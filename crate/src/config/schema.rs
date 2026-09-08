@@ -500,10 +500,11 @@ pub struct PruneInertImportsConfig {
     /// to the same source. `false` keeps every repeat.
     pub drop_duplicates: bool,
     /// Drops an import binding a name nothing references, unless the
-    /// binding is marked for re-export, read by a `del` or a quoted
-    /// annotation, or bound in a package `__init__.py`, in which case it
-    /// is reported instead. `false` keeps every unreferenced import and
-    /// reports none.
+    /// binding is marked for re-export or read by a `del` or a quoted
+    /// annotation. A package `__init__.py`, and a module that writes no
+    /// `__all__` and binds no name of its own, each report an
+    /// unreferenced binding rather than dropping it. `false` keeps
+    /// every unreferenced import and reports none.
     pub drop_unreferenced: bool,
     pub enabled: bool,
 }

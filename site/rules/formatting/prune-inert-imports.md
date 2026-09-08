@@ -1,5 +1,5 @@
 ---
-caption : "Removes an import that binds a name nothing references or repeats a binding an earlier import already made, and reports the unreferenced one in a package `__init__.py` instead of removing it."
+caption : "Removes an import that binds a name nothing references, or that repeats a binding an earlier import already made, and reports rather than removes the unreferenced one where the file reads as a compatibility shim or a package `__init__.py`."
 related : [bare-imports, group-imports, inlinable-bindings, modernize-annotations]
 layout  : doc
 ---
@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads.
+`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads, and where removing an import could change what another module imports from this one, `drop-unreferenced` reports the binding rather than removing it.
 
 <Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
 
@@ -20,22 +20,48 @@ A repeat matches on both the name it binds and the path it names, so `import os`
 
 ## What Holds Its Line
 
+Whether a name is re-exported is a fact about *other* files, and *Prose* formats one file at a time, so it never sees the sibling doing `from shim import name`. Two shapes in the file itself say that removing an import could break such a sibling, and in both the rule reports the binding rather than removing it.
+
+The first is a module that writes no `__all__` and binds no name of its own, counting a `def`, a `class`, a type alias, and every assignment shape from a plain name through an unpack, a `for` target, and a `with` binding. A `try` or an `if` is guarding an import rather than defining the module, so neither counts whatever its body binds, and a dunder such as `__version__` stays out alongside a bare annotation such as `version: str`, which binds nothing when the module runs. A file whose entire content is imports and the branches guarding them is not using those names, it is carrying them, which is what a compatibility shim is.
+
+<Fixture rule="prune_inert_imports" case="module_binding_no_name_of_its_own_reports_instead" />
+
+`drop-duplicates` is unaffected, because removing a repeat cannot change what the module re-exports while the first import still binds the name.
+
+<Fixture rule="prune_inert_imports" case="repeat_drops_while_the_binding_it_repeats_reports" />
+
+The second is a package `__init__.py`, whose bindings are the package's public API whatever its `__all__` says.
+
+Everywhere else the removal stands. A module that writes `__all__` has stated its public surface, so an unreferenced import drops there even where that surface is empty.
+
+<Fixture rule="prune_inert_imports" case="empty_dunder_all_drops_an_unread_name" />
+
+A module that binds names of its own drops one too, whatever its `__all__`. That leaves one case no signal inside the file reaches, a shim carrying a single helper function beside its re-exports, which reads as an ordinary module and loses them. Writing one of the markers below is what settles it.
+
 An import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
 
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.
 3. A `noqa` comment trailing the import, either bare or naming `F401`, which keeps every name that statement binds. The marker has to open a comment rather than appear inside its text, so a stacked `# type: ignore  # noqa: F401` counts whereas a sentence mentioning the word does not, and a statement spanning several rows carries it on the row it opens or the row it closes.
 4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation. A dunder module such as `__future__` is excluded, because its names carry compiler meaning rather than a public API.
+5. A file-level pragma opening its own line at column zero and naming the unused-import behavior, being `# ruff: noqa: F401`, `# flake8: noqa: F401`, or `# pyright: reportUnusedImport=false`, which holds every unreferenced import in the module at once. Each is what the tool naming it already reads as *"the unused imports here are deliberate"*, so *Prose* reads it the same way rather than defining a spelling of its own, matching each head exactly as its own tool matches it. The spacing around a `:` or an `=` is free everywhere, `flake8` reads its own name in any casing whereas `ruff` and `pyright` read only the lower-case spelling, the `noqa` word is read in any casing, and a pyright rule counts anywhere in its comma-separated list. Pyright sets a rule to report nothing on either `false` or `none` and reads both in any casing, whereas a severity such as `error` or `warning` leaves the rule reporting, so a pragma carrying one of those holds no import. An indented pragma sits inside a block rather than over the file, so it holds nothing. A head naming no code (*a bare `# ruff: noqa`*) is not read either, because it silences every rule its tool carries and so says nothing about re-exports in particular.
 
-The `noqa` marker is the only one a reader writes in a comment rather than in code, and it is what the wider ecosystem puts on a re-export no static read can see. [[band-constants]] reads the same comment for `E402`, which pins an import to the row its author gave it. Those two readings are the only ones, so a `noqa` comment exempts nothing from any other rewrite or lint in *Prose*.
+Two of those markers are written in a comment rather than in code, which is where the wider ecosystem records a re-export no static read can see. [[band-constants]] reads a `noqa` naming `E402` as pinning an import to the row its author gave it. Those readings are the whole set, so neither a `noqa` nor a file-level pragma exempts anything from any other rewrite or lint in *Prose*.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
-An `__all__` built from anything other than a list or tuple of string literals, or written below module scope, keeps every import in that module, as does a `from … import *`.
+An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
 
-Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted annotation sits in a string literal rather than in the tree the table reads, so the rule parses each quoted annotation for the names it reads.
+Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in one of these positions:
 
-<Fixture rule="prune_inert_imports" case="quoted_annotation_holds_its_import" />
+1. An annotation, whether the whole annotation is quoted or only a member inside it.
+2. The value of an explicit type alias, written as `type Handle = "Node"` or under a `TypeAlias` annotation, and the bound or the default of a type parameter (*`def f[T: "Node"]()`*).
+3. The subscript of a standard-library generic (*`Optional["Node"]`, `list["Node"]`*). A subscript on anything else is an ordinary lookup, so `config["Node"]` reads nothing.
+4. An argument of a typing construct that takes a type as a string, being `cast`, `assert_type`, `NamedTuple`, `NewType`, `ParamSpec`, `TypeAliasType`, `TypeVar`, `TypeVarTuple`, and `TypedDict`. `cast` carries its type in the first argument and every other construct in the arguments after the name it opens on, with a keyword read the same way, so `TypeVar(bound="Node")` and `cast(typ="Node")` both count.
+
+A construct renamed on the way in still reads as the construct it names, so `from typing import cast as c` leaves `c("Node", handle)` holding what it reads.
+
+<Fixture rule="prune_inert_imports" case="quoted_type_holds_its_import" />
 
 An import binding `__all__` itself sets the whole export surface, so it stays too, as does a name a second import rebinds from another source, which keeps the fallback in a `try: from _speedups import loads` shim in place.
 
@@ -47,14 +73,14 @@ An own-line comment directly above an import keeps the whole statement, because 
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 
-A package `__init__.py` reports an unreferenced import rather than removing it, because its bindings are the package's public API, whereas a repeat still drops there.
-
 ## The `__future__` Directive
 
 `from __future__ import annotations` is removed wherever the directive changes nothing at runtime:
 
 1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation.
 2. No annotation runs at module scope, and every annotated name resolves to an unconditional module-scope binding written before it.
+
+A `del` of an annotated name leaves that name unresolved whatever else binds it, because removing the directive makes the annotation evaluate against the namespace the `del` left rather than against a string.
 
 An annotation at module scope keeps the directive whatever its names resolve to, because the directive decides whether Python stores that annotation in the module's `__annotations__` as a string or evaluates it at import time, so removing it changes what the module presents. An annotation on a `def` or inside a `class` body is stored on that object instead, and the directive can be removed once every name the annotation reads is bound ahead of it.
 

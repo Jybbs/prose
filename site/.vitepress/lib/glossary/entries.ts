@@ -319,9 +319,11 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['dunder name', 'dunder names', '__all__', '__slots__'],
     definition : 'A dunder is a name wrapped in double underscores (`__name__`, `__all__`, '
                + '`__init__`). `reassigned-constants` exempts dunder names, since the runtime '
-               + 'writes them, and `alphabetize-siblings` sorts dunder methods ahead of '
-               + 'properties, private methods, and public methods in a class body.',
-    families   : ['ordering', 'lint']
+               + 'writes them, `alphabetize-siblings` sorts dunder methods ahead of '
+               + 'properties, private methods, and public methods in a class body, and '
+               + '`prune-inert-imports` reads `__all__` as the public surface a module '
+               + 'declares.',
+    families   : ['ordering', 'lint', 'formatting']
   },
 
   'enum': {
@@ -620,6 +622,17 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'constructor. `align-colons` aligns the annotation colons of either.',
     families   : ['ordering', 'alignment'],
     href       : 'https://docs.pydantic.dev/'
+  },
+
+  're-export': {
+    aliases    : ['re-exports', 'reexport', 'reexports'],
+    definition : 'A re-export is a name a module imports so that another module can import it '
+               + 'from there. `prune-inert-imports` recognizes one by a name `__all__` lists, the '
+               + '`x as x` alias form, a trailing `noqa`, or a name taken out of a private '
+               + 'module, or a file-level unused-import pragma, and it reports rather than '
+               + 'removes an unreferenced import where the file reads as a compatibility shim.',
+    families   : ['formatting'],
+    rule       : 'prune-inert-imports'
   },
 
   'reparse': {

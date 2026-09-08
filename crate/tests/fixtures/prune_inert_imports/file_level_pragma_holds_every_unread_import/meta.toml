@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A File-Level Pragma Keeps Every Unread Import Silently"
+
+description = '''
+Nothing reads `shutil`, and `name = "compat"` means the module binds a name of its own, so the import would otherwise be removed. **The import stays and nothing is reported**, because `# ruff: noqa: F401` at the head of a file is what the wider ecosystem already writes to say its unused imports are deliberate.
+'''

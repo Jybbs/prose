@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/file_level_pragma_holds_every_unread_import/input.py
+---
+# ruff: noqa: F401
+import shutil
+
+name = "compat"

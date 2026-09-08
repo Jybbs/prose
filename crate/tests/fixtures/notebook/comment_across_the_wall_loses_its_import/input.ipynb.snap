@@ -3,7 +3,8 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/notebook/comment_across_the_wall_loses_its_import/input.ipynb
 ---
-SEED = 7
+SEED    = 7
+__all__ = ["SEED", "WINDOW"]
 # Sampling knobs
 
 # --- cell 2 ---

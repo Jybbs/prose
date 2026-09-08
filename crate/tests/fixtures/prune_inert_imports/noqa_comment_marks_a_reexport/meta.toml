@@ -3,5 +3,5 @@ previewable = true
 title       = "A `noqa` Comment Marks a Re-Export"
 
 description = '''
-Nothing reads `dumps`, `loads`, `pack`, or `Any`, and each of the three import lines carries a `noqa` comment. **The `json` and `struct` lines stay and `Any` is removed**, because `# noqa: F401` names the code an unread import is reported under and a bare `# noqa` covers every code, whereas the `# noqa: E501` on the `typing` line names an unrelated code and marks nothing.
+Nothing reads `dumps`, `loads`, `pack`, or `Any`, and each of the three import lines carries a `noqa` comment. **The `json` and `struct` lines stay and `Any` is removed**, because `# noqa: F401` names the code an unread import is reported under and a bare `# noqa` covers every code. The `# noqa: E501` on the `typing` line names an unrelated code, so it marks nothing.
 '''

@@ -8,4 +8,6 @@ from .pgen2 import token
 from .pgen2 import driver
 from . import pytree
 
+__all__ = ["GRAMMAR"]
+
 GRAMMAR = driver.load(os.path.join(pytree.root, "Grammar.txt"))

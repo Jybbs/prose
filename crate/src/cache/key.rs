@@ -1,12 +1,13 @@
-//! The cache key: a BLAKE3 digest over the source, config, resolved
-//! rule selection, and version inputs, domain-separated by the anchor
-//! naming which buffer the entry's diagnostics resolve against.
+//! The cache key: a BLAKE3 digest over the source, its name, the
+//! config, the resolved rule selection, and the version inputs,
+//! domain-separated by the anchor naming which buffer the entry's
+//! diagnostics resolve against.
 
 use ruff_python_ast::PySourceType;
 
 use crate::rules::RuleId;
 
-pub(super) const CACHE_FORMAT_VERSION: &str = "9";
+pub(super) const CACHE_FORMAT_VERSION: &str = "10";
 
 /// How many hex characters of the generation digest name the directory.
 const GENERATION_LEN: usize = 16;
@@ -97,12 +98,14 @@ impl CacheKeyPrefix {
         Self(hasher)
     }
 
-    /// Completes the digest with one file's own source bytes and the
-    /// source type the run reads them as, which decides between the
-    /// module and the notebook path.
+    /// Completes the digest with one file's own name, source bytes, and
+    /// the source type the run reads them as, the type deciding between
+    /// the module and the notebook path and the name carrying every
+    /// reading a rule takes off the path, `is_package_init` included.
     #[must_use]
-    pub fn key_for(&self, source_bytes: &[u8], source_type: PySourceType) -> CacheKey {
+    pub fn key_for(&self, name: &str, source_bytes: &[u8], source_type: PySourceType) -> CacheKey {
         let mut hasher = self.0.clone();
+        framed(&mut hasher, name.as_bytes());
         framed(
             &mut hasher,
             match source_type {

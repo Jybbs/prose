@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/repeat_drops_while_the_binding_it_repeats_reports/input.py
+---
+prune-inert-imports@12..24
+prune-inert-imports@7..11

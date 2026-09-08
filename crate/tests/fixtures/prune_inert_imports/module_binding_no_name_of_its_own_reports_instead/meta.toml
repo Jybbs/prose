@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Module Binding No Name of Its Own Reports Rather Than Removes"
+
+description = '''
+Nothing reads `shutil` or `sys`, and the module writes no `__all__` and binds no name of its own, which is the shape a compatibility shim takes. **Both imports stay and each is reported**, because a module that defines nothing is there to carry names for its siblings, and *Prose* cannot see the sibling that imports them.
+'''
