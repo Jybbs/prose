@@ -198,7 +198,7 @@ mod tests {
         let pipeline =
             Pipeline::for_rule("prune-inert-imports", &Config::default()).expect("registered rule");
 
-        let (_, diagnostics) = pipeline.run(source).expect("pipeline runs");
+        let (_, diagnostics, _) = pipeline.run(source).expect("pipeline runs");
 
         assert!(diagnostics.is_empty());
     }

@@ -15,6 +15,7 @@
 #MISE   "site:press",
 #MISE   "site:test",
 #MISE   "site:typecheck",
+#MISE   "wasm:lint",
 #MISE   "wasm:smoke"
 #MISE ]
 #MISE depends_post = ["rust:wheel"]

@@ -1,8 +1,7 @@
-import { stringifyTokenStyle } from 'shiki/core'
-
 import { codeHighlighter } from '../markdown/highlighter'
 import { commonPrefix }    from '../shared/common-prefix'
 import { SHIKI_THEMES }    from '../shared/constants'
+import { escapeHtml }      from '../shared/escape-html'
 
 const CARET = '<span class="code-caret" aria-hidden="true"></span>'
 
@@ -28,11 +27,7 @@ export interface TypingPlan {
   prefix : number
 }
 
-function escapeHtml(text: string): string {
-  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-}
-
-// The first `chars` characters of one tokenized line as styled spans.
+// Renders the first `chars` characters of one tokenized line as styled spans.
 export function lineHtml(line: TokenLine, chars: number): string {
   let remaining = chars
   let html      = ''
@@ -48,7 +43,10 @@ export function lineHtml(line: TokenLine, chars: number): string {
 // Tokenizes `text` to per-line styled tokens through the shared client
 // highlighter.
 export async function tokenLines(text: string): Promise<TokenLine[]> {
-  const highlighter = await codeHighlighter()
+  const [{ stringifyTokenStyle }, highlighter] = await Promise.all([
+    import('shiki/core'),
+    codeHighlighter()
+  ])
   const { tokens } = highlighter.codeToTokens(text, { lang: 'toml', themes: SHIKI_THEMES })
   return tokens.map(line => line.map(token => ({
     content : token.content,
@@ -56,8 +54,8 @@ export async function tokenLines(text: string): Promise<TokenLine[]> {
   })))
 }
 
-// One frame of a typing run, the held lines rendered whole and each line of
-// the changed middle truncated to `chars` under its own caret.
+// Renders one frame of a typing run, holding the untouched lines whole and
+// truncating each line of the changed middle to `chars` under its own caret.
 export function typingFrame(
   tokens : readonly TokenLine[],
   side   : TypingSide,

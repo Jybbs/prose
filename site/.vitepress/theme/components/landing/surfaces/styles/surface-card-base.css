@@ -47,12 +47,6 @@
   text-decoration-line : none;
 }
 
-.surface-card-cover-link:focus-visible,
-.rule-card-cover:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : 2px;
-}
-
 .surface-card-blurb .glossary-anchor,
 .surface-rail > * {
   position       : relative;

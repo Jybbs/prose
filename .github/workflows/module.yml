@@ -10,6 +10,8 @@ on:
       - .github/actions/**
       - .github/workflows/module.yml
       - .mise/config.toml
+      - .mise/lib/wasm.bash
+      - .mise/tasks/wasm/build
       - .mise/tasks/wasm/pack
       - Cargo.lock
       - Cargo.toml
@@ -44,7 +46,7 @@ jobs:
 
       - name : Build the wasm module
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
-        run  : mise run wasm:build && mise run wasm:pack
+        run  : mise run wasm:pack
 
       - name : Save the wasm module
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}

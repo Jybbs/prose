@@ -1,12 +1,12 @@
 import { stringify } from 'smol-toml'
 
-import type { Facet, FacetValue } from './config-schema.data'
-import type { ProseWasm }         from './load-module'
+import type { Facet, FacetValue }      from './config-schema.data'
+import type { ProseFormat, ProseWasm } from './load-module'
 
 const INT_PROBES    = [1, 500] as const
 const LENGTH_PROBES = [30, 180] as const
 
-type ProbeBaseline = { diagnostics: string, formatted: string }
+type ProbeBaseline = Pick<ProseFormat, 'diagnostics' | 'formatted'>
 
 // The probe values that could reveal a facet's effect on a source: a bool
 // flips its default and an int takes each extreme, whereas a string kind has
@@ -27,10 +27,13 @@ function probesDiffer(
   source   : string,
   toConfig : (value: FacetValue) => object
 ): boolean {
+  // Every run builds a new array, so the lists are compared as JSON against a
+  // baseline serialized once here.
+  const findings = JSON.stringify(baseline.diagnostics)
   return probes.some(value => {
     try {
-      const run = format(stringify(toConfig(value)), source)
-      return run.formatted !== baseline.formatted || run.diagnostics !== baseline.diagnostics
+      const run = format(stringify(toConfig(value)), source, false)
+      return run.formatted !== baseline.formatted || JSON.stringify(run.diagnostics) !== findings
     } catch {
       return true
     }

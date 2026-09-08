@@ -3,8 +3,7 @@ import { fc, test } from '@fast-check/vitest'
 import { readLintFindings, type LintFinding } from '../../lib/fixtures/lint-findings'
 import { lintShorthand }                      from '../../lib/fixtures/lint-shorthand'
 import { readFixtureToggle }                  from '../../lib/fixtures/toggle'
-import { walkFixtures }                       from '../../lib/fixtures/walker'
-import { crateDir }                           from '../../lib/shared/paths'
+import { CASES }                              from '../corpus'
 
 const SPLIT = '(\n    "the quick brown fox jumps over "\n    "the lazy dog"\n)'
 
@@ -132,7 +131,7 @@ describe('display-only fix coverage', () => {
     const unshaped: string[] = []
     let shaped = 0
 
-    for (const { id, inputPath } of walkFixtures(crateDir(import.meta.url))) {
+    for (const { id, inputPath } of CASES) {
       const display = readLintFindings(inputPath)
         .filter(finding => finding.fix?.applicability === 'displayonly')
       if (display.length === 0) continue

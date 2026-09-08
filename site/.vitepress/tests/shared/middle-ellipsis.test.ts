@@ -6,11 +6,11 @@ const fitsWithin = (max: number) => (candidate: string): boolean => candidate.le
 
 describe('middleEllipsis', () => {
   it.each([
-    ['keeps text that already fits',             10, 3, 'short',      'short'],
-    ['keeps text too short to elide',            2,  3, 'abcd',       'abcd'],
-    ['elides the middle and keeps the tail',     7,  3, 'abcdefghij', 'abc…hij'],
-    ['drops the whole prefix when nothing fits', 4,  3, 'abcdefghij', '…hij']
-  ])('%s', (_name, max, tail, text, expected) => {
+    { expected: 'short',   max: 10, name: 'keeps text that already fits',             tail: 3, text: 'short'      },
+    { expected: 'abcd',    max: 2,  name: 'keeps text too short to elide',            tail: 3, text: 'abcd'       },
+    { expected: 'abc…hij', max: 7,  name: 'elides the middle and keeps the tail',     tail: 3, text: 'abcdefghij' },
+    { expected: '…hij',    max: 4,  name: 'drops the whole prefix when nothing fits', tail: 3, text: 'abcdefghij' }
+  ])('$name', ({ expected, max, tail, text }) => {
     expect(middleEllipsis(fitsWithin(max), tail, text)).toBe(expected)
   })
 

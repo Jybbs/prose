@@ -1,0 +1,131 @@
+.sandbox-tags {
+  display        : flex;
+  flex-direction : column;
+  gap            : 0.85rem;
+}
+
+.sandbox-tags-cloud {
+  display     : flex;
+  flex-wrap   : wrap;
+  gap         : 0.3rem;
+  align-items : center;
+}
+
+.sandbox-tags-tag {
+  position      : relative;
+  display       : inline-flex;
+  align-items   : center;
+  border-radius : var(--prose-radius-sm);
+  background    : color-mix(in srgb, var(--family-color, var(--vp-c-divider)) 14%, transparent);
+  transition    : background var(--prose-transition), opacity var(--prose-transition),
+                  box-shadow var(--prose-transition);
+}
+
+.sandbox-tags-tag[data-on='false'] {
+  background : color-mix(in srgb, var(--vp-c-text-3) 12%, transparent);
+  opacity    : 0.75;
+}
+
+.sandbox-tags-tag[data-active='true'] {
+  z-index    : 5;
+  box-shadow : 0 0 0 1px color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) 45%, transparent);
+}
+
+.sandbox-tags-toggle {
+  display     : inline-flex;
+  align-items : center;
+  padding     : 2px 7px;
+  border      : 0;
+  background  : transparent;
+  cursor      : pointer;
+}
+
+.sandbox-tags-slug {
+  color          : var(--family-color, var(--vp-c-text-1));
+  font-family    : var(--vp-font-family-mono);
+  font-size      : 0.68rem;
+  letter-spacing : 0.05em;
+  text-transform : uppercase;
+}
+
+.sandbox-tags-tag[data-on='false'] .sandbox-tags-slug {
+  color : var(--vp-c-text-3);
+}
+
+.sandbox-tags-gear {
+  display     : inline-flex;
+  align-items : center;
+  padding     : 2px 6px 2px 3px;
+  border      : 0;
+  background  : transparent;
+  color       : var(--vp-c-text-3);
+  cursor      : pointer;
+  transition  : color var(--prose-transition), opacity var(--prose-transition);
+}
+
+.sandbox-tags-gear:not(:disabled):hover,
+.sandbox-tags-gear[aria-expanded='true'] {
+  color : var(--family-color, var(--vp-c-brand-1));
+}
+
+.sandbox-tags-gear:disabled {
+  opacity : 0.4;
+  cursor  : default;
+}
+
+.sandbox-tags-gear-icon {
+  --glyph-size : 15px;
+}
+
+.sandbox-tags-power {
+  transition : color var(--prose-transition);
+}
+
+.sandbox-tags-power[aria-pressed='true'] {
+  color : var(--vp-c-text-3);
+}
+
+.sandbox-tags-power-icon {
+  --glyph-size : 13px;
+}
+
+.sandbox-tags-banner {
+  display       : flex;
+  min-height    : 5.5rem;
+  max-height    : min(45vh, 30rem);
+  padding       : 0.9rem 1.25rem;
+  overflow-y    : auto;
+  border        : 1px solid var(--vp-c-divider);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg-soft);
+}
+
+.sandbox-tags-banner .rule-card {
+  width      : 100%;
+  min-height : auto;
+}
+
+.sandbox-tags-idle {
+  position : relative;
+  display  : flex;
+  width    : 100%;
+}
+
+.sandbox-tags-idle-ghost {
+  visibility : hidden;
+}
+
+.sandbox-tags-idle .sandbox-tags-hint {
+  position    : absolute;
+  inset       : 0;
+  display     : grid;
+  place-items : center;
+  margin      : 0;
+}
+
+.sandbox-tags-hint {
+  margin     : auto;
+  color      : var(--vp-c-text-3);
+  font-size  : var(--prose-text-sm);
+  text-align : center;
+}

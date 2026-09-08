@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { fixturesDirFrom } from '../shared/paths'
 import { parseToml }       from '../shared/toml'
+import { fixtureId }       from './entry'
 import * as lintFindings   from './lint-findings'
 
 export const CONFIG_FILE = 'config.toml'
@@ -35,7 +36,7 @@ export function corpusLintFindings(crateDir: string): Map<string, lintFindings.L
   return map
 }
 
-// The authored title a `meta.toml` carries, blank and whitespace-only alike
+// Reads the authored title a `meta.toml` carries, blank and whitespace-only alike
 // resolving to nothing so each caller applies its own fallback.
 export function fixtureTitle(docs: FixtureDocs | undefined): string | undefined {
   return docs?.title?.trim() || undefined
@@ -76,7 +77,7 @@ export function* walkFixtures(crateDir: string): Generator<FixtureWalkEntry> {
     for (const caseName of subdirNames(ruleDir)) {
       const inputPath = path.join(ruleDir, caseName, INPUT_FILE)
       if (!fs.existsSync(inputPath)) continue
-      yield { caseName, id: `${rule}/${caseName}`, inputPath, rule }
+      yield { caseName, id: fixtureId(rule, caseName), inputPath, rule }
     }
   }
 }

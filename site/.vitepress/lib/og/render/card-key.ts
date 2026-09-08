@@ -21,9 +21,10 @@ const OG_DIR = import.meta.dirname
 // Each path the card modules import from outside their own directory, hashed
 // alongside the directory itself so an edit to one moves every card key.
 export const SHARED_SOURCES: readonly string[] = [
-  '../../config/og-url.ts',    '../../shared/constants.ts',  '../../shared/numerals.ts',
-  '../../shared/palette.ts',   '../../shared/paths.ts',      '../../shared/registries.ts',
-  '../../shared/svg.ts',       '../../shared/version.ts',    '../pages.ts'
+  '../../config/og-url.ts',       '../../markdown/inline-nodes.ts', '../../shared/constants.ts',
+  '../../shared/numerals.ts',     '../../shared/palette.ts',        '../../shared/paths.ts',
+  '../../shared/registries.ts',   '../../shared/svg.ts',            '../../shared/version.ts',
+  '../pages.ts'
 ]
 
 const TEMPLATE_DIGEST = hash(

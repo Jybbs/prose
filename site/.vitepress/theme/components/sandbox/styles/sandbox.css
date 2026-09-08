@@ -1,0 +1,330 @@
+.sandbox {
+  position  : relative;
+  left      : 50%;
+  width     : min(94rem, calc(100vw - 3rem));
+  transform : translateX(-50%);
+}
+
+.sandbox-surfaces {
+  display               : grid;
+  grid-template-columns : minmax(0, 2fr) minmax(0, 1fr);
+  gap                   : 1.25rem;
+  align-items           : stretch;
+}
+
+.sandbox-surfaces > * {
+  min-height : 30rem;
+}
+
+.sandbox-py {
+  position  : relative;
+  display   : grid;
+  min-width : 0;
+}
+
+.sandbox-deck,
+.sandbox-toml {
+  transition : opacity var(--prose-transition);
+}
+
+.sandbox-py .sandbox-surface {
+  transition : border-color var(--prose-transition);
+}
+
+/* An open source edit dims and disables the config deck and TOML panel, and
+   marks the panel under edit, so no other control fires against an unapplied edit. */
+.sandbox[data-editing] .sandbox-deck,
+.sandbox[data-editing] .sandbox-toml {
+  opacity        : 0.5;
+  pointer-events : none;
+}
+
+.sandbox[data-editing] .sandbox-surface {
+  border-color : var(--vp-c-brand-1);
+}
+
+.sandbox-refresh {
+  right : 40px;
+}
+
+.sandbox-share {
+  right : 72px;
+}
+
+.sandbox-refresh[data-armed] {
+  border-color : var(--prose-role-warning);
+  color        : var(--prose-role-warning);
+  opacity      : 1;
+}
+
+.sandbox-refresh-tip {
+  position       : absolute;
+  top            : 8px;
+  right          : 108px;
+  z-index        : 3;
+  display        : flex;
+  align-items    : center;
+  height         : 28px;
+  padding        : 0 10px;
+  border         : 1px solid color-mix(in srgb, var(--prose-role-warning) 55%, var(--vp-c-divider));
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  box-shadow     : var(--prose-shadow-tooltip);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xxs);
+  letter-spacing : 0.04em;
+  white-space    : nowrap;
+  pointer-events : none;
+}
+
+.sandbox-announce {
+  position    : absolute;
+  width       : 1px;
+  height      : 1px;
+  margin      : 0;
+  overflow    : hidden;
+  clip        : rect(0 0 0 0);
+  white-space : nowrap;
+}
+
+.sandbox-deck {
+  position      : relative;
+  z-index       : 20;
+  margin-bottom : 1.5rem;
+  background    : var(--vp-c-bg-soft);
+}
+
+.sandbox-deck[data-locked='true'] {
+  position : sticky;
+  top      : var(--vp-nav-height);
+}
+
+.sandbox-deck-lock {
+  position   : absolute;
+  top        : 4px;
+  right      : 8px;
+  z-index    : 1;
+  padding    : 6px;
+  border     : 0;
+  background : transparent;
+  color      : var(--vp-c-text-3);
+  cursor     : pointer;
+  transition : color var(--prose-transition);
+}
+
+.sandbox-deck-lock:hover {
+  color : var(--vp-c-text-1);
+}
+
+.sandbox-deck-lock[aria-pressed='true'] {
+  color : var(--vp-c-brand-1);
+}
+
+.sandbox-deck-lock:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+}
+
+.sandbox-deck-lock-icon {
+  --glyph-size : 15px;
+}
+
+.sandbox-deck-body {
+  padding : 0.75rem 1.25rem 1.25rem;
+}
+
+.sandbox-deck-head {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 100%;
+  padding         : 0.45rem;
+  border          : 0;
+  background      : transparent;
+  color           : var(--vp-c-text-2);
+  cursor          : pointer;
+  transition      : color var(--prose-transition), background var(--prose-transition);
+}
+
+.sandbox-deck-head:hover {
+  color      : var(--vp-c-text-1);
+  background : color-mix(in srgb, var(--vp-c-text-1) 4%, transparent);
+}
+
+.sandbox-deck-head[aria-expanded='true'] {
+  border-bottom : 1px solid var(--vp-c-divider);
+}
+
+.sandbox-deck-head:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : -2px;
+}
+
+@media (--prose-bp-tablet) {
+  .sandbox-deck[data-locked='true'] {
+    position : static;
+  }
+
+  .sandbox-deck-lock {
+    display : none;
+  }
+
+  .sandbox-surfaces {
+    grid-template-columns : 1fr;
+  }
+}
+
+/* A margin column runs beside the code. A row carrying an unrecognized key is
+   found there before a word of the notice is read. */
+.sandbox-toml-body {
+  display    : flex;
+  min-height : 0;
+}
+
+.sandbox-toml-gutter {
+  flex-shrink : 0;
+  padding     : 18px 0 18px 10px;
+  font-size   : var(--prose-text-xs);
+  line-height : 1.6;
+  user-select : none;
+}
+
+.sandbox-toml-gutter > span {
+  display : block;
+  width   : 12px;
+  height  : calc(var(--prose-text-xs) * 1.6);
+}
+
+.sandbox-toml-gutter > span[data-flagged]::before {
+  content     : "▲";
+  display     : block;
+  color       : var(--vp-c-warning-1);
+  font-size   : 0.58rem;
+  line-height : inherit;
+  text-align  : center;
+}
+
+.sandbox-toml-body .code-panel-code {
+  padding-left : 8px;
+}
+
+/* An unrecognized key is not a lint finding, so the wave takes the warning hue
+   rather than the lint family's. Its row takes the wash a whole-line finding
+   takes on the formatted panel. */
+.sandbox-toml .lint-flag {
+  --family-color     : var(--vp-c-warning-1);
+  --underline-accent : var(--vp-c-warning-1);
+}
+
+.sandbox-toml-display .line:has(.lint-flag) {
+  background : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+}
+
+/* The count sits in the strip the message list used to hold. That keeps the
+   panel's silhouette and clears both corner controls. */
+.config-notice-strip {
+  display        : flex;
+  align-items    : center;
+  gap            : 6px;
+  margin         : 0;
+  padding        : 7px 14px;
+  border-top     : 1px solid var(--vp-c-divider);
+  background     : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+  color          : var(--vp-c-warning-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  letter-spacing : 0.02em;
+}
+
+.config-notice-popover .config-notice-card {
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+  max-width      : 42ch;
+  padding        : 4px 2px;
+}
+
+/* The trail places the key under the tables it was written in, so the struck
+   last segment reads as the one that belongs to none of them. */
+.config-notice-trail {
+  display     : flex;
+  align-items : center;
+  flex-wrap   : wrap;
+  gap         : 5px;
+  margin      : 0;
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  color       : var(--vp-c-text-2);
+}
+
+.config-notice-root  { color: var(--vp-c-text-3); }
+.config-notice-arrow { color: var(--vp-c-text-3); }
+
+.config-notice-struck {
+  color           : var(--vp-c-danger-1);
+  text-decoration : line-through;
+}
+
+.config-notice-fixes {
+  display        : flex;
+  flex-direction : column;
+  gap            : 7px;
+}
+
+.config-notice-fix {
+  display        : grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items    : center;
+  gap            : 9px;
+  padding        : 7px 11px;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  text-align     : left;
+  cursor         : pointer;
+  transition     : border-color var(--prose-transition), background var(--prose-transition);
+}
+
+.config-notice-fix:hover,
+.config-notice-fix:focus-visible {
+  border-color : color-mix(in srgb, var(--vp-c-warning-1) 55%, transparent);
+  background   : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+}
+
+.config-notice-default {
+  color      : var(--vp-c-text-3);
+  font-size  : var(--prose-text-meta);
+  text-align : right;
+}
+
+/* The tick column carries the membership, so the written key sits in the same
+   list under a cross rather than in a sentence of its own. */
+.config-notice-mark {
+  font-size  : var(--prose-text-meta);
+  text-align : center;
+  color      : var(--vp-c-warning-1);
+}
+
+.config-notice-absent {
+  display              : grid;
+  grid-template-columns: 14px 1fr;
+  align-items          : center;
+  gap                  : 9px;
+  margin               : 2px 0 0;
+  padding              : 5px 12px;
+  border-top           : 1px solid var(--vp-c-divider);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-text-xs);
+}
+
+.config-notice-absent .config-notice-mark {
+  color : var(--vp-c-danger-1);
+}
+
+.config-notice-fix:hover .config-notice-default {
+  color : var(--vp-c-warning-1);
+}

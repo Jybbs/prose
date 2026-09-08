@@ -9,7 +9,7 @@
 use memchr::memmem;
 use ruff_source_file::UniversalNewlines;
 
-use super::{ConfigError, load::prose_table_from_str};
+use super::{ConfigError, discover::prose_table_from_str};
 
 /// Opening pragma of a PEP 723 metadata block.
 const OPEN: &str = "# /// script";

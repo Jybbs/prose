@@ -10,9 +10,11 @@ use serde::{
     de::{Error as _, IntoDeserializer},
 };
 
-use super::de::deserialize_prose;
-use super::load::ConfigNotice;
-use super::{Config, ConfigError};
+use super::{
+    Config, ConfigError,
+    de::deserialize_prose,
+    notice::{ConfigNotice, unknown_keys},
+};
 
 /// One override entry: the glob set its `paths` compile to and the
 /// partial body merged over the base of every file the globs match.
@@ -69,7 +71,7 @@ where
         .remove("paths")
         .ok_or_else(|| toml::de::Error::missing_field("paths"))?;
     let paths = Vec::<String>::deserialize(paths.into_deserializer())?;
-    let _: Config = deserialize_prose(entry.clone(), on_notice)?;
+    let _: Config = deserialize_prose(entry.clone(), &mut unknown_keys(on_notice))?;
     Ok(Override {
         body: entry,
         paths: compile_globs(&paths)?,
