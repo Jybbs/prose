@@ -41,6 +41,10 @@ const PYRIGHT: &str = "pyright";
 /// The `pyright` rule holding every unused import in the file it opens.
 const PYRIGHT_UNUSED_IMPORT: &str = "reportUnusedImport";
 
+/// The values setting a `pyright` rule to report nothing, against the
+/// severities that leave it reporting. Both are read in either casing.
+const PYRIGHT_OFF: [&str; 2] = ["false", "none"];
+
 /// The code `flake8` and its successors report an unread import under,
 /// which a `noqa` naming it marks as deliberate.
 pub(super) const REEXPORT_CODE: &str = "F401";
@@ -229,11 +233,14 @@ fn past<'a>(body: &'a str, word: &str, casing: Casing) -> Option<&'a str> {
     Some(rest.trim_start().strip_prefix(':')?.trim_start())
 }
 
-/// True where `rule` turns pyright's unused-import rule off, reading
-/// the spacing pyright allows around the `=`.
+/// True where `rule` sets pyright's unused-import rule to report
+/// nothing, reading the spacing pyright allows around the `=`.
 fn turns_unused_imports_off(rule: &str) -> bool {
     rule.split_once('=').is_some_and(|(name, value)| {
-        name.trim() == PYRIGHT_UNUSED_IMPORT && value.trim() == "false"
+        name.trim() == PYRIGHT_UNUSED_IMPORT
+            && PYRIGHT_OFF
+                .iter()
+                .any(|off| value.trim().eq_ignore_ascii_case(off))
     })
 }
 

@@ -129,6 +129,18 @@ mod tests {
         assert_eq!(rule().apply(&source).len(), 1);
     }
 
+    #[rstest]
+    #[case::an_error_severity("# pyright: reportUnusedImport=error\nvalue = 1\n\nimport json\n")]
+    #[case::a_warning_severity("# pyright: reportUnusedImport=warning\nvalue = 1\n\nimport json\n")]
+    #[case::a_rule_the_pragma_does_not_name(
+        "# pyright: reportUnusedVariable=false\nvalue = 1\n\nimport json\n"
+    )]
+    fn a_pyright_rule_still_reporting_drops_its_unread_import(#[case] src: &str) {
+        let source = parse(src);
+
+        assert_eq!(rule().apply(&source).len(), 1);
+    }
+
     #[test]
     fn an_indented_pragma_holds_no_module_scope_import() {
         let source = parse("import json\n\n\ndef f():\n    # ruff: noqa: F401\n    return 1\n");
@@ -166,6 +178,12 @@ mod tests {
     )]
     #[case::a_pyright_rule_spaced_around_its_equals(
         "# pyright: reportUnusedImport = false\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::a_pyright_rule_set_to_none(
+        "# pyright: reportUnusedImport=none\nvalue = 1\n\nimport json\n"
+    )]
+    #[case::an_upper_case_pyright_off_value(
+        "# pyright: reportUnusedImport=NONE\nvalue = 1\n\nimport json\n"
     )]
     fn a_module_the_rule_leaves_alone_neither_drops_nor_reports(#[case] src: &str) {
         let source = parse(src);
