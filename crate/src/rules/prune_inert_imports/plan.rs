@@ -1,8 +1,11 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
+use std::cell::OnceCell;
+
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
+use ruff_python_ast::ModModule;
 use ruff_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
@@ -62,11 +65,7 @@ impl<'a> Plan<'a> {
             .collect();
         let package_init = is_package_init(source);
         let shim = !reexports.declares_a_surface() && defines_no_own_name(analysis, body);
-        let type_names = if rule.unreferenced {
-            type_expression_names(source.ast())
-        } else {
-            FxHashSet::default()
-        };
+        let type_names = OnceCell::new();
         let directive_is_inert =
             rule.unreferenced && defers_annotations(body) && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
@@ -96,7 +95,7 @@ impl<'a> Plan<'a> {
                 } else if private_source {
                     None
                 } else {
-                    is_unreferenced(analysis, bound, &repeats, &type_names)
+                    is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
                         .then_some(Candidacy::Unreferenced)
                 };
                 let held = if package_init {
@@ -190,17 +189,22 @@ struct Report<'a> {
 }
 
 /// True when nothing in the module reaches `bound`, counting neither a
-/// write in `repeats` as a rebind nor a name in `type_names` as unread.
+/// write in `repeats` as a rebind nor a name a quoted type expression
+/// reads as unread. `type_names` reads `ast` on the first binding to
+/// reach it and holds that set for the rest of the module.
 fn is_unreferenced(
     analysis: &BindingAnalysis,
     bound: &str,
     repeats: &FxHashSet<TextSize>,
-    type_names: &FxHashSet<String>,
+    type_names: &OnceCell<FxHashSet<String>>,
+    ast: &ModModule,
 ) -> bool {
     analysis.module_usage_count(bound) == 0
         && !analysis.module_reassigned_without(bound, |offset| repeats.contains(&offset))
         && !analysis.is_deleted(bound)
-        && !type_names.contains(bound)
+        && !type_names
+            .get_or_init(|| type_expression_names(ast))
+            .contains(bound)
 }
 
 /// The write offset of every alias repeating a binding an earlier
