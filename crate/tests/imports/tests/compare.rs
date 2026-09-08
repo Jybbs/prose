@@ -120,7 +120,14 @@ fn comparing_sorts_each_module_into_one_bucket() {
     let found = compare(&after, &before, &modules);
     assert_eq!(found.comparable, 2);
     assert_eq!(found.unmeasured, ["lost.py".to_owned()]);
-    assert_eq!(found.uncomparable, ["blocked.py".to_owned()]);
+    assert_eq!(
+        found.uncomparable.keys().collect::<Vec<_>>(),
+        ["blocked.py"]
+    );
+    assert_eq!(
+        found.uncomparable["blocked.py"],
+        "raises ImportError: no _abc"
+    );
     assert_eq!(found.breaks.len(), 1);
     assert_eq!(found.breaks[0].module, "gone.py");
     assert_eq!(found.breaks[0].reason, "leaves `b` unbound");

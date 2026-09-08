@@ -7,7 +7,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::*;
 use crate::{
     ratchet::{
-        Baseline, Carried, Floor, VERSION, bake, baseline, baseline_at, dropped, judge, shortfalls,
+        Baseline, Carried, Counts, VERSION, bake, baseline, baseline_at, dropped, judge,
+        regressions,
     },
     records::Width,
     sweep::DEFAULT_LABEL,
@@ -22,7 +23,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         candidates: 1,
         comparable: 1,
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: vec!["blocked.py".to_owned()],
+        uncomparable: [("blocked.py".to_owned(), "raises".to_owned())].into(),
         ..Width::default()
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
@@ -44,7 +45,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     );
     assert_eq!(
         held.uncomparable[DEFAULT_LABEL],
-        ["blocked.py".to_owned()].into()
+        [("blocked.py".to_owned(), "raises".to_owned())].into()
     );
     assert_eq!(held.version, VERSION);
 }
@@ -81,11 +82,19 @@ fn a_break_set_that_is_older_malformed_or_absent_carries_nothing_forward() {
 fn dropped_names_a_module_the_baseline_does_not_list() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: vec!["fresh.py".to_owned(), "known.py".to_owned()],
+        uncomparable: [
+            ("fresh.py".to_owned(), "raises".to_owned()),
+            ("known.py".to_owned(), "raises".to_owned()),
+        ]
+        .into(),
         ..Width::default()
     };
     let held = Baseline {
-        uncomparable: [(DEFAULT_LABEL.to_owned(), ["known.py".to_owned()].into())].into(),
+        uncomparable: [(
+            DEFAULT_LABEL.to_owned(),
+            [("known.py".to_owned(), "raises".to_owned())].into(),
+        )]
+        .into(),
         ..Baseline::default()
     };
     assert_eq!(dropped(&found, &held), ["fresh.py".to_owned()].into());
@@ -95,20 +104,22 @@ fn dropped_names_a_module_the_baseline_does_not_list() {
 fn dropped_names_nothing_where_the_baseline_records_no_width() {
     let found = Width {
         label: DEFAULT_LABEL.to_owned(),
-        uncomparable: vec!["blocked.py".to_owned()],
+        uncomparable: [("blocked.py".to_owned(), "raises".to_owned())].into(),
         ..Width::default()
     };
     assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
-fn shortfalls_name_every_count_the_run_falls_short_of() {
+fn regressions_name_every_count_that_moved_the_wrong_way() {
     let held = Baseline {
-        floors: [(
+        counts: [(
             DEFAULT_LABEL.to_owned(),
-            Floor {
+            Counts {
                 candidates: 997,
                 comparable: 898,
+                raises: 0,
+                rebinds: 0,
                 refused: 0,
             },
         )]
@@ -123,7 +134,7 @@ fn shortfalls_name_every_count_the_run_falls_short_of() {
         ..Width::default()
     };
     assert_eq!(
-        shortfalls(&short, &held),
+        regressions(&short, &held),
         [
             "candidates 900 against 997 baked",
             "comparable 800 against 898 baked",
@@ -136,18 +147,18 @@ fn shortfalls_name_every_count_the_run_falls_short_of() {
         label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
-    assert_eq!(shortfalls(&reached, &held), Vec::<String>::new());
+    assert_eq!(regressions(&reached, &held), Vec::<String>::new());
 }
 
 #[test]
-fn shortfalls_name_nothing_where_the_baseline_records_no_floor() {
+fn regressions_name_nothing_where_the_baseline_records_no_counts() {
     let found = Width {
         candidates: 1,
         label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
     assert_eq!(
-        shortfalls(&found, &Baseline::default()),
+        regressions(&found, &Baseline::default()),
         Vec::<String>::new()
     );
 }
@@ -173,13 +184,20 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
             .into(),
         )]
         .into(),
-        floors: BTreeMap::new(),
-        uncomparable: [(DEFAULT_LABEL.to_owned(), ["a.py".to_owned()].into())].into(),
+        counts: BTreeMap::new(),
+        uncomparable: [(
+            DEFAULT_LABEL.to_owned(),
+            [("a.py".to_owned(), "raises".to_owned())].into(),
+        )]
+        .into(),
         version: VERSION,
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
-    assert_eq!(held.uncomparable[DEFAULT_LABEL], ["a.py".to_owned()].into());
+    assert_eq!(
+        held.uncomparable[DEFAULT_LABEL],
+        [("a.py".to_owned(), "raises".to_owned())].into()
+    );
 }
 
 #[test]

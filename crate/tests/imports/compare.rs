@@ -31,9 +31,9 @@ pub(crate) struct Partition {
     pub(crate) breaks: Vec<Break>,
     /// How many modules the original tree ran cleanly.
     pub(crate) comparable: usize,
-    /// The modules the original tree did not run cleanly, which a run
-    /// therefore never judges.
-    pub(crate) uncomparable: Vec<String>,
+    /// The modules the original tree did not run cleanly, each beside
+    /// what its run left, which a run therefore never judges.
+    pub(crate) uncomparable: BTreeMap<String, String>,
     /// The modules a run left no record for.
     pub(crate) unmeasured: Vec<String>,
 }
@@ -47,15 +47,20 @@ pub(crate) fn compare(
     modules: &[String],
 ) -> Partition {
     let mut comparable: Vec<String> = Vec::new();
-    let mut uncomparable: Vec<String> = Vec::new();
+    let mut uncomparable: BTreeMap<String, String> = BTreeMap::new();
     let mut unmeasured: Vec<String> = Vec::new();
     for module in modules {
-        let bucket = match (kind(before, module), kind(after, module)) {
-            (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => &mut unmeasured,
-            (Kind::Ok, _) => &mut comparable,
-            _ => &mut uncomparable,
-        };
-        bucket.push(module.clone());
+        match (kind(before, module), kind(after, module)) {
+            (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => unmeasured.push(module.clone()),
+            (Kind::Ok, _) => comparable.push(module.clone()),
+            _ => {
+                let why = before.get(module).map_or_else(
+                    || "the original tree was never asked".to_owned(),
+                    |ran| ran.error.clone(),
+                );
+                uncomparable.insert(module.clone(), why);
+            }
+        }
     }
     let breaks = comparable
         .iter()

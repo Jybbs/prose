@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::setting,
+    outcome::Kind,
     records::{Break, Width},
 };
 
@@ -25,7 +26,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 4;
+pub(crate) const VERSION: u32 = 5;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -35,12 +36,14 @@ pub(crate) const VERSION: u32 = 4;
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
     pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
-    /// How many modules each width compared, which a later run must
-    /// reach so a corpus that quietly shrinks fails rather than passing.
-    pub(crate) floors: BTreeMap<String, Floor>,
-    /// The modules whose original tree did not run cleanly, which a
-    /// later run skips rather than measuring again.
-    pub(crate) uncomparable: BTreeMap<String, BTreeSet<String>>,
+    /// What each width counted, which a later run measures itself
+    /// against so a corpus that shrinks or a defect class that grows
+    /// fails rather than passing.
+    pub(crate) counts: BTreeMap<String, Counts>,
+    /// The modules whose original tree did not run cleanly, each beside
+    /// what its run left. A later run keys on the module alone, so an
+    /// interpreter rewording an error churns no entry.
+    pub(crate) uncomparable: BTreeMap<String, BTreeMap<String, String>>,
     /// The generation the set was baked at, `0` where the file names
     /// none.
     pub(crate) version: u32,
@@ -65,15 +68,22 @@ pub(crate) struct Carried {
     pub(crate) names: Vec<String>,
 }
 
-/// The counts one width reached, which a later run compares against so a
-/// corpus that shrinks fails rather than passing on less work.
+/// What one width counted. The first two are floors a later run must
+/// reach, so a shrinking corpus fails, and the rest are ceilings it must
+/// not exceed, so a growing defect class fails. Splitting a raise from a
+/// rebind keeps a module that fails to import apart from one that ran and
+/// bound a different namespace, since only the first is broken.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(default)]
-pub(crate) struct Floor {
+pub(crate) struct Counts {
     /// How many modules the sweep was eligible to compare.
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
+    /// How many modules failed to import at all.
+    pub(crate) raises: usize,
+    /// How many ran and bound a different namespace.
+    pub(crate) rebinds: usize,
     /// How many modules the format run could not read, parse, or write.
     pub(crate) refused: usize,
 }
@@ -85,20 +95,25 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
     }
     let baked = Baseline {
         breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
-        floors: widths
+        counts: widths
             .iter()
             .map(|found| {
                 (
                     found.label.clone(),
-                    Floor {
+                    Counts {
                         candidates: found.candidates,
                         comparable: found.comparable,
+                        raises: found.counting(Kind::Raised) + found.counting(Kind::Timeout),
+                        rebinds: found.counting(Kind::Ok),
                         refused: found.refused,
                     },
                 )
             })
             .collect(),
-        uncomparable: keyed(widths, |found| found.uncomparable.iter().cloned().collect()),
+        uncomparable: widths
+            .iter()
+            .map(|found| (found.label.clone(), found.uncomparable.clone()))
+            .collect(),
         version: VERSION,
     };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
@@ -141,8 +156,8 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     };
     found
         .uncomparable
-        .iter()
-        .filter(|module| !known.contains(*module))
+        .keys()
+        .filter(|module| !known.contains_key(*module))
         .cloned()
         .collect()
 }
@@ -161,25 +176,34 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
-/// How one width fell short of the counts the baseline recorded, empty
-/// where it reached every one. A baseline holding no floor at this width
-/// records nothing to fall short of.
-pub(crate) fn shortfalls(found: &Width, held: &Baseline) -> Vec<String> {
-    let Some(floor) = held.floors.get(&found.label) else {
+/// How one width moved the wrong way against the counts the baseline
+/// recorded, empty where every one held. A baseline recording nothing at
+/// this width has nothing to move against.
+pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
+    let Some(baked) = held.counts.get(&found.label) else {
         return Vec::new();
     };
-    [
-        ("candidates", found.candidates, floor.candidates),
-        ("comparable", found.comparable, floor.comparable),
+    let short = [
+        ("candidates", found.candidates, baked.candidates),
+        ("comparable", found.comparable, baked.comparable),
     ]
     .into_iter()
-    .filter(|(_, reached, baked)| reached < baked)
-    .map(|(what, reached, baked)| format!("{what} {reached} against {baked} baked"))
-    .chain(
-        (found.refused > floor.refused)
-            .then(|| format!("refused {} against {} baked", found.refused, floor.refused)),
-    )
-    .collect()
+    .filter(|(_, reached, want)| reached < want);
+    let grown = [
+        (
+            "raises",
+            found.counting(Kind::Raised) + found.counting(Kind::Timeout),
+            baked.raises,
+        ),
+        ("rebinds", found.counting(Kind::Ok), baked.rebinds),
+        ("refused", found.refused, baked.refused),
+    ]
+    .into_iter()
+    .filter(|(_, reached, want)| reached > want);
+    short
+        .chain(grown)
+        .map(|(what, reached, want)| format!("{what} {reached} against {want} baked"))
+        .collect()
 }
 
 /// The module, file, kind, and names a baseline holds one break by.

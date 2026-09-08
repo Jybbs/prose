@@ -30,7 +30,7 @@ use crate::{
     common::{setting, watch_for_a_runaway, widths_or},
     corpus::standard_library,
     execute::interpreter,
-    ratchet::{bake, baking, baseline, dropped, judge, shortfalls},
+    ratchet::{bake, baking, baseline, dropped, judge, regressions},
     report::render,
     sweep::{MODULE_VAR, Sweep},
 };
@@ -63,11 +63,11 @@ fn every_rewritten_module_still_imports() {
     let widths: Vec<_> = budgets.map(|width| sweep.sweep(width)).collect();
     let mut fresh = BTreeSet::new();
     let mut lost = BTreeSet::new();
-    let mut short = Vec::new();
+    let mut regressed = Vec::new();
     for found in &widths {
         let carried = judge(found, &held);
         lost.extend(dropped(found, &held));
-        short.extend(shortfalls(found, &held));
+        regressed.extend(regressions(found, &held));
         eprintln!("\nwidth {}\n{}", found.label, render(&carried, found));
         fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
@@ -90,9 +90,9 @@ fn every_rewritten_module_still_imports() {
         return;
     }
     assert!(
-        short.is_empty(),
-        "the run reaches less of the corpus than the baseline records, at {}",
-        short.join(", "),
+        regressed.is_empty(),
+        "the run moves the wrong way against the counts the baseline records, at {}",
+        regressed.join(", "),
     );
     if !lost.is_empty() || !fresh.is_empty() {
         sweep.runner.stage.keep();
