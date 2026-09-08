@@ -6,6 +6,7 @@ import { cacheDirFrom, crateDirFrom }   from '../../shared/paths'
 import { readCargoVersion }             from '../../shared/version'
 import { loadBrandAssets }              from './assets'
 import * as cache                       from './cache'
+import { cardKeyer }                    from './card-key'
 import { enumeratePages }               from '../pages'
 import { renderCards, type RenderTask } from './pool'
 
@@ -18,7 +19,7 @@ export async function buildOgCards(
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = cacheDirFrom(repo, 'og')
-  const keyOf    = cache.cardKeyer(version, brand)
+  const keyOf    = cardKeyer(brand, version)
 
   const tasks: readonly RenderTask[] = [
     { key: keyOf('landing'), outputPath: ogImagePath('index.md'), page: 'landing' },

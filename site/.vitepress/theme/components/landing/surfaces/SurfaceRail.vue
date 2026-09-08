@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { useElementSize, useMouseInElement, useRafFn, useScroll, useTimeoutFn } from '@vueuse/core'
+import {
+  clamp,
+  useElementSize,
+  useMouseInElement,
+  useRafFn,
+  useScroll,
+  useTimeoutFn
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch }                                 from 'vue'
 
 import { useHiddenTabindex } from '../../../../lib/composables/use-aria-hidden'
@@ -50,7 +57,7 @@ const travels = computed(() => travel.value > SLACK_PX)
 
 const atStart = computed(() => scrolled.value <= 0.5)
 const atEnd   = computed(() => scrolled.value >= travel.value - 0.5)
-const behind  = computed(() => (travels.value ? Math.min(1, Math.max(0, scrolled.value / travel.value)) : 0))
+const behind  = computed(() => (travels.value ? clamp(scrolled.value / travel.value, 0, 1) : 0))
 
 const chevrons = computed(() => (travels.value ? [
   { at: atStart.value, glyph: '‹', label: 'Travel to the first rule', reach: behind.value,     side: 'start', toEnd: false },

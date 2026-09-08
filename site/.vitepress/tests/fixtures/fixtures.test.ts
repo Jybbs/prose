@@ -96,13 +96,13 @@ describe('subdirNames', () => {
   it('lists rule directories in sorted order', () => {
     const names = walker.subdirNames(path.join(CRATE, 'tests', 'fixtures'))
     expect(names.length).toBeGreaterThan(0)
-    expect(names).toEqual([...names].sort())
+    expect(names).toStrictEqual([...names].sort())
   })
 })
 
 describe('readFixtureToggle', () => {
   it('derives toggle state from an input and snapshot pair', async () => {
-    const withSnap = CASES.find(c => fs.existsSync(`${c.inputPath}.snap`))!
+    const withSnap = CASES.find(c => fs.existsSync(walker.snapshotPath(c.inputPath)))!
     const state    = await readFixtureToggle(withSnap.inputPath)
     expect(state.inputRaw.length).toBeGreaterThan(0)
     expect(state.hasToggle).toBe(state.changesSource || state.hasFindings)
@@ -116,7 +116,7 @@ describe('readLintFindings', () => {
   })
 
   it('returns an empty list when no sidecar is present', () => {
-    expect(readLintFindings(absent)).toEqual([])
+    expect(readLintFindings(absent)).toStrictEqual([])
   })
 })
 
@@ -129,7 +129,7 @@ describe('readFixtureDocs', () => {
   it('reads the documented key set and no other, across every case', () => {
     const keys = new Set(CASES.flatMap(c => Object.keys(walker.readFixtureDocs(c.inputPath) ?? {})))
     expect([...keys].sort())
-      .toEqual(['canonical', 'description', 'previewable', 'sandbox', 'title'])
+      .toStrictEqual(['canonical', 'description', 'previewable', 'sandbox', 'title'])
   })
 
   it('returns undefined when meta.toml is absent', () => {

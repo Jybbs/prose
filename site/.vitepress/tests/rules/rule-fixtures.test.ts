@@ -29,7 +29,7 @@ describe('readRuleFixtures', () => {
     const duplicated = rules
       .filter(([, set]) => new Set(set.examples.map(ex => ex.case)).size !== set.examples.length)
       .map(([rule]) => rule)
-    expect(duplicated).toEqual([])
+    expect(duplicated).toStrictEqual([])
   })
 
   it('leaves the canonical case out of the examples', () => {
@@ -40,6 +40,6 @@ describe('readRuleFixtures', () => {
     const [rule, set] = rules.find(([, entry]) => entry.examples.length > 3)!
     const toggles     = await Promise.all(set.examples.map(async example =>
       (await readFixtureToggle(inputPath(rule, example.case))).hasToggle))
-    expect(toggles).toEqual([...toggles].sort((a, b) => Number(b) - Number(a)))
+    expect(toggles).toStrictEqual([...toggles].sort((a, b) => Number(b) - Number(a)))
   })
 })

@@ -63,7 +63,7 @@ describe('SurfaceRail', () => {
     const pips = (await mountRail()).findAll('.surface-pip')
 
     expect(pips).toHaveLength(RULES.length)
-    expect(pips.map(p => p.text())).toEqual(['01', '02', '03', '04', '05'])
+    expect(pips.map(p => p.text())).toStrictEqual(['01', '02', '03', '04', '05'])
     expect(pips[0].attributes('href')).toBe('/rules/alignment/align-equals')
     expect(pips[0].attributes('aria-label')).toBe('align-equals')
   })
@@ -95,9 +95,9 @@ describe('SurfaceRail', () => {
 
     const ends = wrapper.findAll('.surface-rail-end')
     expect(wrapper.get('.surface-rail-row').attributes('data-bookends')).toBe('true')
-    expect(ends.map(e => e.attributes('aria-label'))).toEqual(['align-equals', 'align-arrows'])
+    expect(ends.map(e => e.attributes('aria-label'))).toStrictEqual(['align-equals', 'align-arrows'])
     expect(wrapper.findAll('.surface-rail-track .surface-pip').map(p => p.text()))
-      .toEqual(['02', '03', '04'])
+      .toStrictEqual(['02', '03', '04'])
   })
 
   domTest('circles a hovered pip and holds it once the pointer leaves', async ({ reducedMotion }) => {
@@ -110,7 +110,7 @@ describe('SurfaceRail', () => {
     expect(wrapper.get('.surface-rail-chip').text()).toContain('align-commas')
 
     await wrapper.trigger('mouseleave')
-    expect(wrapper.findAll('.surface-pip.active').map(p => p.text())).toEqual(['03'])
+    expect(wrapper.findAll('.surface-pip.active').map(p => p.text())).toStrictEqual(['03'])
   })
 
   domTest('counts each pip away from the circled one', async ({ reducedMotion }) => {
@@ -119,7 +119,7 @@ describe('SurfaceRail', () => {
     const pips    = wrapper.findAll('.surface-pip')
 
     await pips[3].trigger('focus')
-    expect(pips.map(p => p.attributes('style'))).toEqual([
+    expect(pips.map(p => p.attributes('style'))).toStrictEqual([
       '--d: 3;', '--d: 2;', '--d: 1;', '--d: 0;', '--d: 1;'
     ])
   })
@@ -144,7 +144,7 @@ describe('SurfaceRail', () => {
 
     const chevrons = wrapper.findAll('.surface-rail-chevron')
     expect(chevrons.map(c => c.attributes('aria-label')))
-      .toEqual(['Travel to the first rule', 'Travel to the last rule'])
+      .toStrictEqual(['Travel to the first rule', 'Travel to the last rule'])
     expect(chevrons[0].attributes('disabled')).toBeDefined()
     expect(chevrons[1].attributes('disabled')).toBeUndefined()
   })

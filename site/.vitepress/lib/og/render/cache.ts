@@ -1,27 +1,4 @@
-import fs   from 'node:fs'
-import path from 'node:path'
-
 import * as cacache from 'cacache'
-import { hash }     from 'ohash'
-
-import type { BrandAssets } from './assets'
-import type { OgPage }      from '../pages'
-
-const OG_DIR = import.meta.dirname
-
-const SHARED_SOURCES: readonly string[] = ['../../shared/palette.ts', '../../shared/registries.ts']
-
-const TEMPLATE_DIGEST = hash(
-  [...fs.readdirSync(OG_DIR).filter(file => !file.startsWith('.')).sort(), ...SHARED_SOURCES]
-    .map(file => fs.readFileSync(path.join(OG_DIR, file), 'utf8'))
-)
-
-type CardInput = OgPage | 'landing'
-
-export function cardKeyer(version: string, brand: BrandAssets): (card: CardInput) => string {
-  const base = { brand: hash(brand), template: TEMPLATE_DIGEST, version }
-  return card => hash({ base, card })
-}
 
 export async function pruneCards(cacheDir: string, live: Iterable<string>): Promise<void> {
   try {

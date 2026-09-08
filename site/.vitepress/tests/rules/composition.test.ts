@@ -8,12 +8,12 @@ const cases = (name = 'composition'): composition.CompositionCase[] =>
 
 describe('readCompositionCases', () => {
   it('reads the cases a meta.toml marks previewable and skips the rest', () => {
-    expect(cases().map(entry => entry.case)).toEqual(['alpha_case', 'bare_title_case', 'beta_case'])
+    expect(cases().map(entry => entry.case)).toStrictEqual(['alpha_case', 'bare_title_case', 'beta_case'])
   })
 
   it('titles each case from its meta.toml, falling back to the directory name', () => {
     expect(cases().map(entry => entry.titleHtml))
-      .toEqual(['Alpha Runs Ahead of Beta', 'Bare Title Case', 'Beta Settles Alone'])
+      .toStrictEqual(['Alpha Runs Ahead of Beta', 'Bare Title Case', 'Beta Settles Alone'])
   })
 
   it('carries each case source verbatim', () => {
@@ -29,7 +29,7 @@ describe('readCompositionCases', () => {
   })
 
   it('carries the harness rule list each case activates', () => {
-    expect(cases()[0].rules).toEqual(['align-equals', 'space-statements'])
+    expect(cases()[0].rules).toStrictEqual(['align-equals', 'space-statements'])
   })
 
   it('rejects a case declaring no harness rules even where it never renders', () => {
@@ -47,21 +47,21 @@ describe('compositionDir', () => {
 describe('readCompositionData', () => {
   it('pairs the previewable cases with an index built from those same cases', () => {
     const data = composition.readCompositionData(fixture('composition'))
-    expect(data.cases).toEqual(cases())
-    expect(data.byRule).toEqual(composition.byRule(data.cases))
+    expect(data.cases).toStrictEqual(cases())
+    expect(data.byRule).toStrictEqual(composition.byRule(data.cases))
   })
 })
 
 describe('byRule', () => {
   it('inverts the per-case rule lists into the cases each rule takes part in', () => {
-    expect(composition.byRule(cases())).toEqual({
+    expect(composition.byRule(cases())).toStrictEqual({
       'align-equals'     : ['alpha_case', 'beta_case'],
       'space-statements' : ['alpha_case', 'bare_title_case']
     })
   })
 
   it('indexes nothing when no case is previewable', () => {
-    expect(composition.byRule([])).toEqual({})
+    expect(composition.byRule([])).toStrictEqual({})
   })
 })
 

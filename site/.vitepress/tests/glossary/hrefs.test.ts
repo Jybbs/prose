@@ -1,37 +1,53 @@
-import type { GlossaryEntry }       from '../../lib/glossary/entries'
-import { entryHref, glossaryHrefs } from '../../lib/glossary/hrefs'
+import type { GlossaryEntry } from '../../lib/glossary/entries'
+import * as hrefs             from '../../lib/glossary/hrefs'
 
-const rules = new Map([['align-equals', { href: '/rules/alignment/align-equals' }]])
+const rules = new Map([
+  ['align-equals', { family: 'alignment' as const, href: '/rules/alignment/align-equals' }]
+])
 
 const entry = (overrides: Partial<GlossaryEntry>): GlossaryEntry =>
   ({ definition: 'd', families: ['engine'], ...overrides }) as GlossaryEntry
 
-describe('entryHref', () => {
+const resolve = (overrides: Partial<GlossaryEntry>) =>
+  hrefs.entryRule('x', entry(overrides), rules)
+
+describe('entryRule', () => {
   it('resolves a rule-backed entry through the rule index', () => {
-    expect(entryHref('x', entry({ rule: 'align-equals' }), rules)).toBe('/rules/alignment/align-equals')
+    expect(resolve({ rule: 'align-equals' })).toStrictEqual(rules.get('align-equals'))
+  })
+
+  it('resolves to undefined for an entry naming no rule', () => {
+    expect(resolve({})).toBeUndefined()
   })
 
   it('throws when the entry names an unknown rule', () => {
-    expect(() => entryHref('x', entry({ rule: 'ghost' }), rules)).toThrow(/unknown rule/)
+    expect(() => resolve({ rule: 'ghost' })).toThrow(/unknown rule/)
+  })
+})
+
+describe('entryHref', () => {
+  it('takes the href off the resolved rule', () => {
+    expect(hrefs.entryHref('x', entry({ rule: 'align-equals' }), resolve({ rule: 'align-equals' })))
+      .toBe('/rules/alignment/align-equals')
   })
 
   it('throws on a hand-written rule URL', () => {
-    expect(() => entryHref('x', entry({ href: '/rules/alignment/align-equals' }), rules))
+    expect(() => hrefs.entryHref('x', entry({ href: '/rules/alignment/align-equals' })))
       .toThrow(/rule field/)
   })
 
   it('passes a plain href through', () => {
-    expect(entryHref('x', entry({ href: '/reference/cache' }), rules)).toBe('/reference/cache')
+    expect(hrefs.entryHref('x', entry({ href: '/reference/cache' }))).toBe('/reference/cache')
   })
 
   it('returns undefined for an unlinked entry', () => {
-    expect(entryHref('x', entry({}), rules)).toBeUndefined()
+    expect(hrefs.entryHref('x', entry({}))).toBeUndefined()
   })
 })
 
 describe('glossaryHrefs', () => {
   it('maps only the entries that resolve to an href', () => {
-    const map = glossaryHrefs({ linked: entry({ href: '/reference/cache' }), plain: entry({}) }, rules)
-    expect([...map]).toEqual([['linked', '/reference/cache']])
+    const source = { linked: entry({ href: '/reference/cache' }), plain: entry({}) }
+    expect([...hrefs.glossaryHrefs(source, rules)]).toStrictEqual([['linked', '/reference/cache']])
   })
 })

@@ -16,8 +16,9 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import { stripSuffix } from '../lib/shared/strip-suffix'
-import Layout          from './Layout.vue'
+import { provideCurrentRule, useFamilyDataset } from '../lib/composables/route'
+import { stripSuffix }                          from '../lib/shared/strip-suffix'
+import Layout                                   from './Layout.vue'
 
 import 'virtual:prose-palette.css'
 import './styles/tokens.css'
@@ -43,25 +44,25 @@ import './styles/vitepress-chrome.css'
 // order-free and load through one glob in path order.
 import.meta.glob('./components/**/*.css', { eager: true })
 
-const modules = import.meta.glob<{ default: Component }>(
+const components = import.meta.glob<Component>(
   [
     './components/{exit-codes,fixtures,glossary,integrations,primitives,reference,rules,sandbox,suppression,usage}/*.vue',
     './components/base/Tool.vue'
   ],
-  { eager: true }
-)
-const components = Object.fromEntries(
-  Object.entries(modules)
-    .map(([p, mod]) => [stripSuffix(p.split('/').pop()!, '.vue'), mod.default])
+  { eager: true, import: 'default' }
 )
 
 export default {
   extends: DefaultTheme,
   Layout,
+  setup() {
+    provideCurrentRule()
+    useFamilyDataset()
+  },
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)
-    for (const [name, component] of Object.entries(components).sort()) {
-      app.component(name, component)
+    for (const [file, component] of Object.entries(components)) {
+      app.component(stripSuffix(file.split('/').pop()!, '.vue'), component)
     }
     app.use(FloatingVue, {
       themes: {

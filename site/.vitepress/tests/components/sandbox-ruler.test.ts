@@ -20,10 +20,10 @@ const mountRuler = (values: Record<string, number> = {}) =>
 describe('SandboxRuler', () => {
   it('steps a stop by one on an arrow key and by ten with shift', async () => {
     const wrapper = mountRuler()
-    const stop    = wrapper.get('.ruler-stop')
+    const stop    = wrapper.get('.sandbox-ruler-stop')
     await stop.trigger('keydown', { key: 'ArrowRight' })
     await stop.trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
-    expect(wrapper.emitted('setLength')).toEqual([
+    expect(wrapper.emitted('setLength')).toStrictEqual([
       ['code-line-length', 89],
       ['code-line-length', 78]
     ])
@@ -31,10 +31,10 @@ describe('SandboxRuler', () => {
 
   it('jumps to the rail ends on Home and End', async () => {
     const wrapper = mountRuler()
-    const stop    = wrapper.get('.ruler-stop')
+    const stop    = wrapper.get('.sandbox-ruler-stop')
     await stop.trigger('keydown', { key: 'Home' })
     await stop.trigger('keydown', { key: 'End' })
-    expect(wrapper.emitted('setLength')).toEqual([
+    expect(wrapper.emitted('setLength')).toStrictEqual([
       ['code-line-length', 30],
       ['code-line-length', 180]
     ])
@@ -42,32 +42,32 @@ describe('SandboxRuler', () => {
 
   it('clamps a step at the rail bounds', async () => {
     const wrapper = mountRuler({ 'code-line-length': 180 })
-    const stop    = wrapper.get('.ruler-stop')
+    const stop    = wrapper.get('.sandbox-ruler-stop')
     await stop.trigger('keydown', { key: 'ArrowUp' })
-    expect(wrapper.emitted('setLength')).toEqual([['code-line-length', 180]])
+    expect(wrapper.emitted('setLength')).toStrictEqual([['code-line-length', 180]])
   })
 
   it('leaves an unmapped key to the page', async () => {
     const wrapper = mountRuler()
-    await wrapper.get('.ruler-stop').trigger('keydown', { key: 'Tab' })
+    await wrapper.get('.sandbox-ruler-stop').trigger('keydown', { key: 'Tab' })
     expect(wrapper.emitted('setLength')).toBeUndefined()
   })
 
   it('commits a double-click edit through Enter, clamped to the rail', async () => {
     const wrapper = mountRuler()
-    await wrapper.get('.ruler-chip').trigger('dblclick')
-    const input = wrapper.get('input.ruler-chip-input')
+    await wrapper.get('.sandbox-ruler-chip').trigger('dblclick')
+    const input = wrapper.get('input.sandbox-ruler-chip-input')
     await input.setValue('300')
     await input.trigger('keydown.enter')
-    expect(wrapper.emitted('setLength')).toEqual([['code-line-length', 180]])
-    expect(wrapper.find('input.ruler-chip-input').exists()).toBe(false)
+    expect(wrapper.emitted('setLength')).toStrictEqual([['code-line-length', 180]])
+    expect(wrapper.find('input.sandbox-ruler-chip-input').exists()).toBe(false)
   })
 
   it('abandons an edit on Escape without emitting', async () => {
     const wrapper = mountRuler()
-    await wrapper.get('.ruler-chip').trigger('dblclick')
-    await wrapper.get('input.ruler-chip-input').trigger('keydown.esc')
+    await wrapper.get('.sandbox-ruler-chip').trigger('dblclick')
+    await wrapper.get('input.sandbox-ruler-chip-input').trigger('keydown.esc')
     expect(wrapper.emitted('setLength')).toBeUndefined()
-    expect(wrapper.find('input.ruler-chip-input').exists()).toBe(false)
+    expect(wrapper.find('input.sandbox-ruler-chip-input').exists()).toBe(false)
   })
 })

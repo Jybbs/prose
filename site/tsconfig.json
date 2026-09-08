@@ -9,7 +9,8 @@
   "include"         : [
     ".vitepress/**/*.ts",
     ".vitepress/**/*.vue",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "knip.ts"
   ],
   "exclude"         : [".vitepress/tests/wasm/**"]
 }

@@ -28,12 +28,11 @@ describe('useCarouselMeasurement', () => {
   it('adds the column gap to the copy width and the padding to the fit check', async () => {
     const track = document.createElement('div')
     track.append(fakeCard(0, 200), fakeCard(220, 200))
-    const spy = vi.spyOn(window, 'getComputedStyle').mockReturnValue(
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue(
       { columnGap: '20px', paddingLeft: '30px', paddingRight: '10px' } as CSSStyleDeclaration
     )
     const api = mountMeasurement(track, rectElement({ width: 440 }), 2)
     await flushPromises()
-    spy.mockRestore()
     expect(api.halfWidth.value).toBe(440)
     expect(api.fits.value).toBe(false)
   })

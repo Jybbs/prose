@@ -51,13 +51,13 @@ describe('fixtureReloadPlugin', () => {
   })
 
   it('watches the fixture tree, which sits outside the Vite root', () => {
-    expect(harness().watched).toEqual([ROOT])
+    expect(harness().watched).toStrictEqual([ROOT])
   })
 
   it('invalidates every markdown module on an edit under the fixture tree', () => {
     const { fire, nodes } = harness()
     fire(`${ROOT}/align_equals/basic_run/input.py`)
-    expect(nodes.map(node => node.invalidated)).toEqual([true, undefined])
+    expect(nodes.map(node => node.invalidated)).toStrictEqual([true, undefined])
   })
 
   it('marks the site config dirty so the markdown cache rebuilds', () => {
@@ -69,7 +69,7 @@ describe('fixtureReloadPlugin', () => {
   it('reloads the page on an edit under the fixture tree', () => {
     const { fire, sent } = harness()
     fire(`${ROOT}/align_equals/basic_run/input.py.snap`)
-    expect(sent).toEqual([{ type: 'full-reload' }])
+    expect(sent).toStrictEqual([{ type: 'full-reload' }])
   })
 
   it('leaves an edit outside the fixture tree alone', () => {
@@ -77,14 +77,14 @@ describe('fixtureReloadPlugin', () => {
     fire('/repo/site/rules/alignment/align-equals.md')
     expect(nodes.every(node => node.invalidated === undefined)).toBe(true)
     expect(site.__dirty).toBe(false)
-    expect(sent).toEqual([])
+    expect(sent).toStrictEqual([])
   })
 
   it('reloads without a resolved site config', () => {
     const { fire, nodes, sent } = harness(false)
     expect(() => fire(`${ROOT}/align_equals/basic_run/input.py`)).not.toThrow()
     expect(nodes[0].invalidated).toBe(true)
-    expect(sent).toEqual([{ type: 'full-reload' }])
+    expect(sent).toStrictEqual([{ type: 'full-reload' }])
   })
 
   it('takes a config carrying no vitepress field', () => {

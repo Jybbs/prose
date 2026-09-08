@@ -17,7 +17,7 @@ describe('canonicalUrl', () => {
 describe('articleLd', () => {
   it('emits a TechArticle carrying the schema context and the page facts', () => {
     const facts = { description: 'd', headline: 'Align Equals', image: 'i.png', url: 'u' }
-    expect(JSON.parse(articleLd(facts))).toEqual({
+    expect(JSON.parse(articleLd(facts))).toStrictEqual({
       '@context' : 'https://schema.org',
       '@type'    : 'TechArticle',
       ...facts
@@ -55,7 +55,7 @@ describe('ogImageUrl', () => {
 
 describe('ROBOTS_TXT', () => {
   it('allows every crawler and points at the emitted sitemap', () => {
-    expect(ROBOTS_TXT.split('\n')).toEqual([
+    expect(ROBOTS_TXT.split('\n')).toStrictEqual([
       'User-agent: *',
       'Allow: /',
       '',

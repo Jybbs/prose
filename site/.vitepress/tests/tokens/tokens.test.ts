@@ -23,7 +23,7 @@ describe('groupByDomain', () => {
     const tokens = [
       token('config-key', 'z'), token('cli-flag', 'a'), token('config-key', 'y'), token('cli-flag', 'b')
     ]
-    expect(sources.groupByDomain(tokens)).toEqual([
+    expect(sources.groupByDomain(tokens)).toStrictEqual([
       ['cli-flag',   [token('cli-flag', 'a'), token('cli-flag', 'b')]],
       ['config-key', [token('config-key', 'y'), token('config-key', 'z')]]
     ])
@@ -32,7 +32,7 @@ describe('groupByDomain', () => {
   it('does not mutate its input', () => {
     const input = [token('cli-flag', 'b'), token('cli-flag', 'a')]
     sources.groupByDomain(input)
-    expect(input.map(t => t.key)).toEqual(['b', 'a'])
+    expect(input.map(t => t.key)).toStrictEqual(['b', 'a'])
   })
 })
 
@@ -59,15 +59,15 @@ describe('configKeySources', () => {
   const indexed = configKeySources(schema).map(source => source.key)
 
   it('indexes every key the schema declares', () => {
-    expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toEqual([])
+    expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toStrictEqual([])
   })
 
   it('indexes nothing the schema leaves out, beyond the overrides table', () => {
     const unschemed = new Set(['overrides.paths'])
-    expect(indexed.filter(key => !declared.has(key) && !unschemed.has(key))).toEqual([])
+    expect(indexed.filter(key => !declared.has(key) && !unschemed.has(key))).toStrictEqual([])
   })
 
   it('gives every key a one-sentence blurb', () => {
-    expect(configKeySources(schema).filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toEqual([])
+    expect(configKeySources(schema).filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toStrictEqual([])
   })
 })

@@ -1,0 +1,176 @@
+.sandbox {
+  position  : relative;
+  left      : 50%;
+  width     : min(94rem, calc(100vw - 3rem));
+  transform : translateX(-50%);
+}
+
+.sandbox-surfaces {
+  display               : grid;
+  grid-template-columns : minmax(0, 2fr) minmax(0, 1fr);
+  gap                   : 1.25rem;
+  align-items           : stretch;
+}
+
+.sandbox-surfaces > * {
+  min-height : 30rem;
+}
+
+.sandbox-py {
+  position  : relative;
+  display   : grid;
+  min-width : 0;
+}
+
+.sandbox-deck,
+.sandbox-toml {
+  transition : opacity var(--prose-transition);
+}
+
+.sandbox-py .sandbox-surface {
+  transition : border-color var(--prose-transition);
+}
+
+/* An open source edit dims and disables the config deck and TOML panel, and
+   marks the panel under edit, so no other control fires against an unapplied edit. */
+.sandbox[data-editing] .sandbox-deck,
+.sandbox[data-editing] .sandbox-toml {
+  opacity        : 0.5;
+  pointer-events : none;
+}
+
+.sandbox[data-editing] .sandbox-surface {
+  border-color : var(--vp-c-brand-1);
+}
+
+.sandbox-refresh {
+  right : 40px;
+}
+
+.sandbox-share {
+  right : 72px;
+}
+
+.sandbox-refresh[data-armed] {
+  border-color : var(--prose-role-warning);
+  color        : var(--prose-role-warning);
+  opacity      : 1;
+}
+
+.sandbox-refresh-tip {
+  position       : absolute;
+  top            : 8px;
+  right          : 108px;
+  z-index        : 3;
+  display        : flex;
+  align-items    : center;
+  height         : 28px;
+  padding        : 0 10px;
+  border         : 1px solid color-mix(in srgb, var(--prose-role-warning) 55%, var(--vp-c-divider));
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  box-shadow     : var(--prose-shadow-tooltip);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xxs);
+  letter-spacing : 0.04em;
+  white-space    : nowrap;
+  pointer-events : none;
+}
+
+.sandbox-announce {
+  position    : absolute;
+  width       : 1px;
+  height      : 1px;
+  margin      : 0;
+  overflow    : hidden;
+  clip        : rect(0 0 0 0);
+  white-space : nowrap;
+}
+
+.sandbox-deck {
+  position      : relative;
+  z-index       : 20;
+  margin-bottom : 1.5rem;
+  background    : var(--vp-c-bg-soft);
+}
+
+.sandbox-deck[data-locked='true'] {
+  position : sticky;
+  top      : var(--vp-nav-height);
+}
+
+.sandbox-deck-lock {
+  position   : absolute;
+  top        : 4px;
+  right      : 8px;
+  z-index    : 1;
+  padding    : 6px;
+  border     : 0;
+  background : transparent;
+  color      : var(--vp-c-text-3);
+  cursor     : pointer;
+  transition : color var(--prose-transition);
+}
+
+.sandbox-deck-lock:hover {
+  color : var(--vp-c-text-1);
+}
+
+.sandbox-deck-lock[aria-pressed='true'] {
+  color : var(--vp-c-brand-1);
+}
+
+.sandbox-deck-lock:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : 1px;
+}
+
+.sandbox-deck-lock-icon {
+  --glyph-size : 15px;
+}
+
+.sandbox-deck-body {
+  padding : 0.75rem 1.25rem 1.25rem;
+}
+
+.sandbox-deck-head {
+  display         : flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 100%;
+  padding         : 0.45rem;
+  border          : 0;
+  background      : transparent;
+  color           : var(--vp-c-text-2);
+  cursor          : pointer;
+  transition      : color var(--prose-transition), background var(--prose-transition);
+}
+
+.sandbox-deck-head:hover {
+  color      : var(--vp-c-text-1);
+  background : color-mix(in srgb, var(--vp-c-text-1) 4%, transparent);
+}
+
+.sandbox-deck-head[aria-expanded='true'] {
+  border-bottom : 1px solid var(--vp-c-divider);
+}
+
+.sandbox-deck-head:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : -2px;
+}
+
+@media (--prose-bp-tablet) {
+  .sandbox-deck[data-locked='true'] {
+    position : static;
+  }
+
+  .sandbox-deck-lock {
+    display : none;
+  }
+
+  .sandbox-surfaces {
+    grid-template-columns : 1fr;
+  }
+}

@@ -29,9 +29,8 @@ vi.mock('vitepress', async importOriginal => ({
   useData: () => ({ frontmatter })
 }))
 
-vi.mock('../../lib/rules/rules.data', () => ({
-  data: { bySlug: { 'align-equals': { family: 'alignment', slug: 'align-equals' } } }
-}))
+vi.mock('../../lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
 import Fixture     from '../../theme/components/fixtures/Fixture.vue'
 import FixtureCard from '../../theme/components/fixtures/FixtureCard.vue'

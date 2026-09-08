@@ -17,16 +17,16 @@ const ids = (source: string): string[] => pageCaseIds(source, SETS)
 describe('pageCaseIds', () => {
   it('reads the rule and case a Fixture tag names', () => {
     expect(ids('<Fixture rule="align_comments" case="run_shares" />'))
-      .toEqual(['align_comments/run_shares'])
+      .toStrictEqual(['align_comments/run_shares'])
   })
 
   it('reads a FixtureConvergence tag the same way', () => {
     expect(ids('<FixtureConvergence rule="band_constants" case="stacked" />'))
-      .toEqual(['band_constants/stacked'])
+      .toStrictEqual(['band_constants/stacked'])
   })
 
   it('takes the canonical case, the examples, and the composition cases of a RuleLayout', () => {
-    expect(ids('<RuleLayout rule="align_equals">')).toEqual([
+    expect(ids('<RuleLayout rule="align_equals">')).toStrictEqual([
       'align_equals/basic_run',
       'align_equals/nested',
       'align_equals/deep',
@@ -35,12 +35,12 @@ describe('pageCaseIds', () => {
   })
 
   it('takes the canonical case alone where a rule joins no composition case', () => {
-    expect(ids('<RuleLayout rule="strip_stranding">')).toEqual(['strip_stranding/only_case'])
+    expect(ids('<RuleLayout rule="strip_stranding">')).toStrictEqual(['strip_stranding/only_case'])
   })
 
   it('takes every previewable case where a bare CompositionCards narrows nothing', () => {
     expect(ids('<CompositionCards />'))
-      .toEqual(['composition/alpha_case', 'composition/gamma_case'])
+      .toStrictEqual(['composition/alpha_case', 'composition/gamma_case'])
   })
 
   it.each([
@@ -51,16 +51,16 @@ describe('pageCaseIds', () => {
     ['a page carrying no fixture tag',           '# Heading\n\nPlain prose.\n'],
     ['a closing tag alone',                      '</RuleLayout>']
   ])('reaches no case from %s', (_label, source) => {
-    expect(ids(source)).toEqual([])
+    expect(ids(source)).toStrictEqual([])
   })
 
   it('reads attributes in either order', () => {
     expect(ids('<Fixture case="run_shares" rule="align_comments" />'))
-      .toEqual(['align_comments/run_shares'])
+      .toStrictEqual(['align_comments/run_shares'])
   })
 
   it('reports a case once where a page names it twice', () => {
-    expect(ids('<Fixture rule="r" case="c" />\n<Fixture rule="r" case="c" />')).toEqual(['r/c'])
+    expect(ids('<Fixture rule="r" case="c" />\n<Fixture rule="r" case="c" />')).toStrictEqual(['r/c'])
   })
 
   it('collects every tag on a page in source order', () => {
@@ -69,6 +69,6 @@ describe('pageCaseIds', () => {
       '<Fixture rule="composition" case="hoisted" />',
       '</RuleLayout>'
     ].join('\n')
-    expect(ids(source)).toEqual(['strip_stranding/only_case', 'composition/hoisted'])
+    expect(ids(source)).toStrictEqual(['strip_stranding/only_case', 'composition/hoisted'])
   })
 })

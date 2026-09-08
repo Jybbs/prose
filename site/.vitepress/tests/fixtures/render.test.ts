@@ -29,11 +29,11 @@ describe('fixtureEntries', () => {
 
   it('returns one entry per requested id', async () => {
     const requested = [CANONICAL.id, LINTING.id]
-    expect(Object.keys(await fixtureEntries(CRATE, requested))).toEqual(requested)
+    expect(Object.keys(await fixtureEntries(CRATE, requested))).toStrictEqual(requested)
   })
 
   it('returns an empty map where a page reaches no case', async () => {
-    expect(await fixtureEntries(CRATE, [])).toEqual({})
+    await expect(fixtureEntries(CRATE, [])).resolves.toStrictEqual({})
   })
 
   it('renders a case reached from two pages once', async () => {
@@ -47,7 +47,7 @@ describe('fixtureEntries', () => {
     resetFixtureEntries()
     const after = (await fixtureEntries(CRATE, [CANONICAL.id]))[CANONICAL.id]
     expect(after).not.toBe(before)
-    expect(after).toEqual(before)
+    expect(after).toStrictEqual(before)
   })
 
   it('names a case carrying no input and snapshot pair', async () => {

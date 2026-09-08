@@ -16,12 +16,6 @@
   transition : color var(--prose-transition);
 }
 
-.typing-demo-python-code pre {
-  margin     : 0;
-  padding    : 0;
-  background : transparent;
-}
-
 .typing-demo-replay {
   position       : absolute;
   top            : 12px;

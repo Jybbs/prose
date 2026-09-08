@@ -31,11 +31,11 @@ describe('useMagicMove', () => {
     const { precompile } = useMagicMove()
 
     await precompile('a', 'b')
-    expect(commits).toEqual(['a', 'b'])
+    expect(commits).toStrictEqual(['a', 'b'])
 
     // The machine already holds `b`, so stepping from it commits once.
     await precompile('b', 'c')
-    expect(commits).toEqual(['a', 'b', 'c'])
+    expect(commits).toStrictEqual(['a', 'b', 'c'])
     expect(resets).toBe(1)
   })
 
@@ -47,7 +47,7 @@ describe('useMagicMove', () => {
 
     // The surface still shows `a`, so `b` is not the state to step from.
     await precompile('a', 'c')
-    expect(commits).toEqual(['a', 'c'])
+    expect(commits).toStrictEqual(['a', 'c'])
     expect(resets).toBe(1)
   })
 
@@ -60,7 +60,7 @@ describe('useMagicMove', () => {
     expect(to).not.toBe(retained.current)
     expect(to.tokens[0]).not.toBe(retained.current.tokens[0])
     expect(from.tokens[0]).not.toBe(retained.previous.tokens[0])
-    expect(to.tokens[0]).toEqual(retained.current.tokens[0])
+    expect(to.tokens[0]).toStrictEqual(retained.current.tokens[0])
 
     to.tokens[0].key = 'rewritten'
     expect(retained.current.tokens[0].key).toBe('k')

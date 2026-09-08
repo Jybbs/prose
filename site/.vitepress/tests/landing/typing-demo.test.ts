@@ -3,7 +3,7 @@ import * as typingDemo from '../../lib/landing/typing-demo'
 describe('typing-demo source data', () => {
   it('leads with one edit entry per rule, then the trailing config edits', () => {
     expect(typingDemo.ENTRIES.length).toBeGreaterThan(typingDemo.RULES.length)
-    expect(typingDemo.ENTRIES.slice(0, typingDemo.RULES.length).map(e => e.slug)).toEqual([...typingDemo.RULES])
+    expect(typingDemo.ENTRIES.slice(0, typingDemo.RULES.length).map(e => e.slug)).toStrictEqual([...typingDemo.RULES])
   })
 
   it('anchors each rule edit on a padded assignment', () => {
@@ -11,9 +11,12 @@ describe('typing-demo source data', () => {
     expect(typingDemo.ENTRIES[0].anchor).toBe(`${typingDemo.RULES[0].padEnd(width)} = `)
   })
 
-  it('renders the prelude with every rule under a [rules] table', () => {
+  it('opens the prelude with a [rules] table', () => {
     expect(typingDemo.PRELUDE).toContain('[rules]')
-    for (const rule of typingDemo.RULES) expect(typingDemo.PRELUDE).toContain(rule)
+  })
+
+  it.each(typingDemo.RULES)('names %s in the prelude', rule => {
+    expect(typingDemo.PRELUDE).toContain(rule)
   })
 
   it('dedups reset rows so each anchor appears once', () => {

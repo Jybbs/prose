@@ -32,7 +32,6 @@ concurrency:
 jobs:
   checks:
     name            : ${{ matrix.name }}
-    env             : { CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}" }
     runs-on         : &ubuntu ubuntu-latest
     timeout-minutes : &timeout 15
 
@@ -58,16 +57,16 @@ jobs:
     steps:
       - &checkout
         name : Check out repository
-        uses : actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name : Provision Cargo
         uses : ./.github/actions/provision-cargo
         with:
-          cache      : ${{ matrix.shared-key != '' }}
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
       - name : ${{ matrix.command }}
+        env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
         run  : ${{ matrix.command }}
 
   press:
@@ -88,7 +87,7 @@ jobs:
 
       - name : Restore the wasm build cache
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
-        uses : Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+        uses : Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
         with:
           save-if    : 'false'
           shared-key : prose-wasm
@@ -104,9 +103,16 @@ jobs:
       - name : Build the site and check internal links
         run  : mise run site:links
 
+      - name : Save the wasm module
+        if   : ${{ github.event_name != 'pull_request' && steps.wasm-module.outputs.cache-hit != 'true' }}
+        uses : &cache-save actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : ${{ steps.wasm-module.outputs.key }}
+          path : site/public/wasm
+
       - name : Save the OG card cache
         if   : ${{ github.event_name != 'pull_request' && steps.og-cards.outputs.cache-hit != 'true' }}
-        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : *cache-save
         with:
           key  : *og-key
           path : *og-path
@@ -144,19 +150,21 @@ jobs:
     name            : 🍂 Prune
     if              : github.event_name != 'pull_request'
     needs           : press
-    permissions     : { actions: write }
+    permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
     steps:
-      - name : Prune superseded OG card caches
-        env:
-          GH_REPO  : ${{ github.repository }}
-          GH_TOKEN : ${{ github.token }}
-        run  : |
-          gh cache list --key og-cards- --json id,key \
-            --jq '.[] | select(.key | endswith(env.GITHUB_SHA) | not) | .id' \
-            | xargs -rn1 gh cache delete
+      - *checkout
+
+      - name : Provision uv
+        uses : ./.github/actions/provision-uv
+        with : { save: *no-save }
+
+      - name              : Delete the cache entries this run replaces
+        continue-on-error : true
+        env               : { GH_TOKEN: "${{ github.token }}" }
+        run               : mise run gha:prune
 
   gate:
     name            : 🗞️ Brief
@@ -173,9 +181,5 @@ jobs:
         with : { save: "${{ github.event_name != 'pull_request' }}" }
 
       - name : Summarize and gate
-        env:
-          CHECKS : ${{ needs.checks.result }}
-          DEPLOY : ${{ needs.deploy.result }}
-          PRESS  : ${{ needs.press.result }}
-          URL    : ${{ needs.deploy.outputs.url }}
+        env  : { NEEDS: "${{ toJSON(needs) }}" }
         run  : mise run gha:brief deploy
