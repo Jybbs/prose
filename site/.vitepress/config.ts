@@ -10,8 +10,10 @@ import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { canonicalUrl }                               from './lib/config/canonical-url'
 import { pageHead }                                   from './lib/config/head'
+import { injectFixtures }                             from './lib/config/inject-fixtures'
 import { ROBOTS_TXT }                                 from './lib/config/robots'
 import { buildSidebar }                               from './lib/config/sidebar'
+import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin'
 import { corpusLintFindings }                         from './lib/fixtures/walker'
 import { glossary }                                   from './lib/glossary/entries'
 import { glossaryHrefs }                              from './lib/glossary/hrefs'
@@ -21,9 +23,11 @@ import { bodyLinkPlugin }                             from './lib/markdown/body-
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
+import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
 import { ruleLinkPlugin }                             from './lib/rules/link-plugin'
+import { readRuleFixtures }                           from './lib/rules/rule-fixtures'
 import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
 import { PALETTE, paletteCss }                        from './lib/shared/palette'
@@ -47,6 +51,11 @@ const primitiveIndex       = discoverPrimitiveIndex(paths.primitivesDir(import.m
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = PALETTE.ube
+const fixturesRoot         = paths.fixturesDirFrom(crate)
+const fixtureSets          = {
+  composition  : readCompositionData(compositionDir(crate)),
+  ruleFixtures : await readRuleFixtures(crate)
+}
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
 
@@ -115,7 +124,7 @@ export default defineConfig({
   transformHead({ pageData }) {
     return pageHead(pageData, proseVersion)
   },
-  transformPageData(pageData) {
+  async transformPageData(pageData, { siteConfig }) {
     pageData.frontmatter ||= {}
     pageData.frontmatter.proseVersion   = proseVersion
     pageData.frontmatter.requiresPython = requiresPython
@@ -131,6 +140,7 @@ export default defineConfig({
     }
     injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
     injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
+    await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
@@ -149,7 +159,10 @@ export default defineConfig({
       name      : 'prose-palette',
       resolveId : id =>
         id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
-    }, serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')), groupIconVitePlugin({
+    },
+    fixtureReloadPlugin(fixturesRoot),
+    serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')),
+    groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon
