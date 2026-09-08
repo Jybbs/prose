@@ -10,21 +10,45 @@ use crate::{
         Baseline, Carried, Counts, VERSION, bake, baseline, baseline_at, dropped, judge,
         regressions,
     },
-    records::Width,
+    records::{Blocked, Width},
     sweep::DEFAULT_LABEL,
 };
 
+/// The entry a baseline holds for `module` losing `name` at `file`.
+fn carried(module: &str, file: &str, name: &str) -> Carried {
+    Carried {
+        file: file.to_owned(),
+        kind: "unbound".to_owned(),
+        module: module.to_owned(),
+        names: vec![name.to_owned()],
+    }
+}
+
+/// A baseline recording `uncomparable` at the default width and nothing
+/// else.
+fn recording(uncomparable: BTreeMap<String, Blocked>) -> Baseline {
+    Baseline {
+        uncomparable: [(DEFAULT_LABEL.to_owned(), uncomparable)].into(),
+        ..Baseline::default()
+    }
+}
+
+/// A width at the default label holding `uncomparable` and nothing else.
+fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
+    Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable,
+        ..Width::default()
+    }
+}
+
 #[test]
 fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
-    let mut lost = broken("m.py", "re/_parser.py", "leaves `X` unbound");
-    lost.names = vec!["X".to_owned()];
     let found = Width {
-        breaks: vec![lost],
+        breaks: vec![losing("m.py", "re/_parser.py", "X")],
         candidates: 1,
         comparable: 1,
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into(),
-        ..Width::default()
+        ..stalling(stalled(["blocked.py"]))
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("fresh").join("baseline.json");
@@ -35,18 +59,9 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     .expect("the baked break set parses");
     assert_eq!(
         held.breaks[DEFAULT_LABEL],
-        [Carried {
-            file: "re/_parser.py".to_owned(),
-            kind: "unbound".to_owned(),
-            module: "m.py".to_owned(),
-            names: vec!["X".to_owned()],
-        }]
-        .into()
+        [carried("m.py", "re/_parser.py", "X")].into()
     );
-    assert_eq!(
-        held.uncomparable[DEFAULT_LABEL],
-        [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into()
-    );
+    assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["blocked.py"]));
     assert_eq!(held.version, VERSION);
 }
 
@@ -80,31 +95,15 @@ fn a_break_set_that_is_older_malformed_or_absent_carries_nothing_forward() {
 
 #[test]
 fn dropped_names_a_module_the_baseline_does_not_list() {
-    let found = Width {
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [
-            ("fresh.py".to_owned(), blocked("ImportError", "raises")),
-            ("known.py".to_owned(), blocked("ImportError", "raises")),
-        ]
-        .into(),
-        ..Width::default()
-    };
-    let held = Baseline {
-        uncomparable: [(
-            DEFAULT_LABEL.to_owned(),
-            [("known.py".to_owned(), blocked("ImportError", "raises"))].into(),
-        )]
-        .into(),
-        ..Baseline::default()
-    };
+    let found = stalling(stalled(["fresh.py", "known.py"]));
+    let held = recording(stalled(["known.py"]));
     assert_eq!(dropped(&found, &held), ["fresh.py".to_owned()].into());
 }
 
 #[test]
 fn dropped_names_nothing_for_a_package_the_machine_lacks() {
-    let found = Width {
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [
+    let found = stalling(
+        [
             (
                 "absent.py".to_owned(),
                 blocked(
@@ -118,24 +117,21 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
             ),
         ]
         .into(),
-        ..Width::default()
-    };
+    );
     assert_eq!(
         dropped(&found, &Baseline::default()),
         BTreeSet::<String>::new()
     );
-    let held = Baseline {
-        uncomparable: [(DEFAULT_LABEL.to_owned(), BTreeMap::new())].into(),
-        ..Baseline::default()
-    };
-    assert_eq!(dropped(&found, &held), ["lost.py".to_owned()].into());
+    assert_eq!(
+        dropped(&found, &recording(BTreeMap::new())),
+        ["lost.py".to_owned()].into()
+    );
 }
 
 #[test]
 fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
-    let found = Width {
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [
+    let found = stalling(
+        [
             (
                 "quoting.py".to_owned(),
                 blocked(
@@ -149,22 +145,16 @@ fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
             ),
         ]
         .into(),
-        ..Width::default()
-    };
-    let held = Baseline {
-        uncomparable: [(DEFAULT_LABEL.to_owned(), BTreeMap::new())].into(),
-        ..Baseline::default()
-    };
-    assert_eq!(dropped(&found, &held), ["quoting.py".to_owned()].into());
+    );
+    assert_eq!(
+        dropped(&found, &recording(BTreeMap::new())),
+        ["quoting.py".to_owned()].into()
+    );
 }
 
 #[test]
 fn dropped_names_nothing_where_the_baseline_records_no_width() {
-    let found = Width {
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: [("blocked.py".to_owned(), blocked("ImportError", "raises"))].into(),
-        ..Width::default()
-    };
+    let found = stalling(stalled(["blocked.py"]));
     assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
 }
 
@@ -223,39 +213,22 @@ fn regressions_name_nothing_where_the_baseline_records_no_counts() {
 
 #[test]
 fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
-    let mut lost = broken("m.py", "re/_parser.py", "leaves `X` unbound");
-    lost.names = vec!["X".to_owned()];
     let found = Width {
-        breaks: vec![lost],
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        breaks: vec![losing("m.py", "re/_parser.py", "X")],
+        ..stalling(BTreeMap::new())
     };
     let held = Baseline {
         breaks: [(
             DEFAULT_LABEL.to_owned(),
-            [Carried {
-                file: "re/_parser.py".to_owned(),
-                kind: "unbound".to_owned(),
-                module: "m.py".to_owned(),
-                names: vec!["X".to_owned()],
-            }]
-            .into(),
-        )]
-        .into(),
-        counts: BTreeMap::new(),
-        uncomparable: [(
-            DEFAULT_LABEL.to_owned(),
-            [("a.py".to_owned(), blocked("ImportError", "raises"))].into(),
+            [carried("m.py", "re/_parser.py", "X")].into(),
         )]
         .into(),
         version: VERSION,
+        ..recording(stalled(["a.py"]))
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
-    assert_eq!(
-        held.uncomparable[DEFAULT_LABEL],
-        [("a.py".to_owned(), blocked("ImportError", "raises"))].into()
-    );
+    assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["a.py"]));
 }
 
 #[test]

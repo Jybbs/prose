@@ -116,18 +116,22 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
             .cloned()
             .collect()
     };
-    if let [name, rest @ ..] = missing(&original.names, &formatted.names).as_slice() {
+    let lost = missing(&original.names, &formatted.names);
+    if let [name, rest @ ..] = lost.as_slice() {
+        let reason = format!("leaves {} unbound", named(name, rest.len()));
         return Some(Divergence {
             kind: "unbound",
-            names: missing(&original.names, &formatted.names),
-            reason: format!("leaves {} unbound", named(name, rest.len())),
+            names: lost,
+            reason,
         });
     }
-    if let [name, rest @ ..] = missing(&formatted.names, &original.names).as_slice() {
+    let gained = missing(&formatted.names, &original.names);
+    if let [name, rest @ ..] = gained.as_slice() {
+        let reason = format!("binds {} the original does not", named(name, rest.len()));
         return Some(Divergence {
             kind: "extra",
-            names: missing(&formatted.names, &original.names),
-            reason: format!("binds {} the original does not", named(name, rest.len())),
+            names: gained,
+            reason,
         });
     }
     let differing = original

@@ -92,6 +92,18 @@ pub(crate) struct Counts {
     pub(crate) refused: usize,
 }
 
+impl From<&Width> for Counts {
+    fn from(found: &Width) -> Self {
+        Self {
+            candidates: found.candidates,
+            comparable: found.comparable,
+            raises: found.unimported(),
+            rebinds: found.counting(Kind::Ok),
+            refused: found.refused,
+        }
+    }
+}
+
 /// Writes the break set of a run, for a later run to ratchet against.
 pub(crate) fn bake(path: &Path, widths: &[Width]) {
     if let Some(parent) = path.parent() {
@@ -101,18 +113,7 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
         breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
         counts: widths
             .iter()
-            .map(|found| {
-                (
-                    found.label.clone(),
-                    Counts {
-                        candidates: found.candidates,
-                        comparable: found.comparable,
-                        raises: found.unimported(),
-                        rebinds: found.counting(Kind::Ok),
-                        refused: found.refused,
-                    },
-                )
-            })
+            .map(|found| (found.label.clone(), Counts::from(found)))
             .collect(),
         uncomparable: widths
             .iter()
@@ -189,16 +190,17 @@ pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
     let Some(baked) = held.counts.get(&found.label) else {
         return Vec::new();
     };
+    let reached = Counts::from(found);
     let short = [
-        ("candidates", found.candidates, baked.candidates),
-        ("comparable", found.comparable, baked.comparable),
+        ("candidates", reached.candidates, baked.candidates),
+        ("comparable", reached.comparable, baked.comparable),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached < want);
     let grown = [
-        ("raises", found.unimported(), baked.raises),
-        ("rebinds", found.counting(Kind::Ok), baked.rebinds),
-        ("refused", found.refused, baked.refused),
+        ("raises", reached.raises, baked.raises),
+        ("rebinds", reached.rebinds, baked.rebinds),
+        ("refused", reached.refused, baked.refused),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached > want);

@@ -24,93 +24,6 @@
         "names": [
           "textwrap"
         ]
-      },
-      {
-        "file": "site-packages/pip/_internal/operations/install/wheel.py",
-        "kind": "unbound",
-        "module": "site-packages/pip/_internal/operations/install/wheel.py",
-        "names": [
-          "IO"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/distlib/compat.py",
-        "kind": "unbound",
-        "module": "site-packages/pip/_vendor/distlib/compat.py",
-        "names": [
-          "shutil",
-          "sysconfig"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/distlib/scripts.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/distlib/scripts.py",
-        "names": [
-          "sysconfig"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/distlib/util.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/distlib/resources.py",
-        "names": [
-          "shutil"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/distlib/util.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/distlib/util.py",
-        "names": [
-          "shutil"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/requests/compat.py",
-        "kind": "unbound",
-        "module": "site-packages/pip/_vendor/requests/compat.py",
-        "names": [
-          "Callable",
-          "JSONDecodeError",
-          "Mapping",
-          "Morsel",
-          "MutableMapping",
-          "StringIO",
-          "cookielib"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/requests/exceptions.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/requests/__init__.py",
-        "names": [
-          "JSONDecodeError"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/requests/exceptions.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/requests/help.py",
-        "names": [
-          "JSONDecodeError"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/requests/exceptions.py",
-        "kind": "raises",
-        "module": "site-packages/pip/_vendor/requests/packages.py",
-        "names": [
-          "JSONDecodeError"
-        ]
-      },
-      {
-        "file": "site-packages/pip/_vendor/rich/live.py",
-        "kind": "unbound",
-        "module": "site-packages/pip/_vendor/rich/live.py",
-        "names": [
-          "TextIO"
-        ]
       }
     ]
   },
@@ -118,8 +31,8 @@
     "default": {
       "candidates": 997,
       "comparable": 898,
-      "raises": 6,
-      "rebinds": 7,
+      "raises": 0,
+      "rebinds": 3,
       "refused": 0
     }
   },

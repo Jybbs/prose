@@ -2,7 +2,12 @@
 //! every module the formatter rewrote from both trees, and each break
 //! confirmed and attributed.
 
-use std::{collections::BTreeMap, num::NonZeroUsize, path::Path, sync::Mutex};
+use std::{
+    collections::BTreeMap,
+    num::NonZeroUsize,
+    path::Path,
+    sync::{Mutex, MutexGuard},
+};
 
 use prose::{config::Config, pipeline::Pipeline};
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
@@ -74,11 +79,17 @@ impl Sweep {
         }
     }
 
+    /// The memo of what the original tree left for each module it has
+    /// already been asked about.
+    fn memo(&self) -> MutexGuard<'_, BTreeMap<String, Outcome>> {
+        self.known.lock().expect("the memo is never poisoned")
+    }
+
     /// Runs the modules the original tree has not yet been asked about and
     /// returns what it left for every one of them.
     fn originals(&self, modules: &[String]) -> BTreeMap<String, Outcome> {
         let missing: Vec<_> = {
-            let known = self.known.lock().expect("the memo is never poisoned");
+            let known = self.memo();
             modules
                 .iter()
                 .filter(|module| !known.contains_key(*module))
@@ -86,7 +97,7 @@ impl Sweep {
                 .collect()
         };
         let ran = self.outcomes(&missing, &self.runner.stage.original);
-        let mut known = self.known.lock().expect("the memo is never poisoned");
+        let mut known = self.memo();
         known.extend(ran);
         modules
             .iter()
