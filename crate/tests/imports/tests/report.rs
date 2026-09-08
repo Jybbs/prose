@@ -109,6 +109,8 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  comparable       9\n",
             "  uncomparable     3\n",
             "  breaks           0\n",
+            "  raises           0\n",
+            "  rebinds          0\n",
             "  timeouts         0\n",
             "  flaky            0",
         )

@@ -68,6 +68,20 @@ fn a_raised_run_returns_its_error_and_name() {
     );
 }
 
+#[rstest]
+#[case::one(&["a", "b"], "leaves `b` unbound")]
+#[case::two(&["a", "b", "c"], "leaves `b` and 1 more name unbound")]
+#[case::several(&["a", "b", "c", "d"], "leaves `b` and 2 more names unbound")]
+fn a_run_losing_several_names_counts_them_in_its_reason(
+    #[case] original: &[&str],
+    #[case] why: &str,
+) {
+    assert_eq!(
+        divergence(&bound(&["a"], &[]), &bound(original, &[])),
+        Some((why.to_owned(), Some("b".to_owned())))
+    );
+}
+
 #[test]
 fn comparing_sorts_each_module_into_one_bucket() {
     let raised = || Outcome::of(Kind::Raised, "raises ImportError: no _abc");

@@ -23,7 +23,7 @@ use crate::{
 /// baseline already holds, which the tallies leave out, so a run shows what
 /// it newly broke.
 pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
-    let (raising, timeouts) = tallied(carried, found);
+    let (raising, rebinding, timeouts) = tallied(carried, found);
     let uncomparable = if found.unmeasured.is_empty() {
         found.uncomparable.len().to_string()
     } else {
@@ -35,7 +35,9 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("comparable", &found.comparable),
         row("uncomparable", &uncomparable),
         row("breaks", &found.breaks.len()),
-        row("timeouts", &found.timing_out()),
+        row("raises", &found.counting(Kind::Raised)),
+        row("rebinds", &found.counting(Kind::Ok)),
+        row("timeouts", &found.counting(Kind::Timeout)),
         row("flaky", &found.flaky.len()),
     ];
     if !carried.is_empty() {
@@ -48,7 +50,8 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         lines.push(row("refused", &found.refused));
     }
     let mut rendered = lines.join("\n");
-    rendered.push_str(&raising.render("raises or rebinds"));
+    rendered.push_str(&raising.render("raises"));
+    rendered.push_str(&rebinding.render("runs and binds a different namespace"));
     rendered.push_str(&timeouts.render("times out"));
     for (heading, listed) in [
         ("flaky, a second run did not confirm it", &found.flaky),
@@ -89,17 +92,18 @@ fn reproduction(label: &str, module: &str) -> String {
     format!("{} {module}", knobs.join(" "))
 }
 
-/// The breaks the baseline does not carry, split into the ones that raised
-/// or rebound and the ones that outran their deadline, each keyed by the
-/// sentence they share so one frame reaching many modules reports once.
-fn tallied(carried: &BTreeSet<String>, found: &Width) -> (Tally, Tally) {
+/// The breaks the baseline does not carry, split by how the formatted run
+/// ended, each keyed by the sentence they share so one frame reaching many
+/// modules reports once.
+fn tallied(carried: &BTreeSet<String>, found: &Width) -> (Tally, Tally, Tally) {
     let mut raising = Tally::default();
+    let mut rebinding = Tally::default();
     let mut timeouts = Tally::default();
     for brk in found.uncarried(carried) {
-        let tally = if brk.formatted.kind == Kind::Timeout {
-            &mut timeouts
-        } else {
-            &mut raising
+        let tally = match brk.formatted.kind {
+            Kind::Ok => &mut rebinding,
+            Kind::Timeout => &mut timeouts,
+            _ => &mut raising,
         };
         tally.record_hit(
             defect(brk),
@@ -111,5 +115,5 @@ fn tallied(carried: &BTreeSet<String>, found: &Width) -> (Tally, Tally) {
             },
         );
     }
-    (raising, timeouts)
+    (raising, rebinding, timeouts)
 }

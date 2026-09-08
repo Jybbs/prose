@@ -25,7 +25,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 2;
+pub(crate) const VERSION: u32 = 3;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width

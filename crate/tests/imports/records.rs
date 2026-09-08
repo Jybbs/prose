@@ -91,11 +91,13 @@ pub(crate) struct Width {
 }
 
 impl Width {
-    /// How many of this width's breaks outran their deadline.
-    pub(crate) fn timing_out(&self) -> usize {
+    /// How many of this width's breaks left a run of `kind`, which
+    /// separates a module that raised from one that ran and bound a
+    /// different namespace.
+    pub(crate) fn counting(&self, kind: Kind) -> usize {
         self.breaks
             .iter()
-            .filter(|brk| brk.formatted.kind == Kind::Timeout)
+            .filter(|brk| brk.formatted.kind == kind)
             .count()
     }
 

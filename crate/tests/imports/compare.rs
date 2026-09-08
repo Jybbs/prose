@@ -80,16 +80,19 @@ pub(crate) fn divergence(
     if formatted.kind != Kind::Ok {
         return Some((formatted.error.clone(), formatted.name.clone()));
     }
-    let missing = |from: &[String], held: &[String]| {
+    let missing = |from: &[String], held: &[String]| -> Vec<String> {
         from.iter()
-            .find(|name| held.binary_search(name).is_err())
+            .filter(|name| held.binary_search(name).is_err())
             .cloned()
+            .collect()
     };
-    if let Some(name) = missing(&original.names, &formatted.names) {
-        return Some((format!("leaves `{name}` unbound"), Some(name)));
+    if let [name, rest @ ..] = missing(&original.names, &formatted.names).as_slice() {
+        let reason = format!("leaves {} unbound", named(name, rest.len()));
+        return Some((reason, Some(name.clone())));
     }
-    if let Some(name) = missing(&formatted.names, &original.names) {
-        return Some((format!("binds `{name}` the original does not"), Some(name)));
+    if let [name, rest @ ..] = missing(&formatted.names, &original.names).as_slice() {
+        let reason = format!("binds {} the original does not", named(name, rest.len()));
+        return Some((reason, Some(name.clone())));
     }
     let differing = original
         .constants
@@ -109,6 +112,16 @@ pub(crate) fn divergence(
         format!("binds `{differing}` to {now} where the original binds {was}"),
         Some(differing.clone()),
     ))
+}
+
+/// One name and however many followed it, so a run losing several names
+/// keys on the count rather than on the first name alone.
+fn named(first: &str, rest: usize) -> String {
+    match rest {
+        0 => format!("`{first}`"),
+        1 => format!("`{first}` and 1 more name"),
+        _ => format!("`{first}` and {rest} more names"),
+    }
 }
 
 /// The kind a run of one module left behind, `unmeasured` where the tree was

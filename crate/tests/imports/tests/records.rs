@@ -58,7 +58,7 @@ fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
         label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
-    assert_eq!(found.timing_out(), 2);
+    assert_eq!(found.counting(Kind::Timeout), 2);
     let shown = render(&BTreeSet::new(), &found);
     assert!(shown.contains("  timeouts         2"), "{shown}");
     assert!(shown.contains("times out (1):"), "{shown}");

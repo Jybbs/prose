@@ -24,7 +24,7 @@
       {
         "file": "site-packages/pip/_vendor/distlib/compat.py",
         "module": "site-packages/pip/_vendor/distlib/compat.py",
-        "reason": "leaves `shutil` unbound"
+        "reason": "leaves `shutil` and 1 more name unbound"
       },
       {
         "file": "site-packages/pip/_vendor/distlib/scripts.py",
@@ -44,7 +44,7 @@
       {
         "file": "site-packages/pip/_vendor/requests/compat.py",
         "module": "site-packages/pip/_vendor/requests/compat.py",
-        "reason": "leaves `Callable` unbound"
+        "reason": "leaves `Callable` and 6 more names unbound"
       },
       {
         "file": "site-packages/pip/_vendor/requests/exceptions.py",
@@ -171,5 +171,5 @@
       "zipfile/_path/__init__.py"
     ]
   },
-  "version": 2
+  "version": 3
 }
