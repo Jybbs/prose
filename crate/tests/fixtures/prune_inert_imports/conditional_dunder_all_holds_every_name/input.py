@@ -4,3 +4,5 @@ if TYPE_CHECKING:
     __all__ = ["dumps"]
 
 from json import dumps
+
+__all__ = []

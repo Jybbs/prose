@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/repeat_drops_where_the_module_writes_no_dunder_all/input.py
+---
+prune-inert-imports@12..24

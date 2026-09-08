@@ -5,4 +5,6 @@ input_file: crate/tests/fixtures/prune_inert_imports/unread_import_drops_beside_
 ---
 from json import loads
 
+__all__ = ["value"]
+
 value = loads("{}")

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Repeat Drops Where the Module Writes No `__all__`"
+
+description = '''
+Neither `import json` is read, and the module writes no `__all__`, so the two facets part company. **The second line is removed and the first stays**, because `drop-duplicates` reads the repeat against the binding an earlier import already made, where `drop-unreferenced` has no public surface to read the first line against.
+'''

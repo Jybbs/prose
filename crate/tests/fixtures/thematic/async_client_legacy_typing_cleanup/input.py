@@ -4,6 +4,8 @@ import logging
 import asyncio
 import json
 
+__all__ = ["consume", "poll", "register"]
+
 Payload = Dict[Text, Any]
 Handler = Callable[[Payload], Awaitable[None]]
 Interval = Union[int, float]

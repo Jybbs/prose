@@ -6,3 +6,5 @@ input_file: crate/tests/fixtures/prune_inert_imports/star_import_holds_its_line/
 from os.path import *
 
 value = 1
+
+__all__ = []

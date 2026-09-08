@@ -19,10 +19,9 @@ use crate::{
     primitives::{
         binding::BindingAnalysis,
         comments::noqa_names,
-        imports::{Dropping, is_star},
+        imports::{Dropping, defers_annotations, is_star},
     },
-    rules::RuleId,
-    rules::reflow_imports::Folds,
+    rules::{RuleId, reflow_imports::Folds},
     source::Source,
 };
 
@@ -61,16 +60,14 @@ impl<'a> Plan<'a> {
             .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
-        let annotated = if rule.unreferenced {
+        let declares_a_surface = reexports.declares_a_surface();
+        let annotated = if rule.unreferenced && (package_init || declares_a_surface) {
             annotation_names(source.ast())
         } else {
             FxHashSet::default()
         };
-        let directive_is_inert = rule.unreferenced
-            && nodes
-                .iter()
-                .any(|(_, node)| node.future_annotations().is_some())
-            && annotations_are_inert(rule, source);
+        let directive_is_inert =
+            rule.unreferenced && defers_annotations(body) && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
             repeat_writes(&nodes, &reexports, &noqa_held)
         } else {
@@ -105,6 +102,7 @@ impl<'a> Plan<'a> {
                         name: bound,
                         range: alias.range,
                     }),
+                    Some(Candidacy::Unreferenced) if !declares_a_surface => {}
                     Some(_) => dropped[statement].push(index),
                     None => {}
                 }

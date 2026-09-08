@@ -6,3 +6,5 @@ input_file: crate/tests/fixtures/prune_inert_imports/self_alias_marks_a_reexport
 from json import loads as loads
 
 value = 1
+
+__all__ = []

@@ -1,5 +1,5 @@
 ---
-caption : "Removes an import that binds a name nothing references or repeats a binding an earlier import already made, and reports the unreferenced one in a package `__init__.py` instead of removing it."
+caption : "Removes an import that binds a name nothing references, where the module names its public surface through `__all__`, or that repeats a binding an earlier import already made, and reports the unreferenced one in a package `__init__.py` instead of removing it."
 related : [bare-imports, group-imports, inlinable-bindings, modernize-annotations]
 layout  : doc
 ---
@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads.
+`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads, and `drop-unreferenced` reads the module's `__all__` alongside it, so a module writing no `__all__` keeps every unreferenced binding.
 
 <Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
 
@@ -20,7 +20,17 @@ A repeat matches on both the name it binds and the path it names, so `import os`
 
 ## What Holds Its Line
 
-An import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
+`drop-unreferenced` reads the module's `__all__` first. A module that writes one names its public surface, so an import binding a name that surface leaves out drops. A module that writes none names no surface at all, and every unreferenced import in it holds, because nothing else in the file separates a name a sibling module imports from a binding this module stopped using.
+
+A compatibility shim is the module this reading exists for, binding names its siblings import across the package boundary while declaring no `__all__`, writing no `x as x` alias, and carrying no `noqa`, so none of the markers below reaches it.
+
+<Fixture rule="prune_inert_imports" case="absent_dunder_all_holds_an_unread_name" />
+
+`__all__ = []` is a write like any other, so a module naming an empty public surface drops every unreferenced import, the same as a module that lists names.
+
+<Fixture rule="prune_inert_imports" case="empty_dunder_all_drops_an_unread_name" />
+
+Inside a module that declares a surface, an import carrying a re-export marker holds its line under both facets, so a repeated self-alias survives `drop-duplicates`:
 
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.

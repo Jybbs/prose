@@ -6,5 +6,7 @@ input_file: crate/tests/fixtures/prune_inert_imports/repeat_and_unread_member_bo
 import os
 from typing import Final
 
+__all__ = ["label", "path"]
+
 path: str = os.getcwd()
 label: Final = "x"

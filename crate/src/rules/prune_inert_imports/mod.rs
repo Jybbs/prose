@@ -2,14 +2,15 @@
 //! module never references under `drop-unreferenced` and a repeat of a
 //! binding an earlier import already made under `drop-duplicates`, one
 //! walk deciding both facets so a repeat and the binding its drop
-//! leaves unreferenced go together. A package `__init__.py` or its stub
-//! reports an unreferenced binding rather than dropping it, whereas a
-//! repeat drops there too. `from __future__ import annotations` drops
-//! behind the annotation analysis in `future`, and every other
-//! `__future__` feature stays, as does a `from … import *`, a name
-//! `__all__` lists, an import binding `__all__` itself, a name a second
-//! import rebinds from another source, an `x as x` re-export alias, and
-//! an import an own-line comment leads.
+//! leaves unreferenced go together. The unreferenced drop reaches only
+//! a module that writes `__all__` and lists the name nowhere in it, and
+//! a package `__init__.py` or its stub reports that name rather than
+//! dropping it. `from __future__ import annotations` drops behind the
+//! annotation analysis in `future`, and every other `__future__`
+//! feature stays, as does a `from … import *`, a name `__all__` lists,
+//! an import binding `__all__` itself, a name a second import rebinds
+//! from another source, an `x as x` re-export alias, and an import an
+//! own-line comment leads.
 
 use std::{ffi::OsStr, path::Path};
 
@@ -19,8 +20,7 @@ use ruff_python_ast::PythonVersion;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    rules::reflow_imports::Folds,
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, reflow_imports::Folds},
     source::Source,
 };
 
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn a_main_module_prunes_like_any_other_file() {
         let source = Source::parse_named(
-            "import numpy as np\n\nvalue = 1\n".to_owned(),
+            "import numpy as np\n\n__all__ = [\"value\"]\nvalue = 1\n".to_owned(),
             "pkg/__main__.py",
         )
         .expect("test source parses");
@@ -151,6 +151,14 @@ mod tests {
     }
 
     #[test]
+    fn a_quoted_annotation_holds_its_import_inside_a_package_init() {
+        let source = parse_init("from typing import List\n\nx: \"List[int]\" = []\n");
+
+        assert!(rule().apply(&source).is_empty());
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
     fn a_repeat_drops_inside_a_package_init() {
         let source = parse_init("import os\nimport os\n\nvalue = os.getcwd()\n");
         let groups = rule().apply(&source);
@@ -185,10 +193,21 @@ mod tests {
 
     #[test]
     fn an_unread_import_drops_whole_outside_a_package_init() {
-        let source = parse("import json\n\nvalue = 1\n");
+        let source = parse("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
         let groups = rule().apply(&source);
 
-        assert_eq!(applied_text(&source, groups.concat()), "\nvalue = 1\n");
+        assert_eq!(
+            applied_text(&source, groups.concat()),
+            "\n__all__ = [\"value\"]\nvalue = 1\n",
+        );
+        assert!(rule().lint(&source).is_empty());
+    }
+
+    #[test]
+    fn an_unread_import_holds_where_the_module_writes_no_dunder_all() {
+        let source = parse("import json\n\nvalue = 1\n");
+
+        assert!(rule().apply(&source).is_empty());
         assert!(rule().lint(&source).is_empty());
     }
 

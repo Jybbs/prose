@@ -1,6 +1,7 @@
 //! The explicit re-export surface of a module, read from its
-//! module-scope `__all__` writes and from the PEP 484 `x as x` alias
-//! form.
+//! module-scope `__all__` writes, from an import binding `__all__`
+//! itself, from the PEP 484 `x as x` alias form, and from an import
+//! whose source module reads as private.
 
 use ruff_python_ast::{Alias, Expr, Stmt, helpers::is_dunder};
 use rustc_hash::FxHashSet;
@@ -17,51 +18,71 @@ const DUNDER_ALL: &str = "__all__";
 /// The names a module marks for re-export.
 pub(super) struct Reexports<'a> {
     names: FxHashSet<&'a str>,
-    settled: bool,
+    surface: Surface,
 }
 
 impl<'a> Reexports<'a> {
-    /// Reads every module-scope `__all__` write. `settled` drops to
-    /// `false` on a write naming anything other than string literals and
-    /// on any write nested below module scope, and an unsettled surface
-    /// holds every name.
+    /// Reads every module-scope `__all__` write, along with every import
+    /// binding the name, into one surface. A write naming anything other
+    /// than string literals, a write below module scope, and an import
+    /// binding `__all__` each leave the surface `Unreadable` and every
+    /// name held, whereas a module writing it nowhere leaves the surface
+    /// `Undeclared`.
     pub(super) fn of(body: &'a [Stmt]) -> Self {
         let mut names = FxHashSet::default();
+        let mut surface = Surface::Undeclared;
         for stmt in body {
             match dunder_all_write(stmt) {
                 None => {}
-                Some(DunderAll::Names(items)) => names.extend(items),
-                Some(DunderAll::Unreadable) => return Self::unsettled(),
+                Some(DunderAll::Names(items)) => {
+                    names.extend(items);
+                    surface = Surface::Listed;
+                }
+                Some(DunderAll::Unreadable) => return Self::unreadable(),
             }
             if nested_dunder_all_write(stmt) {
-                return Self::unsettled();
+                return Self::unreadable();
             }
         }
-        Self {
-            names,
-            settled: true,
-        }
+        Self { names, surface }
     }
 
     /// A surface no static read settles, holding every name.
-    fn unsettled() -> Self {
+    fn unreadable() -> Self {
         Self {
             names: FxHashSet::default(),
-            settled: false,
+            surface: Surface::Unreadable,
         }
     }
 
+    /// True when the module writes `__all__` at module scope, whatever
+    /// the write lists.
+    pub(super) fn declares_a_surface(&self) -> bool {
+        !matches!(self.surface, Surface::Undeclared)
+    }
+
     /// True when `alias`, binding `bound`, marks an explicit re-export.
-    /// An import binding `__all__` itself sets the whole surface, so it
-    /// holds alongside the names a write lists.
     pub(super) fn holds(&self, alias: &Alias, bound: &str) -> bool {
-        !self.settled || bound == DUNDER_ALL || is_self_alias(alias) || self.names.contains(bound)
+        matches!(self.surface, Surface::Unreadable)
+            || is_self_alias(alias)
+            || self.names.contains(bound)
     }
 }
 
 /// What one module-scope statement contributes to `__all__`.
 enum DunderAll<'a> {
     Names(Vec<&'a str>),
+    Unreadable,
+}
+
+/// The state a module's `__all__` writes leave its re-export surface
+/// in.
+enum Surface {
+    /// Every write reads as a list or tuple of string literals.
+    Listed,
+    /// The module writes `__all__` nowhere.
+    Undeclared,
+    /// A write no static read settles, or an import binding the name.
     Unreadable,
 }
 
@@ -74,11 +95,15 @@ pub(super) fn reexports_a_private_member(node: &ImportNode<'_>) -> bool {
 }
 
 /// What `stmt` writes to `__all__`, `None` for a statement leaving it
-/// alone.
+/// alone. An import binding the name reads as unreadable, because the
+/// list it binds is written in another module.
 fn dunder_all_write(stmt: &Stmt) -> Option<DunderAll<'_>> {
     let value = match stmt {
         Stmt::AugAssign(node) if names_dunder_all(&node.target) => node.value.as_ref(),
         Stmt::Expr(node) if mutates_dunder_all(&node.value) => return Some(DunderAll::Unreadable),
+        Stmt::Import(_) | Stmt::ImportFrom(_) => {
+            return imports_dunder_all(stmt).then_some(DunderAll::Unreadable);
+        }
         _ => {
             let (target, value) = single_name_assignment(stmt)?;
             if target.id.as_str() != DUNDER_ALL {
@@ -88,6 +113,15 @@ fn dunder_all_write(stmt: &Stmt) -> Option<DunderAll<'_>> {
         }
     };
     Some(string_items(value).map_or(DunderAll::Unreadable, DunderAll::Names))
+}
+
+/// True when `stmt` binds `__all__` out of another module.
+fn imports_dunder_all(stmt: &Stmt) -> bool {
+    ImportNode::of(stmt).is_some_and(|node| {
+        node.names()
+            .iter()
+            .any(|alias| node.bound(alias) == DUNDER_ALL)
+    })
 }
 
 /// True for a call on an attribute of `__all__`, covering the
@@ -146,6 +180,24 @@ mod tests {
     }
 
     #[rstest]
+    #[case::bare("import __all__\n", true)]
+    #[case::member("from pkg import __all__\n", true)]
+    #[case::aliased("from pkg import names as __all__\n", true)]
+    #[case::nested("if flag:\n    from pkg import __all__\n", true)]
+    #[case::other_member("from pkg import names\n", false)]
+    fn an_import_binding_dunder_all_leaves_the_surface_unreadable(
+        #[case] src: &str,
+        #[case] holds: bool,
+    ) {
+        let source = parse(&format!(
+            "from json import dumps\n{src}__all__ = [\"other\"]\n"
+        ));
+        let body = &source.ast().body;
+        let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
+        assert_eq!(Reexports::of(body).holds(alias, "dumps"), holds);
+    }
+
+    #[rstest]
     #[case::call("__all__ = build()\n")]
     #[case::name("__all__ = EXPORTS\n")]
     #[case::non_literal_item("__all__ = [name]\n")]
@@ -156,6 +208,26 @@ mod tests {
         let body = &source.ast().body;
         let alias = &body[0].as_import_from_stmt().expect("a from import").names[0];
         assert!(Reexports::of(body).holds(alias, "dumps"));
+    }
+
+    #[rstest]
+    #[case::listed("__all__ = [\"loads\"]\n", true)]
+    #[case::empty_list("__all__ = []\n", true)]
+    #[case::augmented_only("__all__ += [\"loads\"]\n", true)]
+    #[case::unreadable("__all__ = build()\n", true)]
+    #[case::nested("if flag:\n    __all__ = [\"loads\"]\n", true)]
+    #[case::bare_annotation("__all__: list[str]\n", false)]
+    #[case::other_name("__slots__ = [\"loads\"]\n", false)]
+    #[case::no_write("value = 1\n", false)]
+    fn declares_a_surface_reads_whether_the_module_writes_dunder_all(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            Reexports::of(&source.ast().body).declares_a_surface(),
+            expected,
+        );
     }
 
     #[rstest]

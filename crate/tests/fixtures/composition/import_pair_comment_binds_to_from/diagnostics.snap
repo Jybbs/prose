@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/import_pair_comment_binds_to_from/input.py
 ---
-space-statements@9..10
+space-statements@20..21

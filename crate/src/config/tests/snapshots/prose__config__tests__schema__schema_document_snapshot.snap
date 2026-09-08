@@ -320,7 +320,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "drop-unreferenced": {
           "default": true,
-          "description": "Drops an import binding a name nothing references, unless the\nbinding is marked for re-export, read by a `del` or a quoted\nannotation, or bound in a package `__init__.py`, in which case it\nis reported instead. `false` keeps every unreferenced import and\nreports none.",
+          "description": "Drops an import binding a name nothing references, where the\nmodule writes `__all__` and lists the name nowhere in it, unless\nthe binding is marked for re-export or read by a `del` or a\nquoted annotation. A package `__init__.py` reports every\nunreferenced binding rather than dropping it, whatever its\n`__all__`. `false` keeps every unreferenced import and reports\nnone.",
           "type": "boolean"
         },
         "enabled": {

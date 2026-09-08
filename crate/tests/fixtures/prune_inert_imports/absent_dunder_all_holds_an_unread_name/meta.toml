@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Module Writing No `__all__` Keeps Its Unread Import"
+
+description = '''
+Nothing in this compatibility shim reads `shutil`, and the module writes no `__all__`. **The import stays and no diagnostic is reported**, because a module naming no public surface leaves nothing in the file to separate a re-export from a binding the module stopped using.
+'''

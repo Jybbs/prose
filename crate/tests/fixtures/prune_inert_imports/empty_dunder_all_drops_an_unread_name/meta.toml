@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Empty `__all__` Still Drops an Unread Import"
+
+description = '''
+`__all__ = []` names an empty public surface, which is still a write rather than an absence. **`dumps` is removed**, because the module states what it re-exports and `dumps` is not part of it.
+'''

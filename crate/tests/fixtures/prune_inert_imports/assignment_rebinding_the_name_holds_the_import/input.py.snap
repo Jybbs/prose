@@ -5,3 +5,5 @@ input_file: crate/tests/fixtures/prune_inert_imports/assignment_rebinding_the_na
 ---
 import os
 os = None
+
+__all__ = []
