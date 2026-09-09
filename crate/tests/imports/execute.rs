@@ -96,7 +96,8 @@ impl Runner {
         };
         let mut command = Command::new(&self.python);
         command
-            .arg("-I")
+            .arg("-P")
+            .arg("-s")
             .arg("-B")
             .arg(self.stage.probe())
             .arg(&record)
@@ -106,6 +107,7 @@ impl Runner {
             .current_dir(&self.stage.tmp)
             .env_clear()
             .env("HOME", &self.stage.home)
+            .env("PYTHONHASHSEED", "0")
             .env("PATH", env::var("PATH").unwrap_or_default())
             .env("TMPDIR", &self.stage.tmp)
             .process_group(0)
