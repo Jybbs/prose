@@ -39,16 +39,14 @@ from sys        import argv
 from tomllib    import loads
 from yaml       import safe_load
 
-FAMILY_META_ENTRY = r"^\s*(?P<family>\w+)\s*:\s*\{ badge: '(?P<badge>[^']+)', label: '(?P<label>[^']+)'"
-
-
 def badges() -> dict[str, tuple[str, str]]:
     """
     Map each family to its badge and label, read off `FAMILY_META` in
     the docs site's shared registry.
     """
+    entry  = r"^\s*(?P<family>\w+)\s*:\s*\{ badge: '(?P<badge>[^']+)', label: '(?P<label>[^']+)'"
     source = Path("site/.vitepress/lib/shared/registries.ts").read_text(encoding="utf-8")
-    return {m["family"]: (m["badge"], m["label"]) for m in finditer(FAMILY_META_ENTRY, source, MULTILINE)}
+    return {m["family"]: (m["badge"], m["label"]) for m in finditer(entry, source, MULTILINE)}
 
 
 def changed() -> list[str]:
