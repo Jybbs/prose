@@ -26,7 +26,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 8;
+pub(crate) const VERSION: u32 = 9;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -85,6 +85,10 @@ pub(crate) struct Counts {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
+    /// How many this machine could reach, which is a floor where
+    /// `comparable` is a figure, since a module bound to another platform
+    /// moves the second and holds the first.
+    pub(crate) reachable: usize,
     /// How many modules a run set aside because two runs of the original
     /// bound different namespaces.
     pub(crate) flaky: usize,
@@ -101,6 +105,7 @@ impl From<&Width> for Counts {
         Self {
             candidates: found.candidates,
             comparable: found.comparable,
+            reachable: found.reachable(),
             flaky: found.flaky.len(),
             raises: found.unimported(),
             rebinds: found.counting(Kind::Ok),
@@ -212,15 +217,16 @@ pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
     };
     let Counts {
         candidates,
-        comparable,
+        comparable: _,
         flaky,
         raises,
+        reachable,
         rebinds,
         refused,
     } = Counts::from(found);
     let short = [
         ("candidates", candidates, baked.candidates),
-        ("comparable", comparable, baked.comparable),
+        ("reachable", reachable, baked.reachable),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached < want);

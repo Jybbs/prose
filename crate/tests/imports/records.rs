@@ -20,7 +20,7 @@ const ABSENT: &str = "ModuleNotFoundError";
 /// The platform tokens that appear in the path of a module written for another
 /// operating system. Such a module's own error message often does not name the
 /// platform, so the path is what identifies it.
-const PLATFORMS: &[&str] = &["emscripten", "win32", "windows"];
+const PLATFORMS: &[&str] = &["darwin", "emscripten", "macos", "win32", "windows"];
 
 /// What one uncomparable module's own run left, the exception it named
 /// beside the sentence a report shows, so a later read matches the
@@ -215,6 +215,19 @@ impl Width {
                 .count();
             (reach, counted)
         })
+    }
+
+    /// How many modules this machine could reach, being the ones it compared
+    /// beside the ones no run here could import. A module bound to another
+    /// platform or naming an absent package holds this count where it moves
+    /// `comparable`, so the floor reads the same on every machine.
+    pub(crate) fn reachable(&self) -> usize {
+        let unreachable = self
+            .uncomparable
+            .values()
+            .filter(|left| !left.reach.reachable())
+            .count();
+        self.comparable + unreachable
     }
 
     /// The breaks at this width the baseline does not already hold.

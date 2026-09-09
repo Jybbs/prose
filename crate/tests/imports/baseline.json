@@ -46,6 +46,7 @@
     "default": {
       "candidates": 997,
       "comparable": 978,
+      "reachable": 994,
       "flaky": 2,
       "raises": 0,
       "rebinds": 4,
@@ -151,5 +152,5 @@
       }
     }
   },
-  "version": 8
+  "version": 9
 }

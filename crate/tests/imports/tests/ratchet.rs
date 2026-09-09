@@ -214,6 +214,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
                 comparable: 898,
                 flaky: 2,
                 raises: 0,
+                reachable: 900,
                 rebinds: 0,
                 refused: 0,
             },
@@ -232,14 +233,20 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
         regressions(&short, &held),
         [
             "candidates 900 against 997 baked",
-            "comparable 800 against 898 baked",
+            "reachable 800 against 900 baked",
             "flaky 3 against 2 baked",
             "refused 2 against 0 baked",
         ]
     );
     let reached = Width {
         candidates: 997,
-        comparable: 900,
+        comparable: 897,
+        uncomparable: [
+            blocked("dbm/gnu.py", "ModuleNotFoundError"),
+            blocked("asyncio/windows_events.py", "ImportError"),
+            blocked("truststore/_macos.py", "ImportError"),
+        ]
+        .into(),
         ..width()
     };
     assert_eq!(regressions(&reached, &held), Vec::<String>::new());
