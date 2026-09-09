@@ -112,7 +112,8 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  raises           0\n",
             "  rebinds          0\n",
             "  timeouts         0\n",
-            "  flaky            0",
+            "  flaky            0\n",
+            "  carried          0",
         )
     );
 }

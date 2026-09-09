@@ -8,7 +8,7 @@ use super::*;
 use crate::{
     ratchet::{
         Baseline, Carried, Counts, VERSION, bake, baseline, baseline_at, dropped, judge,
-        regressions,
+        regressions, stale,
     },
     records::{Blocked, Width},
     sweep::DEFAULT_LABEL,
@@ -229,6 +229,45 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
     assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
     assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["a.py"]));
+}
+
+#[test]
+fn stale_names_a_baked_break_the_run_no_longer_reproduces() {
+    let held = Baseline {
+        breaks: [(
+            DEFAULT_LABEL.to_owned(),
+            [
+                carried("gone.py", "gone.py", "X"),
+                carried("kept.py", "kept.py", "Y"),
+            ]
+            .into(),
+        )]
+        .into(),
+        ..Baseline::default()
+    };
+    let found = Width {
+        breaks: vec![losing("kept.py", "kept.py", "Y")],
+        ..stalling(BTreeMap::new())
+    };
+    assert_eq!(stale(&found, &held), ["gone.py".to_owned()].into());
+    assert_eq!(stale(&found, &Baseline::default()), BTreeSet::new());
+}
+
+#[test]
+fn stale_names_a_break_whose_names_changed_under_one_module() {
+    let held = Baseline {
+        breaks: [(
+            DEFAULT_LABEL.to_owned(),
+            [carried("m.py", "m.py", "X")].into(),
+        )]
+        .into(),
+        ..Baseline::default()
+    };
+    let found = Width {
+        breaks: vec![losing("m.py", "m.py", "Y")],
+        ..stalling(BTreeMap::new())
+    };
+    assert_eq!(stale(&found, &held), ["m.py".to_owned()].into());
 }
 
 #[test]

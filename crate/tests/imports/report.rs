@@ -40,9 +40,7 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("timeouts", &found.counting(Kind::Timeout)),
         row("flaky", &found.flaky.len()),
     ];
-    if !carried.is_empty() {
-        lines.push(row("carried", &carried.len()));
-    }
+    lines.push(row("carried", &carried.len()));
     if found.refused > 0 {
         lines.push(row("refused", &found.refused));
     }

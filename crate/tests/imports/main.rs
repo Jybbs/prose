@@ -30,7 +30,7 @@ use crate::{
     common::{setting, watch_for_a_runaway, widths_or},
     corpus::standard_library,
     execute::interpreter,
-    ratchet::{bake, baking, baseline, dropped, judge, regressions},
+    ratchet::{bake, baking, baseline, dropped, judge, regressions, stale},
     report::render,
     sweep::{MODULE_VAR, Sweep},
 };
@@ -64,10 +64,12 @@ fn every_rewritten_module_still_imports() {
     let mut fresh = BTreeSet::new();
     let mut lost = BTreeSet::new();
     let mut regressed = Vec::new();
+    let mut unreproduced = BTreeSet::new();
     for found in &widths {
         let carried = judge(found, &held);
         lost.extend(dropped(found, &held));
         regressed.extend(regressions(found, &held));
+        unreproduced.extend(stale(found, &held));
         eprintln!("\nwidth {}\n{}", found.label, render(&carried, found));
         fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
@@ -97,6 +99,14 @@ fn every_rewritten_module_still_imports() {
     if !lost.is_empty() || !fresh.is_empty() {
         sweep.runner.stage.keep();
     }
+    assert!(
+        unreproduced.is_empty(),
+        "this run does not reproduce {} of the breaks the baseline carries, the first being {}, \
+         so re-bake the set with PROSE_IMPORTS_BAKE=crate/tests/imports/baseline.json mise run \
+         imports and land the smaller set with the change that earned it",
+        unreproduced.len(),
+        unreproduced.first().map_or("", String::as_str),
+    );
     assert!(
         lost.is_empty(),
         "the baseline compares {} of the modules this run could not, the first being {}",

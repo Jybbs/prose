@@ -183,6 +183,22 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
+/// The breaks the baseline holds at one width that this run did not
+/// reproduce, meaning the tracked set now overstates what the tree breaks
+/// and a re-bake is owed. A run cannot tell a break someone fixed from one
+/// a narrowed sweep stopped reaching, so both are reported and both are
+/// settled by re-baking.
+pub(crate) fn stale(found: &Width, held: &Baseline) -> BTreeSet<String> {
+    let Some(known) = held.breaks.get(&found.label) else {
+        return BTreeSet::new();
+    };
+    let reproduced: BTreeSet<_> = found.breaks.iter().map(carried).collect();
+    known
+        .difference(&reproduced)
+        .map(|entry| entry.module.clone())
+        .collect()
+}
+
 /// How one width moved the wrong way against the counts the baseline
 /// recorded, empty where every one held. A baseline recording nothing at
 /// this width has nothing to move against.
