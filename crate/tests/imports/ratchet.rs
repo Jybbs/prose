@@ -17,6 +17,10 @@ use crate::{
     records::{Blocked, Break, Width},
 };
 
+/// The exception a module raises where the machine lacks a package or a
+/// platform module it imports.
+const ABSENT: &str = "ModuleNotFoundError";
+
 /// The break set the repository tracks beside the harness, which every
 /// judging run reads.
 const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline.json");
@@ -24,13 +28,9 @@ const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
-/// The exception a module raises where the machine lacks a package or a
-/// platform module it imports.
-const ABSENT: &str = "ModuleNotFoundError";
-
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 6;
+pub(crate) const VERSION: u32 = 7;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -74,7 +74,8 @@ pub(crate) struct Carried {
 
 /// What one width counted. The first two are floors a later run must
 /// reach, so a shrinking corpus fails, and the rest are ceilings it must
-/// not exceed, so a growing defect class fails. Splitting a raise from a
+/// not exceed, so a growing defect class fails and so does a run that sets
+/// more modules aside than the baseline did. Splitting a raise from a
 /// rebind keeps a module that fails to import apart from one that ran and
 /// bound a different namespace, since only the first is broken.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -84,6 +85,9 @@ pub(crate) struct Counts {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
+    /// How many modules a run set aside because two runs of the original
+    /// bound different namespaces.
+    pub(crate) flaky: usize,
     /// How many modules failed to import at all.
     pub(crate) raises: usize,
     /// How many ran and bound a different namespace.
@@ -97,6 +101,7 @@ impl From<&Width> for Counts {
         Self {
             candidates: found.candidates,
             comparable: found.comparable,
+            flaky: found.flaky.len(),
             raises: found.unimported(),
             rebinds: found.counting(Kind::Ok),
             refused: found.refused,
@@ -110,15 +115,9 @@ pub(crate) fn bake(path: &Path, widths: &[Width]) {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
     let baked = Baseline {
-        breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
-        counts: widths
-            .iter()
-            .map(|found| (found.label.clone(), Counts::from(found)))
-            .collect(),
-        uncomparable: widths
-            .iter()
-            .map(|found| (found.label.clone(), found.uncomparable.clone()))
-            .collect(),
+        breaks: keyed(widths, entries),
+        counts: keyed(widths, |found| Counts::from(found)),
+        uncomparable: keyed(widths, |found| found.uncomparable.clone()),
         version: VERSION,
     };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
@@ -170,16 +169,50 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
 }
 
 /// The broken modules of one width the baseline already holds, matched on
-/// the module, the file its frame names, and the reason.
+/// the module, the file its frame names, the kind of difference, and every
+/// name it turns on.
 pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
     };
-    found
-        .breaks
-        .iter()
-        .filter(|brk| known.contains(&carried(brk)))
-        .map(|brk| brk.module.clone())
+    entries(found)
+        .intersection(known)
+        .map(|entry| entry.module.clone())
+        .collect()
+}
+
+/// How one width moved the wrong way against the counts the baseline
+/// recorded, empty where every one held. A baseline recording nothing at
+/// this width has nothing to move against.
+pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
+    let Some(baked) = held.counts.get(&found.label) else {
+        return Vec::new();
+    };
+    let Counts {
+        candidates,
+        comparable,
+        flaky,
+        raises,
+        rebinds,
+        refused,
+    } = Counts::from(found);
+    let short = [
+        ("candidates", candidates, baked.candidates),
+        ("comparable", comparable, baked.comparable),
+    ]
+    .into_iter()
+    .filter(|(_, reached, want)| reached < want);
+    let grown = [
+        ("flaky", flaky, baked.flaky),
+        ("raises", raises, baked.raises),
+        ("rebinds", rebinds, baked.rebinds),
+        ("refused", refused, baked.refused),
+    ]
+    .into_iter()
+    .filter(|(_, reached, want)| reached > want);
+    short
+        .chain(grown)
+        .map(|(what, reached, want)| format!("{what} {reached} against {want} baked"))
         .collect()
 }
 
@@ -192,37 +225,10 @@ pub(crate) fn stale(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
     };
-    let reproduced: BTreeSet<_> = found.breaks.iter().map(carried).collect();
+    let reproduced = entries(found);
     known
         .difference(&reproduced)
         .map(|entry| entry.module.clone())
-        .collect()
-}
-
-/// How one width moved the wrong way against the counts the baseline
-/// recorded, empty where every one held. A baseline recording nothing at
-/// this width has nothing to move against.
-pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
-    let Some(baked) = held.counts.get(&found.label) else {
-        return Vec::new();
-    };
-    let reached = Counts::from(found);
-    let short = [
-        ("candidates", reached.candidates, baked.candidates),
-        ("comparable", reached.comparable, baked.comparable),
-    ]
-    .into_iter()
-    .filter(|(_, reached, want)| reached < want);
-    let grown = [
-        ("raises", reached.raises, baked.raises),
-        ("rebinds", reached.rebinds, baked.rebinds),
-        ("refused", reached.refused, baked.refused),
-    ]
-    .into_iter()
-    .filter(|(_, reached, want)| reached > want);
-    short
-        .chain(grown)
-        .map(|(what, reached, want)| format!("{what} {reached} against {want} baked"))
         .collect()
 }
 
@@ -236,11 +242,13 @@ fn carried(brk: &Break) -> Carried {
     }
 }
 
-/// The set each width projects, keyed by that width's label.
-fn keyed<T: Ord>(
-    widths: &[Width],
-    of: impl Fn(&Width) -> BTreeSet<T>,
-) -> BTreeMap<String, BTreeSet<T>> {
+/// The entries a baseline holds for one width's breaks.
+fn entries(found: &Width) -> BTreeSet<Carried> {
+    found.breaks.iter().map(carried).collect()
+}
+
+/// The value each width projects, keyed by that width's label.
+fn keyed<T>(widths: &[Width], of: impl Fn(&Width) -> T) -> BTreeMap<String, T> {
     widths
         .iter()
         .map(|found| (found.label.clone(), of(found)))

@@ -1,7 +1,7 @@
 //! Comparing what two trees left behind, meaning why one module's run counts
 //! as broken beside the original, and which modules of a sweep broke at all.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     outcome::{Kind, Outcome},
@@ -110,36 +110,17 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
             reason: formatted.error.clone(),
         });
     }
-    let missing = |from: &[String], held: &[String]| -> Vec<String> {
-        from.iter()
-            .filter(|name| held.binary_search(name).is_err())
-            .cloned()
-            .collect()
-    };
-    let lost = missing(&original.names, &formatted.names);
-    if let [name, rest @ ..] = lost.as_slice() {
-        let reason = format!("leaves {} unbound", named(name, rest.len()));
-        return Some(Divergence {
-            kind: "unbound",
-            names: lost,
-            reason,
-        });
+    if let Some(lost) = sided(&original.names, &formatted.names, "unbound", |whom| {
+        format!("leaves {whom} unbound")
+    }) {
+        return Some(lost);
     }
-    let gained = missing(&formatted.names, &original.names);
-    if let [name, rest @ ..] = gained.as_slice() {
-        let reason = format!("binds {} the original does not", named(name, rest.len()));
-        return Some(Divergence {
-            kind: "extra",
-            names: gained,
-            reason,
-        });
+    if let Some(gained) = sided(&formatted.names, &original.names, "extra", |whom| {
+        format!("binds {whom} the original does not")
+    }) {
+        return Some(gained);
     }
-    let differing = original
-        .constants
-        .keys()
-        .chain(formatted.constants.keys())
-        .filter(|name| original.constants.get(*name) != formatted.constants.get(*name))
-        .min()?;
+    let differing = respelt(original, formatted).min()?;
     let was = original
         .constants
         .get(differing)
@@ -155,6 +136,31 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
     })
 }
 
+/// Every name two runs of one tree bound differently, covering a name only
+/// one side bound and a constant the two spelt differently. [`divergence`]
+/// stops at the first of these it finds, where this returns every one.
+pub(crate) fn varying(one: &Outcome, other: &Outcome) -> BTreeSet<String> {
+    missing(&one.names, &other.names)
+        .chain(missing(&other.names, &one.names))
+        .chain(respelt(one, other))
+        .cloned()
+        .collect()
+}
+
+/// The kind a run of one module left behind, `unmeasured` where the tree was
+/// never asked about it.
+fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
+    held.get(module)
+        .map_or(Kind::Unmeasured, |outcome| outcome.kind)
+}
+
+/// The names of `from` that `held` does not carry. Both slices arrive
+/// sorted, which is what lets the lookup bisect `held`.
+fn missing<'a>(from: &'a [String], held: &'a [String]) -> impl Iterator<Item = &'a String> {
+    from.iter()
+        .filter(move |name| held.binary_search(name).is_err())
+}
+
 /// One name and however many followed it, which is the sentence a report
 /// shows rather than the key a baseline holds.
 fn named(first: &str, rest: usize) -> String {
@@ -165,9 +171,32 @@ fn named(first: &str, rest: usize) -> String {
     }
 }
 
-/// The kind a run of one module left behind, `unmeasured` where the tree was
-/// never asked about it.
-fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
-    held.get(module)
-        .map_or(Kind::Unmeasured, |outcome| outcome.kind)
+/// The names under which two runs spelt a plain constant differently. A
+/// name both runs carry arrives twice.
+fn respelt<'a>(one: &'a Outcome, other: &'a Outcome) -> impl Iterator<Item = &'a String> {
+    one.constants
+        .keys()
+        .chain(other.constants.keys())
+        .filter(move |name| one.constants.get(*name) != other.constants.get(*name))
+}
+
+/// The divergence one direction of a name difference makes, `None` where
+/// `held` carries every name `from` binds. `reason` takes the first name
+/// beside however many followed it.
+fn sided(
+    from: &[String],
+    held: &[String],
+    kind: &'static str,
+    reason: impl Fn(&str) -> String,
+) -> Option<Divergence> {
+    let names: Vec<_> = missing(from, held).cloned().collect();
+    let [first, rest @ ..] = names.as_slice() else {
+        return None;
+    };
+    let reason = reason(&named(first, rest.len()));
+    Some(Divergence {
+        kind,
+        names,
+        reason,
+    })
 }

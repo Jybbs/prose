@@ -3,11 +3,14 @@
 //! rule a break is blamed on, so an off-by-one in it misattributes the
 //! break instead of failing a test.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+use itertools::Itertools;
 
 use crate::{
-    outcome::Outcome,
-    records::{Blocked, Break, Frame},
+    outcome::{Kind, Outcome},
+    records::{Blocked, Break, Frame, Width},
+    sweep::DEFAULT_LABEL,
 };
 
 mod bindings;
@@ -19,6 +22,7 @@ mod outcome;
 mod ratchet;
 mod records;
 mod report;
+mod sweep;
 
 /// A module the original tree did not run cleanly, whose run raised
 /// `raised` and reads as `reason`.
@@ -29,22 +33,21 @@ fn blocked(raised: &str, reason: &str) -> Blocked {
     }
 }
 
-/// A break at `frame` for `module`, losing `name` and nothing else.
-fn losing(module: &str, frame: &str, name: &str) -> Break {
-    Break {
-        names: vec![name.to_owned()],
-        ..broken(module, frame, &format!("leaves `{name}` unbound"))
+/// An outcome that ran cleanly, binding `names` and the constants `spelt`.
+fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
+    Outcome {
+        constants: spelt
+            .iter()
+            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+            .collect(),
+        kind: Kind::Ok,
+        names: names
+            .iter()
+            .map(|name| (*name).to_owned())
+            .sorted()
+            .collect(),
+        ..Outcome::default()
     }
-}
-
-/// The uncomparable map holding each of `modules`, every one raising a
-/// plain `ImportError`, which is the shape a case reaches for wherever
-/// only the module name carries the assertion.
-fn stalled<const N: usize>(modules: [&str; N]) -> BTreeMap<String, Blocked> {
-    modules
-        .iter()
-        .map(|module| ((*module).to_owned(), blocked("ImportError", "raises")))
-        .collect()
 }
 
 /// A break at `frame` for `module`, diverging for `reason`.
@@ -63,5 +66,63 @@ fn broken(module: &str, frame: &str, reason: &str) -> Break {
         names: Vec::new(),
         original: Outcome::default(),
         reason: reason.to_owned(),
+    }
+}
+
+/// Asserts `rendered` hides `unwanted`, printing the whole render where it
+/// does not.
+#[track_caller]
+fn hides(rendered: &str, unwanted: &str) {
+    assert!(
+        !rendered.contains(unwanted),
+        "unwanted `{unwanted}` in:\n{rendered}"
+    );
+}
+
+/// A break at `frame` for `module`, losing `name` and nothing else.
+fn losing(module: &str, frame: &str, name: &str) -> Break {
+    Break {
+        names: vec![name.to_owned()],
+        ..broken(module, frame, &format!("leaves `{name}` unbound"))
+    }
+}
+
+/// Asserts `rendered` shows `want`, printing the whole render where it does
+/// not.
+#[track_caller]
+fn shows(rendered: &str, want: &str) {
+    assert!(rendered.contains(want), "want `{want}` in:\n{rendered}");
+}
+
+/// The uncomparable map holding each of `modules`, every one raising a
+/// plain `ImportError`, which is the shape a case reaches for wherever
+/// only the module name carries the assertion.
+fn stalled<const N: usize>(modules: [&str; N]) -> BTreeMap<String, Blocked> {
+    modules
+        .iter()
+        .map(|module| ((*module).to_owned(), blocked("ImportError", "raises")))
+        .collect()
+}
+
+/// The flaky map holding each of `modules` beside the names it varies on,
+/// an empty slice standing for a module whose entire namespace varied.
+fn varied<const N: usize>(modules: [(&str, &[&str]); N]) -> BTreeMap<String, BTreeSet<String>> {
+    modules
+        .iter()
+        .map(|(module, names)| {
+            (
+                (*module).to_owned(),
+                names.iter().map(|name| (*name).to_owned()).collect(),
+            )
+        })
+        .collect()
+}
+
+/// A width at the default label carrying nothing else, which a case
+/// overrides with the fields it measures.
+fn width() -> Width {
+    Width {
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
     }
 }

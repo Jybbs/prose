@@ -12,6 +12,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::outcome::{Kind, Outcome};
 
+/// What one uncomparable module's own run left, the exception it named
+/// beside the sentence a report shows, so a later read matches the
+/// exception rather than searching the sentence for it.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default)]
+pub(crate) struct Blocked {
+    /// The exception the run named, empty where it named none.
+    pub(crate) raised: String,
+    /// The sentence a report shows.
+    pub(crate) reason: String,
+}
+
 /// A module the rewrite breaks.
 pub(crate) struct Break {
     /// The rules and binding the run traced it to.
@@ -61,18 +73,6 @@ pub(crate) struct EditRows {
 /// The safe fixes one format run recorded, keyed by the file each rewrote.
 pub(crate) type Fixes = BTreeMap<String, Vec<(RuleId, Vec<EditRows>)>>;
 
-/// What one uncomparable module's own run left, the exception it named
-/// beside the sentence a report shows, so a later read matches the
-/// exception rather than searching the sentence for it.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(default)]
-pub(crate) struct Blocked {
-    /// The exception the run named, empty where it named none.
-    pub(crate) raised: String,
-    /// The sentence a report shows.
-    pub(crate) reason: String,
-}
-
 /// The file and row a break points at.
 #[derive(Clone, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct Frame {
@@ -91,8 +91,11 @@ pub(crate) struct Width {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
-    /// The modules whose two runs of the original differed.
-    pub(crate) flaky: Vec<String>,
+    /// The modules whose two runs of the original differed, each beside the
+    /// names it varied on. An empty set stands for a module whose entire
+    /// namespace varied, which a comparison sets aside rather than
+    /// narrowing.
+    pub(crate) flaky: BTreeMap<String, BTreeSet<String>>,
     /// The width, or `default` where none was pinned.
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
@@ -132,5 +135,11 @@ impl Width {
             .iter()
             .filter(|brk| brk.formatted.kind != Kind::Ok)
             .count()
+    }
+
+    /// How many names this width set aside across its flaky modules,
+    /// counting a name once per module that varies on it.
+    pub(crate) fn varying(&self) -> usize {
+        self.flaky.values().map(BTreeSet::len).sum()
     }
 }

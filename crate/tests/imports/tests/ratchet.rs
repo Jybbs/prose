@@ -4,6 +4,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use rstest::rstest;
+
 use super::*;
 use crate::{
     ratchet::{
@@ -36,9 +38,8 @@ fn recording(uncomparable: BTreeMap<String, Blocked>) -> Baseline {
 /// A width at the default label holding `uncomparable` and nothing else.
 fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
     Width {
-        label: DEFAULT_LABEL.to_owned(),
         uncomparable,
-        ..Width::default()
+        ..width()
     }
 }
 
@@ -48,6 +49,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         breaks: vec![losing("m.py", "re/_parser.py", "X")],
         candidates: 1,
         comparable: 1,
+        flaky: varied([("varies.py", &["N"])]),
         ..stalling(stalled(["blocked.py"]))
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
@@ -62,7 +64,22 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         [carried("m.py", "re/_parser.py", "X")].into()
     );
     assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["blocked.py"]));
+    assert_eq!(held.counts[DEFAULT_LABEL].flaky, 1);
     assert_eq!(held.version, VERSION);
+}
+
+#[rstest]
+#[case::dropped(dropped)]
+#[case::judge(judge)]
+#[case::stale(stale)]
+fn a_baseline_recording_no_width_names_nothing(
+    #[case] reading: fn(&Width, &Baseline) -> BTreeSet<String>,
+) {
+    let found = Width {
+        breaks: vec![losing("m.py", "m.py", "X")],
+        ..stalling(stalled(["blocked.py"]))
+    };
+    assert_eq!(reading(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
@@ -119,10 +136,6 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
         .into(),
     );
     assert_eq!(
-        dropped(&found, &Baseline::default()),
-        BTreeSet::<String>::new()
-    );
-    assert_eq!(
         dropped(&found, &recording(BTreeMap::new())),
         ["lost.py".to_owned()].into()
     );
@@ -153,12 +166,6 @@ fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
 }
 
 #[test]
-fn dropped_names_nothing_where_the_baseline_records_no_width() {
-    let found = stalling(stalled(["blocked.py"]));
-    assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
-}
-
-#[test]
 fn regressions_name_every_count_that_moved_the_wrong_way() {
     let held = Baseline {
         counts: [(
@@ -166,6 +173,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
             Counts {
                 candidates: 997,
                 comparable: 898,
+                flaky: 2,
                 raises: 0,
                 rebinds: 0,
                 refused: 0,
@@ -177,23 +185,23 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
     let short = Width {
         candidates: 900,
         comparable: 800,
-        label: DEFAULT_LABEL.to_owned(),
+        flaky: varied([("a.py", &[]), ("b.py", &[]), ("c.py", &[])]),
         refused: 2,
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&short, &held),
         [
             "candidates 900 against 997 baked",
             "comparable 800 against 898 baked",
+            "flaky 3 against 2 baked",
             "refused 2 against 0 baked",
         ]
     );
     let reached = Width {
         candidates: 997,
         comparable: 900,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(regressions(&reached, &held), Vec::<String>::new());
 }
@@ -202,33 +210,12 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
 fn regressions_name_nothing_where_the_baseline_records_no_counts() {
     let found = Width {
         candidates: 1,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&found, &Baseline::default()),
         Vec::<String>::new()
     );
-}
-
-#[test]
-fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
-    let found = Width {
-        breaks: vec![losing("m.py", "re/_parser.py", "X")],
-        ..stalling(BTreeMap::new())
-    };
-    let held = Baseline {
-        breaks: [(
-            DEFAULT_LABEL.to_owned(),
-            [carried("m.py", "re/_parser.py", "X")].into(),
-        )]
-        .into(),
-        version: VERSION,
-        ..recording(stalled(["a.py"]))
-    };
-    assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
-    assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
-    assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["a.py"]));
 }
 
 #[test]
@@ -250,7 +237,6 @@ fn stale_names_a_baked_break_the_run_no_longer_reproduces() {
         ..stalling(BTreeMap::new())
     };
     assert_eq!(stale(&found, &held), ["gone.py".to_owned()].into());
-    assert_eq!(stale(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
@@ -271,6 +257,25 @@ fn stale_names_a_break_whose_names_changed_under_one_module() {
 }
 
 #[test]
+fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
+    let found = Width {
+        breaks: vec![losing("m.py", "re/_parser.py", "X")],
+        ..stalling(BTreeMap::new())
+    };
+    let held = Baseline {
+        breaks: [(
+            DEFAULT_LABEL.to_owned(),
+            [carried("m.py", "re/_parser.py", "X")].into(),
+        )]
+        .into(),
+        version: VERSION,
+        ..recording(stalled(["a.py"]))
+    };
+    assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
+    assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["a.py"]));
+}
+
+#[test]
 fn the_tracked_break_set_reads_back_at_the_current_generation() {
     let held = baseline();
     assert_eq!(held.version, VERSION);
@@ -285,8 +290,7 @@ fn two_modules_at_one_frame_bake_as_separate_entries() {
             broken("a.py", "compat.py", "raises ImportError: no shutil"),
             broken("b.py", "compat.py", "raises ImportError: no shutil"),
         ],
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("baseline.json");
