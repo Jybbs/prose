@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 
 use super::*;
-use crate::{common::SHOWN, records::Width, report::render, sweep::DEFAULT_LABEL};
+use crate::{common::SHOWN, records::Width, report::render};
 
 #[test]
 fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
@@ -21,25 +21,19 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
         breaks: vec![brk],
         candidates: 4,
         comparable: 3,
-        label: DEFAULT_LABEL.to_owned(),
         refused: 1,
-        ..Width::default()
+        ..width()
     };
     let shown = render(&["kept.py".to_owned()].into(), &found);
-    assert!(shown.contains("  carried          1"), "{shown}");
-    assert!(shown.contains("  refused          1"), "{shown}");
-    assert!(!shown.contains("uncomparable by reach"), "{shown}");
-    assert!(
-        shown.contains(
-            "re/_parser.py:111 raises NameError: no MAXGROUPS, under `prune-inert-imports`"
-        ),
-        "{shown}"
+    shows(&shown, "  carried          1");
+    shows(&shown, "  refused          1");
+    hides(&shown, "uncomparable by reach");
+    shows(
+        &shown,
+        "re/_parser.py:111 raises NameError: no MAXGROUPS, under `prune-inert-imports`",
     );
-    assert!(
-        shown.contains("reproduce with mise run imports _colorize.py"),
-        "{shown}"
-    );
-    assert!(shown.contains("-from _sre import MAXGROUPS"), "{shown}");
+    shows(&shown, "reproduce with mise run imports _colorize.py");
+    shows(&shown, "-from _sre import MAXGROUPS");
 }
 
 #[test]
@@ -50,25 +44,20 @@ fn a_repro_at_a_pinned_width_carries_the_width_knob() {
         ..Width::default()
     };
     let shown = render(&BTreeSet::new(), &found);
-    assert!(
-        shown.contains("PROSE_SETTLE_WIDTHS=100 mise run imports pydoc.py"),
-        "{shown}"
-    );
+    shows(&shown, "PROSE_SETTLE_WIDTHS=100 mise run imports pydoc.py");
 }
 
 #[test]
 fn an_unmeasured_module_replaces_the_uncomparable_count() {
     let found = Width {
+        uncomparable: stalled(["a.py"]),
         unmeasured: vec!["u.py".to_owned()],
-        ..stalling(stalled(["a.py"]))
+        ..width()
     };
     let shown = render(&BTreeSet::new(), &found);
-    assert!(shown.contains("  uncomparable unmeasured"), "{shown}");
-    assert!(
-        shown.contains("unmeasured, a run left no record (1):"),
-        "{shown}"
-    );
-    assert!(shown.contains("u.py"), "{shown}");
+    shows(&shown, "  uncomparable unmeasured");
+    shows(&shown, "unmeasured, a run left no record (1):");
+    shows(&shown, "u.py");
 }
 
 #[test]
@@ -76,20 +65,41 @@ fn the_flaky_list_caps_at_the_shown_limit() {
     let found = Width {
         candidates: SHOWN + 3,
         comparable: SHOWN + 3,
-        flaky: (0..SHOWN + 3).map(|n| format!("m{n}.py")).collect(),
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        flaky: (0..SHOWN + 3)
+            .map(|n| (format!("m{n:02}.py"), ["N".to_owned()].into()))
+            .collect(),
+        ..width()
     };
     let shown = render(&BTreeSet::new(), &found);
-    assert!(
-        shown.contains(&format!(
-            "flaky, a second run did not confirm it ({}):",
-            SHOWN + 3
-        )),
-        "{shown}"
+    shows(
+        &shown,
+        &format!("flaky, a second run varied ({}):", SHOWN + 3),
     );
-    assert!(shown.contains("... and 3 more"), "{shown}");
-    assert!(!shown.contains(&format!("m{SHOWN}.py")), "{shown}");
+    shows(&shown, "... and 3 more");
+    hides(&shown, &format!("m{SHOWN}.py"));
+}
+
+#[test]
+fn the_flaky_listing_names_each_module_beside_the_names_it_varies_on() {
+    let found = Width {
+        flaky: varied([
+            (
+                "logging/__init__.py",
+                &["_srcfile", "_startTime", "raiseExceptions"],
+            ),
+            ("whole.py", &[]),
+        ]),
+        ..width()
+    };
+    let shown = render(&BTreeSet::new(), &found);
+    shows(&shown, "  flaky            2");
+    shows(&shown, "  varying          3");
+    shows(&shown, "flaky, a second run varied (2):");
+    shows(
+        &shown,
+        "logging/__init__.py  _srcfile, _startTime, raiseExceptions",
+    );
+    shows(&shown, "whole.py  the whole namespace");
 }
 
 #[test]
@@ -103,8 +113,8 @@ fn the_reach_split_names_every_class_beneath_the_block() {
         .into(),
     );
     let shown = render(&BTreeSet::new(), &found);
-    assert!(shown.contains("uncomparable by reach (3):"), "{shown}");
-    assert!(shown.contains("1 absent, 1 platform, 1 module"), "{shown}");
+    shows(&shown, "uncomparable by reach (3):");
+    shows(&shown, "1 absent, 1 platform, 1 module");
 }
 
 #[test]
@@ -112,7 +122,8 @@ fn the_summary_block_holds_every_count_in_one_column() {
     let found = Width {
         candidates: 12,
         comparable: 9,
-        ..stalling(stalled(["a.py", "b.py", "c.py"]))
+        uncomparable: stalled(["a.py", "b.py", "c.py"]),
+        ..width()
     };
     let shown = render(&BTreeSet::new(), &found);
     assert_eq!(
@@ -129,6 +140,7 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  rebinds          0\n",
             "  timeouts         0\n",
             "  flaky            0\n",
+            "  varying          0\n",
             "  carried          0",
         )
     );

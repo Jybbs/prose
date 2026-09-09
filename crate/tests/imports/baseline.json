@@ -36,14 +36,17 @@
     ]
   },
   "corpus": {
-    "digest": "2f163b4bf4ecfb10",
     "files": 1060,
-    "interpreter": "3.14.6"
+    "interpreter": "3.14.6",
+    "vendored": [
+      "pip-26.2"
+    ]
   },
   "counts": {
     "default": {
       "candidates": 997,
       "comparable": 978,
+      "flaky": 2,
       "raises": 0,
       "rebinds": 4,
       "refused": 0
@@ -148,5 +151,5 @@
       }
     }
   },
-  "version": 7
+  "version": 8
 }

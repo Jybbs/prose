@@ -85,18 +85,19 @@ impl Break {
     }
 }
 
-/// What one run swept, naming the interpreter that owns the corpus beside
-/// a digest over every file the walk read, so a corpus that moved between
-/// two runs is reported as that, rather than as counts that no longer add up.
+/// What one run swept, naming the interpreter that owns the corpus beside the
+/// distributions installed next to it, so a corpus that changed between two
+/// runs is reported as that rather than as counts that no longer add up.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(default)]
 pub(crate) struct Corpus {
-    /// The digest over every swept file's path and bytes.
-    pub(crate) digest: String,
     /// How many files the walk read.
     pub(crate) files: usize,
     /// The version of the interpreter the corpus belongs to.
     pub(crate) interpreter: String,
+    /// Every distribution installed beside the standard library, each as
+    /// the name and version its `dist-info` directory carries.
+    pub(crate) vendored: Vec<String>,
 }
 
 /// One edit of a recorded fix, as the span it rewrote and the text it wrote.
@@ -176,8 +177,11 @@ pub(crate) struct Width {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
-    /// The modules whose two runs of the original differed.
-    pub(crate) flaky: Vec<String>,
+    /// The modules whose two runs of the original differed, each beside the
+    /// names it varied on. An empty set stands for a module whose entire
+    /// namespace varied, which a comparison sets aside rather than
+    /// narrowing.
+    pub(crate) flaky: BTreeMap<String, BTreeSet<String>>,
     /// The width, or `default` where none was pinned.
     pub(crate) label: String,
     /// How many modules the format run could not read, parse, or write.
@@ -230,5 +234,11 @@ impl Width {
             .iter()
             .filter(|brk| brk.formatted.kind != Kind::Ok)
             .count()
+    }
+
+    /// How many names this width set aside across its flaky modules,
+    /// counting a name once per module that varies on it.
+    pub(crate) fn varying(&self) -> usize {
+        self.flaky.values().map(BTreeSet::len).sum()
     }
 }

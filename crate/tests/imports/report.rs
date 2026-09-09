@@ -39,8 +39,9 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         row("rebinds", &found.counting(Kind::Ok)),
         row("timeouts", &found.counting(Kind::Timeout)),
         row("flaky", &found.flaky.len()),
+        row("varying", &found.varying()),
+        row("carried", &carried.len()),
     ];
-    lines.push(row("carried", &carried.len()));
     if found.refused > 0 {
         lines.push(row("refused", &found.refused));
     }
@@ -60,8 +61,9 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
     rendered.push_str(&raising.render("raises"));
     rendered.push_str(&rebinding.render("runs and binds a different namespace"));
     rendered.push_str(&timeouts.render("times out"));
+    let varied = excluded(found);
     for (heading, listed) in [
-        ("flaky, a second run did not confirm it", &found.flaky),
+        ("flaky, a second run varied", &varied),
         ("unmeasured, a run left no record", &found.unmeasured),
     ] {
         if !listed.is_empty() {
@@ -83,6 +85,23 @@ fn defect(brk: &Break) -> String {
     let Frame { file, row } = &brk.frame;
     let at = row.map_or_else(|| file.clone(), |row| format!("{file}:{row}"));
     format!("{at} {}, {}", brk.reason, brk.attribution)
+}
+
+/// The rows naming each module a run set aside, one per module beside the
+/// names it varied on. A module whose whole namespace varied carries no
+/// names, so its row reads `the whole namespace` in their place.
+fn excluded(found: &Width) -> Vec<String> {
+    found
+        .flaky
+        .iter()
+        .map(|(module, names)| {
+            if names.is_empty() {
+                format!("{module}  the whole namespace")
+            } else {
+                format!("{module}  {}", names.iter().format(", "))
+            }
+        })
+        .collect()
 }
 
 /// The command that runs one module on its own, carrying every knob the

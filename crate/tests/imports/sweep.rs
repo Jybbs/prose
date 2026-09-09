@@ -3,7 +3,7 @@
 //! confirmed and attributed.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::Path,
     sync::{Mutex, MutexGuard},
@@ -15,7 +15,7 @@ use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterato
 use crate::{
     attribution::Attributor,
     common::setting,
-    compare::{compare, divergence},
+    compare::{compare, divergence, varying},
     corpus::{candidates, excluded, importable},
     execute::Runner,
     format::format_tree,
@@ -29,13 +29,18 @@ pub(crate) const DEFAULT_LABEL: &str = "default";
 /// The environment variable narrowing a run to one module.
 pub(crate) const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
 
-/// What a second run of both sides made of a break.
-enum Confirmed {
-    /// Both reruns agree the break is real.
-    Break,
-    /// The original disagrees with its own rerun, so nothing is proven.
-    Flaky,
-    /// The formatted rerun left no record, so the break is unmeasured.
+/// What a second run of both sides made of a break, each measured variant
+/// carrying the names the original's two runs bound differently.
+#[derive(Debug)]
+pub(crate) enum Confirmed {
+    /// The two reruns still diverge past those names, so the break is real.
+    Break(BTreeSet<String>),
+    /// The two reruns agree once those names are set aside, so the variance
+    /// accounts for the whole difference. An empty set stands for a module
+    /// whose entire namespace varied, which a run sets aside rather than
+    /// narrowing.
+    Flaky(BTreeSet<String>),
+    /// A rerun left no record, so nothing about the module is measured.
     Unmeasured,
 }
 
@@ -58,25 +63,18 @@ impl Sweep {
         }
     }
 
-    /// What a second run of both sides makes of a break, reading
-    /// `Unmeasured` where the formatted rerun left no record so a lost
-    /// record does not read as flake.
+    /// What a second run of both sides makes of a break, running the
+    /// original again and then the formatted copy.
     fn confirm(&self, brk: &Break, formatted: &Path) -> Confirmed {
         let before = self
             .runner
             .run(&brk.module, &[self.runner.stage.original.as_path()]);
-        if before.kind != Kind::Ok || divergence(&before, &brk.original).is_some() {
-            return Confirmed::Flaky;
+        if let Some(reached) = settled(before.kind) {
+            return reached;
         }
+        let varies = varying(&before, &brk.original);
         let after = self.runner.run(&brk.module, &[formatted]);
-        if after.kind == Kind::Unmeasured {
-            return Confirmed::Unmeasured;
-        }
-        if divergence(&after, &before).is_some() {
-            Confirmed::Break
-        } else {
-            Confirmed::Flaky
-        }
+        verdict(&after, &before, varies)
     }
 
     /// The memo of what the original tree left for each module it has
@@ -144,12 +142,19 @@ impl Sweep {
             .map(|brk| (self.confirm(&brk, &formatted), brk))
             .collect();
         let mut breaks = Vec::new();
-        let mut flaky = Vec::new();
+        let mut flaky = BTreeMap::new();
         let mut unmeasured = partition.unmeasured;
         for (verdict, brk) in judged {
             match verdict {
-                Confirmed::Break => breaks.push(brk),
-                Confirmed::Flaky => flaky.push(brk.module),
+                Confirmed::Break(varies) => {
+                    if !varies.is_empty() {
+                        flaky.insert(brk.module.clone(), varies);
+                    }
+                    breaks.push(brk);
+                }
+                Confirmed::Flaky(varies) => {
+                    flaky.insert(brk.module, varies);
+                }
                 Confirmed::Unmeasured => unmeasured.push(brk.module),
             }
         }
@@ -178,4 +183,31 @@ impl Sweep {
 /// report all read.
 pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
     width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
+}
+
+/// The verdict a rerun of the original reaches on its own, `None` where it
+/// ran cleanly and the formatted side is worth running. A rerun that timed
+/// out or left no record measures nothing, and one that raised bound no
+/// namespace to compare, so its variance carries no names.
+pub(crate) fn settled(kind: Kind) -> Option<Confirmed> {
+    match kind {
+        Kind::Ok => None,
+        Kind::Raised => Some(Confirmed::Flaky(BTreeSet::new())),
+        Kind::Timeout | Kind::Unmeasured => Some(Confirmed::Unmeasured),
+    }
+}
+
+/// The verdict two reruns reach once `varies` is set aside, which is a
+/// break wherever they still diverge on some name outside it. A formatted
+/// rerun that left no record measures nothing, whatever the first pair
+/// showed.
+pub(crate) fn verdict(after: &Outcome, before: &Outcome, varies: BTreeSet<String>) -> Confirmed {
+    if after.kind == Kind::Unmeasured {
+        return Confirmed::Unmeasured;
+    }
+    if divergence(&after.without(&varies), &before.without(&varies)).is_some() {
+        Confirmed::Break(varies)
+    } else {
+        Confirmed::Flaky(varies)
+    }
 }

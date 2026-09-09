@@ -22,6 +22,11 @@ const composes  = casesForRule(props.rule).length > 0
     <RuleConfigTable />
   </slot>
 
+  <template v-if="$slots.facets">
+    <DocHeading id="facets" title="Facets" />
+    <slot name="facets" />
+  </template>
+
   <DocHeading id="the-canonical-case" title="The Canonical Case" />
   <Fixture :rule="rule" :case="canonical" />
 

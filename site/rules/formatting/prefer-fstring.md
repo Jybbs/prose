@@ -14,18 +14,6 @@ Both facets read `target-version` and neither runs until it names Python **3.6**
 
 <Fixture rule="prefer_fstring" case="tuple_members_fill_each_spec" />
 
-## What Each Facet Reaches
-
-`rewrite-percent` reads the template's specs in order and pairs each one with the value it renders. A tuple literal binds by position, a dict literal of identifier-shaped string keys binds by name through the parenthesized mapping key, and a lone spec also reads a literal right-hand side.
-
-<Fixture rule="prefer_fstring" case="mapping_keys_bind_by_name" />
-
-`rewrite-str-format` resolves each field against the call's arguments, covering the automatic numbering of an empty field, an explicit index, and a keyword name, and it keeps any attribute or index the field name spelled attached to the value inline.
-
-<Fixture rule="prefer_fstring" case="attribute_and_index_parts_follow_the_value" />
-
-A conversion and a format spec both pass through unchanged, because an f-string field reads the same grammar the template did, and the printf flags translate to their format-spec counterparts, so `-` reads as `<`.
-
 ## Where a Template Holds
 
 The rewrite is written only where both forms render the same text, so several kinds of template stay as written.
@@ -48,6 +36,24 @@ A value the field itself cannot carry keeps the template too, covering a quote m
 <RuleConfigTable />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates both facets per project, and an unset field keeps every template as written.
+
+</template>
+
+<template #facets>
+
+Both facets build the same replacement field, so a conversion and a format spec pass through unchanged wherever the f-string grammar matches the template's. The printf flags translate to their format-spec counterparts, so `-` reads as `<`.
+
+### `rewrite-percent`
+
+`rewrite-percent` reads the template's specs in order and pairs each one with the value it renders. A tuple literal binds by position, a dict literal of identifier-shaped string keys binds by name through the parenthesized mapping key, and a lone spec also reads a literal right-hand side.
+
+<Fixture rule="prefer_fstring" case="mapping_keys_bind_by_name" />
+
+### `rewrite-str-format`
+
+`rewrite-str-format` resolves each field against the call's arguments, covering the automatic numbering of an empty field, an explicit index, and a keyword name, and it keeps any attribute or index the field name spelled attached to the value inline.
+
+<Fixture rule="prefer_fstring" case="attribute_and_index_parts_follow_the_value" />
 
 </template>
 

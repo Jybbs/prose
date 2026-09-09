@@ -57,11 +57,11 @@ fn every_rewritten_module_still_imports() {
     let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
     let sweep = Sweep::new(&corpus);
     eprintln!(
-        "corpus      {} ({} files, digest {})\nbinary      the library under test\ninterpreter \
+        "corpus      {} ({} files, vendored {})\nbinary      the library under test\ninterpreter \
          {python}\nstage       {}",
         corpus.display(),
         swept.files,
-        swept.digest,
+        swept.vendored.join(" "),
         sweep.runner.stage.root.display(),
     );
     let widths: Vec<_> = budgets.map(|width| sweep.sweep(width)).collect();

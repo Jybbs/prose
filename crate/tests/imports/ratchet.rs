@@ -26,7 +26,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 7;
+pub(crate) const VERSION: u32 = 8;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -74,7 +74,8 @@ pub(crate) struct Carried {
 
 /// What one width counted. The first two are floors a later run must
 /// reach, so a shrinking corpus fails, and the rest are ceilings it must
-/// not exceed, so a growing defect class fails. Splitting a raise from a
+/// not exceed, so a growing defect class fails and so does a run that sets
+/// more modules aside than the baseline did. Splitting a raise from a
 /// rebind keeps a module that fails to import apart from one that ran and
 /// bound a different namespace, since only the first is broken.
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -84,6 +85,9 @@ pub(crate) struct Counts {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
+    /// How many modules a run set aside because two runs of the original
+    /// bound different namespaces.
+    pub(crate) flaky: usize,
     /// How many modules failed to import at all.
     pub(crate) raises: usize,
     /// How many ran and bound a different namespace.
@@ -97,6 +101,7 @@ impl From<&Width> for Counts {
         Self {
             candidates: found.candidates,
             comparable: found.comparable,
+            flaky: found.flaky.len(),
             raises: found.unimported(),
             rebinds: found.counting(Kind::Ok),
             refused: found.refused,
@@ -110,16 +115,10 @@ pub(crate) fn bake(path: &Path, corpus: &Corpus, widths: &[Width]) {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
     let baked = Baseline {
-        breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
+        breaks: keyed(widths, entries),
         corpus: corpus.clone(),
-        counts: widths
-            .iter()
-            .map(|found| (found.label.clone(), Counts::from(found)))
-            .collect(),
-        uncomparable: widths
-            .iter()
-            .map(|found| (found.label.clone(), found.uncomparable.clone()))
-            .collect(),
+        counts: keyed(widths, |found| Counts::from(found)),
+        uncomparable: keyed(widths, |found| found.uncomparable.clone()),
         version: VERSION,
     };
     let rendered = serde_json::to_string_pretty(&baked).expect("render the break set");
@@ -172,31 +171,14 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
 }
 
 /// The broken modules of one width the baseline already holds, matched on
-/// the module, the file its frame names, and the reason.
+/// the module, the file its frame names, the kind of difference, and every
+/// name it turns on.
 pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.breaks.get(&found.label) else {
         return BTreeSet::new();
     };
-    found
-        .breaks
-        .iter()
-        .filter(|brk| known.contains(&carried(brk)))
-        .map(|brk| brk.module.clone())
-        .collect()
-}
-
-/// The breaks the baseline holds at one width that this run did not
-/// reproduce, meaning the tracked set now overstates what the tree breaks
-/// and a re-bake is owed. A run cannot tell a break someone fixed from one
-/// a narrowed sweep stopped reaching, so both are reported and both are
-/// settled by re-baking.
-pub(crate) fn stale(found: &Width, held: &Baseline) -> BTreeSet<String> {
-    let Some(known) = held.breaks.get(&found.label) else {
-        return BTreeSet::new();
-    };
-    let reproduced: BTreeSet<_> = found.breaks.iter().map(carried).collect();
-    known
-        .difference(&reproduced)
+    entries(found)
+        .intersection(known)
         .map(|entry| entry.module.clone())
         .collect()
 }
@@ -211,8 +193,13 @@ pub(crate) fn moved(swept: &Corpus, held: &Baseline) -> Option<String> {
         return None;
     }
     Some(format!(
-        "interpreter {} against {} baked, {} files against {}, digest {} against {}",
-        swept.interpreter, baked.interpreter, swept.files, baked.files, swept.digest, baked.digest,
+        "interpreter {} against {} baked, {} files against {}, vendored {} against {}",
+        swept.interpreter,
+        baked.interpreter,
+        swept.files,
+        baked.files,
+        swept.vendored.join(" "),
+        baked.vendored.join(" "),
     ))
 }
 
@@ -223,23 +210,47 @@ pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
     let Some(baked) = held.counts.get(&found.label) else {
         return Vec::new();
     };
-    let reached = Counts::from(found);
+    let Counts {
+        candidates,
+        comparable,
+        flaky,
+        raises,
+        rebinds,
+        refused,
+    } = Counts::from(found);
     let short = [
-        ("candidates", reached.candidates, baked.candidates),
-        ("comparable", reached.comparable, baked.comparable),
+        ("candidates", candidates, baked.candidates),
+        ("comparable", comparable, baked.comparable),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached < want);
     let grown = [
-        ("raises", reached.raises, baked.raises),
-        ("rebinds", reached.rebinds, baked.rebinds),
-        ("refused", reached.refused, baked.refused),
+        ("flaky", flaky, baked.flaky),
+        ("raises", raises, baked.raises),
+        ("rebinds", rebinds, baked.rebinds),
+        ("refused", refused, baked.refused),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached > want);
     short
         .chain(grown)
         .map(|(what, reached, want)| format!("{what} {reached} against {want} baked"))
+        .collect()
+}
+
+/// The breaks the baseline holds at one width that this run did not
+/// reproduce, meaning the tracked set now overstates what the tree breaks
+/// and a re-bake is owed. A run cannot tell a break someone fixed from one
+/// a narrowed sweep stopped reaching, so both are reported and both are
+/// settled by re-baking.
+pub(crate) fn stale(found: &Width, held: &Baseline) -> BTreeSet<String> {
+    let Some(known) = held.breaks.get(&found.label) else {
+        return BTreeSet::new();
+    };
+    let reproduced = entries(found);
+    known
+        .difference(&reproduced)
+        .map(|entry| entry.module.clone())
         .collect()
 }
 
@@ -253,11 +264,13 @@ fn carried(brk: &Break) -> Carried {
     }
 }
 
-/// The set each width projects, keyed by that width's label.
-fn keyed<T: Ord>(
-    widths: &[Width],
-    of: impl Fn(&Width) -> BTreeSet<T>,
-) -> BTreeMap<String, BTreeSet<T>> {
+/// The entries a baseline holds for one width's breaks.
+fn entries(found: &Width) -> BTreeSet<Carried> {
+    found.breaks.iter().map(carried).collect()
+}
+
+/// The value each width projects, keyed by that width's label.
+fn keyed<T>(widths: &[Width], of: impl Fn(&Width) -> T) -> BTreeMap<String, T> {
     widths
         .iter()
         .map(|found| (found.label.clone(), of(found)))

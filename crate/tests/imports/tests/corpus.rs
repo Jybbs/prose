@@ -50,7 +50,7 @@ fn entry_points_leave_the_walk(
 }
 
 #[test]
-fn identity_moves_with_every_file_the_widened_walk_reads() {
+fn identity_counts_every_file_the_widened_walk_reads() {
     let dir = tempfile::tempdir().expect("a scratch directory");
     let root = dir.path();
     let write = |name: &str, text: &str| {
@@ -61,17 +61,14 @@ fn identity_moves_with_every_file_the_widened_walk_reads() {
     write("book.ipynb", "{}\n");
     let bare = identity(root, "3.14.6");
     assert_eq!(bare.files, 1);
+    assert_eq!(bare.vendored, Vec::<String>::new());
     write("script.pyw", "y = 2\n");
     write("stub.pyi", "z: int\n");
     let widened = identity(root, "3.14.6");
     assert_eq!(widened.files, 3);
-    assert_ne!(widened.digest, bare.digest);
-    assert_eq!(identity(root, "3.14.6").digest, widened.digest);
-    write("mod.py", "x = 2\n");
-    let edited = identity(root, "3.14.6");
-    assert_eq!(edited.files, 3);
-    assert_ne!(edited.digest, widened.digest);
-    assert_eq!(edited.interpreter, "3.14.6");
+    assert_eq!(widened.interpreter, "3.14.6");
+    fs_err::create_dir_all(root.join("site-packages/pip-26.2.dist-info")).expect("a dist-info");
+    assert_eq!(identity(root, "3.14.6").vendored, ["pip-26.2"]);
 }
 
 #[rstest]

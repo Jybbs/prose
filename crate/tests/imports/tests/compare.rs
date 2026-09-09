@@ -2,29 +2,22 @@
 //! formatted run counts as broken beside the original and how a width
 //! sorts its candidates into buckets.
 
-use itertools::Itertools;
+use std::collections::BTreeSet;
+
 use rstest::rstest;
 
+use super::*;
 use crate::{
-    compare::{Divergence, compare, divergence},
+    compare::{Divergence, compare, divergence, varying},
     outcome::{Kind, Outcome},
 };
 
-/// An outcome that ran cleanly, binding `names` and the constants `spelt`.
-fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
-    Outcome {
-        constants: spelt
-            .iter()
-            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
-            .collect(),
-        kind: Kind::Ok,
-        names: names
-            .iter()
-            .map(|name| (*name).to_owned())
-            .sorted()
-            .collect(),
-        ..Outcome::default()
-    }
+#[test]
+fn a_constant_only_one_run_binds_counts_as_varying() {
+    assert_eq!(
+        varying(&bound(&["N"], &[("N", "1")]), &bound(&["N"], &[])),
+        ["N".to_owned()].into()
+    );
 }
 
 #[rstest]
@@ -137,4 +130,19 @@ fn comparing_sorts_each_module_into_one_bucket() {
 fn identical_namespaces_do_not_diverge() {
     let same = bound(&["N"], &[("N", "1")]);
     assert_eq!(divergence(&same, &same), None);
+}
+
+#[test]
+fn varying_reads_both_directions_and_the_constants_where_divergence_stops_at_one() {
+    let one = bound(&["N", "a", "b"], &[("N", "1")]);
+    let other = bound(&["N", "a", "c"], &[("N", "2")]);
+    assert_eq!(
+        varying(&one, &other),
+        ["N".to_owned(), "b".to_owned(), "c".to_owned()].into()
+    );
+    assert_eq!(
+        divergence(&one, &other).expect("diverges").names,
+        ["c".to_owned()]
+    );
+    assert_eq!(varying(&one, &one), BTreeSet::new());
 }

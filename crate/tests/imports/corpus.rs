@@ -1,7 +1,7 @@
 //! Which modules of a corpus a sweep runs, meaning the interpreter owning
 //! the corpus and the version it reports, the entry points a run leaves out,
-//! the modules a format run rewrote, and the digest that identifies the corpus
-//! a run swept.
+//! the modules a format run rewrote, and what identifies the corpus a run
+//! swept.
 
 use std::{
     collections::BTreeSet,
@@ -10,9 +10,6 @@ use std::{
 };
 
 use crate::{common::python_files, records::Corpus};
-
-/// How many characters of the corpus digest name one sweep's corpus.
-const DIGEST_LEN: usize = 16;
 
 /// The module names a walk leaves out wherever they sit, since running
 /// either one launches a program instead of binding a namespace.
@@ -51,21 +48,16 @@ pub(crate) fn excluded(relative: &str) -> bool {
             .any(|part| ENTRY_TREES.contains(&part))
 }
 
-/// Digests the corpus at `root` into an identity, reading each swept file's
-/// path and bytes in sorted order and framing both behind their own length, so
-/// a file that moves, changes, or arrives changes the digest.
+/// What identifies the corpus at `root` belonging to `interpreter`, being how
+/// many files the walk reads beside the distributions installed next to the
+/// standard library. Both hold across platforms, where the tree's own bytes do
+/// not, since the build scaffolding and `_sysconfigdata` carry the platform in
+/// their names and contents.
 pub(crate) fn identity(root: &Path, interpreter: &str) -> Corpus {
-    let files: BTreeSet<_> = python_files(root).collect();
-    let mut hasher = blake3::Hasher::new();
-    for path in &files {
-        let relative = path.strip_prefix(root).unwrap_or(path);
-        framed(&mut hasher, relative.to_string_lossy().as_bytes());
-        framed(&mut hasher, &fs_err::read(path).unwrap_or_default());
-    }
     Corpus {
-        digest: hasher.finalize().to_hex()[..DIGEST_LEN].to_owned(),
-        files: files.len(),
+        files: python_files(root).count(),
         interpreter: interpreter.to_owned(),
+        vendored: vendored(root),
     }
 }
 
@@ -107,10 +99,20 @@ fn asked(python: &str, code: &str) -> String {
     String::from_utf8_lossy(&ran.stdout).trim().to_owned()
 }
 
-/// Feeds `bytes` to the digest behind its own length, so two fields cannot run
-/// together and read as one.
-fn framed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
-    let len = u64::try_from(bytes.len()).expect("a corpus file's length fits a u64");
-    hasher.update(&len.to_le_bytes());
-    hasher.update(bytes);
+/// Every distribution installed beside the standard library at `root`, read
+/// off the `dist-info` directory each one leaves, sorted. A tree carrying no
+/// `site-packages` directory names none.
+fn vendored(root: &Path) -> Vec<String> {
+    let Ok(entries) = fs_err::read_dir(root.join("site-packages")) else {
+        return Vec::new();
+    };
+    let mut found: Vec<_> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            name.strip_suffix(".dist-info").map(str::to_owned)
+        })
+        .collect();
+    found.sort();
+    found
 }

@@ -1,10 +1,10 @@
-import loader                        from '../../lib/reference/config-keys.data'
-import { repoRoot }                  from '../../lib/shared/paths'
-import { declaredKeys, proseSchema } from '../../lib/shared/rule-schema'
+import loader           from '../../lib/reference/config-keys.data'
+import { declaredKeys } from '../../lib/shared/rule-schema'
+import { SCHEMA }       from '../schema'
 
 const keys = await loader.load([])
 
-const declared = declaredKeys(proseSchema(repoRoot(import.meta.url)))
+const declared = declaredKeys(SCHEMA)
 
 describe('derived config keys', () => {
   it('covers every top-level schema key outside the nested tables', () => {

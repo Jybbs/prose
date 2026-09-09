@@ -39,9 +39,9 @@ fn recording(uncomparable: BTreeMap<String, Blocked>) -> Baseline {
 /// digests.
 fn swept() -> Corpus {
     Corpus {
-        digest: "0123456789abcdef".to_owned(),
         files: 3,
         interpreter: "3.14.6".to_owned(),
+        vendored: vec!["pip-26.2".to_owned()],
     }
 }
 
@@ -51,6 +51,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         breaks: vec![losing("m.py", "re/_parser.py", "X")],
         candidates: 1,
         comparable: 1,
+        flaky: varied([("varies.py", &["N"])]),
         ..stalling(stalled(["blocked.py"]))
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
@@ -66,7 +67,22 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     );
     assert_eq!(held.corpus, swept());
     assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["blocked.py"]));
+    assert_eq!(held.counts[DEFAULT_LABEL].flaky, 1);
     assert_eq!(held.version, VERSION);
+}
+
+#[rstest]
+#[case::dropped(dropped)]
+#[case::judge(judge)]
+#[case::stale(stale)]
+fn a_baseline_recording_no_width_names_nothing(
+    #[case] reading: fn(&Width, &Baseline) -> BTreeSet<String>,
+) {
+    let found = Width {
+        breaks: vec![losing("m.py", "m.py", "X")],
+        ..stalling(stalled(["blocked.py"]))
+    };
+    assert_eq!(reading(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
@@ -175,17 +191,17 @@ fn moved_names_nothing_where_the_corpus_still_matches() {
 }
 
 #[rstest]
-#[case(Corpus { digest: "fedcba9876543210".to_owned(), ..swept() }, "fedcba9876543210")]
 #[case(Corpus { files: 4, ..swept() }, "4 files")]
 #[case(Corpus { interpreter: "3.14.7".to_owned(), ..swept() }, "3.14.7")]
+#[case(Corpus { vendored: vec!["pip-26.3".to_owned()], ..swept() }, "pip-26.3")]
 fn moved_names_the_corpus_on_either_side(#[case] found: Corpus, #[case] named: &str) {
     let held = Baseline {
         corpus: swept(),
         ..Baseline::default()
     };
     let drift = moved(&found, &held).expect("a corpus that moved names the drift");
-    assert!(drift.contains(named), "{drift}");
-    assert!(drift.contains(&swept().digest), "{drift}");
+    shows(&drift, named);
+    shows(&drift, &swept().interpreter);
 }
 
 #[test]
@@ -196,6 +212,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
             Counts {
                 candidates: 997,
                 comparable: 898,
+                flaky: 2,
                 raises: 0,
                 rebinds: 0,
                 refused: 0,
@@ -207,23 +224,23 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
     let short = Width {
         candidates: 900,
         comparable: 800,
-        label: DEFAULT_LABEL.to_owned(),
+        flaky: varied([("a.py", &[]), ("b.py", &[]), ("c.py", &[])]),
         refused: 2,
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&short, &held),
         [
             "candidates 900 against 997 baked",
             "comparable 800 against 898 baked",
+            "flaky 3 against 2 baked",
             "refused 2 against 0 baked",
         ]
     );
     let reached = Width {
         candidates: 997,
         comparable: 900,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(regressions(&reached, &held), Vec::<String>::new());
 }
@@ -232,8 +249,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
 fn regressions_name_nothing_where_the_baseline_records_no_counts() {
     let found = Width {
         candidates: 1,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&found, &Baseline::default()),
@@ -260,7 +276,6 @@ fn stale_names_a_baked_break_the_run_no_longer_reproduces() {
         ..stalling(BTreeMap::new())
     };
     assert_eq!(stale(&found, &held), ["gone.py".to_owned()].into());
-    assert_eq!(stale(&found, &Baseline::default()), BTreeSet::new());
 }
 
 #[test]
@@ -296,7 +311,6 @@ fn the_ratchet_carries_a_break_the_baseline_holds_at_the_same_width() {
         ..recording(stalled(["a.py"]))
     };
     assert_eq!(judge(&found, &held), ["m.py".to_owned()].into());
-    assert_eq!(judge(&found, &Baseline::default()), BTreeSet::new());
     assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["a.py"]));
 }
 
@@ -315,8 +329,7 @@ fn two_modules_at_one_frame_bake_as_separate_entries() {
             broken("a.py", "compat.py", "raises ImportError: no shutil"),
             broken("b.py", "compat.py", "raises ImportError: no shutil"),
         ],
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("baseline.json");

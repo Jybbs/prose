@@ -1,10 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer } from '../markdown/renderer'
-import * as paths      from '../shared/paths'
-import * as ruleSchema from '../shared/rule-schema'
+import { getRenderer }               from '../markdown/renderer'
+import { type ConfigRow, configRow } from '../shared/config-row'
+import * as paths                    from '../shared/paths'
+import * as ruleSchema               from '../shared/rule-schema'
 
-export type ConfigKeys = Record<ruleSchema.ConfigSection, readonly ruleSchema.ConfigRow[]>
+export type ConfigKeys = Record<ruleSchema.ConfigSection, readonly ConfigRow[]>
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -17,10 +18,10 @@ export default defineLoader({
     const md       = await getRenderer()
     const sections = ruleSchema.sectionProps(ruleSchema.proseSchema(root))
 
-    const rows = (props: ruleSchema.SchemaProps): readonly ruleSchema.ConfigRow[] =>
+    const rows = (props: ruleSchema.SchemaProps): readonly ConfigRow[] =>
       Object.entries(props)
         .toSorted(([a], [b]) => a.localeCompare(b))
-        .map(([key, prop]) => ruleSchema.configRow(md, key, prop, prop.default ?? null))
+        .map(([key, prop]) => configRow(md, key, prop, prop.default ?? null))
 
     return {
       cache   : rows(sections.cache),

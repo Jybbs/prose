@@ -2,7 +2,10 @@
 //! the tagged rows the probe writes, the names a comparison drops, and what
 //! a run amounted to.
 
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 /// The names the formatter reorders by design, whose value a comparison
 /// therefore leaves out.
@@ -119,6 +122,15 @@ impl Outcome {
         read.loaded.dedup();
         read.names.sort();
         read
+    }
+
+    /// This run with `names` left out of both the names it bound and the
+    /// constants among them.
+    pub(crate) fn without(&self, names: &BTreeSet<String>) -> Self {
+        let mut kept = self.clone();
+        kept.constants.retain(|name, _| !names.contains(name));
+        kept.names.retain(|name| !names.contains(name));
+        kept
     }
 }
 
