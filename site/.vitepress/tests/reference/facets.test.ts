@@ -1,10 +1,7 @@
-import loader                      from '../../lib/reference/facets.data'
-import { repoRoot }                from '../../lib/shared/paths'
-import { proseSchema, ruleDefsOf } from '../../lib/shared/rule-schema'
+import loader        from '../../lib/reference/facets.data'
+import { RULE_DEFS } from '../schema'
 
 const families = await loader.load([])
-
-const ruleDefs = ruleDefsOf(proseSchema(repoRoot(import.meta.url)))
 
 // The keys the generic group renders are the ones the per-rule lists drop.
 const hoisted = new Set(
@@ -16,7 +13,7 @@ const derived = families
   .flatMap(family => family.rules.flatMap(group =>
     group.facets.map(facet => [group.rule, facet.key, facet.default] as const)))
 
-const expected = Object.entries(ruleDefs)
+const expected = Object.entries(RULE_DEFS)
   .flatMap(([rule, def]) => Object.keys(def.default)
     .filter(key => !hoisted.has(key))
     .map(key => `${rule}.${key}`))
@@ -28,7 +25,7 @@ describe('derived facets', () => {
   })
 
   it.each(derived)('%s.%s mirrors the schema default', (rule, key, value) => {
-    expect(ruleDefs[rule].default[key]).toStrictEqual(JSON.parse(value))
+    expect(RULE_DEFS[rule].default[key]).toStrictEqual(JSON.parse(value))
   })
 
   it.each(derived)('%s.%s carries a walked meaning', (rule, key) => {

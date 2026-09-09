@@ -7,4 +7,5 @@ input_file: crate/tests/fixtures/notebook/cell_empties_when_its_imports_go/input
 
 # --- cell 2 ---
 
-value = 1
+__all__ = ["value"]
+value   = 1

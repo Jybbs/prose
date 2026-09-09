@@ -1,5 +1,5 @@
 name        : Restore wasm cache
-description : Restore `site/public/wasm` under an exact key derived from the wasm sources, stamping a hit forward so `wasm:pack` reads its outputs as current and skips the `wasm-pack` run. The save is left to the caller, and on a push both `module.yml` and `deploy.yml` write the entry under the key this action reports.
+description : Restore `site/public/wasm` from the cache, under an exact key hashed from the wasm sources. A hit stamps the restored files forward, so `wasm:pack` reads its outputs as current and skips the `wasm-bindgen` emission and the `wasm-opt` pass. The save is left to the caller, and on a push both `module.yml` and `deploy.yml` write the entry under the key this action reports.
 
 outputs:
   cache-hit:
@@ -18,7 +18,7 @@ runs:
       id   : entry
       uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', '.mise/tasks/wasm/pack', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
+        key  : wasm-module-${{ runner.os }}-${{ hashFiles('.mise/config.toml', '.mise/lib/wasm.bash', '.mise/tasks/wasm/build', '.mise/tasks/wasm/pack', 'Cargo.lock', 'Cargo.toml', 'crate/Cargo.toml', 'crate/src/**', 'wasm/**') }}
         path : site/public/wasm
 
     - name  : Stamp the restored module forward

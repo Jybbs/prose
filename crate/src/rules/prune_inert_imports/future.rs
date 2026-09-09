@@ -52,8 +52,13 @@ impl<'a> Resolution<'a> {
 
     /// True when an unconditional module-scope write of `name` precedes
     /// the read at `offset` in the statement at `reader`, as written or
-    /// as seated.
+    /// as seated. A `del` of the name leaves it unresolved, since the
+    /// annotation evaluates against the namespace the directive's
+    /// removal exposes it to.
     fn binds_ahead(&self, name: &str, reader: usize, offset: TextSize) -> bool {
+        if self.analysis.is_deleted(name) {
+            return false;
+        }
         if self.sorts_definitions && binds_a_definition(self.analysis, name) {
             return false;
         }

@@ -52,11 +52,20 @@ mod tests {
             .expect("backdates the directory");
     }
     #[test]
+    fn key_for_separates_two_names_carrying_the_same_bytes() {
+        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        assert_ne!(
+            prefix.key_for("pkg/__init__.py", b"x = 1\n", PySourceType::Python),
+            prefix.key_for("pkg/mod.py", b"x = 1\n", PySourceType::Python)
+        );
+    }
+
+    #[test]
     fn key_for_separates_a_notebook_from_a_module_of_the_same_bytes() {
         let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
         assert_ne!(
-            prefix.key_for(b"x = 1\n", PySourceType::Python),
-            prefix.key_for(b"x = 1\n", PySourceType::Ipynb)
+            prefix.key_for("mod.py", b"x = 1\n", PySourceType::Python),
+            prefix.key_for("mod.py", b"x = 1\n", PySourceType::Ipynb)
         );
     }
 
@@ -121,8 +130,11 @@ mod tests {
         config_toml: &str,
         selection: impl IntoIterator<Item = RuleId>,
     ) -> CacheKey {
-        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten)
-            .key_for(source_bytes, PySourceType::Python)
+        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten).key_for(
+            "mod.py",
+            source_bytes,
+            PySourceType::Python,
+        )
     }
 
     fn rules() -> [RuleId; 2] {
@@ -139,6 +151,7 @@ mod tests {
             "1",
         )
         .key_for(
+            "mod.py",
             b"x = 1
 ",
             PySourceType::Python,
@@ -151,6 +164,7 @@ mod tests {
             "2",
         )
         .key_for(
+            "mod.py",
             b"x = 1
 ",
             PySourceType::Python,
@@ -177,6 +191,7 @@ mod tests {
             CACHE_FORMAT_VERSION,
         )
         .key_for(
+            "mod.py",
             b"x = 1
 ",
             PySourceType::Python,
@@ -189,6 +204,7 @@ mod tests {
             CACHE_FORMAT_VERSION,
         )
         .key_for(
+            "mod.py",
             b"x = 1
 ",
             PySourceType::Python,
@@ -218,11 +234,13 @@ mod tests {
         let rewritten = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::Rewritten);
         assert_ne!(
             as_written.key_for(
+                "mod.py",
                 b"x = 1
 ",
                 PySourceType::Python
             ),
             rewritten.key_for(
+                "mod.py",
                 b"x = 1
 ",
                 PySourceType::Python
@@ -230,11 +248,13 @@ mod tests {
         );
         assert_eq!(
             as_written.key_for(
+                "mod.py",
                 b"x = 1
 ",
                 PySourceType::Python
             ),
             CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(
+                "mod.py",
                 b"x = 1
 ",
                 PySourceType::Python

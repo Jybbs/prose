@@ -62,6 +62,8 @@ pub(crate) struct Outcome {
     pub(crate) name: Option<String>,
     /// The names an `ok` run bound, sorted.
     pub(crate) names: Vec<String>,
+    /// The exception a raised run named, empty where it named none.
+    pub(crate) raised: String,
 }
 
 impl Outcome {
@@ -108,6 +110,7 @@ impl Outcome {
                 (Some("missing"), Some(name), _) => read.name = Some(name.to_owned()),
                 (Some("raise"), Some(raised), Some(message)) => {
                     read.error = format!("raises {raised}: {message}");
+                    read.raised = raised.to_owned();
                 }
                 _ => {}
             }

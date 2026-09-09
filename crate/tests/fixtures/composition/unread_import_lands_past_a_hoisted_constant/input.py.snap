@@ -8,4 +8,6 @@ from pkg import b
 
 X = 1
 
+__all__ = ["b"]
+
 print(b, X)

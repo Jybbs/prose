@@ -17,11 +17,8 @@ Subcommands:
              succeeded.
     corpus   Render the Corpus gate summary. Reads the result of every
              job the corpus workflow's gate depends on, plus the
-             `imports` job's `armed` output, plus the GitHub-runner
-             defaults. The `armed` output says whether the ratchet found
-             a baked break set. Exits 0 when every job that ran
-             succeeded. The delta reports without gating, and an unarmed
-             ratchet degrades the summary without failing it.
+             GitHub-runner defaults. Exits 0 when every job that ran
+             succeeded, the delta reporting without gating.
     deploy   Render the Deploy gate summary. Reads the `checks`, `press`,
              and `deploy` results, the `deploy` job's `url` output, and
              the GitHub-runner defaults. Exits 0 when all three
@@ -48,9 +45,6 @@ from pathlib import Path
 from sys     import argv
 from tomllib import loads
 from yaml    import safe_load
-
-DELTA   = "delta"
-IMPORTS = "imports"
 
 
 class Summary:
@@ -102,14 +96,13 @@ class Summary:
         """
         return any(self._result(job) != "success" for job in jobs)
 
-    def _gate(self, name: str, *jobs: str, degraded: bool = False, **context):
+    def _gate(self, name: str, *jobs: str, **context):
         """
         Render the `name` template and exit with the verdict of the
-        `jobs`. A degraded run passes and says so, its headline reading
-        the way its rows do.
+        `jobs`.
         """
         verdict = self._failed(*jobs)
-        mark    = "❌" if verdict else "⚠️" if degraded else "✅"
+        mark    = "❌" if verdict else "✅"
 
         self._emit(name, check_mark = mark, **context)
         raise SystemExit(verdict)
@@ -128,20 +121,15 @@ class Summary:
 
     def _row(self, jobs: dict, job: str) -> dict:
         """
-        The mark and the name one corpus row shows, the imports row
-        reading as unarmed where it succeeded against no baked baseline.
+        Return the mark and the name one corpus row shows.
 
         Args:
             jobs : The workflow's job table.
             job  : The job id whose row to build.
         """
-        result = self._result(job)
-        name   = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+        name = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
 
-        if job == IMPORTS and result == "success" and self._output(job, "armed") != "true":
-            return {"mark": "⚠️", "name": f"{name} (no baked baseline, nothing asserted)"}
-
-        return {"mark": {"skipped": "➖", "success": "✅"}.get(result, "❌"), "name": name}
+        return {"mark": {"skipped": "➖", "success": "✅"}.get(self._result(job), "❌"), "name": name}
 
     def ci(self):
         """
@@ -157,13 +145,11 @@ class Summary:
         """
         jobs   = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))["jobs"]
         needed = jobs["gate"]["needs"]
-        sweeps = [self._row(jobs, job) for job in needed]
 
         self._gate(
             "corpus",
-            *[job for job in needed if job != DELTA and self._result(job) != "skipped"],
-            degraded = any(row["mark"] == "⚠️" for row in sweeps),
-            sweeps   = sweeps
+            *[job for job in needed if job != "delta" and self._result(job) != "skipped"],
+            sweeps = [self._row(jobs, job) for job in needed]
         )
 
     def deploy(self):

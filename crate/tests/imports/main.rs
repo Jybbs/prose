@@ -1,36 +1,10 @@
-//! The import sweep, wherein every module the formatter rewrites is executed
-//! from the original tree and from the formatted one and the two namespaces
-//! are compared, so a rewrite that settles and still breaks the code is
-//! caught.
-//!
-//! Each module runs in a fresh interpreter through `probe.py`, which loads it
-//! the way an import loads it and records the names and plain constants it
-//! bound. A module counts as broken where the original runs cleanly and the
-//! formatted copy raises, times out, or binds a different namespace,
-//! confirmed by a second run of both sides so a module that flips reports as
-//! flaky. Each break is attributed to the deepest traceback frame under the
-//! formatted tree, then to the rules whose recorded fixes cover that row or
-//! dropped the binding of the name it turns on, and failing both to the rules
-//! reproducing it under one rule alone.
-//!
-//! The sweep is ignored by default, since it executes a corpus and costs a
-//! minute of wall clock. `PROSE_IMPORTS_PYTHON` names the interpreter whose
-//! standard library it runs, `PROSE_IMPORTS_MODULE` narrows it to one module,
-//! `PROSE_SETTLE_WIDTHS` adds widths beside the default,
-//! `PROSE_IMPORTS_TIMEOUT` bounds one module's run, `PROSE_IMPORTS_BAKE`
-//! writes the break set, `PROSE_IMPORTS_BASELINE` names one an earlier
-//! run wrote, so only a break it does not carry fails the run or reaches
-//! the report, and `PROSE_IMPORTS_ARMED` names a file the run writes its
-//! armed state into.
-//!
-//! A set carries the generation it was baked at, and one baked at any
-//! other reads as no baseline rather than as an empty one.
-//!
-//! A baked set carries the modules the original tree did not run cleanly
-//! beside the breaks, which a judging run skips rather than paying to
-//! measure again, and a module falling out of comparison that the set does
-//! not list fails the run the way a fresh break does, so coverage the
-//! sweep loses is caught rather than going quiet.
+//! The import sweep, which runs every module the formatter rewrote from the
+//! original tree and from the formatted one, then compares the two
+//! namespaces, so a rewrite that settles and still breaks the code is
+//! caught. Each module runs in a fresh interpreter through `probe.py`, and
+//! each break is blamed on the rules whose recorded fixes reach it. The run
+//! is ignored by default because it executes a corpus, and it ratchets
+//! against the break set tracked beside this harness.
 
 #[path = "../common/mod.rs"]
 mod common;
@@ -54,14 +28,12 @@ use std::{collections::BTreeSet, iter, num::NonZeroUsize};
 
 use crate::{
     common::{setting, watch_for_a_runaway, widths_or},
-    corpus::interpreter,
-    ratchet::{VERSION, bake, baking, baseline, dropped, judge, record_armed, skipping},
+    corpus::standard_library,
+    execute::interpreter,
+    ratchet::{bake, baking, baseline, dropped, judge, regressions, stale},
     report::render,
-    sweep::{PYTHON_VAR, Sweep, label},
+    sweep::{MODULE_VAR, Sweep},
 };
-
-/// The interpreter the sweep runs absent [`PYTHON_VAR`].
-const PYTHON: &str = "python3";
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -70,75 +42,82 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[ignore = "the sweep executes a corpus and runs in its own row"]
 fn every_rewritten_module_still_imports() {
     watch_for_a_runaway();
-    let python = setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned());
-    let corpus = interpreter(&python);
-    let ratcheting = baseline();
-    let armed = ratcheting.is_some();
+    let python = interpreter();
+    let corpus = standard_library(&python);
     let baked = baking();
-    record_armed(armed);
-    let held = ratcheting.unwrap_or_default();
-    let widths = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
-    let sweep = Sweep::new(&corpus, python.clone());
+    let pointed = setting(MODULE_VAR).is_some();
+    assert!(
+        !(pointed && baked.is_some()),
+        "a run narrowed by {MODULE_VAR} measures one module, so baking it would write a set \
+         holding that module alone over every break and uncomparable module the tracked set \
+         carries",
+    );
+    let held = baked.is_none().then(baseline).unwrap_or_default();
+    let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
+    let sweep = Sweep::new(&corpus);
     eprintln!(
         "corpus      {}\nbinary      the library under test\ninterpreter {python}\nstage       {}",
         corpus.display(),
         sweep.runner.stage.root.display(),
     );
-    let found: Vec<_> = widths
-        .map(|width| {
-            let label = label(width);
-            sweep.sweep(
-                width,
-                baked.is_none().then(|| skipping(&held, &label)).flatten(),
-            )
-        })
-        .collect();
+    let widths: Vec<_> = budgets.map(|width| sweep.sweep(width)).collect();
     let mut fresh = BTreeSet::new();
     let mut lost = BTreeSet::new();
-    for width in &found {
-        let carried = judge(width, &held);
-        lost.extend(dropped(width, &held));
-        eprintln!("\nwidth {}\n{}", width.label, render(&carried, width));
-        fresh.extend(
-            width
-                .breaks
-                .iter()
-                .filter(|brk| !carried.contains(&brk.module))
-                .map(|brk| brk.module.clone()),
-        );
+    let mut regressed = Vec::new();
+    let mut unreproduced = BTreeSet::new();
+    for found in &widths {
+        let carried = judge(found, &held);
+        lost.extend(dropped(found, &held));
+        regressed.extend(regressions(found, &held));
+        unreproduced.extend(stale(found, &held));
+        eprintln!("\nwidth {}\n{}", found.label, render(&carried, found));
+        fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
-    let unmeasured: usize = found.iter().map(|width| width.unmeasured.len()).sum();
+    let unmeasured: usize = widths.iter().map(|found| found.unmeasured.len()).sum();
+    if unmeasured > 0 {
+        sweep.runner.stage.keep();
+    }
     assert!(
         unmeasured == 0,
         "the run leaves {unmeasured} of its modules unmeasured, so the uncomparable count cannot \
          be named",
     );
     if let Some(path) = baked {
-        bake(&path, &found);
+        bake(&path, &widths);
         eprintln!("break set baked into {}", path.display());
         return;
     }
-    if !armed {
-        eprintln!(
-            "\nno break set baked at generation {VERSION} reached this run, so the ratchet \
-             asserted nothing. A bake on the default branch writes one the next run reads.",
-        );
+    if pointed {
+        eprintln!("\nthe run measured one module, so the ratchet asserted nothing");
         return;
     }
+    assert!(
+        regressed.is_empty(),
+        "the run moves the wrong way against the counts the baseline records, at {}",
+        regressed.join(", "),
+    );
     if !lost.is_empty() || !fresh.is_empty() {
         sweep.runner.stage.keep();
     }
     assert!(
+        unreproduced.is_empty(),
+        "this run does not reproduce {} of the breaks the baseline carries, the first being {}, \
+         so re-bake the set with PROSE_IMPORTS_BAKE=crate/tests/imports/baseline.json mise run \
+         imports and land the smaller set with the change that earned it",
+        unreproduced.len(),
+        unreproduced.first().map_or("", String::as_str),
+    );
+    assert!(
         lost.is_empty(),
         "the baseline compares {} of the modules this run could not, the first being {}",
         lost.len(),
-        lost.iter().next().map_or("", String::as_str),
+        lost.first().map_or("", String::as_str),
     );
     assert!(
         fresh.is_empty(),
         "the baseline does not carry {} of the modules that break, the first being {}",
         fresh.len(),
-        fresh.iter().next().map_or("", String::as_str),
+        fresh.first().map_or("", String::as_str),
     );
 }
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Quoted Type Keeps the Import It Names"
+
+description = '''
+Nothing reads `Sequence`, `List`, or `IO` outside a string literal, the first inside a quoted annotation, the second inside the subscript of a type alias, and the third inside the type `cast` takes. **All three imports stay**, because the rule parses every quoted type expression for the names it reads, wherever the type sits.
+'''

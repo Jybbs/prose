@@ -3,46 +3,44 @@
 //! confirmed and attributed.
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     num::NonZeroUsize,
     path::Path,
-    sync::Mutex,
+    sync::{Mutex, MutexGuard},
 };
 
-use itertools::{Either, Itertools};
 use prose::{config::Config, pipeline::Pipeline};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
     attribution::Attributor,
     common::setting,
-    compare::{compare, divergence, every_divergence_excused},
+    compare::{compare, divergence},
     corpus::candidates,
     execute::Runner,
-    fixes::drops,
     format::format_tree,
     outcome::{Kind, Outcome},
-    records::{Break, Fixes, Width},
+    records::{Break, Width},
 };
 
 /// The label a sweep gives the width no `code-line-length` pinned.
 pub(crate) const DEFAULT_LABEL: &str = "default";
 
-/// The label one width is keyed by, which the bake, the ratchet, and the
-/// report all read.
-pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
-    width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
+/// The environment variable narrowing a run to one module.
+pub(crate) const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
+
+/// What a second run of both sides made of a break.
+enum Confirmed {
+    /// Both reruns agree the break is real.
+    Break,
+    /// The original disagrees with its own rerun, so nothing is proven.
+    Flaky,
+    /// The formatted rerun left no record, so the break is unmeasured.
+    Unmeasured,
 }
 
-/// The environment variable narrowing a run to one module.
-const MODULE_VAR: &str = "PROSE_IMPORTS_MODULE";
-
-/// The environment variable naming the interpreter whose standard library
-/// the sweep runs.
-pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
-
-/// One corpus, the runner every module goes through, and what the original
-/// tree has already been asked.
+/// One corpus, the runner every module goes through, and the outcomes
+/// already read from the original tree.
 pub(crate) struct Sweep {
     /// What the original tree left for each module already run from it,
     /// which every width reads rather than running the tree again.
@@ -53,52 +51,45 @@ pub(crate) struct Sweep {
 
 impl Sweep {
     /// Builds the sweep, copying the corpus into a fresh stage.
-    pub(crate) fn new(corpus: &Path, python: String) -> Self {
+    pub(crate) fn new(corpus: &Path) -> Self {
         Self {
             known: Mutex::new(BTreeMap::new()),
-            runner: Runner::new(corpus, python),
+            runner: Runner::new(corpus),
         }
     }
 
-    /// Reports whether every divergence a break carries is one name a
-    /// recorded fix deliberately dropped from that same module, which is
-    /// a rule doing its work rather than a rewrite breaking the code.
-    /// Each excused name is struck from the original namespace and the
-    /// rest re-compared, so a second divergence the fix record does not
-    /// explain keeps the whole break. A module that reads a dropped name
-    /// still raises and still counts.
-    fn deliberately_pruned(&self, brk: &Break, fixes: &Fixes) -> bool {
-        if brk.formatted.kind != Kind::Ok {
-            return false;
-        }
-        let Some(listed) = fixes.get(&brk.module) else {
-            return false;
-        };
-        let text = fs_err::read_to_string(self.runner.stage.original.join(&brk.module))
-            .expect("the staged original holds every module the sweep ran");
-        every_divergence_excused(&brk.formatted, &brk.original, |name| {
-            listed.iter().any(|(_, edits)| drops(edits, name, &text))
-        })
-    }
-
-    /// Reports whether the original matches its own first run and a second
-    /// run of the formatted side still breaks.
-    fn confirm(&self, brk: &Break, formatted: &Path) -> bool {
+    /// What a second run of both sides makes of a break, reading
+    /// `Unmeasured` where the formatted rerun left no record so a lost
+    /// record does not read as flake.
+    fn confirm(&self, brk: &Break, formatted: &Path) -> Confirmed {
         let before = self
             .runner
             .run(&brk.module, &[self.runner.stage.original.as_path()]);
         if before.kind != Kind::Ok || divergence(&before, &brk.original).is_some() {
-            return false;
+            return Confirmed::Flaky;
         }
         let after = self.runner.run(&brk.module, &[formatted]);
-        after.kind != Kind::Unmeasured && divergence(&after, &before).is_some()
+        if after.kind == Kind::Unmeasured {
+            return Confirmed::Unmeasured;
+        }
+        if divergence(&after, &before).is_some() {
+            Confirmed::Break
+        } else {
+            Confirmed::Flaky
+        }
+    }
+
+    /// The memo of what the original tree left for each module it has
+    /// already been asked about.
+    fn memo(&self) -> MutexGuard<'_, BTreeMap<String, Outcome>> {
+        self.known.lock().expect("the memo is never poisoned")
     }
 
     /// Runs the modules the original tree has not yet been asked about and
     /// returns what it left for every one of them.
     fn originals(&self, modules: &[String]) -> BTreeMap<String, Outcome> {
         let missing: Vec<_> = {
-            let known = self.known.lock().expect("the memo is never poisoned");
+            let known = self.memo();
             modules
                 .iter()
                 .filter(|module| !known.contains_key(*module))
@@ -106,7 +97,7 @@ impl Sweep {
                 .collect()
         };
         let ran = self.outcomes(&missing, &self.runner.stage.original);
-        let mut known = self.known.lock().expect("the memo is never poisoned");
+        let mut known = self.memo();
         known.extend(ran);
         modules
             .iter()
@@ -124,11 +115,7 @@ impl Sweep {
 
     /// Sweeps the corpus at one width, running every module the formatter
     /// rewrote from both trees and confirming each break by a second run.
-    pub(crate) fn sweep(
-        &self,
-        width: Option<NonZeroUsize>,
-        skip: Option<&BTreeSet<String>>,
-    ) -> Width {
+    pub(crate) fn sweep(&self, width: Option<NonZeroUsize>) -> Width {
         let label = label(width);
         let config = width.map_or_else(Config::default, |width| Config {
             code_line_length: Some(width),
@@ -137,40 +124,26 @@ impl Sweep {
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
         self.runner.precompile(&formatted);
-        let modules = setting(MODULE_VAR).map_or_else(
-            || {
-                candidates(&run.rewritten)
-                    .into_iter()
-                    .filter(|module| skip.is_none_or(|held| !held.contains(module)))
-                    .collect()
-            },
-            |only| vec![only],
-        );
+        let modules =
+            setting(MODULE_VAR).map_or_else(|| candidates(&run.rewritten), |only| vec![only]);
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);
-        let (suspects, pruned): (Vec<_>, Vec<_>) =
-            partition.breaks.into_iter().partition_map(|brk| {
-                if self.deliberately_pruned(&brk, &run.fixes) {
-                    Either::Right(brk.module)
-                } else {
-                    Either::Left(brk)
-                }
-            });
-        let verdicts: Vec<_> = suspects
-            .par_iter()
-            .map(|brk| self.confirm(brk, &formatted))
+        let judged: Vec<_> = partition
+            .breaks
+            .into_par_iter()
+            .map(|brk| (self.confirm(&brk, &formatted), brk))
             .collect();
-        let (mut breaks, flaky): (Vec<_>, Vec<_>) = suspects
-            .into_iter()
-            .zip(verdicts)
-            .partition_map(|(brk, holds)| {
-                if holds {
-                    Either::Left(brk)
-                } else {
-                    Either::Right(brk.module)
-                }
-            });
+        let mut breaks = Vec::new();
+        let mut flaky = Vec::new();
+        let mut unmeasured = partition.unmeasured;
+        for (verdict, brk) in judged {
+            match verdict {
+                Confirmed::Break => breaks.push(brk),
+                Confirmed::Flaky => flaky.push(brk.module),
+                Confirmed::Unmeasured => unmeasured.push(brk.module),
+            }
+        }
         Attributor {
             config: &config,
             fixes: &run.fixes,
@@ -185,10 +158,15 @@ impl Sweep {
             comparable: partition.comparable,
             flaky,
             label,
-            pruned,
             refused: run.refused,
             uncomparable: partition.uncomparable,
-            unmeasured: partition.unmeasured,
+            unmeasured,
         }
     }
+}
+
+/// The label one width is keyed by, which the bake, the ratchet, and the
+/// report all read.
+pub(crate) fn label(width: Option<NonZeroUsize>) -> String {
+    width.map_or_else(|| DEFAULT_LABEL.to_owned(), |width| width.to_string())
 }

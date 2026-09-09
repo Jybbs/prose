@@ -1,5 +1,5 @@
 /* Shared chrome for fixture cards. Two variants share the same shell:
-   single-rule cards drawn by Fixture.vue carry a solid family-color rail,
+   single-rule cards drawn by FixtureCard.vue carry a solid family-color rail,
    and multi-rule cards drawn by CompositionCards.vue carry a top-to-bottom
    gradient rail through each rule's family color in pipeline order. Both
    leave the folio to the counter below, so one run numbers every card a

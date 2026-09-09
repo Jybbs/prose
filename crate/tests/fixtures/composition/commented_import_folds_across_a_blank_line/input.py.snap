@@ -6,4 +6,6 @@ input_file: crate/tests/fixtures/composition/commented_import_folds_across_a_bla
 # Local imports
 from pkg import b
 
+__all__ = ["b"]
+
 print(b)

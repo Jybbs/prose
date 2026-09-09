@@ -1,7 +1,7 @@
-import { repoRoot }                        from '../../lib/shared/paths'
-import { declaredKeys, proseSchema }       from '../../lib/shared/rule-schema'
+import { declaredKeys }                    from '../../lib/shared/rule-schema'
 import { configKeySources, firstSentence } from '../../lib/tokens/config-keys'
 import * as sources                        from '../../lib/tokens/sources'
+import { SCHEMA }                          from '../schema'
 
 const token = (domain: sources.Domain, key: string): sources.Token =>
   ({ blurbNodes: [], domain, href: '', key, sort: key })
@@ -48,15 +48,14 @@ describe('firstSentence', () => {
 })
 
 describe('configKeySources', () => {
-  const schema   = proseSchema(repoRoot(import.meta.url))
-  const keys     = declaredKeys(schema)
+  const keys     = declaredKeys(SCHEMA)
   const declared = new Set([
     ...keys.top,
     ...keys.rules,
     ...keys.cache.map(key => `cache.${key}`),
     ...keys.imports.map(key => `imports.${key}`)
   ])
-  const built   = configKeySources(schema)
+  const built   = configKeySources(SCHEMA)
   const indexed = built.map(source => source.key)
 
   it('indexes every key the schema declares', () => {

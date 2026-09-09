@@ -21,6 +21,13 @@ use crate::{
 /// How often the harness asks whether a run has finished.
 const POLL: Duration = Duration::from_millis(20);
 
+/// The interpreter a sweep runs absent [`PYTHON_VAR`].
+const PYTHON: &str = "python3";
+
+/// The environment variable naming the interpreter whose standard library
+/// the sweep runs.
+pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
+
 /// How many seconds one module may run for absent [`TIMEOUT_VAR`]. Every
 /// module of the pinned interpreter's library that imports at all lands
 /// well inside this, leaving the deadline to catch the ones that open an
@@ -43,9 +50,9 @@ pub(crate) struct Runner {
 impl Runner {
     /// Builds the runner, copying the corpus into a fresh stage and
     /// compiling it ahead of the runs that read it.
-    pub(crate) fn new(corpus: &Path, python: String) -> Self {
+    pub(crate) fn new(corpus: &Path) -> Self {
         let runner = Self {
-            python,
+            python: interpreter(),
             seconds: setting(TIMEOUT_VAR).map_or(TIMEOUT, |held| {
                 held.parse()
                     .unwrap_or_else(|_| panic!("`{TIMEOUT_VAR}` is a number of seconds"))
@@ -73,14 +80,9 @@ impl Runner {
     }
 
     /// Runs one module of `trees` in a fresh interpreter and returns what it
-    /// left behind.
-    ///
-    /// The child runs with a scratch `HOME` and `TMPDIR` and leads its own
-    /// process group, so it writes nowhere the harness reads and takes no
-    /// signal the harness is sent. A timeout kills the child alone, leaving
-    /// anything it spawned behind. The harness bounds the run rather than the
-    /// probe, which keeps a module that dies on a signal distinguishable from
-    /// one the deadline killed.
+    /// left behind. The child gets a scratch `HOME` and `TMPDIR` and leads
+    /// its own process group, and the harness holds the deadline, killing
+    /// the child alone once it passes.
     pub(crate) fn run(&self, module: &str, trees: &[&Path]) -> Outcome {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let at = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -94,7 +96,8 @@ impl Runner {
         };
         let mut command = Command::new(&self.python);
         command
-            .arg("-I")
+            .arg("-P")
+            .arg("-s")
             .arg("-B")
             .arg(self.stage.probe())
             .arg(&record)
@@ -104,6 +107,7 @@ impl Runner {
             .current_dir(&self.stage.tmp)
             .env_clear()
             .env("HOME", &self.stage.home)
+            .env("PYTHONHASHSEED", "0")
             .env("PATH", env::var("PATH").unwrap_or_default())
             .env("TMPDIR", &self.stage.tmp)
             .process_group(0)
@@ -129,9 +133,20 @@ impl Runner {
     }
 }
 
+/// How waiting on a child ended.
+#[derive(Debug)]
+pub(crate) enum Waited {
+    /// The deadline passed and the wait killed it.
+    Deadline,
+    /// The child ended on its own.
+    Ended(ExitStatus),
+    /// The wait itself failed, so the run measures nothing.
+    Lost,
+}
+
 /// What a run that left no record ended as, which is a raise wherever the
-/// status is not a clean exit, spelt the way the standard library spells it,
-/// so a signal arrives named.
+/// status is not a clean exit. The status reads the way the standard
+/// library spells it, so a signal arrives named.
 pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
     if status.code() == Some(0) {
         return Outcome::of(Kind::Unmeasured, "leaves no record");
@@ -144,12 +159,39 @@ pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
     Outcome::of(Kind::Raised, format!("ends on {status}{tail}"))
 }
 
+/// The interpreter every module runs under, [`PYTHON_VAR`] naming it and
+/// [`PYTHON`] standing in where it is unset.
+pub(crate) fn interpreter() -> String {
+    setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned())
+}
+
 /// The dotted name an import binds one module to.
 pub(crate) fn module_name(module: &str) -> String {
     let stem = module.strip_suffix(".py").unwrap_or(module);
     stem.strip_suffix("/__init__")
         .unwrap_or(stem)
         .replace('/', ".")
+}
+
+/// How a child ended. The deadline kills a child that runs past it, and a
+/// wait that fails reports that separately, so a child the harness loses
+/// does not read as one that runs too long.
+pub(crate) fn wait(child: &mut Child, seconds: f64) -> Waited {
+    let deadline = Instant::now() + Duration::from_secs_f64(seconds);
+    loop {
+        let ended = match child.try_wait() {
+            Ok(Some(status)) => return Waited::Ended(status),
+            Ok(None) if Instant::now() < deadline => {
+                thread::sleep(POLL);
+                continue;
+            }
+            Ok(None) => Waited::Deadline,
+            Err(_) => Waited::Lost,
+        };
+        let _ = child.kill();
+        let _ = child.wait();
+        return ended;
+    }
 }
 
 /// The last line a run printed, or an empty string.
@@ -169,36 +211,4 @@ fn locate(module: &str, trees: &[&Path]) -> Option<PathBuf> {
         .iter()
         .map(|tree| tree.join(module))
         .find(|path| path.exists())
-}
-
-/// How waiting on a child ended.
-#[derive(Debug)]
-pub(crate) enum Waited {
-    /// The deadline passed and the wait killed it.
-    Deadline,
-    /// The child ended on its own.
-    Ended(ExitStatus),
-    /// The wait itself failed, so the run measures nothing.
-    Lost,
-}
-
-/// How a child ended, the deadline killing it where it outran one and the
-/// wait reporting its own failure apart from that, so a child the harness
-/// loses does not read as a module that runs too long.
-pub(crate) fn wait(child: &mut Child, seconds: f64) -> Waited {
-    let deadline = Instant::now() + Duration::from_secs_f64(seconds);
-    loop {
-        let ended = match child.try_wait() {
-            Ok(Some(status)) => return Waited::Ended(status),
-            Ok(None) if Instant::now() < deadline => {
-                thread::sleep(POLL);
-                continue;
-            }
-            Ok(None) => Waited::Deadline,
-            Err(_) => Waited::Lost,
-        };
-        let _ = child.kill();
-        let _ = child.wait();
-        return ended;
-    }
 }

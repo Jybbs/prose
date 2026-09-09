@@ -5,16 +5,24 @@ use std::collections::BTreeMap;
 
 use crate::{
     outcome::{Kind, Outcome},
-    records::{Break, Frame},
+    records::{Blocked, Break, Frame},
 };
 
 /// The reading a constant takes where the run bound no plain constant of
 /// that name.
 const MISSING: &str = "no plain constant";
 
-/// How [`divergence`] closes the reason for a name the formatted run
-/// left unbound, the one divergence a recorded drop can explain.
-const UNBOUND: &str = "` unbound";
+/// Why one run counts as broken beside another, as the tag and names a
+/// baseline keys on beside the sentence a report shows.
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) struct Divergence {
+    /// What kind of difference this is, stable under any rewording.
+    pub(crate) kind: &'static str,
+    /// Every name the difference turns on, sorted.
+    pub(crate) names: Vec<String>,
+    /// The sentence a report shows.
+    pub(crate) reason: String,
+}
 
 /// How one width's candidates divide, the breaks found among the comparable
 /// ones beside the names the verdict reads.
@@ -23,9 +31,9 @@ pub(crate) struct Partition {
     pub(crate) breaks: Vec<Break>,
     /// How many modules the original tree ran cleanly.
     pub(crate) comparable: usize,
-    /// The modules the original tree did not run cleanly, which a run
-    /// therefore never judges.
-    pub(crate) uncomparable: Vec<String>,
+    /// The modules the original tree did not run cleanly, each beside
+    /// what its run left, which a run therefore never judges.
+    pub(crate) uncomparable: BTreeMap<String, Blocked>,
     /// The modules a run left no record for.
     pub(crate) unmeasured: Vec<String>,
 }
@@ -39,31 +47,44 @@ pub(crate) fn compare(
     modules: &[String],
 ) -> Partition {
     let mut comparable: Vec<String> = Vec::new();
-    let mut uncomparable: Vec<String> = Vec::new();
+    let mut uncomparable: BTreeMap<String, Blocked> = BTreeMap::new();
     let mut unmeasured: Vec<String> = Vec::new();
     for module in modules {
-        let bucket = match (kind(before, module), kind(after, module)) {
-            (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => &mut unmeasured,
-            (Kind::Ok, _) => &mut comparable,
-            _ => &mut uncomparable,
-        };
-        bucket.push(module.clone());
+        match (kind(before, module), kind(after, module)) {
+            (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => unmeasured.push(module.clone()),
+            (Kind::Ok, _) => comparable.push(module.clone()),
+            _ => {
+                let left = before.get(module).map_or_else(
+                    || Blocked {
+                        raised: String::new(),
+                        reason: "the original tree was never asked".to_owned(),
+                    },
+                    |ran| Blocked {
+                        raised: ran.raised.clone(),
+                        reason: ran.error.clone(),
+                    },
+                );
+                uncomparable.insert(module.clone(), left);
+            }
+        }
     }
     let breaks = comparable
         .iter()
         .filter_map(|module| {
             let formatted = after.get(module)?;
             let original = before.get(module)?;
-            let (reason, name) = divergence(formatted, original)?;
+            let diverged = divergence(formatted, original)?;
             Some(Break {
                 attribution: String::new(),
                 formatted: formatted.clone(),
                 frame: Frame::default(),
                 hunk: Vec::new(),
+                kind: diverged.kind,
                 module: module.clone(),
-                name,
+                name: diverged.names.first().cloned(),
+                names: diverged.names,
                 original: original.clone(),
-                reason,
+                reason: diverged.reason,
             })
         })
         .collect();
@@ -75,50 +96,43 @@ pub(crate) fn compare(
     }
 }
 
-/// Reports whether every divergence between the two runs is one name
-/// `excused` explains. Each accepted name is struck from the original
-/// namespace and the rest re-compared, so a second divergence nothing
-/// explains keeps the break, and a divergence of any other shape keeps
-/// it whatever `excused` says.
-pub(crate) fn every_divergence_excused(
-    formatted: &Outcome,
-    original: &Outcome,
-    excused: impl Fn(&str) -> bool,
-) -> bool {
-    let mut original = original.clone();
-    loop {
-        let Some((reason, name)) = divergence(formatted, &original) else {
-            return true;
-        };
-        let Some(name) = name.filter(|_| reason.ends_with(UNBOUND)) else {
-            return false;
-        };
-        if !excused(&name) {
-            return false;
-        }
-        original.names.retain(|held| held != &name);
-    }
-}
-
-/// Says why one run counts as broken beside another and the name it turns on,
-/// or `None` where both bound the same namespace.
-pub(crate) fn divergence(
-    formatted: &Outcome,
-    original: &Outcome,
-) -> Option<(String, Option<String>)> {
+/// Says why one run counts as broken beside another, or `None` where both
+/// bound the same namespace.
+pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
     if formatted.kind != Kind::Ok {
-        return Some((formatted.error.clone(), formatted.name.clone()));
+        return Some(Divergence {
+            kind: if formatted.kind == Kind::Timeout {
+                "times out"
+            } else {
+                "raises"
+            },
+            names: formatted.name.clone().into_iter().collect(),
+            reason: formatted.error.clone(),
+        });
     }
-    let missing = |from: &[String], held: &[String]| {
+    let missing = |from: &[String], held: &[String]| -> Vec<String> {
         from.iter()
-            .find(|name| held.binary_search(name).is_err())
+            .filter(|name| held.binary_search(name).is_err())
             .cloned()
+            .collect()
     };
-    if let Some(name) = missing(&original.names, &formatted.names) {
-        return Some((format!("leaves `{name}` unbound"), Some(name)));
+    let lost = missing(&original.names, &formatted.names);
+    if let [name, rest @ ..] = lost.as_slice() {
+        let reason = format!("leaves {} unbound", named(name, rest.len()));
+        return Some(Divergence {
+            kind: "unbound",
+            names: lost,
+            reason,
+        });
     }
-    if let Some(name) = missing(&formatted.names, &original.names) {
-        return Some((format!("binds `{name}` the original does not"), Some(name)));
+    let gained = missing(&formatted.names, &original.names);
+    if let [name, rest @ ..] = gained.as_slice() {
+        let reason = format!("binds {} the original does not", named(name, rest.len()));
+        return Some(Divergence {
+            kind: "extra",
+            names: gained,
+            reason,
+        });
     }
     let differing = original
         .constants
@@ -134,10 +148,21 @@ pub(crate) fn divergence(
         .constants
         .get(differing)
         .map_or(MISSING, String::as_str);
-    Some((
-        format!("binds `{differing}` to {now} where the original binds {was}"),
-        Some(differing.clone()),
-    ))
+    Some(Divergence {
+        kind: "rebound",
+        names: vec![differing.clone()],
+        reason: format!("binds `{differing}` to {now} where the original binds {was}"),
+    })
+}
+
+/// One name and however many followed it, which is the sentence a report
+/// shows rather than the key a baseline holds.
+fn named(first: &str, rest: usize) -> String {
+    match rest {
+        0 => format!("`{first}`"),
+        1 => format!("`{first}` and 1 more name"),
+        _ => format!("`{first}` and {rest} more names"),
+    }
 }
 
 /// The kind a run of one module left behind, `unmeasured` where the tree was

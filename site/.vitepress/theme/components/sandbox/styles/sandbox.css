@@ -174,3 +174,157 @@
     grid-template-columns : 1fr;
   }
 }
+
+/* A margin column runs beside the code. A row carrying an unrecognized key is
+   found there before a word of the notice is read. */
+.sandbox-toml-body {
+  display    : flex;
+  min-height : 0;
+}
+
+.sandbox-toml-gutter {
+  flex-shrink : 0;
+  padding     : 18px 0 18px 10px;
+  font-size   : var(--prose-text-xs);
+  line-height : 1.6;
+  user-select : none;
+}
+
+.sandbox-toml-gutter > span {
+  display : block;
+  width   : 12px;
+  height  : calc(var(--prose-text-xs) * 1.6);
+}
+
+.sandbox-toml-gutter > span[data-flagged]::before {
+  content     : "▲";
+  display     : block;
+  color       : var(--vp-c-warning-1);
+  font-size   : 0.58rem;
+  line-height : inherit;
+  text-align  : center;
+}
+
+.sandbox-toml-body .code-panel-code {
+  padding-left : 8px;
+}
+
+/* An unrecognized key is not a lint finding, so the wave takes the warning hue
+   rather than the lint family's. Its row takes the wash a whole-line finding
+   takes on the formatted panel. */
+.sandbox-toml .lint-flag {
+  --family-color     : var(--vp-c-warning-1);
+  --underline-accent : var(--vp-c-warning-1);
+}
+
+.sandbox-toml-display .line:has(.lint-flag) {
+  background : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+}
+
+/* The count sits in the strip the message list used to hold. That keeps the
+   panel's silhouette and clears both corner controls. */
+.config-notice-strip {
+  display        : flex;
+  align-items    : center;
+  gap            : 6px;
+  margin         : 0;
+  padding        : 7px 14px;
+  border-top     : 1px solid var(--vp-c-divider);
+  background     : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+  color          : var(--vp-c-warning-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  letter-spacing : 0.02em;
+}
+
+.config-notice-popover .config-notice-card {
+  display        : flex;
+  flex-direction : column;
+  gap            : 12px;
+  max-width      : 42ch;
+  padding        : 4px 2px;
+}
+
+/* The trail places the key under the tables it was written in, so the struck
+   last segment reads as the one that belongs to none of them. */
+.config-notice-trail {
+  display     : flex;
+  align-items : center;
+  flex-wrap   : wrap;
+  gap         : 5px;
+  margin      : 0;
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-xs);
+  color       : var(--vp-c-text-2);
+}
+
+.config-notice-root  { color: var(--vp-c-text-3); }
+.config-notice-arrow { color: var(--vp-c-text-3); }
+
+.config-notice-struck {
+  color           : var(--vp-c-danger-1);
+  text-decoration : line-through;
+}
+
+.config-notice-fixes {
+  display        : flex;
+  flex-direction : column;
+  gap            : 7px;
+}
+
+.config-notice-fix {
+  display        : grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items    : center;
+  gap            : 9px;
+  padding        : 7px 11px;
+  border         : 1px solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  color          : var(--vp-c-text-1);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-xs);
+  text-align     : left;
+  cursor         : pointer;
+  transition     : border-color var(--prose-transition), background var(--prose-transition);
+}
+
+.config-notice-fix:hover,
+.config-notice-fix:focus-visible {
+  border-color : color-mix(in srgb, var(--vp-c-warning-1) 55%, transparent);
+  background   : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+}
+
+.config-notice-default {
+  color      : var(--vp-c-text-3);
+  font-size  : var(--prose-text-meta);
+  text-align : right;
+}
+
+/* The tick column carries the membership, so the written key sits in the same
+   list under a cross rather than in a sentence of its own. */
+.config-notice-mark {
+  font-size  : var(--prose-text-meta);
+  text-align : center;
+  color      : var(--vp-c-warning-1);
+}
+
+.config-notice-absent {
+  display              : grid;
+  grid-template-columns: 14px 1fr;
+  align-items          : center;
+  gap                  : 9px;
+  margin               : 2px 0 0;
+  padding              : 5px 12px;
+  border-top           : 1px solid var(--vp-c-divider);
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-text-xs);
+}
+
+.config-notice-absent .config-notice-mark {
+  color : var(--vp-c-danger-1);
+}
+
+.config-notice-fix:hover .config-notice-default {
+  color : var(--vp-c-warning-1);
+}

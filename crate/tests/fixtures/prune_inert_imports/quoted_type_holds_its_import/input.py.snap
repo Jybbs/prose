@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/quoted_type_holds_its_import/input.py
+---
+from typing import IO, List, Optional, Sequence, cast
+
+Rows = Optional["List[int]"]
+
+head: "Sequence[int]" = []
+
+
+def read(stream):
+    return cast("IO[str]", stream)

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Quoted Annotation Keeps the Import It Names"
-
-description = '''
-`List` is read nowhere except inside the quoted annotation `"List[int]"`, a string literal the binding table does not read into. **The import stays**, because the rule parses each quoted annotation for the names it reads, so `List` counts as read.
-'''

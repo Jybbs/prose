@@ -1,10 +1,10 @@
 import { promiseTimeout } from '@vueuse/core'
 import { ref }            from 'vue'
 
-import type * as configSchema from '../sandbox/config-schema.data'
-import type { ProseWasm }     from '../sandbox/load-module'
-import * as probe             from '../sandbox/probe'
-import { nextPaint }          from '../shared/paint'
+import type * as configSchema          from '../sandbox/config-schema.data'
+import type { ProseFormat, ProseWasm } from '../sandbox/load-module'
+import * as probe                      from '../sandbox/probe'
+import { nextPaint }                   from '../shared/paint'
 
 type SourceProbe = {
   eligible     : readonly string[]
@@ -17,13 +17,7 @@ const EMPTY_PROBE: SourceProbe = { eligible: [], facetImpact: {}, lengthImpact: 
 // The rules that fire under the default config are the ones that can affect a
 // snippet, and each eligible rule's sub-facets are probed against that
 // default-run baseline so the panel can hide the knobs that cannot affect it.
-// `isCurrent` reports whether the module a run started on is still the live
-// one, so a run on an instance a panic has since replaced does not seed the
-// cache.
-export function useSandboxProbe(
-  schema    : configSchema.SandboxSchema,
-  isCurrent : (module: ProseWasm) => boolean
-) {
+export function useSandboxProbe(schema: configSchema.SandboxSchema) {
   const eligible     = ref<readonly string[] | null>(null)
   const facetImpact  = ref<Record<string, readonly string[]>>({})
   const lengthImpact = ref<readonly string[] | null>(null)
@@ -46,9 +40,9 @@ export function useSandboxProbe(
   // never blocks a display format. A source change mid-loop abandons the stale
   // loop.
   async function run(current: ProseWasm, target: string): Promise<void> {
-    let baseline: ReturnType<ProseWasm['format']>
+    let baseline: ProseFormat
     try {
-      baseline = current.format('', target)
+      baseline = current.format('', target, false)
     } catch {
       // A failed probe yields no impact data, so every sentinel settles together
       // rather than leaving the ruler reading an unprobed source forever.
@@ -75,9 +69,7 @@ export function useSandboxProbe(
         .map(facet => facet.key)
       facetImpact.value = { ...impact }
     }
-    if (isCurrent(current)) {
-      probed.set(target, { eligible: fired, facetImpact: impact, lengthImpact: lengths })
-    }
+    probed.set(target, { eligible: fired, facetImpact: impact, lengthImpact: lengths })
   }
 
   // Adopts the target's cached probe or kicks a fresh run, two paints after

@@ -10,14 +10,17 @@ it runs.
 
 from _frozen_importlib          import module_from_spec
 from _frozen_importlib_external import spec_from_file_location
-from os  import _exit
-from sys import argv, modules, path
+from os      import _exit
+from os.path import dirname
+from sys     import argv, modules, path
 
-FIELD = "\0"
-ROW   = "\x1e"
-TREE  = "<tree>"
+FIELD  = "\0"
+ROW    = "\x1e"
+STDLIB = "<stdlib>"
+TREE   = "<tree>"
 
-roots = []
+library = dirname(modules["os"].__file__)
+roots   = []
 
 
 class Probe:
@@ -105,9 +108,10 @@ class Probe:
 
 def spelt(text: str) -> str:
     """
-    Spell text with each tree root replaced by `TREE`, so a string a run
-    derives from its own location reads the same from either tree and
-    across runs, whose stage roots carry different process ids.
+    Spell text with each tree root replaced by `TREE` and the interpreter's
+    standard library directory by `STDLIB`, so a string a run derives from
+    a location reads the same from either tree, across runs whose stage
+    roots carry different process ids, and on any machine.
 
     Args:
         text: The text to spell.
@@ -115,7 +119,7 @@ def spelt(text: str) -> str:
     for root in roots:
         text = text.replace(root, TREE)
 
-    return text
+    return text.replace(library, STDLIB)
 
 
 def constant(value: object) -> "str | None":

@@ -57,7 +57,7 @@ impl Attributor<'_> {
                 let ran = self
                     .runner
                     .run(&brk.module, &[&tree, &self.runner.stage.original]);
-                divergence(&ran, &brk.original).is_some_and(|(why, _)| why == brk.reason)
+                divergence(&ran, &brk.original).is_some_and(|d| d.reason == brk.reason)
             })
             .copied()
             .collect();

@@ -93,7 +93,7 @@ removed 17 entries (2097152 bytes)
 
 ```bash
 $ prose cache info
-path: /Users/jybbs/Library/Caches/prose
+path: ~/Library/Caches/prose
 entries: 142
 bytes: 8124416
 oldest: 2d ago

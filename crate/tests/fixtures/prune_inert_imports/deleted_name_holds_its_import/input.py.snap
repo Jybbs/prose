@@ -6,3 +6,5 @@ input_file: crate/tests/fixtures/prune_inert_imports/deleted_name_holds_its_impo
 import os
 
 del os
+
+value = 1

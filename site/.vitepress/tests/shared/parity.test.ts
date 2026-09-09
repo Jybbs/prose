@@ -10,6 +10,7 @@ import { discoverRuleSlugs }  from '../../lib/rules/discovery'
 import * as paths             from '../../lib/shared/paths'
 import * as registries        from '../../lib/shared/registries'
 import * as ruleSchema        from '../../lib/shared/rule-schema'
+import { RULE_DEFS, SCHEMA }  from '../schema'
 
 const styles = (name: string): string =>
   fs.readFileSync(path.join(import.meta.dirname, '..', '..', 'theme', 'styles', name), 'utf8')
@@ -23,21 +24,19 @@ const accentSlugs = (): string[] => {
 }
 
 const glossaryFamilies = Object.keys(registries.GLOSSARY_FAMILY_META).sort()
-const discovered       = discoverRuleSlugs(paths.rulesDir(import.meta.url))
+const rulesDir         = paths.rulesDir(import.meta.url)
+const discovered       = discoverRuleSlugs(rulesDir)
 const slugs            = new Set(discovered.map(r => r.slug))
 
-const schema   = ruleSchema.proseSchema(paths.repoRoot(import.meta.url))
-const ruleDefs = ruleSchema.ruleDefsOf(schema)
-
 const ownFacetKeysOf = (slug: string): string[] =>
-  ruleSchema.ownFacetKeys(schema.$defs, ruleDefs[slug]?.default ?? {})
+  ruleSchema.ownFacetKeys(SCHEMA.$defs, RULE_DEFS[slug]?.default ?? {})
 
 // A rule heads its facets once it carries two or more of its own, leaving one
 // with a single facet to the configuration table.
 const headsFacets = (keys: string[]): boolean => keys.length > 1
 
 const facetSlot = (family: string, slug: string): string => {
-  const page = fs.readFileSync(path.join(paths.rulesDir(import.meta.url), family, `${slug}.md`), 'utf8')
+  const page = fs.readFileSync(path.join(rulesDir, family, `${slug}.md`), 'utf8')
   return page.split('<template #facets>')[1]?.split('</template>')[0] ?? ''
 }
 
@@ -67,7 +66,7 @@ describe('primitive registry and page parity', () => {
 describe('rule page and facet parity', () => {
   it('reaches a page for every rule the schema gives two or more facets of its own', () => {
     expect(facetedPages.map(page => page.slug).toSorted())
-      .toStrictEqual(Object.keys(ruleDefs).filter(slug => headsFacets(ownFacetKeysOf(slug))).toSorted())
+      .toStrictEqual(Object.keys(RULE_DEFS).filter(slug => headsFacets(ownFacetKeysOf(slug))).toSorted())
   })
 
   it.each(facetedPages)('$slug heads each of its own facets in its facets slot', ({ family, keys, slug }) => {

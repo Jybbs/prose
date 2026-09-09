@@ -3,15 +3,16 @@ import { flushPromises } from '@vue/test-utils'
 
 import { useProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import type { ProseSandbox, ProseSandboxOptions } from '../../lib/composables/use-prose-sandbox'
+import type { LintFinding }                       from '../../lib/fixtures/lint-findings'
 import type { SandboxSchema }                     from '../../lib/sandbox/config-schema.data'
-import type { ProseWasm }                         from '../../lib/sandbox/load-module'
+import type { ProseFormat, ProseWasm }            from '../../lib/sandbox/load-module'
 import type { SandboxCase }                       from '../../lib/sandbox/pool.data'
 import { encodeShare }                            from '../../lib/sandbox/share-link'
 import { mountSetup }                             from '../dom'
 import { supportTest }                            from '../support'
 
 type Formatter = ProseWasm['format']
-type Loader    = (reinit: number) => Promise<ProseWasm>
+type Loader    = () => Promise<ProseWasm>
 
 const STORAGE_KEY = 'prose-sandbox'
 
@@ -62,12 +63,27 @@ const CASES: readonly SandboxCase[] = [
 const ENABLED   = SCHEMA.rules[0].facets[0]
 const MAX_SHIFT = SCHEMA.rules[0].facets[1]
 
-const formatting = (formatted: string, diagnostics = '', firedRules: readonly string[] = []): Formatter =>
-  () => ({ config: '', diagnostics, fired_rules: firedRules, unstable_rules: [], formatted })
+const NOTICES = ['warning: unknown key `no-such-key` in [tool.prose]']
 
-const moduleWith = (format: Formatter): ProseWasm => ({ default: () => Promise.resolve(), format })
+const FINDING: LintFinding = {
+  code: 'x', end_location: { column: 1, row: 1 }, location: { column: 1, row: 1 }, message: 'm'
+}
 
-const okLoader: Loader = () => Promise.resolve(moduleWith(formatting('OUT')))
+const record = (overrides: Partial<ProseFormat> = {}): ProseFormat => ({
+  config_notices : [],
+  diagnostics    : [],
+  fired_rules    : [],
+  formatted      : 'OUT',
+  unstable_rules : [],
+  ...overrides
+})
+
+const formatting = (overrides: Partial<ProseFormat> = {}): Formatter => () => record(overrides)
+
+const moduleWith = (format: Formatter, reset = () => {}): ProseWasm =>
+  ({ __wbg_reset_state: reset, default: () => Promise.resolve(), format })
+
+const okLoader: Loader = () => Promise.resolve(moduleWith(formatting()))
 
 const sandbox = (load: Loader, options: Partial<ProseSandboxOptions> = {}): ProseSandbox =>
   mountSetup(() => useProseSandbox({ cases: CASES, schema: SCHEMA, load, pick: () => 0, ...options }))
@@ -87,7 +103,7 @@ describe('useProseSandbox', () => {
     expect(api.source.value).toBe('seed b')
     expect(api.formatted.value).toBe('OUT')
     expect(api.error.value).toBe('')
-    expect(load).toHaveBeenLastCalledWith(0)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('loads the module once and reuses it across runs', async () => {
@@ -106,18 +122,41 @@ describe('useProseSandbox', () => {
   })
 
   it('parses the lint findings from the format result', async () => {
-    const records = JSON.stringify([
+    const records: LintFinding[] = [
       { code: 'bare-imports', end_location: { column: 2, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }
-    ])
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', records))))
+    ]
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ diagnostics: records }))))
     await api.start()
     expect(api.diagnostics.value).toHaveLength(1)
     expect(api.diagnostics.value[0].code).toBe('bare-imports')
   })
 
+  it('publishes the config notices the run returned', async () => {
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ config_notices: NOTICES }))))
+    await api.start()
+    expect(api.configNotices.value).toStrictEqual(NOTICES)
+  })
+
+  it('clears the config notices when a later run throws', async () => {
+    let published = false
+    const format: Formatter = () => {
+      if (published) throw new Error('bad config')
+      published = true
+      return record({ config_notices: NOTICES })
+    }
+    const api = sandbox(() => Promise.resolve(moduleWith(format)))
+    await api.start()
+    expect(api.configNotices.value).toStrictEqual(NOTICES)
+
+    api.setFacet('align-equals', ENABLED, false)
+    await flushPromises()
+    expect(api.configNotices.value).toStrictEqual([])
+    expect(api.error.value).toBe('bad config')
+  })
+
   it('computes the eligible rule set from the default run on the source', async () => {
     const fired = ['align-equals', 'space-statements']
-    const api = sandbox(() => Promise.resolve(moduleWith(formatting('OUT', '', fired))))
+    const api = sandbox(() => Promise.resolve(moduleWith(formatting({ fired_rules: fired }))))
     await api.start()
     // The probe adoption defers past the publish paint, so the set lands a
     // few frames after the format rather than in the same task.
@@ -128,11 +167,8 @@ describe('useProseSandbox', () => {
     // Only the `max-shift = 1` extreme changes the output, so the int facet
     // has impact, the flipped bool does not, and the unprobeable string list
     // fails open.
-    const format: Formatter = config => ({
-      config      : '',
-      diagnostics : '',
+    const format: Formatter = config => record({
       fired_rules : ['align-equals', 'space-statements'],
-    unstable_rules : [],
       formatted   : config.includes('max-shift = 1') ? 'SHIFTED' : 'OUT'
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
@@ -144,12 +180,9 @@ describe('useProseSandbox', () => {
   })
 
   it('counts a bool facet as impactful when its flip changes the findings', async () => {
-    const format: Formatter = config => ({
-      config      : '',
-      diagnostics : config.includes('condense = false') ? '[{"code":"x"}]' : '',
-      fired_rules : ['align-equals'],
-    unstable_rules : [],
-      formatted   : 'OUT'
+    const format: Formatter = config => record({
+      diagnostics : config.includes('condense = false') ? [FINDING] : [],
+      fired_rules : ['align-equals']
     })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -160,8 +193,7 @@ describe('useProseSandbox', () => {
   it('fails a facet probe open when its run throws', async () => {
     const format: Formatter = config => {
       if (config.includes('max-shift')) throw new Error('bad config')
-      return { config: '', diagnostics: '', fired_rules: ['align-equals'],
-    unstable_rules: [], formatted: 'OUT' }
+      return record({ fired_rules: ['align-equals'] })
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -175,8 +207,7 @@ describe('useProseSandbox', () => {
     )
     const format: Formatter = config => {
       if (config === '') throw new WebAssembly.RuntimeError('unreachable')
-      return { config: '', diagnostics: '', fired_rules: [],
-    unstable_rules: [], formatted: 'OUT' }
+      return record()
     }
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
@@ -186,26 +217,16 @@ describe('useProseSandbox', () => {
   })
 
   it('probes the length knobs and keeps only the impactful ones', async () => {
-    const format: Formatter = config => ({
-      config      : '',
-      diagnostics : '',
-      fired_rules : [],
-    unstable_rules : [],
-      formatted   : config.includes('code-line-length = 30') ? 'NARROW' : 'OUT'
-    })
+    const format: Formatter = config =>
+      record({ formatted: config.includes('code-line-length = 30') ? 'NARROW' : 'OUT' })
     const api = sandbox(() => Promise.resolve(moduleWith(format)))
     await api.start()
     await expect.poll(() => api.lengthImpact.value).toStrictEqual(['code-line-length'])
   })
 
   it('caches the probe results per source and replays them without new runs', async () => {
-    const format = vi.fn<Formatter>((config, src) => ({
-      config      : '',
-      diagnostics : '',
-      fired_rules    : src === 'seed a' ? ['align-equals'] : ['space-statements'],
-      unstable_rules : [],
-      formatted   : 'OUT'
-    }))
+    const format = vi.fn<Formatter>((config, src) =>
+      record({ fired_rules: src === 'seed a' ? ['align-equals'] : ['space-statements'] }))
     const api = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 5 })
     const probeRuns = () =>
       format.mock.calls.filter(call => call[0].includes('align-equals')).length
@@ -244,18 +265,22 @@ describe('useProseSandbox', () => {
     expect(api.error.value).toBe('module offline')
   })
 
-  it('recovers from a panic trap by re-instantiating a fresh module', async () => {
-    const trap    = moduleWith(() => { throw new WebAssembly.RuntimeError('unreachable') })
-    const healthy = moduleWith(formatting('RECOVERED'))
-    const load    = vi.fn<Loader>(reinit => Promise.resolve(reinit === 0 ? trap : healthy))
-    const api     = sandbox(load)
+  it('recovers from a panic trap by resetting the instance in place', async () => {
+    let trapped = true
+    const reset = vi.fn<() => void>(() => { trapped = false })
+    const wasm  = moduleWith(() => {
+      if (trapped) throw new WebAssembly.RuntimeError('unreachable')
+      return record({ formatted: 'RECOVERED' })
+    }, reset)
+    const load = vi.fn<Loader>(() => Promise.resolve(wasm))
+    const api  = sandbox(load)
     await api.start()
     expect(api.error.value).toMatch(/internal error/)
+    expect(reset).toHaveBeenCalledOnce()
     await api.start()
     expect(api.formatted.value).toBe('RECOVERED')
     expect(api.error.value).toBe('')
-    expect(load).toHaveBeenNthCalledWith(1, 0)
-    expect(load).toHaveBeenNthCalledWith(2, 1)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   it('refresh moves to a different case', () => {
@@ -299,6 +324,30 @@ describe('useProseSandbox', () => {
     api.setFacet('align-equals', ENABLED, false)
     expect(api.configToml.value).toContain('align-equals = false')
     expect(api.facetValue('align-equals', ENABLED)).toBe(false)
+  })
+
+  it('renames a misspelled facet and carries its value across', async () => {
+    vi.useFakeTimers()
+    const api = sandbox(okLoader, { debounceMs: 5 })
+    api.configToml.value = '[rules.align-equals]\nmax-shfit = 8\n'
+    // The rename reads the last parse, which the debounced watcher writes.
+    await vi.advanceTimersByTimeAsync(10)
+
+    api.renameConfigKey('rules.align-equals.max-shfit', 'max-shift')
+
+    expect(api.configToml.value).toContain('max-shift = 8')
+    expect(api.configToml.value).not.toContain('max-shfit')
+  })
+
+  it('leaves the config alone where the path names nothing it holds', async () => {
+    vi.useFakeTimers()
+    const api = sandbox(okLoader, { debounceMs: 5 })
+    api.configToml.value = 'code-line-length = 40\n'
+    await vi.advanceTimersByTimeAsync(10)
+
+    api.renameConfigKey('rules.align-equals.absent', 'max-shift')
+
+    expect(api.configToml.value).toBe('code-line-length = 40\n')
   })
 
   it('writes a sub-facet override and clears it back to empty', () => {
@@ -355,7 +404,7 @@ describe('useProseSandbox', () => {
 
   it('debounces rapid edits into a single format', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const load   = vi.fn<Loader>(() => Promise.resolve(moduleWith(format)))
     const api    = sandbox(load, { debounceMs: 50 })
     api.source.value = 'a'
@@ -371,7 +420,7 @@ describe('useProseSandbox', () => {
 
   it('formats a rule toggle without waiting out the typing debounce', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.setFacet('align-equals', ENABLED, false)
     api.setFacet('space-statements', SCHEMA.rules[1].facets[0], false)
@@ -379,13 +428,13 @@ describe('useProseSandbox', () => {
     // The two toggles coalesce into one immediate display run with no timer
     // advance, the eligibility runs deferred past the publish paint.
     expect(format).toHaveBeenCalledOnce()
-    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a')
-    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a')
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('align-equals = false'), 'seed a', true)
+    expect(format).toHaveBeenNthCalledWith(1, expect.stringContaining('space-statements = false'), 'seed a', true)
   })
 
   it('formats a drawn example without waiting out the typing debounce', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT'))
+    const format = vi.fn<Formatter>(formatting())
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.refresh()
     await flushPromises()
@@ -395,7 +444,7 @@ describe('useProseSandbox', () => {
 
   it('skips the debounced re-format over the pair the toggle already published', async () => {
     vi.useFakeTimers()
-    const format = vi.fn<Formatter>(formatting('OUT', '[{"code":"x"}]'))
+    const format = vi.fn<Formatter>(formatting({ diagnostics: [FINDING] }))
     const api    = sandbox(() => Promise.resolve(moduleWith(format)), { debounceMs: 250 })
     api.setFacet('align-equals', ENABLED, false)
     await flushPromises()

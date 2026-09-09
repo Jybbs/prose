@@ -11,7 +11,7 @@ mod common;
 use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
-use prose::{diagnostics::Diagnostic, pipeline::Pipeline, source::Source};
+use prose::{diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline, source::Source};
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_source_file::{LineEnding, UniversalNewlines};
 
@@ -35,7 +35,7 @@ fn fixtures() {
         let module = path.extension().is_some_and(|ext| ext == "py");
         let diagnostics = module.then(|| pipeline.diagnose(&source));
 
-        let (formatted, records) = pipeline
+        let (formatted, records, _) = pipeline
             .run(source)
             .expect("first pass succeeds on fixture input");
         let output = formatted.text();
@@ -43,9 +43,9 @@ fn fixtures() {
         common::in_snapshot_dir(path, || {
             if let Some(diagnostics) = &diagnostics {
                 insta::assert_snapshot!("diagnostics", render(diagnostics));
-                if let Some(json) =
-                    prose::findings::lint_records_json(formatted.source_file(), &records)
-                {
+                let lint = lint_records(formatted.source_file(), &records);
+                if !lint.is_empty() {
+                    let json = serde_json::to_string_pretty(&lint).expect("lint records serialize");
                     insta::assert_snapshot!("lint_findings", json);
                 }
             }
@@ -75,7 +75,7 @@ fn fixtures() {
 
         let fresh_source =
             Source::from_path(path).expect("fixture input re-reads for determinism check");
-        let (fresh_formatted, _) = common::build_pipeline(domain, &config, &harness)
+        let (fresh_formatted, _, _) = common::build_pipeline(domain, &config, &harness)
             .run(fresh_source)
             .expect("fresh pipeline run succeeds");
         assert!(
@@ -92,7 +92,7 @@ fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, u
     let reparsed = output
         .parse::<Source>()
         .expect("formatter output reparses as Python");
-    let (second, _) = pipeline.run(reparsed).expect("second pass succeeds");
+    let (second, _, _) = pipeline.run(reparsed).expect("second pass succeeds");
     assert!(
         second.text() == output,
         "fixture `{domain}/{case}` not idempotent {under}:\n{}",
@@ -179,7 +179,7 @@ fn crlf_input_holds_its_endings_and_settles() {
         };
         let lf = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
         let source = crlf(&lf);
-        let (first, _) = pipeline
+        let (first, _, _) = pipeline
             .run(source.parse::<Source>().expect("CRLF input parses"))
             .expect("first CRLF pass succeeds");
         if let Some(line) = foreign_ending_line(first.text(), LineEnding::CrLf) {
@@ -197,7 +197,7 @@ fn pipeline_is_idempotent() {
             return;
         };
         let source = Source::from_path(path).expect("fixture input reads and parses as Python");
-        let (first, _) = pipeline
+        let (first, _, _) = pipeline
             .run(source)
             .expect("first full-pipeline pass succeeds");
         assert_settles(&pipeline, first.text(), domain, case, "under full pipeline");

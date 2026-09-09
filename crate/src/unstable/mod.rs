@@ -206,11 +206,8 @@ fn second_pass(pipeline: &Pipeline, formatted: &Source) -> String {
     formatted
         .reparse_carrying(first.to_owned(), formatted.cell_offsets().clone())
         .ok()
-        .and_then(|source| pipeline.run(source).ok())
-        .map_or_else(
-            || first.to_owned(),
-            |(settled, _)| settled.text().to_owned(),
-        )
+        .and_then(|source| pipeline.format(source).ok())
+        .map_or_else(|| first.to_owned(), |settled| settled.text().to_owned())
 }
 
 /// The reproducing subset for a report over `formatted`, taking the
@@ -263,7 +260,7 @@ mod tests {
             Box::new(prefix_rule("settles-once", "x", "q")),
         ]);
         let config = Config::default();
-        let (formatted, diagnostics) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, diagnostics, _) = pipeline.run(parse(SOURCE)).expect("runs");
 
         assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
         assert!(
@@ -283,7 +280,7 @@ mod tests {
     fn detect_narrowed_reports_a_rule_that_fired_and_still_edits() {
         let pipeline = downstream();
         let config = Config::default();
-        let (formatted, diagnostics) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, diagnostics, _) = pipeline.run(parse(SOURCE)).expect("runs");
 
         let full = UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted)
             .expect("`widens-downstream` leaves the output unsettled");
@@ -302,7 +299,7 @@ mod tests {
     #[test]
     fn candidates_reach_a_rule_that_edits_only_the_output_and_lead_with_it() {
         let pipeline = downstream();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(SOURCE)).expect("runs");
         let editing = pipeline.unsettled(&formatted);
 
         assert_eq!(
@@ -318,7 +315,7 @@ mod tests {
     #[test]
     fn detect_carries_both_passes_of_a_widening_rewrite() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(SOURCE)).expect("runs");
 
         let report = UnstableRewrite::detect(&pipeline, &Config::default(), SOURCE, &formatted)
             .expect("a widening rule leaves the output unsettled");
@@ -331,7 +328,7 @@ mod tests {
     #[test]
     fn detect_carries_the_keys_the_config_set_away_from_the_default() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(SOURCE)).expect("runs");
         let config = Config {
             code_line_length: NonZeroUsize::new(100),
             ..Config::default()
@@ -361,7 +358,7 @@ mod tests {
     #[test]
     fn detect_is_none_for_a_settled_rewrite() {
         let pipeline = Pipeline::with_defaults(&Config::default());
-        let (formatted, _) = pipeline.run(parse("alpha = 1\nb = 22\n")).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse("alpha = 1\nb = 22\n")).expect("runs");
 
         assert!(
             UnstableRewrite::detect(
@@ -377,7 +374,7 @@ mod tests {
     #[test]
     fn detect_marked_is_none_where_the_marked_bytes_do_not_parse() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(SOURCE)).expect("runs");
 
         assert!(
             UnstableRewrite::detect_marked(&pipeline, &Config::default(), "def (\n", &formatted)
@@ -388,7 +385,7 @@ mod tests {
     #[test]
     fn detect_marked_is_none_where_the_marked_bytes_settle() {
         let pipeline = Pipeline::with_defaults(&Config::default());
-        let (formatted, _) = pipeline.run(parse("alpha = 1\nb = 22\n")).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse("alpha = 1\nb = 22\n")).expect("runs");
 
         assert!(
             UnstableRewrite::detect_marked(
@@ -404,7 +401,7 @@ mod tests {
     #[test]
     fn detect_marked_names_the_whole_selection_for_a_notebook() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(notebook(&[MARKED])).expect("runs");
+        let (formatted, _, _) = pipeline.run(notebook(&[MARKED])).expect("runs");
 
         let report =
             UnstableRewrite::detect_marked(&pipeline, &Config::default(), MARKED, &formatted)
@@ -416,7 +413,7 @@ mod tests {
     #[test]
     fn detect_marked_reads_the_editing_set_off_the_marked_bytes() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(MARKED)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(MARKED)).expect("runs");
 
         let report =
             UnstableRewrite::detect_marked(&pipeline, &Config::default(), MARKED, &formatted)
@@ -430,7 +427,7 @@ mod tests {
     #[test]
     fn detect_names_the_whole_selection_for_a_notebook() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(notebook(&[SOURCE])).expect("runs");
+        let (formatted, _, _) = pipeline.run(notebook(&[SOURCE])).expect("runs");
 
         let report = UnstableRewrite::detect(&pipeline, &Config::default(), SOURCE, &formatted)
             .expect("a widening rule leaves the output unsettled");
@@ -444,7 +441,7 @@ mod tests {
         // caller taking the check despite the key, as `check
         // --validate` does, reads a real answer here.
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, _) = pipeline.run(parse(SOURCE)).expect("runs");
         let config = Config {
             report_unstable_output: false,
             ..Config::default()
@@ -456,7 +453,7 @@ mod tests {
     #[test]
     fn detect_runs_a_notebooks_second_pass_across_its_cells() {
         let pipeline = widening();
-        let (formatted, _) = pipeline.run(notebook(&[SOURCE, "y = 2\n"])).expect("runs");
+        let (formatted, _, _) = pipeline.run(notebook(&[SOURCE, "y = 2\n"])).expect("runs");
 
         let report = UnstableRewrite::detect(&pipeline, &Config::default(), SOURCE, &formatted)
             .expect("a widening rule leaves the output unsettled");

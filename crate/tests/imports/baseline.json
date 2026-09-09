@@ -1,0 +1,440 @@
+{
+  "breaks": {
+    "default": [
+      {
+        "file": "_pyrepl/simple_interact.py",
+        "kind": "unbound",
+        "module": "_pyrepl/simple_interact.py",
+        "names": [
+          "errno"
+        ]
+      },
+      {
+        "file": "asyncio/tools.py",
+        "kind": "unbound",
+        "module": "asyncio/tools.py",
+        "names": [
+          "namedtuple"
+        ]
+      },
+      {
+        "file": "pydoc.py",
+        "kind": "unbound",
+        "module": "pydoc.py",
+        "names": [
+          "textwrap"
+        ]
+      }
+    ]
+  },
+  "counts": {
+    "default": {
+      "candidates": 997,
+      "comparable": 898,
+      "raises": 0,
+      "rebinds": 3,
+      "refused": 0
+    }
+  },
+  "uncomparable": {
+    "default": {
+      "asyncio/base_events.py": {
+        "raised": "NameError",
+        "reason": "raises NameError: name 'base_events' is not defined"
+      },
+      "asyncio/base_futures.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.base_futures' has no attribute '_future_repr'"
+      },
+      "asyncio/base_subprocess.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.base_subprocess' has no attribute 'BaseSubprocessTransport'"
+      },
+      "asyncio/base_tasks.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.base_tasks' has no attribute '_task_repr'"
+      },
+      "asyncio/events.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.events' has no attribute '_get_event_loop_policy'"
+      },
+      "asyncio/futures.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.futures' has no attribute '_PyFuture'"
+      },
+      "asyncio/graph.py": {
+        "raised": "NameError",
+        "reason": "raises NameError: name 'graph' is not defined"
+      },
+      "asyncio/locks.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.locks' has no attribute 'Lock'"
+      },
+      "asyncio/mixins.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.mixins' has no attribute '_LoopBoundMixin'"
+      },
+      "asyncio/queues.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.queues' has no attribute 'Queue'"
+      },
+      "asyncio/runners.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.runners' has no attribute 'Runner'"
+      },
+      "asyncio/selector_events.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.selector_events' has no attribute 'BaseSelectorEventLoop'"
+      },
+      "asyncio/streams.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.streams' has no attribute 'StreamReader'"
+      },
+      "asyncio/subprocess.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.subprocess' has no attribute 'create_subprocess_exec'"
+      },
+      "asyncio/taskgroups.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'asyncio.taskgroups' has no attribute 'TaskGroup'"
+      },
+      "asyncio/tasks.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'sleep' from 'asyncio.tasks' (<tree>/asyncio/tasks.py)"
+      },
+      "asyncio/threads.py": {
+        "raised": "NameError",
+        "reason": "raises NameError: name 'threads' is not defined"
+      },
+      "asyncio/timeouts.py": {
+        "raised": "NameError",
+        "reason": "raises NameError: name 'timeouts' is not defined"
+      },
+      "asyncio/unix_events.py": {
+        "raised": "NameError",
+        "reason": "raises NameError: name 'unix_events' is not defined"
+      },
+      "asyncio/windows_events.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: win32 only"
+      },
+      "asyncio/windows_utils.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: win32 only"
+      },
+      "concurrent/interpreters/_queues.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'create' from 'concurrent.interpreters._queues' (<tree>/concurrent/interpreters/_queues.py)"
+      },
+      "ctypes/_endian.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BigEndianStructure' from 'ctypes._endian' (<tree>/ctypes/_endian.py)"
+      },
+      "dbm/gnu.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named '_gdbm'"
+      },
+      "encodings/mbcs.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'mbcs_encode' from 'codecs' (<stdlib>/codecs.py)"
+      },
+      "encodings/oem.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'oem_encode' from 'codecs' (<stdlib>/codecs.py)"
+      },
+      "importlib/resources/_common.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'as_file' from 'importlib.resources._common' (<tree>/importlib/resources/_common.py)"
+      },
+      "importlib/resources/_functional.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'contents' from 'importlib.resources._functional' (<tree>/importlib/resources/_functional.py)"
+      },
+      "json/decoder.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'JSONDecoder' from 'json.decoder' (<tree>/json/decoder.py)"
+      },
+      "multiprocessing/context.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'multiprocessing.context' has no attribute '_default_context'"
+      },
+      "multiprocessing/popen_spawn_win32.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'msvcrt'"
+      },
+      "multiprocessing/reduction.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 'multiprocessing.reduction' has no attribute 'HAVE_SEND_HANDLE'"
+      },
+      "re/_compiler.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 're._compiler' has no attribute 'SRE_FLAG_ASCII'"
+      },
+      "re/_parser.py": {
+        "raised": "AttributeError",
+        "reason": "raises AttributeError: module 're._parser' has no attribute 'TYPE_FLAGS'"
+      },
+      "site-packages/pip/__pip-runner__.py": {
+        "raised": "AssertionError",
+        "reason": "raises AssertionError: Cannot run __pip-runner__.py as a non-main module"
+      },
+      "site-packages/pip/_internal/locations/_distutils.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'distutils'"
+      },
+      "site-packages/pip/_internal/metadata/base.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BaseDistribution' from 'site-packages.pip._internal.metadata.base' (<tree>/site-packages/pip/_internal/metadata/base.py)"
+      },
+      "site-packages/pip/_internal/metadata/importlib/_dists.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Distribution' from 'site-packages.pip._internal.metadata.importlib._dists' (<tree>/site-packages/pip/_internal/metadata/importlib/_dists.py)"
+      },
+      "site-packages/pip/_internal/metadata/importlib/_envs.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Environment' from 'site-packages.pip._internal.metadata.importlib._envs' (<tree>/site-packages/pip/_internal/metadata/importlib/_envs.py)"
+      },
+      "site-packages/pip/_vendor/idna/core.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'IDNABidiError' from 'site-packages.pip._vendor.idna.core' (<tree>/site-packages/pip/_vendor/idna/core.py)"
+      },
+      "site-packages/pip/_vendor/msgpack/fallback.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Packer' from 'site-packages.pip._vendor.msgpack.fallback' (<tree>/site-packages/pip/_vendor/msgpack/fallback.py)"
+      },
+      "site-packages/pip/_vendor/pygments/sphinxext.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'docutils'"
+      },
+      "site-packages/pip/_vendor/pyproject_hooks/_impl.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BackendUnavailable' from 'site-packages.pip._vendor.pyproject_hooks._impl' (<tree>/site-packages/pip/_vendor/pyproject_hooks/_impl.py)"
+      },
+      "site-packages/pip/_vendor/requests/_internal_utils.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_HEADER_VALIDATORS_BYTE' from 'site-packages.pip._vendor.requests._internal_utils' (<tree>/site-packages/pip/_vendor/requests/_internal_utils.py)"
+      },
+      "site-packages/pip/_vendor/requests/adapters.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'HTTPAdapter' from 'site-packages.pip._vendor.requests.adapters' (<tree>/site-packages/pip/_vendor/requests/adapters.py)"
+      },
+      "site-packages/pip/_vendor/requests/api.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'delete' from 'site-packages.pip._vendor.requests.api' (<tree>/site-packages/pip/_vendor/requests/api.py)"
+      },
+      "site-packages/pip/_vendor/requests/auth.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_basic_auth_str' from 'site-packages.pip._vendor.requests.auth' (<tree>/site-packages/pip/_vendor/requests/auth.py)"
+      },
+      "site-packages/pip/_vendor/requests/cookies.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'cookiejar_from_dict' from 'site-packages.pip._vendor.requests.cookies' (<tree>/site-packages/pip/_vendor/requests/cookies.py)"
+      },
+      "site-packages/pip/_vendor/requests/exceptions.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'RequestsDependencyWarning' from 'site-packages.pip._vendor.requests.exceptions' (<tree>/site-packages/pip/_vendor/requests/exceptions.py)"
+      },
+      "site-packages/pip/_vendor/requests/models.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Response' from 'site-packages.pip._vendor.requests.models' (<tree>/site-packages/pip/_vendor/requests/models.py)"
+      },
+      "site-packages/pip/_vendor/requests/sessions.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Session' from 'site-packages.pip._vendor.requests.sessions' (<tree>/site-packages/pip/_vendor/requests/sessions.py)"
+      },
+      "site-packages/pip/_vendor/requests/status_codes.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'codes' from 'site-packages.pip._vendor.requests.status_codes' (<tree>/site-packages/pip/_vendor/requests/status_codes.py)"
+      },
+      "site-packages/pip/_vendor/requests/structures.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'CaseInsensitiveDict' from 'site-packages.pip._vendor.requests.structures' (<tree>/site-packages/pip/_vendor/requests/structures.py)"
+      },
+      "site-packages/pip/_vendor/requests/utils.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'parse_dict_header' from 'site-packages.pip._vendor.requests.utils' (<tree>/site-packages/pip/_vendor/requests/utils.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/providers.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'AbstractProvider' from 'site-packages.pip._vendor.resolvelib.providers' (<tree>/site-packages/pip/_vendor/resolvelib/providers.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/reporters.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BaseReporter' from 'site-packages.pip._vendor.resolvelib.reporters' (<tree>/site-packages/pip/_vendor/resolvelib/reporters.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/resolvers/__init__.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'AbstractResolver' from 'site-packages.pip._vendor.resolvelib.resolvers' (<tree>/site-packages/pip/_vendor/resolvelib/resolvers/__init__.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/resolvers/abstract.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'AbstractResolver' from 'site-packages.pip._vendor.resolvelib.resolvers.abstract' (<tree>/site-packages/pip/_vendor/resolvelib/resolvers/abstract.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/resolvers/criterion.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Criterion' from 'site-packages.pip._vendor.resolvelib.resolvers.criterion' (<tree>/site-packages/pip/_vendor/resolvelib/resolvers/criterion.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/resolvers/exceptions.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'InconsistentCandidate' from 'site-packages.pip._vendor.resolvelib.resolvers.exceptions' (<tree>/site-packages/pip/_vendor/resolvelib/resolvers/exceptions.py)"
+      },
+      "site-packages/pip/_vendor/resolvelib/resolvers/resolution.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Resolution' from 'site-packages.pip._vendor.resolvelib.resolvers.resolution' (<tree>/site-packages/pip/_vendor/resolvelib/resolvers/resolution.py)"
+      },
+      "site-packages/pip/_vendor/rich/_win32_console.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: site-packages.pip._vendor.rich._win32_console can only be imported on Windows"
+      },
+      "site-packages/pip/_vendor/rich/_windows_renderer.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: pip._vendor.rich._win32_console can only be imported on Windows"
+      },
+      "site-packages/pip/_vendor/tomli/_parser.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TOMLDecodeError' from 'site-packages.pip._vendor.tomli._parser' (<tree>/site-packages/pip/_vendor/tomli/_parser.py)"
+      },
+      "site-packages/pip/_vendor/truststore/_api.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'SSLContext' from 'site-packages.pip._vendor.truststore._api' (<tree>/site-packages/pip/_vendor/truststore/_api.py)"
+      },
+      "site-packages/pip/_vendor/truststore/_macos.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_configure_context' from 'site-packages.pip._vendor.truststore._macos' (<tree>/site-packages/pip/_vendor/truststore/_macos.py)"
+      },
+      "site-packages/pip/_vendor/truststore/_windows.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'WinDLL' from 'ctypes' (<tree>/ctypes/__init__.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/_base_connection.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_TYPE_BODY' from 'site-packages.pip._vendor.urllib3._base_connection' (<tree>/site-packages/pip/_vendor/urllib3/_base_connection.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/_request_methods.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'RequestMethods' from 'site-packages.pip._vendor.urllib3._request_methods' (<tree>/site-packages/pip/_vendor/urllib3/_request_methods.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/connection.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BaseSSLError' from 'site-packages.pip._vendor.urllib3.connection' (<tree>/site-packages/pip/_vendor/urllib3/connection.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/connectionpool.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'HTTPConnectionPool' from 'site-packages.pip._vendor.urllib3.connectionpool' (<tree>/site-packages/pip/_vendor/urllib3/connectionpool.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/emscripten/__init__.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'js'"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/emscripten/connection.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'EmscriptenHTTPConnection' from 'site-packages.pip._vendor.urllib3.contrib.emscripten.connection' (<tree>/site-packages/pip/_vendor/urllib3/contrib/emscripten/connection.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/emscripten/fetch.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'js'"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/emscripten/response.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'js'"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/pyopenssl.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'OpenSSL'"
+      },
+      "site-packages/pip/_vendor/urllib3/contrib/socks.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'socks'"
+      },
+      "site-packages/pip/_vendor/urllib3/filepost.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_TYPE_FIELDS' from 'site-packages.pip._vendor.urllib3.filepost' (<tree>/site-packages/pip/_vendor/urllib3/filepost.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/http2/connection.py": {
+        "raised": "ModuleNotFoundError",
+        "reason": "raises ModuleNotFoundError: No module named 'h2'"
+      },
+      "site-packages/pip/_vendor/urllib3/poolmanager.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'PoolManager' from 'site-packages.pip._vendor.urllib3.poolmanager' (<tree>/site-packages/pip/_vendor/urllib3/poolmanager.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/response.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BaseHTTPResponse' from 'site-packages.pip._vendor.urllib3.response' (<tree>/site-packages/pip/_vendor/urllib3/response.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/__init__.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_TYPE_SOCKET_OPTIONS' from partially initialized module 'site-packages.pip._vendor.urllib3.util.connection' (most likely due to a circular import) (<tree>/site-packages/pip/_vendor/urllib3/util/connection.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/connection.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_TYPE_SOCKET_OPTIONS' from 'site-packages.pip._vendor.urllib3.util.connection' (<tree>/site-packages/pip/_vendor/urllib3/util/connection.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/proxy.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'connection_requires_http_tunnel' from 'site-packages.pip._vendor.urllib3.util.proxy' (<tree>/site-packages/pip/_vendor/urllib3/util/proxy.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/request.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'SKIP_HEADER' from 'site-packages.pip._vendor.urllib3.util.request' (<tree>/site-packages/pip/_vendor/urllib3/util/request.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/response.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'is_fp_closed' from 'site-packages.pip._vendor.urllib3.util.response' (<tree>/site-packages/pip/_vendor/urllib3/util/response.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/retry.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Retry' from 'site-packages.pip._vendor.urllib3.util.retry' (<tree>/site-packages/pip/_vendor/urllib3/util/retry.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/ssl_.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'ALPN_PROTOCOLS' from 'site-packages.pip._vendor.urllib3.util.ssl_' (<tree>/site-packages/pip/_vendor/urllib3/util/ssl_.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/timeout.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_DEFAULT_TIMEOUT' from 'site-packages.pip._vendor.urllib3.util.timeout' (<tree>/site-packages/pip/_vendor/urllib3/util/timeout.py)"
+      },
+      "site-packages/pip/_vendor/urllib3/util/url.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name '_BRACELESS_IPV6_ADDRZ_RE' from 'site-packages.pip._vendor.urllib3.util.url' (<tree>/site-packages/pip/_vendor/urllib3/util/url.py)"
+      },
+      "tomllib/_parser.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TOMLDecodeError' from 'tomllib._parser' (<tree>/tomllib/_parser.py)"
+      },
+      "unittest/case.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'addModuleCleanup' from 'unittest.case' (<tree>/unittest/case.py)"
+      },
+      "unittest/loader.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TestLoader' from 'unittest.loader' (<tree>/unittest/loader.py)"
+      },
+      "unittest/main.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TestProgram' from 'unittest.main' (<tree>/unittest/main.py)"
+      },
+      "unittest/result.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TestResult' from 'unittest.result' (<tree>/unittest/result.py)"
+      },
+      "unittest/runner.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'TextTestRunner' from 'unittest.runner' (<tree>/unittest/runner.py)"
+      },
+      "unittest/suite.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'BaseTestSuite' from 'unittest.suite' (<tree>/unittest/suite.py)"
+      },
+      "xml/sax/xmlreader.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'InputSource' from 'xml.sax.xmlreader' (<tree>/xml/sax/xmlreader.py)"
+      },
+      "zipfile/_path/__init__.py": {
+        "raised": "ImportError",
+        "reason": "raises ImportError: cannot import name 'Path' from 'zipfile._path' (<tree>/zipfile/_path/__init__.py)"
+      }
+    }
+  },
+  "version": 6
+}

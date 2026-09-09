@@ -35,7 +35,7 @@ fn run_batches_a_declared_pair_against_one_buffer() {
         capturing(&seen, "strip-trailing-commas", vec![replacement("2", 4, 5)]),
     ]);
 
-    let (result, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+    let (result, _, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
     assert_eq!(result.text(), "y = 2\n");
     assert_eq!(captured(&seen), ["x = 1\n", "x = 1\n"]);
@@ -52,7 +52,7 @@ fn run_batches_adjacent_edits_from_two_rules() {
     ])
     .sharing(Sharing::Always);
 
-    let (result, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+    let (result, _, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
     assert_eq!(result.text(), "ab= 1\n");
     assert_eq!(captured(&seen), ["x = 1\n", "x = 1\n"]);
@@ -88,7 +88,7 @@ fn run_batches_independent_rules_against_one_buffer() {
     ])
     .sharing(Sharing::Always);
 
-    let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+    let (result, diagnostics, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
     assert_eq!(result.text(), "y = 2\n");
     assert_eq!(diagnostics.len(), 2);
@@ -107,7 +107,7 @@ fn run_closes_a_batch_ahead_of_an_overlapping_edit() {
     ])
     .sharing(Sharing::Always);
 
-    let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+    let (result, diagnostics, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
     assert_eq!(result.text(), "z = 1\n");
     assert_eq!(diagnostics.len(), 2);
@@ -125,7 +125,7 @@ fn run_drops_a_rule_whose_edits_vanish_once_the_batch_closes() {
     ])
     .sharing(Sharing::Always);
 
-    let (result, diagnostics) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
+    let (result, diagnostics, _) = pipeline.run(parse("x = 1\n")).expect("the run succeeds");
 
     assert_eq!(result.text(), "y = 1\n");
     assert_eq!(diagnostics.len(), 1);
@@ -158,7 +158,7 @@ fn run_forwards_a_notebook_through_one_batched_splice() {
     .sharing(Sharing::Always);
     let source = notebook(&["x = 1\n", "y = 2\n"]);
 
-    let (result, _) = pipeline.run(source).expect("notebook run succeeds");
+    let (result, _, _) = pipeline.run(source).expect("notebook run succeeds");
 
     assert_eq!(result.text(), "xx = 1\n\nyy = 2\n\n");
     assert_eq!(result.cell_texts(), ["xx = 1\n", "yy = 2\n"]);

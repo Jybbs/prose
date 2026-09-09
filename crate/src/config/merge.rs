@@ -1,5 +1,18 @@
-//! Deep-merge and deep-diff of TOML tables, run at the parsed-value
-//! layer ahead of deserialization.
+//! Merges and diffs TOML tables, both running on parsed values ahead of
+//! deserialization. The config rendering below is built on the diff.
+
+use super::Config;
+
+impl Config {
+    /// Serializes the keys this config sets away from the default,
+    /// leaving an empty string for a config running on the defaults.
+    pub(crate) fn to_changed_toml(&self) -> String {
+        let mut set = toml::Table::try_from(self).expect("Config serializes");
+        let defaults = toml::Table::try_from(Self::default()).expect("Config serializes");
+        without_defaults(&mut set, &defaults);
+        toml::to_string(&set).expect("Config serializes")
+    }
+}
 
 /// Recursively merges `overlay` into `base`. A key both carry as a table
 /// merges field by field, and any other overlay value replaces `base`'s.
@@ -17,7 +30,7 @@ pub(super) fn merge_tables(base: &mut toml::Table, overlay: &toml::Table) {
 /// Drops every entry of `table` matching `defaults`, recursing into a
 /// key both carry as a table and dropping that sub-table once it empties.
 /// A key `defaults` does not carry stays.
-pub(super) fn without_defaults(table: &mut toml::Table, defaults: &toml::Table) {
+fn without_defaults(table: &mut toml::Table, defaults: &toml::Table) {
     table.retain(|key, value| match (value, defaults.get(key)) {
         (toml::Value::Table(sub), Some(toml::Value::Table(base))) => {
             without_defaults(sub, base);

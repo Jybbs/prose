@@ -1,49 +1,48 @@
 //! The per-alias decision the rule reaches over a module's imports, the
 //! drops it applies and the reports a package `__init__` holds back.
 
+use std::cell::OnceCell;
+
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
+use ruff_python_ast::ModModule;
 use ruff_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
     PruneInertImports,
-    annotations::annotation_names,
+    annotations::type_expression_names,
     future::annotations_are_inert,
     inventory::ImportNode,
     is_package_init,
-    reexports::{Reexports, reexports_a_private_member},
+    reexports::{REEXPORT_CODE, Reexports, defines_no_own_name, reexports_a_private_member},
 };
 use crate::{
     diagnostics::Diagnostic,
     primitives::{
         binding::BindingAnalysis,
         comments::noqa_names,
-        imports::{Dropping, is_star},
+        imports::{Dropping, defers_annotations, is_star},
     },
-    rules::RuleId,
-    rules::reflow_imports::Folds,
+    rules::{RuleId, reflow_imports::Folds},
     source::Source,
 };
 
-/// The code `flake8` and its successors report an unread import under,
-/// which a `noqa` naming it marks as deliberate.
-const REEXPORT_CODE: &str = "F401";
-
 /// The alias drops the rule applies, one entry per pruned statement,
 /// beside the unreferenced bindings a package `__init__.py` holds.
-#[derive(Default)]
 pub(super) struct Plan<'a> {
     drops: Vec<Dropping<'a>>,
-    folds: Option<&'a Folds>,
+    folds: &'a Folds,
     reports: Vec<Report<'a>>,
 }
 
 impl<'a> Plan<'a> {
-    /// Walks the module-scope imports of `source`, dropping every
-    /// candidate and holding back the unreferenced ones a package
-    /// `__init__` re-exports. A repeat the pass drops no longer rebinds
-    /// the name, so the binding it repeated reads as write-once.
+    /// Walks the module-scope imports of `source`, dropping each
+    /// candidate, holding an unreferenced binding where the module
+    /// writes no `__all__`, and reporting one a package `__init__`
+    /// binds instead of dropping it. A repeat the pass drops no longer
+    /// rebinds the name, so the binding it repeated reads as
+    /// write-once.
     pub(super) fn of(rule: &'a PruneInertImports, source: &'a Source) -> Self {
         let body = &source.ast().body;
         let nodes: Vec<(usize, ImportNode<'a>)> = body
@@ -52,25 +51,23 @@ impl<'a> Plan<'a> {
             .filter_map(|(slot, stmt)| ImportNode::of(stmt).map(|node| (slot, node)))
             .collect();
         if nodes.is_empty() {
-            return Self::default();
+            return Self {
+                drops: Vec::new(),
+                folds: &rule.folds,
+                reports: Vec::new(),
+            };
         }
         let analysis = source.binding_analysis();
-        let reexports = Reexports::of(body);
+        let reexports = Reexports::of(source);
         let noqa_held: FxHashSet<usize> = nodes
             .iter()
             .positions(|(slot, _)| noqa_names(source, &body[*slot], REEXPORT_CODE))
             .collect();
         let package_init = is_package_init(source);
-        let annotated = if rule.unreferenced {
-            annotation_names(source.ast())
-        } else {
-            FxHashSet::default()
-        };
-        let directive_is_inert = rule.unreferenced
-            && nodes
-                .iter()
-                .any(|(_, node)| node.future_annotations().is_some())
-            && annotations_are_inert(rule, source);
+        let shim = !reexports.declares_a_surface() && defines_no_own_name(analysis, body);
+        let type_names = OnceCell::new();
+        let directive_is_inert =
+            rule.unreferenced && defers_annotations(body) && annotations_are_inert(rule, source);
         let repeats = if rule.duplicates {
             repeat_writes(&nodes, &reexports, &noqa_held)
         } else {
@@ -84,6 +81,7 @@ impl<'a> Plan<'a> {
                 continue;
             }
             let directive = node.future_annotations();
+            let private_source = reexports_a_private_member(node);
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
                 let candidacy = if reexports.holds(alias, bound) {
@@ -94,19 +92,25 @@ impl<'a> Plan<'a> {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                } else if reexports_a_private_member(node) {
+                } else if private_source {
                     None
                 } else {
-                    is_unreferenced(analysis, bound, &repeats, &annotated)
+                    is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
                         .then_some(Candidacy::Unreferenced)
                 };
-                match candidacy {
-                    Some(Candidacy::Unreferenced) if package_init => reports.push(Report {
+                let held = if package_init {
+                    Some(Held::PackageInit)
+                } else {
+                    shim.then_some(Held::NoSurface)
+                };
+                match (candidacy, held) {
+                    (Some(Candidacy::Unreferenced), Some(held)) => reports.push(Report {
+                        held,
                         name: bound,
                         range: alias.range,
                     }),
-                    Some(_) => dropped[statement].push(index),
-                    None => {}
+                    (Some(_), _) => dropped[statement].push(index),
+                    (None, _) => {}
                 }
             }
         }
@@ -123,23 +127,25 @@ impl<'a> Plan<'a> {
                     slot: *slot,
                 })
                 .collect(),
-            folds: Some(&rule.folds),
+            folds: &rule.folds,
             reports,
         }
     }
 
-    /// One lint per unreferenced binding a package `__init__` holds.
+    /// One lint per unreferenced binding the rule holds back rather than
+    /// drops, each naming what about the module held it.
     pub(super) fn diagnostics(&self, rule: RuleId) -> Vec<Diagnostic> {
         self.reports
             .iter()
             .map(|report| {
+                let reason = match report.held {
+                    Held::NoSurface => "This module writes no `__all__` and binds no name of its own, so nothing in it distinguishes a name a sibling imports from a binding the module stopped using. List the name in `__all__` or remove the import by hand to settle which it is",
+                    Held::PackageInit => "Dropping it from a package's `__init__` changes what the package re-exports, so remove the line by hand once nothing outside this file reads it",
+                };
                 Diagnostic::lint(
                     rule,
                     report.range,
-                    format!(
-                        "`{}` is imported and never referenced. Dropping it from a package's `__init__` changes what the package re-exports, so remove the line by hand once nothing outside this file reads it",
-                        report.name,
-                    ),
+                    format!("`{}` is imported and never referenced. {reason}", report.name),
                 )
             })
             .collect()
@@ -149,10 +155,7 @@ impl<'a> Plan<'a> {
     /// losing every alias landing on the import its comment heads once
     /// the later rules have laid the block out.
     pub(super) fn edits(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let Some(folds) = self.folds else {
-            return Vec::new();
-        };
-        folds.prune(source, &self.drops)
+        self.folds.prune(source, &self.drops)
     }
 }
 
@@ -166,24 +169,42 @@ enum Candidacy {
     Unreferenced,
 }
 
-/// One unreferenced binding a package `__init__.py` holds.
+/// What about a module holds an unreferenced binding back from the
+/// drop.
+#[derive(Clone, Copy)]
+enum Held {
+    /// A module writing no `__all__` and binding no name of its own,
+    /// which is the shape a compatibility shim takes.
+    NoSurface,
+    /// A package's `__init__.py` or its stub, whose bindings are the
+    /// package's public API.
+    PackageInit,
+}
+
+/// One unreferenced binding the rule reports rather than drops.
 struct Report<'a> {
+    held: Held,
     name: &'a str,
     range: TextRange,
 }
 
 /// True when nothing in the module reaches `bound`, counting neither a
-/// write in `repeats` as a rebind nor a name in `annotated` as unread.
+/// write in `repeats` as a rebind nor a name a quoted type expression
+/// reads as unread. `type_names` reads `ast` on the first binding to
+/// reach it and holds that set for the rest of the module.
 fn is_unreferenced(
     analysis: &BindingAnalysis,
     bound: &str,
     repeats: &FxHashSet<TextSize>,
-    annotated: &FxHashSet<String>,
+    type_names: &OnceCell<FxHashSet<String>>,
+    ast: &ModModule,
 ) -> bool {
     analysis.module_usage_count(bound) == 0
         && !analysis.module_reassigned_without(bound, |offset| repeats.contains(&offset))
         && !analysis.is_deleted(bound)
-        && !annotated.contains(bound)
+        && !type_names
+            .get_or_init(|| type_expression_names(ast))
+            .contains(bound)
 }
 
 /// The write offset of every alias repeating a binding an earlier

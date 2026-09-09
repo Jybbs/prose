@@ -4,8 +4,14 @@
 
 use std::{collections::BTreeSet, path::PathBuf, process::Command};
 
-/// The modules a walk leaves out, since running an entry point launches
-/// whatever it launches.
+/// The module names a walk leaves out wherever they sit, since running
+/// either one launches a program instead of binding a namespace.
+/// `python-config.py` sits under a directory named for the platform, so
+/// matching on the name rather than the path works on every machine.
+const ENTRY_NAMES: &[&str] = &["__main__.py", "python-config.py"];
+
+/// The modules a walk leaves out by their full path, so a module of the
+/// same name deeper in the tree stays in.
 const ENTRY_POINTS: &[&str] = &["antigravity.py", "idlelib/idle.py", "webbrowser.py"];
 
 /// The directories a walk leaves out wholesale.
@@ -24,7 +30,7 @@ pub(crate) fn candidates(rewritten: &BTreeSet<String>) -> Vec<String> {
 /// Reports whether a module is an entry point rather than a library module.
 pub(crate) fn excluded(relative: &str) -> bool {
     let (directories, last) = relative.rsplit_once('/').unwrap_or(("", relative));
-    last == "__main__.py"
+    ENTRY_NAMES.contains(&last)
         || ENTRY_POINTS.contains(&relative)
         || directories
             .split('/')
@@ -32,7 +38,7 @@ pub(crate) fn excluded(relative: &str) -> bool {
 }
 
 /// Asks an interpreter which standard library it owns.
-pub(crate) fn interpreter(python: &str) -> PathBuf {
+pub(crate) fn standard_library(python: &str) -> PathBuf {
     let asked = Command::new(python)
         .args([
             "-I",
