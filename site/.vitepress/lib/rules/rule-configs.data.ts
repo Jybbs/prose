@@ -1,10 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer } from '../markdown/renderer'
-import * as paths      from '../shared/paths'
-import * as ruleSchema from '../shared/rule-schema'
+import { getRenderer }               from '../markdown/renderer'
+import { type ConfigRow, configRow } from '../shared/config-row'
+import * as paths                    from '../shared/paths'
+import * as ruleSchema               from '../shared/rule-schema'
 
-type RuleConfigData = Record<string, readonly ruleSchema.ConfigRow[]>
+type RuleConfigData = Record<string, readonly ConfigRow[]>
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -19,15 +20,10 @@ export default defineLoader({
     const defs   = schema.$defs
     const rules  = ruleSchema.ruleDefsOf(schema)
 
-    // `enabled` is documented once, on `ToggleOnly`, whatever sub-table a
-    // rule resolves through.
-    const enabled = defs.ToggleOnly.properties.enabled
-
     return Object.fromEntries(Object.entries(rules).map(([slug, def]) => {
-      const props = ruleSchema.rulePropsOf(defs, def)
+      const props = ruleSchema.facetPropsOf(defs, def)
       const keys  = ruleSchema.facetKeys(def.default)
-      return [slug, keys.map(key =>
-        ruleSchema.configRow(md, key, key === 'enabled' ? enabled : props[key], def.default[key]))]
+      return [slug, keys.map(key => configRow(md, key, props[key], def.default[key]))]
     }))
   }
 })

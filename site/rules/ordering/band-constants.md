@@ -15,7 +15,7 @@ layout  : doc
 | Leading | a constant whose value reads only imports, builtins, literals, or other leading constants |
 | Trailing | a constant that names a function or class defined later in the module |
 
-The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`, clustering the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]]. `max-tiers` caps how many tiers open a sub-band.
+The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]].
 
 A band carries its own order, whereas [[group-imports]] moves an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 
@@ -52,7 +52,21 @@ The move and its spacing settle in one run, so the file reaches its final layout
 
 <RuleConfigTable />
 
-The facets above tune the band without switching it off. `group-subcategories` clusters each band by subcategory, falling back to a plain `(tier, name)` sort when `false`. `max-tiers` caps how many evaluation tiers open their own sub-band, defaulting to <ConfigDefault rule="band-constants" facet="max-tiers" /> so a band reads as its base plus one derived sub-band, with `1` keeping it tight and `false` opening one per tier. Turned off entirely with `band-constants = false`, the constants stay in place among their neighbors. The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* sets which imports the leading band sits below, since a first-party package's imports group with the local-package section.
+The `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* sets which imports the leading band sits below, since a first-party package's imports group with the local-package section.
+
+</template>
+
+<template #facets>
+
+The facets below tune the band without switching it off, whereas `band-constants = false` leaves every constant in place among its neighbors.
+
+### `group-subcategories`
+
+`group-subcategories` clusters each band by subcategory, putting the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. Setting it to `false` sorts on `(tier, name)` alone, so each tier reads as one alphabetical run.
+
+### `max-tiers`
+
+`max-tiers` caps how many evaluation tiers open their own blank-separated sub-band, merging every deeper tier into the last. It defaults to <ConfigDefault rule="band-constants" facet="max-tiers" /> so a band reads as its base plus one derived sub-band, where `1` keeps the whole band together and `false` gives every tier a sub-band of its own.
 
 </template>
 

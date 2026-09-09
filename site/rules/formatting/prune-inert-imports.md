@@ -16,8 +16,6 @@ The reference count runs per bound name, so one member drops off a shared `from`
 
 <Fixture rule="prune_inert_imports" case="every_member_unread_drops_the_whole_line" />
 
-A repeat matches on both the name it binds and the path it names, so `import os` beside `import os.path` is two imports rather than a repeat.
-
 ## What Holds Its Line
 
 Whether a name is re-exported is a fact about *other* files, and *Prose* formats one file at a time, so it never sees the sibling doing `from shim import name`. Two shapes in the file itself say that removing an import could break such a sibling, and in both the rule reports the binding rather than removing it.
@@ -114,6 +112,20 @@ The version-gated branch runs, because PEP 749 defers annotation evaluation and 
 <RuleConfigTable />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the `__future__` branch per project.
+
+</template>
+
+<template #facets>
+
+Each facet removes one kind of inert import on its own, so switching one off leaves the other running.
+
+### `drop-duplicates`
+
+`drop-duplicates` removes an import rebinding a name that an earlier import already bound to the same source, so a repeated `import os` keeps one line. The match reads the path as well as the name, which is why `import os` beside `import os.path` is two imports rather than a repeat, and `false` keeps every repeat.
+
+### `drop-unreferenced`
+
+`drop-unreferenced` removes an import binding a name nothing references, holding the line where a re-export marker or a read the count misses claims that name, and reporting rather than removing where the file reads as a compatibility shim or a package `__init__.py`. Setting it to `false` keeps every unreferenced import and reports none.
 
 </template>
 

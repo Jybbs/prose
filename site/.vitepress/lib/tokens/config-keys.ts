@@ -1,17 +1,19 @@
+import * as anchors         from '../reference/anchors'
 import * as ruleSchema      from '../shared/rule-schema'
 import type { TokenSource } from './sources'
 
-const FACET_HREF = '/reference/configuration#per-rule-facets'
+const CONFIG_PAGE    = '/reference/configuration'
+const CATALOGUE_HREF = `${CONFIG_PAGE}#per-rule-facets`
 
 const SECTION_HREF: Record<ruleSchema.ConfigSection, string> = {
   cache   : '/reference/cache#configuration',
-  imports : '/reference/configuration#imports',
-  top     : '/reference/configuration#top-level-keys'
+  imports : `${CONFIG_PAGE}#imports`,
+  top     : `${CONFIG_PAGE}#top-level-keys`
 }
 
 const TOP_HREF_OVERRIDES: Record<string, string> = {
-  'docstring-line-length'       : '/reference/configuration#docstring-budgets',
-  'docstring-structured-policy' : '/reference/configuration#docstring-budgets'
+  'docstring-line-length'       : `${CONFIG_PAGE}#docstring-budgets`,
+  'docstring-structured-policy' : `${CONFIG_PAGE}#docstring-budgets`
 }
 
 // A facet several rules describe differently takes one blurb here, whereas a
@@ -43,6 +45,15 @@ export function firstSentence(text: string): string {
   return text
 }
 
+// Points a facet at its own entry in the catalogue, falling back to the
+// catalogue itself for one that several rules declare.
+function facetHref(key: string, owners: Set<string>): string {
+  const hoisted = anchors.hoistedFacetAnchor(key)
+  if (hoisted !== undefined) return `${CONFIG_PAGE}#${hoisted}`
+  if (owners.size === 1)     return `${CONFIG_PAGE}#${anchors.facetAnchor([...owners][0], key)}`
+  return CATALOGUE_HREF
+}
+
 export function configKeySources(schema: ruleSchema.SchemaDocument): TokenSource[] {
   const sections  = ruleSchema.sectionProps(schema)
   const sectioned = (Object.entries(sections) as [ruleSchema.ConfigSection, ruleSchema.SchemaProps][])
@@ -52,22 +63,25 @@ export function configKeySources(schema: ruleSchema.SchemaDocument): TokenSource
       blurb : firstSentence(prop.description ?? '')
     })))
 
-  const defs         = schema.$defs
-  const descriptions = new Map<string, Set<string>>()
-  for (const def of Object.values(ruleSchema.ruleDefsOf(schema))) {
-    const props = ruleSchema.rulePropsOf(defs, def)
+  const defs   = schema.$defs
+  const facets = new Map<string, { owners: Set<string>, seen: Set<string> }>()
+  for (const [slug, def] of Object.entries(ruleSchema.ruleDefsOf(schema))) {
+    const props = ruleSchema.facetPropsOf(defs, def)
     for (const key of ruleSchema.facetKeys(def.default)) {
-      const prop = key === 'enabled' ? defs.ToggleOnly.properties.enabled : props[key]
-      descriptions.set(key, (descriptions.get(key) ?? new Set()).add(prop?.description ?? ''))
+      const prop  = props[key]
+      const entry = facets.get(key) ?? { owners: new Set<string>(), seen: new Set<string>() }
+      entry.owners.add(slug)
+      entry.seen.add(prop?.description ?? '')
+      facets.set(key, entry)
     }
   }
-  const facets = [...descriptions].map(([key, seen]) => {
+  const facetSources = [...facets].map(([key, { owners, seen }]) => {
     const blurb = seen.size === 1 ? firstSentence([...seen][0]) : SHARED_FACET_BLURBS[key]
     if (blurb === undefined) {
       throw new Error(`facet ${key} carries several descriptions and no shared blurb`)
     }
-    return { key, href: FACET_HREF, blurb }
+    return { key, href: facetHref(key, owners), blurb }
   })
 
-  return [...sectioned, ...facets, ...UNSCHEMED]
+  return [...sectioned, ...facetSources, ...UNSCHEMED]
 }

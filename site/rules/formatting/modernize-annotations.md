@@ -12,14 +12,6 @@ layout  : doc
 
 Each rewrite runs behind its own facet and its own version floor, so a project on 3.9 converts its generics while its unions stay as written until 3.10. A project with no `target-version` set keeps both spellings, since an unset field meets neither version floor.
 
-## What Each Facet Reaches
-
-`rewrite-generics` converts the `typing` generics whose PEP 585 replacement is a builtin, covering `Dict`, `FrozenSet`, `List`, `Set`, `Tuple`, and `Type`, with or without a subscript. A generic whose replacement lives under `collections` instead (*`Deque`, `DefaultDict`*) stays as written, because the rewrite would need an import this rule never adds.
-
-`rewrite-unions` joins the members of an `Optional` or a `Union` with `|`, appending the `| None` member an `Optional` implies. A member that cannot take the operator keeps the whole annotation in its legacy form, which covers a forward-reference string such as `Optional["Node"]`, where the rewritten `"Node" | None` would raise when the annotation is evaluated. An annotation with a comment inside its subscript stays as written too, because the rewrite rebuilds the expression and would drop the comment.
-
-Both facets find their target through whatever name the module bound, so a bare `Optional`, a module-qualified `typing.Optional`, an aliased `Optional as Opt`, and the `typing_extensions` spelling of any of them all take the same rewrite.
-
 ## Dropping the Import
 
 The rewrite leaves a `typing` import unread once it has removed every read of that name, and the rule removes that import in the same pass, one name at a time rather than one line at a time:
@@ -52,6 +44,20 @@ Below 3.10 only `rewrite-generics` runs, since `X | Y` raises at runtime before 
 <RuleConfigTable />
 
 The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates each facet per project, and an unset field keeps both legacy spellings as written.
+
+</template>
+
+<template #facets>
+
+Both facets find their target through whatever name the module bound, so a bare `Optional`, a module-qualified `typing.Optional`, an aliased `Optional as Opt`, and the `typing_extensions` spelling of any of them all take the same rewrite.
+
+### `rewrite-generics`
+
+`rewrite-generics` converts the `typing` generics whose PEP 585 replacement is a builtin, covering `Dict`, `FrozenSet`, `List`, `Set`, `Tuple`, and `Type`, with or without a subscript. A generic whose replacement lives under `collections` instead (*`Deque`, `DefaultDict`*) stays as written, because the rewrite would need an import this rule never adds.
+
+### `rewrite-unions`
+
+`rewrite-unions` joins the members of an `Optional` or a `Union` with `|`, appending the `| None` member an `Optional` implies. A member that cannot take the operator keeps the whole annotation in its legacy form, which covers a forward-reference string such as `Optional["Node"]`, where the rewritten `"Node" | None` would raise when the annotation is evaluated. An annotation with a comment inside its subscript stays as written too, because the rewrite rebuilds the expression and would drop the comment.
 
 </template>
 
