@@ -6,8 +6,10 @@ import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
 import { FAMILY_META }                  from '../shared/registries'
 import * as ruleSchema                  from '../shared/rule-schema'
+import * as anchors                     from './anchors'
 
 interface Facet {
+  anchor       : string
   default      : string
   key          : string
   meaningNodes : InlineNode[]
@@ -15,6 +17,7 @@ interface Facet {
 }
 
 interface RuleGroup {
+  anchor : string
   facets : readonly Facet[]
   rule   : string
 }
@@ -25,9 +28,6 @@ interface FacetFamily {
   label  : string
   rules  : readonly RuleGroup[]
 }
-
-const ALIGNMENT_SCOPE = 'alignment rules'
-const EVERY_RULE      = 'every rule'
 
 const root = paths.repoRoot(import.meta.url)
 
@@ -46,65 +46,45 @@ export default defineLoader({
     const rules  = ruleSchema.ruleDefsOf(schema)
 
     const facet = (
-      key     : string,
-      prop    : ruleSchema.SchemaProp,
-      value   : unknown,
-      meaning : string
+      key   : string,
+      prop  : ruleSchema.SchemaProp,
+      rule  : string,
+      value : unknown
     ): Facet => ({
+      anchor       : anchors.facetAnchor(rule, key),
       default      : JSON.stringify(value),
       key          : key,
-      meaningNodes : inlineNodes(md, meaning),
+      meaningNodes : inlineNodes(md, prop.description ?? ''),
       type         : ruleSchema.typeOf(prop).replaceAll('`', '')
     })
 
-    const describe = (props: ruleSchema.SchemaProps, key: string): string =>
-      props[key].description ?? ''
+    const scope = (key: string, prop: ruleSchema.SchemaProp, rule: string): RuleGroup => ({
+      anchor : anchors.ruleAnchor(rule),
+      facets : [facet(key, prop, rule, prop.default)],
+      rule   : rule
+    })
 
-    // `enabled` and `max-shift` repeat across every rule and every alignment
-    // rule, so they read once as a scope rather than per rule.
-    const aligner = Object.entries(rules).find(([, def]) => 'max-shift' in def.default)
-    if (aligner === undefined) throw new Error('No rule declares a `max-shift` default')
+    // Holds the two facets the shared sub-tables give every rule and every
+    // alignment rule, each rendered once under the scope that names it.
     const generic: FacetFamily = {
       badge  : '',
       family : 'generic',
       label  : 'Generic',
-      rules  : [
-        {
-          rule   : EVERY_RULE,
-          facets : [facet(
-            'enabled',
-            defs.ToggleOnly.properties.enabled,
-            true,
-            describe(defs.ToggleOnly.properties, 'enabled')
-          )]
-        },
-        {
-          rule   : ALIGNMENT_SCOPE,
-          facets : [facet(
-            'max-shift',
-            defs.AlignmentConfig.properties['max-shift'],
-            aligner[1].default['max-shift'],
-            describe(defs.AlignmentConfig.properties, 'max-shift')
-          )]
-        }
-      ]
+      rules  : Object.entries(anchors.HOISTED_SCOPES).map(([key, name]) =>
+        scope(key, ruleSchema.hoistedProps(defs)[key], name))
     }
-
-    // The generic group carries each hoisted facet once, so its keys are what
-    // the per-rule lists drop.
-    const hoisted = new Set(generic.rules.flatMap(group => group.facets.map(one => one.key)))
 
     const rows = Object.entries(rules)
       .toSorted(([a], [b]) => a.localeCompare(b))
       .flatMap(([slug, def]) => {
         const props  = ruleSchema.rulePropsOf(defs, def)
-        const facets = Object.keys(def.default)
-          .filter(key => !hoisted.has(key))
-          .toSorted((a, b) => a.localeCompare(b))
-          .map(key => facet(key, props[key], def.default[key], describe(props, key)))
+        const facets = ruleSchema.ownFacetKeys(defs, def.default)
+          .map(key => facet(key, props[key], slug, def.default[key]))
 
         const family = index.get(slug)?.family
-        return facets.length === 0 || family === undefined ? [] : [{ facets, family, rule: slug }]
+        return facets.length === 0 || family === undefined
+          ? []
+          : [{ anchor: anchors.ruleAnchor(slug), facets, family, rule: slug }]
       })
 
     return [
@@ -115,7 +95,7 @@ export default defineLoader({
           badge  : FAMILY_META[family].badge,
           family : family,
           label  : FAMILY_META[family].label,
-          rules  : ruleGroups.map(({ facets, rule }): RuleGroup => ({ facets, rule }))
+          rules  : ruleGroups.map(({ anchor, facets, rule }) => ({ anchor, facets, rule }))
         }))
     ]
   }

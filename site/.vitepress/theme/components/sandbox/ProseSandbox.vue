@@ -7,6 +7,7 @@ import CopyButton from '../base/CopyButton.vue'
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
 import { data as pool }    from '../../../lib/sandbox/pool.data'
+import { counted }         from '../../../lib/shared/numerals'
 
 const deckLocked   = useStorage('prose-sandbox-pinned', false)
 const deckOpen     = useStorage('prose-sandbox-deck-open', true)
@@ -41,8 +42,7 @@ const dirty = computed(() =>
 const announcement = computed(() => {
   const findings = sandbox.diagnostics.value.length
   const lines    = sandbox.formatted.value.trimEnd().split('\n').length
-  return `Formatted ${lines} ${lines === 1 ? 'line' : 'lines'}, `
-       + `${findings} lint ${findings === 1 ? 'finding' : 'findings'}.`
+  return `Formatted ${counted(lines, 'line')}, ${counted(findings, 'lint finding')}.`
 })
 
 function refresh(): void {

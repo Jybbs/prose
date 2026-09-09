@@ -10,7 +10,7 @@ layout  : doc
 
 `reflow-imports` splits a from-import that overflows `import-line-length` into a run of `from ... import ...` statements. Each statement repeats the module prefix and packs as many alphabetized names as fit before the next line opens, so the imported names start at the same column after `import` on every line and a deep module path never pushes them rightward.
 
-Two further facets change what one import line carries. `split-multi-module` breaks a comma-joined `import a, b`, the form pycodestyle flags as `E401`, into one `import` statement per module, since those commas separate distinct modules and nothing ties them to one line. `merge-members` runs the other way on `from`-imports, merging every `from pkg import ...` statement of one module within an import run onto a single line that names each member once, so the module appears once with its members after it. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
+Two further facets change what one import line carries, one splitting a comma-joined `import` (*the form pycodestyle flags as `E401`*) into a statement per module and one merging a module's repeated `from` statements onto a single line. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
 
 The rule runs after [[group-imports]] and before [[alphabetize-siblings]], so each module it splits onto its own line is placed in its import group in the same pass, and the merged member list is written in the order [[alphabetize-siblings]] would leave it. Setting `alphabetize-siblings = false` keeps the authored member order across both moves.
 
@@ -22,9 +22,21 @@ Pair with [[align-imports]] to align the `import` keyword across the resulting r
 
 <RuleConfigTable />
 
-Each move sits behind its own facet, so a project can switch one off without touching the others. `split-multi-module` gates the comma-joined break and `merge-members` the same-module merge, both on by default, and the width split runs whatever either is set to.
-
 The wrap budget comes from the top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default <ConfigDefault facet="import-line-length" />)*, which governs the import wrap independently of `code-line-length`. An import is a list of names [[alphabetize-siblings]] already sorts, so it stays scannable at a width where dense expression code would not, which is why it gets more horizontal room before a wrap pays off. Setting `import-line-length` to `false` drops the dedicated budget, so the import wrap falls back to `code-line-length`.
+
+</template>
+
+<template #facets>
+
+Each move sits behind its own facet, so a project can switch one off without touching the others, and the width split runs whatever either is set to.
+
+### `merge-members`
+
+`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
+
+### `split-multi-module`
+
+`split-multi-module` breaks a comma-joined `import a, b` into one `import` statement per module, and `false` keeps the comma-joined line as written.
 
 </template>
 
