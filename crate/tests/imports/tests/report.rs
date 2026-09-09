@@ -77,20 +77,43 @@ fn the_flaky_list_caps_at_the_shown_limit() {
     let found = Width {
         candidates: SHOWN + 3,
         comparable: SHOWN + 3,
-        flaky: (0..SHOWN + 3).map(|n| format!("m{n}.py")).collect(),
+        flaky: (0..SHOWN + 3)
+            .map(|n| (format!("m{n:02}.py"), ["N".to_owned()].into()))
+            .collect(),
         label: DEFAULT_LABEL.to_owned(),
         ..Width::default()
     };
     let shown = render(&BTreeSet::new(), &found);
     assert!(
-        shown.contains(&format!(
-            "flaky, a second run did not confirm it ({}):",
-            SHOWN + 3
-        )),
+        shown.contains(&format!("flaky, a second run varied ({}):", SHOWN + 3)),
         "{shown}"
     );
     assert!(shown.contains("... and 3 more"), "{shown}");
     assert!(!shown.contains(&format!("m{SHOWN}.py")), "{shown}");
+}
+
+#[test]
+fn the_flaky_listing_names_each_module_beside_the_names_it_varies_on() {
+    let found = Width {
+        flaky: varied([
+            (
+                "logging/__init__.py",
+                &["_srcfile", "_startTime", "raiseExceptions"],
+            ),
+            ("whole.py", &[]),
+        ]),
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    };
+    let shown = render(&BTreeSet::new(), &found);
+    assert!(shown.contains("  flaky            2"), "{shown}");
+    assert!(shown.contains("  varying          3"), "{shown}");
+    assert!(shown.contains("flaky, a second run varied (2):"), "{shown}");
+    assert!(
+        shown.contains("logging/__init__.py  _srcfile, _startTime, raiseExceptions"),
+        "{shown}"
+    );
+    assert!(shown.contains("whole.py  the whole namespace"), "{shown}");
 }
 
 #[test]
@@ -113,6 +136,7 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  rebinds          0\n",
             "  timeouts         0\n",
             "  flaky            0\n",
+            "  varying          0\n",
             "  carried          0",
         )
     );

@@ -1,9 +1,28 @@
 //! Tests for the record `probe.py` writes and the harness reads back,
 //! covering its tagged rows and the module paths a run names.
 
-use std::path::Path;
+use std::{collections::BTreeSet, path::Path};
 
 use crate::outcome::{Kind, Outcome, relative_to};
+
+#[test]
+fn a_name_set_aside_leaves_the_names_the_constants_and_nothing_else() {
+    let ran = Outcome {
+        constants: [
+            ("KEPT".to_owned(), "1".to_owned()),
+            ("VARIES".to_owned(), "0x7f".to_owned()),
+        ]
+        .into(),
+        kind: Kind::Ok,
+        names: vec!["KEPT".to_owned(), "VARIES".to_owned(), "other".to_owned()],
+        ..Outcome::default()
+    };
+    let kept = ran.without(&["VARIES".to_owned()].into());
+    assert_eq!(kept.names, ["KEPT", "other"]);
+    assert_eq!(kept.constants, [("KEPT".to_owned(), "1".to_owned())].into());
+    assert_eq!(kept.kind, Kind::Ok);
+    assert_eq!(ran.without(&BTreeSet::new()).names, ran.names);
+}
 
 #[test]
 fn a_path_names_itself_against_the_first_tree_carrying_it() {

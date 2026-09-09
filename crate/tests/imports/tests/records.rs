@@ -45,6 +45,21 @@ fn a_carried_break_leaves_the_tally_the_report_renders() {
 }
 
 #[test]
+fn a_flaky_module_counts_its_names_where_one_varying_whole_counts_none() {
+    let found = Width {
+        flaky: varied([
+            ("ctypes/__init__.py", &["_cast_addr", "_string_at_addr"]),
+            ("logging/__init__.py", &["_startTime", "raiseExceptions"]),
+            ("whole.py", &[]),
+        ]),
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    };
+    assert_eq!(found.flaky.len(), 3);
+    assert_eq!(found.varying(), 4);
+}
+
+#[test]
 fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
     let timed = |module: &str| {
         let mut brk = broken(module, "socket.py", "times out after 30s");
