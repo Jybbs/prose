@@ -16,7 +16,7 @@ use crate::{
     attribution::Attributor,
     common::setting,
     compare::{compare, divergence},
-    corpus::candidates,
+    corpus::{candidates, excluded, importable},
     execute::Runner,
     format::format_tree,
     outcome::{Kind, Outcome},
@@ -124,8 +124,17 @@ impl Sweep {
         let formatted = self.runner.stage.copy(&format!("formatted-{label}"));
         let run = format_tree(&formatted, &Pipeline::with_defaults(&config));
         self.runner.precompile(&formatted);
-        let modules =
-            setting(MODULE_VAR).map_or_else(|| candidates(&run.rewritten), |only| vec![only]);
+        let modules = setting(MODULE_VAR).map_or_else(
+            || candidates(&run.rewritten),
+            |only| {
+                assert!(
+                    importable(&only) && !excluded(&only),
+                    "{MODULE_VAR} names {only}, which the sweep never runs, because it is an \
+                     entry point or names no module an import can bind",
+                );
+                vec![only]
+            },
+        );
         let after = self.outcomes(&modules, &formatted);
         let before = self.originals(&modules);
         let partition = compare(&after, &before, &modules);

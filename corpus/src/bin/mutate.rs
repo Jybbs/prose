@@ -44,7 +44,7 @@ use rand::{
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::{
-    Expr,
+    Expr, PySourceType,
     token::TokenKind,
     visitor::source_order::{SourceOrderVisitor, walk_body, walk_expr},
 };
@@ -381,16 +381,19 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     Some(render(&module))
 }
 
-/// Returns every `.py` file under `root` in a stable order. The walk carries
-/// no standard filter, so a hidden directory and an ignored one both enter
-/// the corpus.
+/// Returns every Python source under `root` in a stable order, covering the
+/// `.py`, `.pyw`, and `.pyi` files the walker formats. The walk carries no
+/// standard filter, so a hidden directory and an ignored one both enter the
+/// corpus.
 fn walk(root: &Path) -> Vec<PathBuf> {
     WalkBuilder::new(root)
         .standard_filters(false)
         .build()
         .flatten()
         .map(ignore::DirEntry::into_path)
-        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
+        .filter(|path| {
+            PySourceType::try_from_path(path).is_some_and(PySourceType::is_py_file_or_stub)
+        })
         .sorted()
         .collect()
 }

@@ -12,6 +12,7 @@ use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
 use prose::{diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline, source::Source};
+use ruff_python_ast::PySourceType;
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_source_file::{LineEnding, UniversalNewlines};
 
@@ -32,7 +33,7 @@ fn fixtures() {
         // `diagnose` reads the source as written, so it runs before the
         // rewrite consumes it. A notebook pins its diagnostics through
         // the CLI tests.
-        let module = path.extension().is_some_and(|ext| ext == "py");
+        let module = !PySourceType::from(path).is_ipynb();
         let diagnostics = module.then(|| pipeline.diagnose(&source));
 
         let (formatted, records, _) = pipeline

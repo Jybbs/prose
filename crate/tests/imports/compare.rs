@@ -54,16 +54,10 @@ pub(crate) fn compare(
             (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => unmeasured.push(module.clone()),
             (Kind::Ok, _) => comparable.push(module.clone()),
             _ => {
-                let left = before.get(module).map_or_else(
-                    || Blocked {
-                        raised: String::new(),
-                        reason: "the original tree was never asked".to_owned(),
-                    },
-                    |ran| Blocked {
-                        raised: ran.raised.clone(),
-                        reason: ran.error.clone(),
-                    },
-                );
+                let Some(ran) = before.get(module) else {
+                    unreachable!("invariant: a run that raised or timed out left a record")
+                };
+                let left = Blocked::of(module, &ran.raised, &ran.error);
                 uncomparable.insert(module.clone(), left);
             }
         }
@@ -155,6 +149,13 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
     })
 }
 
+/// The kind a run of one module left behind, `unmeasured` where the tree was
+/// never asked about it.
+fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
+    held.get(module)
+        .map_or(Kind::Unmeasured, |outcome| outcome.kind)
+}
+
 /// One name and however many followed it, which is the sentence a report
 /// shows rather than the key a baseline holds.
 fn named(first: &str, rest: usize) -> String {
@@ -163,11 +164,4 @@ fn named(first: &str, rest: usize) -> String {
         1 => format!("`{first}` and 1 more name"),
         _ => format!("`{first}` and {rest} more names"),
     }
-}
-
-/// The kind a run of one module left behind, `unmeasured` where the tree was
-/// never asked about it.
-fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
-    held.get(module)
-        .map_or(Kind::Unmeasured, |outcome| outcome.kind)
 }

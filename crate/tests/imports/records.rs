@@ -1,9 +1,10 @@
 //! The records one sweep leaves, meaning a module the rewrite breaks, the
-//! frame it points at, one edit of a recorded fix, and one width's tallies
-//! and findings.
+//! frame it points at, one edit of a recorded fix, why a module could not be
+//! compared, one width's tallies and findings, and the corpus the run read.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fmt::{self, Display, Formatter},
     ops::Range,
 };
 
@@ -11,6 +12,42 @@ use prose::rules::RuleId;
 use serde::{Deserialize, Serialize};
 
 use crate::outcome::{Kind, Outcome};
+
+/// The exception a module raises where the machine lacks a package it
+/// imports.
+const ABSENT: &str = "ModuleNotFoundError";
+
+/// The platform tokens that appear in the path of a module written for another
+/// operating system. Such a module's own error message often does not name the
+/// platform, so the path is what identifies it.
+const PLATFORMS: &[&str] = &["emscripten", "win32", "windows"];
+
+/// What one uncomparable module's own run left, the exception it named
+/// beside the sentence a report shows, so a later read matches the
+/// exception rather than searching the sentence for it, and the reach saying
+/// how far this machine gets with the module.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default)]
+pub(crate) struct Blocked {
+    /// The exception the run named, empty where it named none.
+    pub(crate) raised: String,
+    /// How far a run on this machine reaches the module.
+    pub(crate) reach: Reach,
+    /// The sentence a report shows.
+    pub(crate) reason: String,
+}
+
+impl Blocked {
+    /// What blocked the module at `relative`, whose run raised `raised`
+    /// and reads as `reason`.
+    pub(crate) fn of(relative: &str, raised: &str, reason: &str) -> Self {
+        Self {
+            raised: raised.to_owned(),
+            reach: Reach::of(relative, raised),
+            reason: reason.to_owned(),
+        }
+    }
+}
 
 /// A module the rewrite breaks.
 pub(crate) struct Break {
@@ -48,6 +85,20 @@ impl Break {
     }
 }
 
+/// What one run swept, naming the interpreter that owns the corpus beside
+/// a digest over every file the walk read, so a corpus that moved between
+/// two runs is reported as that, rather than as counts that no longer add up.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default)]
+pub(crate) struct Corpus {
+    /// The digest over every swept file's path and bytes.
+    pub(crate) digest: String,
+    /// How many files the walk read.
+    pub(crate) files: usize,
+    /// The version of the interpreter the corpus belongs to.
+    pub(crate) interpreter: String,
+}
+
 /// One edit of a recorded fix, as the span it rewrote and the text it wrote.
 pub(crate) struct EditRows {
     /// The text the edit wrote.
@@ -61,18 +112,6 @@ pub(crate) struct EditRows {
 /// The safe fixes one format run recorded, keyed by the file each rewrote.
 pub(crate) type Fixes = BTreeMap<String, Vec<(RuleId, Vec<EditRows>)>>;
 
-/// What one uncomparable module's own run left, the exception it named
-/// beside the sentence a report shows, so a later read matches the
-/// exception rather than searching the sentence for it.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(default)]
-pub(crate) struct Blocked {
-    /// The exception the run named, empty where it named none.
-    pub(crate) raised: String,
-    /// The sentence a report shows.
-    pub(crate) reason: String,
-}
-
 /// The file and row a break points at.
 #[derive(Clone, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct Frame {
@@ -80,6 +119,52 @@ pub(crate) struct Frame {
     pub(crate) file: String,
     /// The row it names, where the traceback gave one.
     pub(crate) row: Option<usize>,
+}
+
+/// How far a run on this machine gets with a module the sweep could not
+/// compare. It separates the modules nothing here could import from the ones
+/// that fail on their own terms.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum Reach {
+    /// The module imports a package this machine does not carry.
+    Absent,
+    /// The module runs here and fails on its own terms.
+    #[default]
+    Module,
+    /// The module is written for another platform.
+    Platform,
+}
+
+impl Reach {
+    /// The reach of the module at `relative`, whose run raised `raised`. The
+    /// exception is read first and the path second, since a module written for
+    /// another platform often raises an error that does not name one.
+    pub(crate) fn of(relative: &str, raised: &str) -> Self {
+        if raised == ABSENT {
+            Self::Absent
+        } else if PLATFORMS.iter().any(|token| relative.contains(token)) {
+            Self::Platform
+        } else {
+            Self::Module
+        }
+    }
+
+    /// Reports whether a run here reaches the module at all. One naming an
+    /// absent package or another platform does not.
+    pub(crate) const fn reachable(self) -> bool {
+        matches!(self, Self::Module)
+    }
+}
+
+impl Display for Reach {
+    fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
+        form.write_str(match self {
+            Self::Absent => "absent",
+            Self::Module => "module",
+            Self::Platform => "platform",
+        })
+    }
 }
 
 /// One width's tallies and findings.
@@ -113,6 +198,19 @@ impl Width {
             .iter()
             .filter(|brk| brk.formatted.kind == kind)
             .count()
+    }
+
+    /// How this width's uncomparable modules divide by reach, each class
+    /// paired with its count, in the order a report names them.
+    pub(crate) fn reaches(&self) -> [(Reach, usize); 3] {
+        [Reach::Absent, Reach::Platform, Reach::Module].map(|reach| {
+            let counted = self
+                .uncomparable
+                .values()
+                .filter(|left| left.reach == reach)
+                .count();
+            (reach, counted)
+        })
     }
 
     /// The breaks at this width the baseline does not already hold.

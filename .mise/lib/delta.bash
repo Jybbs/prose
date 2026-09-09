@@ -64,8 +64,16 @@ format_widths() {
 }
 
 stage_corpus() {
+  local glob
+
   staged init -b delta -q
-  staged --work-tree="$1" add -f -- '*.py'
+
+  for glob in '*.py' '*.pyi' '*.pyw'; do
+    if [[ -n $(find "$1" -name "$glob" -print -quit) ]]; then
+      staged --work-tree="$1" add -f -- "$glob"
+    fi
+  done
+
   staged commit -m pristine -q
   staged tag pristine
 }

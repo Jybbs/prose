@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::setting,
     outcome::Kind,
-    records::{Blocked, Break, Width},
+    records::{Blocked, Break, Corpus, Width},
 };
 
 /// The break set the repository tracks beside the harness, which every
@@ -24,13 +24,9 @@ const BAKED: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/imports/baseline
 /// The environment variable naming a file the break set is written to.
 const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
-/// The exception a module raises where the machine lacks a package or a
-/// platform module it imports.
-const ABSENT: &str = "ModuleNotFoundError";
-
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 6;
+pub(crate) const VERSION: u32 = 7;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -40,6 +36,10 @@ pub(crate) const VERSION: u32 = 6;
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
     pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
+    /// The corpus the run swept, which a later run compares its own against,
+    /// so a corpus that changed is reported as that rather than as counts
+    /// that no longer add up.
+    pub(crate) corpus: Corpus,
     /// What each width counted, which a later run measures itself
     /// against so a corpus that shrinks or a defect class that grows
     /// fails rather than passing.
@@ -105,12 +105,13 @@ impl From<&Width> for Counts {
 }
 
 /// Writes the break set of a run, for a later run to ratchet against.
-pub(crate) fn bake(path: &Path, widths: &[Width]) {
+pub(crate) fn bake(path: &Path, corpus: &Corpus, widths: &[Width]) {
     if let Some(parent) = path.parent() {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
     let baked = Baseline {
         breaks: keyed(widths, |found| found.breaks.iter().map(carried).collect()),
+        corpus: corpus.clone(),
         counts: widths
             .iter()
             .map(|found| (found.label.clone(), Counts::from(found)))
@@ -153,10 +154,11 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
 
 /// The modules of one width that the original tree no longer runs cleanly
 /// and the baseline does not already list, meaning coverage the sweep just
-/// lost. A module raising [`ABSENT`] is left out, which trades this check
-/// for the `comparable` floor on that module, since a machine missing a
-/// package it imports drops it here on every run. A baseline recording
-/// nothing at this width has no coverage to lose, so it names none.
+/// lost. A module this machine cannot reach is left out, because a machine
+/// lacking a package it imports or running another platform drops that module
+/// on every run, and the `comparable` floor is what covers it instead. A
+/// baseline recording nothing at this width has no coverage to lose, so it
+/// names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.uncomparable.get(&found.label) else {
         return BTreeSet::new();
@@ -164,7 +166,7 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     found
         .uncomparable
         .iter()
-        .filter(|(module, left)| !known.contains_key(*module) && left.raised != ABSENT)
+        .filter(|(module, left)| !known.contains_key(*module) && left.reach.reachable())
         .map(|(module, _)| module.clone())
         .collect()
 }
@@ -197,6 +199,21 @@ pub(crate) fn stale(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .difference(&reproduced)
         .map(|entry| entry.module.clone())
         .collect()
+}
+
+/// How the corpus this run swept differs from the one the baseline
+/// records, `None` where the two match. A baseline that records no corpus has
+/// nothing to differ from, so a set baked before the corpus was tracked reads
+/// as unmoved.
+pub(crate) fn moved(swept: &Corpus, held: &Baseline) -> Option<String> {
+    let baked = &held.corpus;
+    if *baked == Corpus::default() || baked == swept {
+        return None;
+    }
+    Some(format!(
+        "interpreter {} against {} baked, {} files against {}, digest {} against {}",
+        swept.interpreter, baked.interpreter, swept.files, baked.files, swept.digest, baked.digest,
+    ))
 }
 
 /// How one width moved the wrong way against the counts the baseline

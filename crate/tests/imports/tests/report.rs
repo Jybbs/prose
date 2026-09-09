@@ -1,6 +1,6 @@
 //! Tests for the rendering of one width's findings, covering the summary
-//! block of counts, the listings capped at a shown limit, and the command
-//! that reproduces one break alone.
+//! block of counts, the reach split beneath it, the listings capped at a
+//! shown limit, and the command that reproduces one break alone.
 
 use std::collections::BTreeSet;
 
@@ -28,6 +28,7 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
     let shown = render(&["kept.py".to_owned()].into(), &found);
     assert!(shown.contains("  carried          1"), "{shown}");
     assert!(shown.contains("  refused          1"), "{shown}");
+    assert!(!shown.contains("uncomparable by reach"), "{shown}");
     assert!(
         shown.contains(
             "re/_parser.py:111 raises NameError: no MAXGROUPS, under `prune-inert-imports`"
@@ -58,10 +59,8 @@ fn a_repro_at_a_pinned_width_carries_the_width_knob() {
 #[test]
 fn an_unmeasured_module_replaces_the_uncomparable_count() {
     let found = Width {
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: stalled(["a.py"]),
         unmeasured: vec!["u.py".to_owned()],
-        ..Width::default()
+        ..stalling(stalled(["a.py"]))
     };
     let shown = render(&BTreeSet::new(), &found);
     assert!(shown.contains("  uncomparable unmeasured"), "{shown}");
@@ -94,16 +93,33 @@ fn the_flaky_list_caps_at_the_shown_limit() {
 }
 
 #[test]
+fn the_reach_split_names_every_class_beneath_the_block() {
+    let found = stalling(
+        [
+            blocked("dbm/gnu.py", "ModuleNotFoundError"),
+            blocked("asyncio/windows_events.py", "ImportError"),
+            blocked("encodings/mbcs.py", "ImportError"),
+        ]
+        .into(),
+    );
+    let shown = render(&BTreeSet::new(), &found);
+    assert!(shown.contains("uncomparable by reach (3):"), "{shown}");
+    assert!(shown.contains("1 absent, 1 platform, 1 module"), "{shown}");
+}
+
+#[test]
 fn the_summary_block_holds_every_count_in_one_column() {
     let found = Width {
         candidates: 12,
         comparable: 9,
-        label: DEFAULT_LABEL.to_owned(),
-        uncomparable: stalled(["a.py", "b.py", "c.py"]),
-        ..Width::default()
+        ..stalling(stalled(["a.py", "b.py", "c.py"]))
     };
+    let shown = render(&BTreeSet::new(), &found);
     assert_eq!(
-        render(&BTreeSet::new(), &found),
+        shown
+            .split("\n\n")
+            .next()
+            .expect("the block opens the render"),
         concat!(
             "  candidates      12\n",
             "  comparable       9\n",

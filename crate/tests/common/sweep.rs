@@ -19,6 +19,7 @@ use std::{
 use ignore::WalkBuilder;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use ruff_python_ast::PySourceType;
 
 /// The wall clock one probe may take before a sweep treats its run as
 /// non-terminating.
@@ -118,16 +119,20 @@ pub(crate) fn report_verified(what: &str) {
     }
 }
 
-/// The `.py` files under `root`. The walk carries no standard filter, so a
-/// hidden directory and an ignored one both enter the sweep rather than
-/// leaving it short without saying so.
+/// The Python sources under `root`, covering the `.py`, `.pyw`, and `.pyi`
+/// files the walker formats and leaving notebooks to the surface that reads
+/// a `SourceMap`. The walk carries no standard filter, so a hidden directory
+/// and an ignored one both enter the sweep rather than leaving it short
+/// without saying so.
 pub(crate) fn python_files(root: &Path) -> impl Iterator<Item = PathBuf> {
     WalkBuilder::new(root)
         .standard_filters(false)
         .build()
         .flatten()
         .map(ignore::DirEntry::into_path)
-        .filter(|path| path.extension().is_some_and(|ext| ext == "py"))
+        .filter(|path| {
+            PySourceType::try_from_path(path).is_some_and(PySourceType::is_py_file_or_stub)
+        })
 }
 
 /// The value `var` carries, `None` where it is unset or blank.
@@ -212,7 +217,7 @@ fn registry() -> MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
     IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-/// The `.py` files under the corpus root, largest first with the path
+/// The Python sources under the corpus root, largest first with the path
 /// breaking ties, so a parallel sweep's tail is one file long and a
 /// failure names the same file across runs. [`CORPUS`] points a sweep
 /// at a directory other than the fixture tree.

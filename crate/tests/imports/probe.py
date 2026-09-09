@@ -3,9 +3,10 @@ Load one module the way an import loads it and report what it bound.
 
 Usage: probe.py <record> <name> <module> <tree>...
 
-An import here loads the interpreter's own copy into `sys.modules` ahead of
-the tree's, so the probe imports nothing that is not already loaded before
-it runs.
+An import at this level loads the interpreter's own copy into `sys.modules`
+ahead of the tree's, so the probe imports nothing beyond what is already
+loaded when it runs. `Probe.package` imports after `sys.path` puts the trees
+first, so its import resolves against the tree.
 """
 
 from _frozen_importlib          import module_from_spec
@@ -63,6 +64,8 @@ class Probe:
         """
         Execute the module, then record what it bound and what it pulled in.
         """
+        self.package()
+
         spec               = spec_from_file_location(self.name, self.located)
         module             = module_from_spec(spec)
         modules[self.name] = module
@@ -79,6 +82,21 @@ class Probe:
             for held in list(modules.values())
             if getattr(held, "__file__", None)
         ]
+
+    def package(self):
+        """
+        Import the package the module sits in, so a package whose
+        `__init__` reads the module reaches a bound one rather than the
+        empty module this probe is about to register under that name. A
+        package that raises leaves the module's own run to record it.
+        """
+        held, _, _ = self.name.rpartition(".")
+
+        if held:
+            try:
+                __import__(held)
+            except BaseException:
+                pass
 
     def raised(self, exc: BaseException):
         """

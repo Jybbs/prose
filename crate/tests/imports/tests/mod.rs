@@ -7,7 +7,8 @@ use std::collections::BTreeMap;
 
 use crate::{
     outcome::Outcome,
-    records::{Blocked, Break, Frame},
+    records::{Blocked, Break, Frame, Width},
+    sweep::DEFAULT_LABEL,
 };
 
 mod bindings;
@@ -20,31 +21,10 @@ mod ratchet;
 mod records;
 mod report;
 
-/// A module the original tree did not run cleanly, whose run raised
-/// `raised` and reads as `reason`.
-fn blocked(raised: &str, reason: &str) -> Blocked {
-    Blocked {
-        raised: raised.to_owned(),
-        reason: reason.to_owned(),
-    }
-}
-
-/// A break at `frame` for `module`, losing `name` and nothing else.
-fn losing(module: &str, frame: &str, name: &str) -> Break {
-    Break {
-        names: vec![name.to_owned()],
-        ..broken(module, frame, &format!("leaves `{name}` unbound"))
-    }
-}
-
-/// The uncomparable map holding each of `modules`, every one raising a
-/// plain `ImportError`, which is the shape a case reaches for wherever
-/// only the module name carries the assertion.
-fn stalled<const N: usize>(modules: [&str; N]) -> BTreeMap<String, Blocked> {
-    modules
-        .iter()
-        .map(|module| ((*module).to_owned(), blocked("ImportError", "raises")))
-        .collect()
+/// The uncomparable entry for the module at `relative`, whose run raised
+/// `raised`.
+fn blocked(relative: &str, raised: &str) -> (String, Blocked) {
+    (relative.to_owned(), Blocked::of(relative, raised, "raises"))
 }
 
 /// A break at `frame` for `module`, diverging for `reason`.
@@ -63,5 +43,32 @@ fn broken(module: &str, frame: &str, reason: &str) -> Break {
         names: Vec::new(),
         original: Outcome::default(),
         reason: reason.to_owned(),
+    }
+}
+
+/// A break at `frame` for `module`, losing `name` and nothing else.
+fn losing(module: &str, frame: &str, name: &str) -> Break {
+    Break {
+        names: vec![name.to_owned()],
+        ..broken(module, frame, &format!("leaves `{name}` unbound"))
+    }
+}
+
+/// The uncomparable map holding each of `modules`, every one raising a
+/// plain `ImportError`, which is the shape a case reaches for wherever
+/// only the module name carries the assertion.
+fn stalled<const N: usize>(modules: [&str; N]) -> BTreeMap<String, Blocked> {
+    modules
+        .iter()
+        .map(|&module| blocked(module, "ImportError"))
+        .collect()
+}
+
+/// A width at the default label holding `uncomparable` and nothing else.
+fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
+    Width {
+        label: DEFAULT_LABEL.to_owned(),
+        uncomparable,
+        ..Width::default()
     }
 }
