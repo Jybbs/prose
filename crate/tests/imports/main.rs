@@ -28,9 +28,9 @@ use std::{collections::BTreeSet, iter, num::NonZeroUsize};
 
 use crate::{
     common::{setting, watch_for_a_runaway, widths_or},
-    corpus::standard_library,
+    corpus::{identity, standard_library, version},
     execute::interpreter,
-    ratchet::{bake, baking, baseline, dropped, judge, regressions, stale},
+    ratchet::{bake, baking, baseline, dropped, judge, moved, regressions, stale},
     report::render,
     sweep::{MODULE_VAR, Sweep},
 };
@@ -53,11 +53,15 @@ fn every_rewritten_module_still_imports() {
          carries",
     );
     let held = baked.is_none().then(baseline).unwrap_or_default();
+    let swept = identity(&corpus, &version(&python));
     let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
     let sweep = Sweep::new(&corpus);
     eprintln!(
-        "corpus      {}\nbinary      the library under test\ninterpreter {python}\nstage       {}",
+        "corpus      {} ({} files, vendored {})\nbinary      the library under test\ninterpreter \
+         {python}\nstage       {}",
         corpus.display(),
+        swept.files,
+        swept.vendored.join(" "),
         sweep.runner.stage.root.display(),
     );
     let widths: Vec<_> = budgets.map(|width| sweep.sweep(width)).collect();
@@ -74,6 +78,13 @@ fn every_rewritten_module_still_imports() {
         fresh.extend(found.uncarried(&carried).map(|brk| brk.module.clone()));
     }
     let unmeasured: usize = widths.iter().map(|found| found.unmeasured.len()).sum();
+    if let Some(drift) = moved(&swept, &held) {
+        sweep.runner.stage.keep();
+        panic!(
+            "the corpus moved since the break set was baked, at {drift}, so the counts \
+             below it were measured against a tree the set never swept",
+        );
+    }
     if unmeasured > 0 {
         sweep.runner.stage.keep();
     }
@@ -83,7 +94,7 @@ fn every_rewritten_module_still_imports() {
          be named",
     );
     if let Some(path) = baked {
-        bake(&path, &widths);
+        bake(&path, &swept, &widths);
         eprintln!("break set baked into {}", path.display());
         return;
     }

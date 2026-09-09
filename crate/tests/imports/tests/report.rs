@@ -1,6 +1,6 @@
 //! Tests for the rendering of one width's findings, covering the summary
-//! block of counts, the listings capped at a shown limit, and the command
-//! that reproduces one break alone.
+//! block of counts, the reach split beneath it, the listings capped at a
+//! shown limit, and the command that reproduces one break alone.
 
 use std::collections::BTreeSet;
 
@@ -27,6 +27,7 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
     let shown = render(&["kept.py".to_owned()].into(), &found);
     shows(&shown, "  carried          1");
     shows(&shown, "  refused          1");
+    hides(&shown, "uncomparable by reach");
     shows(
         &shown,
         "re/_parser.py:111 raises NameError: no MAXGROUPS, under `prune-inert-imports`",
@@ -102,6 +103,21 @@ fn the_flaky_listing_names_each_module_beside_the_names_it_varies_on() {
 }
 
 #[test]
+fn the_reach_split_names_every_class_beneath_the_block() {
+    let found = stalling(
+        [
+            blocked("dbm/gnu.py", "ModuleNotFoundError"),
+            blocked("asyncio/windows_events.py", "ImportError"),
+            blocked("encodings/mbcs.py", "ImportError"),
+        ]
+        .into(),
+    );
+    let shown = render(&BTreeSet::new(), &found);
+    shows(&shown, "uncomparable by reach (3):");
+    shows(&shown, "1 absent, 1 platform, 1 module");
+}
+
+#[test]
 fn the_summary_block_holds_every_count_in_one_column() {
     let found = Width {
         candidates: 12,
@@ -109,8 +125,12 @@ fn the_summary_block_holds_every_count_in_one_column() {
         uncomparable: stalled(["a.py", "b.py", "c.py"]),
         ..width()
     };
+    let shown = render(&BTreeSet::new(), &found);
     assert_eq!(
-        render(&BTreeSet::new(), &found),
+        shown
+            .split("\n\n")
+            .next()
+            .expect("the block opens the render"),
         concat!(
             "  candidates      12\n",
             "  comparable       9\n",

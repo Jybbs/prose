@@ -9,10 +9,10 @@ use rstest::rstest;
 use super::*;
 use crate::{
     ratchet::{
-        Baseline, Carried, Counts, VERSION, bake, baseline, baseline_at, dropped, judge,
+        Baseline, Carried, Counts, VERSION, bake, baseline, baseline_at, dropped, judge, moved,
         regressions, stale,
     },
-    records::{Blocked, Width},
+    records::{Blocked, Corpus, Width},
     sweep::DEFAULT_LABEL,
 };
 
@@ -35,11 +35,13 @@ fn recording(uncomparable: BTreeMap<String, Blocked>) -> Baseline {
     }
 }
 
-/// A width at the default label holding `uncomparable` and nothing else.
-fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
-    Width {
-        uncomparable,
-        ..width()
+/// The corpus a baking test records, standing in for the tree a real run
+/// digests.
+fn swept() -> Corpus {
+    Corpus {
+        files: 3,
+        interpreter: "3.14.6".to_owned(),
+        vendored: vec!["pip-26.2".to_owned()],
     }
 }
 
@@ -54,7 +56,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("fresh").join("baseline.json");
-    bake(&baked, &[found]);
+    bake(&baked, &swept(), &[found]);
     let held: Baseline = serde_json::from_str(
         &fs_err::read_to_string(&baked).expect("the baked break set reads back"),
     )
@@ -63,6 +65,7 @@ fn a_baked_break_set_reads_back_as_the_set_that_wrote_it() {
         held.breaks[DEFAULT_LABEL],
         [carried("m.py", "re/_parser.py", "X")].into()
     );
+    assert_eq!(held.corpus, swept());
     assert_eq!(held.uncomparable[DEFAULT_LABEL], stalled(["blocked.py"]));
     assert_eq!(held.counts[DEFAULT_LABEL].flaky, 1);
     assert_eq!(held.version, VERSION);
@@ -123,14 +126,15 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
         [
             (
                 "absent.py".to_owned(),
-                blocked(
+                Blocked::of(
+                    "absent.py",
                     "ModuleNotFoundError",
                     "raises ModuleNotFoundError: No module named 'socks'",
                 ),
             ),
             (
                 "lost.py".to_owned(),
-                blocked("ImportError", "raises ImportError: no thing"),
+                Blocked::of("lost.py", "ImportError", "raises ImportError: no thing"),
             ),
         ]
         .into(),
@@ -142,19 +146,26 @@ fn dropped_names_nothing_for_a_package_the_machine_lacks() {
 }
 
 #[test]
+fn dropped_names_nothing_where_the_baseline_records_no_width() {
+    let found = stalling(stalled(["blocked.py"]));
+    assert_eq!(dropped(&found, &Baseline::default()), BTreeSet::new());
+}
+
+#[test]
 fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
     let found = stalling(
         [
             (
                 "quoting.py".to_owned(),
-                blocked(
+                Blocked::of(
+                    "quoting.py",
                     "ImportError",
                     "raises ImportError: ModuleNotFoundError is not it",
                 ),
             ),
             (
                 "silent.py".to_owned(),
-                blocked("ModuleNotFoundError", "the machine lacks it"),
+                Blocked::of("silent.py", "ModuleNotFoundError", "the machine lacks it"),
             ),
         ]
         .into(),
@@ -163,6 +174,34 @@ fn dropped_reads_the_exception_a_run_named_rather_than_its_sentence() {
         dropped(&found, &recording(BTreeMap::new())),
         ["quoting.py".to_owned()].into()
     );
+}
+
+#[test]
+fn moved_names_nothing_where_the_baseline_records_no_corpus() {
+    assert_eq!(moved(&swept(), &Baseline::default()), None);
+}
+
+#[test]
+fn moved_names_nothing_where_the_corpus_still_matches() {
+    let held = Baseline {
+        corpus: swept(),
+        ..Baseline::default()
+    };
+    assert_eq!(moved(&swept(), &held), None);
+}
+
+#[rstest]
+#[case(Corpus { files: 4, ..swept() }, "4 files")]
+#[case(Corpus { interpreter: "3.14.7".to_owned(), ..swept() }, "3.14.7")]
+#[case(Corpus { vendored: vec!["pip-26.3".to_owned()], ..swept() }, "pip-26.3")]
+fn moved_names_the_corpus_on_either_side(#[case] found: Corpus, #[case] named: &str) {
+    let held = Baseline {
+        corpus: swept(),
+        ..Baseline::default()
+    };
+    let drift = moved(&found, &held).expect("a corpus that moved names the drift");
+    shows(&drift, named);
+    shows(&drift, &swept().interpreter);
 }
 
 #[test]
@@ -175,6 +214,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
                 comparable: 898,
                 flaky: 2,
                 raises: 0,
+                reachable: 900,
                 rebinds: 0,
                 refused: 0,
             },
@@ -193,14 +233,20 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
         regressions(&short, &held),
         [
             "candidates 900 against 997 baked",
-            "comparable 800 against 898 baked",
+            "reachable 800 against 900 baked",
             "flaky 3 against 2 baked",
             "refused 2 against 0 baked",
         ]
     );
     let reached = Width {
         candidates: 997,
-        comparable: 900,
+        comparable: 897,
+        uncomparable: [
+            blocked("dbm/gnu.py", "ModuleNotFoundError"),
+            blocked("asyncio/windows_events.py", "ImportError"),
+            blocked("truststore/_macos.py", "ImportError"),
+        ]
+        .into(),
         ..width()
     };
     assert_eq!(regressions(&reached, &held), Vec::<String>::new());
@@ -294,7 +340,7 @@ fn two_modules_at_one_frame_bake_as_separate_entries() {
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("baseline.json");
-    bake(&baked, &[found]);
+    bake(&baked, &swept(), &[found]);
     let held = baseline_at(&baked).expect("the baked break set reads back");
     assert_eq!(
         held.breaks[DEFAULT_LABEL]

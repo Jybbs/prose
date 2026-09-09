@@ -14,12 +14,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::setting,
     outcome::Kind,
-    records::{Blocked, Break, Width},
+    records::{Blocked, Break, Corpus, Width},
 };
-
-/// The exception a module raises where the machine lacks a package or a
-/// platform module it imports.
-const ABSENT: &str = "ModuleNotFoundError";
 
 /// The break set the repository tracks beside the harness, which every
 /// judging run reads.
@@ -30,7 +26,7 @@ const BAKE_VAR: &str = "PROSE_IMPORTS_BAKE";
 
 /// The generation a baked set is written and read at, raised by every
 /// change to what a set carries or to the key that holds one break.
-pub(crate) const VERSION: u32 = 7;
+pub(crate) const VERSION: u32 = 9;
 
 /// What one run recorded for a later run to ratchet against, the breaks
 /// it left beside the modules it could not compare, each keyed by width
@@ -40,6 +36,10 @@ pub(crate) const VERSION: u32 = 7;
 pub(crate) struct Baseline {
     /// The breaks a run left at each frame.
     pub(crate) breaks: BTreeMap<String, BTreeSet<Carried>>,
+    /// The corpus the run swept, which a later run compares its own against,
+    /// so a corpus that changed is reported as that rather than as counts
+    /// that no longer add up.
+    pub(crate) corpus: Corpus,
     /// What each width counted, which a later run measures itself
     /// against so a corpus that shrinks or a defect class that grows
     /// fails rather than passing.
@@ -85,6 +85,10 @@ pub(crate) struct Counts {
     pub(crate) candidates: usize,
     /// How many of those the original tree ran cleanly.
     pub(crate) comparable: usize,
+    /// How many this machine could reach, which is a floor where
+    /// `comparable` is a figure, since a module bound to another platform
+    /// moves the second and holds the first.
+    pub(crate) reachable: usize,
     /// How many modules a run set aside because two runs of the original
     /// bound different namespaces.
     pub(crate) flaky: usize,
@@ -101,6 +105,7 @@ impl From<&Width> for Counts {
         Self {
             candidates: found.candidates,
             comparable: found.comparable,
+            reachable: found.reachable(),
             flaky: found.flaky.len(),
             raises: found.unimported(),
             rebinds: found.counting(Kind::Ok),
@@ -110,12 +115,13 @@ impl From<&Width> for Counts {
 }
 
 /// Writes the break set of a run, for a later run to ratchet against.
-pub(crate) fn bake(path: &Path, widths: &[Width]) {
+pub(crate) fn bake(path: &Path, corpus: &Corpus, widths: &[Width]) {
     if let Some(parent) = path.parent() {
         fs_err::create_dir_all(parent).expect("create the break set's directory");
     }
     let baked = Baseline {
         breaks: keyed(widths, entries),
+        corpus: corpus.clone(),
         counts: keyed(widths, |found| Counts::from(found)),
         uncomparable: keyed(widths, |found| found.uncomparable.clone()),
         version: VERSION,
@@ -152,10 +158,11 @@ pub(crate) fn baseline_at(path: &Path) -> Option<Baseline> {
 
 /// The modules of one width that the original tree no longer runs cleanly
 /// and the baseline does not already list, meaning coverage the sweep just
-/// lost. A module raising [`ABSENT`] is left out, which trades this check
-/// for the `comparable` floor on that module, since a machine missing a
-/// package it imports drops it here on every run. A baseline recording
-/// nothing at this width has no coverage to lose, so it names none.
+/// lost. A module this machine cannot reach is left out, because a machine
+/// lacking a package it imports or running another platform drops that module
+/// on every run, and the `comparable` floor is what covers it instead. A
+/// baseline recording nothing at this width has no coverage to lose, so it
+/// names none.
 pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     let Some(known) = held.uncomparable.get(&found.label) else {
         return BTreeSet::new();
@@ -163,7 +170,7 @@ pub(crate) fn dropped(found: &Width, held: &Baseline) -> BTreeSet<String> {
     found
         .uncomparable
         .iter()
-        .filter(|(module, left)| !known.contains_key(*module) && left.raised != ABSENT)
+        .filter(|(module, left)| !known.contains_key(*module) && left.reach.reachable())
         .map(|(module, _)| module.clone())
         .collect()
 }
@@ -181,6 +188,26 @@ pub(crate) fn judge(found: &Width, held: &Baseline) -> BTreeSet<String> {
         .collect()
 }
 
+/// How the corpus this run swept differs from the one the baseline
+/// records, `None` where the two match. A baseline that records no corpus has
+/// nothing to differ from, so a set baked before the corpus was tracked reads
+/// as unmoved.
+pub(crate) fn moved(swept: &Corpus, held: &Baseline) -> Option<String> {
+    let baked = &held.corpus;
+    if *baked == Corpus::default() || baked == swept {
+        return None;
+    }
+    Some(format!(
+        "interpreter {} against {} baked, {} files against {}, vendored {} against {}",
+        swept.interpreter,
+        baked.interpreter,
+        swept.files,
+        baked.files,
+        swept.vendored.join(" "),
+        baked.vendored.join(" "),
+    ))
+}
+
 /// How one width moved the wrong way against the counts the baseline
 /// recorded, empty where every one held. A baseline recording nothing at
 /// this width has nothing to move against.
@@ -190,15 +217,16 @@ pub(crate) fn regressions(found: &Width, held: &Baseline) -> Vec<String> {
     };
     let Counts {
         candidates,
-        comparable,
+        comparable: _,
         flaky,
         raises,
+        reachable,
         rebinds,
         refused,
     } = Counts::from(found);
     let short = [
         ("candidates", candidates, baked.candidates),
-        ("comparable", comparable, baked.comparable),
+        ("reachable", reachable, baked.reachable),
     ]
     .into_iter()
     .filter(|(_, reached, want)| reached < want);

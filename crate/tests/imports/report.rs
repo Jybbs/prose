@@ -46,6 +46,18 @@ pub(crate) fn render(carried: &BTreeSet<String>, found: &Width) -> String {
         lines.push(row("refused", &found.refused));
     }
     let mut rendered = lines.join("\n");
+    if !found.uncomparable.is_empty() {
+        let split = found
+            .reaches()
+            .iter()
+            .map(|(reach, counted)| format!("{counted} {reach}"))
+            .join(", ");
+        let _ = write!(
+            rendered,
+            "\n\nuncomparable by reach ({}):\n  {split}",
+            found.uncomparable.len(),
+        );
+    }
     rendered.push_str(&raising.render("raises"));
     rendered.push_str(&rebinding.render("runs and binds a different namespace"));
     rendered.push_str(&timeouts.render("times out"));

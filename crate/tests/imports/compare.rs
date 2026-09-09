@@ -54,16 +54,10 @@ pub(crate) fn compare(
             (Kind::Unmeasured, _) | (_, Kind::Unmeasured) => unmeasured.push(module.clone()),
             (Kind::Ok, _) => comparable.push(module.clone()),
             _ => {
-                let left = before.get(module).map_or_else(
-                    || Blocked {
-                        raised: String::new(),
-                        reason: "the original tree was never asked".to_owned(),
-                    },
-                    |ran| Blocked {
-                        raised: ran.raised.clone(),
-                        reason: ran.error.clone(),
-                    },
-                );
+                let Some(ran) = before.get(module) else {
+                    unreachable!("invariant: a run that raised or timed out left a record")
+                };
+                let left = Blocked::of(module, &ran.raised, &ran.error);
                 uncomparable.insert(module.clone(), left);
             }
         }

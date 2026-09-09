@@ -24,13 +24,10 @@ mod records;
 mod report;
 mod sweep;
 
-/// A module the original tree did not run cleanly, whose run raised
-/// `raised` and reads as `reason`.
-fn blocked(raised: &str, reason: &str) -> Blocked {
-    Blocked {
-        raised: raised.to_owned(),
-        reason: reason.to_owned(),
-    }
+/// The uncomparable entry for the module at `relative`, whose run raised
+/// `raised`.
+fn blocked(relative: &str, raised: &str) -> (String, Blocked) {
+    (relative.to_owned(), Blocked::of(relative, raised, "raises"))
 }
 
 /// An outcome that ran cleanly, binding `names` and the constants `spelt`.
@@ -100,8 +97,16 @@ fn shows(rendered: &str, want: &str) {
 fn stalled<const N: usize>(modules: [&str; N]) -> BTreeMap<String, Blocked> {
     modules
         .iter()
-        .map(|module| ((*module).to_owned(), blocked("ImportError", "raises")))
+        .map(|&module| blocked(module, "ImportError"))
         .collect()
+}
+
+/// A width at the default label holding `uncomparable` and nothing else.
+fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
+    Width {
+        uncomparable,
+        ..width()
+    }
 }
 
 /// The flaky map holding each of `modules` beside the names it varies on,
