@@ -110,27 +110,15 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
             reason: formatted.error.clone(),
         });
     }
-    let lost: Vec<_> = missing(&original.names, &formatted.names)
-        .cloned()
-        .collect();
-    if let [name, rest @ ..] = lost.as_slice() {
-        let reason = format!("leaves {} unbound", named(name, rest.len()));
-        return Some(Divergence {
-            kind: "unbound",
-            names: lost,
-            reason,
-        });
+    if let Some(lost) = sided(&original.names, &formatted.names, "unbound", |whom| {
+        format!("leaves {whom} unbound")
+    }) {
+        return Some(lost);
     }
-    let gained: Vec<_> = missing(&formatted.names, &original.names)
-        .cloned()
-        .collect();
-    if let [name, rest @ ..] = gained.as_slice() {
-        let reason = format!("binds {} the original does not", named(name, rest.len()));
-        return Some(Divergence {
-            kind: "extra",
-            names: gained,
-            reason,
-        });
+    if let Some(gained) = sided(&formatted.names, &original.names, "extra", |whom| {
+        format!("binds {whom} the original does not")
+    }) {
+        return Some(gained);
     }
     let differing = respelt(original, formatted).min()?;
     let was = original
@@ -190,4 +178,25 @@ fn respelt<'a>(one: &'a Outcome, other: &'a Outcome) -> impl Iterator<Item = &'a
         .keys()
         .chain(other.constants.keys())
         .filter(move |name| one.constants.get(*name) != other.constants.get(*name))
+}
+
+/// The divergence one direction of a name difference makes, `None` where
+/// `held` carries every name `from` binds. `reason` takes the first name
+/// beside however many followed it.
+fn sided(
+    from: &[String],
+    held: &[String],
+    kind: &'static str,
+    reason: impl Fn(&str) -> String,
+) -> Option<Divergence> {
+    let names: Vec<_> = missing(from, held).cloned().collect();
+    let [first, rest @ ..] = names.as_slice() else {
+        return None;
+    };
+    let reason = reason(&named(first, rest.len()));
+    Some(Divergence {
+        kind,
+        names,
+        reason,
+    })
 }

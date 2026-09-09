@@ -8,7 +8,6 @@ use crate::{
     outcome::{Kind, Outcome},
     records::Width,
     report::render,
-    sweep::DEFAULT_LABEL,
 };
 
 #[test]
@@ -26,8 +25,7 @@ fn a_carried_break_leaves_the_tally_the_report_renders() {
             broken("carried.py", "re/_parser.py", "leaves `X` unbound"),
             broken("fresh.py", "re/_parser.py", "leaves `Y` unbound"),
         ],
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     let carried = ["carried.py".to_owned()].into();
     assert_eq!(
@@ -38,10 +36,10 @@ fn a_carried_break_leaves_the_tally_the_report_renders() {
         ["fresh.py"]
     );
     let shown = render(&carried, &found);
-    assert!(shown.contains("  breaks           2"), "{shown}");
-    assert!(shown.contains("  carried          1"), "{shown}");
-    assert!(shown.contains("fresh.py"), "{shown}");
-    assert!(!shown.contains("carried.py"), "{shown}");
+    shows(&shown, "  breaks           2");
+    shows(&shown, "  carried          1");
+    shows(&shown, "fresh.py");
+    hides(&shown, "carried.py");
 }
 
 #[test]
@@ -52,8 +50,7 @@ fn a_flaky_module_counts_its_names_where_one_varying_whole_counts_none() {
             ("logging/__init__.py", &["_startTime", "raiseExceptions"]),
             ("whole.py", &[]),
         ]),
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(found.flaky.len(), 3);
     assert_eq!(found.varying(), 4);
@@ -70,11 +67,10 @@ fn a_timing_out_break_counts_as_a_module_rather_than_a_defect() {
         breaks: vec![timed("a.py"), timed("b.py")],
         candidates: 2,
         comparable: 2,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(found.counting(Kind::Timeout), 2);
     let shown = render(&BTreeSet::new(), &found);
-    assert!(shown.contains("  timeouts         2"), "{shown}");
-    assert!(shown.contains("times out (1):"), "{shown}");
+    shows(&shown, "  timeouts         2");
+    shows(&shown, "times out (1):");
 }

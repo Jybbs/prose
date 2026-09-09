@@ -38,9 +38,8 @@ fn recording(uncomparable: BTreeMap<String, Blocked>) -> Baseline {
 /// A width at the default label holding `uncomparable` and nothing else.
 fn stalling(uncomparable: BTreeMap<String, Blocked>) -> Width {
     Width {
-        label: DEFAULT_LABEL.to_owned(),
         uncomparable,
-        ..Width::default()
+        ..width()
     }
 }
 
@@ -187,9 +186,8 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
         candidates: 900,
         comparable: 800,
         flaky: varied([("a.py", &[]), ("b.py", &[]), ("c.py", &[])]),
-        label: DEFAULT_LABEL.to_owned(),
         refused: 2,
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&short, &held),
@@ -203,8 +201,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
     let reached = Width {
         candidates: 997,
         comparable: 900,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(regressions(&reached, &held), Vec::<String>::new());
 }
@@ -213,8 +210,7 @@ fn regressions_name_every_count_that_moved_the_wrong_way() {
 fn regressions_name_nothing_where_the_baseline_records_no_counts() {
     let found = Width {
         candidates: 1,
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     assert_eq!(
         regressions(&found, &Baseline::default()),
@@ -294,8 +290,7 @@ fn two_modules_at_one_frame_bake_as_separate_entries() {
             broken("a.py", "compat.py", "raises ImportError: no shutil"),
             broken("b.py", "compat.py", "raises ImportError: no shutil"),
         ],
-        label: DEFAULT_LABEL.to_owned(),
-        ..Width::default()
+        ..width()
     };
     let dir = tempfile::tempdir().expect("a scratch directory");
     let baked = dir.path().join("baseline.json");

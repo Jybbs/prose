@@ -9,7 +9,8 @@ use itertools::Itertools;
 
 use crate::{
     outcome::{Kind, Outcome},
-    records::{Blocked, Break, Frame},
+    records::{Blocked, Break, Frame, Width},
+    sweep::DEFAULT_LABEL,
 };
 
 mod bindings;
@@ -68,12 +69,29 @@ fn broken(module: &str, frame: &str, reason: &str) -> Break {
     }
 }
 
+/// Asserts `rendered` hides `unwanted`, printing the whole render where it
+/// does not.
+#[track_caller]
+fn hides(rendered: &str, unwanted: &str) {
+    assert!(
+        !rendered.contains(unwanted),
+        "unwanted `{unwanted}` in:\n{rendered}"
+    );
+}
+
 /// A break at `frame` for `module`, losing `name` and nothing else.
 fn losing(module: &str, frame: &str, name: &str) -> Break {
     Break {
         names: vec![name.to_owned()],
         ..broken(module, frame, &format!("leaves `{name}` unbound"))
     }
+}
+
+/// Asserts `rendered` shows `want`, printing the whole render where it does
+/// not.
+#[track_caller]
+fn shows(rendered: &str, want: &str) {
+    assert!(rendered.contains(want), "want `{want}` in:\n{rendered}");
 }
 
 /// The uncomparable map holding each of `modules`, every one raising a
@@ -98,4 +116,13 @@ fn varied<const N: usize>(modules: [(&str, &[&str]); N]) -> BTreeMap<String, BTr
             )
         })
         .collect()
+}
+
+/// A width at the default label carrying nothing else, which a case
+/// overrides with the fields it measures.
+fn width() -> Width {
+    Width {
+        label: DEFAULT_LABEL.to_owned(),
+        ..Width::default()
+    }
 }
