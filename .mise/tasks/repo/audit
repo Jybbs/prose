@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, action-manifest hygiene, and cache-trigger coverage"
+#MISE description="Audit version-pin parity, action-manifest hygiene, cache-trigger coverage, and task validity"
 # /// script
 # requires-python = ">=3.11"
 # ///
@@ -13,15 +13,18 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                the runner rejects before any step runs.
     triggers   The `module.yml` push trigger covers every wasm source path
                the module cache key hashes.
+    tasks      Every task passes `mise tasks validate`, so no alias is shared
+               and no dependency names a task that does not exist.
 
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
-from json    import loads as json_loads
-from pathlib import Path
-from re      import MULTILINE, findall, finditer, search
-from tomllib import loads
-from typing  import NoReturn
+from json       import loads as json_loads
+from pathlib    import Path
+from re         import MULTILINE, findall, finditer, search
+from subprocess import run
+from tomllib    import loads
+from typing     import NoReturn
 
 
 def action_pin(action: str, key: str) -> str:
@@ -128,6 +131,19 @@ def hashed_paths(action: str) -> list[str]:
             r"hashFiles\(([^)]*)\)"
         )
     )
+
+
+def input_group(entry: str, groups: dict[str, list[str]]) -> list[str]:
+    """
+    Return the paths a `sources` entry stands for, which is the entry itself
+    unless it references one of the `groups`, whose own references expand in
+    turn.
+    """
+    if not entry.startswith("@group:"):
+        return [entry]
+    if (members := groups.get(name := entry.removeprefix("@group:"))) is None:
+        fail(f"no input group named {name!r} in .mise/config.toml")
+    return [path for member in members for path in input_group(member, groups)]
 
 
 def major_minor(value: str) -> str:
@@ -255,7 +271,7 @@ def parity() -> int:
         (
             ".mise/tasks/wasm/pack sources ↔ restore-wasm hashFiles paths",
             task_sources("wasm/pack"),
-            hashed_paths("restore-wasm")
+            sorted(hashed_paths("restore-wasm"))
         ),
         *action_pins(),
         *member_pins(cargo),
@@ -298,14 +314,38 @@ def sourced_manifests(task: str) -> list[str]:
 
 def task_sources(task: str) -> list[str]:
     """
-    Return the `sources` array the `task` file's `#MISE` frontmatter declares.
+    Return the `sources` the `task` file's `#MISE` frontmatter declares, sorted,
+    with every `@group:` reference replaced by the input group it names.
     """
     lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
     marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
     table  = loads("\n".join(marked))
-    if "sources" in table:
-        return table["sources"]
-    fail(f"no sources declaration in .mise/tasks/{task}")
+    if "sources" not in table:
+        fail(f"no sources declaration in .mise/tasks/{task}")
+    groups = toml(".mise/config.toml")["task_config"]["input_groups"]
+    return sorted(path for entry in table["sources"] for path in input_group(entry, groups))
+
+
+def tasks() -> int:
+    """
+    Report every error `mise tasks validate` finds across the task tree, such as
+    an alias two tasks share or a dependency naming a task that does not exist.
+    """
+    report = run(["mise", "tasks", "validate", "--json"], capture_output=True, text=True)
+    if not report.stdout:
+        fail(report.stderr.strip() or "mise tasks validate wrote no report")
+
+    failed = 0
+    for issue in json_loads(report.stdout)["issues"]:
+        message = f"{issue['task']}: {issue['message']}"
+        if details := issue.get("details"):
+            message = f"{message} ({details})"
+        if issue["severity"] == "error":
+            annotate(message)
+            failed = 1
+        else:
+            print(f"::warning::{message}")
+    return failed
 
 
 def toml(path: str) -> dict:
@@ -361,4 +401,4 @@ def workflow_paths(name: str) -> list[str]:
 
 if __name__ == "__main__":
 
-    raise SystemExit(parity() | manifests() | triggers())
+    raise SystemExit(parity() | manifests() | triggers() | tasks())

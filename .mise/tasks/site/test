@@ -2,20 +2,6 @@
 #MISE depends     = ["rust:build", "site:bake"]
 #MISE description = "Run the docs-site `vitest` suite"
 #MISE dir         = "site"
-#MISE sources     = [
-#MISE   "../.mise/config.toml",
-#MISE   "../Cargo.lock",
-#MISE   "../Cargo.toml",
-#MISE   "../crate/Cargo.toml",
-#MISE   "../crate/pyproject.toml",
-#MISE   "../crate/src/**/*.rs",
-#MISE   "../crate/tests/fixtures/**/*",
-#MISE   "**/*",
-#MISE   "!.vitepress/.temp/**/*",
-#MISE   "!.vitepress/dist/**/*",
-#MISE   "!.vitepress/tests/wasm/pkg/**/*",
-#MISE   "!coverage/**/*",
-#MISE   "!node_modules/**/*"
-#MISE ]
+#MISE sources     = ["@group:crate", "@group:site"]
 
 bunx vitest run --project docs "$@"

@@ -3,17 +3,7 @@
 #MISE depends     = ["wasm:build"]
 #MISE description = "Emit the `prose_wasm` web module into `site/public/wasm` and optimize it"
 #MISE outputs     = ["site/public/wasm/*"]
-#MISE sources     = [
-#MISE   ".mise/config.toml",
-#MISE   ".mise/lib/wasm.bash",
-#MISE   ".mise/tasks/wasm/build",
-#MISE   ".mise/tasks/wasm/pack",
-#MISE   "Cargo.lock",
-#MISE   "Cargo.toml",
-#MISE   "crate/Cargo.toml",
-#MISE   "crate/src/**",
-#MISE   "wasm/**"
-#MISE ]
+#MISE sources     = ["@group:wasm"]
 
 out=site/public/wasm
 trap 'rm -rf "$out"' ERR

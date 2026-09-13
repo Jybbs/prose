@@ -2,6 +2,8 @@
 #MISE alias       = "lockfile"
 #MISE description = "Verify every lockfile is in sync with its manifest"
 #MISE sources     = [
+#MISE   ".mise/config.toml",
+#MISE   ".mise/mise.lock",
 #MISE   "Cargo.lock",
 #MISE   "Cargo.toml",
 #MISE   "corpus/Cargo.toml",
@@ -15,4 +17,6 @@
 
 (cd site && bun install --dry-run --frozen-lockfile)
 cargo update --dry-run --locked --workspace
+stale=$(mise lock --dry-run --json)
+[[ "$stale" == "[]" ]] || { echo "$stale" >&2; exit 1; }
 uv lock --locked --project crate

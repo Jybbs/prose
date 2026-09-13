@@ -1,3 +1,4 @@
 [project]
+dynamic         = ["version"]
 name            = "bare-floor"
 requires-python = "3.10"
