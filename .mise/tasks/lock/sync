@@ -1,8 +1,9 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "relock"
 #MISE description = "Re-resolve every lockfile against its manifest"
-#MISE outputs     = ["Cargo.lock", "crate/uv.lock", "site/bun.lock"]
+#MISE outputs     = [".mise/mise.lock", "Cargo.lock", "crate/uv.lock", "site/bun.lock"]
 #MISE sources     = [
+#MISE   ".mise/config.toml",
 #MISE   "Cargo.toml",
 #MISE   "corpus/Cargo.toml",
 #MISE   "crate/Cargo.toml",
@@ -13,5 +14,6 @@
 
 (cd site && bun install --ignore-scripts)
 cargo update --workspace
+mise lock
 uv lock --project crate
-git diff --stat Cargo.lock crate/uv.lock site/bun.lock
+git diff --stat .mise/mise.lock Cargo.lock crate/uv.lock site/bun.lock

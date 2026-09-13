@@ -1,12 +1,52 @@
 min_version = "2026.9.1"
 
 [env]
+_.python.venv = { path = "crate/.venv", create = true }
 WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 
 [settings]
 auto_install                        = false
+experimental                        = true
 idiomatic_version_file_enable_tools = ["node"]
-python.uv_venv_auto                 = "create|source"
+lockfile_platforms                  = [
+  "linux-arm64",
+  "linux-x64",
+  "macos-arm64",
+  "macos-x64",
+  "windows-arm64",
+  "windows-x64"
+]
+
+[task_config.input_groups]
+crate = [
+  ".mise/config.toml",
+  "Cargo.lock",
+  "Cargo.toml",
+  "crate/Cargo.toml",
+  "crate/pyproject.toml",
+  "crate/src/**/*.rs",
+  "crate/tests/fixtures/**/*"
+]
+site  = [
+  ".mise/config.toml",
+  "site/**/*",
+  "!site/.vitepress/.temp/**/*",
+  "!site/.vitepress/dist/**/*",
+  "!site/.vitepress/tests/wasm/pkg/**/*",
+  "!site/coverage/**/*",
+  "!site/node_modules/**/*"
+]
+wasm  = [
+  ".mise/config.toml",
+  ".mise/lib/wasm.bash",
+  ".mise/tasks/wasm/build",
+  ".mise/tasks/wasm/pack",
+  "Cargo.lock",
+  "Cargo.toml",
+  "crate/Cargo.toml",
+  "crate/src/**",
+  "wasm/**"
+]
 
 [tools]
 "aqua:WebAssembly/binaryen"    = "132"

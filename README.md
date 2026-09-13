@@ -71,7 +71,6 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 git clone https://github.com/Jybbs/prose.git
 cd prose
 mise install
-mise x -- uv venv crate/.venv
 ```
 
 `mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks from a bug report to the fixture case a fix is reviewed against, and covers the branch and pull-request flow.

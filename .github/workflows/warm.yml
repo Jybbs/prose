@@ -16,6 +16,7 @@ on:
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
+      - .mise/mise.lock
       - Cargo.lock
       - Cargo.toml
       - corpus/Cargo.toml
