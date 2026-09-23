@@ -1,19 +1,17 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "relock"
 #MISE description = "Re-resolve every lockfile against its manifest"
-#MISE outputs     = [".mise/mise.lock", "Cargo.lock", "crate/uv.lock", "site/bun.lock"]
-#MISE sources     = [
-#MISE   ".mise/config.toml",
-#MISE   "Cargo.toml",
-#MISE   "corpus/Cargo.toml",
-#MISE   "crate/Cargo.toml",
-#MISE   "crate/pyproject.toml",
-#MISE   "site/package.json",
-#MISE   "wasm/Cargo.toml"
+#MISE outputs     = [
+#MISE   ".mise/locks/**/*",
+#MISE   ".mise/mise.lock",
+#MISE   "Cargo.lock",
+#MISE   "crate/uv.lock",
+#MISE   "site/bun.lock"
 #MISE ]
+#MISE sources     = ["@group:manifests"]
 
 (cd site && bun install --lockfile-only)
 cargo update --workspace
 mise lock
 uv lock --project crate
-git diff --stat .mise/mise.lock Cargo.lock crate/uv.lock site/bun.lock
+mise task info --json lock:sync | jq -r '.outputs[]' | xargs git status --short --

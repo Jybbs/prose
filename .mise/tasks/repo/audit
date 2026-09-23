@@ -19,6 +19,7 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
+from functools  import cache
 from json       import loads as json_loads
 from pathlib    import Path
 from re         import MULTILINE, findall, finditer, search
@@ -133,19 +134,6 @@ def hashed_paths(action: str) -> list[str]:
     )
 
 
-def input_group(entry: str, groups: dict[str, list[str]]) -> list[str]:
-    """
-    Return the paths a `sources` entry stands for, which is the entry itself
-    unless it references one of the `groups`, whose own references expand in
-    turn.
-    """
-    if not entry.startswith("@group:"):
-        return [entry]
-    if (members := groups.get(name := entry.removeprefix("@group:"))) is None:
-        fail(f"no input group named {name!r} in .mise/config.toml")
-    return [path for member in members for path in input_group(member, groups)]
-
-
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -195,10 +183,20 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
         (f"Cargo.toml members ↔ {home}", owned, named)
         for home, named in [
             (".github/workflows/warm.yml path filter", watched_manifests("warm")),
-            (".mise/tasks/lock/check sources", sourced_manifests("lock/check")),
-            (".mise/tasks/lock/sync sources", sourced_manifests("lock/sync"))
+            (".mise/tasks/lock/sync sources", sourced_manifests("lock:sync"))
         ]
     ]
+
+
+def mise_json(*args: str) -> dict | list:
+    """
+    Return the report mise prints for the `args` subcommand run with `--json`,
+    failing when the subcommand prints none.
+    """
+    report = run(["mise", *args, "--json"], capture_output=True, text=True)
+    if not report.stdout:
+        fail(report.stderr.strip() or f"mise {' '.join(args)} wrote no report")
+    return json_loads(report.stdout)
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -264,13 +262,18 @@ def parity() -> int:
             cargo_lock_version("wasm-bindgen")
         ),
         (
+            ".mise/tasks/lock/check sources ↔ .mise/tasks/lock/sync sources and outputs",
+            task_paths("lock:check", "sources"),
+            task_paths("lock:sync", "sources", "outputs")
+        ),
+        (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
-            task_sources("site/test"),
-            task_sources("site/press")
+            task_paths("site:test", "sources"),
+            task_paths("site:press", "sources")
         ),
         (
             ".mise/tasks/wasm/pack sources ↔ restore-wasm hashFiles paths",
-            task_sources("wasm/pack"),
+            task_paths("wasm:pack", "sources"),
             sorted(hashed_paths("restore-wasm"))
         ),
         *action_pins(),
@@ -305,25 +308,36 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     return pairs
 
 
+def rooted(entry: str, base: str) -> str:
+    """
+    Return a `sources` or `outputs` entry, which mise resolves against the `base`
+    directory, as a path relative to the project root, keeping any leading `!`.
+    """
+    bare = entry.removeprefix("!")
+    return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())
+
+
 def sourced_manifests(task: str) -> list[str]:
     """
-    Return every member manifest the `task` frontmatter's sources list names.
+    Return every member manifest the `task` names in its sources.
     """
-    return [path for path in task_sources(task) if path.endswith("/Cargo.toml")]
+    return [
+        path
+        for path in task_paths(task, "sources")
+        if path.endswith("/Cargo.toml")
+    ]
 
 
-def task_sources(task: str) -> list[str]:
+def task_paths(task: str, *keys: str) -> list[str]:
     """
-    Return the `sources` the `task` file's `#MISE` frontmatter declares, sorted,
-    with every `@group:` reference replaced by the input group it names.
+    Return every path the `task` declares under `keys`, sorted and deduplicated,
+    with every `@group:` reference expanded by mise.
     """
-    lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
-    marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
-    table  = loads("\n".join(marked))
-    if "sources" not in table:
-        fail(f"no sources declaration in .mise/tasks/{task}")
-    groups = toml(".mise/config.toml")["task_config"]["input_groups"]
-    return sorted(path for entry in table["sources"] for path in input_group(entry, groups))
+    table = tasks_listed()[task]
+    for key in keys:
+        if not isinstance(table.get(key), list):
+            fail(f"no {key} declaration in the {task} task")
+    return sorted({rooted(entry, table["dir"]) for key in keys for entry in table[key]})
 
 
 def tasks() -> int:
@@ -331,12 +345,8 @@ def tasks() -> int:
     Report every error `mise tasks validate` finds across the task tree, such as
     an alias two tasks share or a dependency naming a task that does not exist.
     """
-    report = run(["mise", "tasks", "validate", "--json"], capture_output=True, text=True)
-    if not report.stdout:
-        fail(report.stderr.strip() or "mise tasks validate wrote no report")
-
     failed = 0
-    for issue in json_loads(report.stdout)["issues"]:
+    for issue in mise_json("tasks", "validate")["issues"]:
         message = f"{issue['task']}: {issue['message']}"
         if details := issue.get("details"):
             message = f"{message} ({details})"
@@ -346,6 +356,14 @@ def tasks() -> int:
         else:
             print(f"::warning::{message}")
     return failed
+
+
+@cache
+def tasks_listed() -> dict[str, dict]:
+    """
+    Return every task `mise tasks ls --json` lists, keyed by name.
+    """
+    return {task["name"]: task for task in mise_json("tasks", "ls")}
 
 
 def toml(path: str) -> dict:
