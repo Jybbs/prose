@@ -3,14 +3,17 @@
 mod parented;
 
 pub(crate) use parented::{
-    Descent, ParentedCollector, ParentedProbe, filter_map_over_parented_exprs,
+    Interpolations, ParentedCollector, ParentedProbe, filter_map_over_parented_exprs,
     walk_parented_arguments, walk_parented_expr, walk_parented_exprs,
 };
 
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
     statement_visitor::{self, StatementVisitor},
-    visitor::{self, Visitor, walk_expr},
+    visitor::{
+        self, Visitor,
+        source_order::{self, SourceOrderVisitor},
+    },
 };
 
 /// Runs a caller's function on every annotation the walk reaches,
@@ -26,6 +29,33 @@ impl<'src, F: FnMut(&Expr)> Visitor<'src> for AnnotationProbe<F> {
 
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         walk_stmt(self, stmt);
+    }
+}
+
+/// The visitor behind [`any_over_expr_within`], which stops at the first
+/// expression satisfying `hit`.
+struct AnyExprProbe<F> {
+    found: bool,
+    hit: F,
+    interpolations: Interpolations,
+}
+
+impl<'src, F: FnMut(&Expr) -> bool> SourceOrderVisitor<'src> for AnyExprProbe<F> {
+    fn visit_expr(&mut self, expr: &'src Expr) {
+        if self.found {
+            return;
+        }
+        if (self.hit)(expr) {
+            self.found = true;
+        } else {
+            source_order::walk_expr(self, expr);
+        }
+    }
+
+    fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
+        if self.interpolations.is_read() {
+            source_order::walk_interpolated_string_element(self, element);
+        }
     }
 }
 
@@ -61,25 +91,39 @@ impl<'src, F: FnMut(&'src Stmt) -> Option<T>, T> StatementVisitor<'src> for Coll
 
 struct ExprCollector<F, T> {
     found: Vec<T>,
-    interpolations: Descent,
+    interpolations: Interpolations,
     probe: F,
 }
 
-impl<'src, F: FnMut(&Expr) -> Option<T>, T> Visitor<'src> for ExprCollector<F, T> {
+impl<'src, F: FnMut(&Expr) -> Option<T>, T> SourceOrderVisitor<'src> for ExprCollector<F, T> {
     fn visit_expr(&mut self, expr: &'src Expr) {
         self.found.extend((self.probe)(expr));
-        walk_expr(self, expr);
-    }
-
-    fn visit_stmt(&mut self, stmt: &'src Stmt) {
-        walk_stmt(self, stmt);
+        source_order::walk_expr(self, expr);
     }
 
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
-        if matches!(self.interpolations, Descent::Into) {
-            visitor::walk_interpolated_string_element(self, element);
+        if self.interpolations.is_read() {
+            source_order::walk_interpolated_string_element(self, element);
         }
     }
+}
+
+/// True when `hit` holds for `expr` or any expression beneath it, and
+/// the walk stops at the first match. `interpolations` decides whether
+/// the walk reads the interior of an f-string or t-string replacement
+/// field.
+pub(crate) fn any_over_expr_within(
+    expr: &Expr,
+    interpolations: Interpolations,
+    hit: impl FnMut(&Expr) -> bool,
+) -> bool {
+    let mut probe = AnyExprProbe {
+        found: false,
+        hit,
+        interpolations,
+    };
+    probe.visit_expr(expr);
+    probe.found
 }
 
 /// True when any statement in `body` satisfies `hit`, descending through
@@ -91,13 +135,13 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> b
     probe.found
 }
 
-/// Every `Some` that `probe` returns over each expression in `body`,
-/// descending through every compound body including nested `def` and
-/// `class` scopes. `interpolations` decides whether the walk reads the
-/// interior of an f-string or t-string replacement field.
+/// Every `Some` that `probe` returns over each expression in `body` in
+/// source order, descending through every compound body including
+/// nested `def` and `class` scopes. `interpolations` decides whether the
+/// walk reads the interior of an f-string or t-string replacement field.
 pub(crate) fn filter_map_over_exprs<T>(
     body: &[Stmt],
-    interpolations: Descent,
+    interpolations: Interpolations,
     probe: impl FnMut(&Expr) -> Option<T>,
 ) -> Vec<T> {
     let mut collector = ExprCollector {
@@ -151,9 +195,10 @@ pub(crate) fn walk_stmt<'src, V: Visitor<'src> + ?Sized>(visitor: &mut V, stmt: 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_expr, parse};
 
     /// The name of every `def` in `src`, in walk order.
     fn def_names(src: &str) -> Vec<String> {
@@ -164,13 +209,41 @@ mod tests {
 
     /// The entry count of every dict literal in `src`, in walk order.
     fn dict_sizes(src: &str) -> Vec<usize> {
-        filter_map_over_exprs(&parse(src).ast().body, Descent::Over, |expr| {
+        filter_map_over_exprs(&parse(src).ast().body, Interpolations::Skip, |expr| {
             Some(expr.as_dict_expr()?.len())
         })
     }
 
     fn has_pass(src: &str) -> bool {
         any_over_stmts(&parse(src).ast().body, |stmt| matches!(stmt, Stmt::Pass(_)))
+    }
+
+    #[rstest]
+    #[case::a_dict_outside_any_field("[{'a': 1}, f\"{x}\"]", Interpolations::Skip, true)]
+    #[case::a_field_read_through("[f\"{ {'a': 1} }\"]", Interpolations::Read, true)]
+    #[case::a_field_left_unwalked("[f\"{ {'a': 1} }\"]", Interpolations::Skip, false)]
+    fn any_over_expr_within_reads_a_replacement_field_on_request(
+        #[case] src: &str,
+        #[case] interpolations: Interpolations,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            any_over_expr_within(first_expr(&source), interpolations, Expr::is_dict_expr),
+            expected,
+        );
+    }
+
+    #[test]
+    fn any_over_expr_within_stops_at_the_first_match() {
+        let source = parse("[a, b]\n");
+        let mut seen = 0;
+        let found = any_over_expr_within(first_expr(&source), Interpolations::Skip, |expr| {
+            seen += 1;
+            expr.is_name_expr()
+        });
+        assert!(found);
+        assert_eq!(seen, 2, "the walk stops at `a` rather than visiting `b`");
     }
 
     #[test]

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/count_exploded_value_leaves_the_iterable_whole/input.py
+---
+reflow-collections@16..64

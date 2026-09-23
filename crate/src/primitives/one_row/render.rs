@@ -2,10 +2,7 @@
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{
-    AnyNodeRef, Comprehension, Expr, ExprDict, helpers::any_over_expr,
-    visitor::Visitor as AstVisitor,
-};
+use ruff_python_ast::{AnyNodeRef, Comprehension, Expr, ExprDict, visitor::Visitor as AstVisitor};
 use ruff_text_size::TextRange;
 
 use super::{Column, Settings, walk::Joiner};
@@ -53,7 +50,7 @@ impl<'a> Writer<'a> {
                 .comment_ranges()
                 .comments_in_range(range)
                 .is_empty()
-            || self.reopens(expr)
+            || self.settings.reopens(self.source, expr)
     }
 
     /// The one-row form of a leaf, meaning an expression the dispatch in
@@ -85,25 +82,6 @@ impl<'a> Writer<'a> {
         let mut out = String::new();
         self.write(&mut out, expr, expr.into())?;
         (!spans_rows(&out)).then_some(Cow::Owned(out))
-    }
-
-    /// True where a later rule reopens `expr` whatever its current
-    /// shape. A dict past `max_dict_entries` explodes on its own count
-    /// trigger, and so does an argument list past `max_args` that
-    /// `reflow-calls` can name, so no one-row form written around either
-    /// survives the pipeline. A call the count trigger claims but cannot
-    /// rewrite into keyword form stays inline, leaving its one-row form
-    /// standing.
-    fn reopens(&self, expr: &Expr) -> bool {
-        any_over_expr(expr, |e| {
-            e.as_call_expr()
-                .is_some_and(|call| self.settings.rejoin.explodes(self.source, call))
-                || e.as_dict_expr().is_some_and(|dict| {
-                    self.settings
-                        .max_dict_entries
-                        .is_some_and(|cap| dict.len() > cap)
-                })
-        })
     }
 
     /// Appends `expr`'s one-row serialization to `out`, dispatching on

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/comprehension_tuple_target_reports/input.py
+---
+NAMES = [name for name, entry in ENTRIES.items() if entry.enabled and not entry.hidden and name]

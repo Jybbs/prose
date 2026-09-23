@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/interpolated_call_in_the_tail_holds_its_row/input.py
+---
+assert len(
+    authkey_bytes
+) == AUTHKEY_LENGTH, f"received {len(authkey_bytes)} bytes, wanted {AUTHKEY_LENGTH}"

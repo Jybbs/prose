@@ -3,5 +3,10 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/line_overflow/reshapeable_signature_stays_quiet/input.py
 ---
-def configure(first, second, third, fourth):
+def configure(
+    first,
+    second,
+    third,
+    fourth
+):
     return first

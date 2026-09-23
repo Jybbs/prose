@@ -1,23 +1,26 @@
 //! The token and bracket lookups on a `Source`: the parenthesized
 //! range an expression recovers against its parent, the tokens a span
-//! overlaps, and the literals and replacement fields a walk seeds from.
+//! overlaps, and the literals, argument lists, and replacement fields a
+//! walk seeds from.
 
 use itertools::Itertools;
 use ruff_python_ast::{
-    AnyNodeRef, ExprRef,
+    AnyNodeRef, Arguments, Expr, ExprRef,
     token::{Token, TokenKind, parenthesized_range},
 };
 use ruff_python_trivia::{BackwardsTokenizer, SimpleToken, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use crate::primitives::{
-    layout::{is_layoutable, requires_expand},
-    tokens::is_interpolated_string_start,
-    walk::{Descent, filter_map_over_exprs},
-};
-
 use super::Source;
+use crate::{
+    primitives::{
+        layout::requires_expand,
+        tokens::is_interpolated_string_start,
+        walk::{Interpolations, filter_map_over_exprs},
+    },
+    rules::{reflow_calls::ReflowCalls, reflow_collections::ReflowCollections},
+};
 
 impl Source {
     /// The start offsets of the non-trivia tokens an `(` directly
@@ -43,17 +46,53 @@ impl Source {
     }
 
     /// Returns the start-ascending ranges of the comment-free literals
-    /// `reflow-collections` can expand, walking the tree on the first
-    /// read.
+    /// `reflow-collections` can expand outside any suppression holding
+    /// that rule, walking the tree on the first read.
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
-            filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
-                (is_layoutable(expr)
-                    && requires_expand(expr)
-                    && !self.intersects_comment(expr.range()))
+            filter_map_over_exprs(&self.ast().body, Interpolations::Skip, |expr| {
+                (self.is_expandable(expr)
+                    && !self
+                        .suppression_map()
+                        .suppresses(expr, ReflowCollections::SLUG))
                 .then_some(expr.range())
             })
         })
+    }
+
+    /// Returns the start-ascending argument lists `reflow-calls` can
+    /// explode, meaning each list carrying an argument and no comment,
+    /// outside any replacement field and any suppression holding that
+    /// rule, walking the tree on the first read.
+    pub(crate) fn explodable_arguments(&self) -> &[TextRange] {
+        self.explodable_arguments.get_or_init(|| {
+            let mut lists = filter_map_over_exprs(&self.ast().body, Interpolations::Skip, |expr| {
+                let arguments = &expr.as_call_expr()?.arguments;
+                (self.is_explodable(arguments)
+                    && !self
+                        .suppression_map()
+                        .suppresses(arguments, ReflowCalls::SLUG))
+                .then_some(arguments.range())
+            });
+            // A call is collected before the calls inside its callee, whose
+            // lists start earlier.
+            lists.sort_unstable_by_key(Ranged::start);
+            lists
+        })
+    }
+
+    /// True where `reflow-collections` can expand `expr` once no
+    /// suppression holds it, meaning it passes `requires_expand` and
+    /// carries no comment.
+    pub(crate) fn is_expandable(&self, expr: &Expr) -> bool {
+        requires_expand(expr) && !self.intersects_comment(expr.range())
+    }
+
+    /// True where `reflow-calls` can explode `arguments` once no
+    /// suppression holds it, meaning the list carries an argument and no
+    /// comment.
+    pub(crate) fn is_explodable(&self, arguments: &Arguments) -> bool {
+        !arguments.is_empty() && !self.intersects_comment(arguments.inner_range())
     }
 
     /// Returns the start offset of the first token in `range` for
@@ -174,10 +213,8 @@ impl Source {
 
 #[cfg(test)]
 mod tests {
-
     use rstest::rstest;
     use ruff_python_ast::token::TokenKind;
-
     use ruff_text_size::TextRange;
 
     use super::*;
@@ -185,6 +222,57 @@ mod tests {
         primitives::{scope::sub_bodies, walk::filter_map_over_parented_exprs},
         testing::parse,
     };
+
+    #[rstest]
+    #[case::a_two_entry_list("x = [a, b]\n", &["[a, b]"])]
+    #[case::an_element_ahead_of_its_iterable("x = [[a, b] for a in (c, d)]\n", &["[a, b]", "(c, d)"])]
+    #[case::a_one_entry_dict("x = {'k': v}\n", &["{'k': v}"])]
+    #[case::a_one_element_list("x = [a]\n", &[])]
+    #[case::a_bare_tuple("x = a, b\n", &[])]
+    #[case::a_literal_holding_a_comment("x = [\n    a,  # c\n    b,\n]\n", &[])]
+    #[case::a_literal_held_by_a_skip("x = [a, b]  # prose: skip[reflow-collections]\n", &[])]
+    #[case::a_literal_inside_a_replacement_field("x = f\"{[a, b]}\"\n", &[])]
+    fn expandable_literals_lists_each_literal_reflow_collections_expands(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let literals: Vec<&str> = source
+            .expandable_literals()
+            .iter()
+            .map(|range| source.slice(*range))
+            .collect();
+        assert_eq!(literals, expected);
+    }
+
+    #[rstest]
+    #[case::a_nested_call_after_its_enclosing_list("f(g(a), b)\n", &["(g(a), b)", "(a)"])]
+    #[case::a_called_result_after_its_callee("f(a)(b)\n", &["(a)", "(b)"])]
+    #[case::a_chained_call_after_its_receiver("a.b(c).d(e)\n", &["(c)", "(e)"])]
+    #[case::an_empty_list("f()\n", &[])]
+    #[case::a_list_holding_a_comment("f(\n    a,  # c\n)\n", &[])]
+    #[case::a_call_inside_a_replacement_field("x = f\"{g(a)}\"\n", &[])]
+    #[case::a_list_held_by_a_skip("f(a)  # prose: skip[reflow-calls]\n", &[])]
+    fn explodable_arguments_lists_each_argument_list_in_start_order(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let lists: Vec<&str> = source
+            .explodable_arguments()
+            .iter()
+            .map(|range| source.slice(*range))
+            .collect();
+        assert_eq!(lists, expected);
+    }
+
+    #[test]
+    fn first_token_offset_in_range_returns_none_for_empty_range() {
+        let s = parse("x = 1\n");
+        let empty = TextRange::empty(TextSize::new(0));
+
+        assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
+    }
 
     #[rstest]
     #[case::the_first_of_two_matches("a = b = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]
@@ -201,14 +289,6 @@ mod tests {
         assert_eq!(found, expected.map(TextSize::new));
     }
 
-    #[test]
-    fn first_token_offset_in_range_returns_none_for_empty_range() {
-        let s = parse("x = 1\n");
-        let empty = TextRange::empty(TextSize::new(0));
-
-        assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
-    }
-
     #[rstest]
     #[case("f(a)\n")]
     #[case("(a)\n")]
@@ -219,9 +299,10 @@ mod tests {
     #[case("x = a if (b) else c\n")]
     fn parenthesized_range_agrees_with_the_token_walk(#[case] src: &str) {
         let source = parse(src);
-        let pairs = filter_map_over_parented_exprs(source.ast(), Descent::Into, |expr, parent| {
-            Some((expr, parent))
-        });
+        let pairs =
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Read, |expr, parent| {
+                Some((expr, parent))
+            });
         assert!(!pairs.is_empty());
         for (expr, parent) in pairs {
             assert_eq!(

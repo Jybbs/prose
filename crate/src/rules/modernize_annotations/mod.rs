@@ -5,14 +5,14 @@
 //! dropping every `typing` import the rewrites leave unread.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
+use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion, visitor::source_order::TraversalSignal};
 use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, singleton_groups},
-        walk::{Descent, ParentedProbe, walk_parented_exprs},
+        walk::{ParentedProbe, walk_parented_exprs},
     },
     rules::reflow_imports::Folds,
     rules::{Rule, RuleId},
@@ -115,11 +115,16 @@ impl<'a> Walker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Walker<'a> {
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
+    fn probe(
+        &mut self,
+        expr: &'a Expr,
+        parent: AnyNodeRef<'a>,
+        _: &[AnyNodeRef<'a>],
+    ) -> TraversalSignal {
         if self.rewrite(expr, parent) {
-            Descent::Over
+            TraversalSignal::Skip
         } else {
-            Descent::Into
+            TraversalSignal::Traverse
         }
     }
 }

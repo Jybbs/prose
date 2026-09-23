@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/generator_set_in_a_dict_value_expands/input.py
+---
+reflow-collections@120..186

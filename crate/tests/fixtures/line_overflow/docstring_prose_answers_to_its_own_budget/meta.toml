@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Docstring Prose Answers to Its Own Budget"
+
+description = '''
+The configuration sets `code-line-length = 40` and leaves `docstring-line-length` at 76. The prose row of `locate`'s docstring runs 72 columns, within the budget `wrap-docstrings` wraps it to, so **it is not reported**, whereas the 45-column `return` row answers to the 40-column code budget and is.
+'''

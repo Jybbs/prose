@@ -15,7 +15,7 @@ use crate::{
     primitives::{
         edit::{narrowed_replacement, padded, singleton_groups},
         inline::rows_within,
-        walk::{Descent, filter_map_over_parented_exprs},
+        walk::{Interpolations, filter_map_over_parented_exprs},
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -92,7 +92,7 @@ impl Rule for PreferFstring {
         }
         singleton_groups(filter_map_over_parented_exprs(
             source.ast(),
-            Descent::Over,
+            Interpolations::Skip,
             |expr, parent| self.edit(source, expr, parent),
         ))
     }

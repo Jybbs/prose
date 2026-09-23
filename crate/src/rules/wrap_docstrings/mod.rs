@@ -11,13 +11,13 @@
 //! output as a word.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::TextSize;
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
     primitives::{
-        docstring::{DocstringBody, LineScanner, rewrite_docstrings, triple_quoted_body},
-        edit::narrowed_replacement,
+        docstring::{DocstringBody, LineScanner, triple_quoted_body, walk_docstrings},
+        edit::{narrowed_replacement, singleton_groups},
         padding,
     },
     rules::{Rule, RuleId},
@@ -36,6 +36,16 @@ pub(super) enum Region {
     Description,
     Section,
     SectionEntry,
+}
+
+/// One multi-line docstring as this rule rewrites it.
+pub(crate) struct Rewrap {
+    /// The budget each line of the body wraps to, keyed by the offset its
+    /// first row opens at, `None` for a line passed through as written and
+    /// for the closing row.
+    pub(crate) budgets: Vec<(TextSize, Option<usize>)>,
+    /// The edit rewrapping the body, `None` where it already reads wrapped.
+    pub(crate) edit: Option<Edit>,
 }
 
 #[derive(Debug)]
@@ -62,25 +72,30 @@ impl WrapDocstrings {
             stranding: config.stranded_padding(),
         }
     }
+
+    /// Returns the rewrap of each multi-line docstring this rule reads, in
+    /// source order.
+    pub(crate) fn rewraps(&self, source: &Source) -> Vec<Rewrap> {
+        let padding = source.stranded_padding(self.stranding);
+        let mut rewraps = Vec::new();
+        walk_docstrings(source, |_, lit| {
+            rewraps.extend(
+                triple_quoted_body(source, lit)
+                    .filter(DocstringBody::is_multiline)
+                    .and_then(|body| rewrite_body(&body, self, source, &padding)),
+            );
+        });
+        rewraps
+    }
 }
 
 impl Rule for WrapDocstrings {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        rewrite_docstrings(source, |source, lit, edits| {
-            let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
-            else {
-                return;
-            };
-            let newline = source.newline_str();
-            let indent_chars = source.line_indent_width(lit.start());
-            let padding = source.stranded_padding(self.stranding);
-            let Some(rewritten) =
-                rewrite_body(&body, indent_chars, newline, self, source, &padding)
-            else {
-                return;
-            };
-            edits.extend(narrowed_replacement(source, body.range, rewritten));
-        })
+        singleton_groups(
+            self.rewraps(source)
+                .into_iter()
+                .filter_map(|rewrap| rewrap.edit),
+        )
     }
 
     fn id(&self) -> RuleId {
@@ -103,17 +118,17 @@ struct Walker<'a> {
 
 fn rewrite_body<'a>(
     body: &DocstringBody<'a>,
-    body_indent_chars: usize,
-    newline: &'a str,
     rule: &'a WrapDocstrings,
     source: &'a Source,
     padding: &'a [Edit],
-) -> Option<String> {
+) -> Option<Rewrap> {
+    let newline = source.newline_str();
     let (content, closer_indent) = body.text.strip_prefix(newline)?.rsplit_once(newline)?;
     let lines = spliced_continuations(content, newline, body.raw);
+    let content_start = body.range.start() + TextSize::of(newline);
 
     let mut walker = Walker {
-        content_start: body.range.start() + TextSize::of(newline),
+        content_start,
         newline,
         out: String::with_capacity(content.len()),
         padding,
@@ -121,16 +136,22 @@ fn rewrite_body<'a>(
         raw: body.raw,
         region: Region::Description,
         rule,
-        scanner: LineScanner::new(body_indent_chars),
+        scanner: LineScanner::new(source.line_indent_width(body.range.start())),
         source,
     };
-    for (offset, line) in &lines {
-        walker.consume(*offset, line);
-    }
+    let budgets = lines
+        .iter()
+        .map(|(offset, line)| (content_start + *offset, walker.consume(*offset, line)))
+        .chain([(body.range.end() - TextSize::of(closer_indent), None)])
+        .collect();
     walker.flush_paragraph();
 
     let wrapped = walker.out.trim_end_matches(newline);
-    Some([newline, wrapped, newline, closer_indent].concat())
+    let rewritten = [newline, wrapped, newline, closer_indent].concat();
+    Some(Rewrap {
+        budgets,
+        edit: narrowed_replacement(source, body.range, rewritten),
+    })
 }
 
 #[cfg(test)]

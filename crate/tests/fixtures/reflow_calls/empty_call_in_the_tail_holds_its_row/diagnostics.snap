@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_calls/empty_call_in_the_tail_holds_its_row/input.py
+---
+reflow-calls@27..63

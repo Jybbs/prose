@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Line Whose Trailing Comment Runs Past the Budget Is Still Reported"
+
+description = '''
+`LOOKUP`'s dict fits the 88-column budget, and the trailing comment after it carries the line to 96 columns. **The line is reported even though the dict is a construct `reflow-collections` can expand**, because a layout rule measures a row only up to its trailing comment, and the dict fits within that measure.
+'''

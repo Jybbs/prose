@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Binding a Bare Tuple Is Reported"
+
+description = '''
+The 96-column line building `NAMES` holds a comprehension that binds the bare tuple `name, entry` on each iteration. **The line is reported with no legal reshape**, because a comprehension never expands and a bare tuple carries no bracket for `reflow-collections` to break at.
+'''

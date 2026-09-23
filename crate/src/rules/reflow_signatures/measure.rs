@@ -2,7 +2,10 @@
 //! later rules settle it to, and the literals along that row a fit test
 //! reads.
 
-use ruff_python_ast::{AnyNodeRef, Expr, StmtFunctionDef, helpers::any_over_expr};
+use ruff_python_ast::{
+    AnyNodeRef, Expr, StmtFunctionDef, helpers::any_over_expr,
+    visitor::source_order::TraversalSignal,
+};
 use ruff_text_size::{Ranged, TextSize};
 
 use super::terms::Expansion;
@@ -12,7 +15,7 @@ use crate::primitives::{
     padding,
     params::parameter_sites,
     range::return_annotation_range,
-    walk::{Descent, ParentedCollector, walk_parented_expr},
+    walk::{Interpolations, ParentedCollector, walk_parented_expr},
 };
 
 impl Expansion<'_> {
@@ -42,7 +45,7 @@ impl Expansion<'_> {
         {
             return true;
         }
-        if !self.expands_literals {
+        if !self.one_row.expands_literals() {
             return false;
         }
         let returns = fd.returns.as_deref();
@@ -59,9 +62,7 @@ impl Expansion<'_> {
                 continue;
             }
             let in_returns = returns.is_some_and(|ret| ret.range().contains_range(literal.range()));
-            let breaks = any_over_expr(literal, &|inner: &Expr| {
-                is_layoutable(inner) && requires_expand(inner)
-            });
+            let breaks = any_over_expr(literal, &|inner: &Expr| requires_expand(inner));
             return in_returns && breaks && column < self.code_line_length;
         }
         false
@@ -112,10 +113,11 @@ fn literals_beneath<'src>(
     expr: &'src Expr,
     parent: AnyNodeRef<'src>,
 ) -> Vec<(&'src Expr, AnyNodeRef<'src>)> {
-    let mut probe =
-        ParentedCollector::new(Descent::Into, Descent::Over, |expr: &'src Expr, parent| {
-            is_layoutable(expr).then_some((expr, parent))
-        });
+    let mut probe = ParentedCollector::new(
+        Interpolations::Read,
+        TraversalSignal::Skip,
+        |expr: &'src Expr, parent| is_layoutable(expr).then_some((expr, parent)),
+    );
     walk_parented_expr(expr, parent, &mut probe);
     probe.found
 }

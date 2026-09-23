@@ -203,6 +203,13 @@ impl Config {
             .releasing_heads()
     }
 
+    /// True where `reflow-collections` is on with its `explode` facet
+    /// set, the state in which it expands an overflowing literal.
+    pub(crate) fn expands_literals(&self) -> bool {
+        let collections = &self.rules.reflow_collections;
+        collections.enabled && collections.explode
+    }
+
     pub(crate) fn first_party(&self) -> Vec<String> {
         self.imports.first_party.clone()
     }

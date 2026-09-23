@@ -114,7 +114,7 @@ pub(crate) fn hung_block_through<'s>(
 }
 
 /// `range`'s source text placed per `landing`, its continuation rows
-/// travelling and every row a row-spanning string part freezes left
+/// traveling and every row a row-spanning string part freezes left
 /// where the source wrote it. Borrowed where the block holds no movable
 /// continuation row or already sits where it lands.
 pub(crate) fn placed_block(source: &Source, range: TextRange, landing: Landing) -> Cow<'_, str> {

@@ -1,0 +1,33 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/disabled_layout_rule_still_reports/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 95,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Line is 94 columns, over the 88-column budget, with `reflow-calls` off"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 93,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Line is 92 columns, over the 88-column budget, with `explode` off on `reflow-collections`"
+  }
+]

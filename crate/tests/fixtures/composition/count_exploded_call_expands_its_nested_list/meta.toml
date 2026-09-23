@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Nested List Holding a Count-Exploded Call Expands in One Pass"
+
+description = '''
+The outer list overflows and expands, and its first element is a two-entry list whose `helper` call carries five keyword arguments, past the `max-args` count of `reflow-calls`. **The nested list expands one entry per row in the same pass**, because the call inside it explodes whatever its width, so the list has no one-row form left to keep.
+'''

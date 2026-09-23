@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/held_literal_leaves_the_call_to_explode/input.py
+---
+value = helper(
+    alpha_argument,
+    beta_argument
+) + [gamma_value, delta_value, epsilon_value, zeta_value]  # prose: skip[reflow-collections]

@@ -1,0 +1,111 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 153,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Line is 152 columns, over the 120-column budget, with `reflow-imports` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 120,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Line is 119 columns, over the 88-column budget, with `reflow-calls` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 130,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 5
+    },
+    "message": "Line is 129 columns, over the 88-column budget, with `reflow-collections` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 91,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Line is 90 columns, over the 88-column budget, with `reflow-calls` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 125,
+      "row": 12
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 12
+    },
+    "message": "Line is 124 columns, over the 88-column budget, with `reflow-signatures` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 97,
+      "row": 18
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 18
+    },
+    "message": "Line is 96 columns, over the 76-column budget, with `wrap-docstrings` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 142,
+      "row": 22
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 22
+    },
+    "message": "Line is 141 columns, over the 88-column budget, with `stack-adjacent-strings` held by a skip"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 125,
+      "row": 27
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 27
+    },
+    "message": "Line is 124 columns, over the 88-column budget, with `align-match-case` held by a skip"
+  }
+]

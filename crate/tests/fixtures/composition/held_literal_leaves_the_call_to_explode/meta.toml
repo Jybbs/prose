@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Held List in the Tail Leaves the Call Ahead of It to Explode"
+
+description = '''
+The row assigning `value` adds a list to the result of a `helper` call and carries `# prose: skip[reflow-collections]`, which holds the list on its row. **`reflow-calls` explodes `helper` one argument per row**, because a held list never breaks, so its `[` no longer bounds the measure of the call ahead of it and the whole row counts against the budget.
+'''

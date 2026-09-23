@@ -21,8 +21,11 @@ use crate::{
         edit::apply_inline_edits,
         fracture::{self, outermost},
         inline::{display_width, settled_slice_width, settled_text_width, spans_rows},
-        layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
+        layout::{
+            is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry, requires_expand,
+        },
         params::parameter_sites,
+        walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
 };
@@ -30,17 +33,17 @@ use crate::{
 mod render;
 mod walk;
 
-use render::write_joined;
-
-use render::Writer;
+use render::{Writer, write_joined};
 
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
-/// closes a fracture at all, and `max_dict_entries` is `None` where the
-/// `explode` facet leaves the entry cap inert.
+/// closes a fracture at all, `expands_literals` whether
+/// `reflow-collections` expands a literal, and `max_dict_entries` is
+/// `None` where it does not, leaving the entry cap inert.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
+    expands_literals: bool,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
@@ -74,6 +77,35 @@ impl<'a> Settings<'a> {
             .then_some(form)
     }
 
+    /// The narrower of the width `range` settles to as written and the
+    /// width `expr`'s canonical rebuild carries. `padding` is the edit
+    /// list `strip-stranded-padding` emits, discounted from the
+    /// as-written reading alone.
+    fn narrowest_width(
+        &self,
+        source: &Source,
+        expr: &Expr,
+        parent: AnyNodeRef,
+        range: TextRange,
+        padding: &[Edit],
+    ) -> usize {
+        let settled = settled_slice_width(source, padding, range);
+        let condensed = self
+            .condensed(source, expr, parent)
+            .map_or(settled, |text| {
+                settled_text_width(source, padding, &text, range)
+            });
+        settled.min(condensed)
+    }
+
+    /// The writer serializing under these settings over `source`.
+    fn writer(&self, source: &'a Source) -> Writer<'a> {
+        Writer {
+            settings: *self,
+            source,
+        }
+    }
+
     /// `expr`'s one-row form over `range`, `hold` deciding whether its
     /// own flush column blocks the form.
     fn written(
@@ -86,20 +118,13 @@ impl<'a> Settings<'a> {
         self.writer(source).formed(expr, range, hold)
     }
 
-    /// The writer serializing under these settings over `source`.
-    fn writer(&self, source: &'a Source) -> Writer<'a> {
-        Writer {
-            settings: *self,
-            source,
-        }
-    }
-
     /// These settings resolving each call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
     /// builds for one source.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             code_line_length: self.code_line_length,
+            expands_literals: self.expands_literals,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
@@ -162,10 +187,35 @@ impl<'a> Settings<'a> {
         self.rejoin.explodes(source, call)
     }
 
-    /// The dict entry cap where the `explode` facet is set, `None` where
-    /// no count expands a dict.
-    pub(crate) fn dict_entry_cap(&self) -> Option<usize> {
-        self.max_dict_entries
+    /// True where `reflow-collections` expands `literal` at `column` with
+    /// `tail` columns after it. A comment-free literal passing
+    /// `requires_expand` expands where a later rule reopens it, where it
+    /// is written across rows, or where its narrowest width under
+    /// `padding` overflows. A caller tries [`Self::rejoined`] first.
+    pub(crate) fn expands(
+        &self,
+        source: &'a Source,
+        literal: &Expr,
+        parent: AnyNodeRef,
+        column: usize,
+        tail: usize,
+        padding: &[Edit],
+    ) -> bool {
+        let range = literal.range();
+        self.expands_literals
+            && requires_expand(literal)
+            && !source.intersects_comment(range)
+            && (source.contains_line_break(range)
+                || self.reopens(source, literal)
+                || !self.fits(
+                    column + self.narrowest_width(source, literal, parent, range, padding) + tail,
+                ))
+    }
+
+    /// True where `reflow-collections` expands literals, meaning the rule
+    /// is on and its `explode` facet is set.
+    pub(crate) fn expands_literals(&self) -> bool {
+        self.expands_literals
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -185,27 +235,6 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
-    }
-
-    /// The narrower of the width `range` settles to as written and the
-    /// width `expr`'s canonical rebuild carries. `padding` is the edit
-    /// list `strip-stranded-padding` emits, discounted from the
-    /// as-written reading alone.
-    pub(crate) fn narrowest_width(
-        &self,
-        source: &Source,
-        expr: &Expr,
-        parent: AnyNodeRef,
-        range: TextRange,
-        padding: &[Edit],
-    ) -> usize {
-        let settled = settled_slice_width(source, padding, range);
-        let condensed = self
-            .condensed(source, expr, parent)
-            .map_or(settled, |text| {
-                settled_text_width(source, padding, &text, range)
-            });
-        settled.min(condensed)
     }
 
     /// `param`'s one-row text, each row-spanning annotation and default
@@ -261,6 +290,19 @@ impl<'a> Settings<'a> {
         }
     }
 
+    /// True where a later rule reopens `expr` whatever its shape. That
+    /// happens where `expr` holds a dict past `max_dict_entries`, or a
+    /// call past `max_args` that `reflow-calls` can name, outside any
+    /// replacement field.
+    pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
+        any_over_expr_within(expr, Interpolations::Skip, |e| {
+            e.as_call_expr()
+                .is_some_and(|call| self.rejoin.explodes(source, call))
+                || e.as_dict_expr()
+                    .is_some_and(|dict| self.max_dict_entries.is_some_and(|cap| dict.len() > cap))
+        })
+    }
+
     /// `expr`'s one-row form measured from `column` across `tail`
     /// trailing columns, its own flush column joining rather than
     /// holding. This is the reading a construct takes whose break falls
@@ -285,11 +327,12 @@ impl From<&Config> for Settings<'_> {
         let collection = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
+            expands_literals: config.expands_literals(),
             keep_multiline_literals: collection.keep_multiline_literals,
             max_dict_entries: collection
                 .max_dict_entries
                 .cap()
-                .filter(|_| collection.explode),
+                .filter(|_| config.expands_literals()),
             rejoin: config.fracture_settings(),
         }
     }
@@ -345,6 +388,36 @@ mod tests {
     }
 
     #[rstest]
+    #[case::fits_its_row("[a, b]", 0, 0, false)]
+    #[case::overflows_through_its_tail("[a, b]", 0, 85, true)]
+    #[case::overflows_from_its_column("[a, b]", 84, 0, true)]
+    #[case::one_entry_dict_overflowing("{'k': v}", 85, 0, true)]
+    #[case::one_element_list("[aaaa]", 90, 0, false)]
+    #[case::comment_inside("[\n    a,  # c\n    b,\n]", 90, 0, false)]
+    #[case::written_across_rows("[\n    a,\n    b,\n]", 0, 0, true)]
+    #[case::count_exploded_call_inside("[helper(a=1, b=2, c=3, d=4), b]", 0, 0, true)]
+    fn expands_reads_each_trigger_reflow_collections_expands_on(
+        #[case] src: &str,
+        #[case] column: usize,
+        #[case] tail: usize,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let literal = first_expr(&source);
+        assert_eq!(
+            Settings::from(&Config::default()).expands(
+                &source,
+                literal,
+                literal.into(),
+                column,
+                tail,
+                &[],
+            ),
+            expected,
+        );
+    }
+
+    #[rstest]
     #[case::fits(0, 0, true)]
     #[case::tail_overflows(0, 84, false)]
     #[case::column_overflows(84, 0, false)]
@@ -386,14 +459,34 @@ mod tests {
         assert_eq!(form_under(&config, "{'a': 1, 'b': 2, 'c': 3}"), None);
     }
 
-    #[test]
-    fn form_joins_a_dict_the_cleared_explode_facet_leaves_inert() {
+    #[rstest]
+    #[case::explode_facet_cleared(true, false)]
+    #[case::rule_disabled(false, true)]
+    fn form_joins_a_dict_the_entry_cap_leaves_inert(#[case] enabled: bool, #[case] explode: bool) {
         let mut config = Config::default();
-        config.rules.reflow_collections.explode = false;
+        config.rules.reflow_collections.enabled = enabled;
+        config.rules.reflow_collections.explode = explode;
         config.rules.reflow_collections.max_dict_entries.0 = NonZeroUsize::new(2);
         assert_eq!(
             form_under(&config, "{'a': 1,\n 'b': 2, 'c': 3}").as_deref(),
             Some("{'a': 1, 'b': 2, 'c': 3}"),
+        );
+    }
+
+    #[rstest]
+    #[case::call_past_the_argument_cap("[helper(a=1, b=2, c=3, d=4)]", true)]
+    #[case::dict_past_the_entry_cap("[{'a': 1, 'b': 2, 'c': 3, 'd': 4}]", true)]
+    #[case::call_at_the_argument_cap("[helper(a=1, b=2, c=3)]", false)]
+    #[case::call_inside_a_replacement_field("[f\"{helper(a=1, b=2, c=3, d=4)}\"]", false)]
+    #[case::dict_inside_a_replacement_field("[f\"{ {'a': 1, 'b': 2, 'c': 3, 'd': 4} }\"]", false)]
+    fn reopens_reads_the_constructs_a_later_rule_explodes(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            Settings::from(&Config::default()).reopens(&source, first_expr(&source)),
+            expected,
         );
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Set Inside a Dict Value's Generator Expands Where It Lands"
+
+description = '''
+The `"pr"` value of the returned dict calls `any` over a generator whose set of `gh` commands runs the row past the budget. **The set expands one tuple per row**, the layout it would take as an entry of its own, because the dict's expansion lays out each literal nested in its entries, through the call and the generator, at the row where that literal lands.
+'''

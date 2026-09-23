@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/thematic/carried_comment_spills_onto_the_last_r
       "column": 1,
       "row": 2
     },
-    "message": "Line is 69 columns, over the 60-column budget, with no legal reshape"
+    "message": "Line is 69 columns, over the 60-column budget, with only its trailing comment past it"
   }
 ]

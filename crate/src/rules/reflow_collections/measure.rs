@@ -1,6 +1,7 @@
 //! The measuring half of the `reflow-collections` walker: the column a
-//! construct lands at, the width it settles to, and the columns
-//! trailing it on its row.
+//! construct lands at, the range its recovered parens cover, the gap
+//! around a dict entry's `:`, and the columns trailing a construct on
+//! its row.
 
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_source_file::LineRanges;
@@ -10,33 +11,11 @@ use super::{Layouter, entry_tail};
 use crate::primitives::inline::settled_width;
 
 impl<'a> Layouter<'a> {
-    /// True when `expr` contains an over-cap `Dict` at any depth,
-    /// including itself. A `Dict` inside a replacement field does not
-    /// count.
-    pub(super) fn has_over_count_dict(&self, expr: &Expr) -> bool {
-        let range = expr.range();
-        self.tripping_dicts
-            .iter()
-            .any(|dict| range.contains_range(*dict))
-    }
-
     /// The source text between a keyed dict entry's `key` and the
     /// `value_start` its parens are recovered against, the span carrying
     /// the `:` and the padding around it.
     pub(super) fn key_value_gap(&self, key_end: TextSize, value_start: TextSize) -> &'a str {
         self.source.slice(TextRange::new(key_end, value_start))
-    }
-
-    /// The narrower of the width `range` settles to as written and the
-    /// width `expr`'s canonical rebuild carries.
-    pub(super) fn narrowest_width(
-        &self,
-        expr: &Expr,
-        parent: AnyNodeRef,
-        range: TextRange,
-    ) -> usize {
-        self.one_row
-            .narrowest_width(self.source, expr, parent, range, self.padding)
     }
 
     /// The range covering `expr` with explicit parens recovered against

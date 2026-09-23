@@ -88,7 +88,7 @@ impl<'a> Layout<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Layout<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     /// Probes each expression for a run to break.
     fn probe(
@@ -96,11 +96,11 @@ impl<'a> ParentedProbe<'a> for Layout<'a> {
         expr: &'a Expr,
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         if let Some(run) = concatenated_run(expr) {
             self.process_run(run, parent, ancestors);
         }
-        Descent::Into
+        TraversalSignal::Traverse
     }
 }
 
