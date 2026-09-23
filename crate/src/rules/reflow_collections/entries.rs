@@ -22,6 +22,7 @@ use crate::{
         colon_targets::dict_entry_slot,
         inline::{display_width, end_column, opening_width, settled_text_width, spans_rows},
         layout::opener_width,
+        tokens::code_token_before,
         travel::Landing,
     },
     rules::{
@@ -123,12 +124,7 @@ impl<'a> Layouter<'a> {
             return item.start();
         }
         let value_start = self.range_with_parens(&item.value, parent).start();
-        self.source
-            .tokens()
-            .before(value_start)
-            .iter()
-            .rev()
-            .find(|token| !token.kind().is_trivia())
+        code_token_before(self.source.tokens(), value_start)
             .filter(|token| token.kind() == TokenKind::DoubleStar)
             .map_or(item.start(), Ranged::start)
     }
