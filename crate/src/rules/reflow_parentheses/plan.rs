@@ -5,7 +5,7 @@
 use std::{borrow::Cow, cmp::Reverse};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr, token::TokenKind};
+use ruff_python_ast::{AnyNodeRef, Expr, token::TokenKind, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
@@ -19,7 +19,7 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener, tokens_within},
-        walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
+        walk::{Interpolations, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
     source::Source,
 };
@@ -75,11 +75,11 @@ impl<'src> ParentedProbe<'src> for Probe<'src> {
         expr: &'src Expr,
         parent: AnyNodeRef<'src>,
         ancestors: &[AnyNodeRef<'src>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         if let Some(found) = candidate(self.source, expr, parent, ancestors) {
             self.found.push(found);
         }
-        Descent::Into
+        TraversalSignal::Traverse
     }
 }
 
@@ -117,7 +117,7 @@ pub(super) fn candidates(source: &Source) -> Vec<Candidate<'_>> {
 pub(super) fn outermost_calls(source: &Source) -> Vec<TextRange> {
     outermost(filter_map_over_exprs(
         &source.ast().body,
-        Descent::Over,
+        Interpolations::Skip,
         |expr| expr.as_call_expr().map(Ranged::range),
     ))
 }

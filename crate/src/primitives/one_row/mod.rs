@@ -25,7 +25,7 @@ use crate::{
             is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry, requires_expand,
         },
         params::parameter_sites,
-        walk::{Descent, any_over_expr_within},
+        walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
 };
@@ -295,7 +295,7 @@ impl<'a> Settings<'a> {
     /// call past `max_args` that `reflow-calls` can name, outside any
     /// replacement field.
     pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
-        any_over_expr_within(expr, Descent::Over, |e| {
+        any_over_expr_within(expr, Interpolations::Skip, |e| {
             e.as_call_expr()
                 .is_some_and(|call| self.rejoin.explodes(source, call))
                 || e.as_dict_expr()

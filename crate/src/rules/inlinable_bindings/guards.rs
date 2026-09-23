@@ -9,7 +9,7 @@ use ruff_text_size::{Ranged, TextRange};
 use crate::primitives::{
     range::blocks_span,
     scope::sub_bodies,
-    walk::{Descent, filter_map_over_exprs, filter_map_over_stmts},
+    walk::{Interpolations, filter_map_over_exprs, filter_map_over_stmts},
 };
 
 /// Every span in `body` that repeats its interior, guards it, or opens
@@ -20,7 +20,11 @@ use crate::primitives::{
 pub(super) fn guarded_regions(body: &[Stmt]) -> Vec<TextRange> {
     filter_map_over_stmts(body, guarded_arms)
         .into_iter()
-        .chain(filter_map_over_exprs(body, Descent::Into, guarded_spans))
+        .chain(filter_map_over_exprs(
+            body,
+            Interpolations::Read,
+            guarded_spans,
+        ))
         .flatten()
         .collect()
 }

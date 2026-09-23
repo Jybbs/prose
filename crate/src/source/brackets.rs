@@ -17,7 +17,7 @@ use crate::{
     primitives::{
         layout::requires_expand,
         tokens::is_interpolated_string_start,
-        walk::{Descent, filter_map_over_exprs},
+        walk::{Interpolations, filter_map_over_exprs},
     },
     rules::{reflow_calls::ReflowCalls, reflow_collections::ReflowCollections},
 };
@@ -50,7 +50,7 @@ impl Source {
     /// that rule, walking the tree on the first read.
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
-            filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
+            filter_map_over_exprs(&self.ast().body, Interpolations::Skip, |expr| {
                 (self.is_expandable(expr)
                     && !self
                         .suppression_map()
@@ -66,7 +66,7 @@ impl Source {
     /// rule, walking the tree on the first read.
     pub(crate) fn explodable_arguments(&self) -> &[TextRange] {
         self.explodable_arguments.get_or_init(|| {
-            let mut lists = filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
+            let mut lists = filter_map_over_exprs(&self.ast().body, Interpolations::Skip, |expr| {
                 let arguments = &expr.as_call_expr()?.arguments;
                 (self.is_explodable(arguments)
                     && !self
@@ -299,9 +299,10 @@ mod tests {
     #[case("x = a if (b) else c\n")]
     fn parenthesized_range_agrees_with_the_token_walk(#[case] src: &str) {
         let source = parse(src);
-        let pairs = filter_map_over_parented_exprs(source.ast(), Descent::Into, |expr, parent| {
-            Some((expr, parent))
-        });
+        let pairs =
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Read, |expr, parent| {
+                Some((expr, parent))
+            });
         assert!(!pairs.is_empty());
         for (expr, parent) in pairs {
             assert_eq!(

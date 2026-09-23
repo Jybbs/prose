@@ -14,7 +14,7 @@ use ruff_text_size::Ranged;
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    primitives::walk::{Descent, filter_map_over_exprs, filter_map_over_parented_exprs},
+    primitives::walk::{Interpolations, filter_map_over_exprs, filter_map_over_parented_exprs},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -104,7 +104,7 @@ impl NormalizeComparisons {
 
 impl Rule for NormalizeComparisons {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        filter_map_over_parented_exprs(source.ast(), Descent::Over, |expr, parent| {
+        filter_map_over_parented_exprs(source.ast(), Interpolations::Skip, |expr, parent| {
             expr.as_compare_expr()
                 .and_then(|compare| self.rewrite(source, compare, parent))
         })
@@ -118,7 +118,7 @@ impl Rule for NormalizeComparisons {
         if !self.identity {
             return Vec::new();
         }
-        filter_map_over_exprs(&source.ast().body, Descent::Over, |expr| {
+        filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
             boolean_lint(Test::of(expr.as_compare_expr()?)?)
         })
     }

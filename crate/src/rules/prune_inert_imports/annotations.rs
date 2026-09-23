@@ -14,7 +14,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::primitives::{
     binding::{from_import_bound_name, is_explicit_type_alias, tail_identifier},
-    walk::{Descent, filter_map_over_exprs, filter_map_over_stmts, for_each_annotation},
+    walk::{Interpolations, filter_map_over_exprs, filter_map_over_stmts, for_each_annotation},
 };
 
 /// The name each `from`-import alias binds, against the member it takes
@@ -71,7 +71,7 @@ pub(super) fn type_expression_names(module: &ModModule) -> FxHashSet<String> {
         absorb(declared, &mut names);
     }
     let aliases = import_aliases(module);
-    let quoted = filter_map_over_exprs(&module.body, Descent::Into, |expr| match expr {
+    let quoted = filter_map_over_exprs(&module.body, Interpolations::Read, |expr| match expr {
         Expr::Call(call) => Some(
             type_expression_args(call, &aliases)?
                 .flat_map(quoted_members)

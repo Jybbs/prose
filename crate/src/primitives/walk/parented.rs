@@ -3,46 +3,46 @@
 
 use ruff_python_ast::{
     AnyNodeRef, Arguments, Expr, ExprCall, ModModule, Stmt,
-    visitor::source_order::{self, SourceOrderVisitor},
+    visitor::source_order::{self, SourceOrderVisitor, TraversalSignal},
 };
 
-/// Whether a parent-tracking walk descends into the expression its probe
-/// just read.
+/// Whether a walk reads the interior of an f-string or t-string
+/// replacement field.
 #[derive(Clone, Copy)]
-pub(crate) enum Descent {
-    /// Visit the expression's own children next.
-    Into,
-    /// Leave the children unvisited.
-    Over,
+pub(crate) enum Interpolations {
+    /// Walk each replacement field's expression.
+    Read,
+    /// Leave every replacement field unwalked.
+    Skip,
 }
 
 /// Reads each expression of a module alongside the node enclosing it
 /// and the full ancestor chain, outermost first.
 pub(crate) trait ParentedProbe<'src> {
     /// Whether the walk reads the interior of a replacement field, a
-    /// probe set to `Over` leaving every f-string and t-string it
+    /// probe set to `Skip` leaving every f-string and t-string it
     /// reaches unwalked whatever it reports on the string itself.
-    const INTERPOLATIONS: Descent = Descent::Into;
+    const INTERPOLATIONS: Interpolations = Interpolations::Read;
 
     fn probe(
         &mut self,
         expr: &'src Expr,
         parent: AnyNodeRef<'src>,
         ancestors: &[AnyNodeRef<'src>],
-    ) -> Descent;
+    ) -> TraversalSignal;
 }
 
 /// Collects each `Some` that `probe` returns, descending past a hit
-/// per `on_hit`, so `Descent::Over` keeps the outermost hits alone.
+/// per `on_hit`, so `TraversalSignal::Skip` keeps the outermost hits alone.
 pub(crate) struct ParentedCollector<F, T> {
     pub(crate) found: Vec<T>,
-    interpolations: Descent,
-    on_hit: Descent,
+    interpolations: Interpolations,
+    on_hit: TraversalSignal,
     probe: F,
 }
 
 impl<F, T> ParentedCollector<F, T> {
-    pub(crate) fn new(interpolations: Descent, on_hit: Descent, probe: F) -> Self {
+    pub(crate) fn new(interpolations: Interpolations, on_hit: TraversalSignal, probe: F) -> Self {
         Self {
             found: Vec::new(),
             interpolations,
@@ -60,18 +60,18 @@ impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe
         expr: &'src Expr,
         parent: AnyNodeRef<'src>,
         _: &[AnyNodeRef<'src>],
-    ) -> Descent {
-        let descent = match (self.probe)(expr, parent) {
+    ) -> TraversalSignal {
+        let signal = match (self.probe)(expr, parent) {
             Some(found) => {
                 self.found.push(found);
                 self.on_hit
             }
-            None => Descent::Into,
+            None => TraversalSignal::Traverse,
         };
-        if is_interpolated_string(expr) && matches!(self.interpolations, Descent::Over) {
-            return Descent::Over;
+        if is_interpolated_string(expr) && matches!(self.interpolations, Interpolations::Skip) {
+            return TraversalSignal::Skip;
         }
-        descent
+        signal
     }
 }
 
@@ -89,8 +89,8 @@ impl<'src, P: ParentedProbe<'src>> SourceOrderVisitor<'src> for ParentedWalk<'sr
 
     fn visit_expr(&mut self, expr: &'src Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
-        if matches!(self.probe.probe(expr, parent, &self.parents), Descent::Over)
-            || (matches!(P::INTERPOLATIONS, Descent::Over) && is_interpolated_string(expr))
+        if !self.probe.probe(expr, parent, &self.parents).is_traverse()
+            || (matches!(P::INTERPOLATIONS, Interpolations::Skip) && is_interpolated_string(expr))
         {
             return;
         }
@@ -107,7 +107,7 @@ impl<'src, P: ParentedProbe<'src>> SourceOrderVisitor<'src> for ParentedWalk<'sr
 }
 
 /// True for an f-string or t-string, the expression a probe set to
-/// `Descent::Over` leaves unwalked.
+/// `Interpolations::Skip` leaves unwalked.
 const fn is_interpolated_string(expr: &Expr) -> bool {
     matches!(expr, Expr::FString(_) | Expr::TString(_))
 }
@@ -117,10 +117,10 @@ const fn is_interpolated_string(expr: &Expr) -> bool {
 /// whether the walk reads the interior of a replacement field.
 pub(crate) fn filter_map_over_parented_exprs<'src, T>(
     module: &'src ModModule,
-    interpolations: Descent,
+    interpolations: Interpolations,
     probe: impl FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>,
 ) -> Vec<T> {
-    let mut collector = ParentedCollector::new(interpolations, Descent::Into, probe);
+    let mut collector = ParentedCollector::new(interpolations, TraversalSignal::Traverse, probe);
     walk_parented_exprs(module, &mut collector);
     collector.found
 }
@@ -156,7 +156,7 @@ pub(crate) fn walk_parented_expr<'src>(
 
 /// Walks every expression in `module` in source order, handing each to
 /// `probe` with the node enclosing it and the ancestor chain above it,
-/// descending unless the probe reports `Over`. A call argument names its
+/// descending unless the probe reports `Skip`. A call argument names its
 /// `Arguments` list rather than the call, so a sole argument's enclosing
 /// range stops short of the call's own parentheses.
 pub(crate) fn walk_parented_exprs<'src>(
@@ -191,14 +191,14 @@ mod tests {
             expr: &'a Expr,
             parent: AnyNodeRef<'a>,
             _: &[AnyNodeRef<'a>],
-        ) -> Descent {
+        ) -> TraversalSignal {
             let text = self.source.slice(expr);
             self.seen
                 .push((text, matches!(parent, AnyNodeRef::Arguments(_))));
             if text == self.halt {
-                Descent::Over
+                TraversalSignal::Skip
             } else {
-                Descent::Into
+                TraversalSignal::Traverse
             }
         }
     }
@@ -207,17 +207,17 @@ mod tests {
     fn filter_map_over_parented_exprs_hands_each_expression_its_parent() {
         let source = parse("f(a)\n");
         let enclosed =
-            filter_map_over_parented_exprs(source.ast(), Descent::Over, |expr, parent| {
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Skip, |expr, parent| {
                 matches!(expr, Expr::Name(_)).then(|| matches!(parent, AnyNodeRef::Arguments(_)))
             });
         assert_eq!(enclosed, vec![false, true], "the argument names its list");
     }
 
     #[rstest]
-    #[case(Descent::Over, vec![1])]
-    #[case(Descent::Into, vec![1, 2])]
+    #[case(Interpolations::Skip, vec![1])]
+    #[case(Interpolations::Read, vec![1, 2])]
     fn filter_map_over_parented_exprs_reads_a_replacement_field_on_request(
-        #[case] interpolations: Descent,
+        #[case] interpolations: Interpolations,
         #[case] expected: Vec<usize>,
     ) {
         let source = parse("plain = {\"a\": 1}\nlabel = f\"{ {'b': 2, 'c': 3} }\"\n");
@@ -249,7 +249,7 @@ mod tests {
         vec![("f(a)", false), ("f", false), ("a", true)],
     )]
     #[case::steps_over_the_members_it_covered("f(a)", vec![("f(a)", false)])]
-    fn walk_parented_exprs_names_each_parent_and_honors_the_descent(
+    fn walk_parented_exprs_names_each_parent_and_honors_the_signal(
         #[case] halt: &str,
         #[case] expected: Vec<(&str, bool)>,
     ) {

@@ -15,7 +15,7 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr};
+use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
@@ -29,7 +29,7 @@ use crate::{
         padding::Stranding,
         reserve,
         travel::Landing,
-        walk::{Descent, ParentedProbe, walk_parented_exprs},
+        walk::{Interpolations, ParentedProbe, walk_parented_exprs},
     },
     rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_calls::CollectionLayout},
     source::Source,
@@ -179,7 +179,7 @@ impl CollectionLayout for Layouter<'_> {
 }
 
 impl<'a> ParentedProbe<'a> for Layouter<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     /// Descends past any expression the rule does not lay out or leaves
     /// as written.
@@ -188,9 +188,9 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         expr: &'a Expr,
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         if !is_collapsible(expr) {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         }
         let range = expr.range();
         let start = range.start();
@@ -227,11 +227,11 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         let grandparent = ancestors[ancestors.len().saturating_sub(2)];
         let tail = self.row_tail(expr, parent, grandparent);
         let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         self.edits
             .extend(narrowed_replacement(self.source, range, text));
-        Descent::Over
+        TraversalSignal::Skip
     }
 }
 

@@ -3,7 +3,7 @@
 mod parented;
 
 pub(crate) use parented::{
-    Descent, ParentedCollector, ParentedProbe, filter_map_over_parented_exprs,
+    Interpolations, ParentedCollector, ParentedProbe, filter_map_over_parented_exprs,
     walk_parented_arguments, walk_parented_expr, walk_parented_exprs,
 };
 
@@ -37,7 +37,7 @@ impl<'src, F: FnMut(&Expr)> Visitor<'src> for AnnotationProbe<F> {
 struct AnyExprProbe<F> {
     found: bool,
     hit: F,
-    interpolations: Descent,
+    interpolations: Interpolations,
 }
 
 impl<'src, F: FnMut(&Expr) -> bool> SourceOrderVisitor<'src> for AnyExprProbe<F> {
@@ -53,7 +53,7 @@ impl<'src, F: FnMut(&Expr) -> bool> SourceOrderVisitor<'src> for AnyExprProbe<F>
     }
 
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
-        if matches!(self.interpolations, Descent::Into) {
+        if matches!(self.interpolations, Interpolations::Read) {
             source_order::walk_interpolated_string_element(self, element);
         }
     }
@@ -91,7 +91,7 @@ impl<'src, F: FnMut(&'src Stmt) -> Option<T>, T> StatementVisitor<'src> for Coll
 
 struct ExprCollector<F, T> {
     found: Vec<T>,
-    interpolations: Descent,
+    interpolations: Interpolations,
     probe: F,
 }
 
@@ -102,7 +102,7 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> SourceOrderVisitor<'src> for ExprCol
     }
 
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
-        if matches!(self.interpolations, Descent::Into) {
+        if matches!(self.interpolations, Interpolations::Read) {
             source_order::walk_interpolated_string_element(self, element);
         }
     }
@@ -114,7 +114,7 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> SourceOrderVisitor<'src> for ExprCol
 /// field.
 pub(crate) fn any_over_expr_within(
     expr: &Expr,
-    interpolations: Descent,
+    interpolations: Interpolations,
     hit: impl FnMut(&Expr) -> bool,
 ) -> bool {
     let mut probe = AnyExprProbe {
@@ -141,7 +141,7 @@ pub(crate) fn any_over_stmts(body: &[Stmt], hit: impl FnMut(&Stmt) -> bool) -> b
 /// walk reads the interior of an f-string or t-string replacement field.
 pub(crate) fn filter_map_over_exprs<T>(
     body: &[Stmt],
-    interpolations: Descent,
+    interpolations: Interpolations,
     probe: impl FnMut(&Expr) -> Option<T>,
 ) -> Vec<T> {
     let mut collector = ExprCollector {
@@ -209,7 +209,7 @@ mod tests {
 
     /// The entry count of every dict literal in `src`, in walk order.
     fn dict_sizes(src: &str) -> Vec<usize> {
-        filter_map_over_exprs(&parse(src).ast().body, Descent::Over, |expr| {
+        filter_map_over_exprs(&parse(src).ast().body, Interpolations::Skip, |expr| {
             Some(expr.as_dict_expr()?.len())
         })
     }
@@ -219,12 +219,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case::a_dict_outside_any_field("[{'a': 1}, f\"{x}\"]", Descent::Over, true)]
-    #[case::a_field_read_through("[f\"{ {'a': 1} }\"]", Descent::Into, true)]
-    #[case::a_field_left_unwalked("[f\"{ {'a': 1} }\"]", Descent::Over, false)]
-    fn any_over_expr_within_reads_a_replacement_field_per_its_descent(
+    #[case::a_dict_outside_any_field("[{'a': 1}, f\"{x}\"]", Interpolations::Skip, true)]
+    #[case::a_field_read_through("[f\"{ {'a': 1} }\"]", Interpolations::Read, true)]
+    #[case::a_field_left_unwalked("[f\"{ {'a': 1} }\"]", Interpolations::Skip, false)]
+    fn any_over_expr_within_reads_a_replacement_field_on_request(
         #[case] src: &str,
-        #[case] interpolations: Descent,
+        #[case] interpolations: Interpolations,
         #[case] expected: bool,
     ) {
         let source = parse(src);
@@ -238,7 +238,7 @@ mod tests {
     fn any_over_expr_within_stops_at_the_first_match() {
         let source = parse("[a, b]\n");
         let mut seen = 0;
-        let found = any_over_expr_within(first_expr(&source), Descent::Over, |expr| {
+        let found = any_over_expr_within(first_expr(&source), Interpolations::Skip, |expr| {
             seen += 1;
             expr.is_name_expr()
         });

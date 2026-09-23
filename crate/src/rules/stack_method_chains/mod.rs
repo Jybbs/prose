@@ -13,7 +13,7 @@
 //! `spine` divides a chain and `render` builds the replacement.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr};
+use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::TextRange;
 
 use crate::{
@@ -26,8 +26,8 @@ use crate::{
         layout::item_indent,
         reserve,
         walk::{
-            Descent, ParentedCollector, ParentedProbe, walk_parented_arguments, walk_parented_expr,
-            walk_parented_exprs,
+            Interpolations, ParentedCollector, ParentedProbe, walk_parented_arguments,
+            walk_parented_expr, walk_parented_exprs,
         },
     },
     rules::{Rule, RuleId},
@@ -155,10 +155,13 @@ impl<'a> Breaker<'a> {
         segment: usize,
     ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
         let source = self.source;
-        let mut nested =
-            ParentedCollector::new(Descent::Over, Descent::Over, |expr: &'a Expr, parent| {
+        let mut nested = ParentedCollector::new(
+            Interpolations::Skip,
+            TraversalSignal::Skip,
+            |expr: &'a Expr, parent| {
                 outermost_chain(source, expr, parent).map(|chain| (expr, parent, chain))
-            });
+            },
+        );
         match segment.checked_sub(1) {
             None => walk_parented_expr(
                 chain.receiver,
@@ -220,11 +223,16 @@ impl<'a> Breaker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
+    fn probe(
+        &mut self,
+        expr: &'a Expr,
+        parent: AnyNodeRef<'a>,
+        _: &[AnyNodeRef<'a>],
+    ) -> TraversalSignal {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         let range = self.source.paren_aware_range(expr.into(), parent);
         let column = self.reservations.column_in(self.source, range.start());
@@ -233,10 +241,10 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
             .broken(expr, &chain, range, column, indent)
             .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         insert_edit(&mut self.edits, edit);
-        Descent::Over
+        TraversalSignal::Skip
     }
 }
 
