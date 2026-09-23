@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "With `align-colons` Off, a Dict Value Stays on One Row"
+
+description = '''
+With `align-colons` off, no `:` column exists for [[reflow-collections]] to measure a value against. **The `"pr"` set stays on one row**, because it fits the budget beside its own key, where the same dict with `align-colons` on expands it to join the column.
+'''

@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/sorted_entry_expands_at_the_comma_it_gains/input.py
+---
+align-colons@28..82
+alphabetize-siblings@19..153
+reflow-collections@85..154

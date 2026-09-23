@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Holding a Comment Leaves Its Overflowing Row Unpadded"
+
+description = '''
+The trailing comment on `"cache"` holds `MUTATIONS` as written, since [[reflow-collections]] lays out no literal a comment sits inside. **The `"pr"` set therefore never expands, and `"pr"` stays unpadded**, where padding it would carry its row past the budget, leaving each key at its own `:`.
+'''

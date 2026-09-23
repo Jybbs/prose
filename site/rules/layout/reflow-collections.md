@@ -26,6 +26,7 @@ Every width the rule reads counts the separator closing an entry's row at the po
 2. A member the expansion moves keeps the calls inside it measured at the columns its rows end up on, and a call the move pushes past the budget explodes in the same pass.
 3. A literal following one the rule expands on the same line is measured where that expansion leaves it, on the closer's row at the statement's indent rather than under the continuation column the source wrote.
 4. A dict value whose key the rule lays across rows is measured from the key's last row.
+5. A value inside an expanded dict is measured at the column [[align-colons]] seats it at once the expanded rows align, so a value whose row would cross the budget at that column expands in the same pass, unless [[alphabetize-siblings]] sorts the dict and the expansion would leave more than one entry spanning rows.
 
 <template #facets>
 

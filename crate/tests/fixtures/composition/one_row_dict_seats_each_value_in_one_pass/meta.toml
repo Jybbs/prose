@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A One-Row Dict Seats Each Value at Its Column in One Pass"
+
+description = '''
+`MUTATIONS` sits on one row far past the budget, so [[reflow-collections]] writes one entry per row. **Each value is measured at the column [[align-colons]] seats it at once those rows align**, so the `"pr"` set, which fits beside its own key, expands in the same pass rather than on a second one.
+'''

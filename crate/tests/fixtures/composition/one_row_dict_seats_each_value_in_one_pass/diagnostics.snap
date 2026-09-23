@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/one_row_dict_seats_each_value_in_one_pass/input.py
+---
+reflow-collections@13..195

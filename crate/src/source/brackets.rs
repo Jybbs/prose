@@ -1,6 +1,7 @@
 //! The token and bracket lookups on a `Source`: the parenthesized
 //! range an expression recovers against its parent, the tokens a span
-//! overlaps, and the literals and replacement fields a walk seeds from.
+//! overlaps, and the literals, argument lists, and replacement fields a
+//! walk seeds from.
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -11,10 +12,13 @@ use ruff_python_trivia::{BackwardsTokenizer, SimpleToken, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use crate::primitives::{
-    layout::{is_layoutable, requires_expand},
-    tokens::is_interpolated_string_start,
-    walk::{Descent, filter_map_over_exprs},
+use crate::{
+    primitives::{
+        layout::{is_layoutable, requires_expand},
+        tokens::is_interpolated_string_start,
+        walk::{Descent, filter_map_over_exprs},
+    },
+    rules::reflow_calls::ReflowCalls,
 };
 
 use super::Source;
@@ -53,6 +57,27 @@ impl Source {
                     && !self.intersects_comment(expr.range()))
                 .then_some(expr.range())
             })
+        })
+    }
+
+    /// Returns the start-ascending argument-list ranges of the calls
+    /// `reflow-calls` can explode, meaning each call outside a
+    /// replacement field that carries an argument and no comment inside
+    /// its list, outside any suppression holding that rule, walking the
+    /// tree on the first read.
+    pub(crate) fn explodable_arguments(&self) -> &[TextRange] {
+        self.explodable_arguments.get_or_init(|| {
+            let mut lists = filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
+                let arguments = &expr.as_call_expr()?.arguments;
+                (!arguments.is_empty()
+                    && !self.intersects_comment(arguments.inner_range())
+                    && !self
+                        .suppression_map()
+                        .suppresses(arguments, ReflowCalls::SLUG))
+                .then_some(arguments.range())
+            });
+            lists.sort_unstable_by_key(Ranged::start);
+            lists
         })
     }
 
@@ -185,6 +210,27 @@ mod tests {
         primitives::{scope::sub_bodies, walk::filter_map_over_parented_exprs},
         testing::parse,
     };
+
+    #[rstest]
+    #[case::a_nested_call_after_its_enclosing_list("f(g(a), b)\n", &["(g(a), b)", "(a)"])]
+    #[case::a_called_result_after_its_callee("f(a)(b)\n", &["(a)", "(b)"])]
+    #[case::a_chained_call_after_its_receiver("a.b(c).d(e)\n", &["(c)", "(e)"])]
+    #[case::an_empty_list("f()\n", &[])]
+    #[case::a_list_holding_a_comment("f(\n    a,  # c\n)\n", &[])]
+    #[case::a_call_inside_a_replacement_field("x = f\"{g(a)}\"\n", &[])]
+    #[case::a_list_held_by_a_skip("f(a)  # prose: skip[reflow-calls]\n", &[])]
+    fn explodable_arguments_lists_each_argument_list_in_start_order(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let lists: Vec<&str> = source
+            .explodable_arguments()
+            .iter()
+            .map(|range| source.slice(*range))
+            .collect();
+        assert_eq!(lists, expected);
+    }
 
     #[rstest]
     #[case::the_first_of_two_matches("a = b = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]

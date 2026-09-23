@@ -23,7 +23,9 @@ mod members;
 mod walker;
 mod widen;
 
-pub(crate) use emit::{forecast_columns, operator_columns, settled_tail, space_padding_edit};
+pub(crate) use emit::{
+    Extent, forecast_columns, operator_columns, settled_tail, space_padding_edit, written_columns,
+};
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
 };
@@ -63,6 +65,21 @@ pub(crate) struct Member {
 }
 
 impl Member {
+    /// Builds a row a layout rule writes on a line of its own, opening
+    /// at `baseline` and `width` wide ahead of its aligned token, with
+    /// no source span, since the column math reads its widths alone.
+    fn written(baseline: usize, width: usize) -> Self {
+        Self {
+            baseline,
+            gap: TextRange::default(),
+            line_start: TextSize::default(),
+            op_width: 0,
+            settled_width: width,
+            value_gap: None,
+            width,
+        }
+    }
+
     /// The post-operator gap an aligned row rewrites to one space,
     /// `None` when the rule leaves that spacing alone or the value
     /// opens on a later line.
@@ -112,7 +129,9 @@ impl Member {
 /// `strip_singleton` collapses a size-one group's gap to zero width.
 /// `cap` carries the governing line length when the rule resolves
 /// within one, so a member whose aligned line would cross it
-/// partitions out of the run the way an over-`max_shift` outlier does.
+/// partitions out of the run the way an over-`max_shift` outlier does,
+/// unless a layout rule expands its value and the opening row that
+/// leaves fits.
 /// `release_heads` lets a group's head row stand down as a singleton
 /// where the cap would otherwise strand the row that cut the group,
 /// which a rule opts into only where its rows reach their settled width

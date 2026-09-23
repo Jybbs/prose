@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Value That Is a Call Explodes to Join the Column"
+
+description = '''
+The `dispatch` call fits the budget beside `"pr"`, but padding `"pr"` out to the column `"variable"` sets would carry the call three columns past it. **[[reflow-collections]] measures the call at that padded column and explodes it one argument per row**, so `"pr"` joins the column [[align-colons]] seats `"cache"` and `"variable"` at, the closing `)` dropping to the entry's indent.
+'''

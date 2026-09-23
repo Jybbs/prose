@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Each Run of an Expanded Dict Seats Its Own Column"
+
+description = '''
+The `**SHARED` unpacking passes the `:` run through, so `"cache"`, `"pr"`, and `"variable"` share one column, whereas the blank line above `"a"` starts a run of its own. **[[reflow-collections]] measures each value at the column [[align-colons]] seats it at within its own run**, so the `"pr"` set, which crosses the budget at the column `"variable"` sets, expands, and `"a"` and `"bb"` align on a narrower column beneath the blank line.
+'''

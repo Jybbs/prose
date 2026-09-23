@@ -8,9 +8,10 @@
 //! construct at its source shape, a held member travels with the row
 //! it lands on, and `keep_multiline_literals` re-expands an authored
 //! flush column rather than joining it. Every measure reads the value
-//! at the column `align_equals` shifts it to, the width the padding
-//! rule settles it at, and the separator `alphabetize-siblings` leaves
-//! closing its row.
+//! at the column `align_equals` shifts it to, or an expanded dict's
+//! value at the column `align_colons` seats it at, the width the
+//! padding rule settles it at, and the separator `alphabetize-siblings`
+//! leaves closing its row.
 
 use std::borrow::Cow;
 
@@ -21,6 +22,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
+        aligner,
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, placed_head, singleton_groups},
         inline::{end_column, indent_width, last_line, spans_rows},
@@ -37,6 +39,7 @@ use crate::{
 };
 
 mod classify;
+mod entries;
 mod flow;
 mod measure;
 mod render;
@@ -46,6 +49,7 @@ const CANONICAL_SEPARATOR: usize = 2;
 #[derive(Debug)]
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
+    colons: Option<aligner::Settings>,
     explode: bool,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
@@ -64,6 +68,11 @@ impl ReflowCollections {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
+            colons: config
+                .rules
+                .align_colons
+                .enabled
+                .then(|| config.colon_settings()),
             explode: rules.explode,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
@@ -94,6 +103,7 @@ impl Rule for ReflowCollections {
         let padding = source.stranded_padding(self.stranding);
         let mut layouter = Layouter {
             code_line_length: self.code_line_length,
+            colons: self.colons,
             edits: Vec::new(),
             explode: self.explode,
             max_atomics: self.max_atomics,
@@ -118,6 +128,7 @@ impl Rule for ReflowCollections {
 
 struct Layouter<'a> {
     pub(super) code_line_length: usize,
+    pub(super) colons: Option<aligner::Settings>,
     pub(super) edits: Vec<Edit>,
     pub(super) explode: bool,
     pub(super) max_atomics: usize,

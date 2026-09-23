@@ -161,6 +161,15 @@ impl Config {
             .get()
     }
 
+    /// The alignment settings `align-colons` runs its code contexts
+    /// under, resolving within the code width and stripping a lone
+    /// row's gap, read by the rule itself and by the forecast
+    /// `reflow-collections` seats an expanded dict's values against.
+    pub(crate) fn colon_settings(&self) -> aligner::Settings {
+        self.align_settings(&self.rules.align_colons, self.code_width())
+            .with_singleton_strip()
+    }
+
     /// The two comment rules a measuring rule predicts, so a trailing
     /// comment reads at the gap `align-comments` seats it at and the
     /// opener `normalize-comment-spacing` settles it to.

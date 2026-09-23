@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/one_row_dict_seats_each_value_in_one_pass/input.py
+---
+MUTATIONS = {
+    "cache"    : {"delete"},
+    "label"    : {"clone", "create", "delete", "edit"},
+    "pr"       : {
+        "close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"
+    },
+    "variable" : {"delete", "set"}
+}

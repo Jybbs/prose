@@ -39,9 +39,7 @@ impl AlignColons {
         Self {
             docstring_settings: type_settings.with_singleton_strip(),
             reservations: config.equals_reservations(),
-            settings: config
-                .align_settings(&config.rules.align_colons, config.code_width())
-                .with_singleton_strip(),
+            settings: config.colon_settings(),
             type_settings,
         }
     }
