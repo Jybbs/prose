@@ -56,7 +56,7 @@ vi.mock('../../lib/suppression/directives.data', () => ({
         { role : 'namespace', text : 'prose:' },
         { role : 'action',    text : 'keep'   }
       ],
-      scope      : 'dict'
+      scope      : 'construct'
     }
   ]
 }))
@@ -66,7 +66,7 @@ const mountAnatomy = () => mount(DirectiveAnatomy, { global: { components: { Inl
 describe('DirectiveAnatomy', () => {
   it('renders one band per scope in the shared order', () => {
     const bands = mountAnatomy().findAll('.directive-anatomy-band')
-    expect(bands.map(b => b.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'dict'])
+    expect(bands.map(b => b.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'construct'])
   })
 
   it('seeds the focus on the bracketed ignore directive', () => {
@@ -78,8 +78,8 @@ describe('DirectiveAnatomy', () => {
 
   it('swaps the plate to the clicked directive', async () => {
     const w = mountAnatomy()
-    await w.get('[data-scope="dict"] .directive-anatomy-thumb').trigger('click')
-    expect(w.get('.directive-anatomy-plate').attributes('data-scope')).toBe('dict')
+    await w.get('[data-scope="construct"] .directive-anatomy-thumb').trigger('click')
+    expect(w.get('.directive-anatomy-plate').attributes('data-scope')).toBe('construct')
     expect(w.get('.directive-anatomy-effect').text()).toBe('Keeps the dict entries in authored order.')
   })
 

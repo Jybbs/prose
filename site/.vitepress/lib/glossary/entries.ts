@@ -607,9 +607,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'pinned statement': {
     aliases    : ['pinned member', 'pinned constant', 'pinned definition'],
     definition : 'A pinned statement stays where the author put it while its siblings sort or '
-               + 'band around it. A `# prose: keep` marker pins a dict literal or a dunder '
-               + 'list, a reference that must resolve at evaluation time pins a definition '
-               + 'below the sibling it names, and a `# noqa: E402` pins an import on its line.',
+               + 'band around it. A `# prose: keep` marker pins a dict literal, a dunder list, '
+               + 'or every statement of a class body, a reference that must resolve at '
+               + 'evaluation time pins a definition below the sibling it names, and a '
+               + '`# noqa: E402` pins an import on its line.',
     families   : ['ordering']
   },
 

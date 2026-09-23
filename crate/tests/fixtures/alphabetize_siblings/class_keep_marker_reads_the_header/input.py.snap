@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_reads_the_header/input.py
+---
+@register  # prose: keep
+class Decorated:
+    alpha = 2
+    zeta  = 1
+
+
+class Wrapped(
+    Base,
+):  # prose: keep
+    zeta  = 1
+    alpha = 2

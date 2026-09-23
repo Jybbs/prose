@@ -27,7 +27,7 @@ mod lint_directive;
 mod parse_common;
 
 use lint_directive::{RuleEntry, parse_ignore};
-use parse_common::{after_prose_prefix, parse_entry};
+use parse_common::{parse_entry, prose_bodies};
 
 /// Sorted byte-range lists for the `# prose: off` regions and the bare
 /// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
@@ -171,6 +171,12 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
     found.region.is_some() || found.skip.is_some() || found.lint.is_some()
 }
 
+/// True when a `#` chunk of `comment` reads `prose: keep`, the marker
+/// holding a dict, a dunder list, or a class body in the order written.
+pub(crate) fn is_keep_marker(comment: &str) -> bool {
+    prose_bodies(comment).any(|body| body == "keep")
+}
+
 /// The offset an unmatched `# prose: off` opened at `start` closes at,
 /// the end of the notebook cell holding `start` or the buffer's end for
 /// an ordinary module whose `cell_offsets` are empty.
@@ -192,7 +198,7 @@ fn directives(comment: &str) -> Directives {
     if memchr(b':', comment.as_bytes()).is_none() {
         return found;
     }
-    for body in comment.split('#').skip(1).filter_map(after_prose_prefix) {
+    for body in prose_bodies(comment) {
         match body {
             "off" => {
                 found.region.get_or_insert(SuppressionKind::Off);
@@ -250,10 +256,9 @@ mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
-    use super::{SuppressionKind, directives, is_directive_comment};
+    use super::{SuppressionKind, directives, is_directive_comment, is_keep_marker};
     use crate::{
-        rules::RuleId,
-        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        rules::{RuleId, align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{at, notebook, parse, range},
     };
 
@@ -262,17 +267,17 @@ mod tests {
     }
 
     #[test]
-    fn a_listed_skip_beside_an_off_still_opens_the_region() {
-        let source = parse("# prose: skip[align-equals]  # prose: off\naa = 1\nb = 2\n");
-        assert!(source.suppression_map().file_is_suppressed());
-    }
-
-    #[test]
     fn a_bare_skip_after_a_listed_one_widens_to_every_rule() {
         let source = parse("x = 1  # prose: skip[align-equals]  # prose: skip\n");
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
         assert!(map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
+    }
+
+    #[test]
+    fn a_listed_skip_beside_an_off_still_opens_the_region() {
+        let source = parse("# prose: skip[align-equals]  # prose: off\naa = 1\nb = 2\n");
+        assert!(source.suppression_map().file_is_suppressed());
     }
 
     #[rstest]
@@ -370,12 +375,25 @@ mod tests {
     #[case("# fmt: off", true)]
     #[case("# prose: skip[align-equals]", true)]
     #[case("# prose: ignore", true)]
+    #[case("# prose: keep", false)]
     #[case("# a plain note", false)]
     fn is_directive_comment_spots_format_and_lint_directives(
         #[case] comment: &str,
         #[case] expected: bool,
     ) {
         assert_eq!(is_directive_comment(comment), expected);
+    }
+
+    #[rstest]
+    #[case::spaced("# prose: keep", true)]
+    #[case::tight("#prose:keep", true)]
+    #[case::doubled_hash("## prose: keep", true)]
+    #[case::after_another_chunk("# noqa  # prose: keep", true)]
+    #[case::trailing_words("# prose: keep the order", false)]
+    #[case::longer_word("# prose: keeps", false)]
+    #[case::bare_word("# keep", false)]
+    fn is_keep_marker_reads_a_prose_keep_chunk(#[case] comment: &str, #[case] expected: bool) {
+        assert_eq!(is_keep_marker(comment), expected);
     }
 
     #[rstest]

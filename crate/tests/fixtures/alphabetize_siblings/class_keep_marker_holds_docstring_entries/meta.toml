@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Kept Class's Docstring Entries Stay in Field Order"
+
+description = '''
+`KeptStations` and `SortedStations` document the same three fields under `Attributes:` in the order they declare them, and only `KeptStations` carries `# prose: keep` on its header. **The entries and the fields of `SortedStations` both sort alphabetically, whereas those of `KeptStations` stay in the order written**, so the docstring still lists the columns in the order the class declares them.
+'''

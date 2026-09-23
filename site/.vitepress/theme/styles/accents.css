@@ -16,10 +16,10 @@
 [data-exit-code="3"] { --exit-code-accent: var(--prose-palette-apricot);  }
 [data-exit-code="4"] { --exit-code-accent: var(--prose-palette-heath);    }
 
-[data-scope="file"]  { --scope-tint: var(--prose-palette-ube);      }
-[data-scope="block"] { --scope-tint: var(--prose-palette-chambray); }
-[data-scope="line"]  { --scope-tint: var(--prose-palette-whiskey);  }
-[data-scope="dict"]  { --scope-tint: var(--prose-palette-celadon);  }
+[data-scope="file"]      { --scope-tint: var(--prose-palette-ube);      }
+[data-scope="block"]     { --scope-tint: var(--prose-palette-chambray); }
+[data-scope="line"]      { --scope-tint: var(--prose-palette-whiskey);  }
+[data-scope="construct"] { --scope-tint: var(--prose-palette-celadon);  }
 
 [data-side="before"] { --side-color: var(--prose-palette-whiskey); }
 [data-side="after"]  { --side-color: var(--prose-palette-celadon); }

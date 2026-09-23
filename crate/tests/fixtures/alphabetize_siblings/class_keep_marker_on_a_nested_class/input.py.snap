@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_on_a_nested_class/input.py
+---
+class Registry:
+    alpha = 2
+    zeta = 1
+
+    class Stages:  # prose: keep
+        fetch = 1
+        parse = 2
+        emit = 3

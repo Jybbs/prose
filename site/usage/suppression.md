@@ -1,10 +1,10 @@
 ---
-description: "Covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, one directive per scope."
+description: "Covers `# fmt: off`, `# fmt: skip`, `# prose: ignore[<rule>]`, and `# prose: keep`, one directive per scope."
 ---
 
 # Suppression
 
-*Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and dict-literal scopes, and choosing a directive means choosing the narrowest scope that covers the exception.
+*Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and construct scopes, and choosing a directive means choosing the narrowest scope that covers the exception.
 
 ## Scope Decisions
 
@@ -45,7 +45,7 @@ The **`ignore`** family silences lints, where `# prose: ignore[<rule>]` at the e
 
 The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. Only the block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses.
 
-### Pinning a Dict Literal
+### Pinning a Dict or a Class Body
 
 `# prose: keep` on the opening `{` line or the closing `}` line of a dict literal keeps that one literal's order as written, and it is the one directive tied to a single construct. The default it overrides is [[alphabetize-siblings]] sorting dict entries by key, which is wrong where the source order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*. [[band-constants]] reads the same marker and leaves the statement where the author put it rather than gathering it into the band. Where a whole project reads its dicts in order, the `sort-dict-keys` facet turns the sort off everywhere, leaving the directive for the remaining exceptions. The same marker on an `__all__` or `__slots__` list keeps that one hand-ordered list, and the `sort-dunder-lists` facet is its project-wide counterpart.
 
@@ -56,6 +56,15 @@ stages = {  # prose: keep
     "validate" : validate_schema,
     "render"   : render_html
 }
+```
+
+The same marker on a `class` line holds the statements of that class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*. The fields, methods, and nested classes keep their order, the docstring's entries keep matching them, and everything inside those statements still sorts.
+
+```python
+class StationSchema(DataFrameModel):  # prose: keep
+    station  : Index[str] = Column(check_name=True)
+    name     : str        = Column()
+    latitude : float      = Column()
 ```
 
 ## See Also

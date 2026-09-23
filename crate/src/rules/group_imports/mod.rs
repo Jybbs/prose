@@ -13,6 +13,7 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{
+        comments::class_keeps_order,
         edit::{narrowed_replacement, singleton_groups},
         imports::{import_group, sectioned_import_runs},
         orderer::{any_sibling_shares_line, assemble_blocks, member_blocks, permute_full},
@@ -49,7 +50,7 @@ impl Rule for GroupImports {
             first_party: &self.first_party,
             source,
         };
-        walker.group_body(&source.ast().body, source.module_range());
+        walker.group_body(&source.ast().body, source.module_range(), false);
         singleton_groups(walker.edits)
     }
 
@@ -67,9 +68,11 @@ struct Walker<'a> {
 impl Walker<'_> {
     /// Partitions each import run in `body`, then recurses into every
     /// nested body. A run reorders within one section, and a body whose
-    /// siblings share a physical line through `;` keeps source order.
-    fn group_body(&mut self, body: &[Stmt], outer: TextRange) {
-        if !body.is_empty() && !any_sibling_shares_line(self.source, body) {
+    /// siblings share a physical line through `;` keeps source order, as
+    /// does one under `keeps_order`, which is set for the body of a class
+    /// whose header carries `# prose: keep` and every arm nested inside it.
+    fn group_body(&mut self, body: &[Stmt], outer: TextRange, keeps_order: bool) {
+        if !keeps_order && !body.is_empty() && !any_sibling_shares_line(self.source, body) {
             let blocks = member_blocks(self.source, body, outer);
             let sections = Sections::of(self.source, &blocks);
             for run in sectioned_import_runs(&sections, body) {
@@ -77,8 +80,13 @@ impl Walker<'_> {
             }
         }
         for stmt in body {
+            let keeps_order = match stmt {
+                Stmt::ClassDef(class) => class_keeps_order(self.source, class),
+                Stmt::FunctionDef(_) => false,
+                _ => keeps_order,
+            };
             for (sub, sub_outer) in sub_bodies(stmt) {
-                self.group_body(sub, sub_outer);
+                self.group_body(sub, sub_outer, keeps_order);
             }
         }
     }

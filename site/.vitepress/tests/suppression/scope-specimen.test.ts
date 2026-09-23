@@ -6,22 +6,22 @@ import { expectAccessible } from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
-    { form : '# prose: off',              id : 'prose-off',          scope : 'file'  },
+    { form : '# prose: off',              id : 'prose-off',          scope : 'file'      },
     { form : '# fmt: off',                id : 'fmt-off',            scope : 'block',
       pairId : 'fmt-on', pairRole : 'opens' },
     { form : '# fmt: on',                 id : 'fmt-on',             scope : 'block',
       pairId : 'fmt-off', pairRole : 'closes' },
-    { form : '# fmt: skip',               id : 'fmt-skip',           scope : 'line'  },
-    { form : '# prose: skip[<rule>, ...]', id : 'prose-skip-rules',  scope : 'line'  },
+    { form : '# fmt: skip',               id : 'fmt-skip',           scope : 'line'      },
+    { form : '# prose: skip[<rule>, ...]', id : 'prose-skip-rules',  scope : 'line'      },
     { form : '# prose: ignore[<rule>, ...]', id : 'prose-ignore-rules', scope : 'line' },
-    { form : '# prose: keep',             id : 'prose-keep',         scope : 'dict'  }
+    { form : '# prose: keep',             id : 'prose-keep',         scope : 'construct' }
   ]
 }))
 
 describe('ScopeSpecimen', () => {
   it('renders one legend band per scope in the shared order', () => {
     const rows = mount(ScopeSpecimen).findAll('.scope-specimen-legend-row')
-    expect(rows.map(r => r.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'dict'])
+    expect(rows.map(r => r.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'construct'])
   })
 
   it('composes the paired display form from the registry', () => {
@@ -38,7 +38,7 @@ describe('ScopeSpecimen', () => {
       '/reference/suppression-directives#line-markers',
       '/reference/suppression-directives#line-markers',
       '/reference/suppression-directives#line-markers',
-      '/reference/suppression-directives#dict-literal-order-preservation'
+      '/reference/suppression-directives#construct-order-preservation'
     ])
   })
 

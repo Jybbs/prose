@@ -16,6 +16,7 @@ use super::{
 };
 use crate::{
     primitives::{
+        comments::class_keeps_order,
         constructor::keyword_field_start,
         decorator::is_decorated,
         edit::{apply_inline_edits, splice_bodies},
@@ -43,9 +44,9 @@ pub(super) struct BodyLayout<'a> {
 }
 
 /// Context threaded through the body-rewrite recursion, every field
-/// invariant but `keyword_fields_from` and `orders_members`, which each
-/// class header refreshes for its own body and for every arm nested
-/// inside it.
+/// invariant but `keeps_order`, `keyword_fields_from`, and
+/// `orders_members`, which `rewrite_stmt` refreshes from each class
+/// header for its body and for every arm nested inside it.
 #[derive(Clone, Copy)]
 pub(super) struct RewriteCtx<'a> {
     pub(super) defer_annotations: bool,
@@ -53,6 +54,7 @@ pub(super) struct RewriteCtx<'a> {
     pub(super) first_party: &'a [String],
     pub(super) group_imports: bool,
     pub(super) group_methods: bool,
+    pub(super) keeps_order: bool,
     pub(super) keyword_fields_from: TextSize,
     pub(super) leaf_edits: &'a [Edit],
     pub(super) orders_members: bool,
@@ -63,7 +65,8 @@ pub(super) struct RewriteCtx<'a> {
 /// Computes the reorder of `body`: renders each member, then permutes the
 /// slots within each section by the family sorts and import grouping that
 /// `scope` enables, leaving the assembly to the caller. The section
-/// partition walls each notebook cell, so no permutation crosses a cell.
+/// partition walls each notebook cell, so no permutation crosses a cell,
+/// and a class-scope body under a `# prose: keep` header keeps every slot.
 pub(super) fn body_layout<'a>(
     ctx: RewriteCtx<'a>,
     body: &'a [Stmt],
@@ -75,6 +78,7 @@ pub(super) fn body_layout<'a>(
         first_party,
         group_imports,
         group_methods,
+        keeps_order,
         keyword_fields_from,
         orders_members,
         sort_definitions,
@@ -88,10 +92,11 @@ pub(super) fn body_layout<'a>(
     } = rendered_member_blocks(source, body, outer, |stmt, block| {
         rewrite_stmt(ctx, stmt, block, scope)
     });
+    let in_class = scope == BodyScope::Class;
+    let held = in_class && keeps_order;
     let mut import_run_slots: Vec<usize> = Vec::new();
-    if !any_sibling_shares_line(source, body) {
+    if !held && !any_sibling_shares_line(source, body) {
         let sections = Sections::of(source, &blocks);
-        let in_class = scope == BodyScope::Class;
         if scope != BodyScope::Function {
             let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
             let refs = eval_time_refs_of(body, defer_annotations);
@@ -236,6 +241,7 @@ fn rewrite_stmt<'a>(
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
     let ctx = stmt.as_class_def_stmt().map_or(ctx, |class| RewriteCtx {
+        keeps_order: class_keeps_order(ctx.source, class),
         keyword_fields_from: keyword_field_start(class),
         orders_members: class_orders_members(class, ctx.enumerations),
         ..ctx

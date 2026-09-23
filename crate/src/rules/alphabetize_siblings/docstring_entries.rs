@@ -6,10 +6,11 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Parameters;
 use ruff_text_size::{Ranged, TextSize};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
     primitives::{
+        comments::class_keeps_order,
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::narrowed_replacement,
         orderer::{permute_full, reorder_text},
@@ -25,9 +26,21 @@ use crate::{
 /// documented signature takes that parameter's position as the rule
 /// leaves the signature, and every other entry sinks below them,
 /// alphabetized by name. Module and class docstrings carry no
-/// signature, so their sections alphabetize throughout.
+/// signature, so their sections alphabetize throughout, except in a
+/// class whose header carries `# prose: keep`, which keeps them as
+/// written.
 pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
-    let param_docs: FxHashMap<TextSize, Vec<&str>> = documented_definitions(source)
+    let definitions = documented_definitions(source);
+    let held: FxHashSet<TextSize> = definitions
+        .iter()
+        .filter(|(definition, _)| {
+            definition
+                .as_class_def_stmt()
+                .is_some_and(|class| class_keeps_order(source, class))
+        })
+        .map(|(_, lit)| lit.start())
+        .collect();
+    let param_docs: FxHashMap<TextSize, Vec<&str>> = definitions
         .into_iter()
         .filter_map(|(definition, lit)| {
             let function = definition.as_function_def_stmt()?;
@@ -35,6 +48,9 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
         })
         .collect();
     rewrite_docstrings(source, |source, lit, edits| {
+        if held.contains(&lit.start()) {
+            return;
+        }
         let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
         for section in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(

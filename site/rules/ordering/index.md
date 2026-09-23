@@ -8,4 +8,4 @@ The ordering rules reorder sibling AST nodes by a fixed key while keeping each n
 
 <RuleCardList family="ordering" />
 
-The [[orderer]] primitive page covers how a comment attaches to a node and the `gap_override` machinery. The `# prose: keep` directive *(documented in [**Suppression Directives**](/reference/suppression-directives))* keeps a dict literal out of [[alphabetize-siblings]] when the entry order carries meaning no rule can read from the source, and the rule's `sort-dict-keys` facet turns the reorder off across a whole project.
+The [[orderer]] primitive page covers how a comment attaches to a node and the `gap_override` machinery. The `# prose: keep` directive *(documented in [**Suppression Directives**](/reference/suppression-directives))* keeps a dict literal or a class body out of the ordering rules when the order written carries meaning no rule can read from the source, and the `sort-dict-keys` facet of [[alphabetize-siblings]] turns the dict reorder off across a whole project.

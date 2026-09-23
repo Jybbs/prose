@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`# prose: keep` on a Class Holds Its Imports Too"
+
+description = '''
+`Kept` and `Grouped` each import `from collections import abc` above `import sys`, and only `Kept` carries `# prose: keep` on its header. **`group-imports` moves `import sys` above the `from` import in `Grouped` and leaves `Kept` as written**, because the marker holds every statement of the class body against each rule that reorders one. The `if TYPE_CHECKING:` arm inside `Kept` keeps its order too, whereas the imports inside `load` still group, since a method body is a scope of its own.
+'''

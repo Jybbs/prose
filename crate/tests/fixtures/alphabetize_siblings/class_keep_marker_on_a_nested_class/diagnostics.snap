@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_on_a_nested_class/input.py
+---
+alphabetize-siblings@20..42

@@ -12,7 +12,7 @@ layout  : doc
 
 Two constructs carry such a run, and the first is a function's positional-or-keyword parameters, free function and method alike, because a method's callers bind by slot exactly as a free function's do. The second is the annotated field run of a class whose header generates a positional constructor, where a `NamedTuple` base or a `@dataclass` decorator turns the fields into that constructor's parameters and a call like `Window(1920, 1080)` binds them in source order.
 
-A function whose decorator is a call carrying positional arguments (*`pytest.mark.parametrize(...)`, `click.argument(...)`, and the like*) draws no report, because the decorator may bind values to the parameters by slot. A name that binds no positional slot drops from the run rather than silencing it, covering the `self` and `cls` receivers, the positional-only parameters before the `/`, a `ClassVar` declaration, and the `dataclasses.KW_ONLY` sentinel. The lint never rewrites, so the diagnostic is reported and the source stays as written.
+A function whose decorator is a call carrying positional arguments (*`pytest.mark.parametrize(...)`, `click.argument(...)`, and the like*) draws no report, because the decorator may bind values to the parameters by slot. The field run of a class whose header carries `# prose: keep` draws no report either, because the marker already states that the order written is deliberate. A name that binds no positional slot drops from the run rather than silencing it, covering the `self` and `cls` receivers, the positional-only parameters before the `/`, a `ClassVar` declaration, and the `dataclasses.KW_ONLY` sentinel. The lint never rewrites, so the diagnostic is reported and the source stays as written.
 
 <template #configuration>
 

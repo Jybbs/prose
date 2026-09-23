@@ -9,10 +9,13 @@
 //! scope emits one edit, or one per notebook cell. Positional-or-
 //! keyword parameters never reorder and only the keyword-only block
 //! past `*` sorts, a class whose header generates a field-ordered
-//! constructor holds its field run, and a decorated definition holds
-//! its slot at module scope while sorting inside a class body.
+//! constructor holds its field run, a class whose header carries
+//! `# prose: keep` holds its statements as written, and a decorated
+//! definition holds its slot at module scope while sorting inside a
+//! class body.
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::StmtAssign;
 use ruff_text_size::TextSize;
 
 use self::{
@@ -22,16 +25,12 @@ use self::{
     reorders::{joined_key, joined_text},
     rewrite::{RewriteCtx, body_layout, import_gap},
 };
-use ruff_python_ast::StmtAssign;
-
-use crate::primitives::binding::single_name_target;
 use crate::{
     config::Config,
-    primitives::{imports::defers_annotations, scope::BodyScope},
+    primitives::{binding::single_name_target, imports::defers_annotations, scope::BodyScope},
     rules::{Rule, RuleId},
     source::Source,
 };
-pub(crate) use reorders::Reorders;
 
 mod class_graph;
 mod dict;
@@ -43,6 +42,8 @@ mod module_graph;
 mod reorders;
 mod rewrite;
 mod section_runs;
+
+pub(crate) use reorders::Reorders;
 
 #[derive(Debug)]
 pub(crate) struct AlphabetizeSiblings {
@@ -99,6 +100,7 @@ impl Rule for AlphabetizeSiblings {
             first_party: &self.first_party,
             group_imports: self.group_imports,
             group_methods: self.group_methods,
+            keeps_order: false,
             keyword_fields_from: TextSize::default(),
             leaf_edits: &leaf_edits,
             orders_members: false,

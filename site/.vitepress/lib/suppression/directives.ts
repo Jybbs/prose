@@ -65,14 +65,15 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
     scope    : 'block'
   },
   {
-    blurb   : 'Keep this dict or dunder list in the order written.',
-    effect  : 'Every ordering rule leaves the entries in the order written, read from the opening '
-            + 'or the closing bracket line. Covers that one dict literal, `__all__`, or `__slots__`.',
+    blurb   : 'Keep this dict, dunder list, or class body in the order written.',
+    effect  : 'Every ordering rule leaves the entries or the statements in the order written, read '
+            + 'from a bracket line of a dict literal, `__all__`, or `__slots__`, or from a class '
+            + 'header. Covers that one construct.',
     example : 'config = {  # prose: keep\n    "stage_one"   : True,\n    "stage_two"   : '
             + 'False,\n}',
     form    : '# prose: keep',
     id      : 'prose-keep',
-    scope   : 'dict'
+    scope   : 'construct'
   },
   {
     blurb   : 'Exempt the logical line it ends from every rewrite.',

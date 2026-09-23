@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Nested Sorts Still Run Inside a Kept Class"
+
+description = '''
+`Pipeline` carries `# prose: keep`, so its assignment, its methods, its `if TYPE_CHECKING:` arm, and its nested class all keep the order written, the two methods inside the arm included. **The marker holds the statements of the body rather than what they contain**, so the `stages` dict, the keywords of the `emit` call, the imports inside `load`, and the body of the unmarked `Settings` class each still sort, the way a marked dict keeps its own entries while a dict nested inside it sorts.
+'''

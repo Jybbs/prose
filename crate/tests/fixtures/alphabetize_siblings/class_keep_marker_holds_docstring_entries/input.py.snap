@@ -1,0 +1,33 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_holds_docstring_entries/input.py
+---
+class KeptStations(DataFrameModel):  # prose: keep
+    """
+    Describes the station table.
+
+    Attributes:
+        station: The station identifier.
+        name: The station name.
+        latitude: The station latitude.
+    """
+
+    station: Index[str] = Column(check_name=True)
+    name: str = Column()
+    latitude: float = Column()
+
+
+class SortedStations(DataFrameModel):
+    """
+    Describes the station table.
+
+    Attributes:
+        latitude: The station latitude.
+        name: The station name.
+        station: The station identifier.
+    """
+
+    latitude: float = Column()
+    name: str = Column()
+    station: Index[str] = Column(check_name=True)
