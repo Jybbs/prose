@@ -23,10 +23,10 @@ A dict expands once it has more than `max-dict-entries` entries whatever its wid
 Every width the rule reads counts the separator closing an entry's row at the position [[alphabetize-siblings]] leaves it in, on the rejoin as well as the expansion. An entry the sort moves last sheds the comma it carries and one the sort moves up gains one before either is measured, so the layout the rule picks stays put once the sort is written. Each construct is then measured at the column it settles at:
 
 1. A literal written on one row is measured at the width [[strip-stranded-padding]] settles it to, past the padding inside its brackets and at one space after each `:`, which is the width a rejoin writes it back at.
-2. A member the expansion moves keeps the calls inside it measured at the columns its rows end up on, and a call the move pushes past the budget explodes in the same pass.
+2. A member the expansion moves keeps the calls inside it measured at the columns its rows end up on, and a call the move pushes past the budget explodes in the same pass, provided [[reflow-calls]] runs and no skip holds the call for it.
 3. A literal following one the rule expands on the same line is measured where that expansion leaves it, on the closer's row at the statement's indent rather than under the continuation column the source wrote.
 4. A dict value whose key the rule lays across rows is measured from the key's last row.
-5. A value inside an expanded dict is measured at the column [[align-colons]] shifts it to once the expanded rows align, so a collection value whose row would cross the budget at that column expands in the same pass and a call value explodes, unless [[alphabetize-siblings]] sorts the dict and breaking the value open would leave more than one entry spanning rows.
+5. A value inside an expanded dict is measured at the column [[align-colons]] shifts it to once the expanded rows align, so a collection value whose row would cross the budget at that column expands in the same pass and a call value explodes under the same condition as item 2. The value breaks open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded, than keeping every value on one row would, and not where [[alphabetize-siblings]] sorts the dict and breaking the value open would leave more than one entry spanning rows.
 
 <template #facets>
 

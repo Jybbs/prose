@@ -16,7 +16,7 @@ use ruff_python_ast::visitor::Visitor as AstVisitor;
 
 use crate::{
     config::Config,
-    primitives::{aligner, equal_targets, walk::walk_stmt},
+    primitives::{aligner, equal_targets, padding::Stranding, walk::walk_stmt},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -28,6 +28,7 @@ use walk::{Run, Visitor};
 #[derive(Debug)]
 pub(crate) struct AlignEquals {
     settings: aligner::Settings,
+    stranding: Stranding,
 }
 
 impl AlignEquals {
@@ -38,6 +39,7 @@ impl AlignEquals {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.equals_settings(),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -46,6 +48,7 @@ impl Rule for AlignEquals {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
             runs: Vec::new(),
+            stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);

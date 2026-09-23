@@ -29,6 +29,7 @@ use crate::{
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
         layout::pack,
+        padding::Stranding,
         scope::{scoped_body, sub_bodies},
     },
     rules::{Rule, RuleId, band_constants::BandConstants},
@@ -60,6 +61,7 @@ pub(crate) struct ReflowImports {
     merge_members: bool,
     sorts: bool,
     split_multi_module: bool,
+    stranding: Stranding,
 }
 
 impl ReflowImports {
@@ -82,6 +84,7 @@ impl ReflowImports {
             merge_members: rules.merge_members,
             sorts: config.alphabetize_siblings_enabled(),
             split_multi_module: rules.split_multi_module,
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -289,7 +292,7 @@ impl<'a> Layout<'a> {
                     .collect(),
             );
         }
-        let gap = import_keyword_gap(self.source, node)?;
+        let gap = import_keyword_gap(self.source, node, self.rule.stranding)?;
         let widths: Vec<usize> = names.iter().map(|name| display_width(name)).collect();
         let prefix = self.source.line_indent_width(node.start())
             + display_width(&import_head(node))
@@ -345,12 +348,17 @@ fn import_head(node: &StmtImportFrom) -> String {
 /// The whitespace between `node`'s module and its `import` keyword, the
 /// column `align-imports` pads the keyword to. `None` when the keyword
 /// opens a line of its own.
-fn import_keyword_gap<'src>(source: &'src Source, node: &StmtImportFrom) -> Option<&'src str> {
+fn import_keyword_gap<'src>(
+    source: &'src Source,
+    node: &StmtImportFrom,
+    stranding: Stranding,
+) -> Option<&'src str> {
     let anchored = aligner::line_anchored_member_at_kind(
         source,
         node.start(),
         node.range(),
         TokenKind::Import,
+        stranding,
     )?;
     Some(source.slice(anchored.gap))
 }
@@ -385,6 +393,7 @@ mod tests {
             merge_members: true,
             sorts: true,
             split_multi_module: true,
+            stranding: Config::default().stranded_padding(),
         }
     }
 
@@ -434,6 +443,9 @@ mod tests {
             .as_import_from_stmt()
             .expect("first statement is a from-import");
 
-        assert_eq!(import_keyword_gap(&source, node), expected);
+        assert_eq!(
+            import_keyword_gap(&source, node, Config::default().stranded_padding()),
+            expected
+        );
     }
 }

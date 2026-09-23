@@ -19,7 +19,7 @@ use crate::primitives::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    slots::starting_within,
+    slots::{holds_exactly, starting_within},
     tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
@@ -337,10 +337,14 @@ impl<'a> Exploder<'a> {
     /// `column`. A keyword-expressible call renders one keyword per
     /// line, any other call renders positionally under the length
     /// trigger alone, and where no trigger fires a fractured list
-    /// rejoins onto one line through the same one-row form.
+    /// rejoins onto one line through the same one-row form. Returns
+    /// `None` where `reflow-calls` is off or
+    /// [`Source::explodable_arguments`] leaves the list out.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
+        if !self.one_row.closes()
+            || !holds_exactly(self.source.explodable_arguments(), arguments.range())
+        {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);

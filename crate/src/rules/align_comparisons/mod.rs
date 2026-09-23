@@ -15,7 +15,7 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::{aligner, comparison::opening_token_kind, walk::walk_stmt},
+    primitives::{aligner, comparison::opening_token_kind, padding::Stranding, walk::walk_stmt},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -23,6 +23,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct AlignComparisons {
     settings: aligner::Settings,
+    stranding: Stranding,
 }
 
 impl AlignComparisons {
@@ -33,6 +34,7 @@ impl AlignComparisons {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.align_settings(&config.rules.align_comparisons, config.code_width()),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -40,6 +42,7 @@ impl AlignComparisons {
 impl Rule for AlignComparisons {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
+            stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
@@ -52,6 +55,7 @@ impl Rule for AlignComparisons {
 }
 
 struct Visitor<'a> {
+    stranding: Stranding,
     walker: aligner::AlignWalker<'a>,
 }
 
@@ -78,6 +82,7 @@ impl Visitor<'_> {
             compare.left.range(),
             comparator.start(),
             opening_token_kind(op),
+            self.stranding,
         )?;
         Some(member.with_op_width(op.as_str().len()))
     }

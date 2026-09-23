@@ -3,25 +3,29 @@
 //! leaves.
 
 use ruff_python_ast::Expr;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextSize};
 
-use crate::{primitives::slots::item_holding, source::Source};
+use crate::{primitives::slots::holds_exactly, source::Source};
 
 /// Returns the display width from `start` through the bracket a layout
 /// rule breaks `expr` open at, meaning the `(` of a call
-/// [`Source::explodable_arguments`] lists or the opener of a literal
-/// [`Source::expandable_literals`] lists. `None` for any other
-/// expression and for a bracket on a later row than `start`.
-pub(crate) fn opener_width(source: &Source, expr: &Expr, start: TextSize) -> Option<usize> {
-    let listed = |ranges: &[TextRange], range: TextRange| {
-        item_holding(ranges, range.start()).is_some_and(|held| *held == range)
-    };
+/// [`Source::explodable_arguments`] lists while `explodes_calls` holds,
+/// or the opener of a literal [`Source::expandable_literals`] lists.
+/// `None` for any other expression and for a bracket on a later row
+/// than `start`.
+pub(crate) fn opener_width(
+    source: &Source,
+    expr: &Expr,
+    start: TextSize,
+    explodes_calls: bool,
+) -> Option<usize> {
     let opener = match expr {
         Expr::Call(call) => {
             let arguments = call.arguments.range();
-            listed(source.explodable_arguments(), arguments).then_some(arguments.start())?
+            (explodes_calls && holds_exactly(source.explodable_arguments(), arguments))
+                .then_some(arguments.start())?
         }
-        _ => listed(source.expandable_literals(), expr.range()).then_some(expr.start())?,
+        _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
     };
     let end = opener + TextSize::of('(');
     source
@@ -52,6 +56,18 @@ mod tests {
     ) {
         let source = parse(src);
         let value = first_value(&source);
-        assert_eq!(opener_width(&source, value, value.start()), expected);
+        assert_eq!(opener_width(&source, value, value.start(), true), expected);
+    }
+
+    #[rstest]
+    #[case::call_arguments("x = frobnicate(a, b)\n", None)]
+    #[case::list_literal("x = [a, b]\n", Some(1))]
+    fn opener_width_leaves_calls_out_where_none_explode(
+        #[case] src: &str,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(src);
+        let value = first_value(&source);
+        assert_eq!(opener_width(&source, value, value.start(), false), expected);
     }
 }

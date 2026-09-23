@@ -202,7 +202,12 @@ impl Config {
             .align_equals
             .enabled
             .then(|| self.equals_settings());
-        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
+        reserve::Reservations::new(
+            AlignEquals::SLUG,
+            settings,
+            self.one_row_settings(),
+            self.stranded_padding(),
+        )
     }
 
     /// The alignment settings `align-equals` runs under, resolving

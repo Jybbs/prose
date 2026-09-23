@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_key_aligns_at_its_written_width/input.py
+---
+align-colons@25..92

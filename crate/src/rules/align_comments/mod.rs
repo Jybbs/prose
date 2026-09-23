@@ -14,7 +14,7 @@ use ruff_text_size::TextRange;
 
 use crate::{
     config::Config,
-    primitives::{aligner, comments::TRAILING_GAP},
+    primitives::{aligner, comments::TRAILING_GAP, padding::Stranding},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -22,6 +22,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct AlignComments {
     settings: aligner::Settings,
+    stranding: Stranding,
 }
 
 impl AlignComments {
@@ -34,6 +35,7 @@ impl AlignComments {
             settings: config
                 .align_settings(&config.rules.align_comments, config.code_width())
                 .with_buffer(TRAILING_GAP.len()),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -41,7 +43,7 @@ impl AlignComments {
 impl Rule for AlignComments {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut walker = aligner::AlignWalker::new(source, self.settings, Self::SLUG);
-        for group in trailing_comment_groups(source, walker.rule) {
+        for group in trailing_comment_groups(source, walker.rule, self.stranding) {
             walker.emit_group_or_buffer(&group);
         }
         walker.groups
@@ -55,8 +57,13 @@ impl Rule for AlignComments {
 /// The runs of trailing comments sitting on consecutive source lines,
 /// each row anchored on its `#` and measured by the code ahead of it. A
 /// row held for `rule` bridges its run, leaving the neighbors on either
-/// side to align as one block.
-fn trailing_comment_groups(source: &Source, rule: RuleId) -> Vec<Vec<aligner::Member>> {
+/// side to align as one block, and each row's code settles past what
+/// `stranding` deletes.
+fn trailing_comment_groups(
+    source: &Source,
+    rule: RuleId,
+    stranding: Stranding,
+) -> Vec<Vec<aligner::Member>> {
     let text = source.text();
     let trailing: Vec<TextRange> = source
         .comment_ranges()
@@ -67,7 +74,7 @@ fn trailing_comment_groups(source: &Source, rule: RuleId) -> Vec<Vec<aligner::Me
         .chunk_by(|a, b| source.same_cell(a.end(), b.start()))
         .flat_map(|cell| {
             aligner::adjacent_member_groups(source, cell.iter().copied(), false, |range| {
-                aligner::line_anchored_member(source, range.start()).slot(source, rule)
+                aligner::line_anchored_member(source, range.start(), stranding).slot(source, rule)
             })
         })
         .collect()
@@ -93,7 +100,11 @@ mod tests {
     #[test]
     fn trailing_comment_groups_measures_the_code_ahead_of_the_hash() {
         let source = parse("x = 1  # a\n");
-        let groups = trailing_comment_groups(&source, AlignComments::SLUG);
+        let groups = trailing_comment_groups(
+            &source,
+            AlignComments::SLUG,
+            Config::default().stranded_padding(),
+        );
         assert_eq!(groups[0][0].width, "x = 1".len());
     }
 
@@ -111,7 +122,11 @@ mod tests {
         #[case] expected: Vec<usize>,
     ) {
         let source = parse(src);
-        let groups = trailing_comment_groups(&source, AlignComments::SLUG);
+        let groups = trailing_comment_groups(
+            &source,
+            AlignComments::SLUG,
+            Config::default().stranded_padding(),
+        );
         assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), expected);
     }
 }

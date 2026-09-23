@@ -12,12 +12,13 @@ use ruff_text_size::{Ranged, TextRange};
 mod gaps;
 
 use gaps::delimiter_padding_gaps;
-pub(crate) use gaps::{delimiter_padding_width, slack};
+pub(crate) use gaps::slack;
 
 use crate::{
     primitives::{
         aligner,
         colon_targets::ColonEmitter,
+        inline::display_width,
         range::covers,
         tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
@@ -36,6 +37,13 @@ pub(crate) struct Stranding {
 impl Stranding {
     pub(crate) fn new(rule: RuleId, enabled: bool) -> Self {
         Self { enabled, rule }
+    }
+
+    /// The delimiter padding runs inside `range` that no skip directive
+    /// for the rule holds, which are the runs the rule deletes.
+    fn stripped_gaps(self, source: &Source, range: TextRange) -> impl Iterator<Item = TextRange> {
+        delimiter_padding_gaps(source, range)
+            .filter(move |gap| !aligner::is_held(source, self.rule, gap.start()))
     }
 
     /// Every edit the padding rule emits over `source`, ascending by
@@ -64,13 +72,24 @@ impl Stranding {
         };
         emitter.walk_within(source, windows);
         emitter.edits.extend(windows.iter().flat_map(|window| {
-            delimiter_padding_gaps(source, *window)
-                .filter(|gap| !aligner::is_held(source, self.rule, gap.start()))
+            self.stripped_gaps(source, *window)
                 .map(Edit::range_deletion)
         }));
         emitter.edits.retain(|edit| covers(edit.range(), windows));
         emitter.edits.sort_by_key(Ranged::start);
         emitter.edits
+    }
+
+    /// Returns the columns the rule takes off `span`, the display width
+    /// of each delimiter padding run it deletes there, or zero where the
+    /// rule is off.
+    pub(crate) fn stripped_width(self, source: &Source, span: TextRange) -> usize {
+        if !self.enabled {
+            return 0;
+        }
+        self.stripped_gaps(source, span)
+            .map(|gap| display_width(source.slice(gap)))
+            .sum()
     }
 }
 
@@ -109,6 +128,10 @@ impl ColonEmitter for Emitter<'_> {
 
     fn rule(&self) -> RuleId {
         self.rule
+    }
+
+    fn stranding(&self) -> Stranding {
+        Stranding::new(self.rule, true)
     }
 }
 

@@ -2,11 +2,13 @@
 //! the separator it keeps, hung at `:` where its row overflows at the
 //! canonical `": "`, and its value measured at the column
 //! `align-colons` seats it at once the expanded rows align, so a value
-//! whose one-row form overflows there expands in the same pass.
+//! whose one-row form overflows there expands in the same pass wherever
+//! that leaves its run in fewer columns, or in as many with fewer rows
+//! standing alone.
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict};
+use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict, token::TokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
@@ -17,11 +19,15 @@ use crate::{
     primitives::{
         INDENT_STEP,
         aligner::{self, Extent, Slot},
+        colon_targets::dict_entry_slot,
         inline::{display_width, end_column, opening_width, settled_text_width, spans_rows},
         layout::opener_width,
         travel::Landing,
     },
-    rules::{align_colons::AlignColons, stack_adjacent_strings::concatenated_run},
+    rules::{
+        align_colons::AlignColons, alphabetize_siblings::sets_dividers,
+        stack_adjacent_strings::concatenated_run,
+    },
 };
 
 /// One dict entry as the expand path writes it: its key text and the
@@ -110,6 +116,23 @@ impl<'a> Layouter<'a> {
         }
     }
 
+    /// Returns the offset `item` opens at, which for a `**` unpacking is
+    /// its `**` token, whereas ruff's own range opens at the value.
+    fn entry_start(&self, item: &DictItem, parent: AnyNodeRef) -> TextSize {
+        if item.key.is_some() {
+            return item.start();
+        }
+        let value_start = self.range_with_parens(&item.value, parent).start();
+        self.source
+            .tokens()
+            .before(value_start)
+            .iter()
+            .rev()
+            .find(|token| !token.kind().is_trivia())
+            .filter(|token| token.kind() == TokenKind::DoubleStar)
+            .map_or(item.start(), Ranged::start)
+    }
+
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
     /// INDENT_STEP` with `tail` columns closing its row. The key is
@@ -163,40 +186,45 @@ impl<'a> Layouter<'a> {
         indent: usize,
         tail: usize,
     ) -> Slot<(usize, Extent)> {
-        let Some(key_text) = entry
-            .key
-            .as_ref()
-            .filter(|_| !aligner::is_held(self.source, AlignColons::SLUG, item.start()))
-        else {
-            return Slot::Bridge;
-        };
-        if spans_rows(key_text) {
-            return Slot::Break;
-        }
-        let extent = if spans_rows(&entry.text) {
-            Extent {
-                expanded: None,
-                inline: indent
-                    + entry.key_width
-                    + opening_width(entry.text[key_text.len()..].trim_start_matches(' ')),
+        dict_entry_slot(self.source, AlignColons::SLUG, item, || {
+            let key_text = entry
+                .key
+                .as_deref()
+                .expect("a keyed item carries its key text");
+            if spans_rows(key_text) {
+                return Slot::Break;
             }
-        } else {
-            Extent {
-                expanded: opener_width(self.source, &item.value, entry.value_start)
+            let extent = if spans_rows(&entry.text) {
+                Extent {
+                    expanded: None,
+                    inline: indent
+                        + entry.key_width
+                        + opening_width(entry.text[key_text.len()..].trim_start_matches(' ')),
+                }
+            } else {
+                Extent {
+                    expanded: opener_width(
+                        self.source,
+                        &item.value,
+                        entry.value_start,
+                        self.one_row.closes(),
+                    )
                     .map(|width| indent + entry.key_width + CANONICAL_SEPARATOR + width),
-                inline: indent + entry.width + tail,
-            }
-        };
-        Slot::Member((entry.key_width, extent))
+                    inline: indent + entry.width + tail,
+                }
+            };
+            Slot::Member((entry.key_width, extent))
+        })
     }
 
     /// Re-serializes each of `entries` whose one-row value overflows at
     /// the column `align-colons` seats it at under `settings`, where a
-    /// layout rule can expand that value, reading rows in the order
-    /// `order` leaves them. A key spanning rows closes a run, as does a
-    /// blank line where `order` names no sort, and a `**` unpacking
-    /// passes through one. Under a sort, nothing is re-serialized once an
-    /// entry already spans rows or more than one value overflows.
+    /// layout rule can expand that value and doing so leaves the run in
+    /// fewer groups, or in as many with fewer groups of one, reading rows
+    /// in the order `order` leaves them. A key spanning rows or, without
+    /// a sort, a blank line closes a run, and a `**` unpacking passes
+    /// through one. Under a sort, nothing is re-serialized where
+    /// [`sets_dividers`] would hold.
     fn seat_entries(
         &self,
         entries: &mut [Entry<'a>],
@@ -207,13 +235,6 @@ impl<'a> Layouter<'a> {
         settings: aligner::Settings,
     ) {
         let reassembled = order.is_some();
-        if reassembled
-            && entries
-                .iter()
-                .any(|entry| entry.key.is_some() && spans_rows(&entry.text))
-        {
-            return;
-        }
         let node = AnyNodeRef::from(dict);
         let mut runs: Vec<Vec<(usize, (usize, Extent))>> = vec![Vec::new()];
         for position in 0..entries.len() {
@@ -222,7 +243,9 @@ impl<'a> Layouter<'a> {
             if matches!(row, Slot::Break)
                 || (!reassembled
                     && position > 0
-                    && self.source.has_blank_line_before(dict.items[index].start()))
+                    && self
+                        .source
+                        .has_blank_line_before(self.entry_start(&dict.items[index], node)))
             {
                 runs.push(Vec::new());
             }
@@ -236,14 +259,42 @@ impl<'a> Layouter<'a> {
         for run in runs {
             let rows: Vec<(usize, Extent)> = run.iter().map(|&(_, row)| row).collect();
             let columns = aligner::written_columns(indent, &rows, settings);
-            for (&(index, (width, extent)), column) in run.iter().zip(columns) {
-                let padding = column - indent - width;
-                if extent.expanded.is_some() && extent.inline + padding > self.code_line_length {
-                    seats.push((index, column + aligner::VALUE_OFFSET));
-                }
+            let overflowing: Vec<(usize, usize)> = run
+                .iter()
+                .zip(columns)
+                .filter_map(|(&(index, (width, extent)), column)| {
+                    let padding = column - indent - width;
+                    (extent.expanded.is_some() && extent.inline + padding > self.code_line_length)
+                        .then_some((index, column + aligner::VALUE_OFFSET))
+                })
+                .collect();
+            if overflowing.is_empty() {
+                continue;
+            }
+            let one_row: Vec<(usize, Extent)> = rows
+                .iter()
+                .map(|&(width, extent)| {
+                    (
+                        width,
+                        Extent {
+                            expanded: None,
+                            ..extent
+                        },
+                    )
+                })
+                .collect();
+            if aligner::written_groups(indent, &rows, settings)
+                < aligner::written_groups(indent, &one_row, settings)
+            {
+                seats.extend(overflowing);
             }
         }
-        if reassembled && seats.len() > 1 {
+        if reassembled
+            && sets_dividers(entries.iter().enumerate().map(|(index, entry)| {
+                entry.key.is_some()
+                    && (spans_rows(&entry.text) || seats.iter().any(|&(seat, _)| seat == index))
+            }))
+        {
             return;
         }
         for (index, seat) in seats {
@@ -287,6 +338,9 @@ impl<'a> Layouter<'a> {
         entries
             .into_iter()
             .zip(dict.iter())
-            .map(|(entry, item)| (entry.text, entry.width, false, item.range()))
+            .map(move |(entry, item)| {
+                let range = TextRange::new(self.entry_start(item, node), item.end());
+                (entry.text, entry.width, false, range)
+            })
     }
 }

@@ -143,6 +143,12 @@ impl<'a> Settings<'a> {
         Some(out)
     }
 
+    /// True where `reflow-calls` is enabled, read off the rejoin terms
+    /// these settings carry.
+    pub(crate) fn closes(&self) -> bool {
+        self.rejoin.closes()
+    }
+
     /// `expr`'s one-row form rebuilt at the canonical spacing, whatever
     /// padding the source wrote inside it. `None` where no one-row form
     /// exists.

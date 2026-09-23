@@ -12,6 +12,7 @@ use super::*;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
+    pub(super) stranding: Stranding,
     pub(super) walker: aligner::AlignWalker<'a>,
 }
 
@@ -86,7 +87,8 @@ impl Visitor<'_> {
         if is_compound_statement(body_first) || self.walker.source.contains_line_break(body_first) {
             return CaseOutcome::Disqualify;
         }
-        let Some(member) = colon_targets::match_case(self.walker.source, case) else {
+        let Some(member) = colon_targets::match_case(self.walker.source, case, self.stranding)
+        else {
             return CaseOutcome::Disqualify;
         };
         let collapse_range =

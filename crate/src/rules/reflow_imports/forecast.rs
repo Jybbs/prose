@@ -188,7 +188,7 @@ impl<'a> Layout<'a> {
                 let mut key = None;
                 for (position, &slot) in order.iter().enumerate() {
                     let stmt = &body[slot];
-                    let Some(member) = qualify_from(source, stmt) else {
+                    let Some(member) = qualify_from(source, stmt, rule.stranding) else {
                         key = None;
                         continue;
                     };

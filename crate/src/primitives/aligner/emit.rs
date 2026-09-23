@@ -132,11 +132,22 @@ pub(crate) fn written_columns(
     rows: &[(usize, Extent)],
     settings: Settings,
 ) -> Vec<usize> {
-    let (members, extents): (Vec<Member>, Vec<Extent>) = rows
-        .iter()
-        .map(|&(width, extent)| (Member::written(baseline, width), extent))
-        .unzip();
+    let (members, extents) = written_members(baseline, rows);
     group_columns(&members, &extents, settings)
+}
+
+/// Counts the groups a run a layout rule writes splits into, paired with
+/// how many of them hold a single row, each row read the way
+/// [`written_columns`] reads it.
+pub(crate) fn written_groups(
+    baseline: usize,
+    rows: &[(usize, Extent)],
+    settings: Settings,
+) -> (usize, usize) {
+    let (members, extents) = written_members(baseline, rows);
+    let groups = reading_order_groups(&members, &extents, settings);
+    let singletons = groups.iter().filter(|(group, _)| group.len() == 1).count();
+    (groups.len(), singletons)
 }
 
 /// The per-member columns of a run, the group math where `candidate`
@@ -388,6 +399,14 @@ fn reading_order_groups<'m>(
     let last = &members[start..];
     groups.push((last, group_max_width(last)));
     groups
+}
+
+/// Builds the members and extents of a run a layout rule writes, every
+/// row opening at `baseline` on a line of its own.
+fn written_members(baseline: usize, rows: &[(usize, Extent)]) -> (Vec<Member>, Vec<Extent>) {
+    rows.iter()
+        .map(|&(width, extent)| (Member::written(baseline, width), extent))
+        .unzip()
 }
 
 #[cfg(test)]
@@ -1102,6 +1121,40 @@ mod tests {
         // opening row reaches 14.
         assert_eq!(
             written_columns(
+                4,
+                &rows,
+                Settings::aligned(cap(16)).within(20, strip(), settling())
+            ),
+            expected,
+        );
+    }
+
+    #[rstest]
+    #[case::one_line_only(None, (2, 2))]
+    #[case::expanded_opening_fits(Some(8), (1, 0))]
+    fn written_groups_count_the_groups_the_cap_splits_a_run_into(
+        #[case] expanded: Option<usize>,
+        #[case] expected: (usize, usize),
+    ) {
+        let rows = [
+            (
+                1,
+                Extent {
+                    expanded,
+                    inline: 19,
+                },
+            ),
+            (
+                6,
+                Extent {
+                    expanded: None,
+                    inline: 10,
+                },
+            ),
+        ];
+
+        assert_eq!(
+            written_groups(
                 4,
                 &rows,
                 Settings::aligned(cap(16)).within(20, strip(), settling())

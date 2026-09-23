@@ -16,7 +16,7 @@ use ruff_text_size::Ranged;
 
 use crate::{
     config::Config,
-    primitives::aligner,
+    primitives::{aligner, padding::Stranding},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -24,6 +24,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct AlignImports {
     settings: aligner::Settings,
+    stranding: Stranding,
 }
 
 impl AlignImports {
@@ -34,6 +35,7 @@ impl AlignImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.import_align_settings(),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -41,6 +43,7 @@ impl AlignImports {
 impl Rule for AlignImports {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
+            stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
@@ -59,6 +62,7 @@ enum Form {
 }
 
 struct Visitor<'a> {
+    stranding: Stranding,
     walker: aligner::AlignWalker<'a>,
 }
 
@@ -71,7 +75,7 @@ impl Visitor<'_> {
     fn process_body(&mut self, body: &[Stmt]) {
         let source = self.walker.source;
         let groups = aligner::keyed_line_adjacent_groups(source, body, self.walker.rule, |s| {
-            qualify(source, s)
+            qualify(source, s, self.stranding)
         });
         for members in groups {
             self.walker.emit_if_candidate(&members);
@@ -90,27 +94,41 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 /// anchored at the `import` keyword. Returns `None` for any other
 /// statement shape and for a multi-line import. The `reflow-imports`
 /// forecast reads it as well.
-pub(crate) fn qualify_from(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+pub(crate) fn qualify_from(
+    source: &Source,
+    stmt: &Stmt,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let s = stmt.as_import_from_stmt()?;
     if source.contains_line_break(s.range) {
         return None;
     }
-    aligner::line_anchored_member_at_kind(source, s.range.start(), s.range, TokenKind::Import)
+    aligner::line_anchored_member_at_kind(
+        source,
+        s.range.start(),
+        s.range,
+        TokenKind::Import,
+        stranding,
+    )
 }
 
 /// Tags a statement with its import form and alignment member, or
 /// `None` for a statement that joins no alignment run.
-fn qualify(source: &Source, stmt: &Stmt) -> Option<(Form, aligner::Member)> {
-    qualify_from(source, stmt)
+fn qualify(source: &Source, stmt: &Stmt, stranding: Stranding) -> Option<(Form, aligner::Member)> {
+    qualify_from(source, stmt, stranding)
         .map(|m| (Form::From, m))
-        .or_else(|| qualify_import_as(source, stmt).map(|m| (Form::As, m)))
+        .or_else(|| qualify_import_as(source, stmt, stranding).map(|m| (Form::As, m)))
 }
 
 /// Builds an alignment member for a single-name aliased import
 /// (`import M as A`), anchored at the `as` keyword. Returns `None`
 /// for bare imports, multi-name imports, multi-line imports, and any
 /// other statement shape.
-fn qualify_import_as(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+fn qualify_import_as(
+    source: &Source,
+    stmt: &Stmt,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let s = stmt.as_import_stmt()?;
     if source.contains_line_break(s.range) {
         return None;
@@ -119,5 +137,11 @@ fn qualify_import_as(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
         return None;
     };
     let asname = alias.asname.as_ref()?;
-    aligner::line_anchored_member_between(source, alias.name.range(), asname.start(), TokenKind::As)
+    aligner::line_anchored_member_between(
+        source,
+        alias.name.range(),
+        asname.start(),
+        TokenKind::As,
+        stranding,
+    )
 }

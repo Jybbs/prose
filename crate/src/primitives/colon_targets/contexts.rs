@@ -10,7 +10,11 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::aligner, rules::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, padding::Stranding},
+    rules::RuleId,
+    source::Source,
+};
 
 /// Walks `body`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
@@ -20,8 +24,26 @@ pub(super) fn annotated_assignment_groups(
     source: &Source,
     rule: RuleId,
     body: &[Stmt],
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |s| annotated_assignment(source, s))
+    aligner::line_adjacent_groups(source, body, rule, |s| {
+        annotated_assignment(source, s, stranding)
+    })
+}
+
+/// Returns `keyed`'s slot for a `key: value` item in a dict's `:` run,
+/// or a bridge for a `**` unpacking and for an item a skip holds for
+/// `rule`, which the entries on either side align across.
+pub(crate) fn dict_entry_slot<T>(
+    source: &Source,
+    rule: RuleId,
+    item: &DictItem,
+    keyed: impl FnOnce() -> aligner::Slot<T>,
+) -> aligner::Slot<T> {
+    if item.key.is_none() || aligner::is_held(source, rule, item.start()) {
+        return aligner::Slot::Bridge;
+    }
+    keyed()
 }
 
 /// Returns one group per run of consecutive-line `key: value` entries
@@ -34,23 +56,23 @@ pub(super) fn dict_member_groups(
     source: &Source,
     rule: RuleId,
     dict: &ExprDict,
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
     aligner::adjacent_member_groups(source, &dict.items, false, |item| {
-        // A `**spread` (no key) or a skip-held entry joins no group yet
-        // bridges the run, so the entries on either side align as one block.
-        if item.key.is_none() || aligner::is_held(source, rule, item.start()) {
-            return aligner::Slot::Bridge;
-        }
-        // A keyed entry whose colon sits on a later line carries no
-        // single-line anchor and breaks the run.
-        dict_item(source, dict, item).into()
+        dict_entry_slot(source, rule, item, || {
+            dict_item(source, dict, item, stranding).into()
+        })
     })
 }
 
 /// Builds an alignment member for a `match` arm, anchored on the
 /// `:` between the pattern (or its `if` guard) and the arm body's
 /// first statement.
-pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
+pub(crate) fn match_case(
+    source: &Source,
+    case: &MatchCase,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let pre_colon_end = match_case_pre_colon_end(case);
     let body_start = case.body.first()?.start();
     aligner::line_anchored_member_between(
@@ -58,12 +80,20 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
         TextRange::new(case.pattern.start(), pre_colon_end),
         body_start,
         TokenKind::Colon,
+        stranding,
     )
 }
 
 /// Returns one alignment member per `case` arm in `cases`.
-pub(super) fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
-    cases.iter().filter_map(|c| match_case(source, c)).collect()
+pub(super) fn match_case_members(
+    source: &Source,
+    cases: &[MatchCase],
+    stranding: Stranding,
+) -> Vec<aligner::Member> {
+    cases
+        .iter()
+        .filter_map(|c| match_case(source, c, stranding))
+        .collect()
 }
 
 /// The offset where a `match` arm's pre-colon left-hand side ends, the
@@ -82,8 +112,9 @@ pub(super) fn parameter_groups(
     source: &Source,
     rule: RuleId,
     params: &Parameters,
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::parameter_split_groups(params, |p| parameter(source, p))
+    aligner::parameter_split_groups(params, |p| parameter(source, p, stranding))
         .into_iter()
         .map(|group| aligner::retain_unheld(source, rule, group))
         .collect()
@@ -92,13 +123,18 @@ pub(super) fn parameter_groups(
 /// Builds an alignment member for an annotated assignment, anchored on
 /// the `:` between target and annotation. Returns `None` for any other
 /// statement shape.
-fn annotated_assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+fn annotated_assignment(
+    source: &Source,
+    stmt: &Stmt,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let ann = stmt.as_ann_assign_stmt()?;
     colon_member(
         source,
         ann.target.range(),
         ann.annotation.as_ref().into(),
         ann.into(),
+        stranding,
     )
 }
 
@@ -112,37 +148,63 @@ fn colon_member(
     lhs: TextRange,
     value: ExprRef,
     parent: AnyNodeRef,
+    stranding: Stranding,
 ) -> Option<aligner::Member> {
     let value_start = source.paren_aware_range(value, parent).start();
-    let member = aligner::line_anchored_member_between(source, lhs, value_start, TokenKind::Colon)?;
+    let member = aligner::line_anchored_member_between(
+        source,
+        lhs,
+        value_start,
+        TokenKind::Colon,
+        stranding,
+    )?;
     Some(member.with_value_gap(TextSize::of(':'), value_start))
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored
 /// on the `:` between key and value. Returns `None` for `**spread`
 /// entries that have no key.
-fn dict_item(source: &Source, dict: &ExprDict, item: &DictItem) -> Option<aligner::Member> {
+fn dict_item(
+    source: &Source,
+    dict: &ExprDict,
+    item: &DictItem,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let key = item.key.as_ref()?;
-    colon_member(source, key.range(), (&item.value).into(), dict.into())
+    colon_member(
+        source,
+        key.range(),
+        (&item.value).into(),
+        dict.into(),
+        stranding,
+    )
 }
 
 /// Builds an alignment member for an annotated function parameter,
 /// anchored on the `:` between name and annotation. Returns `None` for
 /// unannotated parameters, signaling a group break to callers.
-fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
+fn parameter(
+    source: &Source,
+    param: AnyParameterRef<'_>,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let annotation = param.annotation()?;
     colon_member(
         source,
         param.name().range(),
         annotation.into(),
         param.as_parameter().into(),
+        stranding,
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{first_value, parse};
+    use crate::{
+        config::Config,
+        testing::{first_value, parse},
+    };
 
     #[test]
     fn annotated_assignment_rejects_cross_line_colon() {
@@ -150,7 +212,14 @@ mod tests {
         // the next.
         let source = parse("class C:\n    x \\\n        : int\n");
         let class = source.ast().body[0].as_class_def_stmt().expect("class");
-        assert!(annotated_assignment(&source, &class.body[0]).is_none());
+        assert!(
+            annotated_assignment(
+                &source,
+                &class.body[0],
+                Config::default().stranded_padding()
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -159,7 +228,15 @@ mod tests {
         // entry yields no alignable member.
         let source = parse("d = {\n    k\n    : v,\n}\n");
         let dict = first_value(&source).as_dict_expr().expect("dict");
-        assert!(dict_item(&source, dict, &dict.items[0]).is_none());
+        assert!(
+            dict_item(
+                &source,
+                dict,
+                &dict.items[0],
+                Config::default().stranded_padding()
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -168,7 +245,7 @@ mod tests {
         // where the pattern opens.
         let source = parse("match x:\n    case (\n        1,\n        2,\n    ):\n        y\n");
         let m = source.ast().body[0].as_match_stmt().expect("match");
-        assert!(match_case(&source, &m.cases[0]).is_none());
+        assert!(match_case(&source, &m.cases[0], Config::default().stranded_padding()).is_none());
     }
 
     #[test]
@@ -178,6 +255,6 @@ mod tests {
         let source = parse("def f(\n    a\n    : int,\n):\n    pass\n");
         let func = source.ast().body[0].as_function_def_stmt().expect("def");
         let param = func.parameters.iter_source_order().next().expect("param");
-        assert!(parameter(&source, param).is_none());
+        assert!(parameter(&source, param, Config::default().stranded_padding()).is_none());
     }
 }
