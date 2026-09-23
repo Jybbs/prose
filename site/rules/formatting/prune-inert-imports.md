@@ -78,7 +78,7 @@ An own-line comment directly above an import keeps the whole statement, because 
 1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation until something reads the annotations, and every annotated name resolves.
 2. No annotation runs at module scope, and every annotated name resolves.
 
-An annotated name resolves where it is a builtin the module never writes, or where an unconditional module-scope write binds it before the annotation. A builtin the module rebinds anywhere counts as unresolved, because the annotation reads the builtin once the directive is gone and the rebinding once the directive has stored a string.
+An annotated name resolves where it is a builtin the module never writes, or where an unconditional module-scope write binds it before the annotation. A builtin the module rebinds anywhere else counts as unresolved, because the annotation reads the builtin once the directive is gone and the rebinding once the directive has stored a string.
 
 <Fixture rule="prune_inert_imports" case="builtin_the_module_rebinds_keeps_directive" />
 
