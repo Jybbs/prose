@@ -48,7 +48,8 @@ sweep_locked() {
     flock -n "$lock" true || printf 'waiting for the sweep lock at %s\n' "$lock" >&2
     PROSE_SWEEP_LOCKED=1 flock -o "$lock" "$@"
   else
-    PROSE_SWEEP_LOCKED=1 "$@"
+    echo "neither lockf nor flock is installed to take the sweep lock at $lock" >&2
+    return 1
   fi
 }
 
