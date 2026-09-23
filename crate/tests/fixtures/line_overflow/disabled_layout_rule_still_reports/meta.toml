@@ -3,5 +3,5 @@ previewable = false
 title       = "A Line Left to a Disabled Layout Rule Is Still Reported"
 
 description = '''
-`result`'s call and `values`' list each run past the 88-column budget, and the configuration turns `reflow-calls` off and sets `explode = false` on `reflow-collections`. **Both lines are reported, each naming the rule that would have split it as off**, because a construct leaves its line to a layout rule only while that rule runs.
+`result`'s call and `values`' list each run past the 88-column budget, and the configuration turns `reflow-calls` off and sets `explode = false` on `reflow-collections`. **Both lines are reported**, the call's naming `reflow-calls` off and the list's naming `explode` off on `reflow-collections`, because a construct leaves its line to a layout rule only while that rule can split it.
 '''

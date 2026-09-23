@@ -3,5 +3,5 @@ previewable = false
 title       = "A Docstring Line That `wrap-docstrings` Rewraps Is Not Reported"
 
 description = '''
-Both prose lines of the module docstring run past the 88-column budget. **`line-overflow` emits nothing**, because `wrap-docstrings` rewraps both lines to the budget, so the overflow is left to that rule.
+Both prose lines of the module docstring run past the 76-column docstring budget. **`line-overflow` emits nothing**, because `wrap-docstrings` rewraps both lines to the budget, so the overflow is left to that rule.
 '''

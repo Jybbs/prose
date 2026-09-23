@@ -40,6 +40,7 @@ Each report ends by naming why its line stays over the cap:
 | *"with only its trailing comment past it"* | The line's code fits the cap and only its trailing comment runs past it |
 | *"with `reflow-calls` held by a skip"* | A `# prose: skip` holds the rule the ending names over a construct on the line |
 | *"with `reflow-calls` off"* | The configuration turns off the rule the ending names, which would split a construct on the line |
+| *"with `explode` off on `reflow-collections`"* | The rule runs, but the configuration turns off the setting the ending names, `explode` on `reflow-collections` or `split-multi-module` on `reflow-imports`, which would split a construct on the line |
 | *"with no legal reshape"* | Every other reported line |
 
 A literal with no interior whitespace has nowhere legal to break, so a URL, a hash, or a dense regex takes the last ending. A literal that would fit whole one indent below its line needs no break, because the overflow came from the width ahead of it, so its report stays bare rather than claiming nothing could be done.

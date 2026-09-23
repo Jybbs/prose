@@ -1,13 +1,13 @@
-//! Flags each physical line still over its cap, `import_line_length`
-//! inside an import statement and `code_line_length` elsewhere, once no
-//! layout rule can shorten it. A row where a layout rule splits a
-//! construct is left to that rule. It is still flagged where that rule is
-//! off or a skip holds it there, or where its code fits and only a
-//! trailing comment runs past the cap. A line whose code fits ahead of a
-//! trailing pragma or `prose` directive is never flagged. A line whose
-//! overflow sits inside one string literal holding interior whitespace
-//! carries the [`split`] form as a display-only suggestion, gated by
-//! `suggest_string_splits`. Lint-only.
+//! Flags each physical line still over its cap once no layout rule can
+//! shorten it. The cap is `import_line_length` inside an import statement,
+//! the budget `wrap-docstrings` wraps a docstring row to, and
+//! `code_line_length` elsewhere. A row a layout rule splits is left to that
+//! rule, and still flagged where the configuration or a skip keeps the rule
+//! from splitting it, or where only a trailing comment runs past the cap. A
+//! line whose code fits ahead of a trailing pragma run is never flagged. A
+//! line whose overflow sits inside one string literal holding interior
+//! whitespace carries the [`split`] form as a display-only suggestion,
+//! gated by `suggest_string_splits`. Lint-only.
 
 use std::{iter, slice};
 
@@ -55,15 +55,15 @@ mod split;
 
 #[derive(Debug)]
 pub(crate) struct LineOverflow {
+    /// The reason a comma-joined `import a, b` stays joined where
+    /// `split-multi-module` is unset.
+    bare_imports_off: Option<Off>,
     code_line_length: usize,
     import_line_length: usize,
-    /// Each rule the configuration leaves off, `reflow-collections`
-    /// counting as off wherever it expands no literal.
-    off: Vec<RuleId>,
+    /// Each layout rule the configuration keeps from splitting a row.
+    off: Vec<Off>,
     /// The terms `reflow-signatures` decides a signature's shape under.
     signatures: reflow_signatures::Terms,
-    /// True where `reflow-imports` splits a comma-joined `import a, b`.
-    splits_bare_imports: bool,
     stranding: padding::Stranding,
     suggest_string_splits: bool,
     /// The rule whose edits name the docstring rows it rewrites.
@@ -78,21 +78,28 @@ impl LineOverflow {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
+            bare_imports_off: (!config.rules.reflow_imports.split_multi_module).then_some(Off {
+                facet: Some("split-multi-module"),
+                rule: ReflowImports::SLUG,
+            }),
             code_line_length: config.code_width(),
             import_line_length: config.import_width(),
             off: KNOWN_IDS
                 .iter()
-                .copied()
-                .filter(|&id| {
-                    if id == ReflowCollections::SLUG {
-                        !config.expands_literals()
+                .filter_map(|&rule| {
+                    if !config.rules.enabled(rule) {
+                        Some(Off { facet: None, rule })
+                    } else if rule == ReflowCollections::SLUG && !config.expands_literals() {
+                        Some(Off {
+                            facet: Some("explode"),
+                            rule,
+                        })
                     } else {
-                        !config.rules.enabled(id)
+                        None
                     }
                 })
                 .collect(),
             signatures: reflow_signatures::Terms::from_config(config),
-            splits_bare_imports: config.rules.reflow_imports.split_multi_module,
             stranding: config.stranded_padding(),
             suggest_string_splits: config.rules.line_overflow.suggest_string_splits,
             wrap_docstrings: WrapDocstrings::from_config(config),
@@ -106,22 +113,24 @@ impl Rule for LineOverflow {
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
-        let targets = module_call_params(source);
-        let padding = source.stranded_padding(self.stranding);
         let mut spans = Spans {
+            bare_imports_off: self.bare_imports_off,
             blocked: Vec::new(),
             budgets: Vec::new(),
             docstrings: docstring_slots(&source.ast().body),
             exploding: self
                 .signatures
-                .over(source, &targets, &padding)
+                .over(
+                    source,
+                    &module_call_params(source),
+                    &source.stranded_padding(self.stranding),
+                )
                 .exploding_parameters(&source.ast().body),
             imports: Vec::new(),
             off: &self.off,
             reach: Vec::new(),
             reshapeable: Vec::new(),
             source,
-            splits_bare_imports: self.splits_bare_imports,
             strings: Vec::new(),
         };
         spans.note_docstrings(&self.wrap_docstrings);
@@ -188,9 +197,9 @@ enum Kept {
     Held(RuleId),
     /// No layout rule can shorten the line.
     NoReshape,
-    /// The configuration turns off this layout rule, which splits a
-    /// construct on the line.
-    Off(RuleId),
+    /// The configuration keeps a layout rule from splitting a construct on
+    /// the line.
+    Off(Off),
 }
 
 impl Kept {
@@ -200,16 +209,30 @@ impl Kept {
             Self::Comment => "with only its trailing comment past it".to_owned(),
             Self::Held(rule) => format!("with `{rule}` held by a skip"),
             Self::NoReshape => "with no legal reshape".to_owned(),
-            Self::Off(rule) => format!("with `{rule}` off"),
+            Self::Off(Off { facet: None, rule }) => format!("with `{rule}` off"),
+            Self::Off(Off {
+                facet: Some(facet),
+                rule,
+            }) => format!("with `{facet}` off on `{rule}`"),
         }
     }
 }
 
-/// Gathers the import-statement ranges that shift a line to the import
-/// budget, the places a layout rule splits a row, the constructs no
-/// layout rule reaches, the one-line string literals a suggested reshape
-/// can split, and the docstring slots.
+/// A layout rule the configuration keeps from splitting a row, beside the
+/// facet that does it where the rule itself runs.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Off {
+    facet: Option<&'static str>,
+    rule: RuleId,
+}
+
+/// Gathers what the lint reads per line: the import ranges that answer to
+/// the import budget, the budget each docstring row wraps to, the places a
+/// layout rule splits a row or is kept from splitting it, the signatures
+/// `reflow-signatures` lays out, the docstring slots, and the one-line
+/// string literals a suggested reshape can split.
 struct Spans<'a> {
+    bare_imports_off: Option<Off>,
     /// Each place a layout rule would split a row where the rule is off or
     /// held, beside the reason a line holding it stays as written.
     blocked: Vec<(TextRange, Kept)>,
@@ -224,7 +247,7 @@ struct Spans<'a> {
     /// per row, ascending.
     exploding: Vec<TextSize>,
     imports: Vec<TextRange>,
-    off: &'a [RuleId],
+    off: &'a [Off],
     /// The furthest end any `reshapeable` range up to each index
     /// covers, so the intersection test is one binary search over the
     /// ascending starts and one read.
@@ -233,7 +256,6 @@ struct Spans<'a> {
     /// docstring rule rewrites.
     reshapeable: Vec<TextRange>,
     source: &'a Source,
-    splits_bare_imports: bool,
     strings: Vec<&'a StringLiteral>,
 }
 
@@ -296,16 +318,15 @@ impl<'a> Spans<'a> {
     }
 
     /// Records each of `splits`, the places `rule` shortens a row of the
-    /// construct over `range`, through [`Self::record`], counting `rule` off
-    /// wherever the configuration turns it off.
+    /// construct over `range`, through [`Self::record`], blocked wherever
+    /// the configuration keeps `rule` from splitting it.
     fn note(
         &mut self,
         range: TextRange,
         rule: RuleId,
         splits: impl IntoIterator<Item = TextRange>,
     ) {
-        let off = self.off.contains(&rule);
-        self.record(range, rule, off, splits);
+        self.record(range, rule, self.switched_off(rule), splits);
     }
 
     /// Records an argument list `reflow-calls` lays out one argument per
@@ -316,10 +337,10 @@ impl<'a> Spans<'a> {
         self.note(arguments.range(), ReflowCalls::SLUG, splits);
     }
 
-    /// Records the budget each docstring row wraps to and each row the
-    /// docstring rules rewrite. A docstring `wrap-docstrings` reads only
-    /// after `frame-docstrings` or `expand-docstrings` reshapes it leaves
-    /// every row to that rule. A row surviving its rewrap whole is left out.
+    /// Records each docstring row's wrap budget and the rows the docstring
+    /// rules rewrite. Where `frame-docstrings` or `expand-docstrings`
+    /// reshapes a docstring before `wrap-docstrings` reads it, every row of
+    /// that docstring is left to the reshaping rule.
     fn note_docstrings(&mut self, wrap: &WrapDocstrings) {
         let source = self.source;
         let mut wrapped = Vec::new();
@@ -341,6 +362,7 @@ impl<'a> Spans<'a> {
                 }
             }
         }
+        // A row whose text survives its rewrap whole stays as written.
         for edit in wrapped {
             let rewrite = spliced_rows(source, edit.range(), slice::from_ref(&edit));
             let kept: FxHashSet<&str> = rewrite
@@ -358,13 +380,14 @@ impl<'a> Spans<'a> {
     /// Records an import statement's `range` as answering to the import
     /// budget. Where two or more `names` form the comma join
     /// `reflow-imports` splits, each gap between names sharing a row is a
-    /// place that rule splits. A `bare` import counts that rule off where
-    /// its `split-multi-module` facet is unset.
+    /// place that rule splits. A `bare` import is kept from splitting where
+    /// `split-multi-module` is unset.
     fn note_import(&mut self, range: TextRange, names: &[Alias], bare: bool) {
         self.imports.push(range);
         if names.len() >= 2 {
-            let off =
-                self.off.contains(&ReflowImports::SLUG) || (bare && !self.splits_bare_imports);
+            let off = self
+                .switched_off(ReflowImports::SLUG)
+                .or(self.bare_imports_off.filter(|_| bare));
             let splits = row_gaps(self.source, names.iter().map(Ranged::range));
             self.record(range, ReflowImports::SLUG, off, splits);
         }
@@ -432,23 +455,22 @@ impl<'a> Spans<'a> {
     }
 
     /// Records each of `splits`, the places `rule` shortens a row of the
-    /// construct over `range`. Each is blocked where `off` holds or a
-    /// suppression holds `rule` over the construct, and otherwise left to
-    /// `rule`.
+    /// construct over `range`. Each is blocked where `off` keeps `rule` from
+    /// splitting it or a suppression holds `rule` over the construct, and
+    /// otherwise left to `rule`.
     fn record(
         &mut self,
         range: TextRange,
         rule: RuleId,
-        off: bool,
+        off: Option<Off>,
         splits: impl IntoIterator<Item = TextRange>,
     ) {
-        let blocked = if off {
-            Some(Kept::Off(rule))
-        } else if self.source.suppression_map().suppresses(range, rule) {
-            Some(Kept::Held(rule))
-        } else {
-            None
-        };
+        let blocked = off.map(Kept::Off).or_else(|| {
+            self.source
+                .suppression_map()
+                .suppresses(range, rule)
+                .then_some(Kept::Held(rule))
+        });
         match blocked {
             Some(kept) => self
                 .blocked
@@ -471,6 +493,12 @@ impl<'a> Spans<'a> {
                 && self.source.width_between(line.start(), lit.start()) <= cap
                 && self.source.width_between(line.start(), lit.end()) > cap
         })
+    }
+
+    /// Returns how the configuration keeps `rule` from splitting a row,
+    /// `None` where the rule runs in full.
+    fn switched_off(&self, rule: RuleId) -> Option<Off> {
+        self.off.iter().find(|off| off.rule == rule).copied()
     }
 }
 
@@ -591,7 +619,7 @@ mod tests {
     #[case::a_bare_import_left_joined(
         "import collections_long_module_name_one, collections_long_module_name_two\n",
         "import-line-length = 60\n\n[rules]\nreflow-imports = { split-multi-module = false }\n",
-        &["Line is 73 columns, over the 60-column budget, with `reflow-imports` off"],
+        &["Line is 73 columns, over the 60-column budget, with `split-multi-module` off on `reflow-imports`"],
     )]
     #[case::a_row_holding_two_arguments(
         "result = combine(\n    first_argument_value_long_name, second_argument_value_long_name, third_argu,\n)\n",
@@ -638,6 +666,16 @@ mod tests {
         "",
         &["Line is 85 columns, over the 76-column budget, with no legal reshape"],
     )]
+    #[case::a_requoted_docstring_it_also_rewraps(
+        "def fetch():\n    '''\n    Fetch the resource this module names from its canonical location on the network, retrying.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n    '''\n",
+        "",
+        &["Line is 96 columns, over the 76-column budget, with no legal reshape"],
+    )]
+    #[case::section_prose_answering_to_the_structured_budget(
+        "def fetch():\n    \"\"\"\n    Fetch it.\n\n    Note:\n        https://example.com/a/deeply/nested/path/that/runs/past/the/docstring/index.html\n    \"\"\"\n",
+        "",
+        &[],
+    )]
     #[case::an_unframed_docstring(
         "def fetch():\n    \"\"\"Fetch the resource this module names from its canonical location on the network.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n    \"\"\"\n",
         "",
@@ -656,7 +694,7 @@ mod tests {
     #[case::expansion_turned_off(
         "values = [first_argument_value_long_name, second_argument_value_long_name, third_item_value]\n",
         "[rules]\nreflow-collections = { explode = false }\n",
-        &["Line is 92 columns, over the 88-column budget, with `reflow-collections` off"],
+        &["Line is 92 columns, over the 88-column budget, with `explode` off on `reflow-collections`"],
     )]
     fn lint_reads_each_row_a_layout_rule_splits(
         #[case] src: &str,

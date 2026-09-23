@@ -28,6 +28,6 @@ input_file: crate/tests/fixtures/line_overflow/disabled_layout_rule_still_report
       "column": 1,
       "row": 2
     },
-    "message": "Line is 92 columns, over the 88-column budget, with `reflow-collections` off"
+    "message": "Line is 92 columns, over the 88-column budget, with `explode` off on `reflow-collections`"
   }
 ]
