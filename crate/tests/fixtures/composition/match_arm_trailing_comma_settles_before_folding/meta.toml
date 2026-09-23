@@ -3,5 +3,5 @@ previewable = false
 title       = "A Trailing Comma Is Gone Before the Arm Is Measured"
 
 description = '''
-The call under `case Point()` ends on a trailing comma, which `strip-trailing-commas` removes before `align-match-case` measures the arm. **The arm folds in one pass**, its line reaching 87 columns once the comma is gone, inside the 88-column `code-line-length`.
+The call under `case Point()` ends on a trailing comma, which `strip-trailing-commas` removes before `align-match-case` measures the arm. **The arm folds in one pass**, its line reaching exactly 88 columns once the comma is gone, which fits the 88-column `code-line-length`.
 '''

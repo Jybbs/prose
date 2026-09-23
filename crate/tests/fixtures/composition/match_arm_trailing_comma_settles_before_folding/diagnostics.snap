@@ -3,4 +3,4 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/match_arm_trailing_comma_settles_before_folding/input.py
 ---
-strip-trailing-commas@121..122
+strip-trailing-commas@122..123

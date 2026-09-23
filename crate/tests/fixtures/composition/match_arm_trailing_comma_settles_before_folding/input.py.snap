@@ -5,4 +5,4 @@ input_file: crate/tests/fixtures/composition/match_arm_trailing_comma_settles_be
 ---
 def f(p):
     match p:
-        case Point(): return frobnicate(alpha_argument, beta_argument, gamma_xxxxxxxxx)
+        case Point(): return frobnicate(alpha_argument, beta_argument, gamma_xxxxxxxxxx)

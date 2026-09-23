@@ -10,7 +10,7 @@ layout  : doc
 
 `align-match-case` folds each single-statement `case` arm onto its `case` line and pads the space before the `:` so consecutive arms share one column, with the patterns flush left and the bodies starting at one column to the right. A `match` whose arms each contain one statement then reads as a dispatch table, patterns on the left and results on the right, and the reader scans rows rather than tracing each body.
 
-The rule acts only on runs of single-statement arms at the same indentation, and an arm folds only where its one-line form fits within `code-line-length`. The rule measures that line with the padding before the `:` out to the run's column and never narrower than one space, and it counts a trailing comment on the body's line at the gap and opener [[align-comments]] and [[normalize-comment-spacing]] settle it to. An arm stays multi-line and ends the run when:
+The rule acts only on runs of single-statement arms at the same indentation, and an arm folds only where its one-line form fits within `code-line-length`. The rule measures that line with the `:` where the fold writes it, padded out to the run's column one space past the widest pattern, or flush against the pattern of an arm left in a group of its own. It reads the rest of the body's line at the width the other rules leave it, without the padding inside a bracket that [[strip-stranded-padding]] removes, with the space around each `=` at the width [[align-equals]] settles it to, and with a trailing comment at the gap and opener [[align-comments]] and [[normalize-comment-spacing]] settle it to. An arm stays multi-line and ends the run when:
 
 - It holds more than one statement
 - Its body is a compound statement or spans several lines

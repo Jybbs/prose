@@ -81,8 +81,9 @@ pub(crate) fn forecast_columns(
 /// `emit_group`'s column math, each line read with `widenings` and at
 /// the width `joined` names where a later rule writes the row. A
 /// candidate group reports its shared column, any other group the
-/// settings' buffer past each member's width, and the value sits
-/// [`VALUE_OFFSET`](super::VALUE_OFFSET) columns past the token.
+/// padding a group of one takes past each member's width, and the
+/// value sits [`VALUE_OFFSET`](super::VALUE_OFFSET) columns past the
+/// token.
 pub(crate) fn operator_columns(
     source: &Source,
     members: &[Member],
@@ -131,8 +132,8 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
 }
 
 /// The per-member columns of a run, the group math where `candidate`
-/// holds and the settings' buffer past each member's own width
-/// otherwise.
+/// holds and otherwise each member's own width plus the padding a group
+/// of one takes, which a singleton strip leaves at zero.
 fn columns(
     source: &Source,
     members: &[Member],
@@ -144,7 +145,7 @@ fn columns(
     if !candidate {
         return members
             .iter()
-            .map(|m| m.baseline + m.settled_width + settings.buffer)
+            .map(|m| m.baseline + m.settled_width + settings.suffix_len(1))
             .collect();
     }
     group_paddings(source, members, settings, widenings, joined)
@@ -749,6 +750,24 @@ mod tests {
                 &[],
             ),
             vec![4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_keeps_a_lone_member_flush_under_the_singleton_strip() {
+        let (source, members) = rows(&[(3, 5)]);
+
+        // The strip writes a group of one flush, so the operator lands
+        // directly past the width-3 name, where the emitter puts it.
+        assert_eq!(
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)).with_singleton_strip(),
+                &Widenings::default(),
+                &[],
+            ),
+            vec![3],
         );
     }
 

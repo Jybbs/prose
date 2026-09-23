@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Arm Exactly at the Budget Folds"
+
+description = '''
+`describe` and `summarize` each hold a lone `case Point()` arm whose one-line form reaches exactly 88 columns with its `:` flush against the pattern, the way a lone arm folds. That line fits the 88-column `code-line-length`, so **the arm in `describe` stays folded and the arm in `summarize` folds onto its `case` line**.
+'''
