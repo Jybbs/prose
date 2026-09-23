@@ -529,10 +529,10 @@ def read(path: str | Path) -> str:
 
 def reads() -> int:
     """
-    Report every file the audit read that the `pull_request` path filter of
-    no workflow running the audit selects, since a change to that file alone
-    would merge without the audit running. A workflow with no path filter
-    fires on every file.
+    Report every file the earlier checks recorded in `READ` that the
+    `pull_request` path filter of no workflow running the audit selects,
+    since a change to that file alone would merge without the audit running.
+    A workflow with no path filter fires on every file.
     """
     filters = []
     for path in sorted(Path(".github/workflows").glob("*.y*ml")):
