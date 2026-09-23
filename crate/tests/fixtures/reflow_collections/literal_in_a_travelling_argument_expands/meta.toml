@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Set in an Argument That Moves Expands at the Indent It Lands On"
+
+description = '''
+The `any` call in `A.f`'s returned list opens mid-row, and its generator sits on a row the source indented deeper than the call lands once the list expands. **The set expands with its closing `}` at the generator's landed indent**, because its layout is measured at the indent its row takes after the move and rendered at the indent before it, so the move carries every row into place.
+'''

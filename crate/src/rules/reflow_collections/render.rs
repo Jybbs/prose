@@ -289,9 +289,10 @@ impl<'a> Layouter<'a> {
     }
 
     /// `expr`'s paren-recovered source range placed per `landing`, the
-    /// calls inside it reshaped where the move pushes one past the
-    /// budget and the slice moved whole otherwise. `tail` is the columns
-    /// the enclosing layout writes after the text on its last row.
+    /// calls and collapsible constructs inside it reshaped where the
+    /// move pushes one past the budget and the slice moved whole
+    /// otherwise. `tail` is the columns the enclosing layout writes
+    /// after the text on its last row.
     pub(super) fn placed_slice(
         &self,
         expr: &Expr,
@@ -321,10 +322,13 @@ impl<'a> Layouter<'a> {
             .map(Cow::into_owned)
     }
 
-    /// The terms the calls inside a relocated expression reshape under.
-    pub(super) fn reshaper(&self) -> Reshaper<'a> {
+    /// The terms the calls inside a relocated expression reshape under,
+    /// each collapsible construct the walk reaches taking this rule's
+    /// layout where it lands.
+    pub(super) fn reshaper(&self) -> Reshaper<'_> {
         Reshaper {
             expands_literals: self.explode,
+            layout: Some(self),
             one_row: self.one_row,
             padding: self.padding,
             reorders: self.reorders,

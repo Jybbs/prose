@@ -1,13 +1,9 @@
-//! Flags each physical line still over its governing cap once no legal
-//! reshape remains. A line inside an import statement answers to
-//! `import_line_length`, every other line to `code_line_length`. A line
-//! a layout rule could still split (an inline call carrying arguments,
-//! a multi-element collection, a comma-joined import of either form, a
-//! signature carrying parameters, a single-statement match arm, an
-//! implicitly concatenated string run outside a docstring slot) is left
-//! for that rule. No rule reaches a construct inside an f-string or
-//! t-string replacement field, so its line surfaces here as well. A
-//! line whose overflow sits inside one string literal holding interior
+//! Flags each physical line still over its cap, `import_line_length`
+//! inside an import statement and `code_line_length` elsewhere, once no
+//! layout rule can shorten it. A line holding a construct a layout rule
+//! splits is left to that rule, unless a skip holds that rule there or
+//! its code fits and only a trailing comment runs past the cap. A line
+//! whose overflow sits inside one string literal holding interior
 //! whitespace carries the [`split`] form as a display-only suggestion,
 //! gated by `suggest_string_splits`. Lint-only, emits no edits.
 
@@ -29,8 +25,14 @@ use crate::{
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
-    rules::stack_adjacent_strings::concatenated_run,
-    rules::{Rule, RuleId},
+    rules::{
+        Rule, RuleId,
+        align_match_case::AlignMatchCase,
+        reflow_imports::ReflowImports,
+        reflow_signatures::ReflowSignatures,
+        stack_adjacent_strings::{StackAdjacentStrings, concatenated_run},
+        wrap_docstrings::WrapDocstrings,
+    },
     source::Source,
 };
 
@@ -73,6 +75,7 @@ impl Rule for LineOverflow {
             strings: Vec::new(),
         };
         spans.note_docstring(&source.ast().body);
+        spans.note_layouts();
         spans.visit_body(&source.ast().body);
         spans.index();
         let floor = self.code_line_length.min(self.import_line_length);
@@ -90,7 +93,7 @@ impl Rule for LineOverflow {
                 } else {
                     self.code_line_length
                 };
-                if width <= cap || spans.reshapes(range) {
+                if width <= cap || (spans.reshapes(range) && source.tail_width(range) > cap) {
                     return None;
                 }
                 let report = format!("Line is {width} columns, over the {cap}-column budget");
@@ -142,6 +145,12 @@ impl<'a> Spans<'a> {
         concatenated_run(expr).is_some() && !self.docstrings.contains(&expr.range())
     }
 
+    /// True where a suppression holds `rule` over `range`, which leaves
+    /// the construct there as written.
+    fn held(&self, range: TextRange, rule: RuleId) -> bool {
+        self.source.suppression_map().suppresses(range, rule)
+    }
+
     /// True when `line` meets an import statement, which answers to the
     /// import budget. Import statements never nest, so the last range
     /// opening at or before `line`'s end is the only candidate.
@@ -165,9 +174,12 @@ impl<'a> Spans<'a> {
     }
 
     /// Records a leading docstring's whole range, the prose
-    /// `wrap-docstrings` reflows to the budget.
+    /// `wrap-docstrings` reflows to the budget, where no suppression
+    /// holds that rule over it.
     fn note_docstring(&mut self, body: &[Stmt]) {
-        if let Some(lit) = body_docstring(body) {
+        if let Some(lit) = body_docstring(body)
+            && !self.held(lit.range(), WrapDocstrings::SLUG)
+        {
             self.reshapeable.push(lit.range());
         }
     }
@@ -178,7 +190,7 @@ impl<'a> Spans<'a> {
     fn note_import(&mut self, range: TextRange, names: usize) {
         self.imports.push(range);
         if names >= 2 {
-            self.note_inline(range);
+            self.note_unheld(range, ReflowImports::SLUG);
         }
     }
 
@@ -190,6 +202,20 @@ impl<'a> Spans<'a> {
         }
     }
 
+    /// Records the argument lists `reflow-calls` can explode and the
+    /// collection literals `reflow-collections` can expand, each sitting
+    /// on one source line.
+    fn note_layouts(&mut self) {
+        for range in self
+            .source
+            .explodable_arguments()
+            .iter()
+            .chain(self.source.expandable_literals())
+        {
+            self.note_inline(*range);
+        }
+    }
+
     /// Records a single-statement match arm on one source line, the
     /// form `align-match-case` splits onto the next line.
     fn note_match(&mut self, m: &StmtMatch) {
@@ -197,7 +223,7 @@ impl<'a> Spans<'a> {
             if let [body] = case.body.as_slice()
                 && !is_compound_statement(body)
             {
-                self.note_inline(case.range());
+                self.note_unheld(case.range(), AlignMatchCase::SLUG);
             }
         }
     }
@@ -206,7 +232,7 @@ impl<'a> Spans<'a> {
     /// `reflow-signatures` explodes one parameter per line.
     fn note_signature(&mut self, fd: &StmtFunctionDef) {
         if !fd.parameters.is_empty() {
-            self.note_inline(fd.parameters.range());
+            self.note_unheld(fd.parameters.range(), ReflowSignatures::SLUG);
         }
     }
 
@@ -217,6 +243,14 @@ impl<'a> Spans<'a> {
             && !self.source.contains_line_break(lit)
         {
             self.strings.push(lit);
+        }
+    }
+
+    /// Records `range` through [`Self::note_inline`] unless a suppression
+    /// holds `rule`, the layout rule that splits it, over that range.
+    fn note_unheld(&mut self, range: TextRange, rule: RuleId) {
+        if !self.held(range, rule) {
+            self.note_inline(range);
         }
     }
 
@@ -240,13 +274,10 @@ impl<'a> Spans<'a> {
 impl<'a> Visitor<'a> for Spans<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         match expr {
-            _ if self.breakable_run(expr) => self.note_inline(expr.range()),
-            Expr::Call(call) if !call.arguments.is_empty() => self.note_inline(expr.range()),
-            Expr::Dict(d) if d.len() >= 2 => self.note_inline(expr.range()),
-            Expr::List(l) if l.len() >= 2 => self.note_inline(expr.range()),
-            Expr::Set(s) if s.len() >= 2 => self.note_inline(expr.range()),
+            _ if self.breakable_run(expr) => {
+                self.note_unheld(expr.range(), StackAdjacentStrings::SLUG);
+            }
             Expr::StringLiteral(s) => self.note_string(s),
-            Expr::Tuple(t) if t.len() >= 2 => self.note_inline(expr.range()),
             _ => {}
         }
         walk_expr(self, expr);

@@ -69,6 +69,7 @@ impl Rule for ReflowSignatures {
             newline: source.newline_str(),
             reshaper: Reshaper {
                 expands_literals: expansion.expands_literals,
+                layout: None,
                 one_row: expansion.one_row,
                 padding: &padding,
                 reorders: self.reorders,

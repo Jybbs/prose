@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Tail Bracket Bounds the Rejoin Measure"
-
-description = '''
-`helper(alpha, beta)` arrives broken across two rows with `+ [gamma_value, ...]` trailing its `)`, a list long enough that the full row would overflow the budget. **The call still rejoins onto one row**, because the rejoin measure runs only as far as the `[` of the list after the `+`, since exploding the list would end the row there anyway, and the list's own layout is left to `reflow-collections`.
-'''

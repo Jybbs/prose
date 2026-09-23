@@ -5,9 +5,7 @@
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{
-    ArgOrKeyword, Arguments, Expr, ExprCall, token::TokenKind, visitor::Visitor as AstVisitor,
-};
+use ruff_python_ast::{ArgOrKeyword, Arguments, Expr, ExprCall, visitor::Visitor as AstVisitor};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -20,7 +18,6 @@ use crate::primitives::{
     },
     layout::{Separator, explode_parens, is_fractured, item_indent},
     slots::starting_within,
-    tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
@@ -166,29 +163,19 @@ impl<'a> Exploder<'a> {
     }
 
     /// The offset of the first opening bracket inside `range` that
-    /// opens a construct a later pass lays out across rows: a call's or
-    /// grouping `(` always qualifies, whereas a bracket opening a
-    /// literal qualifies only where `reflow-collections` can expand it
-    /// and no literal earlier on the row explodes first, and a
-    /// subscript's `[` never does.
+    /// opens a construct a later pass lays out across rows: the `(` of
+    /// an argument list this rule can explode, or the bracket of a
+    /// literal `reflow-collections` expands where no literal earlier on
+    /// the row explodes first. Any other bracket holds its row.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
-        let literals = self.source.expandable_literals();
-        tokens_within(self.source, range)
-            .find(|token| {
-                if !is_opener(token.kind()) {
-                    return false;
-                }
-                if token.kind() == TokenKind::Lsqb
-                    && opens_subscript(self.source.tokens(), token.start())
-                {
-                    return false;
-                }
-                match literals.binary_search_by_key(&token.start(), Ranged::start) {
-                    Ok(_) => !self.earlier_literal_explodes(token.start()),
-                    Err(_) => token.kind() == TokenKind::Lpar,
-                }
-            })
+        let call = starting_within(self.source.explodable_arguments(), range, Ranged::start)
+            .next()
+            .map(Ranged::start);
+        let ahead = TextRange::new(range.start(), call.unwrap_or(range.end()));
+        let literal = starting_within(self.source.expandable_literals(), ahead, Ranged::start)
             .map(Ranged::start)
+            .find(|&start| self.expands_literals && !self.earlier_literal_explodes(start));
+        literal.or(call)
     }
 
     /// True where the expand fires on the literal at `range`: one
@@ -359,13 +346,16 @@ impl<'a> Exploder<'a> {
             return is_fractured(self.source, arguments.range()).then_some(form);
         }
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
-            Some(keywords) if !keywords.has_posonly_prefix => {
-                Some(self.explode_keywords(&keywords, arguments, self.indent_for(call)))
-            }
+            Some(keywords) if !keywords.has_posonly_prefix => Some(self.explode_keywords(
+                &keywords,
+                arguments,
+                self.indent_for(arguments.start()),
+            )),
             // A call that cannot take keyword form explodes positionally
             // on the length trigger alone, so the count trigger leaves
             // such calls inline.
-            _ => length_trips.then(|| self.explode_source_order(call, self.indent_for(call))),
+            _ => length_trips
+                .then(|| self.explode_source_order(call, self.indent_for(arguments.start()))),
         }
     }
 
@@ -375,7 +365,7 @@ impl<'a> Exploder<'a> {
     /// trailing comment closing the measure either way. A tail holding
     /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
-    /// there, whereas a subscript's `[` never breaks and charges whole.
+    /// there, whereas a tail holding none is charged whole.
     pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;

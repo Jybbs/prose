@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/unexpanded_literal_leaves_the_tail_whole/input.py
+---
+value = helper(
+    alpha,
+    beta
+) + [gamma_value, delta_value, epsilon_value, zeta_value, eta_value]

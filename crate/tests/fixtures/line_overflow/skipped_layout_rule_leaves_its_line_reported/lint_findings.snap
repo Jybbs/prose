@@ -1,0 +1,72 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_leaves_its_line_reported/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 153,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Line is 152 columns, over the 120-column budget, with no legal reshape"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 120,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Line is 119 columns, over the 88-column budget, with no legal reshape"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 130,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 5
+    },
+    "message": "Line is 129 columns, over the 88-column budget, with no legal reshape"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 125,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 8
+    },
+    "message": "Line is 124 columns, over the 88-column budget, with no legal reshape"
+  },
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 125,
+      "row": 14
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 14
+    },
+    "message": "Line is 124 columns, over the 88-column budget, with no legal reshape"
+  }
+]

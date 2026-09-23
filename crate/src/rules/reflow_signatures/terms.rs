@@ -26,10 +26,9 @@ pub(crate) struct Terms {
 
 impl Terms {
     pub(crate) fn from_config(config: &Config) -> Self {
-        let collections = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
-            expands_literals: collections.enabled && collections.explode,
+            expands_literals: config.expands_literals(),
             max_params: config.rules.reflow_signatures.max_params.cap(),
             one_row: config.one_row_settings(),
         }

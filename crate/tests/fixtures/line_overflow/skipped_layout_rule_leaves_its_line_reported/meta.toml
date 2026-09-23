@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Line Whose Layout Rule a Skip Holds Is Reported"
+
+description = '''
+Each long line here carries a `# prose: skip[...]` naming the one rule that would split it: `reflow-imports` for the import, `reflow-calls` for `TOTAL`'s call, `reflow-collections` for `TABLE`'s dict, `reflow-signatures` for the signature of `configure`, and `align-match-case` for the `"halt"` arm in `dispatch`. The code on each line runs past its budget on its own. **Every one of those lines is reported**, because each skip holds the rule that would split its line and that rule then leaves the line as written.
+'''

@@ -1,8 +1,9 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/suppression/skip_and_ignore_same_line/input.py
 ---
 align-equals@13..189
+line-overflow@19..124
 reassigned-constants@0..18
 reassigned-constants@125..139

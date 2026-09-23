@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A List No Rule Expands Leaves the Whole Tail on the Call's Row"
+
+description = '''
+`helper(alpha, beta)` arrives broken across two rows with `+ [gamma_value, ...]` trailing its `)`, and `reflow-collections` is not running to expand that list. **The call explodes one argument per row**, because the list holds its row and the whole of it counts against the rejoin, which overflows the budget.
+'''

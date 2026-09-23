@@ -82,6 +82,23 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> Visitor<'src> for ExprCollector<F, T
     }
 }
 
+/// True when `hit` holds for `expr` or any expression beneath it,
+/// `interpolations` deciding whether the walk reads the interior of an
+/// f-string or t-string replacement field.
+pub(crate) fn any_over_expr_within(
+    expr: &Expr,
+    interpolations: Descent,
+    mut hit: impl FnMut(&Expr) -> bool,
+) -> bool {
+    let mut collector = ExprCollector {
+        found: Vec::new(),
+        interpolations,
+        probe: |e: &Expr| hit(e).then_some(()),
+    };
+    collector.visit_expr(expr);
+    !collector.found.is_empty()
+}
+
 /// True when any statement in `body` satisfies `hit`, descending through
 /// every compound body including nested `def` and `class` scopes and
 /// stopping at the first match.
@@ -151,9 +168,10 @@ pub(crate) fn walk_stmt<'src, V: Visitor<'src> + ?Sized>(visitor: &mut V, stmt: 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{first_expr, parse};
 
     /// The name of every `def` in `src`, in walk order.
     fn def_names(src: &str) -> Vec<String> {
@@ -171,6 +189,22 @@ mod tests {
 
     fn has_pass(src: &str) -> bool {
         any_over_stmts(&parse(src).ast().body, |stmt| matches!(stmt, Stmt::Pass(_)))
+    }
+
+    #[rstest]
+    #[case::a_dict_outside_any_field("[{'a': 1}, f\"{x}\"]", Descent::Over, true)]
+    #[case::a_field_read_through("[f\"{ {'a': 1} }\"]", Descent::Into, true)]
+    #[case::a_field_left_unwalked("[f\"{ {'a': 1} }\"]", Descent::Over, false)]
+    fn any_over_expr_within_reads_a_replacement_field_per_its_descent(
+        #[case] src: &str,
+        #[case] interpolations: Descent,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            any_over_expr_within(first_expr(&source), interpolations, Expr::is_dict_expr),
+            expected,
+        );
     }
 
     #[test]

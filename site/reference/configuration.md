@@ -61,7 +61,7 @@ Several alignment rules reach the same row, since [[align-colons]], [[align-equa
 
 A trailing comment counts toward the cap like any other span on the line, since *Prose* places it through [[normalize-comment-spacing]] and [[align-comments]] rather than leaving it untouched. A row already past its cap before any padding therefore keeps its own gap and joins a shared column only where that column adds no width to it, which only the widest row of a run satisfies. Alignment never pushes an over-budget line further out, and [[line-overflow]] reports the remainder at the narrowest width the row can reach.
 
-A cap no legal layout can meet *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains, so an unsatisfiable cap shows up as a finding in `prose check` and a flagged line in the sandbox rather than as a setting that did nothing.
+A cap no legal layout can meet *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains, so an unsatisfiable cap shows up as a finding in `prose check` and a flagged line in the sandbox rather than as a setting that did nothing. A line whose code fits while its trailing comment runs past the cap stays as written too, since no layout rule reshapes a line for its comment, and [[line-overflow]] reports it.
 
 ## Cache
 

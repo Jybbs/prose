@@ -2,15 +2,15 @@
 //! `Config::code_line_length` budget. A multi-line subscript,
 //! comprehension, or dict key whose inline form fits rejoins onto one
 //! line, an overflowing single-line literal expands one entry per
-//! line, a dict over `max_dict_entries` expands whatever its width,
-//! and an over-wide dict entry breaks at `:` and hangs its value. A
-//! comment, a replacement field, or a folded multi-line string holds a
-//! construct at its source shape, a held member travels with the row
-//! it lands on, and `keep_multiline_literals` re-expands an authored
-//! flush column rather than joining it. Every measure reads the value
-//! at the column `align_equals` shifts it to, the width the padding
-//! rule settles it at, and the separator `alphabetize-siblings` leaves
-//! closing its row.
+//! line, as does one holding a dict over `max_dict_entries` or a call
+//! the `max_args` trigger explodes whatever its width, and an over-wide
+//! dict entry breaks at `:` and hangs its value. A comment, a
+//! replacement field, or a folded multi-line string holds a construct
+//! at its source shape, a held member travels with the row it lands on,
+//! and `keep_multiline_literals` re-expands an authored flush column
+//! rather than joining it. Every measure reads the value at the column
+//! `align_equals` shifts it to, the width the padding rule settles it
+//! at, and the separator `alphabetize-siblings` leaves closing its row.
 
 use std::borrow::Cow;
 
@@ -24,15 +24,14 @@ use crate::{
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, placed_head, singleton_groups},
         inline::{end_column, indent_width, last_line, spans_rows},
-        layout::{is_collapsible, is_layoutable, requires_expand},
+        layout::is_collapsible,
         one_row,
         padding::Stranding,
         reserve,
         travel::Landing,
-        walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
+        walk::{Descent, ParentedProbe, walk_parented_exprs},
     },
-    rules::alphabetize_siblings::Reorders,
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_calls::CollectionLayout},
     source::Source,
 };
 
@@ -77,18 +76,6 @@ impl ReflowCollections {
 
 impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let body = &source.ast().body;
-        // The count cap reads the `explode` facet, so a cleared `explode`
-        // leaves no tripping dicts and the cap goes inert. Precomputed
-        // once for the per-node containment scan.
-        let count_cap = self.one_row.dict_entry_cap();
-        let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
-            filter_map_over_exprs(body, Descent::Over, |expr| {
-                expr.as_dict_expr()
-                    .filter(|dict| dict.len() > cap)
-                    .map(Ranged::range)
-            })
-        });
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let padding = source.stranded_padding(self.stranding);
@@ -104,7 +91,6 @@ impl Rule for ReflowCollections {
             reservations: &reservations,
             source,
             targets: &targets,
-            tripping_dicts,
             wrap_dict_entries: self.wrap_dict_entries,
         };
         walk_parented_exprs(source.ast(), &mut layouter);
@@ -128,7 +114,6 @@ struct Layouter<'a> {
     pub(super) reservations: &'a reserve::Columns,
     pub(super) source: &'a Source,
     pub(super) targets: &'a CallTargets<'a>,
-    pub(super) tripping_dicts: Vec<TextRange>,
     pub(super) wrap_dict_entries: bool,
 }
 
@@ -138,9 +123,9 @@ impl<'a> Layouter<'a> {
     /// closing bracket lands on expand. A multi-line subscript or
     /// comprehension that fits rejoins, while a multi-item `Dict`,
     /// `List`, `Set`, or parenthesized `Tuple` that overflows expands,
-    /// as does a `Dict` over `max_dict_entries` and a literal already
-    /// laid out as a flush column. A subscript and a comprehension only
-    /// ever rejoin. The `explode` facet gates every expansion, and a set
+    /// as does one a later rule reopens and a literal already laid out
+    /// as a flush column. A subscript and a comprehension only ever
+    /// rejoin. The `explode` facet gates every expansion, and a set
     /// `keep_multiline_literals` suppresses the literal rejoin, a
     /// cleared `explode` returning `None`.
     fn replacement_for(
@@ -151,27 +136,17 @@ impl<'a> Layouter<'a> {
         indent: usize,
         tail: usize,
     ) -> Option<String> {
-        let range = expr.range();
         if let Some(inline) = self
             .one_row
             .rejoined(self.source, expr, expr.into(), column, tail)
         {
             return Some(inline.into_owned());
         }
-        if !is_layoutable(expr) || self.source.intersects_comment(range) {
-            return None;
-        }
-        let expandable = requires_expand(expr);
-        let over_count = self.has_over_count_dict(expr);
-        if self.source.contains_line_break(range) {
-            return (self.explode && expandable).then(|| self.expand(expr, parent, indent));
-        }
         (self.explode
-            && expandable
-            && (over_count
-                || column + self.narrowest_width(expr, parent, range) + tail
-                    > self.code_line_length))
-            .then(|| self.expand(expr, parent, indent))
+            && self
+                .one_row
+                .expands(self.source, expr, parent, column, tail, self.padding))
+        .then(|| self.expand(expr, parent, indent))
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand with
@@ -198,6 +173,14 @@ impl<'a> Layouter<'a> {
                 || self.placed_slice(expr, parent, landing, tail),
                 Cow::Owned,
             )
+    }
+}
+
+impl CollectionLayout for Layouter<'_> {
+    /// Lays out `expr` read as its own enclosing node, which leaves no
+    /// dunder-list sort forecast over its entries.
+    fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String> {
+        self.replacement_for(expr, expr.into(), column, indent, tail)
     }
 }
 

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/line_overflow/trailing_comment_carries_the_row_past/input.py
+---
+line-overflow@0..96

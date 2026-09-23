@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/literal_in_a_travelling_argument_expands/input.py
+---
+class A:
+    def f(self):
+        return [
+            alpha_value,
+            any(
+                x in {
+                    aaaaaaaaaa, bbbbbbbbbbbb, cccccccccccc,
+                    ddddddddddd, eeeeeeeeeeee, ffff
+                } for x in y
+            ),
+            beta
+        ]

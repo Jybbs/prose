@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_leaves_its_line_reported/input.py
+---
+from package.module import alpha_name, beta_name, delta_name, gamma_name, lambda_name, omega_name, sigma_name, theta_name  # prose: skip[reflow-imports]
+
+TOTAL = combine(first_argument_value, second_argument_value, third_argument_value, fourth)  # prose: skip[reflow-calls]
+
+TABLE = {"alpha": alpha_value, "beta": beta_value, "delta": delta_value, "gamma": gamma_value}  # prose: skip[reflow-collections]
+
+
+def configure(first_parameter, second_parameter, third_parameter, fourth_parameter_value):  # prose: skip[reflow-signatures]
+    return first_parameter
+
+
+def dispatch(command):
+    match command:
+        case "halt": return first_identifier_long_enough_to_matter + second_identifier_long  # prose: skip[align-match-case]

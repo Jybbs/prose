@@ -65,7 +65,7 @@ pub(crate) struct Travel {
 
 impl Travel {
     /// The move carrying every continuation row by `rows`.
-    fn rigid(rows: isize) -> Self {
+    pub(crate) fn rigid(rows: isize) -> Self {
         Self { rows, closer: None }
     }
 

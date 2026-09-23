@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Inside an f-string in the Tail Leaves the Earlier Call to Explode"
+
+description = '''
+The 108-column `assert` opens on `len(authkey_bytes)`, and its message is an f-string whose replacement field calls `len` again. **The leading `len` explodes one argument per row**, because no rule reaches a call inside a replacement field, so that call never breaks and the whole tail counts against the leading call's row.
+'''

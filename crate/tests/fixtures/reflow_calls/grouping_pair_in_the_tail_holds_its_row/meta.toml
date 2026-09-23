@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Grouping Pair in the Tail Leaves the Earlier Call to Explode"
+
+description = '''
+`fullmatch(r"[a-z-]+", name)` opens a 109-column condition whose tail calls `is_file` on a parenthesized path chain. **`fullmatch` explodes one argument per row**, the layout it takes beside a plain-name receiver, because `reflow-parentheses` never breaks the pair around the chain, an operand of the `or`, so the whole tail counts against the call's row.
+'''
