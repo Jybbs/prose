@@ -25,6 +25,7 @@ mod reach;
 mod records;
 mod removed;
 mod report;
+mod stage;
 mod sweep;
 
 /// The uncomparable entry for the module at `relative`, whose run raised

@@ -1,6 +1,7 @@
 //! The scratch stage one sweep works in, meaning the original copy of the
-//! corpus, each formatted copy, the overlays formatted under one rule, and
-//! the home, records, and temporary directories the runs write to.
+//! corpus, each formatted copy, the overlays formatted under one rule, each
+//! removed once its run ends, and the home, records, and temporary
+//! directories the runs write to.
 
 use std::{
     collections::BTreeSet,
@@ -68,22 +69,27 @@ impl Stage {
 
     /// Builds a tree holding the original of the top-level module or package
     /// carrying each of `files`, ready to be formatted under one rule ahead
-    /// of the original tree. A file under [`VENDORED`] takes its top-level
-    /// package from the component below that directory.
+    /// of the original tree, and removed when the returned directory drops.
+    /// A file under [`VENDORED`] takes its top-level package from the
+    /// component below that directory.
     pub(crate) fn overlay(
         &self,
         files: &[String],
         label: &str,
         module: &str,
         slug: &str,
-    ) -> PathBuf {
-        let tree = self
+    ) -> TempDir {
+        let parent = self
             .root
             .join("alone")
             .join(label)
-            .join(module.replace('/', "+"))
-            .join(slug);
-        fs_err::create_dir_all(&tree).expect("create an overlay");
+            .join(module.replace('/', "+"));
+        fs_err::create_dir_all(&parent).expect("create an overlay parent");
+        let held = tempfile::Builder::new()
+            .prefix(&format!("{slug}."))
+            .tempdir_in(&parent)
+            .expect("create an overlay");
+        let tree = held.path();
         for top in files
             .iter()
             .map(|file| {
@@ -104,7 +110,7 @@ impl Stage {
                 fs_err::copy(&source, target).expect("copy an overlay module");
             }
         }
-        tree
+        held
     }
 
     /// Releases the stage from removal, so a failed run leaves its tree

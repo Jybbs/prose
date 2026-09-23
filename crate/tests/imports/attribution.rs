@@ -49,10 +49,10 @@ impl Attributor<'_> {
                     self.runner
                         .stage
                         .overlay(&loaded, self.label, &brk.module, rule.as_str());
-                format_tree(&tree, &pipeline);
+                format_tree(tree.path(), &pipeline);
                 let ran = self
                     .runner
-                    .run(&brk.module, &[&tree, &self.runner.stage.original]);
+                    .run(&brk.module, &[tree.path(), &self.runner.stage.original]);
                 divergence(&ran, &brk.original).is_some_and(|d| d.reason == brk.reason)
             })
             .copied()
