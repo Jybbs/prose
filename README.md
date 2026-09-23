@@ -73,6 +73,6 @@ cd prose
 mise install
 ```
 
-`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks from a bug report to the fixture case a fix is reviewed against, and covers the branch and pull-request flow.
+`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks a change in order, from setting up a clone and filing or picking up an issue through the fixture case a fix is reviewed against, the commit, and the pull request, to the checks that run on it.
 
 For the architecture, the [**primitive surface**](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.

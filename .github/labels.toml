@@ -1,0 +1,59 @@
+[[labels]]
+color       = "e8c840"
+description = "Rules that align tokens vertically: =, :, import, match arrows"
+name        = "🪜 alignment"
+
+[[labels]]
+color       = "43aeb0"
+description = "Cross-cutting structural or design changes"
+name        = "🗺️ architecture"
+
+[[labels]]
+color       = "d4a574"
+description = "Workflow or behavior regression"
+name        = "🐞 bug"
+
+[[labels]]
+color       = "e6e6ff"
+description = "Cargo.toml, maturin, dependencies, release plumbing"
+name        = "🗜️ build"
+
+[[labels]]
+color       = "17171b"
+description = "Command-line interface, config loader, diff output"
+name        = "🪄 cli"
+
+[[labels]]
+color       = "8cc5a3"
+description = "README, style guide, rule specs, in-code doc comments"
+name        = "📰 docs"
+
+[[labels]]
+color       = "2d2566"
+description = "Parser integration, Source wrapper, Aligner and Orderer primitives"
+name        = "🦉 engine"
+
+[[labels]]
+color       = "c08597"
+description = "Other formatting rules: singleton, one-per-line, trailing commas"
+name        = "🪶 formatting"
+
+[[labels]]
+color       = "5069ad"
+description = "Rules that shape calls, signatures, collections, and from-imports past one line"
+name        = "🧺 layout"
+
+[[labels]]
+color       = "e8876f"
+description = "Rules that report violations without auto-fixing"
+name        = "🧶 lint"
+
+[[labels]]
+color       = "7db3e0"
+description = "Rules that alphabetize or reorder siblings"
+name        = "🪉 ordering"
+
+[[labels]]
+color       = "ffffcc"
+description = "Documentation-site infrastructure, content, and theming"
+name        = "🗝️ site"

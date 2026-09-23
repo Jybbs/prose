@@ -1,30 +1,41 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, action-manifest hygiene, cache-trigger coverage, and task validity"
+#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, cache-trigger coverage, the required checks, and task validity"
 # /// script
 # requires-python = ">=3.11"
+# dependencies = ["pyyaml==6.0.3"]
 # ///
 """
 Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
 
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
+    labels     Every label `release.yml`, an issue template, or the label
+               table in `CONTRIBUTING.md` names is declared in
+               `.github/labels.toml` and described the same way there. Every
+               registry label sits in exactly one release-notes category,
+               and every color is six lowercase hex digits no other label
+               uses.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
     triggers   The `module.yml` push trigger covers every wasm source path
                the module cache key hashes.
+    gates      The checks the `main` ruleset requires are the names of the
+               jobs the pull-request workflows end on.
     tasks      Every task passes `mise tasks validate`, so no alias is shared
                and no dependency names a task that does not exist.
 
 Findings surface as `::error::` annotations naming the divergence or file.
 """
 
-from json       import loads as json_loads
-from pathlib    import Path
-from re         import MULTILINE, findall, finditer, search
-from subprocess import run
-from tomllib    import loads
-from typing     import NoReturn
+from collections import Counter, defaultdict
+from json        import loads as json_loads
+from pathlib     import Path
+from re          import MULTILINE, findall, finditer, fullmatch, search
+from subprocess  import run
+from tomllib     import loads
+from typing      import NoReturn
+from yaml        import AnchorToken, safe_load, safe_load_all, scan
 
 
 def action_pin(action: str, key: str) -> str:
@@ -43,11 +54,11 @@ def action_pins() -> list[tuple[str, str, str]]:
     Return one parity pair per repeat of a third-party action pin, comparing
     every later home's commit against the first home's.
     """
-    homes: dict[str, list[tuple[str, str]]] = {}
-    for path in sorted(Path(".github").rglob("*.yml")):
-        text = path.read_text(encoding="utf-8")
+    homes = defaultdict(list)
+    for path in sorted(Path(".github").rglob("*.y*ml")):
+        text = read(path)
         for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
-            homes.setdefault(match[1], []).append((str(path), match[2]))
+            homes[match[1]].append((str(path), match[2]))
 
     return [
         (f"{action} in {first} ↔ {home}", pin, repeat)
@@ -102,12 +113,19 @@ def cargo_lock_version(name: str) -> str:
     fail(f"no Cargo.lock package named {name!r}")
 
 
+def cargo_manifests(paths: list[str]) -> list[str]:
+    """
+    Return every member manifest among `paths`, sorted.
+    """
+    return sorted(path for path in paths if path.endswith("/Cargo.toml"))
+
+
 def extract(message: str, pattern: str, text: str) -> str:
     """
     Return the first capture of `pattern` in `text`.
     """
     if match := search(pattern, text):
-        return match.group(1)
+        return match[1]
     fail(message)
 
 
@@ -117,6 +135,48 @@ def fail(message: str) -> NoReturn:
     """
     annotate(message)
     raise SystemExit(1)
+
+
+def gates() -> int:
+    """
+    Report every check the `main` ruleset requires that no pull-request
+    workflow ends on, and every pull-request workflow ending on a job whose
+    name the ruleset does not require, since a required check no workflow
+    reports leaves every pull request waiting on it.
+
+    A workflow's triggers sit under the key `True`, which is how PyYAML reads
+    the bare `on` key, and a job with no `name` reports under its key.
+    """
+    ruleset = json_loads(read(".github/rulesets/main.json"))
+    required = {
+        check["context"]
+        for rule in ruleset["rules"]
+        if rule["type"] == "required_status_checks"
+        for check in rule["parameters"]["required_status_checks"]
+    }
+
+    ended  = set()
+    failed = 0
+    for path in sorted(Path(".github/workflows").glob("*.y*ml")):
+        flow = yaml(path)
+        if "pull_request" not in flow[True]:
+            continue
+
+        *_, (job, gate) = flow["jobs"].items()
+        ended.add(name := gate.get("name", job))
+        if name not in required:
+            annotate(
+                f"the workflow ends on {name!r}, which main.json does not require",
+                file = path
+            )
+            failed = 1
+
+    if missing := sorted(required - ended):
+        annotate(
+            f"main.json requires checks no pull-request workflow ends on: {missing}"
+        )
+        failed = 1
+    return failed
 
 
 def hashed_paths(action: str) -> list[str]:
@@ -146,6 +206,68 @@ def input_group(entry: str, groups: dict[str, list[str]]) -> list[str]:
     return [path for member in members for path in input_group(member, groups)]
 
 
+def labels() -> int:
+    """
+    Report every drift between the label registry at `.github/labels.toml` and
+    the files naming its labels, covering a label `release.yml` or an issue
+    template names that the registry lacks, a registry label in no
+    release-notes category or in more than one, a row of the label table in
+    `CONTRIBUTING.md` that names or describes a label differently once its
+    backticks are dropped, and a color that is not six lowercase hex digits or
+    that two labels share.
+    """
+    registry = {label["name"]: label for label in toml(".github/labels.toml")["labels"]}
+    colors   = [label["color"] for label in registry.values()]
+    named    = [
+        label
+        for category in yaml(".github/release.yml")["changelog"]["categories"]
+        for label in category["labels"]
+        if label != "*"
+    ]
+    rows     = findall(
+        r"^\| `([^`]+)` \| (.+) \|$",
+        matched(
+            "no label table in CONTRIBUTING.md",
+            "CONTRIBUTING.md",
+            r"\| \*\*Label\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
+        ),
+        MULTILINE
+    )
+
+    failed    = 0
+    templates = Path(".github/ISSUE_TEMPLATE")
+    for path in sorted([*templates.glob("*.y*ml"), *templates.glob("*.md")]):
+        form = next(safe_load_all(read(path)))
+        if isinstance(applied := form.get("labels") or [], str):
+            applied = applied.split(",")
+        if unknown := sorted({label.strip() for label in applied} - registry.keys()):
+            annotate(
+                f"the template applies labels the registry lacks: {unknown}",
+                file = path
+            )
+            failed = 1
+
+    for found, message in [
+        (set(named) - registry.keys(), "release.yml names labels the registry lacks"),
+        (registry.keys() - set(named), "registry labels in no release.yml category"),
+        (repeated(named), "labels in more than one release.yml category"),
+        (
+            {(name, described.replace("`", "")) for name, described in rows}
+            ^ {(name, label["description"]) for name, label in registry.items()},
+            "CONTRIBUTING.md label rows that differ from the registry"
+        ),
+        (
+            [color for color in colors if not fullmatch("[0-9a-f]{6}", color)],
+            "label colors that are not six lowercase hex digits"
+        ),
+        (repeated(colors), "label colors more than one label shares")
+    ]:
+        if found:
+            annotate(f"{message}: {sorted(found)}")
+            failed = 1
+    return failed
+
+
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -166,15 +288,15 @@ def manifests() -> int:
     runner's manifest parser rejects before any step runs.
     """
     failed = 0
-    for path in sorted(Path(".github/actions").glob("*/action.yml")):
-        text = path.read_text(encoding="utf-8")
-        for match in finditer(r"^\s*[\w-]+\s*:\s*&([\w-]+)", text, MULTILINE):
-            annotate(
-                f"YAML anchors are rejected in an action manifest, so remove {match.group(1)!r}",
-                file = path,
-                line = text[: match.start()].count("\n") + 1
-            )
-            failed = 1
+    for path in sorted(Path(".github/actions").glob("*/action.y*ml")):
+        for token in scan(read(path)):
+            if isinstance(token, AnchorToken):
+                annotate(
+                    f"YAML anchors are rejected in an action manifest, so remove {token.value!r}",
+                    file = path,
+                    line = token.start_mark.line + 1
+                )
+                failed = 1
     return failed
 
 
@@ -182,7 +304,7 @@ def matched(message: str, path: str, pattern: str) -> str:
     """
     Return the first capture of `pattern` in the file at `path`.
     """
-    return extract(message, pattern, Path(path).read_text(encoding="utf-8"))
+    return extract(message, pattern, read(path))
 
 
 def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
@@ -192,11 +314,11 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     """
     owned = sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
     return [
-        (f"Cargo.toml members ↔ {home}", owned, named)
-        for home, named in [
-            (".github/workflows/warm.yml path filter", watched_manifests("warm")),
-            (".mise/tasks/lock/check sources", sourced_manifests("lock/check")),
-            (".mise/tasks/lock/sync sources", sourced_manifests("lock/sync"))
+        (f"Cargo.toml members ↔ {home}", owned, cargo_manifests(paths))
+        for home, paths in [
+            (".github/workflows/warm.yml path filter", workflow_paths("warm")),
+            (".mise/tasks/lock/check sources", task_sources("lock/check")),
+            (".mise/tasks/lock/sync sources", task_sources("lock/sync"))
         ]
     ]
 
@@ -225,7 +347,7 @@ def parity() -> int:
     """
     cargo   = toml("Cargo.toml")
     mise    = toml(".mise/config.toml")
-    package = json_loads(Path("site/package.json").read_text(encoding="utf-8"))
+    package = json_loads(read("site/package.json"))
     project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
@@ -276,7 +398,8 @@ def parity() -> int:
         *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
-        *patch_pins(package)
+        *patch_pins(package),
+        *placeholder_pins(toml("crate/Cargo.toml")["package"]["version"])
     ]
 
     failed = 0
@@ -305,11 +428,35 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     return pairs
 
 
-def sourced_manifests(task: str) -> list[str]:
+def placeholder_pins(version: str) -> list[tuple[str, str, str]]:
     """
-    Return every member manifest the `task` frontmatter's sources list names.
+    Return one parity pair per issue form asking for the release a run came
+    from, matching the version its placeholder shows against `version`.
     """
-    return [path for path in task_sources(task) if path.endswith("/Cargo.toml")]
+    return [
+        (
+            f"{path} version placeholder ↔ crate/Cargo.toml version",
+            field["attributes"].get("placeholder"),
+            version
+        )
+        for path in sorted(Path(".github/ISSUE_TEMPLATE").glob("*.y*ml"))
+        for field in yaml(path).get("body", [])
+        if field.get("id") == "version"
+    ]
+
+
+def read(path: str | Path) -> str:
+    """
+    Return the text of the file at `path`.
+    """
+    return Path(path).read_text(encoding="utf-8")
+
+
+def repeated(values: list[str]) -> set[str]:
+    """
+    Return every value `values` holds more than once.
+    """
+    return {value for value, count in Counter(values).items() if count > 1}
 
 
 def task_sources(task: str) -> list[str]:
@@ -317,7 +464,7 @@ def task_sources(task: str) -> list[str]:
     Return the `sources` the `task` file's `#MISE` frontmatter declares, sorted,
     with every `@group:` reference replaced by the input group it names.
     """
-    lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
+    lines  = read(f".mise/tasks/{task}").splitlines()
     marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
     table  = loads("\n".join(marked))
     if "sources" not in table:
@@ -348,11 +495,11 @@ def tasks() -> int:
     return failed
 
 
-def toml(path: str) -> dict:
+def toml(path: str | Path) -> dict:
     """
     Return the parsed TOML mapping at `path`.
     """
-    return loads(Path(path).read_text(encoding="utf-8"))
+    return loads(read(path))
 
 
 def triggers() -> int:
@@ -366,17 +513,6 @@ def triggers() -> int:
     return 0
 
 
-def watched_manifests(name: str) -> list[str]:
-    """
-    Return every member manifest the `name` workflow's path filter watches.
-    """
-    text = Path(workflow(name)).read_text(encoding="utf-8")
-    return sorted(
-        match.group(1)
-        for match in finditer(r"^\s*-\s+(\S+/Cargo\.toml)\s*$", text, MULTILINE)
-    )
-
-
 def workflow(name: str) -> str:
     """
     Return the path of the `name` workflow file.
@@ -386,19 +522,21 @@ def workflow(name: str) -> str:
 
 def workflow_paths(name: str) -> list[str]:
     """
-    Return the paths the `name` workflow's push trigger filters on.
+    Return the paths the `name` workflow's push trigger filters on, read under
+    the key `True`, which is how PyYAML reads the bare `on` key.
     """
-    return findall(
-        r"^\s+- (\S+)$",
-        matched(
-            f"no paths filter in {name}.yml",
-            workflow(name),
-            r"paths:\n((?:\s+- \S+\n)+)"
-        ),
-        MULTILINE
-    )
+    if (paths := yaml(workflow(name))[True].get("push", {}).get("paths")) is None:
+        fail(f"no push paths filter in {name}.yml")
+    return paths
+
+
+def yaml(path: str | Path) -> dict:
+    """
+    Return the parsed YAML mapping at `path`.
+    """
+    return safe_load(read(path))
 
 
 if __name__ == "__main__":
 
-    raise SystemExit(parity() | manifests() | triggers() | tasks())
+    raise SystemExit(parity() | labels() | manifests() | triggers() | gates() | tasks())

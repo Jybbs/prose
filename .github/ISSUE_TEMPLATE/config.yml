@@ -1,0 +1,12 @@
+blank_issues_enabled : false
+
+contact_links:
+  - name  : Rule catalog
+    about : What each rule does, with a before and after for every case it handles
+    url   : https://prose.fyi/rules/
+  - name  : Configuration reference
+    about : Every key under [tool.prose], the default it takes, and the rules it reaches
+    url   : https://prose.fyi/reference/configuration
+  - name  : Sandbox
+    about : Format a snippet in the browser to see what the current release does with it
+    url   : https://prose.fyi/sandbox/

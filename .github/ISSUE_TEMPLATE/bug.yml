@@ -1,0 +1,78 @@
+name        : Bug
+description : A defect a second run leaves in place, such as a wrong rewrite, a crash, or a flag or key that does not do what its reference says.
+labels      : ["🐞 bug"]
+
+body:
+  - type : markdown
+    attributes:
+      value: |
+        ### The Defect This Form Reports
+
+        This form covers anything *Prose* does that its reference says it should not, where a second run leaves the result exactly as the first one did. A rewrite that a second run would change again has a form of its own, `Unstable output`, which the formatter links to at the moment it writes the file.
+
+        A maintainer reproduces the defect from the fields below, so the command and the source matter more than a description of either. Searching the open issues for the same rule slug or flag first is worth the minute.
+
+  - type : input
+    id   : version
+    attributes:
+      description : The release the run came from, as `prose --version` prints it.
+      label       : Version
+      placeholder : 0.9.1
+    validations:
+      required: true
+
+  - type : input
+    id   : command
+    attributes:
+      description : The invocation that shows the defect, carrying every flag it ran with.
+      label       : Command
+      placeholder : prose format --diff module.py
+    validations:
+      required: true
+
+  - type : textarea
+    id   : config
+    attributes:
+      description : The `[tool.prose]` table the file resolved to, which is empty for a project running on the defaults.
+      label       : Resolved configuration
+      render      : toml
+
+  - type : textarea
+    id   : source
+    attributes:
+      description : The Python the run read, reduced to the smallest snippet that still shows the defect where that is easy. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
+      label       : Source
+      render      : python
+    validations:
+      required: true
+
+  - type : textarea
+    id   : actual
+    attributes:
+      description : What the run wrote or printed, pasted verbatim beside the exit status it returned.
+      label       : What happened
+    validations:
+      required: true
+
+  - type : textarea
+    id   : expected
+    attributes:
+      description : What the run should have written or printed instead, naming the reference page that says so where one does.
+      label       : What should have happened
+    validations:
+      required: true
+
+  - type : textarea
+    id   : notes
+    attributes:
+      description : The platform, the editor or integration the run went through, and anything the fields above do not show on their own.
+      label       : Anything else
+
+  - type : markdown
+    attributes:
+      value: |
+        ### After the Report Is Filed
+
+        A maintainer reproduces from the fields above and turns the source into a fixture case pinning the output the rule should produce, or into an inline test where the defect sits outside a rule. That case is what stops the defect coming back, so a report carrying a small reproduction usually turns into a fix quickly.
+
+        `CONTRIBUTING.md` at the repository root walks from a report to the `input.py` and `meta.toml` pair a maintainer drops into the fixture tree, which is the shortest path from a report to a regression test.

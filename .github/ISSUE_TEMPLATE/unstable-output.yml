@@ -6,7 +6,7 @@ body:
   - type : markdown
     attributes:
       value: |
-        ### What This Reports
+        ### The Defect This Form Reports
 
         *Prose* settles a file in one pass, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
 
@@ -26,7 +26,7 @@ body:
     attributes:
       description : The release this run came from, as `prose --version` prints it.
       label       : Version
-      placeholder : 0.8.3
+      placeholder : 0.9.1
     validations:
       required: true
 
@@ -49,7 +49,7 @@ body:
   - type : textarea
     id   : source
     attributes:
-      description : The Python the run read, reduced to the smallest snippet that still reproduces where that is easy. A notebook reports the concatenated code cells rather than its `.ipynb` JSON.
+      description : The Python the run read, reduced to the smallest snippet that still reproduces where that is easy. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
       label       : Source
       render      : python
     validations:
@@ -82,7 +82,7 @@ body:
   - type : markdown
     attributes:
       value: |
-        ### What Happens Next
+        ### After the Report Is Filed
 
         A maintainer reproduces from the fields above, turns the snippet into a fixture case pinning the output the rule should settle on, and fixes the rule the subset names. That fixture is what stops the shape coming back, so a report carrying a small reproduction usually turns into a fix quickly.
 
