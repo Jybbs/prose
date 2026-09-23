@@ -50,9 +50,12 @@ pub(crate) fn delimiter_padding_width(source: &Source, range: TextRange) -> usiz
 /// The columns the edits in `edits` take off `range`, negative where
 /// they widen it, counting each edit `range` covers whole. An insertion
 /// at either boundary belongs to the text beside `range` and is left
-/// out. `edits` is the ascending list [`Stranding::edits`] builds.
+/// out, and so is an edit inside one already counted, whose text that
+/// one replaces. `edits` arrives ascending by start, as
+/// [`Stranding::edits`] and [`beside`](super::beside) build it.
 pub(crate) fn slack(source: &Source, edits: &[Edit], range: TextRange) -> isize {
     let first = edits.partition_point(|edit| edit.start() < range.start());
+    let mut counted = range.start();
     edits[first..]
         .iter()
         .take_while(|edit| edit.start() <= range.end())
@@ -60,6 +63,11 @@ pub(crate) fn slack(source: &Source, edits: &[Edit], range: TextRange) -> isize 
             range.contains_range(edit.range())
                 && !(edit.range().is_empty()
                     && (edit.start() == range.start() || edit.start() == range.end()))
+        })
+        .filter(|edit| {
+            let nested = edit.start() < counted;
+            counted = counted.max(edit.end());
+            !nested
         })
         .map(|edit| {
             display_width(source.slice(edit.range())).cast_signed()

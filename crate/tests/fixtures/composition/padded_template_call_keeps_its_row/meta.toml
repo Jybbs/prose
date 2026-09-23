@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Padded `%` Tuple Keeps Its Row"
+
+description = '''
+`type(exc)` sits inside `( type(exc), exc )`, whose padding `strip-stranded-padding` removes. **The row around `type(exc)` reads with that padding gone, as it would with no conversion ahead, because the measure covers only part of the `%` template**, so `type(exc)` stays on its row and the template converts in the same pass.
+'''

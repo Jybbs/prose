@@ -29,8 +29,10 @@ use crate::{
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
-    rules::{Rule, RuleId},
-    rules::{alphabetize_siblings::Reorders, reflow_signatures},
+    rules::{
+        Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
+        reflow_signatures,
+    },
     source::Source,
 };
 
@@ -40,6 +42,7 @@ mod render;
 #[derive(Debug)]
 pub(crate) struct ReflowCalls {
     expands_literals: bool,
+    fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
     reservations: reserve::Reservations,
@@ -56,6 +59,7 @@ impl ReflowCalls {
         let collections = &config.rules.reflow_collections;
         Self {
             expands_literals: collections.enabled && collections.explode,
+            fstrings: config.fstrings(),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
@@ -69,10 +73,12 @@ impl Rule for ReflowCalls {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
-        let padding = source.stranded_padding(self.stranding);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
         let held = self
             .signatures
-            .over(source, &targets, &padding)
+            .over(source, &targets, &padding, &rewrites)
             .exploding_parameters(&source.ast().body);
         let mut exploder = Exploder {
             edits: Vec::new(),
@@ -80,7 +86,7 @@ impl Rule for ReflowCalls {
             held: &held,
             indent: None,
             line_shift: 0,
-            one_row: self.one_row.against(&targets),
+            one_row: self.one_row.against(&targets).forecasting(&rewrites),
             origin_column: 0,
             padding: &padding,
             region: source.module_range(),

@@ -29,7 +29,11 @@ An argument no field reads keeps the whole call as written, because removing it 
 
 <Fixture rule="prefer_fstring" case="a_repeated_effectful_argument_holds" />
 
-A value the field itself cannot carry keeps the template too, covering a quote matching the delimiter the f-string opens with, a backslash, a line break, and a brace, which are the bounds every Python version accepts. A comment anywhere inside the template or the call keeps it as well, since an f-string has no place for one. A rewrite that would push its line past the budget keeps it too, because no layout rule reaches inside an f-string to wrap it back.
+A value the field itself cannot carry keeps the template too, covering a quote matching the delimiter the f-string opens with, a backslash, a line break, and a brace, which are the bounds every Python version accepts. A comment anywhere inside the template or the call keeps it as well, since an f-string has no place for one. A rewrite keeps the template too where its line would run past the budget with every rewrite on that line in place, because no layout rule reaches inside an f-string to wrap it back.
+
+[[reflow-calls]], [[reflow-signatures]], and [[reflow-collections]] measure each template this rule converts at the width of its f-string, so a construct that fits on one row once converted lands on that row in the same pass.
+
+<Fixture rule="composition" case="hung_entry_measures_its_template_as_an_fstring" />
 
 <template #configuration>
 

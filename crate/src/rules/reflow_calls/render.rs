@@ -170,12 +170,13 @@ impl<'a> Exploder<'a> {
     /// grouping `(` always qualifies, whereas a bracket opening a
     /// literal qualifies only where `reflow-collections` can expand it
     /// and no literal earlier on the row explodes first, and a
-    /// subscript's `[` never does.
+    /// subscript's `[` never does, nor does a bracket inside a forecast
+    /// f-string rewrite.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         let literals = self.source.expandable_literals();
         tokens_within(self.source, range)
             .find(|token| {
-                if !is_opener(token.kind()) {
+                if !is_opener(token.kind()) || self.one_row.rewritten(token.start()) {
                     return false;
                 }
                 if token.kind() == TokenKind::Lsqb
@@ -318,14 +319,16 @@ impl<'a> Exploder<'a> {
         }
     }
 
-    /// The width `arguments` takes on its row, which is the width of
-    /// `form` for a list written across rows and the settled width of
+    /// The width `arguments` takes on its row, which is the
+    /// [`form_width`](crate::primitives::one_row::Settings::form_width)
+    /// of `form` for a list written across rows and the settled width of
     /// the source slice for one already on a single row, whose spacing
     /// stays as the author wrote it less the padding
     /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
-            display_width(form)
+            self.one_row
+                .form_width(self.source, form, arguments.range())
         } else {
             settled_slice_width(self.source, self.padding, arguments.range())
         }
@@ -376,12 +379,17 @@ impl<'a> Exploder<'a> {
     /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
     /// there, whereas a subscript's `[` never breaks and charges whole.
+    /// Each forecast f-string rewrite in the charged text reads at the
+    /// width of its f-string.
     pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
         if let Some(offset) = self.first_breaking_opener(tail) {
-            return self.source.width_between(end, offset + TextSize::from(1));
+            let through = TextRange::new(end, offset + TextSize::from(1));
+            return self
+                .one_row
+                .form_width(self.source, self.source.slice(through), through);
         }
         let written = self.settled_width(tail, self.source.tail_width(tail));
         if clipped {
