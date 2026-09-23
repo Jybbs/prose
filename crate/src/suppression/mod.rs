@@ -34,10 +34,13 @@ use parse_common::{parse_entry, prose_bodies};
 /// spans and a per-line `OneIndexed` map of `# prose: ignore` lint
 /// directives. An off region suppresses rewrites and lint diagnostics
 /// alike, whereas a skip span suppresses rewrites alone and leaves lints
-/// to the `ignore` directives. Span queries run in O(log n) against
-/// `spans` and `skip_spans`, O(n) against `skips`, and O(1) per line.
+/// to the `ignore` directives. `closes` holds the line start of each
+/// `# prose: on` that closes a region. Span queries run in O(log n)
+/// against `spans` and `skip_spans`, O(n) against `skips` and `closes`,
+/// and O(1) per line.
 #[derive(Clone, Debug)]
 pub(crate) struct SuppressionMap {
+    closes: Vec<TextSize>,
     file_suppressed: bool,
     lints: FxHashMap<OneIndexed, RuleEntry>,
     skip_spans: Vec<TextRange>,
@@ -59,6 +62,7 @@ impl SuppressionMap {
         cell_offsets: &CellOffsets,
     ) -> Self {
         let source_text = source.text();
+        let mut closes: Vec<TextSize> = Vec::new();
         let mut lints: FxHashMap<OneIndexed, RuleEntry> = FxHashMap::default();
         let mut skip_spans: Vec<TextRange> = Vec::new();
         let mut skips: Vec<(TextRange, RuleEntry)> = Vec::new();
@@ -75,9 +79,11 @@ impl SuppressionMap {
                         open_off.get_or_insert_with(|| source_text.line_start(range.start()));
                     }
                     SuppressionKind::On => {
-                        spans.extend(open_off.take().map(|start| {
-                            TextRange::new(start, source_text.line_start(range.start()))
-                        }))
+                        if let Some(start) = open_off.take() {
+                            let close = source_text.line_start(range.start());
+                            closes.push(close);
+                            spans.push(TextRange::new(start, close));
+                        }
                     }
                     SuppressionKind::Skip => {}
                 }
@@ -102,6 +108,7 @@ impl SuppressionMap {
         });
         spans.extend(unmatched_span);
         Self {
+            closes,
             file_suppressed,
             lints,
             skip_spans: merged_spans(skip_spans),
@@ -141,6 +148,14 @@ impl SuppressionMap {
     /// every rule on their line.
     pub(crate) fn is_lint_suppressed_at(&self, line: OneIndexed, rule: RuleId) -> bool {
         self.lints.get(&line).is_some_and(|e| e.matches(rule))
+    }
+
+    /// Returns `true` when a reorder by `rule` leaves `ranged` in place,
+    /// it overlapping a span [`Self::suppresses`] reports for `rule` or
+    /// holding the line of a `# prose: on` that closes an off region.
+    pub(crate) fn pins<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
+        let range = ranged.range();
+        self.suppresses(range, rule) || self.closes.iter().any(|&close| range.contains(close))
     }
 
     /// Returns `true` when `ranged` overlaps a `# prose: off` region, a
@@ -467,6 +482,28 @@ mod tests {
         let map = source.suppression_map();
         assert!(!map.suppresses(at(source.text(), "x = 1"), AlignEquals::SLUG));
         assert!(!map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
+    }
+
+    #[rstest]
+    #[case::skipped_line("x = 1  # prose: skip\n", "x = 1", true)]
+    #[case::closing_line(
+        "# prose: off\nx = 1\n# prose: on\ny = 2\n",
+        "# prose: on\ny = 2",
+        true
+    )]
+    #[case::below_the_close("# prose: off\nx = 1\n# prose: on\ny = 2\n", "y = 2", false)]
+    #[case::stray_on("# prose: on\ny = 2\n", "# prose: on\ny = 2", false)]
+    #[case::other_rule("x = 1  # prose: skip[align-equals]\n", "x = 1", false)]
+    fn pins_a_suppressed_span_and_the_line_closing_a_region(
+        #[case] src: &str,
+        #[case] needle: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let pinned = source
+            .suppression_map()
+            .pins(at(source.text(), needle), AlphabetizeSiblings::SLUG);
+        assert_eq!(pinned, expected);
     }
 
     #[rstest]

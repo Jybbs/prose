@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/indented_comment_moves_with_the_import_above/input.py
+---
+alphabetize-siblings@7..65

@@ -45,7 +45,7 @@ Methods answering the common *"where does this offset sit?"* and *"what does the
 
 - **Position-from-offset.** `column_of`, `line_column`, `line_index` map a `TextSize` to a column, a `(line, column)` pair, or a 1-indexed line number.
 - **Line geometry.** `line_indent_width` reports the indent on the line containing an offset, `logical_line_tail` reports the range from an offset to where its logical line closes, a break inside a bracketed construct leaving it open, and `slice` returns the source text covering any `Ranged` value.
-- **Line-ending convention.** `newline_str` returns the per-file newline (`\n`, `\r\n`, or `\r`), resolved once when the *Source* is built and reused by every rule that writes a break.
+- **Line-ending convention.** `newline_str` returns the per-file newline (`\n`, `\r\n`, or `\r`), resolved once when the *Source* is built from the first line break outside a string literal and reused by every rule that writes a break.
 - **Range and line predicates.** `contains_line_break`, `has_blank_line_before`, `consecutive_lines` answer line questions about a range.
 - **Comment-aware predicates.** `intersects_comment` reports whether a range crosses a comment span, and `first_token_offset_in_range` finds the first non-trivia token inside a range.
 

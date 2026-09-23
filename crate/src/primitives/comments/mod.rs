@@ -120,6 +120,40 @@ pub(super) fn bound_block_start(
         .map_or(line_start, TextRange::start)
 }
 
+/// Returns the end of the own-line comments below the statement opening
+/// at `stmt_start`, scanned from `line_end`, the end of the statement's
+/// last line, up to `upper` across blank lines, each indented deeper than
+/// the statement, which close its body rather than head the statement
+/// after it. Stops at the first comment at the statement's indent or
+/// shallower, at code, and at a notebook cell wall, and returns `None`
+/// where no such comment sits there.
+pub(crate) fn closing_comments_end(
+    source: &Source,
+    stmt_start: TextSize,
+    line_end: TextSize,
+    upper: TextSize,
+) -> Option<TextSize> {
+    let text = source.text();
+    let indent = source.line_indent_width(stmt_start);
+    let mut end = None;
+    for comment in source
+        .comment_ranges()
+        .comments_in_range(TextRange::new(line_end, upper.max(line_end)))
+    {
+        if !text[TextRange::new(end.unwrap_or(line_end), comment.start())]
+            .trim()
+            .is_empty()
+            || !CommentRanges::is_own_line(comment.start(), text)
+            || source.line_indent_width(comment.start()) <= indent
+            || !source.same_cell(stmt_start, comment.start())
+        {
+            break;
+        }
+        end = Some(comment.end());
+    }
+    end
+}
+
 /// True when an own-line comment block leads the item at `item_start`,
 /// reached across the blank run between the two and stopped at a
 /// notebook cell wall.

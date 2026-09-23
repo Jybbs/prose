@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/dataclass_docstring_attributes_follow_fields/input.py
+---
+@dataclass
+class Posting:
+    """
+    A job posting.
+
+    Attributes:
+        title: The posting title.
+        url: The listing address the class derives.
+        company: The hiring company.
+        date_posted: The day the posting went up.
+    """
+
+    title: str
+    company: str
+    date_posted: str

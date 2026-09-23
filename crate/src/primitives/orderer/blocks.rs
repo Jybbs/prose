@@ -5,10 +5,13 @@ use std::borrow::Cow;
 
 use ruff_python_trivia::{CommentRanges, indentation_at_offset};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use super::assemble::Assembly;
-use crate::{primitives::comments::bound_block_start, source::Source};
+use crate::{
+    primitives::comments::{bound_block_start, closing_comments_end},
+    source::Source,
+};
 
 /// [`block_range`] for every slot of `items`, the marker-free counterpart
 /// to [`member_blocks`] for a body with no section markers to floor against.
@@ -89,13 +92,21 @@ fn block_lower<T: Ranged>(
 /// notebook cell start, and forward by the next item's start, or [`tail_end`]
 /// for the last item.
 fn block_range<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
-    let item = items[i].range();
     let lower = block_lower(source, items, i, outer, outer.start());
-    let forward = match items.get(i + 1) {
-        Some(next) => source.text().line_end(item.end()).min(next.start()),
-        None => tail_end(source, item.end()),
-    };
-    TextRange::new(leading_attached_start(source, item.start(), lower), forward)
+    TextRange::new(
+        leading_attached_start(source, items[i].start(), lower),
+        item_end(source, items, i),
+    )
+}
+
+/// The end of `items[i]`'s own text, the end of its last line capped at
+/// the next item's start, or [`tail_end`] for the last item.
+fn item_end<T: Ranged>(source: &Source, items: &[T], i: usize) -> TextSize {
+    let end = items[i].end();
+    match items.get(i + 1) {
+        Some(next) => source.text().line_end(end).min(next.start()),
+        None => tail_end(source, end),
+    }
 }
 
 /// True when the last member carries a trailing comma on its line.
@@ -138,19 +149,24 @@ pub(super) fn leading_attached_start(
 
 /// [`block_range`] for `items[i]` with its start settled by
 /// [`bound_block_start`], so a comment run leading the member binds to
-/// it across a blank line while a banner, hash heading, or suppression
-/// directive stays in the gap rather than traveling through a reorder.
-/// That gap is what [`Sections`](crate::primitives::sections::Sections)
-/// reads to divide the body. Binding never reads the blank run, so a
-/// block spans the same text either side of `space-statements`.
+/// it across a blank line while a banner, hash heading, suppression
+/// directive, or run at a shallower indent stays in the gap rather than
+/// traveling through a reorder. Its end reaches over the comments
+/// closing its body per [`trailing_body_end`]. That gap is what
+/// [`Sections`](crate::primitives::sections::Sections) reads to divide
+/// the body. Binding never reads the blank run, so a block spans the
+/// same text either side of `space-statements`.
 fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
     let raw = block_range(source, items, i, outer);
     // The first member has no predecessor to bound the gap, so its own
     // attached run stands in as the lower bound.
     let lower = block_lower(source, items, i, outer, raw.start());
+    let lower = i.checked_sub(1).map_or(lower, |prev| {
+        lower.max(trailing_body_end(source, items, prev))
+    });
     TextRange::new(
         bound_block_start(source, lower, items[i].start()),
-        raw.end(),
+        trailing_body_end(source, items, i),
     )
 }
 
@@ -170,10 +186,23 @@ pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
     item_end + TextSize::try_from(consumed).expect("a line fits u32")
 }
 
+/// The end of `items[i]`'s block, reaching over the comments that close
+/// its body per [`closing_comments_end`], so the last member of a nested
+/// body reaches past the enclosing statement's range.
+fn trailing_body_end<T: Ranged>(source: &Source, items: &[T], i: usize) -> TextSize {
+    let start = item_end(source, items, i);
+    let upper = items
+        .get(i + 1)
+        .map_or(source.text().text_len(), Ranged::start);
+    closing_comments_end(source, items[i].start(), start, upper).unwrap_or(start)
+}
+
 #[cfg(test)]
 mod tests {
 
     use indoc::indoc;
+    use rstest::rstest;
+    use ruff_python_ast::Stmt;
 
     use super::*;
     use crate::source::Source;
@@ -264,6 +293,84 @@ mod tests {
     fn last_member_has_comma_true_with_trailing_comma() {
         let source = parse("x = {\n    a,\n    b,\n}\n");
         assert!(last_member_has_comma(&source, set_elts(&source)));
+    }
+
+    /// The text of each member block `member_blocks` reads over `body`.
+    fn member_slices<'a>(source: &'a Source, body: &[Stmt], outer: TextRange) -> Vec<&'a str> {
+        member_blocks(source, body, outer)
+            .into_iter()
+            .map(|block| source.slice(block))
+            .collect()
+    }
+
+    #[rstest]
+    #[case::closing_its_body(
+        "def zeta():\n    x = 1\n    # tail\n\n\ndef alpha():\n    pass\n",
+        &["def zeta():\n    x = 1\n    # tail", "def alpha():\n    pass"],
+    )]
+    #[case::across_a_blank_line(
+        "import zlib\n\n  # tail\n\nimport os\n",
+        &["import zlib\n\n  # tail", "import os"],
+    )]
+    #[case::ahead_of_a_heading(
+        "def zeta():\n    x = 1\n    # tail\n# heads alpha\ndef alpha():\n    pass\n",
+        &["def zeta():\n    x = 1\n    # tail", "# heads alpha\ndef alpha():\n    pass"],
+    )]
+    fn member_blocks_reach_over_the_comments_closing_a_body(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let slices = member_slices(&source, &source.ast().body, source.module_range());
+        assert_eq!(slices, expected);
+    }
+
+    #[test]
+    fn member_blocks_leave_a_shallower_comment_standing() {
+        let source = parse(indoc! {"
+            class C:
+                def zeta(self):
+                    pass
+            # standing
+                def alpha(self):
+                    pass
+        "});
+        let class = first_class(&source);
+        assert_eq!(
+            member_slices(&source, &class.body, class.range()),
+            [
+                "    def zeta(self):\n        pass",
+                "    def alpha(self):\n        pass"
+            ],
+        );
+    }
+
+    #[test]
+    fn member_blocks_reach_past_the_enclosing_range_for_the_last_member() {
+        let source = parse(indoc! {"
+            class C:
+                def zeta(self):
+                    pass
+                    # tail
+
+
+            X = 1
+        "});
+        let class = first_class(&source);
+        assert_eq!(
+            member_slices(&source, &class.body, class.range()),
+            ["    def zeta(self):\n        pass\n        # tail"],
+        );
+    }
+
+    #[test]
+    fn member_blocks_stop_the_closing_run_at_code() {
+        let source = parse("x = 1\ndef f():\n    # inside f\n    pass\n");
+        let body = &source.ast().body;
+        assert_eq!(
+            member_slices(&source, &body[..1], source.module_range()),
+            ["x = 1"]
+        );
     }
 
     #[test]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skipped Import Divides Its Run"
+
+description = '''
+`import sys` closes its line with `# prose: skip` inside a run of five imports. **`import sys` stays put and the imports below it group on their own**, `import re` moving above `from pkg import alpha`, whereas `from pkg import beta` above it stays first, because a skipped import holds its line and the regrouping of the imports on either side leaves it untouched.
+'''

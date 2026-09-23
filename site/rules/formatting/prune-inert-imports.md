@@ -63,11 +63,15 @@ A construct renamed on the way in still reads as the construct it names, so `fro
 
 An import binding `__all__` itself sets the whole export surface, so it stays too, as does a name a second import rebinds from another source, which keeps the fallback in a `try: from _speedups import loads` shim in place.
 
+A dotted import stays where the module reads its submodule through another name bound to the package, as `import multiprocessing.connection` does beside `import multiprocessing as mp` when a function reads `mp.connection`, because the dotted import is what loads the submodule even though nothing reads the `multiprocessing` name it binds.
+
+<Fixture rule="prune_inert_imports" case="submodule_an_alias_reads_holds_its_import" />
+
 A repeat of a name nothing reads takes the first binding with it, because both facets resolve in the one pass rather than one per run.
 
 <Fixture rule="prune_inert_imports" case="repeat_of_an_unread_name_drops_both_lines" />
 
-An own-line comment directly above an import keeps the whole statement, because removing the line would leave the comment above whatever statement follows. Where [[reflow-imports]] will merge the statement into a same-module sibling, the drop happens instead on the merged line the comment then leads.
+An own-line comment directly above an import keeps the whole statement, because removing the line would leave the comment above whatever statement follows. Where [[reflow-imports]] will merge the statement into a same-module sibling, the drop happens instead on the merged line the comment then leads. Where [[band-constants]] will move the comment onto the import its sort puts first, reading the order [[group-imports]] leaves, the drop lands the comment on that import in the same pass.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
 

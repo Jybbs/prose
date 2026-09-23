@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_leaves_raises_as_written/input.py
+---
+alphabetize-siblings@93..156

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/shallower_comment_divides_the_methods/input.py
+---
+class Station:
+    def zeta(self):
+        return 1
+
+# the methods below serve the scheduler
+    def alpha(self):
+        return 3
+
+    def beta(self):
+        return 2

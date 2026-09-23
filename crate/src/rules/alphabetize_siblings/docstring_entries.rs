@@ -1,16 +1,19 @@
-//! The docstring-entry sort of `alphabetize-siblings`, each function's
-//! signature-order names read as its mirror key.
+//! The docstring-entry sort of `alphabetize-siblings`, the
+//! signature-order names of each function and the fields that hold their
+//! slots in each class read as its mirror key.
 
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::Parameters;
+use ruff_python_ast::{Parameters, Stmt, StmtClassDef};
 use ruff_text_size::{Ranged, TextSize};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{
+        binding::single_name_assignment,
         comments::class_keeps_order,
+        constructor::{classify_field, keyword_field_start},
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::narrowed_replacement,
         orderer::{permute_full, reorder_text},
@@ -19,44 +22,45 @@ use crate::{
     source::Source,
 };
 
+/// The names whose order the entries of one docstring follow, beside
+/// whether an entry naming none of them holds its slot rather than
+/// sinking below them, alphabetized.
+struct Mirror<'a> {
+    holds_rest: bool,
+    names: Vec<&'a str>,
+}
+
 /// Walks every docstring in `source` and emits one edit per
 /// entry-carrying Google-style section whose `name: description`
 /// entries are out of order, each edit replacing the section's entries
 /// span with the reordered text. An entry naming a parameter of the
 /// documented signature takes that parameter's position as the rule
 /// leaves the signature, and every other entry sinks below them,
-/// alphabetized by name. Module and class docstrings carry no
-/// signature, so their sections alphabetize throughout, whereas the
-/// entries of a class docstring under a `# prose: keep` header stay as
-/// written.
+/// alphabetized by name. A class docstring mirrors the fields that hold
+/// their slots per [`class_mirror`], whereas the sections of every other
+/// module and class docstring alphabetize throughout.
 pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
-    let definitions = documented_definitions(source);
-    let held: FxHashSet<TextSize> = definitions
-        .iter()
-        .filter(|(definition, _)| {
-            definition
-                .as_class_def_stmt()
-                .is_some_and(|class| class_keeps_order(source, class))
-        })
-        .map(|(_, lit)| lit.start())
-        .collect();
-    let param_docs: FxHashMap<TextSize, Vec<&str>> = definitions
+    let mirrors: FxHashMap<TextSize, Mirror<'_>> = documented_definitions(source)
         .into_iter()
         .filter_map(|(definition, lit)| {
-            let function = definition.as_function_def_stmt()?;
-            Some((lit.start(), signature_order(&function.parameters)))
+            let mirror = match definition {
+                Stmt::ClassDef(class) => class_mirror(source, class)?,
+                Stmt::FunctionDef(function) => Mirror {
+                    holds_rest: false,
+                    names: signature_order(&function.parameters),
+                },
+                _ => return None,
+            };
+            Some((lit.start(), mirror))
         })
         .collect();
     rewrite_docstrings(source, |source, lit, edits| {
-        if held.contains(&lit.start()) {
-            return;
-        }
-        let signature = param_docs.get(&lit.start()).map(Vec::as_slice);
+        let mirror = mirrors.get(&lit.start());
         for section in entry_carrying_sections(source, lit) {
             let (cow, span) = reorder_text(
                 source,
                 &section.entries,
-                |entry| Some(entry_key(entry.name, signature)),
+                |entry| entry_key(entry.name, mirror),
                 |_, block| Cow::Borrowed(source.slice(block)),
             );
             let Cow::Owned(text) = cow else {
@@ -70,13 +74,45 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     .collect()
 }
 
-/// Composite docstring-entry sort key. An entry naming a signature
-/// parameter takes that parameter's position, and any other entry
-/// sinks below the signature's, alphabetized by name.
-fn entry_key<'e>(name: &'e str, signature: Option<&[&str]>) -> (usize, &'e str) {
-    signature
-        .and_then(|names| names.iter().position(|&n| n == name))
-        .map_or((usize::MAX, name), |i| (i, ""))
+/// Returns the fields of `class` that hold their slots, in the order
+/// written, every entry naming none of them holding its slot too. Under a
+/// `# prose: keep` header that is every single-name assignment, whereas a
+/// class whose header generates its constructor holds the fields bound
+/// by position. `None` where no field holds its slot.
+fn class_mirror<'a>(source: &Source, class: &'a StmtClassDef) -> Option<Mirror<'a>> {
+    let names: Vec<&str> = if class_keeps_order(source, class) {
+        class
+            .body
+            .iter()
+            .filter_map(single_name_assignment)
+            .map(|(name, _)| name.id.as_str())
+            .collect()
+    } else {
+        let keyword_start = keyword_field_start(class);
+        class
+            .body
+            .iter()
+            .take_while(|stmt| stmt.start() < keyword_start)
+            .filter_map(classify_field)
+            .map(|(_, name)| name)
+            .collect()
+    };
+    (!names.is_empty()).then_some(Mirror {
+        holds_rest: true,
+        names,
+    })
+}
+
+/// Composite docstring-entry sort key. An entry naming one of the
+/// `mirror` names takes that name's position, and any other entry sinks
+/// below them, alphabetized by name, or holds its slot as `None` where
+/// the mirror holds the rest.
+fn entry_key<'e>(name: &'e str, mirror: Option<&Mirror<'_>>) -> Option<(usize, &'e str)> {
+    match mirror.and_then(|mirror| mirror.names.iter().position(|&n| n == name)) {
+        Some(position) => Some((position, "")),
+        None if mirror.is_some_and(|mirror| mirror.holds_rest) => None,
+        None => Some((usize::MAX, name)),
+    }
 }
 
 /// Returns the parameter names in the order the rule leaves the
@@ -172,6 +208,36 @@ mod tests {
         assert!(
             pos("KeyError: missing") < pos("ValueError: bad"),
             "non-parameter entries still sort"
+        );
+    }
+
+    #[rstest]
+    #[case("class Station:  # prose: keep", ["zone:", "station:", "latitude:"])]
+    #[case("@dataclass\nclass Station:", ["zone:", "station:", "latitude:"])]
+    #[case("class Station:", ["latitude:", "station:", "zone:"])]
+    fn collect_docstring_entry_edits_mirrors_the_fields_holding_their_slots(
+        #[case] header: &str,
+        #[case] expected: [&str; 3],
+    ) {
+        let src = indoc! {"
+            HEADER
+                \"\"\"Summary.
+
+                Attributes:
+                    zone: Stale entry.
+                    latitude: Degrees north.
+                    station: Identifier.
+                \"\"\"
+
+                station: str
+                latitude: float
+        "}
+        .replace("HEADER", header);
+        let text = entry_sorted_text(&src);
+        let pos = |needle: &str| at(&text, needle).start();
+        assert!(
+            pos(expected[0]) < pos(expected[1]) && pos(expected[1]) < pos(expected[2]),
+            "the entries read {expected:?}"
         );
     }
 

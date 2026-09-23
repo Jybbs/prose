@@ -9,11 +9,13 @@
 //! per notebook cell. Positional-or-keyword parameters, the field run
 //! of a class whose header generates its constructor, the statements of
 //! a class under a `# prose: keep` header, and a decorated definition at
-//! module scope each keep their order.
+//! module scope each keep their order, and a statement a suppression
+//! covers keeps its slot while the rewrites inside it land as edits of
+//! their own.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::StmtAssign;
-use ruff_text_size::TextSize;
+use ruff_text_size::{Ranged, TextSize};
 
 use self::{
     docstring_entries::collect_docstring_entry_edits,
@@ -90,6 +92,10 @@ impl Rule for AlphabetizeSiblings {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
         }
+        let suppression = source.suppression_map();
+        if suppression.has_format_suppression() {
+            leaf_edits.retain(|edit| !suppression.suppresses(edit, Self::SLUG));
+        }
         let enumerations = Enumerations::of(body);
         let ctx = RewriteCtx {
             defer_annotations: defers_annotations(body),
@@ -105,11 +111,20 @@ impl Rule for AlphabetizeSiblings {
             source,
         };
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        layout
+        let groups = layout
             .assembly
             .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
                 import_gap(source, &layout.import_run_slots, i)
-            })
+            });
+        if layout.held.is_empty() {
+            return groups;
+        }
+        let mut edits: Vec<Edit> = groups.into_iter().flatten().chain(layout.held).collect();
+        edits.sort_unstable();
+        edits
+            .chunk_by(|a, b| source.same_cell(a.start(), b.start()))
+            .map(<[Edit]>::to_vec)
+            .collect()
     }
 
     fn id(&self) -> RuleId {

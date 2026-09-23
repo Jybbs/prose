@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Closing a Function Body Keeps the Blank Lines Below It"
+
+description = '''
+The last line of `alpha` is a comment at the indent of its body, directly above `def beta`. **The two blank lines between the functions open below the comment**, because a comment indented deeper than the statement after it closes the function above rather than heading the one below.
+'''

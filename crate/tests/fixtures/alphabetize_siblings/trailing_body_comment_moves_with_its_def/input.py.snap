@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/trailing_body_comment_moves_with_its_def/input.py
+---
+def alpha():
+    return 2
+
+
+def zeta():
+    value = 1
+    return value
+    # the fallback path lives in alpha

@@ -13,12 +13,11 @@ use ruff_text_size::TextRange;
 use crate::{
     config::Config,
     primitives::{
-        comments::class_keeps_order,
         edit::{narrowed_replacement, singleton_groups},
         imports::{import_group, sectioned_import_runs},
         orderer::{any_sibling_shares_line, assemble_blocks, member_blocks, permute_full},
         range::blocks_span,
-        scope::sub_bodies,
+        scope::{sub_bodies, sub_bodies_keep_order},
         sections::Sections,
     },
     rules::{Rule, RuleId},
@@ -66,25 +65,22 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
-    /// Partitions each import run in `body` within its section, then
+    /// Partitions each import run in `body` within its section, an
+    /// import a suppression covers sitting in a section of its own, then
     /// recurses into every nested body. A body keeps source order when its
-    /// siblings share a line through `;` or under `keeps_order`, which is
-    /// set for a class body under a `# prose: keep` header and for every
-    /// arm in it.
+    /// siblings share a line through `;` or under `keeps_order`, which
+    /// [`sub_bodies_keep_order`] sets for a class body under a
+    /// `# prose: keep` header and for every arm in it.
     fn group_body(&mut self, body: &[Stmt], outer: TextRange, keeps_order: bool) {
         if !keeps_order && !body.is_empty() && !any_sibling_shares_line(self.source, body) {
             let blocks = member_blocks(self.source, body, outer);
-            let sections = Sections::of(self.source, &blocks);
+            let sections = Sections::pinning(self.source, &blocks, GroupImports::SLUG);
             for run in sectioned_import_runs(&sections, body) {
                 self.group_run(body, &blocks, run);
             }
         }
         for stmt in body {
-            let keeps_order = match stmt {
-                Stmt::ClassDef(class) => class_keeps_order(self.source, class),
-                Stmt::FunctionDef(_) => false,
-                _ => keeps_order,
-            };
+            let keeps_order = sub_bodies_keep_order(self.source, stmt, keeps_order);
             for (sub, sub_outer) in sub_bodies(stmt) {
                 self.group_body(sub, sub_outer, keeps_order);
             }

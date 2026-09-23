@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Submodule Read Through an Alias Keeps Its Import"
+
+description = '''
+Nothing reads the `multiprocessing` name `import multiprocessing.connection` binds, but `wait` reads `mp.connection` through the `mp` alias. **Both imports stay**, because the dotted import is what loads the `connection` submodule the alias reads.
+'''

@@ -1,6 +1,7 @@
 ---
-source: tests/integration.rs
-expression: render(&diagnostics)
-input_file: tests/fixtures/composition/banner_keeps_band_within_section/input.py
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/banner_keeps_band_within_section/input.py
 ---
 alphabetize-siblings@35..49
+band-constants@35..49

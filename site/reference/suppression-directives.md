@@ -59,6 +59,8 @@ A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewr
 
 A skip reaches the rewrite rules only, so a lint finding on the statement still prints, and silencing it takes a `# prose: ignore` beside the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
+A skipped statement and every statement inside an exempt region hold their slots when a rule reorders the body around them. [[alphabetize-siblings]] sorts the classes and functions around a skipped statement past it and the imports above and below it as two separate runs. A region's `# prose: off` and `# prose: on` lines stay where they stand and divide the body, so the siblings on each side of a region sort as runs of their own. [[group-imports]] groups the imports on either side of a skipped statement or a region apart, and the rewrites inside a class or function holding an exempt line still reach every other line of it.
+
 ### Lint Suppression
 
 `# prose: ignore` and its bracketed forms silence lint findings on the same line:
@@ -101,12 +103,15 @@ class StationSchema(DataFrameModel):  # prose: keep
 At the level of the class body, the marker holds every order a rule would otherwise change:
 
 - [[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, including those inside an `if`, a `try`, or a `with` at that level, since none of them opens a scope of its own
-- The entries under each heading of the class docstring keep their order too, so they go on matching the fields
+- [[reflow-imports]] merges the members of one module only across consecutive statements, since a merge across another statement moves a member above it
+- The entries under each heading of the class docstring that name a field follow the order of the fields, the way the entries of a function docstring follow its signature, and every other entry keeps its place
 - [[unsorted-positionals]] passes over the field run, since the marker states that the order written is deliberate
 
 Every expression and every nested scope inside the body still sorts, and so does the class itself among its siblings, because the marker holds the body rather than the class's place:
 
 - A dict in a field's default and the keywords of a call
+- The names one import statement binds
+- The items of a `__slots__` or `__all__` list, which take a `# prose: keep` of their own on the list's bracket line
 - The body of a method
 - The body of a nested class carrying no marker of its own
 
