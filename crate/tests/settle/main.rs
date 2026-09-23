@@ -19,7 +19,6 @@
 //! input's tree over the same runs.
 
 use std::{
-    assert_matches,
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
     path::Path,
@@ -50,7 +49,8 @@ mod trees;
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-/// The environment variable choosing how a scoped run claims its pairs.
+/// The environment variable choosing how a scoped run claims its pairs
+/// and its joint run.
 const PAIRS_VAR: &str = "PROSE_SETTLE_PAIRS";
 
 /// The environment variable naming the rules a sweep touches, every
@@ -104,15 +104,27 @@ enum Applied {
     Same,
 }
 
-/// How a scoped run claims the pairs it probes.
-#[derive(Clone, Copy, Debug)]
+/// How a scoped run claims the subsets it probes, the pairs and the run
+/// of [`Probes::joint`] alike.
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Claim {
-    /// Every pair whose earlier rule this run scopes, so a set of runs
-    /// partitioning the rules probes each pair exactly once.
+    /// Every subset whose first rule this run scopes, so a set of runs
+    /// partitioning the rules probes each exactly once.
     Owned,
-    /// Every pair either of whose rules this run scopes, so one run
-    /// reaches every subset touching them.
+    /// Every subset holding a rule this run scopes, so one run reaches
+    /// every subset touching them.
     Touching,
+}
+
+impl Claim {
+    /// Reports whether a run claims the subset `rules`, `held` accepting
+    /// each rule the run scopes.
+    fn claims(self, rules: &[RuleId], held: impl Fn(&RuleId) -> bool) -> bool {
+        match self {
+            Claim::Owned => rules.first().is_some_and(held),
+            Claim::Touching => rules.iter().any(held),
+        }
+    }
 }
 
 /// The corpus defects one sweep found, each keyed by its own wording so
@@ -326,7 +338,7 @@ struct Probes {
     /// unless one of those rewrites changes the tree.
     fixtures: bool,
     /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
-    /// this run reports at least one of them.
+    /// this run claims that subset against the rules it reports.
     joint: Option<Pipeline>,
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
@@ -374,10 +386,7 @@ impl Probes {
             .iter()
             .copied()
             .array_combinations()
-            .filter(|[earlier, later]| match claim {
-                Claim::Owned => in_scope(earlier),
-                Claim::Touching => in_scope(earlier) || in_scope(later),
-            })
+            .filter(|pair| claim.claims(pair, in_scope))
             .skip(share)
             .step_by(shares)
             .map(|pair @ [earlier, later]| {
@@ -408,9 +417,8 @@ impl Probes {
         Self {
             budget: format!("at `code-line-length` {width}"),
             fixtures,
-            joint: preserving
-                .iter()
-                .any(|rule| reported.contains(rule))
+            joint: claim
+                .claims(&preserving, |rule| reported.contains(rule))
                 .then(|| subset(&config, &preserving)),
             pairs,
             reported,
@@ -446,8 +454,8 @@ struct Single {
     rule: RuleId,
 }
 
-/// How this run claims its pairs, [`PAIRS_VAR`] naming the shape and
-/// `touching` standing where it is absent.
+/// How this run claims its pairs and its joint run, [`PAIRS_VAR`] naming
+/// the shape and `touching` standing where it is absent.
 fn claim() -> Claim {
     claim_of(setting(PAIRS_VAR).as_deref())
 }
@@ -706,21 +714,36 @@ fn verify_pair(
 }
 
 #[rstest]
-#[case(None)]
-#[case(Some("touching"))]
-fn claim_of_reaches_every_pair_touching_the_scope(#[case] named: Option<&str>) {
-    assert_matches!(claim_of(named), Claim::Touching);
-}
-
-#[test]
-fn claim_of_reads_the_owned_shape() {
-    assert_matches!(claim_of(Some("owned")), Claim::Owned);
+#[case(None, Claim::Touching)]
+#[case(Some("touching"), Claim::Touching)]
+#[case(Some("owned"), Claim::Owned)]
+fn claim_of_reads_each_shape_touching_by_default(
+    #[case] named: Option<&str>,
+    #[case] claim: Claim,
+) {
+    assert_eq!(claim_of(named), claim);
 }
 
 #[rstest]
 #[should_panic(expected = "takes `owned` or `touching`")]
 fn claim_of_rejects_an_unknown_shape(#[values("both", "Owned", "OWNED")] named: &str) {
     let _ = claim_of(Some(named));
+}
+
+#[rstest]
+#[case::owned_where_it_holds_the_first(Claim::Owned, &["align-equals"], true)]
+#[case::owned_where_it_holds_only_a_later_one(Claim::Owned, &["band-constants"], false)]
+#[case::touching_where_it_holds_any(Claim::Touching, &["band-constants"], true)]
+#[case::touching_where_it_holds_none(Claim::Touching, &[], false)]
+fn claims_reads_the_first_rule_when_owned_and_any_when_touching(
+    #[case] claim: Claim,
+    #[case] held: &[&str],
+    #[case] claimed: bool,
+) {
+    let rules = [rule("align-equals"), rule("band-constants")];
+    let held: BTreeSet<RuleId> = held.iter().copied().map(rule).collect();
+
+    assert_eq!(claim.claims(&rules, |rule| held.contains(rule)), claimed);
 }
 
 #[test]

@@ -18,11 +18,10 @@ use super::registry::{KNOWN_IDS, slug_index};
 #[error("unknown rule id `{0}`")]
 pub struct ParseRuleIdError(String);
 
-/// Stable, parseable rule identifier wrapping a kebab-case slug.
-/// Returned by [`Rule::id`] and parsed from CLI / pragma input via
-/// [`FromStr`]. The canonical handle in `--select` / `--ignore`,
-/// `# prose: ignore[...]`, JSON `"rule"` fields, and `github`
-/// annotations.
+/// Stable, parseable rule identifier wrapping a kebab-case slug, which
+/// `Rule::id` returns and [`FromStr`] parses from CLI and pragma input.
+/// It is the canonical handle in `--select` / `--ignore`,
+/// `# prose: ignore[...]`, JSON `"rule"` fields, and `github` annotations.
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct RuleId(pub(super) &'static str);
 
@@ -74,10 +73,9 @@ impl Serialize for RuleId {
     }
 }
 
-/// Returns `true` when `bytes` is a valid kebab-case slug. Non-empty,
-/// starts and ends with a lowercase ASCII letter or digit, contains
-/// only lowercase ASCII letters, digits, and dashes, and has no `--`
-/// substring.
+/// Returns `true` when `bytes` is a valid kebab-case slug, meaning a
+/// non-empty run of lowercase ASCII letters, digits, and dashes that
+/// starts and ends on a letter or digit and holds no `--`.
 pub(super) const fn is_valid_slug(bytes: &[u8]) -> bool {
     let mut i = 0;
     let mut prev_was_dash = true;

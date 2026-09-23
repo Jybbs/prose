@@ -1,4 +1,4 @@
-//! The rules: the [`Rule`] trait and [`RuleId`] handle every rule
+//! The rules: the `Rule` trait and [`RuleId`] handle every rule
 //! implements and carries, the registry tying each rule struct to the
 //! pipeline, and one module per rule.
 

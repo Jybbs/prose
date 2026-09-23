@@ -374,7 +374,7 @@ pub fn preserves_tree(slug: &str) -> bool {
 /// Whether `later`'s dependency column reaches `earlier`, directly or
 /// through the column of a rule it already names. `false` for an
 /// unknown slug on either side. Takes its pair in the opposite order
-/// from [`precedes`], which reads registration order rather than the
+/// from `precedes`, which reads registration order rather than the
 /// declared column.
 pub fn runs_behind(later: &str, earlier: &str) -> bool {
     slug_index(later).is_some_and(|seat| reaches(seat, earlier))

@@ -38,7 +38,9 @@ Each ordering the guarantee depends on is recorded in the registry's dependency 
 
 ## Rules That Keep the Tree
 
-Many rules change only whitespace, parentheses, commas, comments, and how a literal is spelled, as [[align-equals]] does when it pads a column and [[normalize-literals]] does when it settles a string on `"`. A rewrite confined to those leaves the parsed tree as it was, in a comparison that ignores positions, parentheses, comments, and implicit string concatenation. The corpus sweep holds each such rule to that comparison on every rewrite it makes, and runs every such rule together in one pipeline under the same comparison. The comparison reads every function body in the corpus, including code no import of the module ever runs, so a rule that changed what a line does fails the sweep before it reaches a release.
+Many rules change only whitespace, parentheses, commas, comments, and how a literal is spelled, as [[align-equals]] does when it pads a column and [[normalize-literals]] does when it settles a string on `"`. A rewrite confined to those leaves the parsed tree as it was, in a comparison that ignores positions, parentheses, comments, and implicit string concatenation. The corpus sweep holds each such rule to that comparison on every rewrite it makes, and runs every such rule together in one pipeline under the same comparison. The comparison reads every function body in the corpus, including code no import of the module ever runs, so a rule that changed what a line does fails the sweep before it reaches a release. The rules below declare that they keep the tree, listed in pipeline order:
+
+<TreeRules tree="kept" />
 
 A rule whose rewrite changes the tree sits outside that check, even where the rewritten code runs exactly as the original did, as these examples do:
 
@@ -47,7 +49,9 @@ A rule whose rewrite changes the tree sits outside that check, even where the re
 - [[reflow-calls]] writes a positional argument in keyword form, named after its parameter
 - [[wrap-docstrings]] and [[align-colons]] change the text inside a docstring, which the tree holds as a string value
 
-Every such rule answers to a second sweep, which executes every module *Prose* rewrote and compares what each one binds before and after formatting.
+The rules below can change the tree, so they answer to a second sweep instead, which executes every module *Prose* rewrote and compares what each one binds before and after formatting:
+
+<TreeRules tree="changed" />
 
 ## Independent Rules Share a Parse
 
