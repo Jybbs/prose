@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ScopeSpecimen        from '../../theme/components/suppression/ScopeSpecimen.vue'
-import { expectAccessible } from '../axe'
+import ScopeSpecimen         from '../../theme/components/suppression/ScopeSpecimen.vue'
+import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
@@ -47,7 +47,5 @@ describe('ScopeSpecimen', () => {
     expect(lines.map(l => l.attributes('data-bracket'))).toStrictEqual(['open', 'mid', 'close', 'solo'])
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mount(ScopeSpecimen).html())
-  })
+  rendersAccessibly(() => mount(ScopeSpecimen).html())
 })

@@ -1,0 +1,47 @@
+[labels."🪜 alignment"]
+color       = "e8c840"
+description = "Rules that pad the space before a shared token so consecutive rows read as columns"
+
+[labels."🗺️ architecture"]
+color       = "43aeb0"
+description = "Cross-cutting structural or design changes"
+
+[labels."🐞 bug"]
+color       = "d4a574"
+description = "A defect in what the formatter writes or reports, or in a CI workflow"
+
+[labels."🗜️ build"]
+color       = "e6e6ff"
+description = "Cargo.toml, maturin, dependencies, CI workflows, mise tasks, and release plumbing"
+
+[labels."🪄 cli"]
+color       = "17171b"
+description = "Command-line interface, config loader, diff output"
+
+[labels."📰 docs"]
+color       = "8cc5a3"
+description = "Docstring rules, the README, the contributor guide, rule pages, and in-code doc comments"
+
+[labels."🦉 engine"]
+color       = "2d2566"
+description = "Parser integration, the pipeline, Source, and the primitives under crate/src/primitives/"
+
+[labels."🪶 formatting"]
+color       = "c08597"
+description = "Rules that rewrite a token, a line, or a spelling once a statement's layout is settled"
+
+[labels."🧺 layout"]
+color       = "5069ad"
+description = "Rules that explode a bracketed construct to one entry per line once it outgrows its line"
+
+[labels."🧶 lint"]
+color       = "e8876f"
+description = "Rules that report a finding without rewriting the source"
+
+[labels."🪉 ordering"]
+color       = "7db3e0"
+description = "Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it"
+
+[labels."🗝️ site"]
+color       = "ffffcc"
+description = "Documentation-site infrastructure, content, and theming"

@@ -2,7 +2,35 @@
 
 ***Prose*** formats Python to be legible at a glance, and every rule it ships answers to a snapshot fixture holding the exact source it reads and the exact source it produces. That pairing is what makes a contribution here cheap to review, because a change to behavior arrives as a readable before-and-after in Python rather than as a claim about Rust.
 
-This page walks the path a bug report takes, from the notice the formatter prints to the fixture case a fix is reviewed against. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key, and `README.md` covers provisioning the toolchain.
+This page walks a change through each step in the order a contributor takes it, from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the corpus sweeps that test it, to the commit, the pull request, and the checks that run on it. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, and the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key.
+
+---
+
+## 🗜️ Setting Up
+
+`README.md` carries the provisioning steps, and once a clone is provisioned, these conventions hold:
+
+| **Convention** | **Rule** |
+|---|---|
+| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it |
+| Tasks | A command runs through its mise task rather than the `cargo`, `bun`, or `maturin` call the task wraps, because the task carries the flags CI runs with. `mise tasks` lists them all, and most developer tasks also run under a one-word alias (*`mise ci` for `repo:ci`, `mise review` for `rust:review`*) |
+| Virtualenv | The first mise command in a clone creates `crate/.venv`, and `mise wheel` builds the extension into it through `maturin develop` |
+| Lockfiles | An edit to `crate/Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, or `.mise/config.toml` takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
+| Local sweep | `mise ci` runs what the `🪻 CI` and `🪻 Deploy` workflows run, short of uploading coverage |
+
+---
+
+## 🧵 Filing an Issue
+
+Every issue opens from a template, because the chooser offers no blank issue. It links the rule catalog, the configuration reference, and the sandbox in its place, and one of those usually answers a question about what *Prose* does before an issue is needed.
+
+| **Template** | **For** | **Labels** |
+|---|---|---|
+| `Unstable output` | *A rewrite a second run would change again, reported through the link the formatter prints, with every field that fits in that link already filled* | `🐞 bug` |
+| `Bug` | *Any other defect, such as a wrong rewrite, a crash, or a flag or key that does not do what its reference says, with fields for the version, the command, the resolved configuration, the source, and what happened beside what should have* | `🐞 bug` |
+| `Issue spec` | *A unit of work, opening on what is wrong today and what has to change, with numbered requirements only where the work needs three or more steps a reader would not assume* | The labels the author picks |
+
+The formatter fills in the `Unstable output` form from the run itself, and the next section walks through that report in full.
 
 ---
 
@@ -34,6 +62,41 @@ Turning the notice off entirely is one key:
 ```toml
 report-unstable-output = false
 ```
+
+---
+
+## 🗺️ Picking Up an Issue
+
+An issue carries its labels and its milestone before work on it starts, because both are copied onto its pull request, where GitHub reads the labels to file the pull request under a release-notes category.
+
+1. Pick an issue from an open milestone, which is named for the minor release line it ships in (*`0.10`*), and assign it to yourself
+2. Confirm the issue carries at least one label from the table below, adding the label for the rule family or area it touches where none is set
+3. Cut a branch named `<issue>/<slug>` from an up-to-date `main`, the slug holding at most three terms from the issue's title (*`55/fmt-suppression`*)
+4. Commit the work on that branch, and open the pull request once `mise ci` passes
+
+Setting the labels, the assignee, and the milestone takes triage access on the repository, so a contributor without it leaves those three fields to a maintainer.
+
+| **Label** | **Covers** |
+|---|---|
+| `🐞 bug` | A defect in what the formatter writes or reports, or in a CI workflow |
+| `🦉 engine` | Parser integration, the pipeline, `Source`, and the primitives under `crate/src/primitives/` |
+| `🪜 alignment` | Rules that pad the space before a shared token so consecutive rows read as columns |
+| `🪉 ordering` | Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it |
+| `🧺 layout` | Rules that explode a bracketed construct to one entry per line once it outgrows its line |
+| `🪶 formatting` | Rules that rewrite a token, a line, or a spelling once a statement's layout is settled |
+| `🧶 lint` | Rules that report a finding without rewriting the source |
+| `🪄 cli` | Command-line interface, config loader, diff output |
+| `📰 docs` | Docstring rules, the README, the contributor guide, rule pages, and in-code doc comments |
+| `🗝️ site` | Documentation-site infrastructure, content, and theming |
+| `🗺️ architecture` | Cross-cutting structural or design changes |
+| `🗜️ build` | `Cargo.toml`, maturin, dependencies, CI workflows, mise tasks, and release plumbing |
+
+`.github/labels.toml` is the registry declaring every label's name, color, and description, so a label is added, renamed, or recolored there rather than in the repository settings. `mise run repo:labels` creates or updates each registry label on GitHub, so a label renamed in the registry is created as a new label beside the old one. The task lists every label on GitHub the registry omits rather than deleting it, leaving a maintainer to rename or delete it by hand. `mise run repo:audit` fails on any of these:
+
+- `.github/release.yml` or an issue template names a label the registry lacks, or the table above names or describes a label differently
+- A registry label sits in no release-notes category, or in more than one
+- A color is not six lowercase hex digits, or two labels share it
+- A rule family's label differs from the color or the description the docs site gives that family
 
 ---
 
@@ -94,7 +157,7 @@ it writes.
 '''
 ```
 
-| Key | Meaning |
+| **Key** | **Meaning** |
 |---|---|
 | `title` | Title-case sentence naming what the case pins |
 | `description` | Markdown prose the rule's docs page renders beneath the example |
@@ -117,14 +180,12 @@ mise review
 
 ---
 
-## 🪄 Working the Repository
+## ⚓ Sweeping a Corpus
 
-*Prose* is a Rust crate shipping as a Python wheel, with [**mise**](https://mise.jdx.dev) managing the Rust toolchain, the Python interpreter, and every supporting tool from one config. `README.md` carries the provisioning steps, and `mise tasks` lists the full set. These matter most while chasing an unstable rewrite:
+A fixture case pins one shape, whereas the corpus tasks run the formatter over a whole body of Python at every line length, which is how a defect surfaces before anyone reports it and how a fix is shown to reach every file it should. The corpus tasks below are the ones that matter most while chasing an unstable rewrite:
 
-| Task | What it does |
+| **Task** | **What It Does** |
 |---|---|
-| `mise ci` | The full local sweep every pull request answers to |
-| `mise run rust:test` | The Rust suites, including every fixture snapshot |
 | `mise run rust:proof` | Formats the fixture tree at every line length, then checks that a second pass changes nothing and that every reported fix was applied, which is the settling half of `rust:test` |
 | `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took |
 | `mise run rust:mutations` | Formats every mutation of a corpus with the unstable-output notice on, generating the set under a budget into the directory `PROSE_SETTLE_MUTATIONS` names, or a scratch one, when that directory is absent |
@@ -145,6 +206,109 @@ The `🪻 Corpus` workflow runs the sweeps against the pinned interpreter's stan
 
 ---
 
-## 🧵 Opening a Pull Request
+## ☕ Committing
 
-Branches cut from `main` and merge back through a squash merge, and every pull request links the issue it closes. A change carries its own evidence in the same commit as the code, which means fixture cases for a change in rule behavior, inline tests for a change in a primitive, and the documentation page for a change in a public surface. The [**pipeline order**](https://prose.fyi/reference/pipeline-order) reference explains where a rule sits and what it may assume the rules ahead of it have already settled, which is usually the first question a rule fix has to answer.
+Every commit on a branch follows the [**Conventional Commits**](https://www.conventionalcommits.org/) shape below. A squash merge folds a branch's commits into one on `main`, whereas the closed pull request keeps each of them as the record of how the change was built.
+
+```
+type(scope): concise description
+
+- First thematic change
+- Second thematic change
+```
+
+| **Part** | **Rule** |
+|---|---|
+| Type | `feat`, `fix`, `refactor`, `chore`, `docs`, or `test` |
+| Scope | `cli`, `config`, `pipeline`, `source`, `aligner`, `orderer`, `rules`, `docs`, `build`, or a rule's slug (*`align-equals`*) |
+| Title | Lowercase after the prefix, naming the whole change |
+| Body | One hyphen bullet per thematic change, opening on a verb and kept near **fifteen words**, with a backticked token counting as one word |
+| Casing | Each bullet's first word capitalized, unless the bullet opens on a backticked identifier |
+| One bullet | A body that would hold one bullet folds it into a more descriptive title instead, leaving the commit title-only |
+| Left out of the body | Style-only fixes, doc-only updates, and formatting tweaks |
+| Attribution | No co-author line and no tool attribution |
+
+Pass the message through a single-quoted heredoc, even for a title-only commit, because the shell runs a backtick inside a double-quoted `-m "..."` string as command substitution, whereas the text a quoted heredoc produces is never expanded:
+
+```bash
+git commit -m "$(cat <<'EOF'
+chore(build): declare the labels in a registry the audit reads
+
+- Add `.github/labels.toml` with every label's color and description
+- Fail `repo:audit` where `.github/release.yml` names a label the registry lacks
+EOF
+)"
+```
+
+A change carries its own evidence in the same commit as the code, which means fixture cases for a change in rule behavior, inline tests for a change in a primitive, and the documentation page for a change in a public surface. The [**pipeline order**](https://prose.fyi/reference/pipeline-order) reference explains where a rule sits and what it may assume the rules ahead of it have already settled, which is usually the first question a rule fix has to answer.
+
+---
+
+## 🪻 Opening a Pull Request
+
+When a pull request is opened in the browser, GitHub pre-fills its body from `.github/PULL_REQUEST_TEMPLATE.md`. The template carries every section below apart from Implementation Notes, and its comments give the title format, the fields to copy from the issue, and the condition for adding Implementation Notes.
+
+| **Field** | **Value** |
+|---|---|
+| Title | `[N]` followed by the issue's title, where `N` is the number of the issue the pull request closes, keeping every backtick the title places around a rule slug or code token (*`` [576] Rename the `sweeps` workspace member to `corpus` ``*) |
+| Labels | The issue's labels |
+| Assignee | The issue's assignee |
+| Milestone | The issue's milestone |
+| Merge | A squash merge, landing one commit on `main` titled with the pull request's title and number, then deleting the branch |
+
+Where a contributor lacks triage access, a maintainer copies the labels, the assignee, and the milestone across instead.
+
+When GitHub generates a release's notes, it files each pull request under the first category in `.github/release.yml` that lists one of the pull request's labels, so a pull request labeled `🐞 bug` beside a family label lands under `🐞 Bugs`, and one carrying no label lands under `Other`.
+
+The body runs through these sections, separated by `---` dividers:
+
+| **Section** | **Holds** |
+|---|---|
+| `🪻 Quick Summary` | Two or three sentences naming what the pull request delivers |
+| `🗞️ Key Changes` | One concrete change per bullet, opening on a third-person verb (*"Adds", "Pins"*) rather than the imperative a commit bullet takes, and naming the function, file, rule slug, or task it touches, with a blank line between bullets |
+| `☕ Implementation Notes` | Optional and usually absent, kept only for a point a reviewer needs that no bullet can carry |
+| `🧵 Related Issues` | `Closes #N` lines and nothing else |
+
+
+---
+
+## 🪷 Checks Every Pull Request Runs
+
+A pull request triggers each workflow whose path filter matches a file it touches, a change to the workflow's own file included, and every such workflow ends on a `🗞️ Brief` job that renders the run's summary and passes only when every job it waits on passed:
+
+| **Workflow** | **Fires on a Pull Request Touching** |
+|---|---|
+| `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
+| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue and pull request templates, `.nvmrc`, `CONTRIBUTING.md`, `LICENSE`, `README.md`, or `crate/Cargo.toml` |
+| `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
+| `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
+
+`🗞️ Brief` is the one check the `main` ruleset requires, so a pull request can merge once every workflow it triggered reports that check green. The rulesets are recorded under `.github/rulesets/`, and `mise run repo:rulesets` applies them along with the repository settings no ruleset covers (*squash as the only merge method, the head branch deleted on merge, every action pinned to a commit, a read-only workflow token*). `mise run repo:audit` fails when the checks `.github/rulesets/main.json` requires differ from the names of the jobs the pull-request workflows end on, so renaming the `🗞️ Brief` job cannot leave every pull request waiting on a check that never reports.
+
+The table lists each row beside the task that runs the same check locally:
+
+| **Row** | **Workflow** | **Runs Locally As** | **What It Checks** |
+|---|---|---|---|
+| `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
+| `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Every tracked file sits inside the path filter of some pull-request workflow, and every file the audit reads sits inside that of a workflow running the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
+| `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
+| `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
+| `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
+| `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which `🥃 Proof` runs |
+| `🥃 Proof` | `🪻 CI` | `mise run rust:proof` | The fixture tree settles in one pass at every line length, with every reported fix applied |
+| `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
+| `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
+| `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |
+| `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `vue-tsc` reports no type error in the docs site |
+| `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
+| `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
+| `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |
+| `⚓ Settle` | `🪻 Corpus` | `mise run rust:settle` | The standard library settles in one pass at every line length |
+| `🎨 Mutations` | `🪻 Corpus` | `mise run rust:mutations` | Every mutation of the standard library settles in one pass |
+| `🦋 Delta` | `🪻 Corpus` | `mise run rust:delta` | The job reports how the branch changes the standard library's formatting against `main`, and never fails |
+| `🪟 Imports` | `🪻 Corpus` | `mise run rust:imports` | Every standard-library module that imports before formatting still imports after it, each break attributed to the rules whose fixes reach it |
+| `🪜 Subsets · Alignment`, one row per family | `🪻 Corpus` | `mise run rust:subsets` | The family's rules settle in one pass alone and in every ordered pair |
+| `🎻` one row per platform, `🚢 sdist`, `🕯️ Validate` | `🪻 Release` | `mise run rust:wheel` | A wheel builds for every platform, the sdist builds, and one wheel installs offline and runs. The local task builds the extension for the current platform alone |
+
+The corpus rows sweep the pinned interpreter's standard library rather than the fixture tree, and [**Sweeping a Corpus**](#-sweeping-a-corpus) above covers their tasks, the variables that narrow them, and how the `🪻 Corpus` workflow scopes its subset rows.
