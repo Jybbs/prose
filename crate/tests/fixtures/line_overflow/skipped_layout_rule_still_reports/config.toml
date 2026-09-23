@@ -1,0 +1,10 @@
+[harness]
+rules = [
+    "align-match-case",
+    "reflow-calls",
+    "reflow-collections",
+    "reflow-imports",
+    "reflow-signatures",
+    "stack-adjacent-strings",
+    "wrap-docstrings",
+]

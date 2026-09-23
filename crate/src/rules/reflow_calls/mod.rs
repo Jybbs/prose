@@ -42,9 +42,9 @@ mod render;
 /// The layout `reflow-collections` gives a collapsible construct, read
 /// by a walk that relocates the expression holding it.
 pub(crate) trait CollectionLayout {
-    /// `expr`'s replacement once it lands at `column`, its closing
-    /// bracket dropping to `indent` and `tail` columns following it, or
-    /// `None` where it stays as written.
+    /// Returns `expr`'s replacement at `column`, or `None` where it stays
+    /// as written. Its closing bracket drops to `indent`, and `tail`
+    /// columns follow its last row.
     fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String>;
 }
 

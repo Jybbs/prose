@@ -5,7 +5,7 @@
 
 use itertools::Itertools;
 use ruff_python_ast::{
-    AnyNodeRef, ExprRef,
+    AnyNodeRef, Arguments, Expr, ExprRef,
     token::{Token, TokenKind, parenthesized_range},
 };
 use ruff_python_trivia::{BackwardsTokenizer, SimpleToken, SimpleTokenKind};
@@ -51,8 +51,7 @@ impl Source {
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
             filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
-                (requires_expand(expr)
-                    && !self.intersects_comment(expr.range())
+                (self.is_expandable(expr)
                     && !self
                         .suppression_map()
                         .suppresses(expr, ReflowCollections::SLUG))
@@ -69,16 +68,31 @@ impl Source {
         self.explodable_arguments.get_or_init(|| {
             let mut lists = filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
                 let arguments = &expr.as_call_expr()?.arguments;
-                (!arguments.is_empty()
-                    && !self.intersects_comment(arguments.inner_range())
+                (self.is_explodable(arguments)
                     && !self
                         .suppression_map()
                         .suppresses(arguments, ReflowCalls::SLUG))
                 .then_some(arguments.range())
             });
+            // A call is collected before the calls inside its callee, whose
+            // lists start earlier.
             lists.sort_unstable_by_key(Ranged::start);
             lists
         })
+    }
+
+    /// True where `reflow-collections` can expand `expr` once no
+    /// suppression holds it, meaning it passes `requires_expand` and
+    /// carries no comment.
+    pub(crate) fn is_expandable(&self, expr: &Expr) -> bool {
+        requires_expand(expr) && !self.intersects_comment(expr.range())
+    }
+
+    /// True where `reflow-calls` can explode `arguments` once no
+    /// suppression holds it, meaning the list carries an argument and no
+    /// comment.
+    pub(crate) fn is_explodable(&self, arguments: &Arguments) -> bool {
+        !arguments.is_empty() && !self.intersects_comment(arguments.inner_range())
     }
 
     /// Returns the start offset of the first token in `range` for

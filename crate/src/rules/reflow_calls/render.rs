@@ -329,7 +329,7 @@ impl<'a> Exploder<'a> {
     /// rejoins onto one line through the same one-row form.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
+        if !self.source.is_explodable(arguments) {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);

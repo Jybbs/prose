@@ -1,0 +1,3 @@
+[rules]
+reflow-calls       = false
+reflow-collections = { explode = false }

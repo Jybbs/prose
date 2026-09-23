@@ -111,11 +111,11 @@ impl<'a> Exploder<'a> {
             )
     }
 
-    /// The indent an exploded closing bracket drops to for the construct
-    /// opening at `offset`: this walk's own indent where the construct
-    /// settles on the row the region opens on, and otherwise the placed
-    /// indent of the row [`Self::settled_row_anchor`] resolves for its
-    /// opening bracket.
+    /// Returns the indent an exploded closing bracket drops to, for the
+    /// construct opening at `offset`. [`Self::settled_row_anchor`]
+    /// resolves the row that construct settles on. Where that row is the
+    /// region's first, the indent is this walk's own, and otherwise it is
+    /// the row's placed indent.
     pub(super) fn indent_for(&self, offset: TextSize) -> usize {
         let anchor = self.settled_row_anchor(offset).max(self.region.start());
         if let Some(indent) = self.indent
@@ -127,10 +127,10 @@ impl<'a> Exploder<'a> {
         indent_width(last_line(&placed))
     }
 
-    /// `expr`'s replacement under `layout` once its row lands, measured
-    /// at the indent its row takes after this walk's rows move and
-    /// rendered at the indent before that move, so the move carries
-    /// each of its rows into place.
+    /// Returns `expr`'s replacement under `layout` once its row lands. The
+    /// replacement is measured at the indent its row takes after this
+    /// walk's rows move, and written at the indent before that move, so
+    /// the move shifts each of its rows into place.
     pub(super) fn laid_out(&self, layout: &dyn CollectionLayout, expr: &Expr) -> Option<String> {
         let column = self.placed_column(expr.start(), true);
         let tail = self.row_tail(expr.end());

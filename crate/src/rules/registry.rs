@@ -171,6 +171,13 @@ macro_rules! register_rules {
             )*
         }
 
+        impl RuleConfigs {
+            /// True where the rule registered under `id` is on.
+            pub(crate) fn enabled(&self, id: RuleId) -> bool {
+                [$(self.$field.enabled),*][registered_index(id)]
+            }
+        }
+
         impl JsonSchema for RuleConfigs {
             fn schema_name() -> Cow<'static, str> {
                 Cow::Borrowed("RuleConfigs")

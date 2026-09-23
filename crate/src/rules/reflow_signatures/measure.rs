@@ -59,9 +59,7 @@ impl Expansion<'_> {
                 continue;
             }
             let in_returns = returns.is_some_and(|ret| ret.range().contains_range(literal.range()));
-            let breaks = any_over_expr(literal, &|inner: &Expr| {
-                is_layoutable(inner) && requires_expand(inner)
-            });
+            let breaks = any_over_expr(literal, &|inner: &Expr| requires_expand(inner));
             return in_returns && breaks && column < self.code_line_length;
         }
         false

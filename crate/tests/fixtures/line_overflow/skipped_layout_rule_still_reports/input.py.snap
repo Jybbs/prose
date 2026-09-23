@@ -9,6 +9,10 @@ TOTAL = combine(first_argument_value, second_argument_value, third_argument_valu
 
 TABLE = {"alpha": alpha_value, "beta": beta_value, "delta": delta_value, "gamma": gamma_value}  # prose: skip[reflow-collections]
 
+RESULT = combine(
+    first_argument_value_long_name, second_argument_value_long_name, third_argument_valux,
+)  # prose: skip[reflow-calls]
+
 
 def configure(first_parameter, second_parameter, third_parameter, fourth_parameter_value):  # prose: skip[reflow-signatures]
     return first_parameter
@@ -16,6 +20,10 @@ def configure(first_parameter, second_parameter, third_parameter, fourth_paramet
 
 def describe():
     """Describe the configuration this module carries, in a sentence long enough to overflow."""  # prose: skip[wrap-docstrings]
+
+
+def locate():
+    """https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index"""  # prose: skip[wrap-docstrings]
 
 
 MESSAGE = "the first part of the message runs long, " "and the second part carries it past the budget"  # prose: skip[stack-adjacent-strings]

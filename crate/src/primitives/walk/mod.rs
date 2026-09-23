@@ -32,8 +32,8 @@ impl<'src, F: FnMut(&Expr)> Visitor<'src> for AnnotationProbe<F> {
     }
 }
 
-/// Answers whether any expression beneath its start satisfies `hit`,
-/// stopping at the first that does.
+/// The visitor behind [`any_over_expr_within`], which stops at the first
+/// expression satisfying `hit`.
 struct AnyExprProbe<F> {
     found: bool,
     hit: F,
@@ -108,9 +108,10 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> SourceOrderVisitor<'src> for ExprCol
     }
 }
 
-/// True when `hit` holds for `expr` or any expression beneath it,
-/// stopping at the first match, `interpolations` deciding whether the
-/// walk reads the interior of an f-string or t-string replacement field.
+/// True when `hit` holds for `expr` or any expression beneath it, and
+/// the walk stops at the first match. `interpolations` decides whether
+/// the walk reads the interior of an f-string or t-string replacement
+/// field.
 pub(crate) fn any_over_expr_within(
     expr: &Expr,
     interpolations: Descent,

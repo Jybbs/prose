@@ -188,10 +188,10 @@ impl<'a> Settings<'a> {
     }
 
     /// True where `reflow-collections` expands `literal` at `column` with
-    /// `tail` columns after it, meaning a comment-free literal passing
-    /// `requires_expand` that a later rule reopens, that is written across
-    /// rows, or whose narrowest width under `padding` overflows. A caller
-    /// tries [`Self::rejoined`] first.
+    /// `tail` columns after it. A comment-free literal passing
+    /// `requires_expand` expands where a later rule reopens it, where it
+    /// is written across rows, or where its narrowest width under
+    /// `padding` overflows. A caller tries [`Self::rejoined`] first.
     pub(crate) fn expands(
         &self,
         source: &'a Source,
@@ -212,8 +212,8 @@ impl<'a> Settings<'a> {
                 ))
     }
 
-    /// True where `reflow-collections` expands a literal, the rule on
-    /// with its `explode` facet set.
+    /// True where `reflow-collections` expands literals, meaning the rule
+    /// is on and its `explode` facet is set.
     pub(crate) fn expands_literals(&self) -> bool {
         self.expands_literals
     }
@@ -290,10 +290,10 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// True where a later rule reopens `expr` whatever its shape, meaning
-    /// it holds a dict past `max_dict_entries` or a call past `max_args`
-    /// that `reflow-calls` can name, outside any replacement field, so no
-    /// one-row form written around either survives the pipeline.
+    /// True where a later rule reopens `expr` whatever its shape. That
+    /// happens where `expr` holds a dict past `max_dict_entries`, or a
+    /// call past `max_args` that `reflow-calls` can name, outside any
+    /// replacement field.
     pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
         any_over_expr_within(expr, Descent::Over, |e| {
             e.as_call_expr()

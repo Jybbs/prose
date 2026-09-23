@@ -160,7 +160,13 @@ pub(crate) fn has_keep_marker(source: &Source, literal: impl Ranged) -> bool {
                 .comment_ranges()
                 .comments_in_range(text.full_line_range(offset))
         })
-        .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
+        .any(|c| is_keep_marker(source.slice(c)))
+}
+
+/// True where `comment` is the `# prose: keep` marker that pins a dict or
+/// a dunder list.
+pub(crate) fn is_keep_marker(comment: &str) -> bool {
+    comment.trim_start_matches('#').trim() == "prose: keep"
 }
 
 /// Returns the range spanning every own-line comment between `lower`

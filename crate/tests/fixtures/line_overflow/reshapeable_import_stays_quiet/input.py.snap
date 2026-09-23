@@ -3,6 +3,7 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/line_overflow/reshapeable_import_stays_quiet/input.py
 ---
-import collections, itertools
+import collections
+import itertools
 
 print(collections, itertools)
