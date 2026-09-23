@@ -64,10 +64,10 @@ pub(super) fn check_trees(
         })
         .into_group_map();
     for (input, runs) in checked {
-        let before = parsed(input);
+        let before = memo.source(input);
         let tree = ComparableModModule::from(before.ast());
         for (rule, preserves, output) in runs {
-            let after = parsed(output);
+            let after = memo.source(output);
             let reshaped = ComparableModModule::from(after.ast()) != tree;
             if !preserves {
                 *findings.changing.entry(rule).or_default() |= reshaped;
@@ -76,7 +76,7 @@ pub(super) fn check_trees(
                     format!("`{rule}` changes the tree it rewrites {}", probes.budget),
                     path,
                     Hit {
-                        detail: Some(reshaping(&before, &after, &format!("after `{rule}`"))),
+                        detail: Some(reshaping(before, after, &format!("after `{rule}`"))),
                         ..probes.hit(path, &[rule])
                     },
                 );
@@ -134,11 +134,9 @@ fn moved_rows(before: &Source, after: &Source) -> Option<RangeInclusive<usize>> 
     Some(row(old[at].start())..=row(old[at].end()))
 }
 
-/// Parses a buffer a single-rule run read or wrote, which the pipeline
-/// has already parsed once.
+/// Parses the buffer a test writes.
 fn parsed(text: &str) -> Source {
-    text.parse()
-        .expect("invariant: a buffer a single-rule run read or wrote parses")
+    text.parse().expect("a test's buffer parses")
 }
 
 /// Renders the excerpt from `before` to `after`, headed `"before"` and
@@ -150,6 +148,18 @@ fn reshaping(before: &Source, after: &Source, to: &str) -> String {
         .map(|rows| excerpt("before", to, before.text(), after.text(), rows))
         .filter(|shown| !shown.is_empty())
         .unwrap_or_else(|| excerpt("before", to, before.text(), after.text(), ..))
+}
+
+/// Builds a memo over `input` holding one solo run of `rule` that
+/// rewrites it to `output`.
+fn rewriting<'p>(probes: &'p Probes, rule: RuleId, input: &str, output: &str) -> Memo<'p> {
+    let (input, output) = (parsed(input), parsed(output));
+    let (read, written) = (Rc::from(input.text()), Rc::from(output.text()));
+    let mut memo = Memo::new(probes, input);
+    memo.sources.insert(Rc::clone(&written), output);
+    memo.runs
+        .insert((probes.solo[&rule], read), Applied::Changed(written));
+    memo
 }
 
 /// Collects every statement `source` holds, each ahead of the statements
@@ -168,12 +178,9 @@ fn check_trees_files_a_joint_run_that_changes_the_tree() {
         &[rule("strip-none-return")],
         &[],
     ));
-    let memo = Memo {
-        probes: &probes,
-        runs: IndexMap::default(),
-    };
-    let mut findings = Findings::default();
     let source = parsed("def f() -> None:\n    pass\n");
+    let memo = Memo::new(&probes, source.clone());
+    let mut findings = Findings::default();
 
     check_trees(
         &probes,
@@ -212,13 +219,7 @@ fn check_trees_files_a_run_in_the_sweep_that_reports_it(
     probes.joint = None;
     probes.reported = reported.iter().copied().map(rule).collect();
     let rule = rule(slug);
-    let memo = Memo {
-        probes: &probes,
-        runs: IndexMap::from_iter([(
-            (probes.solo[&rule], Rc::from("x = 1\n")),
-            Applied::Changed(Rc::from("x = 2\n")),
-        )]),
-    };
+    let memo = rewriting(&probes, rule, "x = 1\n", "x = 2\n");
     let mut findings = Findings::default();
 
     check_trees(
@@ -250,13 +251,7 @@ fn check_trees_holds_each_run_to_its_rules_declaration(
     let mut probes = Probes::build(88);
     probes.fixtures = true;
     probes.reported = BTreeSet::from([rule]);
-    let memo = Memo {
-        probes: &probes,
-        runs: IndexMap::from_iter([(
-            (probes.solo[&rule], Rc::from(input)),
-            Applied::Changed(Rc::from(output)),
-        )]),
-    };
+    let memo = rewriting(&probes, rule, input, output);
     let mut findings = Findings::default();
 
     check_trees(

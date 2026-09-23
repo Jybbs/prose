@@ -225,9 +225,21 @@ impl Absorbing for Findings {
 struct Memo<'p> {
     probes: &'p Probes,
     runs: IndexMap<(usize, Rc<str>), Applied, FxBuildHasher>,
+    /// The source of the file and of every buffer a run wrote, keyed by
+    /// its text.
+    sources: FxHashMap<Rc<str>, Source>,
 }
 
-impl Memo<'_> {
+impl<'p> Memo<'p> {
+    /// Opens a memo over the file `source` holds.
+    fn new(probes: &'p Probes, source: Source) -> Self {
+        Self {
+            probes,
+            runs: IndexMap::default(),
+            sources: FxHashMap::from_iter([(Rc::from(source.text()), source)]),
+        }
+    }
+
     /// The buffer the rule at `seat` leaves `text` as, `text` itself
     /// where the rule made no edit.
     fn after(&mut self, seat: usize, text: &Rc<str>) -> Result<Rc<str>, Rc<str>> {
@@ -239,18 +251,24 @@ impl Memo<'_> {
     }
 
     fn apply(&mut self, seat: usize, text: &Rc<str>) -> Applied {
-        let probes = self.probes;
-        self.runs
-            .entry((seat, Rc::clone(text)))
-            .or_insert_with(|| match text.parse::<Source>() {
-                Err(_) => Applied::Rejected(Rc::from("the buffer does not parse")),
-                Ok(source) => match probes.singles[seat].pipeline.format(source) {
-                    Ok(out) if out.text() == &**text => Applied::Same,
-                    Ok(out) => Applied::Changed(Rc::from(out.text())),
-                    Err(error) => Applied::Rejected(Rc::from(error.to_string())),
-                },
-            })
-            .clone()
+        let run = (seat, Rc::clone(text));
+        if let Some(applied) = self.runs.get(&run) {
+            return applied.clone();
+        }
+        let applied = match self.probes.singles[seat]
+            .pipeline
+            .format(self.source(text).clone())
+        {
+            Ok(out) if out.text() == &**text => Applied::Same,
+            Ok(out) => {
+                let written: Rc<str> = Rc::from(out.text());
+                self.sources.entry(Rc::clone(&written)).or_insert(out);
+                Applied::Changed(written)
+            }
+            Err(error) => Applied::Rejected(Rc::from(error.to_string())),
+        };
+        self.runs.insert(run, applied.clone());
+        applied
     }
 
     /// The buffer the rules at `seats` leave `text` as, run first to
@@ -269,6 +287,13 @@ impl Memo<'_> {
             .filter(|&&seat| !matches!(self.apply(seat, text), Applied::Same))
             .map(|&seat| probes.singles[seat].rule)
             .collect()
+    }
+
+    /// The source of `text`, which the file holds or a run wrote.
+    fn source(&self, text: &str) -> &Source {
+        self.sources
+            .get(text)
+            .expect("invariant: the memo holds the source of every buffer a run reads")
     }
 }
 
@@ -438,12 +463,11 @@ fn claim_of(named: Option<&str>) -> Claim {
     }
 }
 
-/// The text `pipeline` folds `text` into, `None` where the buffer does
-/// not parse.
-fn folded_text(pipeline: &Pipeline, text: &str) -> Option<Result<String, PipelineError>> {
-    text.parse::<Source>()
-        .ok()
-        .map(|source| pipeline.format(source).map(|out| out.text().to_owned()))
+/// The text `pipeline` folds `source` into.
+fn folded_text(pipeline: &Pipeline, source: &Source) -> Result<String, PipelineError> {
+    pipeline
+        .format(source.clone())
+        .map(|out| out.text().to_owned())
 }
 
 /// The budgets this run probes. A pointed corpus takes the shipped
@@ -468,10 +492,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     };
     let _slot = Slot::open(format!("{} {}", path.display(), probes.budget));
     let text: Rc<str> = Rc::from(source.text());
-    let mut memo = Memo {
-        probes,
-        runs: IndexMap::default(),
-    };
+    let mut memo = Memo::new(probes, source);
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for (&rule, &seat) in &probes.solo {
         let label = || format!("`{rule}` alone {}", probes.budget);
@@ -524,7 +545,8 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             continue;
         }
         if memo.editing(&seats, &text).len() == 2 {
-            let agrees = |spliced: &Pipeline| spliced_matches(spliced, &text, &forward);
+            let agrees =
+                |spliced: &Pipeline| spliced_matches(spliced, memo.source(&text), &forward);
             if declared {
                 if !agrees(&probe.folded) {
                     file(
@@ -579,7 +601,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             ),
         );
     }
-    check_trees(probes, &memo, solo, &source, path, &mut findings);
+    check_trees(probes, &memo, solo, memo.source(&text), path, &mut findings);
     findings
 }
 
@@ -634,11 +656,10 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
     (k - 1, n)
 }
 
-/// True where `spliced` leaves `text` as the `chained` run did. A run
-/// `spliced` rejects, and a buffer it cannot parse, both count as a
-/// divergence.
-fn spliced_matches(spliced: &Pipeline, text: &str, chained: &str) -> bool {
-    matches!(folded_text(spliced, text), Some(Ok(out)) if out == chained)
+/// True where `spliced` leaves `source` as the `chained` run did, a run
+/// `spliced` rejects counting as a divergence.
+fn spliced_matches(spliced: &Pipeline, source: &Source, chained: &str) -> bool {
+    matches!(folded_text(spliced, source), Ok(out) if out == chained)
 }
 
 /// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
@@ -657,27 +678,25 @@ fn verify_pair(
     chained: &Result<Rc<str>, Rc<str>>,
 ) {
     let (folded, [earlier, later], seats) = (&probe.folded, probe.rules, probe.seats);
-    let old = folded_text(folded, text);
+    let old = folded_text(folded, memo.source(text));
     match (chained, old) {
-        (Ok(new), Some(Ok(old))) => assert!(
+        (Ok(new), Ok(old)) => assert!(
             **new == *old,
             "forward text differs for `{earlier}` then `{later}` on {}:\n{}",
             path.display(),
             common::unified_diff(&old, new),
         ),
-        (Err(_), Some(Err(_))) => {}
+        (Err(_), Err(_)) => {}
         (new, old) => panic!(
             "forward verdict differs for `{earlier}` then `{later}` on {}: chained {} vs folded {}",
             path.display(),
             new.is_ok(),
-            old.map_or("unparsed".to_owned(), |o| o.is_ok().to_string()),
+            old.is_ok(),
         ),
     }
-    if let Ok(new) = chained
-        && let Ok(parsed) = new.parse::<Source>()
-    {
+    if let Ok(new) = chained {
         assert_eq!(
-            folded.unsettled(&parsed),
+            folded.unsettled(memo.source(new)),
             memo.editing(&seats, new),
             "still-editing set differs for `{earlier}` then `{later}` on {}",
             path.display()
