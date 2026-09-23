@@ -1,7 +1,7 @@
 //! Shared layout helpers for laying a construct out across lines,
 //! covering one-per-line expansion, greedy line filling, reading the
-//! bracket shape a block already carries, and the bracket a layout
-//! rule opens a value across rows at.
+//! bracket shape a block already carries, and finding the bracket a
+//! layout rule breaks a value open at.
 
 mod opener;
 mod pack;

@@ -31,7 +31,7 @@ use crate::{
     rules::{Rule, RuleId},
     source::Source,
 };
-pub(crate) use reorders::Reorders;
+pub(crate) use reorders::{Reorders, Sorted};
 
 mod class_graph;
 mod dict;

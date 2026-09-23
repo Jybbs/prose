@@ -7,11 +7,11 @@
 //! comment, a replacement field, or a folded multi-line string holds a
 //! construct at its source shape, a held member travels with the row
 //! it lands on, and `keep_multiline_literals` re-expands an authored
-//! flush column rather than joining it. Every measure reads the value
-//! at the column `align_equals` shifts it to, or an expanded dict's
-//! value at the column `align_colons` seats it at, the width the
-//! padding rule settles it at, and the separator `alphabetize-siblings`
-//! leaves closing its row.
+//! flush column rather than joining it. Every measure reads the width
+//! the padding rule settles a value at and the separator
+//! `alphabetize-siblings` leaves closing its row, placing the value at
+//! the column `align-equals` shifts it to or, inside an expanded dict,
+//! the column `align-colons` seats it at.
 
 use std::borrow::Cow;
 

@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/sorted_dict_keeps_two_overflowing_values_inline/input.py
+input_file: crate/tests/fixtures/composition/sorted_dict_keeps_two_wide_values_inline/input.py
 ---
 MUTATIONS = {
     "cache": {"delete"},

@@ -43,8 +43,42 @@ impl Reorders {
         }
     }
 
-    /// The sort over `node`'s entries, per [`Self::sorted_slots`].
-    fn sorted(self, source: &Source, node: AnyNodeRef, parent: AnyNodeRef) -> Option<Sorted> {
+    /// True when the rule is on and no skip directive over `node` holds
+    /// it.
+    fn sorts(self, source: &Source, node: impl Ranged) -> bool {
+        self.enabled
+            && !source
+                .suppression_map()
+                .suppresses(node, AlphabetizeSiblings::SLUG)
+    }
+
+    /// True when the sort leaves `node` as laid out, the gates the rule
+    /// reads off the layout rather than the entries: a multi-line dict
+    /// packing entries onto a shared row, one whose first entry trails
+    /// the `{` on its row with a comment in the span, and a multi-line
+    /// set, list, or tuple packing entries or opening mid-row with a
+    /// comment in the span.
+    pub(crate) fn holds_as_laid_out(self, source: &Source, node: AnyNodeRef) -> bool {
+        match node {
+            AnyNodeRef::ExprDict(dict) => dict_holds_as_laid_out(source, &dict.items),
+            AnyNodeRef::ExprList(list) => held_leaves(source, &list.elts),
+            AnyNodeRef::ExprSet(set) => held_leaves(source, &set.elts),
+            AnyNodeRef::ExprTuple(tuple) => held_leaves(source, &tuple.elts),
+            _ => false,
+        }
+    }
+
+    /// Returns the sort over `node`'s entries, or `None` where no entry
+    /// of `node` sorts: the rule off or skip-held over `node`, a node of
+    /// another kind, a list or tuple bound to nothing the rule sorts under
+    /// `parent`, a dict or dunder list held by `# prose: keep` or the
+    /// config, or fewer than two entries.
+    pub(crate) fn sorted(
+        self,
+        source: &Source,
+        node: AnyNodeRef,
+        parent: AnyNodeRef,
+    ) -> Option<Sorted> {
         if !self.sorts(source, node) {
             return None;
         }
@@ -86,33 +120,8 @@ impl Reorders {
         }
     }
 
-    /// True when the rule is on and no skip directive over `node` holds
-    /// it.
-    fn sorts(self, source: &Source, node: impl Ranged) -> bool {
-        self.enabled
-            && !source
-                .suppression_map()
-                .suppresses(node, AlphabetizeSiblings::SLUG)
-    }
-
-    /// True when the sort leaves `node` as laid out, the gates the rule
-    /// reads off the layout rather than the entries: a multi-line dict
-    /// packing entries onto a shared row, one whose first entry trails
-    /// the `{` on its row with a comment in the span, and a multi-line
-    /// set, list, or tuple packing entries or opening mid-row with a
-    /// comment in the span.
-    pub(crate) fn holds_as_laid_out(self, source: &Source, node: AnyNodeRef) -> bool {
-        match node {
-            AnyNodeRef::ExprDict(dict) => dict_holds_as_laid_out(source, &dict.items),
-            AnyNodeRef::ExprList(list) => held_leaves(source, &list.elts),
-            AnyNodeRef::ExprSet(set) => held_leaves(source, &set.elts),
-            AnyNodeRef::ExprTuple(tuple) => held_leaves(source, &tuple.elts),
-            _ => false,
-        }
-    }
-
     /// The range of the entry of `node` the sort leaves last, `None`
-    /// where no entry of `node` sorts per [`Self::sorted_slots`]. A
+    /// where no entry of `node` sorts per [`Self::sorted`]. A
     /// pinned last entry stays last, and otherwise the greatest key in
     /// the run closing there lands last.
     pub(crate) fn sorted_last(
@@ -142,28 +151,13 @@ impl Reorders {
             .collect();
         sorted_order(&keys, whole(&keys))?.pop()
     }
-
-    /// The order the sort leaves `node`'s entries in, each slot holding
-    /// the source index of the entry landing there, `None` where no
-    /// entry of `node` sorts: the rule off or skip-held over `node`, a
-    /// node of another kind, a list or tuple bound to nothing the rule
-    /// sorts under `parent`, a dict or dunder list held by
-    /// `# prose: keep` or the config, or fewer than two entries.
-    pub(crate) fn sorted_slots(
-        self,
-        source: &Source,
-        node: AnyNodeRef,
-        parent: AnyNodeRef,
-    ) -> Option<Vec<usize>> {
-        Some(self.sorted(source, node, parent)?.order)
-    }
 }
 
 /// The sort over one node's entries: the range of the entry the sort
 /// leaves last, and the source index landing in each slot.
-struct Sorted {
-    last: TextRange,
-    order: Vec<usize>,
+pub(crate) struct Sorted {
+    pub(crate) last: TextRange,
+    pub(crate) order: Vec<usize>,
 }
 
 /// `ranged`'s source text read the way a later join writes it onto one

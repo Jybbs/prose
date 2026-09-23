@@ -20,7 +20,7 @@ use crate::{
         layout::item_indent,
         travel::{Landing, placed_block},
     },
-    rules::reflow_calls::Reshaper,
+    rules::{alphabetize_siblings::Sorted, reflow_calls::Reshaper},
 };
 
 /// Per-item state for a dict, list, set, or tuple literal: serialized
@@ -56,27 +56,27 @@ impl<'src> GatheredItems<'src> {
 }
 
 impl<'a> Layouter<'a> {
-    /// Collects the bracket pair and per-item text, atomicity, and source
-    /// range for the collection at `expr`, each child serialized through
-    /// `serialize_expr` or `gather_entries` at `indent` and charged the
-    /// separator the sort `order` names leaves closing its row, a dict's
-    /// entries read in that order too. An item needing neither a rewrite
-    /// nor a move borrows its source slice.
+    /// Collects the bracket pair and each item's text, atomicity, and
+    /// source range for the collection at `expr`, serializing each child
+    /// at `indent` through `serialize_expr`, or through `gather_entries`
+    /// for a dict, which also reads the entries in the order `sorted`
+    /// leaves them. Each row is charged the separator that sort leaves
+    /// closing it, and an item needing neither a rewrite nor a move
+    /// borrows its source slice.
     fn gather_items(
         &self,
         expr: &Expr,
         indent: usize,
-        order: Option<&[usize]>,
+        sorted: Option<&Sorted>,
     ) -> GatheredItems<'a> {
         let node = AnyNodeRef::from(expr);
-        let tail = |last: Option<TextRange>| {
-            move |i: usize, count: usize, entry: TextRange| {
-                entry_tail(last, entry, usize::from(i + 1 < count))
-            }
+        let last = sorted.map(|sorted| sorted.last);
+        let tail = move |i: usize, count: usize, entry: TextRange| {
+            entry_tail(last, entry, usize::from(i + 1 < count))
         };
         let (open, close, elts) = match expr {
             Expr::Dict(d) => {
-                let tail = tail(sorted_last(&d.items, order));
+                let order = sorted.map(|sorted| sorted.order.as_slice());
                 return GatheredItems::of('{', '}', self.gather_entries(d, indent, order, tail));
             }
             Expr::List(l) => ('[', ']', &l.elts),
@@ -84,7 +84,6 @@ impl<'a> Layouter<'a> {
             Expr::Tuple(t) => ('(', ')', &t.elts),
             _ => unreachable!("gather_items called on non-expandable expr"),
         };
-        let tail = tail(sorted_last(elts, order));
         GatheredItems::of(
             open,
             close,
@@ -109,7 +108,7 @@ impl<'a> Layouter<'a> {
     pub(super) fn expand(&self, expr: &Expr, parent: AnyNodeRef, indent: usize) -> String {
         let item_indent = item_indent(indent);
         let node = AnyNodeRef::from(expr);
-        let order = self.reorders.sorted_slots(self.source, node, parent);
+        let sorted = self.reorders.sorted(self.source, node, parent);
         let GatheredItems {
             atomics,
             close,
@@ -117,7 +116,7 @@ impl<'a> Layouter<'a> {
             ranges,
             texts,
             widths,
-        } = self.gather_items(expr, item_indent, order.as_deref());
+        } = self.gather_items(expr, item_indent, sorted.as_ref());
         let total = texts.len();
         let item_prefix = " ".repeat(item_indent);
         let available = self.code_line_length.saturating_sub(item_indent);
@@ -135,8 +134,11 @@ impl<'a> Layouter<'a> {
                     };
                     // The slots pack at the widths of the entries the sort
                     // leaves in them.
-                    let slot_widths: Vec<usize> = match &order {
-                        Some(order) => order[range].iter().map(|&index| widths[index]).collect(),
+                    let slot_widths: Vec<usize> = match &sorted {
+                        Some(sorted) => sorted.order[range]
+                            .iter()
+                            .map(|&index| widths[index])
+                            .collect(),
                         None => widths[range].to_vec(),
                     };
                     for line_range in flow_lines(&slot_widths, packing) {
@@ -216,10 +218,4 @@ impl<'a> Layouter<'a> {
             targets: self.targets,
         }
     }
-}
-
-/// The range of the entry of `items` the sort leaves last, `None` where
-/// `order` names no sort.
-fn sorted_last<T: Ranged>(items: &[T], order: Option<&[usize]>) -> Option<TextRange> {
-    order?.last().map(|&index| items[index].range())
 }

@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "An Overflowing Dict Value Expands So Its Row Joins the Column"
-
-description = '''
-The `"pr"` entry of `MUTATIONS` fits the budget beside its key, but padding its `:` out to the column `"variable"` sets would carry its set six columns past it. **[[reflow-collections]] measures the set at that padded column and expands it, so `"pr"` joins the column** [[align-colons]] seats every other key at, rather than standing unpadded and splitting the run in two.
-'''

@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/overflowing_dict_value_expands_into_its_column/input.py
+input_file: crate/tests/fixtures/composition/wide_dict_value_expands_into_its_column/input.py
 ---
 MUTATIONS = {
     "cache"    : {"delete"},

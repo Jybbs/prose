@@ -66,8 +66,8 @@ pub(crate) struct Member {
 
 impl Member {
     /// Builds a row a layout rule writes on a line of its own, opening
-    /// at `baseline` and `width` wide ahead of its aligned token, with
-    /// no source span, since the column math reads its widths alone.
+    /// at `baseline` and `width` wide ahead of its aligned token, its
+    /// `gap` and `line_start` left empty.
     fn written(baseline: usize, width: usize) -> Self {
         Self {
             baseline,
@@ -130,8 +130,8 @@ impl Member {
 /// `cap` carries the governing line length when the rule resolves
 /// within one, so a member whose aligned line would cross it
 /// partitions out of the run the way an over-`max_shift` outlier does,
-/// unless a layout rule expands its value and the opening row that
-/// leaves fits.
+/// unless a layout rule can expand its value and the opening row the
+/// expansion leaves fits.
 /// `release_heads` lets a group's head row stand down as a singleton
 /// where the cap would otherwise strand the row that cut the group,
 /// which a rule opts into only where its rows reach their settled width

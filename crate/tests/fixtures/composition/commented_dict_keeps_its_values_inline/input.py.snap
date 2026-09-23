@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/commented_dict_keeps_its_overflowing_row/input.py
+input_file: crate/tests/fixtures/composition/commented_dict_keeps_its_values_inline/input.py
 ---
 MUTATIONS = {
     "cache": {"delete"},  # every verb deletes

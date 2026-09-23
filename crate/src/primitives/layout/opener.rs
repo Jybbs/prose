@@ -7,23 +7,21 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{primitives::slots::item_holding, source::Source};
 
-/// The display width from `start` through the bracket `expr` opens
-/// across rows at once a layout rule expands it, the `(` of a call
-/// `reflow-calls` explodes or a literal's own opener where
-/// `reflow-collections` expands it, where that bracket sits on
-/// `start`'s row. `None` for a call without arguments or with a comment
-/// inside them, a literal [`Source::expandable_literals`] leaves out,
-/// and every other expression.
+/// Returns the display width from `start` through the bracket a layout
+/// rule breaks `expr` open at, meaning the `(` of a call
+/// [`Source::explodable_arguments`] lists or the opener of a literal
+/// [`Source::expandable_literals`] lists. `None` for any other
+/// expression and for a bracket on a later row than `start`.
 pub(crate) fn opener_width(source: &Source, expr: &Expr, start: TextSize) -> Option<usize> {
     let listed = |ranges: &[TextRange], range: TextRange| {
         item_holding(ranges, range.start()).is_some_and(|held| *held == range)
     };
     let opener = match expr {
-        Expr::Call(call) if listed(source.explodable_arguments(), call.arguments.range()) => {
-            call.arguments.start()
+        Expr::Call(call) => {
+            let arguments = call.arguments.range();
+            listed(source.explodable_arguments(), arguments).then_some(arguments.start())?
         }
-        _ if listed(source.expandable_literals(), expr.range()) => expr.start(),
-        _ => return None,
+        _ => listed(source.expandable_literals(), expr.range()).then_some(expr.start())?,
     };
     let end = opener + TextSize::of('(');
     source

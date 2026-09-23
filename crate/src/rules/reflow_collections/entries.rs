@@ -21,7 +21,7 @@ use crate::{
         layout::opener_width,
         travel::Landing,
     },
-    rules::stack_adjacent_strings::concatenated_run,
+    rules::{align_colons::AlignColons, stack_adjacent_strings::concatenated_run},
 };
 
 /// One dict entry as the expand path writes it: its key text and the
@@ -37,14 +37,13 @@ struct Entry<'a> {
 }
 
 impl<'a> Layouter<'a> {
-    /// Serializes a dict item as `key: value` or `**value`, paired with
-    /// its display width at the canonical `": "` separator. The key
-    /// routes through `repaired_key`, and the value measures and lands
-    /// at `seat` where `align-colons` seats it, or otherwise fits past
-    /// the key text's last row and the canonical separator and lands
-    /// past the separator the text keeps. A borrowed key and value over
-    /// an `align-colons`-padded gap return the source slice whole, the
-    /// width still counting the canonical `": "`.
+    /// Builds the [`Entry`] for a dict item written as `key: value` or
+    /// `**value`, its width counted at the canonical `": "` separator.
+    /// The value is measured and lands at `seat` where one is given, and
+    /// otherwise is measured past the key's last row and the canonical
+    /// separator while landing past the separator the text keeps. A
+    /// borrowed key and value over an `align-colons`-padded gap return
+    /// the source slice whole.
     fn entry(
         &self,
         item: &DictItem,
@@ -91,8 +90,9 @@ impl<'a> Layouter<'a> {
                 Cow::Owned,
             );
         let key_width = settled_text_width(self.source, self.padding, &key_text, key.range());
-        let width =
-            key_width + 2 + settled_text_width(self.source, self.padding, &value_text, value_range);
+        let width = key_width
+            + CANONICAL_SEPARATOR
+            + settled_text_width(self.source, self.padding, &value_text, value_range);
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(
                 self.source
@@ -112,9 +112,9 @@ impl<'a> Layouter<'a> {
 
     /// Builds the hung two-line form of a `key: value` dict entry,
     /// breaking at `:` and emitting the value at `item_indent +
-    /// INDENT_STEP` with `tail` columns closing its row. The key writes
-    /// as `key_text`, the form `repaired_key` gave it, and keeps its
-    /// pre-colon padding. Returns `None` for a `**value` unpacking item
+    /// INDENT_STEP` with `tail` columns closing its row. The key is
+    /// written as `key_text`, the form `repaired_key` returns, and keeps
+    /// its pre-colon padding. Returns `None` for a `**value` unpacking item
     /// and for an entry with an implicitly concatenated string on either
     /// side of its `:`, which `stack-adjacent-strings` breaks in place.
     fn hang_dict_value(
@@ -150,11 +150,12 @@ impl<'a> Layouter<'a> {
         )
     }
 
-    /// The `align-colons` row `entry` of `item` opens at `indent` with
-    /// `tail` columns closing it: a bridge for a `**` unpacking, a break
-    /// for a key spanning rows, and otherwise the key's width beside the
-    /// [`Extent`] the row takes before padding, its value's opening row
-    /// measured where a layout rule expands a one-row value.
+    /// Returns the `align-colons` slot for `entry`'s row, which opens at
+    /// `indent` with `tail` columns closing it: a bridge for a `**`
+    /// unpacking or for a row a skip holds for `align-colons`, a break for
+    /// a key spanning rows, and otherwise the key's settled width beside
+    /// the row's [`Extent`], which measures the value's opening row where
+    /// a layout rule can expand a one-row value.
     fn row(
         &self,
         entry: &Entry<'a>,
@@ -162,7 +163,11 @@ impl<'a> Layouter<'a> {
         indent: usize,
         tail: usize,
     ) -> Slot<(usize, Extent)> {
-        let Some(key_text) = &entry.key else {
+        let Some(key_text) = entry
+            .key
+            .as_ref()
+            .filter(|_| !aligner::is_held(self.source, AlignColons::SLUG, item.start()))
+        else {
             return Slot::Bridge;
         };
         if spans_rows(key_text) {
@@ -171,7 +176,9 @@ impl<'a> Layouter<'a> {
         let extent = if spans_rows(&entry.text) {
             Extent {
                 expanded: None,
-                inline: indent + opening_width(&entry.text),
+                inline: indent
+                    + entry.key_width
+                    + opening_width(entry.text[key_text.len()..].trim_start_matches(' ')),
             }
         } else {
             Extent {
@@ -180,21 +187,16 @@ impl<'a> Layouter<'a> {
                 inline: indent + entry.width + tail,
             }
         };
-        Slot::Member((display_width(key_text), extent))
+        Slot::Member((entry.key_width, extent))
     }
 
-    /// Re-serializes each of `entries` whose value `align-colons` seats
-    /// under `settings` past the canonical `": "` at a column where its
-    /// one-row form overflows and a layout rule expands it. The rows
-    /// read in the order `order` leaves them, a run closing at a key
-    /// spanning rows and ahead of a row a blank line opens, and a `**`
-    /// unpacking passing a run through. Where `order` names the sort
-    /// `alphabetize-siblings` reassembles the dict under, that rule drops
-    /// the source's blank lines and sets one on either side of each entry
-    /// spanning rows once two do, so an entry already spanning rows seats
-    /// nothing and more than one value to expand expands none, since
-    /// either would leave an expanded entry alone between two blank
-    /// lines.
+    /// Re-serializes each of `entries` whose one-row value overflows at
+    /// the column `align-colons` seats it at under `settings`, where a
+    /// layout rule can expand that value, reading rows in the order
+    /// `order` leaves them. A key spanning rows closes a run, as does a
+    /// blank line where `order` names no sort, and a `**` unpacking
+    /// passes through one. Under a sort, nothing is re-serialized once an
+    /// entry already spans rows or more than one value overflows.
     fn seat_entries(
         &self,
         entries: &mut [Entry<'a>],
@@ -220,9 +222,7 @@ impl<'a> Layouter<'a> {
             if matches!(row, Slot::Break)
                 || (!reassembled
                     && position > 0
-                    && self
-                        .source
-                        .has_blank_line_before(dict.items[position].start()))
+                    && self.source.has_blank_line_before(dict.items[index].start()))
             {
                 runs.push(Vec::new());
             }
@@ -234,9 +234,9 @@ impl<'a> Layouter<'a> {
         }
         let mut seats = Vec::new();
         for run in runs {
-            let (indices, rows): (Vec<usize>, Vec<(usize, Extent)>) = run.into_iter().unzip();
+            let rows: Vec<(usize, Extent)> = run.iter().map(|&(_, row)| row).collect();
             let columns = aligner::written_columns(indent, &rows, settings);
-            for ((index, (width, extent)), column) in indices.into_iter().zip(rows).zip(columns) {
+            for (&(index, (width, extent)), column) in run.iter().zip(columns) {
                 let padding = column - indent - width;
                 if extent.expanded.is_some() && extent.inline + padding > self.code_line_length {
                     seats.push((index, column + aligner::VALUE_OFFSET));
@@ -251,12 +251,11 @@ impl<'a> Layouter<'a> {
         }
     }
 
-    /// Collects `dict`'s entries at `indent`, each charged the separator
-    /// `tail` names for its slot, the one a later sort leaves closing its
-    /// row, and hung at `:` where that row overflows at the canonical
-    /// `": "`. Where `align-colons` runs, each value then measures at the
-    /// column that rule seats it at once the expanded rows align in the
-    /// order `order` leaves them.
+    /// Collects `dict`'s entries at `indent`, charging each the separator
+    /// `tail` names for its slot and hanging it at `:` where that row
+    /// overflows at the canonical `": "`. Where `align-colons` is on, each
+    /// value is then measured at the column that rule seats it at once the
+    /// expanded rows align in the order `order` leaves them.
     pub(super) fn gather_entries(
         &self,
         dict: &ExprDict,

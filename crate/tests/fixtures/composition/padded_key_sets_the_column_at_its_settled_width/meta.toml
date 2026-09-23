@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Padded Key Sets the Column at Its Settled Width"
+
+description = '''
+The key `( "pp", "qq" )` is 14 columns as written and 12 once [[strip-stranded-padding]] drops the spaces inside its parentheses. **[[reflow-collections]] measures each value at the column that settled width sets**, the same column [[align-colons]] pads every key out to, so the `"pr"` set fits the budget there and stays on one row. Measured at the column the written width would set, two columns further right, the set would cross the budget and expand.
+'''

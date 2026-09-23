@@ -2,7 +2,7 @@
 //! Splits each source-ordered run into the contiguous groups the
 //! `max-shift` and governing line-length caps allow and rewrites each
 //! member's gap to its group's column. A row whose value a layout rule
-//! expands fits the cap where the opening line that expansion leaves
+//! can expand fits the cap where the opening row that expansion leaves
 //! fits it.
 
 use std::ops::RangeInclusive;
@@ -26,10 +26,10 @@ use crate::{
     source::Source,
 };
 
-/// The width one row's line takes before padding, as the cap check
-/// reads it: the whole row as one line, and the opening line alone
-/// where a layout rule can expand the row's value across rows, `None`
-/// where no rule can.
+/// The widths one row's line takes before padding, as the cap check
+/// reads them: `inline` for the whole row on one line, and `expanded`
+/// for the opening row alone where a layout rule can expand the row's
+/// value, `None` where no rule can.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Extent {
     pub(crate) expanded: Option<usize>,
@@ -123,10 +123,10 @@ pub(crate) fn space_padding_edit(source: &Source, range: TextRange, n: usize) ->
     Some(repeat_edit(range, " ", n))
 }
 
-/// The column each row of a run a layout rule writes lands its aligned
-/// token at, every row opening at `baseline` on a line of its own and
-/// each pairing its width ahead of the token with the [`Extent`] its
-/// line takes before padding.
+/// Returns the column each row's aligned token lands at in a run a
+/// layout rule writes, where every row opens at `baseline` on a line of
+/// its own and pairs its width ahead of the token with the [`Extent`]
+/// its line takes before padding.
 pub(crate) fn written_columns(
     baseline: usize,
     rows: &[(usize, Extent)],
@@ -193,10 +193,11 @@ fn emitted_base_width(source: &Source, member: Member, cap: Cap, joined: Option<
         .map_or(base, |gap| base + 1 - display_width(source.slice(gap)))
 }
 
-/// Each member's emitted [`Extent`] as written, measured once per run,
-/// its line read at the width `joined` names where a later rule joins
-/// the row. Empty where no line-length cap governs and
-/// [`fits_line_cap`] reads none of them.
+/// Measures each member's emitted [`Extent`] once per run, reading its
+/// line at the width `joined` names where a later rule joins the row
+/// and leaving `expanded` unset. Returns an empty vector where no
+/// line-length cap governs, since [`fits_line_cap`] then reads none of
+/// them.
 fn emitted_extents(
     source: &Source,
     members: &[Member],
@@ -221,8 +222,8 @@ fn emitted_extents(
 /// True when padding no member of `group` to `max_w` pushes its line
 /// past the governing line-length cap, or when no cap governs. `extents`
 /// carries each member's emitted widths in step with `group`, and a
-/// member whose value a layout rule expands fits where its opening line
-/// does. A member over the cap even at its singleton fallback gap stays
+/// member whose value a layout rule can expand fits where its opening
+/// row does. A member over the cap even at its singleton fallback gap stays
 /// in the run only where the shared column costs it no more width than
 /// the buffer, which holds for the widest member alone.
 fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w: usize) -> bool {
@@ -239,8 +240,9 @@ fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w
     })
 }
 
-/// The column each of `members` lands its aligned token at once
-/// [`group_paddings`] pads it, `extents` measuring each member in step.
+/// Returns the column each of `members` lands its aligned token at once
+/// [`group_paddings`] pads it, with `extents` measuring each member in
+/// step.
 fn group_columns(members: &[Member], extents: &[Extent], settings: Settings) -> Vec<usize> {
     group_paddings(members, extents, settings)
         .map(|(m, pad)| m.baseline + m.settled_width + pad)
@@ -1095,8 +1097,9 @@ mod tests {
             ),
         ];
 
-        // The narrow row lands at 25 columns padded to the width-6 row,
-        // past the cap of 20, whereas its expanded opening lands at 14.
+        // Padded to the column the width-6 row sets, the narrow row's line
+        // reaches 25 columns, past the cap of 20, whereas its expanded
+        // opening row reaches 14.
         assert_eq!(
             written_columns(
                 4,

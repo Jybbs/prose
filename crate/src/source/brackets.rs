@@ -12,16 +12,15 @@ use ruff_python_trivia::{BackwardsTokenizer, SimpleToken, SimpleTokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
+use super::Source;
 use crate::{
     primitives::{
         layout::{is_layoutable, requires_expand},
         tokens::is_interpolated_string_start,
         walk::{Descent, filter_map_over_exprs},
     },
-    rules::reflow_calls::ReflowCalls,
+    rules::{reflow_calls::ReflowCalls, reflow_collections::ReflowCollections},
 };
-
-use super::Source;
 
 impl Source {
     /// The start offsets of the non-trivia tokens an `(` directly
@@ -47,14 +46,17 @@ impl Source {
     }
 
     /// Returns the start-ascending ranges of the comment-free literals
-    /// `reflow-collections` can expand, walking the tree on the first
-    /// read.
+    /// `reflow-collections` can expand outside any suppression holding
+    /// that rule, walking the tree on the first read.
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
             filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
                 (is_layoutable(expr)
                     && requires_expand(expr)
-                    && !self.intersects_comment(expr.range()))
+                    && !self.intersects_comment(expr.range())
+                    && !self
+                        .suppression_map()
+                        .suppresses(expr, ReflowCollections::SLUG))
                 .then_some(expr.range())
             })
         })
@@ -199,10 +201,8 @@ impl Source {
 
 #[cfg(test)]
 mod tests {
-
     use rstest::rstest;
     use ruff_python_ast::token::TokenKind;
-
     use ruff_text_size::TextRange;
 
     use super::*;
@@ -210,6 +210,27 @@ mod tests {
         primitives::{scope::sub_bodies, walk::filter_map_over_parented_exprs},
         testing::parse,
     };
+
+    #[rstest]
+    #[case::a_two_entry_list("x = [a, b]\n", &["[a, b]"])]
+    #[case::a_one_entry_dict("x = {'k': v}\n", &["{'k': v}"])]
+    #[case::a_one_element_list("x = [a]\n", &[])]
+    #[case::a_bare_tuple("x = a, b\n", &[])]
+    #[case::a_literal_holding_a_comment("x = [\n    a,  # c\n    b,\n]\n", &[])]
+    #[case::a_literal_held_by_a_skip("x = [a, b]  # prose: skip[reflow-collections]\n", &[])]
+    #[case::a_literal_inside_a_replacement_field("x = f\"{[a, b]}\"\n", &[])]
+    fn expandable_literals_lists_each_literal_reflow_collections_expands(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let literals: Vec<&str> = source
+            .expandable_literals()
+            .iter()
+            .map(|range| source.slice(*range))
+            .collect();
+        assert_eq!(literals, expected);
+    }
 
     #[rstest]
     #[case::a_nested_call_after_its_enclosing_list("f(g(a), b)\n", &["(g(a), b)", "(a)"])]
