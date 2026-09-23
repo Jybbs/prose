@@ -194,8 +194,8 @@ impl<'a> Settings<'a> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
     }
 
-    /// The display width `form`, a one-row form written over `range`,
-    /// measures at once each forecast rewrite inside `range` lands.
+    /// The display width of `form`, a one-row form written over `range`,
+    /// once each forecast rewrite inside `range` lands.
     pub(crate) fn form_width(&self, source: &Source, form: &str, range: TextRange) -> usize {
         settled_width(source, self.rewrites, range, display_width(form))
     }

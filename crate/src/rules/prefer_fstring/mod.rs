@@ -2,7 +2,8 @@
 //! f-strings, holding every template whose two forms would not render
 //! alike, every value a replacement field cannot carry, every construct
 //! carrying a comment, and every rewrite whose rows run past the budget
-//! once every rewrite on them lands.
+//! once every rewrite on them lands and `strip-stranded-padding` clears
+//! their padding.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, PythonVersion};
@@ -12,7 +13,9 @@ use crate::{
     config::Config,
     primitives::{
         edit::{narrowed_replacement, padded, singleton_groups},
+        fracture::outermost,
         inline::rows_within,
+        padding::Stranding,
         walk::{Descent, filter_map_over_parented_exprs},
     },
     rules::{Rule, RuleId},
@@ -33,6 +36,7 @@ pub(crate) struct PreferFstring {
     code_line_length: usize,
     percent: bool,
     str_format: bool,
+    stranding: Stranding,
 }
 
 impl PreferFstring {
@@ -51,6 +55,7 @@ impl PreferFstring {
             code_line_length: config.code_width(),
             percent: facets.rewrite_percent && targets,
             str_format: facets.rewrite_str_format && targets,
+            stranding: config.stranded_padding(),
         }
     }
 
@@ -118,7 +123,14 @@ impl PreferFstring {
 impl Rule for PreferFstring {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let rewrites = self.rewrites(source);
-        let landed: Vec<_> = rewrites.iter().map(|(_, edit)| edit.clone()).collect();
+        let landed = outermost(
+            source
+                .stranded_padding(self.stranding)
+                .iter()
+                .chain(rewrites.iter().map(|(_, edit)| edit))
+                .cloned()
+                .collect(),
+        );
         singleton_groups(
             rewrites
                 .into_iter()
@@ -179,6 +191,29 @@ mod tests {
         assert_eq!(
             run("def f(x):\n    return\"%s\" % (x,)\n"),
             "def f(x):\n    return f\"{x}\"\n"
+        );
+    }
+
+    #[rstest]
+    #[case::past_the_budget(18, false)]
+    #[case::at_the_budget(19, true)]
+    #[case::one_column_under(20, true)]
+    #[case::two_columns_under(21, true)]
+    fn a_rewrite_reads_its_row_with_the_padding_cleared(
+        #[case] width: usize,
+        #[case] converts: bool,
+    ) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(width),
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("x = [ \"%s\" % ( alpha, ), b ]\n");
+        assert_eq!(
+            !PreferFstring::from_config(&config)
+                .apply(&source)
+                .is_empty(),
+            converts
         );
     }
 
