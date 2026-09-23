@@ -12,9 +12,9 @@ Each directive covers exceptions at one scope, and the colored brackets in the g
 
 <ScopeSpecimen />
 
-## When to Reach for Each
+## Choosing a Directive
 
-The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Whichever scope a directive takes, it is recorded in the file's [[suppression-map]], and each rule checks that map before writing an edit or reporting a finding.
+The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Every directive but `# prose: keep` is recorded in the file's [[suppression-map]], which each rule checks before writing an edit or reporting a finding, whereas `# prose: keep` is read off the construct it marks.
 
 ### Disabling a Whole File
 
@@ -58,7 +58,7 @@ stages = {  # prose: keep
 }
 ```
 
-The same marker on a `class` line holds the statements of that class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*. The fields, methods, and nested classes keep their order, the docstring's entries keep matching them, and everything inside those statements still sorts.
+The same marker on a `class` line holds the statements of that class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*. The fields, methods, and nested classes keep their order, and so do the entries of the class docstring, whereas the body of a method, the body of an unmarked nested class, and each dict or call inside a statement still sort.
 
 ```python
 class StationSchema(DataFrameModel):  # prose: keep

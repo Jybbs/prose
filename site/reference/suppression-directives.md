@@ -73,7 +73,7 @@ A bare `# prose: ignore` silences every lint rule on the line. A bracketed list 
 
 ## Construct Order Preservation
 
-`# prose: keep` holds one construct in the order written, and which construct it covers depends on where it sits. On the opening `{` line or the closing `}` line of a dict literal, it keeps the entries in the order written, so [[alphabetize-siblings]] leaves them alone:
+`# prose: keep` holds one construct in the order written, and which construct it covers depends on where it sits. On the opening `{` line or the closing `}` line of a dict literal, it keeps the entry order, so [[alphabetize-siblings]] leaves the entries alone:
 
 ```python
 config = {  # prose: keep
@@ -98,7 +98,17 @@ class StationSchema(DataFrameModel):  # prose: keep
     latitude : float      = Column()
 ```
 
-[[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, the arms of an `if` inside it included, and the entries under a heading of the class docstring keep their order too, so they go on matching the fields. What the statements contain still sorts, meaning a dict in a field's default, the keywords of a call, the body of a method, and the body of a nested class carrying no marker of its own. [[unsorted-positionals]] passes over the field run of a kept class, since the marker states that the order written is deliberate, and the class itself still sorts among its siblings, because the marker holds its body rather than its place.
+At the level of the class body, the marker holds every order a rule would otherwise change:
+
+- [[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, including those inside an `if`, a `try`, or a `with` at that level, since none of them opens a scope of its own
+- The entries under each heading of the class docstring keep their order too, so they go on matching the fields
+- [[unsorted-positionals]] passes over the field run, since the marker states that the order written is deliberate
+
+Every expression and every nested scope inside the body still sorts, and so does the class itself among its siblings, because the marker holds the body rather than the class's place:
+
+- A dict in a field's default and the keywords of a call
+- The body of a method
+- The body of a nested class carrying no marker of its own
 
 ## Composition
 

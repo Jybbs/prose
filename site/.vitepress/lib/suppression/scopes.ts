@@ -1,3 +1,5 @@
+import { groupByMember } from '../shared/group-by-member'
+
 export const SCOPE_ORDER = ['file', 'block', 'line', 'construct'] as const
 
 export type ScopeKey = (typeof SCOPE_ORDER)[number]
@@ -15,9 +17,7 @@ export function directiveHref(scope: ScopeKey): string {
 
 export function scopeBands<T extends { scope: ScopeKey }>(
   items: readonly T[]
-): Array<{ items: T[], scope: ScopeKey }> {
-  return SCOPE_ORDER.map(scope => ({
-    items : items.filter(item => item.scope === scope),
-    scope : scope
-  }))
+): Array<{ items: readonly T[], scope: ScopeKey }> {
+  const byScope = groupByMember(items, item => item.scope, SCOPE_ORDER)
+  return SCOPE_ORDER.map(scope => ({ items: byScope[scope], scope }))
 }

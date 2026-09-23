@@ -3,16 +3,13 @@
 //! keyword-only parameters, call kwargs, dict keys, set elements,
 //! import names and alias lists within each section, `global` /
 //! `nonlocal` / `del` name lists, and the strings inside `__all__` /
-//! `__slots__`. Sorting runs through the `primitives::orderer`
-//! permute and assemble primitives, a recursive rewriter folding inner
-//! sorts into the outer scope's replacement text so each outermost
-//! scope emits one edit, or one per notebook cell. Positional-or-
-//! keyword parameters never reorder and only the keyword-only block
-//! past `*` sorts, a class whose header generates a field-ordered
-//! constructor holds its field run, a class whose header carries
-//! `# prose: keep` holds its statements as written, and a decorated
-//! definition holds its slot at module scope while sorting inside a
-//! class body.
+//! `__slots__`. A recursive rewriter over the `primitives::orderer`
+//! permute and assemble primitives folds inner sorts into the outer
+//! scope's replacement, so each outermost scope emits one edit, or one
+//! per notebook cell. Positional-or-keyword parameters, the field run
+//! of a class whose header generates its constructor, the statements of
+//! a class under a `# prose: keep` header, and a decorated definition at
+//! module scope each keep their order.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::StmtAssign;

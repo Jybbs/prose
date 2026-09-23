@@ -26,8 +26,8 @@ use crate::{
 /// documented signature takes that parameter's position as the rule
 /// leaves the signature, and every other entry sinks below them,
 /// alphabetized by name. Module and class docstrings carry no
-/// signature, so their sections alphabetize throughout, except in a
-/// class whose header carries `# prose: keep`, which keeps them as
+/// signature, so their sections alphabetize throughout, whereas the
+/// entries of a class docstring under a `# prose: keep` header stay as
 /// written.
 pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
     let definitions = documented_definitions(source);

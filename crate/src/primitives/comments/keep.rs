@@ -1,5 +1,5 @@
 //! The `# prose: keep` marker a trailing comment carries, read off the
-//! bracket rows of a dict or a dunder list and off a class header,
+//! bracket lines of a dict or a dunder list and off a class header,
 //! where it holds what it marks in the order written.
 
 use ruff_python_ast::StmtClassDef;
@@ -8,10 +8,10 @@ use ruff_text_size::{Ranged, TextRange};
 use super::end_rows_carry;
 use crate::{source::Source, suppression::is_keep_marker};
 
-/// True when the trailing comment on the `class` line of `class` or on
-/// the line holding its header's closing `:` carries `# prose: keep`,
-/// the marker that holds the statements of the class body in the order
-/// written.
+/// True when the trailing comment on the line opening the header of
+/// `class` or on the line holding the header's closing `:` carries
+/// `# prose: keep`, the marker that holds the statements of the class
+/// body in the order written.
 pub(crate) fn class_keeps_order(source: &Source, class: &StmtClassDef) -> bool {
     let colon_end = class
         .body

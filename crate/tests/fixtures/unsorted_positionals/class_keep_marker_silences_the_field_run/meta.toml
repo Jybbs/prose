@@ -1,7 +1,7 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Kept Dataclass's Field Run Is Not Reported"
 
 description = '''
-`Point` and `Pair` are dataclasses whose fields are listed out of alphabetical order, and only `Point` carries `# prose: keep` on its header. **The lint reports the field run of `Pair` and passes over `Point`**, because the marker states that the order written is deliberate, which is the opposite of the reordering the lint asks for.
+`Point` and `Pair` are dataclasses whose fields are listed out of alphabetical order, and only `Point` carries `# prose: keep` on its header. **The lint reports the field run of `Pair` and passes over `Point`**, because the marker states that the order written is deliberate, whereas the lint reports a run its author is expected to reorder by hand.
 '''

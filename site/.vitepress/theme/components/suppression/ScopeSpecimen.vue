@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { data as directives, type Directive }    from '../../../lib/suppression/directives.data'
+import { lookup }                                from '../../../lib/shared/lookup'
+import { data as directives }                    from '../../../lib/suppression/directives.data'
 import { directiveHref, SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
 import type { ScopeKey }                         from '../../../lib/suppression/scopes'
 
 interface SpecimenLine {
-  bracket : 'open' | 'close' | 'mid' | 'solo' | null
-  scope   : ScopeKey | null
+  bracket : 'close' | 'mid' | 'open' | 'solo'
+  scope   : ScopeKey
   text    : string
 }
 
@@ -40,19 +41,13 @@ const lines: SpecimenLine[] = [
   { bracket : 'close', scope : 'file',      text : '' }
 ]
 
-function legendDirective(id: string): Directive {
-  const directive = directives.find(d => d.id === id)
-  if (directive === undefined) {
-    throw new Error(`scope specimen: no directive with id "${id}"`)
-  }
-  return directive
-}
+const byId = Object.fromEntries(directives.map(directive => [directive.id, directive]))
 
 const entries = LEGEND_IDS.map(id => {
-  const directive = legendDirective(id)
+  const directive = lookup(byId, id, 'Directive')
   return {
     form  : directive.pairRole === 'opens' && directive.pairId !== undefined
-      ? `${directive.form} … ${legendDirective(directive.pairId).form}`
+      ? `${directive.form} … ${lookup(byId, directive.pairId, 'Directive').form}`
       : directive.form,
     href  : directiveHref(directive.scope),
     id    : id,

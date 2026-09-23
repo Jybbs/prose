@@ -17,7 +17,7 @@ layout  : doc
 | **External `from`** | `from collections import Counter` |
 | **Local-package** | relative imports and any package on the `first-party` list |
 
-The rule moves imports into their sections and leaves the order within each to [[alphabetize-siblings]], so the two agree on the grouping through one shared classifier. A run already in section order passes through with no edit. A class whose header carries `# prose: keep` keeps its imports as written along with the rest of its body, whereas the imports inside one of its methods still group, since a method body is a scope of its own.
+The rule moves imports into their sections and leaves the order within each to [[alphabetize-siblings]], so the two agree on the grouping through one shared classifier. A run already in section order passes through with no edit. Under a class header carrying `# prose: keep`, the imports in the class body stay as written along with its other statements, whereas the imports inside one of its methods still group, since a method body is a scope of its own.
 
 An absolute `from __future__ import …` takes the leading section on its own, because Python rejects a module that places the statement below any other code, so the section is a compiler requirement rather than a legibility preference. A relative `from .__future__ import …` and a bare `import __future__` name ordinary modules and classify as any other import does.
 

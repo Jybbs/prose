@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "`# prose: keep` Holds a Class Only From Its Header"
-
-description = '''
-The header of `Wrapped` spans three lines with the marker on the `):` line that closes it, whereas `Decorated` carries the marker on its decorator. **`zeta` stays above `alpha` in `Wrapped`, whereas `Decorated` sorts**, because the marker counts on the `class` line or on the line holding the header's closing `:`, and a decorator line is neither.
-'''

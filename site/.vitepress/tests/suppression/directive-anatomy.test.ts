@@ -3,21 +3,18 @@ import { mount } from '@vue/test-utils'
 
 import DirectiveAnatomy     from '../../theme/components/suppression/DirectiveAnatomy.vue'
 import InlineProse          from '../../theme/components/base/InlineProse.vue'
+import { SCOPE_ORDER }      from '../../lib/suppression/scopes'
 import { expectAccessible } from '../axe'
 
-vi.mock('../../lib/suppression/directives.data', () => ({
-  data: [
+vi.mock('../../lib/suppression/directives.data', async () => {
+  const { directiveParts } = await import('../../lib/suppression/directive-parts')
+  const records = [
     {
       effectNodes : [{ kind: 'text', text: 'Suppresses every rewrite for the file.' }],
       example     : '# prose: off',
       form        : '# prose: off',
       id          : 'prose-off',
-      parts       : [
-        { role : 'comment',   text : '#'      },
-        { role : 'namespace', text : 'prose:' },
-        { role : 'action',    text : 'off'    }
-      ],
-      scope      : 'file'
+      scope       : 'file'
     },
     {
       effectNodes : [{ kind: 'text', text: 'Opens a suppressed region.' }],
@@ -26,47 +23,32 @@ vi.mock('../../lib/suppression/directives.data', () => ({
       id          : 'fmt-off',
       pairId      : 'fmt-on',
       pairRole    : 'opens',
-      parts       : [
-        { role : 'comment',   text : '#'    },
-        { role : 'namespace', text : 'fmt:' },
-        { role : 'action',    text : 'off'  }
-      ],
-      scope      : 'block'
+      scope       : 'block'
     },
     {
       effectNodes : [{ kind: 'text', text: 'Only the listed lint rules skip the line.' }],
       example     : 'x = 1  # prose: ignore[<rule>]',
       form        : '# prose: ignore[<rule>, ...]',
       id          : 'prose-ignore-rules',
-      parts       : [
-        { role : 'comment',   text : '#'             },
-        { role : 'namespace', text : 'prose:'        },
-        { role : 'action',    text : 'ignore'        },
-        { role : 'payload',   text : '[<rule>, ...]' }
-      ],
-      scope      : 'line'
+      scope       : 'line'
     },
     {
       effectNodes : [{ kind: 'text', text: 'Keeps the dict entries in authored order.' }],
       example     : 'config = {}  # prose: keep',
       form        : '# prose: keep',
       id          : 'prose-keep',
-      parts       : [
-        { role : 'comment',   text : '#'      },
-        { role : 'namespace', text : 'prose:' },
-        { role : 'action',    text : 'keep'   }
-      ],
-      scope      : 'construct'
+      scope       : 'construct'
     }
   ]
-}))
+  return { data: records.map(directive => ({ ...directive, parts: directiveParts(directive.form) })) }
+})
 
 const mountAnatomy = () => mount(DirectiveAnatomy, { global: { components: { InlineProse } } })
 
 describe('DirectiveAnatomy', () => {
   it('renders one band per scope in the shared order', () => {
     const bands = mountAnatomy().findAll('.directive-anatomy-band')
-    expect(bands.map(b => b.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'construct'])
+    expect(bands.map(b => b.attributes('data-scope'))).toStrictEqual([...SCOPE_ORDER])
   })
 
   it('seeds the focus on the bracketed ignore directive', () => {

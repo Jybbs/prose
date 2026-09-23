@@ -17,8 +17,8 @@ pub(super) fn parse_entry(body: &str, keyword: &str) -> Option<RuleEntry> {
     parse_bracketed_rule_list(rest).map(RuleEntry::Specific)
 }
 
-/// The trimmed body of every `#` chunk of `comment` opening on the
-/// `prose:` prefix, in the order written.
+/// Yields the trimmed body past the `prose:` prefix of each `#` chunk
+/// of `comment` that opens on it, in the order the chunks appear.
 pub(super) fn prose_bodies(comment: &str) -> impl Iterator<Item = &str> {
     comment.split('#').skip(1).filter_map(after_prose_prefix)
 }

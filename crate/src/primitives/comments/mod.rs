@@ -150,8 +150,8 @@ pub(crate) fn comments_held_by(
         })
 }
 
-/// True when the trailing comment on the row holding `span`'s start or
-/// on the row holding its end satisfies `marks`, read off its text.
+/// True when `marks` accepts the text of the trailing comment on the
+/// row holding `span`'s start or on the row holding its end.
 pub(super) fn end_rows_carry(
     source: &Source,
     span: impl Ranged,

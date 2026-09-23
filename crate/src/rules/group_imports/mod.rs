@@ -66,11 +66,11 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
-    /// Partitions each import run in `body`, then recurses into every
-    /// nested body. A run reorders within one section, and a body whose
-    /// siblings share a physical line through `;` keeps source order, as
-    /// does one under `keeps_order`, which is set for the body of a class
-    /// whose header carries `# prose: keep` and every arm nested inside it.
+    /// Partitions each import run in `body` within its section, then
+    /// recurses into every nested body. A body keeps source order when its
+    /// siblings share a line through `;` or under `keeps_order`, which is
+    /// set for a class body under a `# prose: keep` header and for every
+    /// arm in it.
     fn group_body(&mut self, body: &[Stmt], outer: TextRange, keeps_order: bool) {
         if !keeps_order && !body.is_empty() && !any_sibling_shares_line(self.source, body) {
             let blocks = member_blocks(self.source, body, outer);

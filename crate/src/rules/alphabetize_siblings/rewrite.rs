@@ -65,8 +65,8 @@ pub(super) struct RewriteCtx<'a> {
 /// Computes the reorder of `body`: renders each member, then permutes the
 /// slots within each section by the family sorts and import grouping that
 /// `scope` enables, leaving the assembly to the caller. The section
-/// partition walls each notebook cell, so no permutation crosses a cell,
-/// and a class-scope body under a `# prose: keep` header keeps every slot.
+/// partition walls each notebook cell, so no permutation crosses a cell.
+/// A class-scope body under a `# prose: keep` header keeps every slot.
 pub(super) fn body_layout<'a>(
     ctx: RewriteCtx<'a>,
     body: &'a [Stmt],
