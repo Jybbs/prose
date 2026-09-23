@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Trailing Comment Counts Toward the Folded Width"
+
+description = '''
+`case "tag"` holds a `return` whose line carries a trailing comment and fits at 86 columns as written. Folding the arm would bring that comment up onto the `case` line, and with its `:` padded out to the column `"other"` sets the line would reach **97**, past the 88-column `code-line-length`. **`"tag"` keeps its multi-line form**, because the fold measures the comment at the two-space gap the comment rules settle it to, and `"other"` folds alone with its `:` flush against the pattern.
+'''

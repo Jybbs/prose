@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/lone_arm_past_budget_splits/input.py
+---
+def tally(event):
+    match event.kind:
+        case "rebuilt":
+            return source_path_total + target_path_total + flags_total + mode_total

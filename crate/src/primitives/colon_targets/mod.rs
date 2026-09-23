@@ -21,10 +21,10 @@ mod contexts;
 
 pub(crate) use columns::EntryColumns;
 use columns::docstring_runs_within;
+pub(crate) use contexts::match_case;
 use contexts::{
     annotated_assignment_groups, dict_member_groups, match_case_members, parameter_groups,
 };
-pub(crate) use contexts::{match_case, match_case_pre_colon_end};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for annotated assignments, dict entries, and parameters, with

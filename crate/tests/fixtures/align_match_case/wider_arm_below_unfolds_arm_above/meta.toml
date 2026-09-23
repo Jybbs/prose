@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wider Arm Below Keeps the Arm Above It Multi-Line"
+
+description = '''
+`case ("mise", *_)` holds a `return` that fits at 81 columns folded, and the wider `case ("gh", group, verb, *_)` follows it. **The `"mise"` arm keeps its multi-line form even though it opens the run**, because padding its `:` out to the column the arm below sets would carry it past the 88-column `code-line-length`, leaving `("gh", group, verb, *_)` to fold alone beneath it.
+'''

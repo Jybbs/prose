@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Arm Too Wide to Fold Alone Splits Onto Two Lines"
+
+description = '''
+`case "rebuilt"` sits alone on one line with its `return`, which runs past the 88-column `code-line-length` even with its `:` flush against the pattern. **The body drops onto its own line beneath the `case`**, the one form of the arm that fits.
+'''

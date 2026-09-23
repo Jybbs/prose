@@ -51,7 +51,10 @@ pub(super) fn dict_member_groups(
 /// `:` between the pattern (or its `if` guard) and the arm body's
 /// first statement.
 pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::Member> {
-    let pre_colon_end = match_case_pre_colon_end(case);
+    let pre_colon_end = case
+        .guard
+        .as_deref()
+        .map_or(case.pattern.end(), Ranged::end);
     let body_start = case.body.first()?.start();
     aligner::line_anchored_member_between(
         source,
@@ -64,14 +67,6 @@ pub(crate) fn match_case(source: &Source, case: &MatchCase) -> Option<aligner::M
 /// Returns one alignment member per `case` arm in `cases`.
 pub(super) fn match_case_members(source: &Source, cases: &[MatchCase]) -> Vec<aligner::Member> {
     cases.iter().filter_map(|c| match_case(source, c)).collect()
-}
-
-/// The offset where a `match` arm's pre-colon left-hand side ends, the
-/// guard's end when the arm is guarded and the pattern's end otherwise.
-pub(crate) fn match_case_pre_colon_end(case: &MatchCase) -> TextSize {
-    case.guard
-        .as_deref()
-        .map_or(case.pattern.end(), Ranged::end)
 }
 
 /// Walks `params` in source order and returns one group per run of

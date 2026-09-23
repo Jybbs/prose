@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Arm Padded Past the Budget Keeps Its Multi-Line Form"
+
+description = '''
+Two arms each hold one `return`, and `case ("gh", group, verb, *_)` runs eleven columns wider than `case ("mise", *_)`. Folded alone, the `"mise"` arm fits at **81** columns, whereas padding its `:` out to the column `("gh", group, verb, *_)` sets would carry the line to **93**, past the 88-column `code-line-length`. **The `"mise"` arm keeps its multi-line form and ends the run**, so `("gh", group, verb, *_)` folds alone with its `:` flush against the pattern.
+'''

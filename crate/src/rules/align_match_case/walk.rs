@@ -16,88 +16,115 @@ pub(super) struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    /// Emits a sub-group's alignment and collapse edits as one fix
-    /// group and drains it.
-    fn flush_subgroup(&mut self, group: &mut Vec<(aligner::Member, TextRange)>) {
-        let (members, ranges): (Vec<aligner::Member>, Vec<TextRange>) = group.drain(..).unzip();
-        self.walker.emit_group_with_gaps(&members, ranges);
-    }
-
-    /// Returns `Disqualify` when the `:`-to-body gap already carries
-    /// a line break, otherwise `Split` carrying an edit that pushes
-    /// the body onto the next source line.
-    fn over_budget_outcome(&self, case: &MatchCase, collapse_range: TextRange) -> CaseOutcome {
-        if self.walker.source.contains_line_break(collapse_range) {
-            return CaseOutcome::Disqualify;
+    /// Emits the alignment and collapse edits for `arms` as one fix
+    /// group. Keeps an arm multi-line instead where its fold at the
+    /// run's column would exceed `code_line_length`, emitting the arms
+    /// above and below it as separate runs.
+    fn emit_run(&mut self, arms: &[Arm]) {
+        match self.first_overflow(arms) {
+            None => {
+                let members: Vec<_> = arms.iter().map(|arm| arm.member).collect();
+                self.walker
+                    .emit_group_with_gaps(&members, arms.iter().map(|arm| arm.collapse));
+            }
+            Some(i) => {
+                self.emit_run(&arms[..i]);
+                self.walker
+                    .push_group(self.unfold_edits(arms[i].member, Some(arms[i].collapse)));
+                self.emit_run(&arms[i + 1..]);
+            }
         }
-        let body_indent = self.walker.source.line_indent_width(case.start()) + INDENT_STEP;
-        let replacement = format!(
-            "{}{}",
-            self.walker.source.newline_str(),
-            " ".repeat(body_indent),
-        );
-        CaseOutcome::Split(Edit::range_replacement(replacement, collapse_range))
     }
 
-    /// Returns `true` when the canonical
-    /// `[indent]case PATTERN[ if GUARD] : BODY` form for `case` would
-    /// exceed `code_line_length`.
-    fn overflows_budget(&self, case: &MatchCase, body_first: &Stmt) -> bool {
-        let source = self.walker.source;
-        let pre_colon_end = colon_targets::match_case_pre_colon_end(case);
-        let lhs_width = source.width_between(case.start(), pre_colon_end);
-        let body_width = source.width_between(body_first.start(), body_first.end());
-        source.column_overflows(
-            case.start(),
-            lhs_width + 3 + body_width,
-            self.code_line_length,
-        )
+    /// Returns the index of the first arm in `arms` whose folded line
+    /// would exceed `code_line_length` once its `:` pads to the column
+    /// the run gives it.
+    fn first_overflow(&self, arms: &[Arm]) -> Option<usize> {
+        let members: Vec<_> = arms.iter().map(|arm| arm.member).collect();
+        self.walker
+            .operator_columns(&members)
+            .into_iter()
+            .zip(arms)
+            .position(|(column, arm)| {
+                column + aligner::VALUE_OFFSET + arm.body_width > self.code_line_length
+            })
     }
 
     /// Emits collapse-and-align edits for one match by walking each
     /// case through `qualify_case` and dispatching on its outcome.
     fn process_match(&mut self, m: &StmtMatch) {
-        let mut current: Vec<(aligner::Member, TextRange)> = Vec::new();
+        let mut run = Vec::new();
         for case in &m.cases {
             if self.walker.is_held(case.start()) {
                 continue;
             }
             match self.qualify_case(case) {
-                CaseOutcome::Align(member, range) => current.push((member, range)),
-                CaseOutcome::Disqualify => self.flush_subgroup(&mut current),
-                CaseOutcome::Split(edit) => {
-                    self.flush_subgroup(&mut current);
-                    self.walker.push_group(vec![edit]);
+                CaseOutcome::Align(arm) => run.push(arm),
+                CaseOutcome::Disqualify(member) => {
+                    self.emit_run(&std::mem::take(&mut run));
+                    let edits =
+                        member.map_or_else(Vec::new, |member| self.unfold_edits(member, None));
+                    self.walker.push_group(edits);
+                }
+                CaseOutcome::Overflow(arm) => {
+                    self.emit_run(&std::mem::take(&mut run));
+                    self.walker
+                        .push_group(self.unfold_edits(arm.member, Some(arm.collapse)));
                 }
             }
         }
-        self.flush_subgroup(&mut current);
+        self.emit_run(&run);
     }
 
     /// Classifies one arm into the matching `CaseOutcome` variant.
-    /// Disqualifies on multi-statement, compound, or multi-line
-    /// bodies and on a comment in the `:`-to-body gap, deferring to
-    /// `over_budget_outcome` when the collapsed arm would overflow
-    /// the line-length budget.
+    /// Disqualifies on a pattern spanning lines, on multi-statement,
+    /// compound, or multi-line bodies, and on a comment in the
+    /// `:`-to-body gap, and reports an arm whose folded line would
+    /// exceed `code_line_length` even outside a run as an overflow.
     fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
+        let source = self.walker.source;
+        let Some(member) = colon_targets::match_case(source, case) else {
+            return CaseOutcome::Disqualify(None);
+        };
         let [body_first] = case.body.as_slice() else {
-            return CaseOutcome::Disqualify;
+            return CaseOutcome::Disqualify(Some(member));
         };
-        if is_compound_statement(body_first) || self.walker.source.contains_line_break(body_first) {
-            return CaseOutcome::Disqualify;
+        if is_compound_statement(body_first) || source.contains_line_break(body_first) {
+            return CaseOutcome::Disqualify(Some(member));
         }
-        let Some(member) = colon_targets::match_case(self.walker.source, case) else {
-            return CaseOutcome::Disqualify;
+        let collapse = TextRange::new(member.gap.end() + TextSize::of(':'), body_first.start());
+        if source.intersects_comment(collapse) {
+            return CaseOutcome::Disqualify(Some(member));
+        }
+        let arm = Arm {
+            body_width: source.width_between(body_first.start(), body_first.end())
+                + trailing_comment(source, body_first.end())
+                    .map_or(0, |comment| trailing_width(source, comment)),
+            collapse,
+            member,
         };
-        let collapse_range =
-            TextRange::new(member.gap.end() + TextSize::from(1u32), body_first.start());
-        if self.walker.source.intersects_comment(collapse_range) {
-            return CaseOutcome::Disqualify;
+        if self.first_overflow(std::slice::from_ref(&arm)).is_some() {
+            return CaseOutcome::Overflow(arm);
         }
-        if self.overflows_budget(case, body_first) {
-            return self.over_budget_outcome(case, collapse_range);
-        }
-        CaseOutcome::Align(member, collapse_range)
+        CaseOutcome::Align(arm)
+    }
+
+    /// Returns the edits holding an arm out of every run, drawing its
+    /// `:` flush against the pattern and pushing its body onto the next
+    /// line where a `collapse` gap is given on the `case` line.
+    fn unfold_edits(&self, member: aligner::Member, collapse: Option<TextRange>) -> Vec<Edit> {
+        let source = self.walker.source;
+        let split = collapse
+            .filter(|collapse| !source.contains_line_break(*collapse))
+            .map(|collapse| {
+                let body_indent = item_indent(source.line_indent_width(member.line_start));
+                let replacement = format!("{}{}", source.newline_str(), " ".repeat(body_indent));
+                Edit::range_replacement(replacement, collapse)
+            });
+        aligner::space_padding_edit(source, member.gap, 0)
+            .into_iter()
+            .chain(split)
+            .collect()
     }
 }
 
@@ -110,12 +137,23 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     }
 }
 
+/// One arm whose single-statement body can fold onto its `case` line,
+/// carrying the row its `:` aligns on, the `:`-to-body gap its fold
+/// collapses to one space, and the display width of the body the fold
+/// joins onto that line, counting any trailing comment on the body's
+/// line at the two-space gap the comment rules settle it to.
+struct Arm {
+    body_width: usize,
+    collapse: TextRange,
+    member: aligner::Member,
+}
+
 /// Outcome of qualifying one `case` arm. `Align` enrolls the arm in
-/// the active alignment sub-group. `Disqualify` breaks the sub-group
-/// without emitting an edit. `Split` breaks the sub-group and emits
-/// an edit pushing the body onto the next source line.
+/// the active run. `Disqualify` breaks the run and draws the arm's `:`
+/// flush where it shares the pattern's line. `Overflow` breaks the run
+/// and keeps the arm multi-line through [`Visitor::unfold_edits`].
 enum CaseOutcome {
-    Align(aligner::Member, TextRange),
-    Disqualify,
-    Split(Edit),
+    Align(Arm),
+    Disqualify(Option<aligner::Member>),
+    Overflow(Arm),
 }
