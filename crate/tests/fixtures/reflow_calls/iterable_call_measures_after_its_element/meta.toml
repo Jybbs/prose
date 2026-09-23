@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Iterable's Call Measures on the Row Its Element Leaves"
+
+description = '''
+The 106-column line building `values` holds a list comprehension whose element calls `helper` past `max-args` and whose `for` clause calls `collect`. **`helper` explodes and `collect` stays whole on the closing row**, because the walk reaches the element before the `for` clause, the order the source writes them, so `collect(...)` is measured on the short row the exploded call leaves it on.
+'''

@@ -5,7 +5,9 @@
 
 use std::borrow::Cow;
 
-use ruff_python_ast::{ArgOrKeyword, Arguments, Expr, ExprCall, visitor::Visitor as AstVisitor};
+use ruff_python_ast::{
+    ArgOrKeyword, Arguments, Expr, ExprCall, visitor::source_order::SourceOrderVisitor,
+};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 

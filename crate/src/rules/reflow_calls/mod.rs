@@ -18,7 +18,7 @@
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
-    visitor::{Visitor as AstVisitor, walk_expr},
+    visitor::source_order::{self, SourceOrderVisitor},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -30,7 +30,6 @@ use crate::{
         layout::is_collapsible,
         one_row, padding, reserve,
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
-        walk::walk_stmt,
     },
     rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_signatures},
     source::Source,
@@ -209,7 +208,7 @@ struct Exploder<'a> {
     targets: &'a CallTargets<'a>,
 }
 
-impl<'a> AstVisitor<'a> for Exploder<'a> {
+impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
     /// Lays out each collapsible construct where it lands when `layout`
     /// is set, and otherwise leaves unwalked a literal
     /// `reflow-collections` expands later. The calls inside either one
@@ -228,7 +227,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
             _ => {}
         }
         let Expr::Call(call) = expr else {
-            walk_expr(self, expr);
+            source_order::walk_expr(self, expr);
             return;
         };
         // The callee settles first, so the argument list measures against
@@ -265,7 +264,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
             self.visit_body(&fd.body);
             return;
         }
-        walk_stmt(self, stmt);
+        source_order::walk_stmt(self, stmt);
     }
 }
 
