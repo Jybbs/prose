@@ -133,9 +133,9 @@ impl Config {
         Ok((config, notices))
     }
 
-    /// Names which of `align-comments` and `normalize-comment-spacing`
-    /// this config runs, so a rule measuring a line can allow for the gap
-    /// and opener they give a trailing comment.
+    /// Returns which of `align-comments` and `normalize-comment-spacing`
+    /// this config runs, each by slug, so a rule measuring a line can allow
+    /// for the gap and opener they give a trailing comment.
     fn comment_settling(&self) -> comments::Settling {
         comments::Settling {
             gap: self

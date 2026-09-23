@@ -195,9 +195,9 @@ impl Settings {
     }
 }
 
-/// The line limit an aligned run must fit, with the padding and
-/// comment rules whose later edits the check counts when measuring
-/// each line.
+/// The line limit an aligned run must fit within, with the padding rule
+/// and the comment rules whose later edits the cap check counts when it
+/// measures each line.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct Cap {
     line_length: usize,

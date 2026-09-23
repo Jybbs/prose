@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`align-docstring-entries = false` Leaves Docstring Entries Flush While Fields Align"
+
+description = '''
+`config.toml` sets `align-docstring-entries = false`, and the `Args:` section of `run` arrives hand-padded. **The padding before each `:` is removed, leaving every colon flush against its name**, whereas the `name` and `retry_budget` fields above still align on one `:` column, because the facet turns off the docstring context alone.
+'''

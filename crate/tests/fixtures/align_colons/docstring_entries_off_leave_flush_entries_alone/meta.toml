@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "Flush Docstring Entries Stay Flush With the Facet Off"
-
-description = '''
-`config.toml` sets `align-docstring-entries = false`, and every entry in the `Attributes:` section of `Pipeline` and the `Args:` section of `run` already sits flush. **The rule makes no edit**, so a project that writes its Google docstrings flush keeps them as written.
-'''

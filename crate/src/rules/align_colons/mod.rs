@@ -1,14 +1,13 @@
 //! Pads the space before `:` so consecutive dict entries, annotated
 //! assignments, annotated parameters, and docstring entries share one
 //! column, leaving a lone row, a one-line group, or rows at different
-//! indents to `strip_stranded_padding`. Every aligned `:` keeps one space
-//! before it. In code the space after it shrinks to one, and a row that
-//! would run past `code_line_length` starts a new column. A docstring has
-//! no line limit, and an entry with a parenthesized type first gets its
-//! `(` padded into a column of its own, so the `:` column counts that
-//! padding. With `align-docstring-entries` off, a docstring gets no
-//! padding at all, as under `max-shift = 0`, while code keeps its
-//! `max-shift`.
+//! baselines to `strip_stranded_padding`. Every aligned `:` keeps one
+//! space before it. In the dict, annotation, and parameter contexts the
+//! space after it shrinks to one, and a row that would run past
+//! `code_line_length` starts a new column. A docstring run aligns under
+//! no line limit, padding its parenthesized types onto a column of their
+//! own before the `:` column is measured, and resolves as it would under
+//! `max-shift = 0` when `align-docstring-entries` is off.
 
 use ruff_diagnostics::Edit;
 

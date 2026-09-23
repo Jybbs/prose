@@ -16,15 +16,17 @@ use super::{
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignColonsConfig {
-    /// Lines up the `:` of a docstring's `name: description` entries, and
-    /// puts each parenthesized type in a column of its own. `false` leaves
-    /// no padding in docstring entries, so each `:` sits right after the
-    /// name or type, while dicts, annotations, and parameters still align.
+    /// Pads the space before the `:` of each docstring `name: description`
+    /// entry so a run shares one column, and the space before each
+    /// parenthesized type so the types share a second column. `false` leaves
+    /// each `(` one space past its name and each `:` flush against the name
+    /// or the closing paren, while dicts, annotations, and parameters still
+    /// align.
     pub align_docstring_entries: bool,
     pub enabled: bool,
     /// How far apart the widest and narrowest rows of a run may be for the
     /// run to still align on one column. A positive `N` caps that gap, `0`
-    /// forbids any padding so every row sits flush, and `false` lifts the
+    /// forbids any padding so every row sits flush, and `false` removes the
     /// cap so a run of any width aligns on one column. A row marked
     /// `# prose: skip` stays out of its group.
     pub max_shift: MaxShift,
@@ -40,15 +42,15 @@ impl Default for AlignColonsConfig {
     }
 }
 
-/// Config for the alignment rules whose only settings are `enabled`
-/// and `max-shift`.
+/// Configuration for the alignment rules whose only facets are
+/// `enabled` and `max-shift`.
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
     pub enabled: bool,
     /// How far apart the widest and narrowest rows of a run may be for the
     /// run to still align on one column. A positive `N` caps that gap, `0`
-    /// forbids any padding so every row sits flush, and `false` lifts the
+    /// forbids any padding so every row sits flush, and `false` removes the
     /// cap so a run of any width aligns on one column. A row marked
     /// `# prose: skip` stays out of its group.
     pub max_shift: MaxShift,

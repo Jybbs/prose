@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "Docstring Entries Sit Flush While Class Fields Still Align"
-
-description = '''
-`config.toml` sets `align-docstring-entries = false`, and the `Args:` section of `run` arrives hand-padded. **Each `:` moves right up against its name**, so a docstring parser reads the name without trailing spaces. The `name` and `retry_budget` fields above still line up on one `:` column.
-'''
