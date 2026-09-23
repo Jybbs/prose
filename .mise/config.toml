@@ -59,6 +59,7 @@ wasm      = [
 
 [tools]
 "aqua:WebAssembly/binaryen"    = "132"
+"aqua:jqlang/jq"               = "1.8.2"
 "aqua:lycheeverse/lychee"      = "0.24.2"
 "aqua:mitsuhiko/insta"         = "1.48.0"
 "aqua:taiki-e/cargo-llvm-cov"  = "0.9.0"

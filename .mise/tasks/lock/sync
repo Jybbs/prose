@@ -10,8 +10,8 @@
 #MISE ]
 #MISE sources     = ["@group:manifests"]
 
-(cd site && bun install --ignore-scripts)
+(cd site && bun install --lockfile-only)
 cargo update --workspace
 mise lock
 uv lock --project crate
-git status --short .mise/locks .mise/mise.lock Cargo.lock crate/uv.lock site/bun.lock
+mise task info --json lock:sync | jq -r '.outputs[]' | xargs git status --short --

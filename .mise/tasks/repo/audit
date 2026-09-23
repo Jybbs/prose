@@ -183,10 +183,20 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
         (f"Cargo.toml members ↔ {home}", owned, named)
         for home, named in [
             (".github/workflows/warm.yml path filter", watched_manifests("warm")),
-            (".mise/tasks/lock/check sources", sourced_manifests("lock:check")),
             (".mise/tasks/lock/sync sources", sourced_manifests("lock:sync"))
         ]
     ]
+
+
+def mise_json(*args: str) -> dict | list:
+    """
+    Return the report mise prints for the `args` subcommand run with `--json`,
+    failing when the subcommand prints none.
+    """
+    report = run(["mise", *args, "--json"], capture_output=True, text=True)
+    if not report.stdout:
+        fail(report.stderr.strip() or f"mise {' '.join(args)} wrote no report")
+    return json_loads(report.stdout)
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -254,9 +264,7 @@ def parity() -> int:
         (
             ".mise/tasks/lock/check sources ↔ .mise/tasks/lock/sync sources and outputs",
             task_paths("lock:check", "sources"),
-            sorted(
-                task_paths("lock:sync", "sources") + task_paths("lock:sync", "outputs")
-            )
+            task_paths("lock:sync", "sources", "outputs")
         ),
         (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
@@ -320,15 +328,16 @@ def sourced_manifests(task: str) -> list[str]:
     ]
 
 
-def task_paths(task: str, key: str) -> list[str]:
+def task_paths(task: str, *keys: str) -> list[str]:
     """
-    Return the paths the `task` declares under `key`, sorted and deduplicated,
+    Return every path the `task` declares under `keys`, sorted and deduplicated,
     with every `@group:` reference expanded by mise.
     """
     table = tasks_listed()[task]
-    if not isinstance(paths := table.get(key), list):
-        fail(f"no {key} declaration in the {task} task")
-    return sorted({rooted(entry, table["dir"]) for entry in paths})
+    for key in keys:
+        if not isinstance(table.get(key), list):
+            fail(f"no {key} declaration in the {task} task")
+    return sorted({rooted(entry, table["dir"]) for key in keys for entry in table[key]})
 
 
 def tasks() -> int:
@@ -336,12 +345,8 @@ def tasks() -> int:
     Report every error `mise tasks validate` finds across the task tree, such as
     an alias two tasks share or a dependency naming a task that does not exist.
     """
-    report = run(["mise", "tasks", "validate", "--json"], capture_output=True, text=True)
-    if not report.stdout:
-        fail(report.stderr.strip() or "mise tasks validate wrote no report")
-
     failed = 0
-    for issue in json_loads(report.stdout)["issues"]:
+    for issue in mise_json("tasks", "validate")["issues"]:
         message = f"{issue['task']}: {issue['message']}"
         if details := issue.get("details"):
             message = f"{message} ({details})"
@@ -358,13 +363,7 @@ def tasks_listed() -> dict[str, dict]:
     """
     Return every task `mise tasks ls --json` lists, keyed by name.
     """
-    listing = run(
-        ["mise", "tasks", "ls", "--json"],
-        capture_output = True,
-        check          = True,
-        text           = True
-    )
-    return {task["name"]: task for task in json_loads(listing.stdout)}
+    return {task["name"]: task for task in mise_json("tasks", "ls")}
 
 
 def toml(path: str) -> dict:
