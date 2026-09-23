@@ -31,6 +31,8 @@ impl AlignImports {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config.import_align_settings(),

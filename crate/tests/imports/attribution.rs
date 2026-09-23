@@ -10,6 +10,7 @@ use similar::TextDiff;
 
 use crate::{
     bindings::bound_at,
+    common::subset,
     compare::divergence,
     diff::{hunk, mapped_rows},
     execute::Runner,
@@ -44,7 +45,7 @@ impl Attributor<'_> {
         let reproducing: Vec<_> = Pipeline::known_ids()
             .par_iter()
             .filter(|rule| {
-                let pipeline = Pipeline::with_filters(self.config, from_ref(*rule), &[]);
+                let pipeline = subset(self.config, from_ref(*rule));
                 let tree =
                     self.runner
                         .stage

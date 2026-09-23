@@ -38,6 +38,8 @@ impl ModernizeAnnotations {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.modernize_annotations;
         let targets = |version: PythonVersion| {

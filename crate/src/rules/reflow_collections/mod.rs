@@ -60,6 +60,8 @@ impl ReflowCollections {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;
         Self {

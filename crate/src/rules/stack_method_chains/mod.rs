@@ -53,6 +53,8 @@ impl StackMethodChains {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.stack_method_chains;
         Self {

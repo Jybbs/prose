@@ -45,6 +45,8 @@ impl PreferFstring {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prefer_fstring;
         let targets = facets.enabled
