@@ -16,20 +16,11 @@ pub(crate) enum Interpolations {
     Skip,
 }
 
-/// Reads each expression of a module alongside the node enclosing it
-/// and the full ancestor chain, outermost first.
-pub(crate) trait ParentedProbe<'src> {
-    /// Whether the walk reads the interior of a replacement field, a
-    /// probe set to `Skip` leaving every f-string and t-string it
-    /// reaches unwalked whatever it reports on the string itself.
-    const INTERPOLATIONS: Interpolations = Interpolations::Read;
-
-    fn probe(
-        &mut self,
-        expr: &'src Expr,
-        parent: AnyNodeRef<'src>,
-        ancestors: &[AnyNodeRef<'src>],
-    ) -> TraversalSignal;
+impl Interpolations {
+    /// True where the walk reads each replacement field's expression.
+    pub(crate) const fn is_read(self) -> bool {
+        matches!(self, Self::Read)
+    }
 }
 
 /// Collects each `Some` that `probe` returns, descending past a hit
@@ -68,11 +59,28 @@ impl<'src, F: FnMut(&'src Expr, AnyNodeRef<'src>) -> Option<T>, T> ParentedProbe
             }
             None => TraversalSignal::Traverse,
         };
-        if is_interpolated_string(expr) && matches!(self.interpolations, Interpolations::Skip) {
+        if is_interpolated_string(expr) && !self.interpolations.is_read() {
             return TraversalSignal::Skip;
         }
         signal
     }
+}
+
+/// Reads each expression of a module alongside the node enclosing it
+/// and the full ancestor chain, outermost first.
+pub(crate) trait ParentedProbe<'src> {
+    /// Whether the walk reads the interior of a replacement field, a
+    /// probe set to `Interpolations::Skip` leaving every f-string and
+    /// t-string it reaches unwalked whatever it reports on the string
+    /// itself.
+    const INTERPOLATIONS: Interpolations = Interpolations::Read;
+
+    fn probe(
+        &mut self,
+        expr: &'src Expr,
+        parent: AnyNodeRef<'src>,
+        ancestors: &[AnyNodeRef<'src>],
+    ) -> TraversalSignal;
 }
 
 struct ParentedWalk<'src, 'probe, P> {
@@ -90,7 +98,7 @@ impl<'src, P: ParentedProbe<'src>> SourceOrderVisitor<'src> for ParentedWalk<'sr
     fn visit_expr(&mut self, expr: &'src Expr) {
         let parent = *self.parents.last().expect("seeded with the module node");
         if !self.probe.probe(expr, parent, &self.parents).is_traverse()
-            || (matches!(P::INTERPOLATIONS, Interpolations::Skip) && is_interpolated_string(expr))
+            || (!P::INTERPOLATIONS.is_read() && is_interpolated_string(expr))
         {
             return;
         }
@@ -104,12 +112,6 @@ impl<'src, P: ParentedProbe<'src>> SourceOrderVisitor<'src> for ParentedWalk<'sr
         source_order::walk_stmt(self, stmt);
         self.parents.pop();
     }
-}
-
-/// True for an f-string or t-string, the expression a probe set to
-/// `Interpolations::Skip` leaves unwalked.
-const fn is_interpolated_string(expr: &Expr) -> bool {
-    matches!(expr, Expr::FString(_) | Expr::TString(_))
 }
 
 /// Every `Some` that `probe` returns over each expression in `module`,
@@ -156,9 +158,9 @@ pub(crate) fn walk_parented_expr<'src>(
 
 /// Walks every expression in `module` in source order, handing each to
 /// `probe` with the node enclosing it and the ancestor chain above it,
-/// descending unless the probe reports `Skip`. A call argument names its
-/// `Arguments` list rather than the call, so a sole argument's enclosing
-/// range stops short of the call's own parentheses.
+/// descending unless the probe reports `TraversalSignal::Skip`. A call
+/// argument names its `Arguments` list rather than the call, so a sole
+/// argument's enclosing range stops short of the call's own parentheses.
 pub(crate) fn walk_parented_exprs<'src>(
     module: &'src ModModule,
     probe: &mut impl ParentedProbe<'src>,
@@ -168,6 +170,12 @@ pub(crate) fn walk_parented_exprs<'src>(
         probe,
     }
     .visit_body(&module.body);
+}
+
+/// True for an f-string or t-string, the expression a probe set to
+/// `Interpolations::Skip` leaves unwalked.
+const fn is_interpolated_string(expr: &Expr) -> bool {
+    matches!(expr, Expr::FString(_) | Expr::TString(_))
 }
 
 #[cfg(test)]

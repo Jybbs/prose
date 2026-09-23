@@ -11,7 +11,7 @@
 //! output as a word.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::TextSize;
 
 use crate::{
     config::{Config, DocstringStructuredPolicy},
@@ -76,22 +76,14 @@ impl WrapDocstrings {
     /// Returns the rewrap of each multi-line docstring this rule reads, in
     /// source order.
     pub(crate) fn rewraps(&self, source: &Source) -> Vec<Rewrap> {
-        let newline = source.newline_str();
         let padding = source.stranded_padding(self.stranding);
         let mut rewraps = Vec::new();
         walk_docstrings(source, |_, lit| {
-            if let Some(body) = triple_quoted_body(source, lit).filter(DocstringBody::is_multiline)
-            {
-                let indent_chars = source.line_indent_width(lit.start());
-                rewraps.extend(rewrite_body(
-                    &body,
-                    indent_chars,
-                    newline,
-                    self,
-                    source,
-                    &padding,
-                ));
-            }
+            rewraps.extend(
+                triple_quoted_body(source, lit)
+                    .filter(DocstringBody::is_multiline)
+                    .and_then(|body| rewrite_body(&body, self, source, &padding)),
+            );
         });
         rewraps
     }
@@ -126,12 +118,11 @@ struct Walker<'a> {
 
 fn rewrite_body<'a>(
     body: &DocstringBody<'a>,
-    body_indent_chars: usize,
-    newline: &'a str,
     rule: &'a WrapDocstrings,
     source: &'a Source,
     padding: &'a [Edit],
 ) -> Option<Rewrap> {
+    let newline = source.newline_str();
     let (content, closer_indent) = body.text.strip_prefix(newline)?.rsplit_once(newline)?;
     let lines = spliced_continuations(content, newline, body.raw);
     let content_start = body.range.start() + TextSize::of(newline);
@@ -145,15 +136,15 @@ fn rewrite_body<'a>(
         raw: body.raw,
         region: Region::Description,
         rule,
-        scanner: LineScanner::new(body_indent_chars),
+        scanner: LineScanner::new(source.line_indent_width(body.range.start())),
         source,
     };
-    let mut budgets = Vec::with_capacity(lines.len() + 1);
-    for (offset, line) in &lines {
-        budgets.push((content_start + *offset, walker.consume(*offset, line)));
-    }
+    let budgets = lines
+        .iter()
+        .map(|(offset, line)| (content_start + *offset, walker.consume(*offset, line)))
+        .chain([(body.range.end() - TextSize::of(closer_indent), None)])
+        .collect();
     walker.flush_paragraph();
-    budgets.push((body.range.end() - TextSize::of(closer_indent), None));
 
     let wrapped = walker.out.trim_end_matches(newline);
     let rewritten = [newline, wrapped, newline, closer_indent].concat();

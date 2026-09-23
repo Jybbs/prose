@@ -53,7 +53,7 @@ impl<'src, F: FnMut(&Expr) -> bool> SourceOrderVisitor<'src> for AnyExprProbe<F>
     }
 
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
-        if matches!(self.interpolations, Interpolations::Read) {
+        if self.interpolations.is_read() {
             source_order::walk_interpolated_string_element(self, element);
         }
     }
@@ -102,7 +102,7 @@ impl<'src, F: FnMut(&Expr) -> Option<T>, T> SourceOrderVisitor<'src> for ExprCol
     }
 
     fn visit_interpolated_string_element(&mut self, element: &'src InterpolatedStringElement) {
-        if matches!(self.interpolations, Interpolations::Read) {
+        if self.interpolations.is_read() {
             source_order::walk_interpolated_string_element(self, element);
         }
     }
