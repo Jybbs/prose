@@ -67,6 +67,8 @@ impl ReflowImports {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let align = &config.rules.align_imports;
         let rules = &config.rules.reflow_imports;

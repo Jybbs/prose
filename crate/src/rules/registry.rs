@@ -108,10 +108,12 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 /// single source consumed by `RuleId::from_str`, the
 /// `[tool.prose.rules.<slug>]` section name, the
 /// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
-/// Each rule's one-line imperative lives on its own type as `MESSAGE`
-/// and whether its edits leave every binding standing as
-/// `PRESERVES_BINDINGS`, which [`message_for_id`] and
-/// [`preserves_bindings_for_id`] read back per slug.
+/// Each rule's type declares its one-line imperative as `MESSAGE`,
+/// whether its edits leave every binding standing as
+/// `PRESERVES_BINDINGS`, and whether its output parses to the tree its
+/// input does as `PRESERVES_TREE`. [`message_for_id`],
+/// [`preserves_bindings_for_id`], and [`preserves_tree`] read each one
+/// back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -132,13 +134,17 @@ macro_rules! register_rules {
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         pub(super) const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
-        /// The slugs each rule shares a splice and a parse with,
-        /// indexed alongside [`KNOWN_IDS`].
-        const SHARES: &[&[&str]] = &[$(&[$($shares),*]),*];
-
         /// Whether each rule's edits leave every binding standing,
         /// indexed alongside [`KNOWN_IDS`].
         const PRESERVES_BINDINGS: &[bool] = &[$($ty::PRESERVES_BINDINGS),*];
+
+        /// Whether each rule's output parses to the tree its input does,
+        /// indexed alongside [`KNOWN_IDS`].
+        const PRESERVES_TREE: &[bool] = &[$($ty::PRESERVES_TREE),*];
+
+        /// The slugs each rule shares a splice and a parse with,
+        /// indexed alongside [`KNOWN_IDS`].
+        const SHARES: &[&[&str]] = &[$(&[$($shares),*]),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
@@ -357,10 +363,18 @@ pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
     }
 }
 
+/// Reports whether the rule named `slug` declares that its output parses
+/// to a tree whose `ComparableModModule` equals its input's, a form that
+/// ignores positions, parentheses, comments, and implicit string
+/// concatenation. `false` for an unknown slug.
+pub fn preserves_tree(slug: &str) -> bool {
+    slug_index(slug).is_some_and(|seat| PRESERVES_TREE[seat])
+}
+
 /// Whether `later`'s dependency column reaches `earlier`, directly or
 /// through the column of a rule it already names. `false` for an
 /// unknown slug on either side. Takes its pair in the opposite order
-/// from [`precedes`], which reads registration order rather than the
+/// from `precedes`, which reads registration order rather than the
 /// declared column.
 pub fn runs_behind(later: &str, earlier: &str) -> bool {
     slug_index(later).is_some_and(|seat| reaches(seat, earlier))
@@ -467,6 +481,19 @@ mod tests {
     }
 
     #[rstest]
+    #[case("strip-trailing-commas", "normalize-literals", true)]
+    #[case("normalize-literals", "strip-trailing-commas", false)]
+    #[case("align-equals", "align-colons", false)]
+    #[case("align-equals", "not-a-rule", false)]
+    fn independent_reads_the_pair_in_registry_order(
+        #[case] later: &str,
+        #[case] earlier: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(independent(later, earlier), expected);
+    }
+
+    #[rstest]
     #[case("reflow-collections", "align-equals", true)]
     #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
@@ -477,6 +504,16 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(precedes(earlier, later), expected);
+    }
+
+    #[rstest]
+    #[case("align-equals", true)]
+    #[case("line-overflow", true)]
+    #[case("reflow-imports", false)]
+    #[case("strip-none-return", false)]
+    #[case("not-a-rule", false)]
+    fn preserves_tree_reads_each_rules_declaration(#[case] slug: &str, #[case] expected: bool) {
+        assert_eq!(preserves_tree(slug), expected);
     }
 
     #[test]
@@ -502,18 +539,5 @@ mod tests {
         assert!(slug_bytes_equal(b"foo", b"foo"));
         assert!(!slug_bytes_equal(b"foo", b"food"));
         assert!(!slug_bytes_equal(b"foo", b"bar"));
-    }
-
-    #[rstest]
-    #[case("strip-trailing-commas", "normalize-literals", true)]
-    #[case("normalize-literals", "strip-trailing-commas", false)]
-    #[case("align-equals", "align-colons", false)]
-    #[case("align-equals", "not-a-rule", false)]
-    fn independent_reads_the_pair_in_registry_order(
-        #[case] later: &str,
-        #[case] earlier: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(independent(later, earlier), expected);
     }
 }

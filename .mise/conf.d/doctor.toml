@@ -9,6 +9,11 @@ hint        = "Run `xcode-select --install` and finish the installer it opens."
 os          = ["macos"]
 run         = '''test -d "$(xcode-select --print-path)"'''
 
+[doctor.checks.lock]
+description = "`lockf` or `flock` is installed, taking the lock the corpus tasks share so no two of them sweep at once"
+hint        = "Install `util-linux`, which ships `flock`."
+run         = '''command -v lockf > /dev/null || command -v flock > /dev/null'''
+
 [doctor.checks.token]
 description = "mise holds a GitHub token for downloading the releases its `aqua:` and `github:` tools install from"
 hint        = '''Run `mise settings set github.credential_command "gh auth token"` where `gh` is signed in, or `mise token github --oauth` to sign in through GitHub's device flow, or export `GITHUB_TOKEN`.'''

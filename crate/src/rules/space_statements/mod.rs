@@ -47,6 +47,8 @@ impl SpaceStatements {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
