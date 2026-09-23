@@ -9,11 +9,6 @@ hint        = "Run `xcode-select --install` and finish the installer it opens."
 os          = ["macos"]
 run         = '''test -d "$(xcode-select --print-path)"'''
 
-[doctor.checks.modules]
-description = "`site/node_modules` was installed from the `site/bun.lock` checked out in this tree"
-hint        = "Run `mise run site:bake`, which reinstalls it against the frozen lockfile."
-run         = '''cmp -s site/bun.lock site/node_modules/.bun.lock'''
-
 [doctor.checks.token]
 description = "mise holds a GitHub token for downloading the releases its `aqua:` and `github:` tools install from"
 hint        = '''Run `mise settings set github.credential_command "gh auth token"` where `gh` is signed in, or `mise token github --oauth` to sign in through GitHub's device flow, or export `GITHUB_TOKEN`.'''
@@ -23,8 +18,3 @@ run         = '''mise token github --raw > /dev/null'''
 description = "`crate/.venv` was built on the `python` this config pins"
 hint        = "Remove `crate/.venv`, which mise recreates on the pinned `python` the next time it loads this config, then run `mise wheel`."
 run         = '''test "$("$VIRTUAL_ENV/bin/python" -c 'import sys; print(sys.base_prefix)')" = "$(mise where python)"'''
-
-[doctor.checks.wheel]
-description = "`crate/.venv` holds the `prose` binary the wheel installs"
-hint        = "Run `mise wheel`, which builds the wheel into `crate/.venv`."
-run         = '''test -x "$VIRTUAL_ENV/bin/prose"'''
