@@ -67,8 +67,8 @@ impl ReflowCalls {
         }
     }
 
-    /// The explode edits this rule's walk over `source` emits, recording
-    /// each seat into `seats` where it is set.
+    /// Walks `source` and returns the edits that explode or rejoin its
+    /// argument lists, recording each seat into `seats` when one is given.
     fn walk(
         &self,
         source: &Source,

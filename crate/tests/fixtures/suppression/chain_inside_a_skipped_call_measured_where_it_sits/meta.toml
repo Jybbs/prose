@@ -3,5 +3,5 @@ previewable = false
 title       = "A Chain Inside a Call `reflow-calls` Skips Is Measured Where It Sits"
 
 description = '''
-`# prose: skip[reflow-calls]` trails the `advise(...)` row, so [[reflow-calls]] never explodes it and the chain's argument stays where the source wrote it. **`stack-method-chains` measures the chain from that column, where it overflows and breaks** inside a pair of its own, rather than keeping it joined for an explode the skip prevents.
+`# prose: skip[reflow-calls]` trails the `advise(...)` row, so [[reflow-calls]] never explodes it and the chain's argument stays where the source wrote it. **`stack-method-chains` measures the chain from that column, where it overflows and breaks** inside a pair of its own, rather than keeping it joined as if `reflow-calls` had exploded the call.
 '''
