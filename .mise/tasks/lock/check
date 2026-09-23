@@ -3,7 +3,6 @@
 #MISE description = "Verify every lockfile is in sync with its manifest"
 #MISE sources     = [
 #MISE   "@group:manifests",
-#MISE   ".mise/locks/**/*",
 #MISE   ".mise/mise.lock",
 #MISE   "Cargo.lock",
 #MISE   "crate/uv.lock",

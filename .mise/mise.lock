@@ -362,6 +362,36 @@ checksum = "sha256:996120ac70afe405c58fce508a476f25bb71032c6fb8013aa0123bba36429
 url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131414"
 
+[[tools."github:codecov/codecov-cli"]]
+version = "11.3.1"
+backend = "github:codecov/codecov-cli"
+specifiers = ["11.3.1"]
+
+[tools."github:codecov/codecov-cli"."platforms.linux-arm64"]
+checksum = "sha256:baff0923257c20b8594154c9651e7a6848f9783dc4392c6ce71791fec11a5913"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_linux_arm64"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877788"
+
+[tools."github:codecov/codecov-cli"."platforms.macos-arm64"]
+checksum = "sha256:ffb2b821551076b69d3267508b2d5dc10925c821c436521f2216f5ead62cb138"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_macos"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877460"
+
+[tools."github:codecov/codecov-cli"."platforms.macos-x64"]
+checksum = "sha256:ffb2b821551076b69d3267508b2d5dc10925c821c436521f2216f5ead62cb138"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_macos"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877460"
+
+[tools."github:codecov/codecov-cli"."platforms.windows-arm64"]
+checksum = "sha256:d43733506ed2561533a7182ed5c4c2b23711dda1f03cbe9d120bcc888ac4e10a"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_windows.exe"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877786"
+
+[tools."github:codecov/codecov-cli"."platforms.windows-x64"]
+checksum = "sha256:d43733506ed2561533a7182ed5c4c2b23711dda1f03cbe9d120bcc888ac4e10a"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_windows.exe"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877786"
+
 [[tools."github:mstange/samply"]]
 version = "0.13.1"
 backend = "github:mstange/samply"
@@ -529,15 +559,6 @@ url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-win-arm64.zip"
 [tools.node."platforms.windows-x64"]
 checksum = "sha256:9fef7eca6743a6b910989cd8e78712376b394fcb9b6e1e9c44a0799a287f90c5"
 url = "https://nodejs.org/dist/v26.10.0/node-v26.10.0-win-x64.zip"
-
-[[tools."pypi:codecov-cli"]]
-version = "11.3.1"
-backend = "pypi:codecov-cli"
-specifiers = ["11.3.1"]
-uv = { path = "locks/pypi-codecov-cli/11.3.1~47d47778", digest = "sha256:dc41abdf3ab1dafa689375673d6ad584847de2ba34d669558d23e5a9d05e7272" }
-
-[tools."pypi:codecov-cli".options]
-with = '["requests==2.34.2","urllib3==2.8.0"]'
 
 [[tools.python]]
 version = "3.14.6"

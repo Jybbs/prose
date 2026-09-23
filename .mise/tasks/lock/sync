@@ -2,7 +2,6 @@
 #MISE alias       = "relock"
 #MISE description = "Re-resolve every lockfile against its manifest"
 #MISE outputs     = [
-#MISE   ".mise/locks/**/*",
 #MISE   ".mise/mise.lock",
 #MISE   "Cargo.lock",
 #MISE   "crate/uv.lock",
