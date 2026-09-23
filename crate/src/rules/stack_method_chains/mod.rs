@@ -68,11 +68,7 @@ impl StackMethodChains {
             code_line_length: config.code_width(),
             max_links: rules.max_links.cap(),
             max_shift: rules.max_shift,
-            reflow_calls: config
-                .rules
-                .reflow_calls
-                .enabled
-                .then(|| ReflowCalls::from_config(config)),
+            reflow_calls: config.call_seating(),
             rejoin: config.fracture_settings(),
             reservations: config.equals_reservations(),
         }
@@ -202,11 +198,15 @@ impl<'a> Breaker<'a> {
     /// The seat a chain is measured from, `expr` being the expression that
     /// opens it and `range` the span holding it. That is the seat
     /// `reflow_calls` records for `expr` where `range` opens on the chain's
-    /// own row, and otherwise the column `range` lands at on a row at its
-    /// source indent, with no move and no trailing text.
-    fn placed(&self, expr: &Expr, range: TextRange) -> Seat {
+    /// own row inside an argument list among `ancestors`, and otherwise the
+    /// column `range` lands at on a row at its source indent, with no move
+    /// and no trailing text.
+    fn placed(&self, expr: &Expr, range: TextRange, ancestors: &[AnyNodeRef]) -> Seat {
         if let Some(rule) = self.reflow_calls
             && self.source.same_line(range.start(), expr.start())
+            && ancestors
+                .iter()
+                .any(|node| matches!(node, AnyNodeRef::Arguments(_)))
             && let Some(&seat) = self
                 .seats
                 .get_or_init(|| rule.seats(self.source))
@@ -284,13 +284,18 @@ impl<'a> Breaker<'a> {
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
     const INTERPOLATIONS: Descent = Descent::Over;
 
-    fn probe(&mut self, expr: &'a Expr, parent: AnyNodeRef<'a>, _: &[AnyNodeRef<'a>]) -> Descent {
+    fn probe(
+        &mut self,
+        expr: &'a Expr,
+        parent: AnyNodeRef<'a>,
+        ancestors: &[AnyNodeRef<'a>],
+    ) -> Descent {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
             return Descent::Into;
         };
         let range = self.source.paren_aware_range(expr.into(), parent);
         let Some(edit) = self
-            .broken(expr, &chain, range, self.placed(expr, range))
+            .broken(expr, &chain, range, self.placed(expr, range, ancestors))
             .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
             return Descent::Into;

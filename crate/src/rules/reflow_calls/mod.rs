@@ -104,8 +104,9 @@ impl ReflowCalls {
 
     /// The seat of every call and attribute access inside an argument
     /// this rule's walk over `source` relocates, keyed by its range, less
-    /// one inside a literal `reflow-collections` expands or inside a
-    /// replacement field, where the walk does not reach.
+    /// one inside an argument list a skip directive holds for this rule,
+    /// which never moves, or inside a literal `reflow-collections` expands
+    /// or a replacement field, where the walk does not reach.
     pub(crate) fn seats(&self, source: &Source) -> FxHashMap<TextRange, Seat> {
         let seats = RefCell::default();
         self.walk(source, Some(&seats));
@@ -241,19 +242,20 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
     /// Leaves a literal `reflow-collections` expands unwalked, the calls
     /// inside it reshaping where its entries land, and records the seat of
     /// each call and attribute access it reaches inside a relocated region
-    /// into `seats`, where set.
+    /// into `seats`, where set, leaving out every one inside an argument
+    /// list a skip directive holds for this rule.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if is_layoutable(expr) && self.expands_later(expr) {
             return;
         }
         if let Some(seats) = self.seats
-            && let Some(indent) = self.indent
+            && self.indent.is_some()
             && matches!(expr, Expr::Call(_) | Expr::Attribute(_))
         {
             seats
                 .borrow_mut()
                 .entry(expr.range())
-                .or_insert_with(|| self.seat(expr, indent));
+                .or_insert_with(|| self.seat(expr));
         }
         let Expr::Call(call) = expr else {
             walk_expr(self, expr);
@@ -263,9 +265,16 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
         let column = self.open_paren_column(call);
+        let held = self.seats.take_if(|_| {
+            self.source
+                .suppression_map()
+                .suppresses(call.arguments.range(), ReflowCalls::SLUG)
+        });
+        let exploded = self.explode_args(call, column);
+        self.seats = self.seats.or(held);
         // The rendered list already carries every nested reshape, so the
         // arguments go unwalked.
-        if let Some(text) = self.explode_args(call, column) {
+        if let Some(text) = exploded {
             if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
                 insert_edit(&mut self.edits, edit);
             }
@@ -404,6 +413,11 @@ mod tests {
     #[case::call_behind_an_exploded_closer(
         "total = explode(alpha, beta, gamma) + delta.get(key)\n",
         "delta.get(key)",
+        None
+    )]
+    #[case::call_inside_a_skipped_list(
+        "result = advise(alpha, beta, gamma.get(key).strip())  # prose: skip[reflow-calls]\n",
+        "gamma.get(key).strip()",
         None
     )]
     #[case::call_the_walk_leaves_in_place("x = f(a.b().c())\n", "a.b().c()", None)]

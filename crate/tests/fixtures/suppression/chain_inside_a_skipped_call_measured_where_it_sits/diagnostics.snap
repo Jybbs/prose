@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/suppression/chain_inside_a_skipped_call_measured_where_it_sits/input.py
+---
+stack-method-chains@95..137
