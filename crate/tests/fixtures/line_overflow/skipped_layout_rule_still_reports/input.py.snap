@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_leaves_its_line_reported/input.py
+input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports/input.py
 ---
 from package.module import alpha_name, beta_name, delta_name, gamma_name, lambda_name, omega_name, sigma_name, theta_name  # prose: skip[reflow-imports]
 
@@ -12,6 +12,13 @@ TABLE = {"alpha": alpha_value, "beta": beta_value, "delta": delta_value, "gamma"
 
 def configure(first_parameter, second_parameter, third_parameter, fourth_parameter_value):  # prose: skip[reflow-signatures]
     return first_parameter
+
+
+def describe():
+    """Describe the configuration this module carries, in a sentence long enough to overflow."""  # prose: skip[wrap-docstrings]
+
+
+MESSAGE = "the first part of the message runs long, " "and the second part carries it past the budget"  # prose: skip[stack-adjacent-strings]
 
 
 def dispatch(command):

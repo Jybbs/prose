@@ -2,10 +2,11 @@
 //! inside an import statement and `code_line_length` elsewhere, once no
 //! layout rule can shorten it. A line holding a construct a layout rule
 //! splits is left to that rule, unless a skip holds that rule there or
-//! its code fits and only a trailing comment runs past the cap. A line
-//! whose overflow sits inside one string literal holding interior
-//! whitespace carries the [`split`] form as a display-only suggestion,
-//! gated by `suggest_string_splits`. Lint-only, emits no edits.
+//! its code fits and only a trailing comment runs past the cap, and a
+//! line whose code fits short of a trailing pragma or `prose` directive
+//! is not flagged. A line whose overflow sits inside one string literal
+//! holding interior whitespace carries the [`split`] form as a
+//! display-only suggestion, gated by `suggest_string_splits`. Lint-only.
 
 use ruff_python_ast::{
     Expr, ExprStringLiteral, InterpolatedStringElement, Stmt, StmtFunctionDef, StmtMatch,
@@ -13,6 +14,7 @@ use ruff_python_ast::{
     helpers::is_compound_statement,
     visitor::{Visitor, walk_expr},
 };
+use ruff_python_trivia::find_trailing_pragma_offset;
 use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -20,20 +22,25 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
+        comments::trailing_comment,
         docstring::{body_docstring, docstring_slots},
         inline::display_width,
+        layout::requires_expand,
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
     rules::{
         Rule, RuleId,
         align_match_case::AlignMatchCase,
+        reflow_calls::ReflowCalls,
+        reflow_collections::ReflowCollections,
         reflow_imports::ReflowImports,
         reflow_signatures::ReflowSignatures,
         stack_adjacent_strings::{StackAdjacentStrings, concatenated_run},
         wrap_docstrings::WrapDocstrings,
     },
     source::Source,
+    suppression::is_directive_comment,
 };
 
 mod split;
@@ -68,6 +75,7 @@ impl Rule for LineOverflow {
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
         let mut spans = Spans {
             docstrings: docstring_slots(&source.ast().body),
+            holds: Vec::new(),
             imports: Vec::new(),
             reach: Vec::new(),
             reshapeable: Vec::new(),
@@ -93,7 +101,10 @@ impl Rule for LineOverflow {
                 } else {
                     self.code_line_length
                 };
-                if width <= cap || (spans.reshapes(range) && source.tail_width(range) > cap) {
+                if width <= cap
+                    || width_before_pragma(source, range).is_some_and(|code| code <= cap)
+                    || (spans.reshapes(range) && source.tail_width(range) > cap)
+                {
                     return None;
                 }
                 let report = format!("Line is {width} columns, over the {cap}-column budget");
@@ -113,7 +124,7 @@ impl Rule for LineOverflow {
                         None => Diagnostic::lint(
                             self.id(),
                             range,
-                            format!("{report}, with no legal reshape"),
+                            format!("{report}, {}", spans.kept_because(range, cap)),
                         ),
                     },
                 )
@@ -124,10 +135,14 @@ impl Rule for LineOverflow {
 
 /// Gathers the import-statement ranges that shift a line to the import
 /// budget, the still-collapsible construct ranges a layout rule could
-/// shorten, the one-line string literals a suggested reshape can split,
-/// and the docstring slots a concatenated run is held in.
+/// shorten, the constructs a suppression holds, the one-line string
+/// literals a suggested reshape can split, and the docstring slots a
+/// concatenated run is held in.
 struct Spans<'a> {
     docstrings: Vec<TextRange>,
+    /// Each construct a suppression holds its splitting rule over, with
+    /// that rule.
+    holds: Vec<(TextRange, RuleId)>,
     imports: Vec<TextRange>,
     /// The furthest end any `reshapeable` range up to each index
     /// covers, so the intersection test is one binary search over the
@@ -173,14 +188,40 @@ impl<'a> Spans<'a> {
             .collect();
     }
 
+    /// The ending a report on `line` closes with where no string split
+    /// applies: its trailing comment where its code fits `cap`, the rule
+    /// a suppression holds over a construct on it, or no legal reshape.
+    fn kept_because(&self, line: TextRange, cap: usize) -> String {
+        if self.source.tail_width(line) <= cap {
+            return "with only its trailing comment past it".to_owned();
+        }
+        self.holds
+            .iter()
+            .find(|(held, _)| held.start() <= line.end() && held.end() >= line.start())
+            .map_or_else(
+                || "with no legal reshape".to_owned(),
+                |(_, rule)| format!("with `{rule}` held by a skip"),
+            )
+    }
+
     /// Records a leading docstring's whole range, the prose
     /// `wrap-docstrings` reflows to the budget, where no suppression
     /// holds that rule over it.
     fn note_docstring(&mut self, body: &[Stmt]) {
-        if let Some(lit) = body_docstring(body)
-            && !self.held(lit.range(), WrapDocstrings::SLUG)
-        {
-            self.reshapeable.push(lit.range());
+        if let Some(lit) = body_docstring(body) {
+            if self.held(lit.range(), WrapDocstrings::SLUG) {
+                self.holds.push((lit.range(), WrapDocstrings::SLUG));
+            } else {
+                self.reshapeable.push(lit.range());
+            }
+        }
+    }
+
+    /// Records a construct on one source line that a suppression holds
+    /// `rule`, the layout rule splitting it, over, along with that rule.
+    fn note_held(&mut self, range: TextRange, rule: RuleId) {
+        if !self.source.contains_line_break(range) {
+            self.holds.push((range, rule));
         }
     }
 
@@ -202,8 +243,8 @@ impl<'a> Spans<'a> {
         }
     }
 
-    /// Records the argument lists `reflow-calls` can explode and the
-    /// collection literals `reflow-collections` can expand, each sitting
+    /// Records each argument list `reflow-calls` can explode and each
+    /// collection literal `reflow-collections` can expand, wherever it sits
     /// on one source line.
     fn note_layouts(&mut self) {
         for range in self
@@ -247,9 +288,12 @@ impl<'a> Spans<'a> {
     }
 
     /// Records `range` through [`Self::note_inline`] unless a suppression
-    /// holds `rule`, the layout rule that splits it, over that range.
+    /// holds `rule`, the layout rule that splits it, over that range, and
+    /// through [`Self::note_held`] where one does.
     fn note_unheld(&mut self, range: TextRange, rule: RuleId) {
-        if !self.held(range, rule) {
+        if self.held(range, rule) {
+            self.note_held(range, rule);
+        } else {
             self.note_inline(range);
         }
     }
@@ -277,7 +321,16 @@ impl<'a> Visitor<'a> for Spans<'a> {
             _ if self.breakable_run(expr) => {
                 self.note_unheld(expr.range(), StackAdjacentStrings::SLUG);
             }
+            Expr::Call(call)
+                if !call.arguments.is_empty()
+                    && self.held(call.arguments.range(), ReflowCalls::SLUG) =>
+            {
+                self.note_held(call.arguments.range(), ReflowCalls::SLUG);
+            }
             Expr::StringLiteral(s) => self.note_string(s),
+            _ if requires_expand(expr) && self.held(expr.range(), ReflowCollections::SLUG) => {
+                self.note_held(expr.range(), ReflowCollections::SLUG);
+            }
             _ => {}
         }
         walk_expr(self, expr);
@@ -300,4 +353,17 @@ impl<'a> Visitor<'a> for Spans<'a> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// Returns the display width of `line` short of a trailing tool pragma
+/// or `prose` directive, or `None` where neither trails it.
+fn width_before_pragma(source: &Source, line: TextRange) -> Option<usize> {
+    let comment = trailing_comment(source, line.start())?;
+    let text = source.slice(comment);
+    let offset =
+        find_trailing_pragma_offset(text).or_else(|| is_directive_comment(text).then_some(0))?;
+    let end = comment.start() + TextSize::try_from(offset).ok()?;
+    Some(display_width(
+        source.slice(TextRange::new(line.start(), end)).trim_end(),
+    ))
 }

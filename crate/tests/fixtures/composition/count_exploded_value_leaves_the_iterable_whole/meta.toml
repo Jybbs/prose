@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Count-Exploded Value Leaves Its Comprehension's Iterable on One Row"
+
+description = '''
+The 93-column line building `result` holds a dict comprehension whose value is a list holding a `helper` call past `max-args`, and whose `for` clause reads the tuple `(first, second)`. **The value expands and the call inside it explodes, while the tuple stays on the closing row**, because the walk reaches the value before the `for` clause, so the tuple is measured on the row the expanded value leaves it on.
+'''

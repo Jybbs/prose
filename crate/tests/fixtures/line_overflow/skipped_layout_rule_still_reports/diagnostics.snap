@@ -1,10 +1,12 @@
 ---
 source: crate/tests/integration.rs
 expression: render(diagnostics)
-input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_leaves_its_line_reported/input.py
+input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports/input.py
 ---
 line-overflow@0..152
 line-overflow@154..273
 line-overflow@275..404
 line-overflow@407..531
-line-overflow@603..727
+line-overflow@577..705
+line-overflow@708..849
+line-overflow@894..1018

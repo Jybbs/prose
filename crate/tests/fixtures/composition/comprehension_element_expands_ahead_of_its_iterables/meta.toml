@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension's Element Expands Ahead of Its Iterables"
+
+description = '''
+The 102-column line building `table` holds a list comprehension whose element is the list `[row, column]` and whose two `for` clauses each read a two-entry tuple. **Only the element expands, its names on one row inside its brackets, while both tuples stay on the closing row**, because the walk reaches the element before the `for` clauses, the order the source writes them, so each tuple is measured on the short row the expanded element leaves it on.
+'''

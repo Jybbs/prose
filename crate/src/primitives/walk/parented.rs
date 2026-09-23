@@ -1,9 +1,9 @@
 //! The parent-tracking expression walk, handing a rule the node
-//! enclosing each expression.
+//! enclosing each expression in the order the source writes them.
 
 use ruff_python_ast::{
     AnyNodeRef, Arguments, Expr, ExprCall, ModModule, Stmt,
-    visitor::{self, Visitor, walk_expr},
+    visitor::source_order::{self, SourceOrderVisitor},
 };
 
 /// Whether a parent-tracking walk descends into the expression its probe
@@ -80,10 +80,10 @@ struct ParentedWalk<'src, 'probe, P> {
     probe: &'probe mut P,
 }
 
-impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
+impl<'src, P: ParentedProbe<'src>> SourceOrderVisitor<'src> for ParentedWalk<'src, '_, P> {
     fn visit_arguments(&mut self, arguments: &'src Arguments) {
         self.parents.push(arguments.into());
-        visitor::walk_arguments(self, arguments);
+        source_order::walk_arguments(self, arguments);
         self.parents.pop();
     }
 
@@ -95,13 +95,13 @@ impl<'src, P: ParentedProbe<'src>> Visitor<'src> for ParentedWalk<'src, '_, P> {
             return;
         }
         self.parents.push(expr.into());
-        walk_expr(self, expr);
+        source_order::walk_expr(self, expr);
         self.parents.pop();
     }
 
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.parents.push(stmt.into());
-        super::walk_stmt(self, stmt);
+        source_order::walk_stmt(self, stmt);
         self.parents.pop();
     }
 }
@@ -154,11 +154,11 @@ pub(crate) fn walk_parented_expr<'src>(
     .visit_expr(expr);
 }
 
-/// Walks every expression in `module`, handing each to `probe` with the
-/// node enclosing it and the ancestor chain above it, descending unless
-/// the probe reports `Over`. A call argument names its `Arguments` list
-/// rather than the call, so a sole argument's enclosing range stops
-/// short of the call's own parentheses.
+/// Walks every expression in `module` in source order, handing each to
+/// `probe` with the node enclosing it and the ancestor chain above it,
+/// descending unless the probe reports `Over`. A call argument names its
+/// `Arguments` list rather than the call, so a sole argument's enclosing
+/// range stops short of the call's own parentheses.
 pub(crate) fn walk_parented_exprs<'src>(
     module: &'src ModModule,
     probe: &mut impl ParentedProbe<'src>,

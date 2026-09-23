@@ -1,6 +1,7 @@
 //! The measuring half of the `reflow-collections` walker: the column a
 //! construct lands at, the range its recovered parens cover, the gap
-//! around a dict entry's `:`, and the columns trailing it on its row.
+//! around a dict entry's `:`, and the columns trailing a construct on
+//! its row.
 
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_source_file::LineRanges;

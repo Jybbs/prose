@@ -20,8 +20,7 @@ use crate::{
         splice::splice_parses,
         walk::filter_map_over_stmts,
     },
-    rules::{Rule, RuleId},
-    rules::{alphabetize_siblings::Reorders, reflow_calls::Reshaper},
+    rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_calls::Reshaper},
     source::Source,
 };
 
@@ -68,7 +67,6 @@ impl Rule for ReflowSignatures {
             expansion,
             newline: source.newline_str(),
             reshaper: Reshaper {
-                expands_literals: expansion.expands_literals,
                 layout: None,
                 one_row: expansion.one_row,
                 padding: &padding,

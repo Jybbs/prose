@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/count_exploded_value_leaves_the_iterable_whole/input.py
+---
+result = {key: [
+    helper(
+        alpha=1,
+        beta=2,
+        gamma=3,
+        delta=4
+    ),
+    extra
+] for key in (first, second)}

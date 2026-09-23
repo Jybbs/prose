@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/trailing_pragma_leaves_a_fitting_line_unreported/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 102,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Line is 101 columns, over the 88-column budget, with only its trailing comment past it"
+  }
+]

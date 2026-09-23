@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/reflow_collections/subscripted_list_in_a_relocated_tuple_expands/input.py
+input_file: crate/tests/fixtures/reflow_collections/subscripted_list_in_an_expanded_tuple_expands/input.py
 ---
 def stamp(timetuple):
     return "%s, %02d %s %04d" % (

@@ -20,7 +20,13 @@ The count trigger fires only where every argument can be written as a keyword. A
 
 Every width is measured at the column a construct ends up at once its parent settles, reading the row as [[strip-stranded-padding]] leaves it. A nested call that fits the row it ends up on stays inline, a call following a sibling the rule has just joined or exploded is measured on the row that sibling leaves it on, and a keyword value is measured from the column [[align-equals]] shifts it to, with the comma closing its row counted at the position [[alphabetize-siblings]] later puts it at. A call inside a literal that [[reflow-collections]] expands, or inside the parameters of a signature that [[reflow-signatures]] lays out one per line, is left to that rule, which reshapes the call where its entry or parameter ends up.
 
-A call's row is measured through the first bracket after it that a later layout breaks, meaning an argument list [[reflow-calls]] can explode or a literal [[reflow-collections]] expands, because breaking that bracket ends the row there. A bracket nothing breaks counts in full, which covers an empty `()`, a grouping pair [[reflow-parentheses]] keeps, a one-entry tuple, a call inside an f-string replacement field, and a construct a `# prose: skip` holds, so a call ahead of any of them explodes the way it would ahead of a plain name.
+A call's row is measured through the first bracket after it that a layout rule breaks, meaning an argument list this rule can explode or a literal [[reflow-collections]] expands, because breaking that bracket ends the row there. Any other bracket counts in full along with the rest of the row, so a call ahead of one explodes the way it would ahead of a plain name. Those brackets include:
+
+- An empty `()`
+- A grouping pair
+- A one-entry list, set, or tuple
+- The `(` of a call inside an f-string replacement field
+- A literal a `# prose: skip[reflow-collections]` holds
 
 The span trigger reads the argument itself rather than the list, and that argument explodes the list to one argument per line, whatever the count and the joined width, so a call carrying a literal kept multi-line, a nested list already written one entry per line, or a stacked string run takes the same layout a long call does. A call with a single such argument explodes around it, and that argument moves whole into the exploded form the way [[reflow-collections]] moves a member it keeps as written.
 

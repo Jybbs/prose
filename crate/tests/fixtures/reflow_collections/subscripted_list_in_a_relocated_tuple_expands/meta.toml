@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Fractured List Indexed Inside an Expanded Tuple Expands Where It Lands"
-
-description = '''
-`stamp` formats its string against a tuple written one entry per row, and one entry indexes a month list the source broke across two rows. **The month list expands inside its brackets, one flow row of names, with its `[timetuple[1] - 1]` index following the closing `]`**, because the tuple's expand lays out each literal it reaches inside an entry, through the subscript, where the entry's row lands.
-'''

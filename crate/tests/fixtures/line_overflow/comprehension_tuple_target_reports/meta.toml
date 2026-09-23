@@ -3,5 +3,5 @@ previewable = false
 title       = "A Comprehension Binding a Bare Tuple Is Reported"
 
 description = '''
-`NAMES` is built by a 96-column comprehension that binds `name, entry` on each pass. **The line is reported with no legal reshape**, because a comprehension never expands and a bare tuple carries no bracket for `reflow-collections` to break at.
+The 96-column line building `NAMES` holds a comprehension that binds the bare tuple `name, entry` on each iteration. **The line is reported with no legal reshape**, because a comprehension never expands and a bare tuple carries no bracket for `reflow-collections` to break at.
 '''

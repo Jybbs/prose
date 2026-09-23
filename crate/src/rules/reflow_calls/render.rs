@@ -174,7 +174,9 @@ impl<'a> Exploder<'a> {
         let ahead = TextRange::new(range.start(), call.unwrap_or(range.end()));
         let literal = starting_within(self.source.expandable_literals(), ahead, Ranged::start)
             .map(Ranged::start)
-            .find(|&start| self.expands_literals && !self.earlier_literal_explodes(start));
+            .find(|&start| {
+                self.one_row.expands_literals() && !self.earlier_literal_explodes(start)
+            });
         literal.or(call)
     }
 

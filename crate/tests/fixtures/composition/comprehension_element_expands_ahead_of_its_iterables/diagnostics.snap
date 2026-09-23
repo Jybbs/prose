@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/comprehension_element_expands_ahead_of_its_iterables/input.py
+---
+reflow-collections@10..21

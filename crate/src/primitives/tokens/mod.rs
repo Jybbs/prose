@@ -1,6 +1,7 @@
 //! Token-kind predicates over the bracket delimiters and the
-//! interpolated-string openers, and the characters those delimiters are
-//! written with.
+//! interpolated-string openers, the characters those delimiters are
+//! written with, and the scans for the brackets a token run leaves
+//! open and the tokens opening inside a range.
 
 use ruff_python_ast::token::{Token, TokenKind};
 use ruff_text_size::{Ranged, TextRange, TextSize};

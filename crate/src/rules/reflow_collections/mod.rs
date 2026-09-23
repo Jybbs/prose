@@ -3,8 +3,8 @@
 //! comprehension, or dict key whose inline form fits rejoins onto one
 //! line, an overflowing single-line literal expands one entry per
 //! line, as does one holding a dict over `max_dict_entries` or a call
-//! the `max_args` trigger explodes whatever its width, and an over-wide
-//! dict entry breaks at `:` and hangs its value. A comment, a
+//! the `max_args` trigger explodes, whatever the literal's width, and an
+//! over-wide dict entry breaks at `:` and hangs its value. A comment, a
 //! replacement field, or a folded multi-line string holds a construct
 //! at its source shape, a held member travels with the row it lands on,
 //! and `keep_multiline_literals` re-expands an authored flush column
@@ -45,7 +45,6 @@ const CANONICAL_SEPARATOR: usize = 2;
 #[derive(Debug)]
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
-    explode: bool,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
@@ -63,7 +62,6 @@ impl ReflowCollections {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
-            explode: rules.explode,
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
@@ -82,7 +80,6 @@ impl Rule for ReflowCollections {
         let mut layouter = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
-            explode: self.explode,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets),
@@ -105,7 +102,6 @@ impl Rule for ReflowCollections {
 struct Layouter<'a> {
     pub(super) code_line_length: usize,
     pub(super) edits: Vec<Edit>,
-    pub(super) explode: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
@@ -142,11 +138,9 @@ impl<'a> Layouter<'a> {
         {
             return Some(inline.into_owned());
         }
-        (self.explode
-            && self
-                .one_row
-                .expands(self.source, expr, parent, column, tail, self.padding))
-        .then(|| self.expand(expr, parent, indent))
+        self.one_row
+            .expands(self.source, expr, parent, column, tail, self.padding)
+            .then(|| self.expand(expr, parent, indent))
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand with
@@ -177,8 +171,8 @@ impl<'a> Layouter<'a> {
 }
 
 impl CollectionLayout for Layouter<'_> {
-    /// Lays out `expr` read as its own enclosing node, which leaves no
-    /// dunder-list sort forecast over its entries.
+    /// Lays out `expr` with itself as the parent node, so no dunder-list
+    /// sort applies to its entries.
     fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String> {
         self.replacement_for(expr, expr.into(), column, indent, tail)
     }

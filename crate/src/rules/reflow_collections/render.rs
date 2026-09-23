@@ -327,7 +327,6 @@ impl<'a> Layouter<'a> {
     /// layout where it lands.
     pub(super) fn reshaper(&self) -> Reshaper<'_> {
         Reshaper {
-            expands_literals: self.explode,
             layout: Some(self),
             one_row: self.one_row,
             padding: self.padding,

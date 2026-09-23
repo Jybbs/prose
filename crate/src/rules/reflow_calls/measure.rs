@@ -1,8 +1,9 @@
-//! The columns an explode decision reads: where a call's `(` lands once
-//! the walk's earlier edits place the text ahead of it, the indent an
-//! exploded closing bracket drops to, whether a literal holding a call
-//! is one `reflow-collections` expands once its row lands, and the
-//! layout a construct takes where a relocated walk lands it.
+//! The columns and layouts an explode decision reads: where a call's
+//! `(` lands once the walk's earlier edits place the text ahead of it,
+//! the indent an exploded closing bracket drops to, whether
+//! `reflow-collections` expands a literal holding a call once its row
+//! lands, and the layout a construct takes where it lands inside a
+//! relocated expression.
 
 use std::borrow::Cow;
 
@@ -86,18 +87,26 @@ impl<'a> Exploder<'a> {
     /// leaving every call inside to the reshape that rule runs where the
     /// entries land.
     pub(super) fn expands_later(&self, literal: &Expr) -> bool {
-        self.expands_literals
-            && self
+        if !self.one_row.expands_literals()
+            || self
                 .source
                 .expandable_literals()
                 .binary_search_by_key(&literal.start(), Ranged::start)
-                .is_ok()
+                .is_err()
+        {
+            return false;
+        }
+        let column = self.placed_column(literal.start(), true);
+        let tail = self.row_tail(literal.end());
+        self.one_row
+            .rejoined(self.source, literal, literal.into(), column, tail)
+            .is_none()
             && self.one_row.expands(
                 self.source,
                 literal,
                 literal.into(),
-                self.placed_column(literal.start(), true),
-                self.row_tail(literal.end()),
+                column,
+                tail,
                 self.padding,
             )
     }

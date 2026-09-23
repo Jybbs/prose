@@ -15,7 +15,7 @@ use rustc_hash::FxHashSet;
 use super::Source;
 use crate::{
     primitives::{
-        layout::{is_layoutable, requires_expand},
+        layout::requires_expand,
         tokens::is_interpolated_string_start,
         walk::{Descent, filter_map_over_exprs},
     },
@@ -51,8 +51,7 @@ impl Source {
     pub(crate) fn expandable_literals(&self) -> &[TextRange] {
         self.expandable_literals.get_or_init(|| {
             filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
-                (is_layoutable(expr)
-                    && requires_expand(expr)
+                (requires_expand(expr)
                     && !self.intersects_comment(expr.range())
                     && !self
                         .suppression_map()
@@ -62,11 +61,10 @@ impl Source {
         })
     }
 
-    /// Returns the start-ascending argument-list ranges of the calls
-    /// `reflow-calls` can explode, meaning each call outside a
-    /// replacement field that carries an argument and no comment inside
-    /// its list, outside any suppression holding that rule, walking the
-    /// tree on the first read.
+    /// Returns the start-ascending argument lists `reflow-calls` can
+    /// explode, meaning each list carrying an argument and no comment,
+    /// outside any replacement field and any suppression holding that
+    /// rule, walking the tree on the first read.
     pub(crate) fn explodable_arguments(&self) -> &[TextRange] {
         self.explodable_arguments.get_or_init(|| {
             let mut lists = filter_map_over_exprs(&self.ast().body, Descent::Over, |expr| {
@@ -213,6 +211,7 @@ mod tests {
 
     #[rstest]
     #[case::a_two_entry_list("x = [a, b]\n", &["[a, b]"])]
+    #[case::an_element_ahead_of_its_iterable("x = [[a, b] for a in (c, d)]\n", &["[a, b]", "(c, d)"])]
     #[case::a_one_entry_dict("x = {'k': v}\n", &["{'k': v}"])]
     #[case::a_one_element_list("x = [a]\n", &[])]
     #[case::a_bare_tuple("x = a, b\n", &[])]
@@ -253,6 +252,14 @@ mod tests {
         assert_eq!(lists, expected);
     }
 
+    #[test]
+    fn first_token_offset_in_range_returns_none_for_empty_range() {
+        let s = parse("x = 1\n");
+        let empty = TextRange::empty(TextSize::new(0));
+
+        assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
+    }
+
     #[rstest]
     #[case::the_first_of_two_matches("a = b = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]
     #[case::a_single_match("x = 1\n", |t: &Token| t.kind() == TokenKind::Equal, Some(2))]
@@ -266,14 +273,6 @@ mod tests {
         let s = parse(src);
         let found = s.first_token_offset_in_range(s.ast().body[0].range(), predicate);
         assert_eq!(found, expected.map(TextSize::new));
-    }
-
-    #[test]
-    fn first_token_offset_in_range_returns_none_for_empty_range() {
-        let s = parse("x = 1\n");
-        let empty = TextRange::empty(TextSize::new(0));
-
-        assert!(s.first_token_offset_in_range(empty, |_| true).is_none());
     }
 
     #[rstest]

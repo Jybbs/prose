@@ -9,6 +9,13 @@ def configure(first_parameter, second_parameter, third_parameter, fourth_paramet
     return first_parameter
 
 
+def describe():
+    """Describe the configuration this module carries, in a sentence long enough to overflow."""  # prose: skip[wrap-docstrings]
+
+
+MESSAGE = "the first part of the message runs long, " "and the second part carries it past the budget"  # prose: skip[stack-adjacent-strings]
+
+
 def dispatch(command):
     match command:
         case "halt": return first_identifier_long_enough_to_matter + second_identifier_long  # prose: skip[align-match-case]

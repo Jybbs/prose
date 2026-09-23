@@ -19,7 +19,6 @@ use crate::{
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Terms {
     code_line_length: usize,
-    expands_literals: bool,
     max_params: Option<usize>,
     one_row: one_row::Settings<'static>,
 }
@@ -28,7 +27,6 @@ impl Terms {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
-            expands_literals: config.expands_literals(),
             max_params: config.rules.reflow_signatures.max_params.cap(),
             one_row: config.one_row_settings(),
         }
@@ -45,7 +43,6 @@ impl Terms {
     ) -> Expansion<'a> {
         Expansion {
             code_line_length: self.code_line_length,
-            expands_literals: self.expands_literals,
             max_params: self.max_params,
             one_row: self.one_row.against(targets),
             padding,
@@ -59,7 +56,6 @@ impl Terms {
 #[derive(Clone, Copy)]
 pub(crate) struct Expansion<'a> {
     pub(super) code_line_length: usize,
-    pub(super) expands_literals: bool,
     pub(super) max_params: Option<usize>,
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) padding: &'a [Edit],

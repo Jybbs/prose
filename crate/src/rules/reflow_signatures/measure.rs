@@ -42,7 +42,7 @@ impl Expansion<'_> {
         {
             return true;
         }
-        if !self.expands_literals {
+        if !self.one_row.expands_literals() {
             return false;
         }
         let returns = fd.returns.as_deref();

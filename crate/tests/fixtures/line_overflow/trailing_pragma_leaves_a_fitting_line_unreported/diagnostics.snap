@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/line_overflow/trailing_pragma_leaves_a_fitting_line_unreported/input.py
+---
+line-overflow@197..298

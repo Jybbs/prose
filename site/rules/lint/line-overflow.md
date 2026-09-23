@@ -10,28 +10,37 @@ layout  : doc
 
 `line-overflow` reports each line still over its `*-line-length` cap once no layout rule can shorten it, so an unsatisfiable cap shows up as a finding in `prose check` and as a flagged line in the sandbox rather than as a setting that did nothing. The caps are hard limits that every layout rule fits within, so a call, collection, signature, or import that crosses its cap explodes to one entry per line, and an alignment run lays out an over-budget member first and aligns it within the cap after. When no legal layout meets the cap (*a deep indent, a long identifier, a single-name import already at its narrowest, a cap set below what the statement needs*), the narrowest layout stays and this rule names the line.
 
-A line inside an import statement is measured against `import-line-length` and every other line against `code-line-length`. A line a layout rule could still split is left to that rule, so `line-overflow` reports only what no layout rule can shorten. The constructs a layout rule splits are:
+A line inside an import statement is measured against `import-line-length` and every other line against `code-line-length`. A line a layout rule will split is left to that rule, so `line-overflow` reports only what the layout rules leave over the cap. The constructs a layout rule splits, each written on one row, are:
 
-- A call whose argument list sits on one row
-- A collection `reflow-collections` can expand (*a dict of any size, or a bracketed list, set, or tuple of two or more entries*)
+- A call carrying arguments
+- A collection `reflow-collections` can expand (*a dict of one or more entries, or a bracketed list, set, or tuple of two or more*)
 - A comma-joined import of either form
 - A signature carrying parameters
 - A single-statement match arm
 - An implicitly concatenated string run outside a docstring slot
 - A line of docstring prose
 
-A line is reported even so in these cases:
+A bare tuple, such as the `name, entry` a comprehension binds, is not among them, because it carries no bracket to break at. A line holding one of those constructs is still reported when:
 
-- Its only candidate is a bare tuple, such as the `name, entry` a comprehension binds, because a bare tuple carries no bracket to break at
-- Its code fits the cap while its trailing comment runs past it, because no layout rule counts a trailing comment against the cap
-- A `# prose: skip` holds the rule that would split it, because that rule then leaves the line as written
-- Its only splittable construct sits inside an f-string or t-string replacement field, which no rule reaches
+- Its code fits the cap while an ordinary trailing comment runs past it, because a layout rule measures a row only up to its trailing comment
+- A `# prose: skip` holds the rule that would split it, which then leaves the line as written
+- The construct sits inside an f-string or t-string replacement field, which no rule reaches
 
-The lint never rewrites, so the diagnostic is reported and the source stays as written.
+A line whose code fits once a trailing tool pragma (*`# type:`, `# noqa`*) or a `# prose:` directive is set aside is not reported at all, since the pragma governs the line it sits on and cannot move off it. The lint never rewrites, so the diagnostic is reported and the source stays as written.
 
 An overflow that sits inside one string literal with interior whitespace has a reshape even though no rule performs it, because the whitespace gives a legal place to break and adjacent literals inside parentheses join at compile time into the identical value. `line-overflow` carries that parenthesized form as a display-only suggestion, so `prose check` renders the layout and `prose format` never writes it. It stays a suggestion because the break points would become source, where a word inserted near the front reflows every line beneath it and the diff then claims the whole literal changed.
 
-Two cases draw no suggestion, and their findings differ. A literal with no interior whitespace has nowhere legal to break, so a URL, a hash, or a dense regex keeps the report ending *"with no legal reshape"*. A literal that would fit whole one indent below its line needs no break either, because the overflow came from the width ahead of it, so its report stays bare rather than claiming nothing could be done.
+Each report ends by naming why its line stays over the cap:
+
+| **Ending** | **When** |
+|---|---|
+| *"with a legal reshape at the string literal"* | A single-part literal crosses the cap, has interior whitespace, and `suggest-string-splits` is on |
+| *No ending* | That literal would fit whole one indent below its line, or `suggest-string-splits` is off |
+| *"with only its trailing comment past it"* | The line's code fits the cap and only its trailing comment runs past it |
+| *"with `reflow-calls` held by a skip"* | A `# prose: skip` holds the rule the ending names over a construct on the line |
+| *"with no legal reshape"* | Every other reported line |
+
+A literal with no interior whitespace has nowhere legal to break, so a URL, a hash, or a dense regex takes the last ending. A literal that would fit whole one indent below its line needs no break, because the overflow came from the width ahead of it, so its report stays bare rather than claiming nothing could be done.
 
 <template #configuration>
 

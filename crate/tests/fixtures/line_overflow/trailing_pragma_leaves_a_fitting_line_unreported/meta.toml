@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Pragma Leaves a Line Whose Code Fits Unreported"
+
+description = '''
+`reader` and `handler` each fit the 88-column budget on their code, and a trailing `# type: ignore[...]` and a `# noqa` after a note carry them past it. **Neither line is reported, whereas `fallback`, carried past by an ordinary comment, is**, because a pragma governs the line it sits on and cannot move off it, so reporting its width would name nothing the author can change.
+'''

@@ -9,11 +9,11 @@
 //! trigger reaches a call inside an f-string or t-string, or inside a
 //! signature `reflow-signatures` lays out one parameter per line.
 //! Where no trigger fires, a fractured list rejoins onto one row,
-//! whereas the flush column shape holds its break. Inside an
-//! expression `reflow-collections` relocates, a collection literal,
-//! subscript, or comprehension the walk reaches takes that rule's
-//! layout where it lands. `measure` holds the column arithmetic behind
-//! each decision, and `render` builds the replacement.
+//! whereas the flush column shape holds its break. Within an
+//! expression that `reflow-collections` moves, each collection literal,
+//! subscript, or comprehension takes that rule's layout where it lands.
+//! `measure` holds the column arithmetic behind each decision, and
+//! `render` builds the replacement.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -50,7 +50,6 @@ pub(crate) trait CollectionLayout {
 
 #[derive(Debug)]
 pub(crate) struct ReflowCalls {
-    expands_literals: bool,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
     reservations: reserve::Reservations,
@@ -65,7 +64,6 @@ impl ReflowCalls {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            expands_literals: config.expands_literals(),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
@@ -86,7 +84,6 @@ impl Rule for ReflowCalls {
             .exploding_parameters(&source.ast().body);
         let mut exploder = Exploder {
             edits: Vec::new(),
-            expands_literals: self.expands_literals,
             held: &held,
             indent: None,
             layout: None,
@@ -117,7 +114,6 @@ impl Rule for ReflowCalls {
 /// rule's own pass.
 #[derive(Clone, Copy)]
 pub(crate) struct Reshaper<'a> {
-    pub(crate) expands_literals: bool,
     pub(crate) layout: Option<&'a dyn CollectionLayout>,
     pub(crate) one_row: one_row::Settings<'a>,
     pub(crate) padding: &'a [Edit],
@@ -128,13 +124,12 @@ pub(crate) struct Reshaper<'a> {
 }
 
 impl<'a> Reshaper<'a> {
-    /// `expr`'s text with every call inside it exploded and, where
-    /// `layout` is set, every collapsible construct laid out, once it
-    /// lands per `landing`, its source `range` covering any grouping
-    /// pair, an exploded closing bracket dropping to the landing indent
-    /// and `tail` columns following the text on its last row. A block
-    /// written across rows measures each call where its rows travel to
-    /// and moves the rows with the result, one running through a
+    /// `expr`'s text once it lands per `landing`, with every call inside it
+    /// exploded and, where `layout` is set, every collapsible construct laid
+    /// out. `range` covers any grouping pair, an exploded closing bracket
+    /// drops to the landing indent, and `tail` columns follow the last row.
+    /// A block written across rows measures each call where its rows travel
+    /// to and moves the rows with the result, one running through a
     /// row-spanning string part reshapes nothing, and `None` leaves the
     /// caller its own placement of the source slice.
     pub(crate) fn reshaped(
@@ -159,7 +154,6 @@ impl<'a> Reshaper<'a> {
         let rows = travel.map_or(0, |travel| travel.rows);
         let mut exploder = Exploder {
             edits: Vec::new(),
-            expands_literals: self.expands_literals,
             held: &[],
             indent: Some(landing.indent.saturating_add_signed(-rows)),
             layout: self.layout,
@@ -194,14 +188,12 @@ impl<'a> Reshaper<'a> {
 /// indent an exploded closing bracket drops to, unset where each call
 /// answers to its own source line. `padding` is every edit
 /// `strip-stranded-padding` emits over the source, `held` the start of
-/// each parameter list `reflow-signatures` lays out one per line,
-/// `expands_literals` whether `reflow-collections` expands an
-/// overflowing literal, and `layout` the layout a collapsible construct
-/// takes where the walk reaches it, unset where `reflow-collections`
-/// walks the text later in the fold.
+/// each parameter list `reflow-signatures` lays out one per line, and
+/// `layout` the layout a collapsible construct takes where the walk
+/// reaches it, unset where `reflow-collections` walks the text later in
+/// the fold.
 struct Exploder<'a> {
     edits: Vec<Edit>,
-    expands_literals: bool,
     held: &'a [TextSize],
     indent: Option<usize>,
     layout: Option<&'a dyn CollectionLayout>,

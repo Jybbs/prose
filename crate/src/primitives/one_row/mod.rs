@@ -33,17 +33,17 @@ use crate::{
 mod render;
 mod walk;
 
-use render::write_joined;
-
-use render::Writer;
+use render::{Writer, write_joined};
 
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
-/// closes a fracture at all, and `max_dict_entries` is `None` where
-/// `reflow-collections` expands no literal, leaving the entry cap inert.
+/// closes a fracture at all, `expands_literals` whether
+/// `reflow-collections` expands a literal, and `max_dict_entries` is
+/// `None` where it does not, leaving the entry cap inert.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
+    expands_literals: bool,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
@@ -98,6 +98,14 @@ impl<'a> Settings<'a> {
         settled.min(condensed)
     }
 
+    /// The writer serializing under these settings over `source`.
+    fn writer(&self, source: &'a Source) -> Writer<'a> {
+        Writer {
+            settings: *self,
+            source,
+        }
+    }
+
     /// `expr`'s one-row form over `range`, `hold` deciding whether its
     /// own flush column blocks the form.
     fn written(
@@ -110,20 +118,13 @@ impl<'a> Settings<'a> {
         self.writer(source).formed(expr, range, hold)
     }
 
-    /// The writer serializing under these settings over `source`.
-    fn writer(&self, source: &'a Source) -> Writer<'a> {
-        Writer {
-            settings: *self,
-            source,
-        }
-    }
-
     /// These settings resolving each call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
     /// builds for one source.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             code_line_length: self.code_line_length,
+            expands_literals: self.expands_literals,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
@@ -186,12 +187,11 @@ impl<'a> Settings<'a> {
         self.rejoin.explodes(source, call)
     }
 
-    /// True where `reflow-collections` expands `literal` landing at
-    /// `column` with `tail` columns following it on its row: a dict, or
-    /// a list, set, or bracketed tuple of two or more entries, free of
-    /// comments, that a later rule reopens, that is written across rows
-    /// no rejoin reaches, or whose narrowest one-row width under
-    /// `padding` overflows the budget.
+    /// True where `reflow-collections` expands `literal` at `column` with
+    /// `tail` columns after it, meaning a comment-free literal passing
+    /// `requires_expand` that a later rule reopens, that is written across
+    /// rows, or whose narrowest width under `padding` overflows. A caller
+    /// tries [`Self::rejoined`] first.
     pub(crate) fn expands(
         &self,
         source: &'a Source,
@@ -202,17 +202,20 @@ impl<'a> Settings<'a> {
         padding: &[Edit],
     ) -> bool {
         let range = literal.range();
-        if !requires_expand(literal) || source.intersects_comment(range) {
-            return false;
-        }
-        if source.contains_line_break(range) {
-            return self
-                .rejoined(source, literal, literal.into(), column, tail)
-                .is_none();
-        }
-        self.reopens(source, literal)
-            || !self
-                .fits(column + self.narrowest_width(source, literal, parent, range, padding) + tail)
+        self.expands_literals
+            && requires_expand(literal)
+            && !source.intersects_comment(range)
+            && (source.contains_line_break(range)
+                || self.reopens(source, literal)
+                || !self.fits(
+                    column + self.narrowest_width(source, literal, parent, range, padding) + tail,
+                ))
+    }
+
+    /// True where `reflow-collections` expands a literal, the rule on
+    /// with its `explode` facet set.
+    pub(crate) fn expands_literals(&self) -> bool {
+        self.expands_literals
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -287,14 +290,10 @@ impl<'a> Settings<'a> {
         }
     }
 
-    /// True where a later rule reopens `expr` whatever its current
-    /// shape. A dict past `max_dict_entries` explodes on its own count
-    /// trigger, and so does an argument list past `max_args` that
-    /// `reflow-calls` can name, so no one-row form written around either
-    /// survives the pipeline. A call the count trigger claims but cannot
-    /// rewrite into keyword form stays inline, leaving its one-row form
-    /// standing, and neither construct counts inside a replacement
-    /// field, which no rule reaches.
+    /// True where a later rule reopens `expr` whatever its shape, meaning
+    /// it holds a dict past `max_dict_entries` or a call past `max_args`
+    /// that `reflow-calls` can name, outside any replacement field, so no
+    /// one-row form written around either survives the pipeline.
     pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
         any_over_expr_within(expr, Descent::Over, |e| {
             e.as_call_expr()
@@ -328,6 +327,7 @@ impl From<&Config> for Settings<'_> {
         let collection = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
+            expands_literals: config.expands_literals(),
             keep_multiline_literals: collection.keep_multiline_literals,
             max_dict_entries: collection
                 .max_dict_entries
@@ -394,8 +394,7 @@ mod tests {
     #[case::one_entry_dict_overflowing("{'k': v}", 85, 0, true)]
     #[case::one_element_list("[aaaa]", 90, 0, false)]
     #[case::comment_inside("[\n    a,  # c\n    b,\n]", 90, 0, false)]
-    #[case::fracture_that_rejoins("[\n    a, b]", 0, 0, false)]
-    #[case::held_flush_column("[\n    a,\n    b,\n]", 0, 0, true)]
+    #[case::written_across_rows("[\n    a,\n    b,\n]", 0, 0, true)]
     #[case::count_exploded_call_inside("[helper(a=1, b=2, c=3, d=4), b]", 0, 0, true)]
     fn expands_reads_each_trigger_reflow_collections_expands_on(
         #[case] src: &str,

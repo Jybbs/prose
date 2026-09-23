@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/reflow_collections/literal_in_a_travelling_argument_expands/input.py
+input_file: crate/tests/fixtures/reflow_collections/literal_in_a_traveling_argument_expands/input.py
 ---
 class A:
     def f(self):
