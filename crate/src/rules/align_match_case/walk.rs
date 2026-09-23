@@ -12,14 +12,15 @@ use super::*;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
+    pub(super) settling: Settling,
     pub(super) walker: aligner::AlignWalker<'a>,
 }
 
 impl Visitor<'_> {
     /// Emits the alignment and collapse edits for `arms` as one fix
-    /// group. Keeps an arm multi-line instead where its fold at the
-    /// run's column would exceed `code_line_length`, emitting the arms
-    /// above and below it as separate runs.
+    /// group. Where an arm's folded line at the run's column would exceed
+    /// `code_line_length`, records [`Self::unfold_edits`] for the first
+    /// such arm instead and emits the arms on either side as runs of their own.
     fn emit_run(&mut self, arms: &[Arm]) {
         match self.first_overflow(arms) {
             None => {
@@ -37,8 +38,8 @@ impl Visitor<'_> {
     }
 
     /// Returns the index of the first arm in `arms` whose folded line
-    /// would exceed `code_line_length` once its `:` pads to the column
-    /// the run gives it.
+    /// would exceed `code_line_length` with its `:` padded to the column
+    /// `operator_columns` resolves for it, or `None` where every arm fits.
     fn first_overflow(&self, arms: &[Arm]) -> Option<usize> {
         let members: Vec<_> = arms.iter().map(|arm| arm.member).collect();
         self.walker
@@ -48,6 +49,20 @@ impl Visitor<'_> {
             .position(|(column, arm)| {
                 column + aligner::VALUE_OFFSET + arm.body_width > self.code_line_length
             })
+    }
+
+    /// Returns the display width `body` takes through the end of its row
+    /// once folded, reading a trailing comment at the width the enabled
+    /// comment rules settle it to and any other tail as written.
+    fn folded_width(&self, body: &Stmt, member: aligner::Member) -> usize {
+        let source = self.walker.source;
+        let slack = trailing_comment(source, body.end()).map_or(0, |comment| {
+            let gap = aligner::line_gap_before(source, comment.start());
+            self.settling.slack(source, comment, gap, member.gap)
+        });
+        source
+            .width_between(body.start(), source.row_tail(body.end()).end())
+            .saturating_add_signed(-slack)
     }
 
     /// Emits collapse-and-align edits for one match by walking each
@@ -76,11 +91,10 @@ impl Visitor<'_> {
         self.emit_run(&run);
     }
 
-    /// Classifies one arm into the matching `CaseOutcome` variant.
-    /// Disqualifies on a pattern spanning lines, on multi-statement,
-    /// compound, or multi-line bodies, and on a comment in the
-    /// `:`-to-body gap, and reports an arm whose folded line would
-    /// exceed `code_line_length` even outside a run as an overflow.
+    /// Classifies one arm into its `CaseOutcome`, returning `Disqualify`
+    /// for a pattern spanning lines, a multi-statement, compound, or
+    /// multi-line body, or a comment in the `:`-to-body gap, and
+    /// `Overflow` where the arm's folded line alone exceeds `code_line_length`.
     fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
         let source = self.walker.source;
         let Some(member) = colon_targets::match_case(source, case) else {
@@ -97,9 +111,7 @@ impl Visitor<'_> {
             return CaseOutcome::Disqualify(Some(member));
         }
         let arm = Arm {
-            body_width: source.width_between(body_first.start(), body_first.end())
-                + trailing_comment(source, body_first.end())
-                    .map_or(0, |comment| trailing_width(source, comment)),
+            body_width: self.folded_width(body_first, member),
             collapse,
             member,
         };
@@ -109,9 +121,9 @@ impl Visitor<'_> {
         CaseOutcome::Align(arm)
     }
 
-    /// Returns the edits holding an arm out of every run, drawing its
-    /// `:` flush against the pattern and pushing its body onto the next
-    /// line where a `collapse` gap is given on the `case` line.
+    /// Returns the edits that keep an arm out of every run, removing the
+    /// padding before its `:` and replacing a `collapse` gap that holds no
+    /// line break with a newline and the body indent.
     fn unfold_edits(&self, member: aligner::Member, collapse: Option<TextRange>) -> Vec<Edit> {
         let source = self.walker.source;
         let split = collapse
@@ -137,21 +149,22 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
     }
 }
 
-/// One arm whose single-statement body can fold onto its `case` line,
-/// carrying the row its `:` aligns on, the `:`-to-body gap its fold
-/// collapses to one space, and the display width of the body the fold
-/// joins onto that line, counting any trailing comment on the body's
-/// line at the two-space gap the comment rules settle it to.
+/// An arm whose single-statement body can fold onto its `case` line.
 struct Arm {
+    /// The display width [`Visitor::folded_width`] measures for the
+    /// body's row, a trailing comment read at its settled width.
     body_width: usize,
+    /// The `:`-to-body gap the fold collapses to one space.
     collapse: TextRange,
+    /// The row whose `:` aligns with the run.
     member: aligner::Member,
 }
 
 /// Outcome of qualifying one `case` arm. `Align` enrolls the arm in
-/// the active run. `Disqualify` breaks the run and draws the arm's `:`
-/// flush where it shares the pattern's line. `Overflow` breaks the run
-/// and keeps the arm multi-line through [`Visitor::unfold_edits`].
+/// the active run. `Disqualify` ends the run and removes the padding
+/// before the arm's `:` where the `:` sits on the line the pattern
+/// opens on. `Overflow` ends the run and leaves the arm multi-line
+/// through [`Visitor::unfold_edits`], splitting it where it sits folded.
 enum CaseOutcome {
     Align(Arm),
     Disqualify(Option<aligner::Member>),

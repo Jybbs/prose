@@ -1,7 +1,7 @@
 [docs]
-previewable = true
-title       = "A Held Arm Leaves the Run Intact Around It"
+previewable = false
+title       = "A Skipped Arm Bridges the Arms Around It"
 
 description = '''
-`case "hold"` carries `# prose: skip[align-match-case]`, so the rule leaves it exactly as written while the arms above and below it still form one run. `("gh", group, verb, *_)` sets that run's column across the held arm, and padding `("mise", *_)` out to it would carry its line past the 88-column `code-line-length`. **`"mise"` keeps its multi-line form**, leaving `("gh", group, verb, *_)` and `"tag"` to fold alone on either side of it.
+`("gh", group, verb, *_)` sets the column `("mise", *_)` would share across the skipped arm, and padding `("mise", *_)` out to it would carry its line to 93 columns, past the 88-column `code-line-length`. **The `"mise"` arm keeps its multi-line form**, and `("gh", group, verb, *_)` and `"tag"` each fold with their `:` flush against the pattern.
 '''

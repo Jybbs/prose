@@ -164,7 +164,7 @@ impl Config {
     /// The two comment rules a measuring rule predicts, so a trailing
     /// comment reads at the gap `align-comments` seats it at and the
     /// opener `normalize-comment-spacing` settles it to.
-    fn comment_settling(&self) -> comments::Settling {
+    pub(crate) fn comment_settling(&self) -> comments::Settling {
         comments::Settling {
             gap: self
                 .rules

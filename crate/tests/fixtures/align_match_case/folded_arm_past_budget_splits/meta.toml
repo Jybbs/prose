@@ -3,5 +3,5 @@ previewable = true
 title       = "A Folded Arm Padded Past the Budget Splits Onto Two Lines"
 
 description = '''
-Both arms already sit folded on their `case` lines, with `("mise", *_)` padded out to the `:` column `("gh", group, verb, *_)` sets, which carries its line to 95 columns. **The `"mise"` arm splits, its body dropping onto the next line and its `:` drawn flush against the pattern**, since the padded fold runs past the 88-column `code-line-length`. `("gh", group, verb, *_)` then stands alone and sheds its padding.
+Both arms already sit folded on their `case` lines, and `("mise", *_)` is padded out to the `:` column `("gh", group, verb, *_)` sets. That padding carries its line to 95 columns, past the 88-column `code-line-length`. **The `"mise"` arm splits onto two lines, its body moving beneath the `case` and its `:` sitting flush against the pattern**, and `("gh", group, verb, *_)`, now alone, sheds its padding as well.
 '''

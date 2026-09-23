@@ -3,5 +3,5 @@ previewable = true
 title       = "An Arm Too Wide to Fold Alone Splits Onto Two Lines"
 
 description = '''
-`case "rebuilt"` sits alone on one line with its `return`, which runs past the 88-column `code-line-length` even with its `:` flush against the pattern. **The body drops onto its own line beneath the `case`**, the one form of the arm that fits.
+`case "rebuilt"` is the only arm in its `match`, folded with its `return` onto a line that reaches 95 columns even with its `:` flush against the pattern, past the 88-column `code-line-length`. **The body moves onto its own line beneath the `case`**, the one form of the arm that fits.
 '''

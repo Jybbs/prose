@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/align_match_case/wider_arm_below_unfolds_arm_above/input.py
+input_file: crate/tests/fixtures/align_match_case/wider_arm_below_keeps_arm_above_multiline/input.py
 ---
 def mutates(args):
     match args:

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/wide_comment_gap_counts_as_written/input.py
+---
+match event.kind:
+    case "tag":
+        release = tag_of(event.release_name, event.channel)     # pinned stable
+    case "other": release = None

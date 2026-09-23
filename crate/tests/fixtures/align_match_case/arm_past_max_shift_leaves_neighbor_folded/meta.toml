@@ -1,7 +1,7 @@
 [docs]
 previewable = true
-title       = "An Arm Past `max-shift` Leaves Its Neighbor Folded Flush"
+title       = "A Pattern Too Wide for `max-shift` Leaves Its Neighbor Folded"
 
 description = '''
-`case "b"` holds an assignment that fits at 86 columns folded with its `:` flush, whereas padding its `:` out to the column `"an_arm_past_the_shift_cap"` sets would carry the line to 106. **Both arms fold with their `:` flush against the pattern**, because the two patterns differ by more than `max-shift`, which splits the run before any shared column forms, so `"b"` never takes that padding.
+`case "b"` holds an assignment that fits at 86 columns folded with its `:` flush, whereas padding its `:` out to the column `"an_arm_past_the_shift_cap"` sets would carry the line to 111. **Both arms fold with their `:` flush against their patterns**, because the two patterns differ by more than `max-shift`, so the run splits before any shared column forms and `"b"` never takes that padding.
 '''
