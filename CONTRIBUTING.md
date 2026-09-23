@@ -279,7 +279,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | **Workflow** | **Fires on a Pull Request Touching** |
 |---|---|
 | `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
-| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, `.nvmrc`, `CONTRIBUTING.md`, `README.md`, or `crate/Cargo.toml` |
+| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue and pull request templates, `.nvmrc`, `CONTRIBUTING.md`, `LICENSE`, `README.md`, or `crate/Cargo.toml` |
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 
@@ -291,7 +291,7 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Every file the audit reads sits inside the path filter of a workflow that runs the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Every tracked file sits inside the path filter of some pull-request workflow, and every file the audit reads sits inside that of a workflow running the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |

@@ -9,8 +9,9 @@ env:
 
 on:
   pull_request:
-    paths: &paths
+    paths:
       - .github/ISSUE_TEMPLATE/**
+      - .github/PULL_REQUEST_TEMPLATE.md
       - .github/actions/**
       - .github/workflows/deploy.yml
       - .mise/config.toml
@@ -19,13 +20,24 @@ on:
       - .mise/tasks/**
       - .nvmrc
       - CONTRIBUTING.md
+      - LICENSE
       - README.md
       - crate/Cargo.toml
       - site/**
 
   push:
-    branches : [main]
-    paths    : *paths
+    branches:
+      - main
+    paths:
+      - .github/actions/**
+      - .github/workflows/deploy.yml
+      - .mise/config.toml
+      - .mise/mise.lock
+      - .mise/lib/**
+      - .mise/tasks/**
+      - .nvmrc
+      - crate/Cargo.toml
+      - site/**
 
   workflow_dispatch:
 

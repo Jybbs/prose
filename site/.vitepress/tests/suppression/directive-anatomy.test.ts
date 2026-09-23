@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import DirectiveAnatomy     from '../../theme/components/suppression/DirectiveAnatomy.vue'
-import InlineProse          from '../../theme/components/base/InlineProse.vue'
-import { expectAccessible } from '../axe'
+import DirectiveAnatomy      from '../../theme/components/suppression/DirectiveAnatomy.vue'
+import InlineProse           from '../../theme/components/base/InlineProse.vue'
+import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', () => ({
   data: [
@@ -83,7 +83,5 @@ describe('DirectiveAnatomy', () => {
     expect(w.get('.directive-anatomy-effect').text()).toBe('Keeps the dict entries in authored order.')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountAnatomy().html())
-  })
+  rendersAccessibly(() => mountAnatomy().html())
 })

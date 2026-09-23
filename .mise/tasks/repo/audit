@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, cache-trigger coverage, the required checks, and task validity"
+#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, cache-trigger coverage, the required checks, task validity, and pull-request path coverage"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml==6.0.3"]
@@ -25,9 +25,11 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                jobs the pull-request workflows end on.
     tasks      Every task passes `mise tasks validate`, so no alias is shared
                and no dependency names a task that does not exist.
-    reads      Every file the audit reads sits inside the `pull_request`
-               path filter of a workflow that runs the audit, so a change
-               to that file alone still runs it.
+    filters    Every tracked file sits inside the `pull_request` path filter
+               of some workflow, so a pull request touching only that file
+               still reports the check the `main` ruleset requires, and
+               every file the audit reads sits inside that of a workflow
+               running the audit.
 
 Findings surface as `::error::` annotations naming the divergence or file.
 """
@@ -153,27 +155,39 @@ def families() -> dict[str, tuple[str, str | None]]:
     rule-index page declares, without its leading `The ` or its closing
     period. The `docs` family's label covers documentation at large rather
     than the docstring rules alone, so it takes no description from its page.
+    A family without a badge, a hue, or a rule-index page fails the audit.
     """
-    registry = read("site/.vitepress/lib/shared/registries.ts")
-    palette  = read("site/.vitepress/lib/shared/palette.ts")
-    badges   = dict(
-        findall(r"^\s*(\w+)\s*:\s*\{ badge: '([^']+)'", registry, MULTILINE)
+    registries = "site/.vitepress/lib/shared/registries.ts"
+    meta       = extract(
+        f"no FAMILY_META registry in {registries}",
+        r"(?ms)^export const FAMILY_META\b.*?\{(.*?)^\}",
+        read(registries)
     )
-    hues     = dict(
+    palette    = read("site/.vitepress/lib/shared/palette.ts")
+    hues       = dict(
         findall(r"^\s*'?([\w-]+)'?\s*:\s*'#([0-9a-f]{6})'", palette, MULTILINE)
     )
-    tints    = dict(findall(r"^\s*(\w+)\s*:\s*PALETTE\.(\w+)", palette, MULTILINE))
+    tints      = dict(findall(r"^\s*(\w+)\s*:\s*PALETTE\.(\w+)", palette, MULTILINE))
 
     sited = {}
-    for page in sorted(Path("site/rules").glob("*/index.md")):
-        if (family := page.parent.name) not in badges:
-            continue
+    for family, entry in findall(r"^\s*['\"]?([\w-]+)['\"]?\s*:(.*)$", meta, MULTILINE):
+        badge = extract(
+            f"no badge on the {family} entry of FAMILY_META",
+            r"badge\s*:\s*['\"]([^'\"]+)['\"]",
+            entry
+        )
+        if tints.get(family) not in hues:
+            fail(f"FAMILIES in palette.ts gives the {family} family no palette hue")
+        if not (page := Path(f"site/rules/{family}/index.md")).exists():
+            fail(f"the {family} family has no rule-index page at {page}")
         described = next(load_all(read(page), Loader=BaseLoader))["description"]
         described = described.removeprefix("The ").removesuffix(".")
-        sited[f"{badges[family]} {family}"] = (
+        sited[f"{badge} {family}"] = (
             hues[tints[family]],
             None if family == "docs" else described[:1].upper() + described[1:]
         )
+    if not sited:
+        fail(f"FAMILY_META in {registries} declares no family")
     return sited
 
 
@@ -195,6 +209,42 @@ def filtered(path: str, patterns: list[str]) -> bool:
         if fullmatch(glob, path):
             selected = not pattern.startswith("!")
     return selected
+
+
+def filters() -> int:
+    """
+    Report every tracked file no workflow's `pull_request` path filter
+    selects, since a pull request touching only such files never reports the
+    check the `main` ruleset requires, and every file the earlier checks
+    recorded in `READ` that no workflow running the audit selects. A workflow
+    with no path filter fires on every file.
+    """
+    every, audited = [], []
+    for path in sorted(Path(".github/workflows").glob("*.y*ml")):
+        text    = read(path)
+        trigger = load(text, Loader=BaseLoader)["on"]
+        if "pull_request" in trigger:
+            event = trigger["pull_request"] if isinstance(trigger, dict) else ""
+            paths = (event or {}).get("paths", ["**"])
+            every.append(paths)
+            if "mise run repo:audit" in text:
+                audited.append(paths)
+
+    listed  = run(["git", "ls-files", "-z"], capture_output=True, check=True, text=True)
+    tracked = listed.stdout.split("\0")[:-1]
+    failed  = 0
+    for files, selecting, message in (
+        (tracked, every,   "no pull-request workflow fires on tracked files"),
+        (READ,    audited, "no workflow running the audit fires on files it reads"),
+    ):
+        unselected = sorted(
+            path for path in files
+            if not any(filtered(path, paths) for paths in selecting)
+        )
+        if unselected:
+            annotate(f"{message}: {unselected}")
+            failed = 1
+    return failed
 
 
 def gates() -> int:
@@ -527,29 +577,6 @@ def read(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def reads() -> int:
-    """
-    Report every file the earlier checks recorded in `READ` that the
-    `pull_request` path filter of no workflow running the audit selects,
-    since a change to that file alone would merge without the audit running.
-    A workflow with no path filter fires on every file.
-    """
-    filters = []
-    for path in sorted(Path(".github/workflows").glob("*.y*ml")):
-        text    = read(path)
-        trigger = load(text, Loader=BaseLoader)["on"]
-        if "mise run repo:audit" in text and "pull_request" in trigger:
-            event = trigger["pull_request"] if isinstance(trigger, dict) else ""
-            filters.append((event or {}).get("paths", ["**"]))
-
-    if unwatched := sorted(
-        path for path in READ if not any(filtered(path, paths) for paths in filters)
-    ):
-        annotate(f"no workflow running the audit fires on files it reads: {unwatched}")
-        return 1
-    return 0
-
-
 def repeated(values: list[str]) -> set[str]:
     """
     Return every value `values` holds more than once.
@@ -637,5 +664,5 @@ def yaml(path: str | Path) -> dict:
 if __name__ == "__main__":
 
     raise SystemExit(
-        parity() | labels() | manifests() | triggers() | gates() | tasks() | reads()
+        parity() | labels() | manifests() | triggers() | gates() | tasks() | filters()
     )

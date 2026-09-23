@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import Surfaces             from '../../theme/components/landing/surfaces/Surfaces.vue'
-import { expectAccessible } from '../axe'
-import { domTest }          from '../dom'
-import { popperStubMount }  from '../popper-stub'
+import Surfaces                             from '../../theme/components/landing/surfaces/Surfaces.vue'
+import { AXE_TIMEOUT_MS, expectAccessible } from '../axe'
+import { domTest }                          from '../dom'
+import { popperStubMount }                  from '../popper-stub'
 
 vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/' }) }))
 
@@ -90,5 +90,5 @@ describe('Surfaces', () => {
   domTest('renders with no axe violations', async ({ reducedMotion }) => {
     reducedMotion(true)
     await expectAccessible(mountSurfaces().html())
-  })
+  }, AXE_TIMEOUT_MS)
 })
