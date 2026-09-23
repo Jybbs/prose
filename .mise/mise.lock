@@ -317,11 +317,6 @@ version = "0.4.46"
 backend = "cargo:cargo-llvm-lines"
 specifiers = ["0.4.46"]
 
-[[tools."cargo:samply"]]
-version = "0.13.1"
-backend = "cargo:samply"
-specifiers = ["0.13.1"]
-
 [[tools."cargo:twiggy"]]
 version = "0.8.0"
 backend = "cargo:twiggy"
@@ -386,6 +381,39 @@ url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397
 checksum = "sha256:996120ac70afe405c58fce508a476f25bb71032c6fb8013aa0123bba36429c76"
 url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131414"
+
+[[tools."github:mstange/samply"]]
+version = "0.13.1"
+backend = "github:mstange/samply"
+specifiers = ["0.13.1"]
+
+[tools."github:mstange/samply".options]
+version_prefix = "samply-v"
+
+[tools."github:mstange/samply"."platforms.linux-arm64"]
+checksum = "sha256:aa465162b62830168775b7ff4804bc35049436dcbc29bb3d1ea9f580380ea06a"
+url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379066"
+
+[tools."github:mstange/samply"."platforms.linux-x64"]
+checksum = "sha256:61875daad67888798690dea3cb2748279df6ac299c5c6a857d67eed7642473d9"
+url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-gnu.tar.xz"
+url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379074"
+
+[tools."github:mstange/samply"."platforms.macos-arm64"]
+checksum = "sha256:7597239aa3769e75058be5ed359dbfe067f5e7714a5f052c45dd81d509aec17f"
+url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379067"
+
+[tools."github:mstange/samply"."platforms.macos-x64"]
+checksum = "sha256:a57f05f9162d06c36df6d51425d976ac774a8cd6dbd84050e6303fa8bf813998"
+url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-apple-darwin.tar.xz"
+url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379070"
+
+[tools."github:mstange/samply"."platforms.windows-x64"]
+checksum = "sha256:8fed74dac18197bbb2520125b0199255e09709bed7903a7672a06225a5d7e976"
+url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379071"
 
 [[tools."github:rustwasm/wasm-bindgen"]]
 version = "0.2.128"

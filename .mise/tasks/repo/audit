@@ -119,6 +119,15 @@ def fail(message: str) -> NoReturn:
     raise SystemExit(1)
 
 
+def frontmatter(task: str) -> dict:
+    """
+    Return the TOML table the `task` file's `#MISE` frontmatter declares.
+    """
+    lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
+    marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
+    return loads("\n".join(marked))
+
+
 def hashed_paths(action: str) -> list[str]:
     """
     Return the file paths listed in the `action` manifest's `hashFiles` call.
@@ -264,6 +273,11 @@ def parity() -> int:
             cargo_lock_version("wasm-bindgen")
         ),
         (
+            ".mise/tasks/lock/check sources ↔ .mise/tasks/lock/sync sources and outputs",
+            task_sources("lock/check"),
+            sorted(task_sources("lock/sync") + task_outputs("lock/sync"))
+        ),
+        (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
             task_sources("site/test"),
             task_sources("site/press")
@@ -312,15 +326,21 @@ def sourced_manifests(task: str) -> list[str]:
     return [path for path in task_sources(task) if path.endswith("/Cargo.toml")]
 
 
+def task_outputs(task: str) -> list[str]:
+    """
+    Return the `outputs` the `task` file's `#MISE` frontmatter declares, sorted.
+    """
+    if "outputs" not in (table := frontmatter(task)):
+        fail(f"no outputs declaration in .mise/tasks/{task}")
+    return sorted(table["outputs"])
+
+
 def task_sources(task: str) -> list[str]:
     """
     Return the `sources` the `task` file's `#MISE` frontmatter declares, sorted,
     with every `@group:` reference replaced by the input group it names.
     """
-    lines  = Path(f".mise/tasks/{task}").read_text(encoding="utf-8").splitlines()
-    marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
-    table  = loads("\n".join(marked))
-    if "sources" not in table:
+    if "sources" not in (table := frontmatter(task)):
         fail(f"no sources declaration in .mise/tasks/{task}")
     groups = toml(".mise/config.toml")["task_config"]["input_groups"]
     return sorted(path for entry in table["sources"] for path in input_group(entry, groups))

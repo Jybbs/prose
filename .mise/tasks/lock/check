@@ -15,4 +15,4 @@ cargo update --dry-run --locked --workspace
 stale=$(mise lock --dry-run --json)
 [[ "$stale" == "[]" ]] || { echo "$stale" >&2; exit 1; }
 MISE_LOCKED_SCOPES=project mise install --dry-run --force --locked
-uv lock --locked --project crate
+uv lock --check --project crate
