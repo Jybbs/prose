@@ -9,15 +9,24 @@ use std::{
 };
 
 use rstest::rstest;
+use ruff_python_ast::PythonVersion;
 
 use crate::{
+    corpus::{interpreter, target, version},
     execute::{Runner, Waited, ending, module_name, wait},
     outcome::{Kind, Outcome},
 };
 
 /// Runs `module` of a scratch corpus holding `files`, each a path beside its
-/// text, through the probe every sweep runs.
+/// text, through the probe every sweep runs, under the resolved interpreter,
+/// which has to be 3.14 or later for the annotation cases to test what they
+/// name.
 fn probed(files: &[(&str, &str)], module: &str) -> Outcome {
+    let python = interpreter();
+    assert!(
+        target(&version(&python)) >= PythonVersion::PY314,
+        "the probe tests need the pinned 3.14 interpreter, found {python}",
+    );
     let dir = tempfile::tempdir().expect("a scratch corpus");
     for (path, text) in files {
         let file = dir.path().join(path);
@@ -25,7 +34,7 @@ fn probed(files: &[(&str, &str)], module: &str) -> Outcome {
             .expect("create a corpus directory");
         fs_err::write(file, text).expect("write a corpus file");
     }
-    let runner = Runner::new(dir.path());
+    let runner = Runner::new(dir.path(), python);
     runner.run(module, &[&runner.stage.original])
 }
 
@@ -86,6 +95,15 @@ fn an_annotation_naming_an_unbound_name_raises_when_the_probe_reads_it() {
     let ran = probed(&[("mod.py", "value: Missing = 1\n")], "mod.py");
     assert_eq!(ran.kind, Kind::Raised);
     assert_eq!(ran.raised, "NameError");
+}
+
+#[test]
+fn the_probe_records_the_names_the_module_annotations_cover() {
+    let ran = probed(&[("mod.py", "b: int = 1\na: str\n")], "mod.py");
+    assert_eq!(
+        ran.constants.get("__annotations__").map(String::as_str),
+        Some("('a', 'b')")
+    );
 }
 
 #[test]

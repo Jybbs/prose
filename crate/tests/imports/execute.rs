@@ -14,20 +14,13 @@ use std::{
 
 use crate::{
     common::setting,
-    corpus::{VENDORED, asked},
+    corpus::VENDORED,
     outcome::{Kind, Outcome},
     stage::Stage,
 };
 
 /// How often the harness asks whether a run has finished.
 const POLL: Duration = Duration::from_millis(20);
-
-/// The interpreter a sweep runs absent [`PYTHON_VAR`].
-const PYTHON: &str = "python3";
-
-/// The environment variable naming the interpreter whose standard library
-/// the sweep runs.
-pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
 
 /// How many seconds one module may run for absent [`TIMEOUT_VAR`]. Every
 /// module of the pinned interpreter's library that imports at all lands
@@ -49,11 +42,11 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    /// Builds the runner, copying the corpus into a fresh stage and
-    /// compiling it ahead of the runs that read it.
-    pub(crate) fn new(corpus: &Path) -> Self {
+    /// Builds the runner over `python`, copying the corpus into a fresh
+    /// stage and compiling it ahead of the runs that read it.
+    pub(crate) fn new(corpus: &Path, python: String) -> Self {
         let runner = Self {
-            python: interpreter(),
+            python,
             seconds: setting(TIMEOUT_VAR).map_or(TIMEOUT, |held| {
                 held.parse()
                     .unwrap_or_else(|_| panic!("`{TIMEOUT_VAR}` is a number of seconds"))
@@ -168,20 +161,9 @@ pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
     Outcome::of(Kind::Raised, format!("ends on {status}{tail}"))
 }
 
-/// The interpreter every module runs under, resolved to the executable it
-/// runs as, with [`PYTHON_VAR`] naming it and [`PYTHON`] standing in where it
-/// is unset. A version manager's shim reads configuration the cleared
-/// environment of a run leaves out of reach, so a run launches the executable
-/// the shim resolves to instead.
-pub(crate) fn interpreter() -> String {
-    asked(
-        &setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned()),
-        "import sys; print(sys.executable)",
-    )
-}
-
 /// The dotted name an import binds one module to, a module under
-/// [`VENDORED`] naming itself from that directory rather than from the tree.
+/// [`VENDORED`] taking its dotted name from its path below that directory
+/// rather than below the tree.
 pub(crate) fn module_name(module: &str) -> String {
     let module = module
         .strip_prefix(VENDORED)

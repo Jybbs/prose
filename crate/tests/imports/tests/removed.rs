@@ -1,6 +1,6 @@
 //! Tests for the names a comparison leaves out, covering a binding any
-//! recorded fix removed, a name lost with no fix removing it, and a module
-//! whose formatted run never bound a namespace.
+//! recorded fix removed, a name lost with no fix removing it, a module the
+//! tree does not hold, and a module either of whose runs raised.
 
 use std::path::Path;
 
@@ -11,7 +11,7 @@ use ruff_source_file::LineIndex;
 use super::*;
 use crate::{
     format::edit_rows,
-    outcome::{Kind, Outcome},
+    outcome::Outcome,
     records::{EditRows, Fixes, Removed},
     removed::removed,
 };
@@ -88,15 +88,9 @@ fn a_name_no_fix_removed_stays_in_the_comparison() {
 }
 
 #[rstest]
-#[case::the_original(true)]
-#[case::the_formatted_copy(false)]
-fn a_side_that_raised_leaves_nothing_out(#[case] original_raised: bool) {
-    let raised = || Outcome::of(Kind::Raised, "raises NameError: name 'sys' is not defined");
-    let (was, now) = if original_raised {
-        (raised(), bound(&["args", "sys"], &[]))
-    } else {
-        (bound(&["args", "os", "sys"], &[]), raised())
-    };
+#[case::the_original(raising("NameError", None), bound(&["args", "sys"], &[]))]
+#[case::the_formatted_copy(bound(&["args", "os", "sys"], &[]), raising("NameError", None))]
+fn a_side_that_raised_leaves_nothing_out(#[case] was: Outcome, #[case] now: Outcome) {
     assert_eq!(
         left_out(was, now, &removing_os("prune-inert-imports")),
         Removed::new()

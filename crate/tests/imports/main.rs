@@ -4,7 +4,7 @@
 //! in a fresh interpreter through `probe.py`, and each break is blamed on the
 //! rules whose recorded fixes reach it. The run is ignored by default because
 //! it executes a corpus, and it fails on any break and on any condition that
-//! leaves it unable to judge one.
+//! leaves it unable to judge whether a module broke.
 
 #[path = "../common/mod.rs"]
 mod common;
@@ -30,8 +30,7 @@ use std::{iter, num::NonZeroUsize};
 
 use crate::{
     common::{watch_for_a_runaway, widths_or},
-    corpus::{identity, standard_library, target, version},
-    execute::interpreter,
+    corpus::{identity, interpreter, standard_library, target, version},
     gate::failures,
     report::render,
     sweep::Sweep,
@@ -46,17 +45,18 @@ fn every_module_still_imports() {
     watch_for_a_runaway();
     let python = interpreter();
     let corpus = standard_library(&python);
-    let target = target(&python);
+    let release = version(&python);
+    let target = target(&release);
     let swept = identity(&corpus);
     let budgets = iter::once(None).chain(widths_or(&[]).into_iter().map(NonZeroUsize::new));
-    let sweep = Sweep::new(&corpus, target);
+    let sweep = Sweep::new(&corpus, &python, target);
     eprintln!(
         "corpus      {} ({} files, vendored {})\nbinary      the library under test\ninterpreter \
          {python} ({})\ntarget      {target}\nstage       {}",
         corpus.display(),
         swept.files,
         swept.vendored.join(" "),
-        version(&python),
+        release,
         sweep.runner.stage.root.display(),
     );
     let mut failed = Vec::new();

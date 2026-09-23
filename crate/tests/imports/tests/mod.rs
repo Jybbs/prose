@@ -90,8 +90,8 @@ fn losing(module: &str, frame: &str, name: &str) -> Break {
     }
 }
 
-/// A run that raised `raised`, its failed import reading from `importing`
-/// where it names one.
+/// A run that raised `raised`, its failed import naming `importing` where it
+/// names one.
 fn raising(raised: &str, importing: Option<&str>) -> Outcome {
     Outcome {
         error: format!("raises {raised}: no thing"),

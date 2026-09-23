@@ -71,7 +71,8 @@ pub(crate) fn binding_rows(text: &str) -> BTreeMap<String, Range<usize>> {
 }
 
 /// The rows binding `name` in one module of `tree`, beside that module's
-/// text, `None` where the module does not read or does not bind it.
+/// text, `None` where the file cannot be read or the module does not bind
+/// the name.
 pub(crate) fn bound_at(tree: &Path, module: &str, name: &str) -> Option<(Range<usize>, String)> {
     let text = fs_err::read_to_string(tree.join(module)).ok()?;
     let rows = binding_rows(&text).get(name)?.clone();

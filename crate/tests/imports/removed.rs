@@ -1,6 +1,6 @@
-//! The names a comparison leaves out, meaning each name a module's original
-//! bound and its formatted copy does not, where a recorded fix removed the
-//! binding.
+//! The names a comparison leaves out, meaning each name the original of a
+//! module binds and its formatted copy does not, where a recorded fix
+//! removed the binding.
 
 use std::{collections::BTreeMap, path::Path};
 

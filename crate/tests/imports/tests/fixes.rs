@@ -1,6 +1,6 @@
 //! Tests for the span and row arithmetic behind an attribution, covering
-//! whether a fix reached a given row, which rows an edit rewrote, and the
-//! hunk a report shows around them.
+//! whether a fix reached a given row or took a name out, what its edits leave
+//! of the lines they reach, and the hunk a report shows around a row.
 
 use std::ops::Range;
 
@@ -10,7 +10,7 @@ use similar::TextDiff;
 use crate::{
     diff::{hunk, mapped_rows},
     fixes::{drops, holds_word, reaches, rewritten},
-    format::{edit_rows, row_of},
+    format::edit_rows,
     records::EditRows,
 };
 
@@ -24,15 +24,6 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
         rows: edit_rows(&LineIndex::from_source_text(text), text, &range),
         range,
     }
-}
-
-#[test]
-fn an_end_at_column_one_closes_on_the_row_above() {
-    let text = "a = 1\nb = 2\nc = 3\n";
-    let lines = LineIndex::from_source_text(text);
-    assert_eq!(edit_rows(&lines, text, &(0..12)), 1..3);
-    assert_eq!(edit_rows(&lines, text, &(0..13)), 1..4);
-    assert_eq!(edit_rows(&lines, text, &(0..5)), 1..2);
 }
 
 #[test]
@@ -72,14 +63,6 @@ fn rewritten_returns_the_reached_lines_before_and_after() {
         rewritten(&[edit("9", 10..11, text)], text),
         ("b = 2".to_owned(), "b = 9".to_owned())
     );
-}
-
-#[test]
-fn rows_count_from_one() {
-    let lines = LineIndex::from_source_text("a\nbb\nccc\n");
-    assert_eq!(row_of(&lines, 0), 1);
-    assert_eq!(row_of(&lines, 2), 2);
-    assert_eq!(row_of(&lines, 5), 3);
 }
 
 #[test]

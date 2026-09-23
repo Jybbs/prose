@@ -28,8 +28,8 @@ pub(crate) struct Formatted {
     /// Each file the pipeline read and could not format, beside the error it
     /// returned.
     pub(crate) rejected: BTreeMap<String, String>,
-    /// The files the run rewrote.
-    pub(crate) rewritten: BTreeSet<String>,
+    /// How many files the run rewrote.
+    pub(crate) rewritten: usize,
     /// How many files the pipeline could not read or parse.
     pub(crate) unread: usize,
 }
@@ -39,7 +39,7 @@ impl Absorbing for Formatted {
         self.fixes.extend(other.fixes);
         self.read.extend(other.read);
         self.rejected.extend(other.rejected);
-        self.rewritten.extend(other.rewritten);
+        self.rewritten += other.rewritten;
         self.unread += other.unread;
     }
 }
@@ -56,12 +56,13 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
     start..end + 1
 }
 
-/// Formats every file of a tree in place and returns the files it read,
-/// rejected, and rewrote, the safe fixes each file's run recorded, and how
-/// many files it could not read or parse.
+/// Formats every file of a tree in place and returns the files it read and
+/// rejected, how many it rewrote, the safe fixes each file's run recorded,
+/// and how many files it could not read or parse.
 ///
 /// A file the pipeline could not read, parse, or format is left as it was,
-/// the first two counted and the third named beside its error.
+/// an unread or unparsed file only counted and a file the pipeline could not
+/// format named beside its error.
 pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Formatted {
     let files: Vec<PathBuf> = python_files(tree).collect();
     swept(&files, |path| formatted(path, pipeline, tree))
@@ -72,8 +73,9 @@ pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
     lines.line_index(offset(at)).get()
 }
 
-/// What formatting one file of `tree` in place left behind, a file the
-/// pipeline could not read or parse counting itself and nothing else.
+/// What formatting one file of `tree` in place left behind, recording one
+/// unread file and nothing else where the pipeline could not read or parse
+/// it.
 fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
     let _slot = Slot::open(path.display().to_string());
     let Ok(source) = Source::from_path(path) else {
@@ -129,7 +131,7 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
     Formatted {
         fixes: Fixes::from_iter((!fixes.is_empty()).then(|| (module.clone(), fixes))),
         read,
-        rewritten: changed.then_some(module).into_iter().collect(),
+        rewritten: usize::from(changed),
         ..Formatted::default()
     }
 }

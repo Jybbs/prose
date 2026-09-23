@@ -108,7 +108,7 @@ fn each_name_left_out_lists_its_binding_and_the_fix_that_removed_it() {
         ..width()
     };
     let shown = render(&found);
-    shows(&shown, "  removed          3");
+    shows(&shown, "  left out         3");
     shows(&shown, "left out, a recorded fix removed the binding (3):");
     shows(
         &shown,
@@ -124,7 +124,10 @@ fn each_name_left_out_lists_its_binding_and_the_fix_that_removed_it() {
 fn each_uncomparable_module_lists_its_reach_beside_its_exception() {
     let found = stalling([blocked("encodings/mbcs.py", "ImportError")].into());
     let shown = render(&found);
-    shows(&shown, "uncomparable, the original did not run (1):");
+    shows(
+        &shown,
+        "uncomparable, the original did not run cleanly (1):",
+    );
     shows(
         &shown,
         "encodings/mbcs.py  module, raises ImportError: no thing",
@@ -214,7 +217,7 @@ fn the_summary_block_holds_every_count_in_one_column() {
             "  rejected         0\n",
             "  flaky            0\n",
             "  varying          0\n",
-            "  removed          0",
+            "  left out         0",
         )
     );
 }

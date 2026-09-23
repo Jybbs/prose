@@ -1,6 +1,7 @@
 //! One sweep of a corpus at a width, meaning a formatted copy, the run of
-//! every module of the corpus from both trees, the names a recorded fix
-//! removed set aside, and each break confirmed and attributed.
+//! every module of the corpus from both trees, the comparison that sets
+//! aside each name a recorded fix removed, and each break confirmed and
+//! attributed.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -59,12 +60,12 @@ pub(crate) struct Sweep {
 }
 
 impl Sweep {
-    /// Builds the sweep, copying the corpus into a fresh stage, every format
-    /// run targeting `target`.
-    pub(crate) fn new(corpus: &Path, target: PythonVersion) -> Self {
+    /// Builds the sweep over `python`, copying the corpus into a fresh stage,
+    /// every format run targeting `target`.
+    pub(crate) fn new(corpus: &Path, python: &str, target: PythonVersion) -> Self {
         Self {
             known: Mutex::new(BTreeMap::new()),
-            runner: Runner::new(corpus),
+            runner: Runner::new(corpus, python.to_owned()),
             target,
         }
     }
@@ -201,7 +202,7 @@ impl Sweep {
             label,
             rejected: run.rejected,
             removed,
-            rewritten: run.rewritten.len(),
+            rewritten: run.rewritten,
             uncomparable: partition.uncomparable,
             unmeasured,
             unread: run.unread,

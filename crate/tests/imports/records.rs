@@ -66,8 +66,8 @@ impl Break {
     }
 }
 
-/// What one run swept, the files the walk read beside the distributions
-/// installed next to the standard library.
+/// What one run swept, how many files the walk read beside the
+/// distributions installed next to the standard library.
 pub(crate) struct Corpus {
     /// How many files the walk read.
     pub(crate) files: usize,

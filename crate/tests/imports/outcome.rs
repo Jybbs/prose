@@ -11,8 +11,11 @@ use std::{
 /// therefore leaves out.
 const REORDERED: &[&str] = &["__all__", "__slots__"];
 
-/// The names every module binds through the loader or the compiler rather
-/// than through its own statements, which a comparison leaves out.
+/// The name the probe records the names a module annotates under.
+pub(crate) const ANNOTATED: &str = "__annotations__";
+
+/// The names a module binds through the loader or the compiler rather than
+/// through its own statements, which a comparison leaves out.
 const UNBOUND: &[&str] = &[
     "__annotate__",
     "__builtins__",
@@ -52,13 +55,14 @@ impl Kind {
 /// What one run of a module left behind, as the probe records it.
 #[derive(Clone, Default)]
 pub(crate) struct Outcome {
-    /// The plain constants the run bound, each spelt.
+    /// The plain constants the run bound, each spelt, beside the names the
+    /// module annotates, spelt under [`ANNOTATED`].
     pub(crate) constants: BTreeMap<String, String>,
     /// The predicate of a sentence naming the module.
     pub(crate) error: String,
     /// The file and row of every frame a raise passed through.
     pub(crate) frames: Vec<(String, usize)>,
-    /// The module a raised import read from, where the raise names one.
+    /// The module a failed import named, where the exception names one.
     pub(crate) importing: Option<String>,
     /// What the run amounted to.
     pub(crate) kind: Kind,

@@ -1,5 +1,5 @@
 """
-Load one module the way an import loads it and report what it bound.
+Loads one module the way an import loads it and reports what it bound.
 
 Usage: probe.py <record> <name> <module> <tree>...
 
@@ -37,6 +37,9 @@ class Probe:
 
     def __init__(self, located: str, name: str):
         """
+        Builds the probe for the module at `located`, bound to `name`, with no
+        row recorded yet.
+
         Args:
             located : The path the module sits at.
             name    : The dotted name an import binds it to.
@@ -47,13 +50,13 @@ class Probe:
 
     def bound(self, module: object, annotated: object):
         """
-        Record every name the module bound, each plain constant among them,
+        Records every name the module bound, each plain constant among them,
         and the names its annotations cover.
 
         Args:
             module    : The module whose namespace to read.
-            annotated : The module's annotations, as a read of the attribute
-                        returns them.
+            annotated : The module's annotations, as reading
+                        `module.__annotations__` returns them.
         """
         self.rows.append(("kind", "ok"))
 
@@ -63,16 +66,17 @@ class Probe:
             if (spelt := constant(value)) is not None:
                 self.rows.append(("const", name, spelt))
 
-        names = tuple(sorted(annotated, key=str)) if isinstance(annotated, dict) else None
+        if not isinstance(annotated, dict):
+            return
 
-        if (spelt := constant(names)) is not None:
+        if (spelt := constant(tuple(sorted(annotated, key=str)))) is not None:
             self.rows.append(("const", "__annotations__", spelt))
 
     def load(self):
         """
-        Import the package holding the module, execute the module, and read
-        its annotations the way a consumer reads them, then record what it
-        bound or what any step raised, beside what the run pulled in.
+        Imports the package holding the module, executes the module, and
+        reads its annotations the way a consumer reads them, then records
+        what it bound or what any step raised, beside what the run pulled in.
         """
         spec   = spec_from_file_location(self.name, self.located)
         module = module_from_spec(spec)
@@ -95,10 +99,10 @@ class Probe:
 
     def package(self):
         """
-        Import the package the module sits in, as an import of the module
-        imports it first, so a package whose `__init__` reads the module
-        reaches a bound one rather than the empty module this probe is about
-        to register under that name.
+        Imports the package the module sits in, the way an import of the
+        module imports its package first, so a package whose `__init__` reads
+        the module finds the bound one rather than the empty module this probe
+        is about to register under that name.
         """
         held, _, _ = self.name.rpartition(".")
 
@@ -107,8 +111,8 @@ class Probe:
 
     def raised(self, exc: BaseException):
         """
-        Record an exception, the name it turns on, the module a failed
-        import read from, and the frames it passed.
+        Records an exception, the name it turns on, the module a failed
+        import named, and the frames it passed.
 
         Args:
             exc: The exception the module raised.
@@ -126,7 +130,7 @@ class Probe:
 
     def write(self, record: str):
         """
-        Write the rows as `NUL`-separated fields in `RS`-separated rows.
+        Writes the rows as `NUL`-separated fields in `RS`-separated rows.
 
         Args:
             record: The path to write the record to.
@@ -137,7 +141,7 @@ class Probe:
 
 def spelt(text: str) -> str:
     """
-    Spell text with each tree root replaced by `TREE` and the interpreter's
+    Spells text with each tree root replaced by `TREE` and the interpreter's
     standard library directory by `STDLIB`, so a string a run derives from
     a location reads the same from either tree, across runs whose stage
     roots carry different process ids, and on any machine.
@@ -151,9 +155,9 @@ def spelt(text: str) -> str:
     return text.replace(library, STDLIB)
 
 
-def constant(value: object) -> "str | None":
+def constant(value: object) -> str | None:
     """
-    Spell a value where its `repr` holds across runs, `None` otherwise. An
+    Spells a value where its `repr` holds across runs, `None` otherwise. An
     `int` or `str` subclass spells through its own `repr`, so an enum member
     reads as the member. Each tree root spells as `TREE`, so a value a module
     derives from its own location reads the same from either tree.
@@ -161,13 +165,13 @@ def constant(value: object) -> "str | None":
     Args:
         value: The bound value to spell.
     """
-    if value is None or isinstance(value, (int, str)):
+    if value is None or isinstance(value, int | str):
         try:
             return spelt(repr(value))
         except BaseException:
             return None
 
-    if not isinstance(value, (frozenset, tuple)):
+    if not isinstance(value, frozenset | tuple):
         return None
 
     parts = [constant(item) for item in value]
@@ -184,7 +188,7 @@ def constant(value: object) -> "str | None":
 
 def frames(exc: BaseException):
     """
-    The rows naming every frame an exception passed through.
+    Yields the rows naming every frame an exception passed through.
 
     Args:
         exc: The exception to walk.
@@ -198,7 +202,7 @@ def frames(exc: BaseException):
 
 def main(located: str, name: str, record: str, trees: list):
     """
-    Run the module the harness named and write the record it reads back.
+    Runs the module the harness named and writes the record it reads back.
 
     Args:
         located : The path the module sits at.

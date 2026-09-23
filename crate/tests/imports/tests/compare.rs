@@ -81,6 +81,16 @@ fn a_run_losing_several_names_carries_every_one(#[case] original: &[&str], #[cas
 }
 
 #[test]
+fn an_annotations_divergence_reads_as_what_the_module_annotates() {
+    let was = bound(&[], &[("__annotations__", "('a', 'b')")]);
+    let now = bound(&[], &[("__annotations__", "('a',)")]);
+    assert_eq!(
+        divergence(&now, &was).map(|diverged| diverged.reason),
+        Some("annotates ('a',) at module scope where the original annotates ('a', 'b')".to_owned())
+    );
+}
+
+#[test]
 fn comparing_sorts_each_module_into_one_bucket() {
     let raised = || Outcome::of(Kind::Raised, "raises ImportError: no _abc");
     let modules = [

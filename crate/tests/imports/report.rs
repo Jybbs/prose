@@ -1,8 +1,8 @@
 //! Rendering one width's findings. The breaks are tallied by the frame and
 //! rules they share, each shown with the hunk around the row it names and the
-//! command that reproduces one of its modules alone, beside each file the
-//! pipeline could not format, each module the original could not run, and
-//! each name the comparison left out.
+//! command that reproduces one of its modules alone. Beneath them the report
+//! lists each file the pipeline could not format, each module whose original
+//! run did not end cleanly, and each name the comparison left out.
 
 use std::{
     collections::BTreeMap,
@@ -14,7 +14,8 @@ use itertools::Itertools;
 
 use crate::{
     common::{Hit, SHOWN, Tally, WIDTHS_VAR, remainder, setting},
-    execute::{PYTHON_VAR, TIMEOUT_VAR},
+    corpus::PYTHON_VAR,
+    execute::TIMEOUT_VAR,
     outcome::Kind,
     records::{Break, Frame, Width},
     sweep::DEFAULT_LABEL,
@@ -41,7 +42,7 @@ pub(crate) fn render(found: &Width) -> String {
         row("rejected", &found.rejected.len()),
         row("flaky", &found.flaky.len()),
         row("varying", &found.varying()),
-        row("removed", &found.left_out()),
+        row("left out", &found.left_out()),
     ];
     if found.unread > 0 {
         lines.push(row("unread", &found.unread));
@@ -81,7 +82,7 @@ pub(crate) fn render(found: &Width) -> String {
     let varied = excluded(found);
     for (heading, listed) in [
         ("rejected, the pipeline could not format it", &rejected),
-        ("uncomparable, the original did not run", &blocked),
+        ("uncomparable, the original did not run cleanly", &blocked),
         ("left out, a recorded fix removed the binding", &left_out),
         ("flaky, a second run varied", &varied),
         ("unmeasured, a run left no record", &found.unmeasured),

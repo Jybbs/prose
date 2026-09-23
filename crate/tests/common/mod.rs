@@ -17,7 +17,7 @@ pub(crate) use sweep::{
     pointed_corpus, python_files, report_verified, setting, swept, unread, verifying,
     watch_for_a_runaway, widths_or,
 };
-pub(crate) use tally::{Hit, SHOWN, Tally, remainder};
+pub(crate) use tally::{Hit, SHOWN, Tally, remainder, with_rest};
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.

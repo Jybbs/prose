@@ -4,7 +4,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    outcome::{Kind, Outcome},
+    common::with_rest,
+    outcome::{ANNOTATED, Kind, Outcome},
     records::{Blocked, Break, Frame},
 };
 
@@ -113,9 +114,14 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
         .constants
         .get(differing)
         .map_or(MISSING, String::as_str);
+    let reason = if differing == ANNOTATED {
+        format!("annotates {now} at module scope where the original annotates {was}")
+    } else {
+        format!("binds `{differing}` to {now} where the original binds {was}")
+    };
     Some(Divergence {
         names: vec![differing.clone()],
-        reason: format!("binds `{differing}` to {now} where the original binds {was}"),
+        reason,
     })
 }
 
@@ -138,15 +144,6 @@ pub(crate) fn varying(one: &Outcome, other: &Outcome) -> BTreeSet<String> {
         .chain(respelt(one, other))
         .cloned()
         .collect()
-}
-
-/// `first` beside how many followed it, the rest counted as `noun`s.
-pub(crate) fn with_rest(first: &str, rest: usize, noun: &str) -> String {
-    match rest {
-        0 => first.to_owned(),
-        1 => format!("{first} and 1 more {noun}"),
-        _ => format!("{first} and {rest} more {noun}s"),
-    }
 }
 
 /// The kind a run of one module left behind, `unmeasured` where the tree was

@@ -55,7 +55,7 @@ fn a_raise_row_composes_its_sentence_beside_the_other_endings() {
 }
 
 #[test]
-fn an_importing_row_names_the_module_a_failed_import_read_from() {
+fn an_importing_row_names_the_module_a_failed_import_named() {
     let record = [
         ["kind", "raised"].join("\0"),
         ["importing", "pkg.mod"].join("\0"),

@@ -1,7 +1,7 @@
 //! Tests for the verdict a run reaches at one width, covering each cause
 //! that fails it and the run that passes.
 
-use std::collections::BTreeMap;
+use std::{assert_matches, collections::BTreeMap};
 
 use rstest::rstest;
 
@@ -41,7 +41,7 @@ fn a_clean_width_fails_on_nothing() {
 }
 
 #[rstest]
-fn a_module_failing_on_its_own_terms_fails_nothing(
+fn an_uncomparable_module_the_loader_did_not_fail_fails_nothing(
     #[values(Reach::Absent, Reach::Module, Reach::Platform)] reach: Reach,
 ) {
     let found = Width {
@@ -68,12 +68,10 @@ fn a_module_failing_on_its_own_terms_fails_nothing(
 )]
 #[case::rejected(
     Width { rejected: [("s.pyi".to_owned(), "rule `x` failed".to_owned())].into(), ..clean() },
-    "the rewrite breaks s.pyi",
+    "the pipeline could not format s.pyi",
 )]
 fn each_cause_fails_the_width_it_names(#[case] found: Width, #[case] cause: &str) {
-    let failed = failures(&found);
-    assert_eq!(failed.len(), 1, "{failed:?}");
-    shows(&failed[0], cause);
+    assert_matches!(failures(&found).as_slice(), [only] if only.contains(cause));
 }
 
 #[test]
@@ -85,6 +83,9 @@ fn several_modules_under_one_cause_name_the_first_and_count_the_rest() {
     };
     assert_eq!(
         failures(&found),
-        ["the rewrite breaks a.py and 2 more modules"]
+        [
+            "the pipeline could not format c.pyi",
+            "the rewrite breaks a.py and 1 more module"
+        ]
     );
 }

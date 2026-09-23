@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A 3.14 Target Removes the Directive for a Name Bound Below Its Reader"
-
-description = '''
-`target-version = "3.14"` is set, and `convert` annotates its parameter and its return with `Alias`, which is assigned below the function. **`from __future__ import annotations` is removed**, because on 3.14 the annotations evaluate once something reads them after the module has run, by which point `Alias` is bound, so its position below the reader no longer matters.
-'''
