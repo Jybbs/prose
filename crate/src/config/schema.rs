@@ -18,10 +18,11 @@ use super::{
 pub struct AlignColonsConfig {
     /// Pads the space before the `:` of each docstring `name: description`
     /// entry so a run shares one column, and the space before each
-    /// parenthesized type so the types share a second column. `false` leaves
-    /// each `(` one space past its name and each `:` flush against the name
-    /// or the closing paren, while dicts, annotations, and parameters still
-    /// align.
+    /// parenthesized type so the types share a second column. `false`
+    /// removes that padding, including any the source already carries, and
+    /// leaves each `(` one space past its name and each `:` flush against the
+    /// name or the closing paren, while dicts, annotations, and parameters
+    /// still align.
     pub align_docstring_entries: bool,
     pub enabled: bool,
     /// How far apart the widest and narrowest rows of a run may be for the

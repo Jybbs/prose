@@ -9,7 +9,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "align-docstring-entries": {
           "default": true,
-          "description": "Pads the space before the `:` of each docstring `name: description`\nentry so a run shares one column, and the space before each\nparenthesized type so the types share a second column. `false` leaves\neach `(` one space past its name and each `:` flush against the name\nor the closing paren, while dicts, annotations, and parameters still\nalign.",
+          "description": "Pads the space before the `:` of each docstring `name: description`\nentry so a run shares one column, and the space before each\nparenthesized type so the types share a second column. `false`\nremoves that padding, including any the source already carries, and\nleaves each `(` one space past its name and each `:` flush against the\nname or the closing paren, while dicts, annotations, and parameters\nstill align.",
           "type": "boolean"
         },
         "enabled": {
