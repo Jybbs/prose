@@ -6,7 +6,7 @@ body:
   - type : markdown
     attributes:
       value: |
-        ### The Defect This Form Reports
+        ### The Defect This Form Covers
 
         *Prose* settles a file in one pass, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
 
@@ -49,7 +49,7 @@ body:
   - type : textarea
     id   : source
     attributes:
-      description : The Python the run read, reduced to the smallest snippet that still reproduces where that is easy. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
+      description : The Python the run read, reduced where that is easy to the smallest snippet that still reproduces. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
       label       : Source
       render      : python
     validations:

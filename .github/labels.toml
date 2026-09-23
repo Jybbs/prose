@@ -1,59 +1,47 @@
-[[labels]]
+[labels."🪜 alignment"]
 color       = "e8c840"
-description = "Rules that align tokens vertically: =, :, import, match arrows"
-name        = "🪜 alignment"
+description = "Rules that pad the space before a shared token so consecutive rows read as columns"
 
-[[labels]]
+[labels."🗺️ architecture"]
 color       = "43aeb0"
 description = "Cross-cutting structural or design changes"
-name        = "🗺️ architecture"
 
-[[labels]]
+[labels."🐞 bug"]
 color       = "d4a574"
-description = "Workflow or behavior regression"
-name        = "🐞 bug"
+description = "A defect in what the formatter writes or reports, or in a CI workflow"
 
-[[labels]]
+[labels."🗜️ build"]
 color       = "e6e6ff"
-description = "Cargo.toml, maturin, dependencies, release plumbing"
-name        = "🗜️ build"
+description = "Cargo.toml, maturin, dependencies, CI workflows, mise tasks, and release plumbing"
 
-[[labels]]
+[labels."🪄 cli"]
 color       = "17171b"
 description = "Command-line interface, config loader, diff output"
-name        = "🪄 cli"
 
-[[labels]]
+[labels."📰 docs"]
 color       = "8cc5a3"
-description = "README, style guide, rule specs, in-code doc comments"
-name        = "📰 docs"
+description = "Docstring rules, the README, the contributor guide, rule pages, and in-code doc comments"
 
-[[labels]]
+[labels."🦉 engine"]
 color       = "2d2566"
-description = "Parser integration, Source wrapper, Aligner and Orderer primitives"
-name        = "🦉 engine"
+description = "Parser integration, the pipeline, Source, and the primitives under crate/src/primitives/"
 
-[[labels]]
+[labels."🪶 formatting"]
 color       = "c08597"
-description = "Other formatting rules: singleton, one-per-line, trailing commas"
-name        = "🪶 formatting"
+description = "Rules that rewrite a token, a line, or a spelling once a statement's layout is settled"
 
-[[labels]]
+[labels."🧺 layout"]
 color       = "5069ad"
-description = "Rules that shape calls, signatures, collections, and from-imports past one line"
-name        = "🧺 layout"
+description = "Rules that explode a bracketed construct to one entry per line once it outgrows its line"
 
-[[labels]]
+[labels."🧶 lint"]
 color       = "e8876f"
 description = "Rules that report violations without auto-fixing"
-name        = "🧶 lint"
 
-[[labels]]
+[labels."🪉 ordering"]
 color       = "7db3e0"
 description = "Rules that alphabetize or reorder siblings"
-name        = "🪉 ordering"
 
-[[labels]]
+[labels."🗝️ site"]
 color       = "ffffcc"
 description = "Documentation-site infrastructure, content, and theming"
-name        = "🗝️ site"

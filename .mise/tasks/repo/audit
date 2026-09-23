@@ -35,7 +35,7 @@ from re          import MULTILINE, findall, finditer, fullmatch, search
 from subprocess  import run
 from tomllib     import loads
 from typing      import NoReturn
-from yaml        import AnchorToken, safe_load, safe_load_all, scan
+from yaml        import AnchorToken, BaseLoader, load, load_all, scan
 
 
 def action_pin(action: str, key: str) -> str:
@@ -142,10 +142,8 @@ def gates() -> int:
     Report every check the `main` ruleset requires that no pull-request
     workflow ends on, and every pull-request workflow ending on a job whose
     name the ruleset does not require, since a required check no workflow
-    reports leaves every pull request waiting on it.
-
-    A workflow's triggers sit under the key `True`, which is how PyYAML reads
-    the bare `on` key, and a job with no `name` reports under its key.
+    reports leaves every pull request waiting on it. A job with no `name`
+    reports under its key.
     """
     ruleset = json_loads(read(".github/rulesets/main.json"))
     required = {
@@ -159,7 +157,7 @@ def gates() -> int:
     failed = 0
     for path in sorted(Path(".github/workflows").glob("*.y*ml")):
         flow = yaml(path)
-        if "pull_request" not in flow[True]:
+        if "pull_request" not in flow["on"]:
             continue
 
         *_, (job, gate) = flow["jobs"].items()
@@ -216,7 +214,7 @@ def labels() -> int:
     backticks are dropped, and a color that is not six lowercase hex digits or
     that two labels share.
     """
-    registry = {label["name"]: label for label in toml(".github/labels.toml")["labels"]}
+    registry = toml(".github/labels.toml")["labels"]
     colors   = [label["color"] for label in registry.values()]
     named    = [
         label
@@ -237,7 +235,7 @@ def labels() -> int:
     failed    = 0
     templates = Path(".github/ISSUE_TEMPLATE")
     for path in sorted([*templates.glob("*.y*ml"), *templates.glob("*.md")]):
-        form = next(safe_load_all(read(path)))
+        form = next(load_all(read(path), Loader=BaseLoader))
         if isinstance(applied := form.get("labels") or [], str):
             applied = applied.split(",")
         if unknown := sorted({label.strip() for label in applied} - registry.keys()):
@@ -522,19 +520,18 @@ def workflow(name: str) -> str:
 
 def workflow_paths(name: str) -> list[str]:
     """
-    Return the paths the `name` workflow's push trigger filters on, read under
-    the key `True`, which is how PyYAML reads the bare `on` key.
+    Return the paths the `name` workflow's push trigger filters on.
     """
-    if (paths := yaml(workflow(name))[True].get("push", {}).get("paths")) is None:
+    if (paths := yaml(workflow(name))["on"].get("push", {}).get("paths")) is None:
         fail(f"no push paths filter in {name}.yml")
     return paths
 
 
 def yaml(path: str | Path) -> dict:
     """
-    Return the parsed YAML mapping at `path`.
+    Return the YAML mapping at `path`, every scalar in it read as a string.
     """
-    return safe_load(read(path))
+    return load(read(path), Loader=BaseLoader)
 
 
 if __name__ == "__main__":

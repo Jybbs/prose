@@ -1,14 +1,14 @@
 name        : Bug
-description : A defect a second run leaves in place, such as a wrong rewrite, a crash, or a flag or key that does not do what its reference says.
+description : Any defect other than unstable output, such as a wrong rewrite, a crash, or a flag or key that does not do what its reference says.
 labels      : ["🐞 bug"]
 
 body:
   - type : markdown
     attributes:
       value: |
-        ### The Defect This Form Reports
+        ### The Defects This Form Covers
 
-        This form covers anything *Prose* does that its reference says it should not, where a second run leaves the result exactly as the first one did. A rewrite that a second run would change again has a form of its own, `Unstable output`, which the formatter links to at the moment it writes the file.
+        This form covers anything *Prose* does differently from what its reference describes. A rewrite that a second run would change again goes through the `Unstable output` form instead, which the formatter links to at the moment it writes the file.
 
         A maintainer reproduces the defect from the fields below, so the command and the source matter more than a description of either. Searching the open issues for the same rule slug or flag first is worth the minute.
 
@@ -33,14 +33,14 @@ body:
   - type : textarea
     id   : config
     attributes:
-      description : The `[tool.prose]` table the file resolved to, which is empty for a project running on the defaults.
+      description : The configuration the run read, meaning the nearest `prose.toml`, `.config/prose.toml`, or `[tool.prose]` table in `pyproject.toml` above the file, left empty for a project running on the defaults.
       label       : Resolved configuration
       render      : toml
 
   - type : textarea
     id   : source
     attributes:
-      description : The Python the run read, reduced to the smallest snippet that still shows the defect where that is easy. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
+      description : The Python the run read, reduced where that is easy to the smallest snippet that still shows the defect. For a notebook, paste the concatenated code cells rather than its `.ipynb` JSON.
       label       : Source
       render      : python
     validations:
@@ -57,7 +57,7 @@ body:
   - type : textarea
     id   : expected
     attributes:
-      description : What the run should have written or printed instead, naming the reference page that says so where one does.
+      description : What the run should have written or printed instead, with a link to the reference page that says so where one exists.
       label       : What should have happened
     validations:
       required: true
@@ -73,6 +73,6 @@ body:
       value: |
         ### After the Report Is Filed
 
-        A maintainer reproduces from the fields above and turns the source into a fixture case pinning the output the rule should produce, or into an inline test where the defect sits outside a rule. That case is what stops the defect coming back, so a report carrying a small reproduction usually turns into a fix quickly.
+        A maintainer reproduces from the fields above and turns the source into a fixture case pinning the output the rule should produce, or into an inline test where the defect sits outside a rule. A report carrying a small reproduction becomes that case almost as written, so it usually turns into a fix quickly. The case then stays in the suite and keeps the defect from coming back.
 
-        `CONTRIBUTING.md` at the repository root walks from a report to the `input.py` and `meta.toml` pair a maintainer drops into the fixture tree, which is the shortest path from a report to a regression test.
+        A reporter who wants to write the case directly can follow `CONTRIBUTING.md` at the repository root, which walks through the `input.py` and `meta.toml` pair a maintainer drops into the fixture tree, the shortest path from a report to a regression test.

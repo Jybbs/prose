@@ -25,11 +25,11 @@ if __name__ == "__main__":
 
     labels = loads(Path(".github/labels.toml").read_text(encoding="utf-8"))["labels"]
 
-    for label in labels:
+    for name, label in labels.items():
         run(
             [
                 "gh", "label", "create",
-                label["name"],
+                name,
                 "--color",
                 label["color"],
                 "--description",
@@ -44,6 +44,6 @@ if __name__ == "__main__":
         text = True
     )
 
-    if omitted := sorted(set(live.splitlines()) - {label["name"] for label in labels}):
+    if omitted := sorted(set(live.splitlines()) - labels.keys()):
         print("labels on GitHub that .github/labels.toml omits:")
         print("\n".join(f"  {name}" for name in omitted))
