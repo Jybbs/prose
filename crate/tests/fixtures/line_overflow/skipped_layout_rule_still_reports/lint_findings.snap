@@ -72,47 +72,26 @@ input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports
   {
     "code": "line-overflow",
     "end_location": {
-      "column": 129,
-      "row": 17
-    },
-    "fix": {
-      "applicability": "displayonly",
-      "edits": [
-        {
-          "before": "\"\"\"Describe the configuration this module carries, in a sentence long enough to overflow.\"\"\"",
-          "content": "(\n        \"\"\"Describe the configuration this module carries, in a sentence long enough \"\"\"\n        \"\"\"to overflow.\"\"\"\n    )"
-        }
-      ]
-    },
-    "location": {
-      "column": 1,
-      "row": 17
-    },
-    "message": "Line is 128 columns, over the 88-column budget, with a legal reshape at the string literal"
-  },
-  {
-    "code": "line-overflow",
-    "end_location": {
-      "column": 130,
-      "row": 21
+      "column": 97,
+      "row": 18
     },
     "fix": null,
     "location": {
       "column": 1,
-      "row": 21
+      "row": 18
     },
-    "message": "Line is 129 columns, over the 88-column budget, with `wrap-docstrings` held by a skip"
+    "message": "Line is 96 columns, over the 88-column budget, with `wrap-docstrings` held by a skip"
   },
   {
     "code": "line-overflow",
     "end_location": {
       "column": 142,
-      "row": 24
+      "row": 22
     },
     "fix": null,
     "location": {
       "column": 1,
-      "row": 24
+      "row": 22
     },
     "message": "Line is 141 columns, over the 88-column budget, with `stack-adjacent-strings` held by a skip"
   },
@@ -120,12 +99,12 @@ input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports
     "code": "line-overflow",
     "end_location": {
       "column": 125,
-      "row": 29
+      "row": 27
     },
     "fix": null,
     "location": {
       "column": 1,
-      "row": 29
+      "row": 27
     },
     "message": "Line is 124 columns, over the 88-column budget, with `align-match-case` held by a skip"
   }

@@ -9,7 +9,7 @@
 //! carries the [`split`] form as a display-only suggestion, gated by
 //! `suggest_string_splits`. Lint-only.
 
-use std::iter;
+use std::{iter, slice};
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -19,26 +19,31 @@ use ruff_python_ast::{
     visitor::{Visitor, walk_expr},
 };
 use ruff_python_trivia::is_pragma_comment;
-use ruff_source_file::UniversalNewlines;
+use ruff_source_file::{LineRanges, UniversalNewlineIterator, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashSet;
 
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
+        call_keywords::module_call_params,
         comments::{is_keep_marker, trailing_comment},
-        docstring::{body_docstring, docstring_slots},
-        inline::display_width,
+        docstring::docstring_slots,
+        inline::{display_width, spliced_rows},
+        padding,
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
     rules::{
         KNOWN_IDS, Rule, RuleId,
         align_match_case::AlignMatchCase,
+        expand_docstrings::ExpandDocstrings,
+        frame_docstrings::FrameDocstrings,
         reflow_calls::ReflowCalls,
         reflow_collections::ReflowCollections,
         reflow_imports::ReflowImports,
-        reflow_signatures::ReflowSignatures,
+        reflow_signatures::{self, ReflowSignatures},
         stack_adjacent_strings::{StackAdjacentStrings, concatenated_run},
         wrap_docstrings::WrapDocstrings,
     },
@@ -55,9 +60,14 @@ pub(crate) struct LineOverflow {
     /// Each rule the configuration leaves off, `reflow-collections`
     /// counting as off wherever it expands no literal.
     off: Vec<RuleId>,
+    /// The terms `reflow-signatures` decides a signature's shape under.
+    signatures: reflow_signatures::Terms,
     /// True where `reflow-imports` splits a comma-joined `import a, b`.
     splits_bare_imports: bool,
+    stranding: padding::Stranding,
     suggest_string_splits: bool,
+    /// The rule whose edits name the docstring rows it rewrites.
+    wrap_docstrings: WrapDocstrings,
 }
 
 impl LineOverflow {
@@ -81,8 +91,11 @@ impl LineOverflow {
                     }
                 })
                 .collect(),
+            signatures: reflow_signatures::Terms::from_config(config),
             splits_bare_imports: config.rules.reflow_imports.split_multi_module,
+            stranding: config.stranded_padding(),
             suggest_string_splits: config.rules.line_overflow.suggest_string_splits,
+            wrap_docstrings: WrapDocstrings::from_config(config),
         }
     }
 }
@@ -93,9 +106,15 @@ impl Rule for LineOverflow {
     }
 
     fn lint(&self, source: &Source) -> Vec<Diagnostic> {
+        let targets = module_call_params(source);
+        let padding = source.stranded_padding(self.stranding);
         let mut spans = Spans {
             blocked: Vec::new(),
             docstrings: docstring_slots(&source.ast().body),
+            exploding: self
+                .signatures
+                .over(source, &targets, &padding)
+                .exploding_parameters(&source.ast().body),
             imports: Vec::new(),
             off: &self.off,
             reach: Vec::new(),
@@ -104,7 +123,7 @@ impl Rule for LineOverflow {
             splits_bare_imports: self.splits_bare_imports,
             strings: Vec::new(),
         };
-        spans.note_docstring(&source.ast().body);
+        spans.note_docstrings(&self.wrap_docstrings);
         spans.visit_body(&source.ast().body);
         spans.index();
         let floor = self.code_line_length.min(self.import_line_length);
@@ -183,20 +202,25 @@ impl Kept {
 /// Gathers the import-statement ranges that shift a line to the import
 /// budget, the places a layout rule splits a row, the constructs no
 /// layout rule reaches, the one-line string literals a suggested reshape
-/// can split, and the docstring slots a concatenated run is held in.
+/// can split, and the docstring slots.
 struct Spans<'a> {
     /// Each place a layout rule would split a row where the rule is off or
     /// held, beside the reason a line holding it stays as written.
     blocked: Vec<(TextRange, Kept)>,
+    /// Each docstring slot in source order, whether it holds a docstring or
+    /// a concatenated run.
     docstrings: Vec<TextRange>,
+    /// The start of each parameter list `reflow-signatures` lays out one
+    /// per row, ascending.
+    exploding: Vec<TextSize>,
     imports: Vec<TextRange>,
     off: &'a [RuleId],
     /// The furthest end any `reshapeable` range up to each index
     /// covers, so the intersection test is one binary search over the
     /// ascending starts and one read.
     reach: Vec<TextSize>,
-    /// Each place a layout rule splits a row, and each docstring
-    /// `wrap-docstrings` reflows.
+    /// Each place a layout rule splits a row, and each docstring row a
+    /// docstring rule rewrites.
     reshapeable: Vec<TextRange>,
     source: &'a Source,
     splits_bare_imports: bool,
@@ -272,11 +296,38 @@ impl<'a> Spans<'a> {
         self.note(arguments.range(), ReflowCalls::SLUG, splits);
     }
 
-    /// Records a leading docstring, the prose `wrap-docstrings` reflows to
-    /// the budget whichever rows it spans.
-    fn note_docstring(&mut self, body: &[Stmt]) {
-        if let Some(lit) = body_docstring(body) {
-            self.note(lit.range(), WrapDocstrings::SLUG, [lit.range()]);
+    /// Records each docstring row the docstring rules rewrite. A docstring
+    /// `wrap-docstrings` reads only after `frame-docstrings` or
+    /// `expand-docstrings` reshapes it leaves every row to that rule. Any
+    /// other row whose text survives a `wrap-docstrings` edit is left out.
+    fn note_docstrings(&mut self, wrap: &WrapDocstrings) {
+        let source = self.source;
+        let wrapped = wrap.apply(source).into_iter().flatten().collect_vec();
+        let reshaped = [
+            (FrameDocstrings::SLUG, FrameDocstrings.apply(source)),
+            (ExpandDocstrings::SLUG, ExpandDocstrings.apply(source)),
+        ];
+        for (rule, groups) in reshaped {
+            for edits in groups {
+                if let Some(first) = edits.first()
+                    && let Some(&slot) = item_holding(&self.docstrings, first.start())
+                    && !wrapped.iter().any(|edit| slot.contains_range(edit.range()))
+                {
+                    self.note(slot, rule, [slot]);
+                }
+            }
+        }
+        for edit in wrapped {
+            let rewrite = spliced_rows(source, edit.range(), slice::from_ref(&edit));
+            let kept: FxHashSet<&str> = rewrite
+                .universal_newlines()
+                .map(|row| row.as_str())
+                .collect();
+            let rows = source.text().lines_range(edit.range());
+            let splits = UniversalNewlineIterator::with_offset(source.slice(rows), rows.start())
+                .filter(|row| !kept.contains(row.as_str()))
+                .map(|row| row.range());
+            self.note(edit.range(), WrapDocstrings::SLUG, splits);
         }
     }
 
@@ -334,16 +385,11 @@ impl<'a> Spans<'a> {
         }
     }
 
-    /// Records a signature carrying parameters and no comment inside its
-    /// `()`, which `reflow-signatures` lays out one parameter per row.
+    /// Records a signature carrying parameters that `reflow-signatures`
+    /// lays out one per row.
     fn note_signature(&mut self, fd: &StmtFunctionDef) {
         let params = &fd.parameters;
-        let bracket = TextSize::from(1);
-        if params.is_empty()
-            || self
-                .source
-                .intersects_comment(params.range().add_start(bracket).sub_end(bracket))
-        {
+        if params.is_empty() || self.exploding.binary_search(&params.start()).is_err() {
             return;
         }
         let items = params.iter_source_order().map(|param| param.range());
@@ -427,11 +473,7 @@ impl<'a> Visitor<'a> for Spans<'a> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         match stmt {
-            Stmt::ClassDef(cd) => self.note_docstring(&cd.body),
-            Stmt::FunctionDef(fd) => {
-                self.note_signature(fd);
-                self.note_docstring(&fd.body);
-            }
+            Stmt::FunctionDef(fd) => self.note_signature(fd),
             Stmt::Import(i) => self.note_import(i.range(), &i.names, true),
             Stmt::ImportFrom(i) => self.note_import(i.range(), &i.names, false),
             Stmt::Match(m) => self.note_match(m),
@@ -547,10 +589,35 @@ mod tests {
         "",
         &[],
     )]
+    #[case::a_stub_whose_body_carries_the_row_past(
+        "def configure_request(first_parameter_value, second_parameter_value, third) -> Mapping: ...\n",
+        "",
+        &["Line is 91 columns, over the 88-column budget, with no legal reshape"],
+    )]
     #[case::a_layout_rule_turned_off(
         "result = combine(first_argument_value_long_name, second_argument_value_long_name, third_value)\n",
         "[rules]\nreflow-calls = false\n",
         &["Line is 94 columns, over the 88-column budget, with `reflow-calls` off"],
+    )]
+    #[case::a_url_row_between_rewrapped_paragraphs(
+        "def fetch():\n    \"\"\"\n    Fetch the resource this module names from its canonical location on the network, retrying.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n\n    Return the parsed payload once the server answers, raising on any status past the budget.\n    \"\"\"\n",
+        "",
+        &["Line is 96 columns, over the 88-column budget, with no legal reshape"],
+    )]
+    #[case::an_unframed_docstring(
+        "def fetch():\n    \"\"\"Fetch the resource this module names from its canonical location on the network.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n    \"\"\"\n",
+        "",
+        &[],
+    )]
+    #[case::a_one_line_docstring_with_expansion_off(
+        "def locate():\n    \"\"\"https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index\"\"\"\n",
+        "[rules]\nexpand-docstrings = false\n",
+        &["Line is 97 columns, over the 88-column budget, with `expand-docstrings` off"],
+    )]
+    #[case::docstring_wrapping_turned_off(
+        "def locate():\n    \"\"\"\n    Locate the configuration this module carries, in a sentence long enough to overflow its row.\n    \"\"\"\n",
+        "[rules]\nwrap-docstrings = false\n",
+        &["Line is 96 columns, over the 88-column budget, with `wrap-docstrings` off"],
     )]
     #[case::expansion_turned_off(
         "values = [first_argument_value_long_name, second_argument_value_long_name, third_item_value]\n",
