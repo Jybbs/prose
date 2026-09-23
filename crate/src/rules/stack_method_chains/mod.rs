@@ -1,10 +1,9 @@
 //! Breaks a fluent method chain across lines under two triggers, the
 //! count trigger on a chain carrying more than `max_links` links and
 //! the length trigger on one whose joined single-line form crosses
-//! `code_line_length` from the column it lands at. A chain inside an
-//! argument list `reflow_calls` explodes lands on the row that explode
-//! gives it and is charged there with the text trailing it on the row,
-//! whereas any other chain is measured where the source writes it. The
+//! `code_line_length` from the column it lands at, which for a chain
+//! inside an argument list `reflow_calls` explodes is the seat that rule
+//! records, with the text trailing the chain on that row counted in. The
 //! broken chain sits inside a parenthesis pair, its head holding the
 //! receiver and the first link and every later link hanging beneath the
 //! head's own dot, a receiver wider than `max_shift` taking the full
@@ -106,8 +105,8 @@ impl Rule for StackMethodChains {
 
 /// Emits the break edit each over-long or over-count chain needs as the
 /// parent-tracking walk reaches it. `seats` holds the seat `reflow_calls`
-/// gives each call and attribute access inside an argument it relocates,
-/// built in full the first time a chain reads it.
+/// records for each call and attribute access inside an argument it
+/// relocates, built in full the first time a chain reads it.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
@@ -122,11 +121,9 @@ struct Breaker<'a> {
 
 impl<'a> Breaker<'a> {
     /// The text breaking `chain` across lines where it trips from `seat`,
-    /// `range` covering the grouping pair the source already carries, or
-    /// `None` where neither trigger fires or a comment or a line-spanning
-    /// segment holds the shape. The broken rows are written at the seat's
-    /// indent, and each segment measures the seat's `line_shift` past the
-    /// column it is written at, the move carrying the rows that far.
+    /// its rows written at the seat's indent, `range` covering the grouping
+    /// pair the source already carries, or `None` where neither trigger
+    /// fires or a comment or a line-spanning segment holds the shape.
     fn broken(
         &self,
         expr: &'a Expr,
@@ -202,11 +199,11 @@ impl<'a> Breaker<'a> {
         nested.found
     }
 
-    /// The seat the chain `expr` opens is measured from. Where `range`, the
-    /// span holding the chain, opens on the chain's own row, this is the
-    /// seat `reflow_calls` gives `expr`, and otherwise it is the column and
-    /// indent the source writes `range` at, with no move and no trailing
-    /// text.
+    /// The seat a chain is measured from, `expr` being the expression that
+    /// opens it and `range` the span holding it. That is the seat
+    /// `reflow_calls` records for `expr` where `range` opens on the chain's
+    /// own row, and otherwise the column `range` lands at on a row at its
+    /// source indent, with no move and no trailing text.
     fn placed(&self, expr: &Expr, range: TextRange) -> Seat {
         if let Some(rule) = self.reflow_calls
             && self.source.same_line(range.start(), expr.start())
@@ -232,8 +229,9 @@ impl<'a> Breaker<'a> {
     /// overflows the budget, `reflow_calls` explodes the argument list,
     /// so a nested chain that fits one indent step past the row stays
     /// joined and one that trips even there breaks from the column the
-    /// joined row reaches, and every measure adds the seat's `line_shift`
-    /// to the column its row is written at.
+    /// joined row reaches. Every column it measures sits the seat's
+    /// `line_shift` past the one its row is written at, where the later
+    /// move carries it.
     fn segment(
         &self,
         chain: &Chain<'a>,

@@ -10,7 +10,8 @@
 //! signature `reflow-signatures` lays out one parameter per line.
 //! Where no trigger fires, a fractured list rejoins onto one row,
 //! whereas the flush column shape holds its break. `measure` answers
-//! the columns a decision reads and `render` builds the replacement.
+//! the columns a decision reads beside the seat `stack_method_chains`
+//! measures a relocated chain from, and `render` builds the replacement.
 
 use std::cell::RefCell;
 
@@ -102,11 +103,9 @@ impl ReflowCalls {
     }
 
     /// The seat of every call and attribute access inside an argument
-    /// this rule's walk over `source` relocates, keyed by its range. A
-    /// call the walk leaves where the source wrote it takes no seat, and
-    /// neither does one inside a construct the walk leaves to another
-    /// rule, meaning a literal `reflow-collections` expands, a replacement
-    /// field, or a signature `reflow-signatures` lays out.
+    /// this rule's walk over `source` relocates, keyed by its range, less
+    /// one inside a literal `reflow-collections` expands or inside a
+    /// replacement field, where the walk does not reach.
     pub(crate) fn seats(&self, source: &Source) -> FxHashMap<TextRange, Seat> {
         let seats = RefCell::default();
         self.walk(source, Some(&seats));
@@ -195,11 +194,11 @@ impl<'a> Reshaper<'a> {
     }
 }
 
-/// Where a call or attribute access inside an argument the walk
-/// relocates sits once the walk's explodes land: the column its start
-/// reaches, the indent of its row in the text written over the source,
-/// the columns a later move carries that row by, and the columns
-/// trailing it on that row.
+/// The position a call or attribute access takes once the walk
+/// relocates the argument holding it. `column` is the column its start
+/// reaches after every move, `indent` the indent its row is written at
+/// before a later move carries that row `line_shift` columns, and
+/// `tail` the columns trailing it on that row.
 #[derive(Clone, Copy)]
 pub(crate) struct Seat {
     pub(crate) column: usize,
@@ -240,7 +239,9 @@ struct Exploder<'a> {
 
 impl<'a> AstVisitor<'a> for Exploder<'a> {
     /// Leaves a literal `reflow-collections` expands unwalked, the calls
-    /// inside it reshaping where its entries land.
+    /// inside it reshaping where its entries land, and records the seat of
+    /// each call and attribute access it reaches inside a relocated region
+    /// into `seats`, where set.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if is_layoutable(expr) && self.expands_later(expr) {
             return;
@@ -380,7 +381,7 @@ mod tests {
         "gamma.get(key).value",
         Some((4, 4, 0, 0))
     )]
-    #[case::call_charges_the_text_after_it(
+    #[case::call_measured_with_the_text_after_it(
         "result = advise(alpha_value, int(gamma.get(key)[0]), beta)\n",
         "gamma.get(key)",
         Some((8, 4, 0, 5))
@@ -407,7 +408,7 @@ mod tests {
     )]
     #[case::call_the_walk_leaves_in_place("x = f(a.b().c())\n", "a.b().c()", None)]
     #[case::expanding_literal_left_unwalked(
-        "values = [alpha_value, beta_value, gamma.get(key).strip()]\n",
+        "result = advise(alpha_value, [beta_value, gamma.get(key).strip(), delta_value])\n",
         "gamma.get(key).strip()",
         None
     )]

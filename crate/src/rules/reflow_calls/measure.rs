@@ -1,8 +1,8 @@
-//! The columns an explode decision reads: where a call's `(` lands once
-//! the walk's earlier edits place the text ahead of it, the indent an
-//! exploded closing `)` drops to, and whether a literal holding a call
-//! is one `reflow-collections` expands once its row lands, beside the
-//! seat of each call and attribute access inside a relocated region.
+//! The columns the walk measures: where a call's `(` lands once the
+//! walk's earlier edits place the text ahead of it, the indent an
+//! exploded closing `)` drops to, whether a literal holding a call is
+//! one `reflow-collections` expands once its row lands, and the seat of
+//! each call and attribute access inside a relocated region.
 
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;

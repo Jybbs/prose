@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Chain on a Moved Row Lands at the Row's New Indent"
+
+description = '''
+`advise(...)` explodes, which carries every row of the `inner(...)` argument one indent step deeper. The chain carries three links, past the `max-links` cap, so the count trigger breaks it, and **its broken rows land one step inside the new indent of the row holding the argument of `inner(...)`** rather than a step further, because they are written at that row's indent before the move and travel with it.
+'''

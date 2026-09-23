@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/chain_on_a_moved_row_keeps_its_indent/input.py
+input_file: crate/tests/fixtures/composition/chain_on_a_moved_row_lands_at_its_new_indent/input.py
 ---
 def dispatch():
     result = advise(

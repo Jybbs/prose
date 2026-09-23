@@ -1,13 +1,13 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/chain_under_a_pair_opened_above_keeps_its_row/input.py
+input_file: crate/tests/fixtures/composition/grouped_chain_argument_measured_without_its_pair/input.py
 ---
 result = advise(
     alpha_value,
+    beta_value,
     (
         gamma.get(key)
              .strip()
-             .lower()
     )
 )

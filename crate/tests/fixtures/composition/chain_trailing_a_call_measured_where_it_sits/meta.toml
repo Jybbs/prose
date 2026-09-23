@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Trailing a Call Is Measured Where It Sits"
+
+description = '''
+`explode_me(...)` fits the 88-column budget on its own and overflows only while the joined chain trails it, so [[reflow-calls]] explodes it only if the chain stays joined. Since the chain sits behind the call rather than inside one of its arguments, **it is measured from the column the source writes it at, where it overflows and breaks**, and `explode_me(...)` then fits and keeps its arguments on one row.
+'''

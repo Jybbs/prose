@@ -1,8 +1,0 @@
-[docs]
-canonical   = false
-previewable = true
-title       = "A Chain Behind a Call It Would Explode Is Measured Where It Sits"
-
-description = '''
-`explode_me(...)` fits the 88-column budget on its own and overflows only while the joined chain trails it, so it explodes only if the chain stays joined. **The chain is measured from the column it sits at and breaks**, and `explode_me(...)` keeps its arguments on one row.
-'''

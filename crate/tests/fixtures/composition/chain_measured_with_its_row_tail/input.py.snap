@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/composition/chain_charges_the_text_trailing_it/input.py
+input_file: crate/tests/fixtures/composition/chain_measured_with_its_row_tail/input.py
 ---
 def mode():
     if int(

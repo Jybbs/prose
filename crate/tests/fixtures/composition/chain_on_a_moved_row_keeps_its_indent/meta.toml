@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Chain on a Moved Row Lands at the Row's New Indent"
-
-description = '''
-`advise(...)` explodes, which carries every row of the `inner(...)` argument one indent step deeper. The chain's three links break it on the count trigger, and **its broken rows land one step inside the row holding `inner(`'s argument** rather than a step further, because they are written where that row sits before the move and travel with it.
-'''
