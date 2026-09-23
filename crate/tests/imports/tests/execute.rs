@@ -78,6 +78,16 @@ fn a_signal_death_is_a_raise_rather_than_a_timeout() {
 }
 
 #[test]
+fn a_static_type_the_module_names_records_no_raise() {
+    let ran = probed(
+        &[("collections.py", "from _collections import OrderedDict\n")],
+        "collections.py",
+    );
+    assert_eq!(ran.kind, Kind::Ok);
+    assert!(ran.unevaluated.is_empty(), "{:?}", ran.unevaluated);
+}
+
+#[test]
 fn a_vendored_distribution_imports_itself_from_the_tree() {
     let ran = probed(
         &[
@@ -95,6 +105,74 @@ fn an_annotation_naming_an_unbound_name_raises_when_the_probe_reads_it() {
     let ran = probed(&[("mod.py", "value: Missing = 1\n")], "mod.py");
     assert_eq!(ran.kind, Kind::Raised);
     assert_eq!(ran.raised, "NameError");
+}
+
+#[test]
+fn the_probe_records_each_definition_of_the_module_whose_annotations_raise() {
+    let module = "\
+import os
+from functools import cached_property
+from other import imported
+
+def f(x: Missing): pass
+
+def fine(x: int): pass
+
+class C:
+    y: Missing
+
+    def m(self, z: Missing): pass
+
+    @classmethod
+    def k(cls, z: Missing): pass
+
+    @staticmethod
+    def s(z: int): pass
+
+    @property
+    def p(self) -> Missing: pass
+
+    @cached_property
+    def c(self) -> Missing: pass
+
+    class Inner:
+        w: Missing
+
+class D:
+    v: os.absent
+";
+    let ran = probed(
+        &[
+            ("mod.py", module),
+            ("other.py", "def imported(x: Missing): pass\n"),
+        ],
+        "mod.py",
+    );
+    assert_eq!(ran.kind, Kind::Ok);
+    let raised: Vec<_> = ran
+        .unevaluated
+        .iter()
+        .map(|(held, raise)| {
+            (
+                held.as_str(),
+                raise.raised.as_str(),
+                raise.missing.as_deref(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        raised,
+        [
+            ("C", "NameError", Some("Missing")),
+            ("C.Inner", "NameError", Some("Missing")),
+            ("C.c", "NameError", Some("Missing")),
+            ("C.k", "NameError", Some("Missing")),
+            ("C.m", "NameError", Some("Missing")),
+            ("C.p", "NameError", Some("Missing")),
+            ("D", "AttributeError", Some("absent")),
+            ("f", "NameError", Some("Missing")),
+        ]
+    );
 }
 
 #[test]

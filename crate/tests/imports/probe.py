@@ -16,10 +16,13 @@ from os      import _exit
 from os.path import dirname
 from sys     import argv, modules, path
 
-FIELD  = "\0"
-ROW    = "\x1e"
-STDLIB = "<stdlib>"
-TREE   = "<tree>"
+FIELD    = "\0"
+FUNCTION = type(lambda: None)
+OWN      = type.__dict__["__annotations__"].__get__
+ROW      = "\x1e"
+STDLIB   = "<stdlib>"
+TREE     = "<tree>"
+VALUE    = 1
 
 library = dirname(modules["os"].__file__)
 roots   = []
@@ -90,6 +93,7 @@ class Probe:
             self.raised(exc)
         else:
             self.bound(module, annotated)
+            self.unevaluated(module)
 
         self.rows += [
             ("loaded", held.__file__)
@@ -120,13 +124,29 @@ class Probe:
         self.rows.append(("kind", "raised"))
         self.rows.append(("raise", type(exc).__name__, spelt(str(exc))))
 
-        if missing := getattr(exc, "name_from", None) or getattr(exc, "name", None):
-            self.rows.append(("missing", missing))
+        if named := missing(exc):
+            self.rows.append(("missing", named))
 
         if isinstance(exc, ImportError) and exc.name:
             self.rows.append(("importing", exc.name))
 
         self.rows += frames(exc)
+
+    def unevaluated(self, module: object):
+        """
+        Records each function and class the module defines whose annotations
+        raise when read, beside the exception each raised and the name it
+        turned on.
+
+        Args:
+            module: The module whose definitions to read.
+        """
+        for held in defined(vars(module).values(), self.name, set()):
+            try:
+                annotations(held)
+            except BaseException as exc:
+                why = (type(exc).__name__, missing(exc) or "")
+                self.rows.append(("unevaluated", held.__qualname__, *why))
 
     def write(self, record: str):
         """
@@ -153,6 +173,28 @@ def spelt(text: str) -> str:
         text = text.replace(root, TREE)
 
     return text.replace(library, STDLIB)
+
+
+def annotations(held: object) -> object:
+    """
+    Reads the annotations of a function or a class the way
+    `annotationlib.get_annotations` reads them in its `VALUE` format, which
+    evaluates every one. A class whose annotations descriptor raises
+    `AttributeError`, as a static type's does, is read through its
+    `__annotate__` where it has one and as carrying none otherwise.
+
+    Args:
+        held: The function or class to read.
+    """
+    if not isinstance(held, type):
+        return held.__annotations__
+
+    try:
+        return OWN(held)
+    except AttributeError:
+        annotate = getattr(held, "__annotate__", None)
+
+        return None if annotate is None else annotate(VALUE)
 
 
 def constant(value: object) -> str | None:
@@ -186,6 +228,32 @@ def constant(value: object) -> str | None:
     )
 
 
+def defined(values, name: str, seen: set):
+    """
+    Yields each function and class among some values that the module `name`
+    defines, then each one in the body of every such class, reading every
+    value through the functions `wrapped` finds in it.
+
+    Args:
+        values : The values to read.
+        name   : The dotted name of the defining module.
+        seen   : The ids of the definitions already yielded.
+    """
+    for value in values:
+        for held in wrapped(value):
+            if not isinstance(held, FUNCTION | type) or id(held) in seen:
+                continue
+
+            if held.__module__ != name:
+                continue
+
+            seen.add(id(held))
+            yield held
+
+            if isinstance(held, type):
+                yield from defined(vars(held).values(), name, seen)
+
+
 def frames(exc: BaseException):
     """
     Yields the rows naming every frame an exception passed through.
@@ -198,6 +266,39 @@ def frames(exc: BaseException):
     while traceback:
         yield "frame", str(traceback.tb_lineno), traceback.tb_frame.f_code.co_filename
         traceback = traceback.tb_next
+
+
+def missing(exc: BaseException) -> str | None:
+    """
+    Returns the name an exception turns on, which is the name a failed
+    `from … import …` asked for or the name a `NameError` or an
+    `AttributeError` could not find, `None` where it names none.
+
+    Args:
+        exc: The exception to read.
+    """
+    return getattr(exc, "name_from", None) or getattr(exc, "name", None)
+
+
+def wrapped(value: object) -> tuple:
+    """
+    Returns the functions a value holds, which are the function a
+    `classmethod` or a `staticmethod` wraps, the accessors of a `property`,
+    the function a `cached_property` wraps, and the value itself otherwise.
+
+    Args:
+        value: The value to read.
+    """
+    if isinstance(value, classmethod | staticmethod):
+        return (value.__func__,)
+
+    if isinstance(value, property):
+        return (value.fget, value.fset, value.fdel)
+
+    if type(value).__name__ == "cached_property":
+        return (getattr(value, "func", None),)
+
+    return (value,)
 
 
 def main(located: str, name: str, record: str, trees: list):

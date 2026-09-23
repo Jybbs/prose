@@ -74,6 +74,9 @@ pub(crate) struct Outcome {
     pub(crate) names: Vec<String>,
     /// The exception a raised run named, empty where it named none.
     pub(crate) raised: String,
+    /// The qualified name of each function and class an `ok` run defined
+    /// whose annotations raised when read, beside what each raised.
+    pub(crate) unevaluated: BTreeMap<String, Raise>,
 }
 
 impl Outcome {
@@ -123,6 +126,15 @@ impl Outcome {
                     read.error = format!("raises {raised}: {message}");
                     read.raised = raised.to_owned();
                 }
+                (Some("unevaluated"), Some(held), Some(raised)) => {
+                    let missing = fields
+                        .next()
+                        .filter(|name| !name.is_empty())
+                        .map(str::to_owned);
+                    let raised = raised.to_owned();
+                    read.unevaluated
+                        .insert(held.to_owned(), Raise { missing, raised });
+                }
                 _ => {}
             }
         }
@@ -132,14 +144,25 @@ impl Outcome {
         read
     }
 
-    /// This run with `names` left out of both the names it bound and the
-    /// constants among them.
+    /// This run with `names` left out of the names it bound, the constants
+    /// among them, and the definitions whose annotations raised.
     pub(crate) fn without(&self, names: &BTreeSet<String>) -> Self {
         let mut kept = self.clone();
         kept.constants.retain(|name, _| !names.contains(name));
         kept.names.retain(|name| !names.contains(name));
+        kept.unevaluated.retain(|held, _| !names.contains(held));
         kept
     }
+}
+
+/// What reading one definition's annotations raised, as the exception
+/// beside the name it turned on.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct Raise {
+    /// The name the exception turned on, where it named one.
+    pub(crate) missing: Option<String>,
+    /// The exception raised.
+    pub(crate) raised: String,
 }
 
 /// A path named relative to whichever of `trees` carries it, `None` for one

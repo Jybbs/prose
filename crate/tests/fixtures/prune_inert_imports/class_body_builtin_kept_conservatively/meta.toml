@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Class-Body Annotation Naming a Builtin Keeps the Directive"
-
-description = '''
-The class-body annotations `x: int` and `y: int` name the builtin `int`, which no statement in the file binds. **The directive stays**, because below a 3.14 target the rule resolves an annotated name only against bindings the module itself writes, so `int` counts as unresolved even though Python resolves it at runtime.
-'''

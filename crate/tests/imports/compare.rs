@@ -3,6 +3,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use itertools::Itertools;
+
 use crate::{
     common::with_rest,
     outcome::{ANNOTATED, Kind, Outcome},
@@ -87,7 +89,8 @@ pub(crate) fn compare(
 }
 
 /// Says why one run counts as broken beside another, or `None` where both
-/// bound the same namespace.
+/// bound the same namespace and every definition whose annotations evaluate
+/// in the original evaluates in the formatted run too.
 pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
     if formatted.kind != Kind::Ok {
         return Some(Divergence {
@@ -105,7 +108,9 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
     }) {
         return Some(gained);
     }
-    let differing = respelt(original, formatted).min()?;
+    let Some(differing) = respelt(original, formatted).min() else {
+        return unevaluated(formatted, original);
+    };
     let was = original
         .constants
         .get(differing)
@@ -136,12 +141,21 @@ pub(crate) fn missing<'a>(
 }
 
 /// Every name two runs of one tree bound differently, covering a name only
-/// one side bound and a constant the two spelt differently. [`divergence`]
-/// stops at the first of these it finds, where this returns every one.
+/// one side bound, a constant the two spelt differently, and a definition
+/// whose annotations raised in one run alone or raised differently in each.
+/// [`divergence`] stops at the first of these it finds, where this returns
+/// every one.
 pub(crate) fn varying(one: &Outcome, other: &Outcome) -> BTreeSet<String> {
+    let raising = |held: &&String| one.unevaluated.get(*held) != other.unevaluated.get(*held);
     missing(&one.names, &other.names)
         .chain(missing(&other.names, &one.names))
         .chain(respelt(one, other))
+        .chain(
+            one.unevaluated
+                .keys()
+                .chain(other.unevaluated.keys())
+                .filter(raising),
+        )
         .cloned()
         .collect()
 }
@@ -171,5 +185,36 @@ fn sided(from: &[String], held: &[String], reason: impl Fn(&str) -> String) -> O
         return None;
     };
     let reason = reason(&with_rest(&format!("`{first}`"), rest.len(), "name"));
+    Some(Divergence { names, reason })
+}
+
+/// The divergence made by each definition whose annotations raise in
+/// `formatted` but not with the same exception on the same name in
+/// `original`, `None` where there is none. Each name it turns on is the one
+/// an exception could not find, or the definition's own where none is named.
+fn unevaluated(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
+    let raising: Vec<_> = formatted
+        .unevaluated
+        .iter()
+        .filter(|(held, raise)| original.unevaluated.get(*held) != Some(*raise))
+        .collect();
+    let [(first, raise), rest @ ..] = raising.as_slice() else {
+        return None;
+    };
+    let on = raise
+        .missing
+        .as_deref()
+        .map_or_else(String::new, |name| format!(" on `{name}`"));
+    let reason = format!(
+        "reading the annotations of {} raises {}{on} where the original's do not",
+        with_rest(&format!("`{first}`"), rest.len(), "definition"),
+        raise.raised,
+    );
+    let names = raising
+        .iter()
+        .map(|(held, raise)| raise.missing.as_ref().unwrap_or(held).clone())
+        .sorted()
+        .dedup()
+        .collect();
     Some(Divergence { names, reason })
 }

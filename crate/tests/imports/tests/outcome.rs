@@ -3,10 +3,10 @@
 
 use std::{collections::BTreeSet, path::Path};
 
-use crate::outcome::{Kind, Outcome, relative_to};
+use crate::outcome::{Kind, Outcome, Raise, relative_to};
 
 #[test]
-fn a_name_set_aside_leaves_the_names_the_constants_and_nothing_else() {
+fn a_name_set_aside_leaves_every_record_of_it_and_nothing_else() {
     let ran = Outcome {
         constants: [
             ("KEPT".to_owned(), "1".to_owned()),
@@ -15,11 +15,21 @@ fn a_name_set_aside_leaves_the_names_the_constants_and_nothing_else() {
         .into(),
         kind: Kind::Ok,
         names: vec!["KEPT".to_owned(), "VARIES".to_owned(), "other".to_owned()],
+        unevaluated: [("KEPT.m", "NameError"), ("VARIES", "NameError")]
+            .map(|(held, raised)| {
+                let raise = Raise {
+                    missing: None,
+                    raised: raised.to_owned(),
+                };
+                (held.to_owned(), raise)
+            })
+            .into(),
         ..Outcome::default()
     };
     let kept = ran.without(&["VARIES".to_owned()].into());
     assert_eq!(kept.names, ["KEPT", "other"]);
     assert_eq!(kept.constants, [("KEPT".to_owned(), "1".to_owned())].into());
+    assert_eq!(kept.unevaluated.keys().collect::<Vec<_>>(), ["KEPT.m"]);
     assert_eq!(kept.kind, Kind::Ok);
     assert_eq!(ran.without(&BTreeSet::new()).names, ran.names);
 }
@@ -63,6 +73,25 @@ fn an_importing_row_names_the_module_a_failed_import_named() {
     .join("\u{1e}");
     let read = Outcome::parse(&record, &[]);
     assert_eq!(read.importing, Some("pkg.mod".to_owned()));
+}
+
+#[test]
+fn an_unevaluated_row_names_the_definition_beside_what_it_raised() {
+    let record = [
+        ["kind", "ok"].join("\0"),
+        ["unevaluated", "C.m", "NameError", "Sequence"].join("\0"),
+        ["unevaluated", "f", "ValueError", ""].join("\0"),
+    ]
+    .join("\u{1e}");
+    let read = Outcome::parse(&record, &[]);
+    assert_eq!(
+        read.unevaluated["C.m"],
+        Raise {
+            missing: Some("Sequence".to_owned()),
+            raised: "NameError".to_owned(),
+        }
+    );
+    assert_eq!(read.unevaluated["f"].missing, None);
 }
 
 #[test]
