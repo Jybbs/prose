@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Call Inside an Expanded List Explodes Into Keyword Form"
+
+description = '''
+`pairs` lists a `build` call and `None`, and the call runs past the budget even once the list expands. **The list expands one entry per row and the call explodes one argument per row, each positional argument written as the keyword `build` declares for it**, because a call inside a relaid collection is reshaped under the same terms `reflow-calls` applies. The rewrite changes the tree, which is why `reflow-collections` declares `PRESERVES_TREE` as `false`.
+'''

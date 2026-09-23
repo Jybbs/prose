@@ -34,7 +34,7 @@ on:
       - crate/tests/common/**
       - crate/tests/corpus.rs
       - crate/tests/imports/**
-      - crate/tests/settle.rs
+      - crate/tests/settle/**
 
   push:
     branches:

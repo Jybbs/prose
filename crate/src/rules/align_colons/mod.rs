@@ -34,6 +34,8 @@ impl AlignColons {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let type_settings = aligner::Settings::from(&config.rules.align_colons);
         Self {

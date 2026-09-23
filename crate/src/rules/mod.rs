@@ -7,7 +7,7 @@ mod registry;
 
 pub use id::{ParseRuleIdError, RuleId, render_slugs};
 pub(crate) use registry::{KNOWN_IDS, Rule, message_for_id};
-pub use registry::{RuleConfigs, dependencies_of, independent, runs_behind};
+pub use registry::{RuleConfigs, dependencies_of, independent, preserves_tree, runs_behind};
 
 pub(crate) mod align_colons;
 pub(crate) mod align_comments;

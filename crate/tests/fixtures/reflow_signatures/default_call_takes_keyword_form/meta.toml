@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = false
+title       = "A Call in a Parameter Default Explodes Into Keyword Form"
+
+description = '''
+`run`'s `third` default is a `build` call that runs past the budget once the signature expands. **The signature expands one parameter per row and the call explodes one argument per row, each positional argument written as the keyword `build` declares for it**, because a call inside a default is reshaped under the same terms `reflow-calls` applies. The rewrite changes the tree, which is why `reflow-signatures` declares `PRESERVES_TREE` as `false`.
+'''

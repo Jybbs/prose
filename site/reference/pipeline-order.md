@@ -36,6 +36,12 @@ The guarantee needs no sweep over every subset, because a rule that settles alon
 
 Each ordering the guarantee depends on is recorded in the registry's dependency column rather than left to a position that happens to work, and `prose rules --output-format json` prints that column as each rule's `after` list.
 
+## Layout Rules Keep the Tree
+
+Most rules move only whitespace, punctuation, and comments, and the corpus sweep holds each of them to exactly that. Every rewrite such a rule makes has to parse to a tree equal to its input's, compared with positions, parentheses, comments, and implicit string concatenation ignored, and every such rule also runs together in one pipeline held to the same comparison. The sweep reaches every function body in the corpus, so a layout rule that changed what a line of code does fails the sweep before it reaches a release.
+
+A rule that changes the tree by design sits outside that check, as [[reflow-imports]] does when it splits `import a, b` into two statements and [[strip-none-return]] does when it drops a `-> None` annotation. Those rules answer to a second sweep, which executes every module the formatter rewrote and compares what each one binds before and after formatting.
+
 ## Independent Rules Share a Parse
 
 A run applies the edits of consecutive rules whose edits are independent to one buffer and parses once. The batch closes before a rule the registry places after one the batch holds, and before a rule whose edits overlap one already in the batch. Independence is declared rather than assumed, in a shared-splice column each rule carries beside its dependency column in the registry, and a pair joins that column on two kinds of evidence:

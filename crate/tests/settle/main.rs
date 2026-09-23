@@ -24,22 +24,26 @@ use std::{
     rc::Rc,
 };
 
+use indexmap::IndexMap;
 use itertools::Itertools;
 use prose::{
     config::Config,
     pipeline::{Pipeline, PipelineError, Sharing},
-    rules::{RuleId, independent, render_slugs, runs_behind},
+    rules::{RuleId, independent, preserves_tree, render_slugs, runs_behind},
     source::Source,
 };
 use rstest::rstest;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxBuildHasher, FxHashMap};
 
 use common::{
     Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list_of, note_verified,
     pointed_corpus, report_verified, setting, swept, unread, verifying, widths_or,
 };
+use trees::check_trees;
 
+#[path = "../common/mod.rs"]
 mod common;
+mod trees;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -113,9 +117,17 @@ enum Claim {
 /// the same shape across many files reports once.
 #[derive(Default)]
 struct Findings {
+    /// Each reported rule declaring `PRESERVES_TREE` as `false` that
+    /// rewrote a fixture, beside whether any of its rewrites changed the
+    /// tree, gathered over the fixture tree alone.
+    changing: BTreeMap<RuleId, bool>,
     /// Declared-independent pairs whose spliced run differs from their
     /// chained one.
     divergent: Tally,
+    /// Rewrites whose rule declares `PRESERVES_TREE` and whose output
+    /// parses to a different tree, the tree-preserving rules run
+    /// together among them.
+    reshaped: Tally,
     /// How each undeclared pair's spliced run compared, gathered only
     /// for the pointed sweep that prints it.
     sharing: BTreeMap<[RuleId; 2], Agreement>,
@@ -129,6 +141,29 @@ struct Findings {
 }
 
 impl Findings {
+    /// Lists the rules declaring `PRESERVES_TREE` as `false` whose every
+    /// rewrite kept the tree.
+    fn kept(&self) -> impl Iterator<Item = &RuleId> {
+        self.changing
+            .iter()
+            .filter(|&(_, &reshaped)| !reshaped)
+            .map(|(rule, _)| rule)
+    }
+
+    /// Renders the rules `kept` lists one line apiece, empty where there
+    /// are none.
+    fn render_kept(&self) -> String {
+        let kept = self.kept().map(|rule| format!("  `{rule}`")).collect_vec();
+        if kept.is_empty() {
+            return String::new();
+        }
+        format!(
+            "\nrules declaring `PRESERVES_TREE` as `false` whose every rewrite keeps the tree ({}):\n{}",
+            kept.len(),
+            kept.iter().format("\n"),
+        )
+    }
+
     /// The undeclared pairs by how they agreed, one line apiece, for a
     /// pointed sweep to print.
     fn render_sharing(&self) -> String {
@@ -158,13 +193,21 @@ impl Findings {
     }
 
     fn total(&self) -> usize {
-        self.divergent.len() + self.undeclared.len() + self.unsettled.len()
+        self.divergent.len()
+            + self.kept().count()
+            + self.reshaped.len()
+            + self.undeclared.len()
+            + self.unsettled.len()
     }
 }
 
 impl Absorbing for Findings {
     fn absorb(&mut self, other: Self) {
         self.divergent.absorb(other.divergent);
+        self.reshaped.absorb(other.reshaped);
+        for (rule, reshaped) in other.changing {
+            *self.changing.entry(rule).or_default() |= reshaped;
+        }
         for (pair, agreement) in other.sharing {
             self.sharing.entry(pair).or_default().absorb(agreement);
         }
@@ -175,10 +218,11 @@ impl Absorbing for Findings {
 }
 
 /// Every single-rule run one file's sweep makes, keyed by the seat of
-/// the rule in [`Probes::singles`] and the buffer it ran over.
+/// the rule in [`Probes::singles`] and the buffer it ran over, in the
+/// order the sweep first made each.
 struct Memo<'p> {
     probes: &'p Probes,
-    runs: FxHashMap<(usize, Rc<str>), Applied>,
+    runs: IndexMap<(usize, Rc<str>), Applied, FxBuildHasher>,
 }
 
 impl Memo<'_> {
@@ -250,6 +294,13 @@ struct Probes {
     /// The `code-line-length` clause every defect this budget files
     /// carries.
     budget: String,
+    /// Whether the corpus is the fixture tree, over which a reported rule
+    /// declaring `PRESERVES_TREE` as `false` fails unless one of its
+    /// rewrites changes the tree.
+    fixtures: bool,
+    /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
+    /// this run reports at least one of them.
+    joint: Option<Pipeline>,
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
     pairs: Vec<Pair>,
@@ -274,7 +325,7 @@ impl Probes {
         let (share, shares) = shard();
         let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
-        let reporting_agreement = pointed_corpus().is_some();
+        let fixtures = pointed_corpus().is_none();
         let mut singles = Vec::new();
         let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
@@ -310,20 +361,30 @@ impl Probes {
                     folded: subset(&config, &pair),
                     rules: pair,
                     seats: [seat(earlier, first), seat(later, second)],
-                    spliced: (!declared && reporting_agreement)
+                    spliced: (!declared && !fixtures)
                         .then(|| subset(&config, &pair).sharing(Sharing::Always)),
                 }
             })
             .collect();
-        let reported = Pipeline::known_ids()
+        let reported: BTreeSet<RuleId> = Pipeline::known_ids()
             .iter()
             .copied()
             .filter(in_scope)
             .skip(share)
             .step_by(shares)
             .collect();
+        let preserving = Pipeline::known_ids()
+            .iter()
+            .copied()
+            .filter(|rule| preserves_tree(rule.as_str()))
+            .collect_vec();
         Self {
             budget: format!("at `code-line-length` {width}"),
+            fixtures,
+            joint: preserving
+                .iter()
+                .any(|rule| reported.contains(rule))
+                .then(|| subset(&config, &preserving)),
             pairs,
             reported,
             singles,
@@ -332,14 +393,18 @@ impl Probes {
         }
     }
 
-    /// The command sweeping the subsets touching `rules` over `path`
-    /// alone at this budget.
+    /// Builds the command sweeping the subsets touching `rules` over
+    /// `path` alone at this budget, or every subset where `rules` is empty.
     fn hit(&self, path: &Path, rules: &[RuleId]) -> Hit {
+        let scope = if rules.is_empty() {
+            String::new()
+        } else {
+            format!("{RULES_VAR}='{}' ", rules.iter().format(" "))
+        };
         Hit {
             repro: Some(format!(
-                "{CORPUS}={} {RULES_VAR}='{}' {WIDTHS_VAR}={} cargo test --test settle",
+                "{CORPUS}={} {scope}{WIDTHS_VAR}={} cargo test --test settle",
                 path.display(),
-                rules.iter().format(" "),
                 self.width,
             )),
             ..Hit::default()
@@ -371,6 +436,14 @@ fn claim_of(named: Option<&str>) -> Claim {
     }
 }
 
+/// The text `pipeline` folds `text` into, `None` where the buffer does
+/// not parse.
+fn folded_text(pipeline: &Pipeline, text: &str) -> Option<Result<String, PipelineError>> {
+    text.parse::<Source>()
+        .ok()
+        .map(|source| pipeline.format(source).map(|out| out.text().to_owned()))
+}
+
 /// The budgets this run probes. A pointed corpus takes the shipped
 /// default alone, holding its wall clock where it already sits, and
 /// `PROSE_SETTLE_WIDTHS` names the set outright either way.
@@ -395,7 +468,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     let text: Rc<str> = Rc::from(source.text());
     let mut memo = Memo {
         probes,
-        runs: FxHashMap::default(),
+        runs: IndexMap::default(),
     };
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for (&rule, &seat) in &probes.solo {
@@ -418,6 +491,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             }
         }
     }
+    let solo = memo.runs.len();
 
     for probe in &probes.pairs {
         let (declared, pair @ [earlier, later], seats @ [first, second]) =
@@ -503,7 +577,13 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             ),
         );
     }
+    check_trees(probes, &memo, solo, &source, path, &mut findings);
     findings
+}
+
+/// Parses `slug` into the rule it names.
+fn rule(slug: &str) -> RuleId {
+    slug.parse().expect("a registered slug")
 }
 
 /// The rules [`RULES_VAR`] names, `None` for every rule when it is
@@ -550,14 +630,6 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
     let (k, n) =
         parsed.unwrap_or_else(|| panic!("{SHARD_VAR} takes `k/n` with 1 <= k <= n: {spec}"));
     (k - 1, n)
-}
-
-/// The text `pipeline` folds `text` into, `None` where the buffer does
-/// not parse.
-fn folded_text(pipeline: &Pipeline, text: &str) -> Option<Result<String, PipelineError>> {
-    text.parse::<Source>()
-        .ok()
-        .map(|source| pipeline.format(source).map(|out| out.text().to_owned()))
 }
 
 /// True where `spliced` leaves `text` as the `chained` run did. A run
@@ -652,12 +724,16 @@ fn every_rule_subset_settles_and_declares_its_seating() {
     }
     let unread = unread(findings.skipped.len(), files.len(), "probe");
     let report = format!(
-        "{}{}{}",
+        "{}{}{}{}{}",
         findings.unsettled.render("unsettled subsets"),
         findings.undeclared.render("undeclared seatings"),
         findings
             .divergent
             .render("declared independence the chained run contradicts"),
+        findings
+            .reshaped
+            .render("rewrites that change the tree their rules declare they keep"),
+        findings.render_kept(),
     );
     assert!(
         report.is_empty(),
@@ -667,6 +743,61 @@ fn every_rule_subset_settles_and_declares_its_seating() {
         files.len(),
         lengths.iter().format(", "),
     );
+}
+
+#[test]
+fn findings_absorb_reads_a_rule_as_reshaping_where_any_run_did() {
+    let mut held = Findings {
+        changing: BTreeMap::from([
+            (rule("band-constants"), false),
+            (rule("reflow-calls"), true),
+        ]),
+        ..Findings::default()
+    };
+
+    held.absorb(Findings {
+        changing: BTreeMap::from([
+            (rule("band-constants"), true),
+            (rule("reflow-calls"), false),
+        ]),
+        ..Findings::default()
+    });
+
+    assert_eq!(
+        held.changing,
+        BTreeMap::from([(rule("band-constants"), true), (rule("reflow-calls"), true)]),
+    );
+}
+
+#[rstest]
+#[case(&[], "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_WIDTHS=88 cargo test --test settle")]
+#[case(
+    &["align-equals"],
+    "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_RULES='align-equals' PROSE_SETTLE_WIDTHS=88 cargo test --test settle",
+)]
+fn hit_scopes_its_command_to_the_rules_it_names(#[case] slugs: &[&str], #[case] command: &str) {
+    let rules = slugs.iter().copied().map(rule).collect_vec();
+
+    let hit = Probes::build(88).hit(Path::new("a.py"), &rules);
+
+    assert_eq!(hit.repro.as_deref(), Some(command));
+}
+
+#[test]
+fn render_kept_lists_each_rule_whose_every_rewrite_kept_the_tree() {
+    let findings = Findings {
+        changing: BTreeMap::from([
+            (rule("band-constants"), true),
+            (rule("reflow-calls"), false),
+        ]),
+        ..Findings::default()
+    };
+
+    assert_eq!(
+        findings.render_kept(),
+        "\nrules declaring `PRESERVES_TREE` as `false` whose every rewrite keeps the tree (1):\n  `reflow-calls`",
+    );
+    assert!(Findings::default().render_kept().is_empty());
 }
 
 #[test]
@@ -683,10 +814,7 @@ fn scope_of_splits_on_spaces_and_commas(#[case] named: &str) {
 
     assert_eq!(
         named,
-        BTreeSet::from([
-            "align-equals".parse::<RuleId>().unwrap(),
-            "band-constants".parse::<RuleId>().unwrap(),
-        ])
+        BTreeSet::from([rule("align-equals"), rule("band-constants")])
     );
 }
 
