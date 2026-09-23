@@ -6,14 +6,18 @@ use ruff_python_ast::{
     helpers::is_compound_statement,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::*;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
+    pub(super) reservations: reserve::Reservations,
     pub(super) settling: Settling,
+    pub(super) stranding: Stranding,
     pub(super) walker: aligner::AlignWalker<'a>,
+    pub(super) widenings: OnceCell<aligner::Widenings>,
 }
 
 impl Visitor<'_> {
@@ -52,14 +56,19 @@ impl Visitor<'_> {
     }
 
     /// Returns the display width `body` takes through the end of its row
-    /// once folded, reading a trailing comment at the width the enabled
-    /// comment rules settle it to and any other tail as written.
+    /// once folded, reading the delimiter padding `strip-stranded-padding`
+    /// removes, the gaps `align-equals` seats, and a trailing comment at the
+    /// widths their rules settle them to, and any other tail as written.
     fn folded_width(&self, body: &Stmt, member: aligner::Member) -> usize {
         let source = self.walker.source;
         let slack = aligner::comment_slack(source, body.end(), member.gap, self.settling);
-        source
-            .width_between(body.start(), source.row_tail(body.end()).end())
-            .saturating_add_signed(-slack)
+        let widening = self
+            .widenings
+            .get_or_init(|| self.reservations.widenings(source))
+            .on_line(source.text().line_start(body.start()));
+        let row = TextRange::new(body.start(), source.row_tail(body.end()).end());
+        settled_slice_width(source, &source.stranded_padding(self.stranding), row)
+            .saturating_add_signed(widening - slack)
     }
 
     /// Emits collapse-and-align edits for one match by walking each
@@ -149,7 +158,7 @@ impl<'a> StatementVisitor<'a> for Visitor<'a> {
 /// An arm whose single-statement body can fold onto its `case` line.
 struct Arm {
     /// The display width [`Visitor::folded_width`] measures for the
-    /// body's row, a trailing comment read at its settled width.
+    /// body's row once its padding, `=` gaps, and trailing comment settle.
     body_width: usize,
     /// The `:`-to-body gap the fold collapses to one space.
     collapse: TextRange,

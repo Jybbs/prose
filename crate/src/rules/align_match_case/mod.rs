@@ -8,12 +8,17 @@
 //! column, ends the run the same way and splits onto two lines where
 //! it sits folded. Nested matches recurse.
 
+use std::cell::OnceCell;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::statement_visitor::StatementVisitor;
 
 use crate::{
     config::Config,
-    primitives::{aligner, colon_targets, comments::Settling, layout::item_indent},
+    primitives::{
+        aligner, colon_targets, comments::Settling, inline::settled_slice_width,
+        layout::item_indent, padding::Stranding, reserve,
+    },
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -25,8 +30,10 @@ use walk::Visitor;
 #[derive(Debug)]
 pub(crate) struct AlignMatchCase {
     code_line_length: usize,
+    reservations: reserve::Reservations,
     settings: aligner::Settings,
     settling: Settling,
+    stranding: Stranding,
 }
 
 impl AlignMatchCase {
@@ -37,9 +44,11 @@ impl AlignMatchCase {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
+            reservations: config.equals_reservations(),
             settings: aligner::Settings::from(&config.rules.align_match_case)
                 .with_singleton_strip(),
             settling: config.comment_settling(),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -48,8 +57,11 @@ impl Rule for AlignMatchCase {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
             code_line_length: self.code_line_length,
+            reservations: self.reservations,
             settling: self.settling,
+            stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
+            widenings: OnceCell::new(),
         };
         visitor.visit_body(&source.ast().body);
         visitor.walker.groups
