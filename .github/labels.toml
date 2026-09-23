@@ -36,11 +36,11 @@ description = "Rules that explode a bracketed construct to one entry per line on
 
 [labels."🧶 lint"]
 color       = "e8876f"
-description = "Rules that report violations without auto-fixing"
+description = "Rules that report a finding without rewriting the source"
 
 [labels."🪉 ordering"]
 color       = "7db3e0"
-description = "Rules that alphabetize or reorder siblings"
+description = "Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it"
 
 [labels."🗝️ site"]
 color       = "ffffcc"

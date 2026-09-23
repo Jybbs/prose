@@ -8,7 +8,7 @@ This page walks a change through each step in the order a contributor takes it, 
 
 ## 🗜️ Setting Up
 
-`README.md` carries the provisioning steps, which install mise, activate it in the shell, and run `mise install` from a clone. From then on, these conventions hold:
+`README.md` carries the provisioning steps, and once a clone is provisioned, these conventions hold:
 
 | **Convention** | **Rule** |
 |---|---|
@@ -81,10 +81,10 @@ Setting the labels, the assignee, and the milestone takes triage access on the r
 | `🐞 bug` | A defect in what the formatter writes or reports, or in a CI workflow |
 | `🦉 engine` | Parser integration, the pipeline, `Source`, and the primitives under `crate/src/primitives/` |
 | `🪜 alignment` | Rules that pad the space before a shared token so consecutive rows read as columns |
-| `🪉 ordering` | Rules that alphabetize or reorder siblings |
+| `🪉 ordering` | Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it |
 | `🧺 layout` | Rules that explode a bracketed construct to one entry per line once it outgrows its line |
 | `🪶 formatting` | Rules that rewrite a token, a line, or a spelling once a statement's layout is settled |
-| `🧶 lint` | Rules that report violations without auto-fixing |
+| `🧶 lint` | Rules that report a finding without rewriting the source |
 | `🪄 cli` | Command-line interface, config loader, diff output |
 | `📰 docs` | Docstring rules, the README, the contributor guide, rule pages, and in-code doc comments |
 | `🗝️ site` | Documentation-site infrastructure, content, and theming |
@@ -96,6 +96,7 @@ Setting the labels, the assignee, and the milestone takes triage access on the r
 - `.github/release.yml` or an issue template names a label the registry lacks, or the table above names or describes a label differently
 - A registry label sits in no release-notes category, or in more than one
 - A color is not six lowercase hex digits, or two labels share it
+- A rule family's label differs from the color or the description the docs site gives that family
 
 ---
 
@@ -278,7 +279,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | **Workflow** | **Fires on a Pull Request Touching** |
 |---|---|
 | `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
-| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, `.nvmrc`, or `crate/Cargo.toml` |
+| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, `.nvmrc`, `CONTRIBUTING.md`, `README.md`, or `crate/Cargo.toml` |
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 
@@ -290,7 +291,7 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, and the label table above. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Every file the audit reads sits inside the path filter of a workflow that runs the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |

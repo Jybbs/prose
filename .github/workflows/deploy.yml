@@ -10,6 +10,7 @@ env:
 on:
   pull_request:
     paths: &paths
+      - .github/ISSUE_TEMPLATE/**
       - .github/actions/**
       - .github/workflows/deploy.yml
       - .mise/config.toml
@@ -17,6 +18,8 @@ on:
       - .mise/lib/**
       - .mise/tasks/**
       - .nvmrc
+      - CONTRIBUTING.md
+      - README.md
       - crate/Cargo.toml
       - site/**
 
