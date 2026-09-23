@@ -8,12 +8,12 @@ def build(alpha_parameter, beta_parameter, gamma_parameter, delta_parameter):
 
 
 def run(
-    first,
-    third=build(
+    value,
+    fallback=build(
         alpha_parameter="a long string value here",
         beta_parameter="another long string value",
         gamma_parameter="third long string value",
         delta_parameter="fourth"
     )
 ):
-    return first
+    return value

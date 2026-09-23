@@ -39,7 +39,7 @@ fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
 
     let shown = excerpt("before", "after", &before, &after, ..);
 
-    assert!(shown.ends_with(" more lines and 1 more hunks"), "{shown}");
+    assert!(shown.ends_with(" more lines and 1 more hunk"), "{shown}");
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn excerpt_shows_the_first_hunk_and_counts_the_rest() {
         "{shown}"
     );
     assert!(shown.contains("-line 2\n+line two\n"), "{shown}");
-    assert!(shown.ends_with("... and 1 more hunks"), "{shown}");
+    assert!(shown.ends_with("... and 1 more hunk"), "{shown}");
 }
 
 #[rstest]
@@ -110,7 +110,7 @@ fn excerpt_shows_the_first_hunk_changing_the_rows_it_names(
     let shown = excerpt("before", "after", &before, &after, rows);
 
     assert!(shown.contains(hunk), "{shown}");
-    assert!(shown.ends_with("... and 1 more hunks"), "{shown}");
+    assert!(shown.ends_with("... and 1 more hunk"), "{shown}");
 }
 
 #[test]

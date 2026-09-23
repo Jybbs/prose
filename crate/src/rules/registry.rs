@@ -108,12 +108,12 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 /// single source consumed by `RuleId::from_str`, the
 /// `[tool.prose.rules.<slug>]` section name, the
 /// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
-/// Each rule's one-line imperative lives on its own type as `MESSAGE`,
+/// Each rule's type declares its one-line imperative as `MESSAGE`,
 /// whether its edits leave every binding standing as
 /// `PRESERVES_BINDINGS`, and whether its output parses to the tree its
-/// input does as `PRESERVES_TREE`, which [`message_for_id`],
-/// [`preserves_bindings_for_id`], and [`preserves_tree`] read back per
-/// slug.
+/// input does as `PRESERVES_TREE`. [`message_for_id`],
+/// [`preserves_bindings_for_id`], and [`preserves_tree`] read each one
+/// back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -363,10 +363,10 @@ pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
     }
 }
 
-/// Reports whether the output of the rule named `slug` parses to a
-/// `ComparableMod` equal to its input's, the comparison that ignores
-/// positions, parentheses, comments, and implicit string concatenation.
-/// `false` for an unknown slug.
+/// Reports whether the rule named `slug` declares that its output parses
+/// to a tree whose `ComparableModModule` equals its input's, a form that
+/// ignores positions, parentheses, comments, and implicit string
+/// concatenation. `false` for an unknown slug.
 pub fn preserves_tree(slug: &str) -> bool {
     slug_index(slug).is_some_and(|seat| PRESERVES_TREE[seat])
 }

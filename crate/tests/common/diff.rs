@@ -10,9 +10,9 @@ use similar::{DiffOp, DiffTag, TextDiff};
 pub(crate) const EXCERPT: usize = 16;
 
 /// Renders the first hunk of the unified diff from `before` to `after`
-/// that changes one of `rows`, counted from zero in `before`, headed
-/// `from` and `to`. The excerpt stops at [`EXCERPT`] lines and reports the
-/// rest of the diff as a hunk count and a line count.
+/// that changes one of the zero-based `rows` of `before`, headed `from`
+/// and `to`. The excerpt stops at [`EXCERPT`] lines and reports the rest
+/// of the diff as a hunk count and a line count.
 pub(crate) fn excerpt(
     from: &str,
     to: &str,
@@ -36,11 +36,12 @@ pub(crate) fn excerpt(
         lines.iter().take(EXCERPT).format("\n")
     );
     let more_lines = lines.len().saturating_sub(EXCERPT);
+    let hunks = if rest == 1 { "hunk" } else { "hunks" };
     match (more_lines, rest) {
         (0, 0) => shown,
-        (0, hunks) => format!("{shown}\n... and {hunks} more hunks"),
+        (0, rest) => format!("{shown}\n... and {rest} more {hunks}"),
         (lines, 0) => format!("{shown}\n... {lines} more lines"),
-        (lines, hunks) => format!("{shown}\n... {lines} more lines and {hunks} more hunks"),
+        (lines, rest) => format!("{shown}\n... {lines} more lines and {rest} more {hunks}"),
     }
 }
 

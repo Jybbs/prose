@@ -1,5 +1,5 @@
 ---
-description: "Covers the fixed order rules run in and why each rule sits where it does."
+description: "Covers the fixed order rules run in, why each rule sits where it does, and what the corpus sweep holds each rule to."
 ---
 
 # Pipeline Order
@@ -36,11 +36,18 @@ The guarantee needs no sweep over every subset, because a rule that settles alon
 
 Each ordering the guarantee depends on is recorded in the registry's dependency column rather than left to a position that happens to work, and `prose rules --output-format json` prints that column as each rule's `after` list.
 
-## Layout Rules Keep the Tree
+## Rules That Keep the Tree
 
-Most rules move only whitespace, punctuation, and comments, and the corpus sweep holds each of them to exactly that. Every rewrite such a rule makes has to parse to a tree equal to its input's, compared with positions, parentheses, comments, and implicit string concatenation ignored, and every such rule also runs together in one pipeline held to the same comparison. The sweep reaches every function body in the corpus, so a layout rule that changed what a line of code does fails the sweep before it reaches a release.
+Many rules change only whitespace, parentheses, commas, comments, and how a literal is spelled, as [[align-equals]] does when it pads a column and [[normalize-literals]] does when it settles a string on `"`. A rewrite confined to those leaves the parsed tree as it was, in a comparison that ignores positions, parentheses, comments, and implicit string concatenation. The corpus sweep holds each such rule to that comparison on every rewrite it makes, and runs every such rule together in one pipeline under the same comparison. The comparison reads every function body in the corpus, including code no import of the module ever runs, so a rule that changed what a line does fails the sweep before it reaches a release.
 
-A rule that changes the tree by design sits outside that check, as [[reflow-imports]] does when it splits `import a, b` into two statements and [[strip-none-return]] does when it drops a `-> None` annotation. Those rules answer to a second sweep, which executes every module the formatter rewrote and compares what each one binds before and after formatting.
+A rule whose rewrite changes the tree sits outside that check, even where the rewritten code runs exactly as the original did:
+
+- [[reflow-imports]] splits `import a, b` into two statements
+- [[strip-none-return]] drops a `-> None` annotation
+- [[reflow-calls]] writes a positional argument in keyword form, named after its parameter
+- [[wrap-docstrings]] and [[align-colons]] change the text inside a docstring, which the tree holds as a string value
+
+Those rules answer to a second sweep, which executes every module *Prose* rewrote and compares what each one binds before and after formatting.
 
 ## Independent Rules Share a Parse
 

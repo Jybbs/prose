@@ -1,9 +1,10 @@
-//! Holds every rule declaring `PRESERVES_TREE` to its tree contract. Every
-//! rewrite the subset sweep records for such a rule, pair runs included,
-//! fails where its output parses to a `ComparableModModule` other than its
-//! input's, and every such rule also runs together in one pipeline held to
-//! the same comparison. Over the fixture tree, a rule declaring `false`
-//! whose every rewrite keeps the tree fails as well.
+//! Holds every rule declaring `PRESERVES_TREE` to the tree its input
+//! parses to. The check files every rewrite the subset sweep records for
+//! such a rule, pair runs included, whose output's `ComparableModModule`
+//! differs from its input's, and runs every such rule together in one
+//! pipeline held to the same comparison, a rejection there filing too.
+//! Over the fixture tree it also files a rule declaring `false` whose
+//! every rewrite keeps the tree.
 
 use std::{iter::successors, ops::RangeInclusive};
 
@@ -31,9 +32,10 @@ impl<'a> StatementVisitor<'a> for Statements<'a> {
 }
 
 /// Files each changed run whose rule declares `PRESERVES_TREE` and whose
-/// output parses to another tree, then the run of every such rule together.
-/// A solo entry, one of the memo's first `solo`, files only where this row
-/// reports its rule, and the fixture tree records each `false` rule's runs.
+/// output parses to another tree, then the run of [`Probes::joint`],
+/// filing one of the memo's first `solo` runs only where this sweep
+/// reports its rule. Over the fixture tree it records whether each
+/// `false` rule's runs changed the tree.
 pub(super) fn check_trees(
     probes: &Probes,
     memo: &Memo,
@@ -84,7 +86,10 @@ pub(super) fn check_trees(
     let Some(joint) = &probes.joint else {
         return;
     };
-    let together = format!("every rule declaring `PRESERVES_TREE` {}", probes.budget);
+    let together = format!(
+        "every rule declaring `PRESERVES_TREE` together {}",
+        probes.budget
+    );
     let (defect, detail) = match joint.format(source.clone()) {
         Err(error) => (format!("{together} was rejected: {error}"), None),
         Ok(after)
@@ -129,15 +134,17 @@ fn moved_rows(before: &Source, after: &Source) -> Option<RangeInclusive<usize>> 
     Some(row(old[at].start())..=row(old[at].end()))
 }
 
-/// Parses a buffer a run read or wrote, which always parses.
+/// Parses a buffer a single-rule run read or wrote, which the pipeline
+/// has already parsed once.
 fn parsed(text: &str) -> Source {
     text.parse()
         .expect("invariant: a buffer a single-rule run read or wrote parses")
 }
 
-/// Renders the excerpt from `before` to `after`, headed `before` and `to`,
-/// at the innermost statement whose tree changed, or at the first hunk
-/// where no single statement of `before` holds the change.
+/// Renders the excerpt from `before` to `after`, headed `"before"` and
+/// `to`, at the innermost statement whose tree changed, or at the diff's
+/// first hunk where no statement holds the change or no hunk reaches its
+/// rows.
 fn reshaping(before: &Source, after: &Source, to: &str) -> String {
     moved_rows(before, after)
         .map(|rows| excerpt("before", to, before.text(), after.text(), rows))
@@ -192,7 +199,7 @@ fn check_trees_files_a_joint_run_that_changes_the_tree() {
 #[case::a_pair_run_whatever_its_rule("align-equals", 0, &[], true, 1, None)]
 #[case::a_solo_run_of_an_unreported_rule("align-equals", 1, &[], true, 0, None)]
 #[case::a_changing_rule_off_the_fixture_tree("reflow-calls", 1, &["reflow-calls"], false, 0, None)]
-fn check_trees_files_a_run_in_the_row_that_owns_it(
+fn check_trees_files_a_run_in_the_sweep_that_reports_it(
     #[case] slug: &str,
     #[case] solo: usize,
     #[case] reported: &[&str],

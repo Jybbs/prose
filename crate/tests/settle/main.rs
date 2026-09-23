@@ -14,7 +14,9 @@
 //! pointed sweep reports which undeclared pairs agree on every file
 //! they edit together. The fixture tree runs the sweep at every line
 //! length the harness carries, because a subset that settles at one
-//! `code-line-length` can still edit its own output at another.
+//! `code-line-length` can still edit its own output at another. The
+//! `trees` module holds every rule declaring `PRESERVES_TREE` to its
+//! input's tree over the same runs.
 
 use std::{
     assert_matches,
@@ -118,15 +120,15 @@ enum Claim {
 #[derive(Default)]
 struct Findings {
     /// Each reported rule declaring `PRESERVES_TREE` as `false` that
-    /// rewrote a fixture, beside whether any of its rewrites changed the
-    /// tree, gathered over the fixture tree alone.
+    /// rewrote a fixture, beside whether any of those rewrites changed the
+    /// tree.
     changing: BTreeMap<RuleId, bool>,
     /// Declared-independent pairs whose spliced run differs from their
     /// chained one.
     divergent: Tally,
     /// Rewrites whose rule declares `PRESERVES_TREE` and whose output
-    /// parses to a different tree, the tree-preserving rules run
-    /// together among them.
+    /// parses to a different tree, beside the run of every such rule
+    /// together wherever it changes the tree or the pipeline rejects it.
     reshaped: Tally,
     /// How each undeclared pair's spliced run compared, gathered only
     /// for the pointed sweep that prints it.
@@ -295,8 +297,8 @@ struct Probes {
     /// carries.
     budget: String,
     /// Whether the corpus is the fixture tree, over which a reported rule
-    /// declaring `PRESERVES_TREE` as `false` fails unless one of its
-    /// rewrites changes the tree.
+    /// declaring `PRESERVES_TREE` as `false` that rewrites any file fails
+    /// unless one of those rewrites changes the tree.
     fixtures: bool,
     /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
     /// this run reports at least one of them.
@@ -704,7 +706,7 @@ fn claim_of_rejects_an_unknown_shape(#[values("both", "Owned", "OWNED")] named: 
 
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
-fn every_rule_subset_settles_and_declares_its_seating() {
+fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() {
     let files = corpus();
     let lengths = lengths();
     let mut findings = Findings::default();
