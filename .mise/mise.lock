@@ -367,10 +367,18 @@ version = "11.3.1"
 backend = "github:codecov/codecov-cli"
 specifiers = ["11.3.1"]
 
+[tools."github:codecov/codecov-cli".options]
+matching_regex = "^codecovcli_(linux|macos|windows)"
+
 [tools."github:codecov/codecov-cli"."platforms.linux-arm64"]
 checksum = "sha256:baff0923257c20b8594154c9651e7a6848f9783dc4392c6ce71791fec11a5913"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_linux_arm64"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877788"
+
+[tools."github:codecov/codecov-cli"."platforms.linux-x64"]
+checksum = "sha256:ca1d64196d2d34771084afe76ea657d581bf628e31d993ff8e52ea09cc88a56d"
+url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.1/codecovcli_linux"
+url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/470877726"
 
 [tools."github:codecov/codecov-cli"."platforms.macos-arm64"]
 checksum = "sha256:ffb2b821551076b69d3267508b2d5dc10925c821c436521f2216f5ead62cb138"
