@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/line_overflow/docstring_row_left_as_written_rep
       "column": 1,
       "row": 6
     },
-    "message": "Line is 96 columns, over the 88-column budget, with no legal reshape"
+    "message": "Line is 96 columns, over the 76-column budget, with no legal reshape"
   }
 ]

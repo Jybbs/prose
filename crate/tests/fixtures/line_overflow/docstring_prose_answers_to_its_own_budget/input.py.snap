@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/docstring_prose_answers_to_its_own_budget/input.py
+---
+def locate():
+    """
+    See the relevant header files in /usr/include/mach-o for the layout.
+    """
+    return resolve_the_header_path_for_mach_o

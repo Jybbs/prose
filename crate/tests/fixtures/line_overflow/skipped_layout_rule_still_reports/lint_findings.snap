@@ -80,7 +80,7 @@ input_file: crate/tests/fixtures/line_overflow/skipped_layout_rule_still_reports
       "column": 1,
       "row": 18
     },
-    "message": "Line is 96 columns, over the 88-column budget, with `wrap-docstrings` held by a skip"
+    "message": "Line is 96 columns, over the 76-column budget, with `wrap-docstrings` held by a skip"
   },
   {
     "code": "line-overflow",

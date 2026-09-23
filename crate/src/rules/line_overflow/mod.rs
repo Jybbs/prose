@@ -110,6 +110,7 @@ impl Rule for LineOverflow {
         let padding = source.stranded_padding(self.stranding);
         let mut spans = Spans {
             blocked: Vec::new(),
+            budgets: Vec::new(),
             docstrings: docstring_slots(&source.ast().body),
             exploding: self
                 .signatures
@@ -126,7 +127,10 @@ impl Rule for LineOverflow {
         spans.note_docstrings(&self.wrap_docstrings);
         spans.visit_body(&source.ast().body);
         spans.index();
-        let floor = self.code_line_length.min(self.import_line_length);
+        let floor = spans.budgets.iter().filter_map(|&(_, budget)| budget).fold(
+            self.code_line_length.min(self.import_line_length),
+            usize::min,
+        );
         source
             .text()
             .universal_newlines()
@@ -139,7 +143,9 @@ impl Rule for LineOverflow {
                 let cap = if spans.in_import(range) {
                     self.import_line_length
                 } else {
-                    self.code_line_length
+                    spans
+                        .docstring_budget(range)
+                        .unwrap_or(self.code_line_length)
                 };
                 if width <= cap
                     || width_before_pragma(source, range).is_some_and(|code| code <= cap)
@@ -207,6 +213,10 @@ struct Spans<'a> {
     /// Each place a layout rule would split a row where the rule is off or
     /// held, beside the reason a line holding it stays as written.
     blocked: Vec<(TextRange, Kept)>,
+    /// The budget each line of a docstring `wrap-docstrings` reads wraps
+    /// to, keyed by the offset it opens at, `None` from a line passed
+    /// through as written.
+    budgets: Vec<(TextSize, Option<usize>)>,
     /// Each docstring slot in source order, whether it holds a docstring or
     /// a concatenated run.
     docstrings: Vec<TextRange>,
@@ -233,6 +243,16 @@ impl<'a> Spans<'a> {
     /// filling a docstring slot.
     fn breakable_run<'e>(&self, expr: &'e Expr) -> Option<StringLike<'e>> {
         concatenated_run(expr).filter(|_| !self.docstrings.contains(&expr.range()))
+    }
+
+    /// Returns the budget `wrap-docstrings` wraps `line` to, `None` outside
+    /// the prose of a docstring it reads.
+    fn docstring_budget(&self, line: TextRange) -> Option<usize> {
+        let slot = self
+            .budgets
+            .partition_point(|&(start, _)| start <= line.start())
+            .checked_sub(1)?;
+        self.budgets[slot].1
     }
 
     /// True when `line` meets an import statement, which answers to the
@@ -296,13 +316,17 @@ impl<'a> Spans<'a> {
         self.note(arguments.range(), ReflowCalls::SLUG, splits);
     }
 
-    /// Records each docstring row the docstring rules rewrite. A docstring
-    /// `wrap-docstrings` reads only after `frame-docstrings` or
-    /// `expand-docstrings` reshapes it leaves every row to that rule. Any
-    /// other row whose text survives a `wrap-docstrings` edit is left out.
+    /// Records the budget each docstring row wraps to and each row the
+    /// docstring rules rewrite. A docstring `wrap-docstrings` reads only
+    /// after `frame-docstrings` or `expand-docstrings` reshapes it leaves
+    /// every row to that rule. A row surviving its rewrap whole is left out.
     fn note_docstrings(&mut self, wrap: &WrapDocstrings) {
         let source = self.source;
-        let wrapped = wrap.apply(source).into_iter().flatten().collect_vec();
+        let mut wrapped = Vec::new();
+        for rewrap in wrap.rewraps(source) {
+            self.budgets.extend(rewrap.budgets);
+            wrapped.extend(rewrap.edit);
+        }
         let reshaped = [
             (FrameDocstrings::SLUG, FrameDocstrings.apply(source)),
             (ExpandDocstrings::SLUG, ExpandDocstrings.apply(source)),
@@ -602,7 +626,17 @@ mod tests {
     #[case::a_url_row_between_rewrapped_paragraphs(
         "def fetch():\n    \"\"\"\n    Fetch the resource this module names from its canonical location on the network, retrying.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n\n    Return the parsed payload once the server answers, raising on any status past the budget.\n    \"\"\"\n",
         "",
-        &["Line is 96 columns, over the 88-column budget, with no legal reshape"],
+        &["Line is 96 columns, over the 76-column budget, with no legal reshape"],
+    )]
+    #[case::docstring_prose_within_its_own_budget(
+        "def locate():\n    \"\"\"\n    See the relevant header files in /usr/include/mach-o\n    \"\"\"\n",
+        "code-line-length = 40",
+        &[],
+    )]
+    #[case::a_list_item_answering_to_the_code_cap(
+        "def fetch():\n    \"\"\"\n    https://example.com/a/deeply/nested/path/that/runs/past/the/docstring/budget.html\n\n    - a list item long enough to run past the docstring budget and inside the code cap\n    \"\"\"\n",
+        "",
+        &["Line is 85 columns, over the 76-column budget, with no legal reshape"],
     )]
     #[case::an_unframed_docstring(
         "def fetch():\n    \"\"\"Fetch the resource this module names from its canonical location on the network.\n\n    https://example.com/a/deeply/nested/path/that/runs/well/past/the/docstring/budget/index.html\n    \"\"\"\n",
@@ -617,7 +651,7 @@ mod tests {
     #[case::docstring_wrapping_turned_off(
         "def locate():\n    \"\"\"\n    Locate the configuration this module carries, in a sentence long enough to overflow its row.\n    \"\"\"\n",
         "[rules]\nwrap-docstrings = false\n",
-        &["Line is 96 columns, over the 88-column budget, with `wrap-docstrings` off"],
+        &["Line is 96 columns, over the 76-column budget, with `wrap-docstrings` off"],
     )]
     #[case::expansion_turned_off(
         "values = [first_argument_value_long_name, second_argument_value_long_name, third_item_value]\n",

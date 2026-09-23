@@ -53,7 +53,7 @@ The two checks differ in reach, in that a `format` run, and the editor message [
 
 ## Lengths
 
-The `*-line-length` caps are hard limits, and every rule that lays out code fits within them rather than reading the budget as a hint. `code-line-length` governs code lines and `import-line-length` governs import lines, and the count keys *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choose a layout only for lines that already fit under a cap.
+The `*-line-length` caps are hard limits, and every rule that lays out code fits within them rather than reading the budget as a hint. `code-line-length` governs code lines, `import-line-length` governs import lines, and `docstring-line-length` governs docstring description prose, whereas the count keys *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choose a layout only for lines that already fit under a cap.
 
 A construct with a legal multi-line layout takes it once its line crosses the cap, whatever its count says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its own budget. An alignment run whose padding would push a row past its cap lays that row out first *(an import splits per [[reflow-imports]], a call or collection value explodes per its layout rule)* and then aligns within the cap. A row leaves the run unpadded, the way a row over `max-shift` does, only when no layout can bring its aligned width under the cap.
 
