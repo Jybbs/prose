@@ -1,0 +1,25 @@
+[tasks."repo:ci"]
+alias       = "ci"
+description = "Full local CI sweep"
+run         = [
+  "mise doctor project",
+  { tasks = [
+    "lock:check",
+    "repo:audit",
+    "rust:check",
+    "rust:cruft",
+    "rust:lint",
+    "rust:proof",
+    "rust:suite",
+    "rust:unused",
+    "site:cruft",
+    "site:links",
+    "site:lint",
+    "site:press",
+    "site:test",
+    "site:typecheck",
+    "wasm:lint",
+    "wasm:smoke"
+  ] },
+  { task = "rust:wheel" }
+]

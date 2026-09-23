@@ -12,7 +12,7 @@
 #MISE   "wasm/Cargo.toml"
 #MISE ]
 
-(cd site && bun install --ignore-scripts)
+(cd site && bun install --lockfile-only)
 cargo update --workspace
 mise lock
 uv lock --project crate
