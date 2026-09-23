@@ -1,20 +1,26 @@
 //! Breaks a fluent method chain across lines under two triggers, the
 //! count trigger on a chain carrying more than `max_links` links and
 //! the length trigger on one whose joined single-line form crosses
-//! `code_line_length` from the column it lands at. The broken chain
-//! sits inside a parenthesis pair, its head holding the receiver and
-//! the first link and every later link hanging beneath the head's own
-//! dot, a receiver wider than `max_shift` taking the full split. Both
-//! measures read the settled form, so a hand-wrapped link counts at
-//! the width `reflow_calls` closes it to, and a chain inside a broken
-//! chain's receiver or argument breaks in the same text where it trips
-//! from the column the break lands it at. Neither trigger reaches a
-//! replacement field, a comment span, or a segment holding its break.
+//! `code_line_length` from the column it lands at. A chain inside an
+//! argument list `reflow_calls` explodes lands on the row that explode
+//! gives it and is charged there with the text trailing it on the row,
+//! whereas any other chain is measured where the source writes it. The
+//! broken chain sits inside a parenthesis pair, its head holding the
+//! receiver and the first link and every later link hanging beneath the
+//! head's own dot, a receiver wider than `max_shift` taking the full
+//! split. Both measures read the settled form, so a hand-wrapped link
+//! counts at the width `reflow_calls` closes it to, and a chain inside a
+//! broken chain's receiver or argument breaks in the same text where it
+//! trips from the column the break lands it at. Neither trigger reaches
+//! a replacement field, a comment span, or a segment holding its break.
 //! `spine` divides a chain and `render` builds the replacement.
+
+use std::cell::OnceCell;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::{Config, MaxShift},
@@ -30,7 +36,10 @@ use crate::{
             walk_parented_exprs,
         },
     },
-    rules::{Rule, RuleId},
+    rules::{
+        Rule, RuleId,
+        reflow_calls::{ReflowCalls, Seat},
+    },
     source::Source,
 };
 
@@ -44,6 +53,7 @@ pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,
     max_shift: MaxShift,
+    reflow_calls: Option<ReflowCalls>,
     rejoin: fracture::Settings<'static>,
     reservations: reserve::Reservations,
 }
@@ -59,6 +69,11 @@ impl StackMethodChains {
             code_line_length: config.code_width(),
             max_links: rules.max_links.cap(),
             max_shift: rules.max_shift,
+            reflow_calls: config
+                .rules
+                .reflow_calls
+                .enabled
+                .then(|| ReflowCalls::from_config(config)),
             rejoin: config.fracture_settings(),
             reservations: config.equals_reservations(),
         }
@@ -74,8 +89,10 @@ impl Rule for StackMethodChains {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
+            reflow_calls: self.reflow_calls.as_ref(),
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
+            seats: OnceCell::new(),
             source,
         };
         walk_parented_exprs(source.ast(), &mut breaker);
@@ -88,29 +105,34 @@ impl Rule for StackMethodChains {
 }
 
 /// Emits the break edit each over-long or over-count chain needs as the
-/// parent-tracking walk reaches it.
+/// parent-tracking walk reaches it. `seats` holds the seat `reflow_calls`
+/// gives each call and attribute access inside an argument it relocates,
+/// built in full the first time a chain reads it.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
+    reflow_calls: Option<&'a ReflowCalls>,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
+    seats: OnceCell<FxHashMap<TextRange, Seat>>,
     source: &'a Source,
 }
 
 impl<'a> Breaker<'a> {
-    /// The text breaking `chain` across lines from `column` on a row
-    /// indented `indent`, `range` covering the grouping pair the source
-    /// already carries, or `None` where neither trigger fires or a
-    /// comment or a line-spanning segment holds the shape.
+    /// The text breaking `chain` across lines where it trips from `seat`,
+    /// `range` covering the grouping pair the source already carries, or
+    /// `None` where neither trigger fires or a comment or a line-spanning
+    /// segment holds the shape. The broken rows are written at the seat's
+    /// indent, and each segment measures the seat's `line_shift` past the
+    /// column it is written at, the move carrying the rows that far.
     fn broken(
         &self,
         expr: &'a Expr,
         chain: &Chain<'a>,
         range: TextRange,
-        column: usize,
-        indent: usize,
+        seat: Seat,
     ) -> Option<String> {
         if !self
             .source
@@ -121,15 +143,25 @@ impl<'a> Breaker<'a> {
             return None;
         }
         let joins = self.rejoin.joins(self.source, expr);
-        if chain.spans_lines(self.source, &joins) || !self.trips(chain, column, &joins) {
+        if chain.spans_lines(self.source, &joins)
+            || !self.trips(chain, seat.column + seat.tail, &joins)
+        {
             return None;
         }
         let text = render::broken(
             self.source,
             chain,
-            indent,
+            seat.indent,
             self.hang(chain),
-            |segment, column, indent| self.segment(chain, segment, column, indent, &joins),
+            |segment, column, indent| {
+                let seat = Seat {
+                    column: column.saturating_add_signed(seat.line_shift),
+                    indent,
+                    tail: 0,
+                    ..seat
+                };
+                self.segment(chain, segment, seat, &joins)
+            },
         );
         Some(text)
     }
@@ -170,36 +202,68 @@ impl<'a> Breaker<'a> {
         nested.found
     }
 
-    /// `chain`'s segment at `segment`, settled and written from
-    /// `column` on a row indented `indent`, the receiver at index zero
-    /// and each link after it, every chain inside it broken where it
-    /// trips from the column it lands at. Where the settled row
+    /// The seat the chain `expr` opens is measured from. Where `range`, the
+    /// span holding the chain, opens on the chain's own row, this is the
+    /// seat `reflow_calls` gives `expr`, and otherwise it is the column and
+    /// indent the source writes `range` at, with no move and no trailing
+    /// text.
+    fn placed(&self, expr: &Expr, range: TextRange) -> Seat {
+        if let Some(rule) = self.reflow_calls
+            && self.source.same_line(range.start(), expr.start())
+            && let Some(&seat) = self
+                .seats
+                .get_or_init(|| rule.seats(self.source))
+                .get(&expr.range())
+        {
+            return seat;
+        }
+        Seat {
+            column: self.reservations.column_in(self.source, range.start()),
+            indent: self.source.line_indent_width(range.start()),
+            line_shift: 0,
+            tail: 0,
+        }
+    }
+
+    /// `chain`'s segment at `segment`, settled and measured from the
+    /// seat's column on a row written at its indent, the receiver at
+    /// index zero and each link after it, every chain inside it broken
+    /// where it trips from the column it lands at. Where the settled row
     /// overflows the budget, `reflow_calls` explodes the argument list,
     /// so a nested chain that fits one indent step past the row stays
     /// joined and one that trips even there breaks from the column the
-    /// joined row reaches.
+    /// joined row reaches, and every measure adds the seat's `line_shift`
+    /// to the column its row is written at.
     fn segment(
         &self,
         chain: &Chain<'a>,
         segment: usize,
-        column: usize,
-        indent: usize,
+        seat: Seat,
         joins: &fracture::Joins,
     ) -> String {
         let range = segment
             .checked_sub(1)
             .map_or(chain.receiver_range, |link| chain.links[link]);
         let explodes = self.rejoin.closes()
-            && column + display_width(&joins.settled(self.source, range)) > self.code_line_length;
+            && seat.column + display_width(&joins.settled(self.source, range))
+                > self.code_line_length;
         let mut out = String::new();
         let mut cursor = range.start();
         for (expr, parent, nested) in self.nested(chain, segment) {
             let nested_range = self.source.paren_aware_range(expr.into(), parent);
             out.push_str(&joins.settled(self.source, TextRange::new(cursor, nested_range.start())));
-            let landing = end_column(&out, column);
-            let seated = explodes && !self.trips(&nested, item_indent(indent), joins);
+            let seated = explodes
+                && !self.trips(
+                    &nested,
+                    item_indent(seat.indent).saturating_add_signed(seat.line_shift),
+                    joins,
+                );
+            let nested_seat = Seat {
+                column: end_column(&out, seat.column),
+                ..seat
+            };
             match self
-                .broken(expr, &nested, nested_range, landing, indent)
+                .broken(expr, &nested, nested_range, nested_seat)
                 .filter(|_| !seated)
             {
                 Some(text) => out.push_str(&text),
@@ -227,10 +291,8 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
             return Descent::Into;
         };
         let range = self.source.paren_aware_range(expr.into(), parent);
-        let column = self.reservations.column_in(self.source, range.start());
-        let indent = self.source.line_indent_width(range.start());
         let Some(edit) = self
-            .broken(expr, &chain, range, column, indent)
+            .broken(expr, &chain, range, self.placed(expr, range))
             .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
             return Descent::Into;

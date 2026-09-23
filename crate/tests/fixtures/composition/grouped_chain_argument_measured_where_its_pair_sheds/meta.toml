@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Grouped Chain Argument Is Measured Where Its Pair Comes Off"
+
+description = '''
+`advise(...)` crosses the 25-column budget, so [[reflow-calls]] puts each argument on its own row and drops the grouping pair around the one-row `(gamma.get(key).strip())`, which leaves the chain at the start of that row. The joined chain runs one column past the budget from there, so **the chain breaks and keeps the pair the source wrote around it**.
+'''

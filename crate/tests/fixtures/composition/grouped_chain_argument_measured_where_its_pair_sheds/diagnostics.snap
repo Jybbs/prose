@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/grouped_chain_argument_measured_where_its_pair_sheds/input.py
+---
+reflow-calls@16..65
+stack-method-chains@42..64

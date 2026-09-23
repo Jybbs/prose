@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Chain Under a Pair Opened on the Row Above Hangs From That Row"
+
+description = '''
+The grouping pair around `gamma.get(key).strip().lower()` opens at the end of the `advise(...)` row, above the chain. The chain's three links break it on the count trigger, and since its pair opens on an earlier row, **the broken chain is written at the indent of the row carrying the `(`**, which [[reflow-calls]] then moves onto the argument's own row along with the rest of the pair.
+'''

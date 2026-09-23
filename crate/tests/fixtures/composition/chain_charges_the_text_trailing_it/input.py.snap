@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_charges_the_text_trailing_it/input.py
+---
+def mode():
+    if int(
+        (
+            _os.uname()
+               .release.split(".")
+        )[0]
+    ) < 8:
+        return RTLD_GLOBAL

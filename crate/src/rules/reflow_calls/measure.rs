@@ -1,13 +1,14 @@
 //! The columns an explode decision reads: where a call's `(` lands once
 //! the walk's earlier edits place the text ahead of it, the indent an
 //! exploded closing `)` drops to, and whether a literal holding a call
-//! is one `reflow-collections` expands once its row lands.
+//! is one `reflow-collections` expands once its row lands, beside the
+//! seat of each call and attribute access inside a relocated region.
 
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use super::Exploder;
+use super::{Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
@@ -136,5 +137,26 @@ impl<'a> Exploder<'a> {
     pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
         let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
         self.placed_column(call.arguments.start(), !spans_rows(&callee))
+    }
+
+    /// Where `expr` sits once this walk's earlier edits place the text
+    /// ahead of it. Its start reaches the column [`Self::placed_column`]
+    /// reads, its row is written at `indent` when that row opens the
+    /// region and at the row's placed indent otherwise, and the columns
+    /// [`Self::row_tail`] reads trail it on that row.
+    pub(super) fn seat(&self, expr: &Expr, indent: usize) -> Seat {
+        let offset = expr.start();
+        let placed = placed_head(self.source, &self.edits, offset, self.region.start());
+        let indent = if spans_rows(&placed) {
+            indent_width(last_line(&placed))
+        } else {
+            indent
+        };
+        Seat {
+            column: self.placed_column(offset, true),
+            indent,
+            line_shift: self.line_shift,
+            tail: self.row_tail(expr.end()),
+        }
     }
 }

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/keyword_chain_measured_past_the_equals_buffer/input.py
+---
+reflow-calls@14..61
+stack-method-chains@20..49

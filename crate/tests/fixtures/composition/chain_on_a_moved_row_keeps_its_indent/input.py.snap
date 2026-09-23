@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_on_a_moved_row_keeps_its_indent/input.py
+---
+def dispatch():
+    result = advise(
+        alpha_value,
+        inner(
+            (
+                gamma.get(key)
+                     .strip()
+                     .lower()
+            ),
+        )
+    )
+    return result
