@@ -24,6 +24,21 @@ use crate::{
     source::Source,
 };
 
+/// The columns a trailing comment on `anchor`'s line stands past the
+/// width `settling`'s comment rules settle it to, zero where the line
+/// has no trailing comment, per [`Settling::slack`] with `own` left out.
+pub(crate) fn comment_slack(
+    source: &Source,
+    anchor: TextSize,
+    own: TextRange,
+    settling: Settling,
+) -> isize {
+    trailing_comment(source, anchor).map_or(0, |comment| {
+        let gap = line_gap_before(source, comment.start());
+        settling.slack(source, comment, gap, own)
+    })
+}
+
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
 /// its widest member. A singleton group collapses its gap to the
@@ -96,7 +111,12 @@ pub(crate) fn settled_tail(
 ) -> usize {
     let tail = display_width(source.slice(source.row_tail(code_end)));
     settings.cap.map_or(tail, |cap| {
-        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
+        tail.saturating_add_signed(-comment_slack(
+            source,
+            member.line_start,
+            member.gap,
+            cap.settling,
+        ))
     })
 }
 
@@ -132,17 +152,6 @@ fn columns(
         .collect()
 }
 
-/// The columns a trailing comment on `member`'s line stands past the
-/// width `settling`'s comment rules settle it to, zero where the line
-/// has no trailing comment, per [`Settling::slack`] with the gap
-/// `member` rewrites itself left out.
-fn comment_slack(source: &Source, member: Member, settling: Settling) -> isize {
-    trailing_comment(source, member.line_start).map_or(0, |comment| {
-        let gap = line_gap_before(source, comment.start());
-        settling.slack(source, comment, gap, member.gap)
-    })
-}
-
 /// The width of `member`'s line as the aligner emits it: less the
 /// pre-operator gap the padding replaces, any rewritten post-operator
 /// gap collapsed to one space, a trailing comment at the gap and opener
@@ -157,8 +166,10 @@ fn emitted_base_width(source: &Source, member: Member, cap: Cap, joined: Option<
         Some(width) => (width, TextRange::new(line.start(), member.gap.end())),
         None => (display_width(source.slice(line)), line),
     };
-    let slack = joined.map_or_else(|| comment_slack(source, member, cap.settling), |_| 0)
-        + padding_slack(source, member, padded, cap.stranding);
+    let slack = joined.map_or_else(
+        || comment_slack(source, member.line_start, member.gap, cap.settling),
+        |_| 0,
+    ) + padding_slack(source, member, padded, cap.stranding);
     let base = (written - display_width(source.slice(member.gap))).saturating_add_signed(-slack);
     member
         .rewritten_value_gap(source)

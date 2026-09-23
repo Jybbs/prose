@@ -56,10 +56,7 @@ impl Visitor<'_> {
     /// comment rules settle it to and any other tail as written.
     fn folded_width(&self, body: &Stmt, member: aligner::Member) -> usize {
         let source = self.walker.source;
-        let slack = trailing_comment(source, body.end()).map_or(0, |comment| {
-            let gap = aligner::line_gap_before(source, comment.start());
-            self.settling.slack(source, comment, gap, member.gap)
-        });
+        let slack = aligner::comment_slack(source, body.end(), member.gap, self.settling);
         source
             .width_between(body.start(), source.row_tail(body.end()).end())
             .saturating_add_signed(-slack)

@@ -13,11 +13,7 @@ use ruff_python_ast::statement_visitor::StatementVisitor;
 
 use crate::{
     config::Config,
-    primitives::{
-        aligner, colon_targets,
-        comments::{Settling, trailing_comment},
-        layout::item_indent,
-    },
+    primitives::{aligner, colon_targets, comments::Settling, layout::item_indent},
     rules::{Rule, RuleId},
     source::Source,
 };
