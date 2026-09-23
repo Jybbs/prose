@@ -1,7 +1,8 @@
-[tasks."repo:ci"]
+["repo:ci"]
 alias       = "ci"
 description = "Full local CI sweep"
 run         = [
+  { task = "site:bake" },
   "mise doctor project",
   { tasks = [
     "lock:check",
