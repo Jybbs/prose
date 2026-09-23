@@ -104,7 +104,7 @@ At the level of the class body, the marker holds every order a rule would otherw
 
 - [[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, including those inside an `if`, a `try`, or a `with` at that level, since none of them opens a scope of its own
 - [[reflow-imports]] merges the members of one module only across consecutive statements, since a merge across another statement moves a member above it
-- The entries under each heading of the class docstring that name a field follow the order of the fields, the way the entries of a function docstring follow its signature, and every other entry keeps its place
+- The entries under each heading of the class docstring that name a field follow the order of the fields, and an entry naming no field keeps its written slot among them
 - [[unsorted-positionals]] passes over the field run, since the marker states that the order written is deliberate
 
 Every expression and every nested scope inside the body still sorts, and so does the class itself among its siblings, because the marker holds the body rather than the class's place:

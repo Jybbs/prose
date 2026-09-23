@@ -74,9 +74,8 @@ pub(super) struct RewriteCtx<'a> {
 /// A body under `keeps_order` skips every permutation while its import
 /// neighbors still collapse. A member a suppression pins keeps its slot
 /// and its text while the definitions around it sort past it and the
-/// imports on either side sort apart, the gaps beside it stay as
-/// written, and the rewrites inside it land in `held` per
-/// [`held_edits`].
+/// imports on either side sort apart. The gaps beside it stay as written,
+/// and the rewrites inside it land in `held` per [`held_edits`].
 pub(super) fn body_layout<'a>(
     ctx: RewriteCtx<'a>,
     body: &'a [Stmt],

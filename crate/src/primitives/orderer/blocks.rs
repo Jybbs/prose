@@ -32,8 +32,9 @@ pub(crate) fn member_blocks<T: Ranged>(
     items: &[T],
     outer: TextRange,
 ) -> Vec<TextRange> {
+    let ends = trailing_body_ends(source, items);
     (0..items.len())
-        .map(|i| member_block(source, items, i, outer))
+        .map(|i| member_block(source, items, i, outer, &ends))
         .collect()
 }
 
@@ -53,11 +54,12 @@ pub(crate) fn rendered_member_blocks<'src, T: Ranged>(
     outer: TextRange,
     mut render: impl FnMut(&'src T, TextRange) -> Cow<'src, str>,
 ) -> Assembly<'src> {
+    let ends = trailing_body_ends(source, items);
     let (blocks, rendered) = items
         .iter()
         .enumerate()
         .map(|(i, item)| {
-            let block = member_block(source, items, i, outer);
+            let block = member_block(source, items, i, outer, &ends);
             (block, render(item, block))
         })
         .unzip();
@@ -151,23 +153,24 @@ pub(super) fn leading_attached_start(
 /// [`bound_block_start`], so a comment run leading the member binds to
 /// it across a blank line while a banner, hash heading, suppression
 /// directive, or run at a shallower indent stays in the gap rather than
-/// traveling through a reorder. Its end reaches over the comments
-/// closing its body per [`trailing_body_end`]. That gap is what
+/// traveling through a reorder. Its end is `ends[i]`, reaching over the
+/// comments closing its body per [`trailing_body_ends`]. That gap is what
 /// [`Sections`](crate::primitives::sections::Sections) reads to divide
 /// the body. Binding never reads the blank run, so a block spans the
 /// same text either side of `space-statements`.
-fn member_block<T: Ranged>(source: &Source, items: &[T], i: usize, outer: TextRange) -> TextRange {
+fn member_block<T: Ranged>(
+    source: &Source,
+    items: &[T],
+    i: usize,
+    outer: TextRange,
+    ends: &[TextSize],
+) -> TextRange {
     let raw = block_range(source, items, i, outer);
     // The first member has no predecessor to bound the gap, so its own
     // attached run stands in as the lower bound.
     let lower = block_lower(source, items, i, outer, raw.start());
-    let lower = i.checked_sub(1).map_or(lower, |prev| {
-        lower.max(trailing_body_end(source, items, prev))
-    });
-    TextRange::new(
-        bound_block_start(source, lower, items[i].start()),
-        trailing_body_end(source, items, i),
-    )
+    let lower = i.checked_sub(1).map_or(lower, |prev| lower.max(ends[prev]));
+    TextRange::new(bound_block_start(source, lower, items[i].start()), ends[i])
 }
 
 /// Extends `item_end` over a trailing comma and inline comment on its line,
@@ -186,15 +189,19 @@ pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
     item_end + TextSize::try_from(consumed).expect("a line fits u32")
 }
 
-/// The end of `items[i]`'s block, reaching over the comments that close
-/// its body per [`closing_comments_end`], so the last member of a nested
-/// body reaches past the enclosing statement's range.
-fn trailing_body_end<T: Ranged>(source: &Source, items: &[T], i: usize) -> TextSize {
-    let start = item_end(source, items, i);
-    let upper = items
-        .get(i + 1)
-        .map_or(source.text().text_len(), Ranged::start);
-    closing_comments_end(source, items[i].start(), start, upper).unwrap_or(start)
+/// Returns the end of each member's block, reaching over the comments
+/// that close its body per [`closing_comments_end`], so the last member of
+/// a nested body reaches past the enclosing statement's range.
+fn trailing_body_ends<T: Ranged>(source: &Source, items: &[T]) -> Vec<TextSize> {
+    (0..items.len())
+        .map(|i| {
+            let start = item_end(source, items, i);
+            let upper = items
+                .get(i + 1)
+                .map_or(source.text().text_len(), Ranged::start);
+            closing_comments_end(source, items[i].start(), start, upper).unwrap_or(start)
+        })
+        .collect()
 }
 
 #[cfg(test)]

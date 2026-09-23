@@ -1,9 +1,9 @@
 //! Partitions a statement body's slots into sections at each comment
 //! block left standing between two members and at each notebook cell
-//! boundary, the boundaries a section-aware reorder never moves a member
-//! across, and around each
-//! statement a suppression pins for the rule reordering. Import grouping,
-//! the family sorts, and constant banding all read one [`Sections`].
+//! boundary, which a section-aware reorder never moves a member across.
+//! `Sections::pinning` also seats each statement a suppression pins for
+//! the reordering rule in a section of its own. Import grouping, the
+//! family sorts, and constant banding all read one [`Sections`].
 
 use std::ops::Range;
 

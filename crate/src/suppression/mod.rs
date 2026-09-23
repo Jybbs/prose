@@ -151,8 +151,9 @@ impl SuppressionMap {
     }
 
     /// Returns `true` when a reorder by `rule` leaves `ranged` in place,
-    /// it overlapping a span [`Self::suppresses`] reports for `rule` or
-    /// holding the line of a `# prose: on` that closes an off region.
+    /// meaning `ranged` overlaps a span [`Self::suppresses`] reports for
+    /// `rule` or holds the line of a `# prose: on` that closes an off
+    /// region.
     pub(crate) fn pins<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
         let range = ranged.range();
         self.suppresses(range, rule) || self.closes.iter().any(|&close| range.contains(close))

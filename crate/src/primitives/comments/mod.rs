@@ -120,13 +120,13 @@ pub(super) fn bound_block_start(
         .map_or(line_start, TextRange::start)
 }
 
-/// Returns the end of the own-line comments below the statement opening
-/// at `stmt_start`, scanned from `line_end`, the end of the statement's
-/// last line, up to `upper` across blank lines, each indented deeper than
-/// the statement, which close its body rather than head the statement
-/// after it. Stops at the first comment at the statement's indent or
-/// shallower, at code, and at a notebook cell wall, and returns `None`
-/// where no such comment sits there.
+/// Returns the end of the comments closing the body of the statement
+/// opening at `stmt_start`. The scan starts at `line_end`, the end of the
+/// statement's last line, and runs up to `upper` across blank lines,
+/// taking each own-line comment indented deeper than the statement. It
+/// stops at a comment at the statement's indent or shallower, at code, and
+/// at a notebook cell wall, and returns `None` where no comment closes the
+/// body.
 pub(crate) fn closing_comments_end(
     source: &Source,
     stmt_start: TextSize,

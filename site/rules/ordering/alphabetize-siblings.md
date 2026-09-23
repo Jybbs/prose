@@ -69,7 +69,7 @@ Each sort switches off on its own, so a project can keep its methods grouped whi
 
 ### `sort-docstring-entries`
 
-`sort-docstring-entries` orders the `name: description` entries under a Title-case docstring heading, each parameter entry taking its parameter's position as the rule leaves the signature and every other entry sorting alphabetically below them. The docstring of a class whose fields hold their order follows those fields the same way, whether a `# prose: keep` header or a header that generates the constructor, such as `@dataclass`, holds them. Each entry naming a held field takes that field's position, and every other entry keeps its place. Under `false` the entries keep the order written.
+`sort-docstring-entries` orders the `name: description` entries under a Title-case docstring heading, each parameter entry taking its parameter's position as the rule leaves the signature and every other entry sorting alphabetically below them. The docstring of a class whose fields hold their order, under a `# prose: keep` header or a header that generates the constructor such as `@dataclass`, follows those fields instead. Each entry naming a held field takes that field's position, and an entry naming no field keeps its written slot among them. Under `false` the entries keep the order written.
 
 ### `sort-dunder-lists`
 

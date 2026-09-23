@@ -75,10 +75,10 @@ pub(super) fn collect_docstring_entry_edits(source: &Source) -> Vec<Edit> {
 }
 
 /// Returns the fields of `class` that hold their slots, in the order
-/// written, every entry naming none of them holding its slot too. Under a
-/// `# prose: keep` header that is every single-name assignment, whereas a
-/// class whose header generates its constructor holds the fields bound
-/// by position. `None` where no field holds its slot.
+/// written. Under a `# prose: keep` header that is every single-name
+/// assignment, whereas a class whose header generates its constructor
+/// holds the fields bound by position. `None` where no field holds its
+/// slot.
 fn class_mirror<'a>(source: &Source, class: &'a StmtClassDef) -> Option<Mirror<'a>> {
     let names: Vec<&str> = if class_keeps_order(source, class) {
         class
@@ -103,10 +103,10 @@ fn class_mirror<'a>(source: &Source, class: &'a StmtClassDef) -> Option<Mirror<'
     })
 }
 
-/// Composite docstring-entry sort key. An entry naming one of the
-/// `mirror` names takes that name's position, and any other entry sinks
-/// below them, alphabetized by name, or holds its slot as `None` where
-/// the mirror holds the rest.
+/// Returns the sort key of the docstring entry naming `name`. An entry
+/// naming one of the `mirror` names takes that name's position, and any
+/// other entry sinks below them alphabetized by name, or keeps its written
+/// slot among them as `None` where the mirror holds the rest.
 fn entry_key<'e>(name: &'e str, mirror: Option<&Mirror<'_>>) -> Option<(usize, &'e str)> {
     match mirror.and_then(|mirror| mirror.names.iter().position(|&n| n == name)) {
         Some(position) => Some((position, "")),

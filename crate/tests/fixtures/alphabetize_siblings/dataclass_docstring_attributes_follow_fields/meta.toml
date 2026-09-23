@@ -3,5 +3,5 @@ previewable = true
 title       = "Dataclass Docstring Attributes Follow the Field Order"
 
 description = '''
-`@dataclass` holds the fields of `Posting` in declaration order, from `title` down to `date_posted`, while its `Attributes:` section lists them out of that order beside a `url` entry that names no field. **The entries naming a field follow the fields**, the way the `Args:` entries of a function follow its signature, whereas `url`, which names no field, keeps its place.
+`@dataclass` holds the fields of `Posting` in declaration order, from `title` down to `date_posted`, while its `Attributes:` section lists them out of that order beside a `url` entry that names no field. **The entries naming a field follow the fields**, whereas `url`, which names no field, keeps its written slot among them.
 '''
