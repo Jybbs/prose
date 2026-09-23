@@ -35,13 +35,14 @@ Findings surface as `::error::` annotations naming the divergence or file.
 """
 
 from collections import Counter, defaultdict
+from functools   import cache
 from json        import loads as json_loads
 from pathlib     import Path
 from re          import MULTILINE, escape, findall, finditer, fullmatch, search
 from subprocess  import run
 from tomllib     import loads
 from typing      import NoReturn
-from yaml        import AnchorToken, BaseLoader, load, load_all, scan
+from yaml        import AnchorToken, BaseLoader, load_all, scan
 
 
 READ: set[str] = set()
@@ -180,8 +181,7 @@ def families() -> dict[str, tuple[str, str | None]]:
             fail(f"FAMILIES in palette.ts gives the {family} family no palette hue")
         if not (page := Path(f"site/rules/{family}/index.md")).exists():
             fail(f"the {family} family has no rule-index page at {page}")
-        described = next(load_all(read(page), Loader=BaseLoader))["description"]
-        described = described.removeprefix("The ").removesuffix(".")
+        described = yaml(page)["description"].removeprefix("The ").removesuffix(".")
         sited[f"{badge} {family}"] = (
             hues[tints[family]],
             None if family == "docs" else described[:1].upper() + described[1:]
@@ -220,15 +220,12 @@ def filters() -> int:
     with no path filter fires on every file.
     """
     every, audited = [], []
-    for path in sorted(Path(".github/workflows").glob("*.y*ml")):
-        text    = read(path)
-        trigger = load(text, Loader=BaseLoader)["on"]
-        if "pull_request" in trigger:
-            event = trigger["pull_request"] if isinstance(trigger, dict) else ""
-            paths = (event or {}).get("paths", ["**"])
-            every.append(paths)
-            if "mise run repo:audit" in text:
-                audited.append(paths)
+    for path, flow in pull_request_workflows():
+        event = flow["on"]["pull_request"] if isinstance(flow["on"], dict) else ""
+        paths = (event or {}).get("paths", ["**"])
+        every.append(paths)
+        if "mise run repo:audit" in read(path):
+            audited.append(paths)
 
     listed  = run(["git", "ls-files", "-z"], capture_output=True, check=True, text=True)
     tracked = listed.stdout.split("\0")[:-1]
@@ -265,11 +262,7 @@ def gates() -> int:
 
     ended  = set()
     failed = 0
-    for path in sorted(Path(".github/workflows").glob("*.y*ml")):
-        flow = yaml(path)
-        if "pull_request" not in flow["on"]:
-            continue
-
+    for path, flow in pull_request_workflows():
         *_, (job, gate) = flow["jobs"].items()
         ended.add(name := gate.get("name", job))
         if name not in required:
@@ -301,19 +294,6 @@ def hashed_paths(action: str) -> list[str]:
     )
 
 
-def input_group(entry: str, groups: dict[str, list[str]]) -> list[str]:
-    """
-    Return the paths a `sources` entry stands for, which is the entry itself
-    unless it references one of the `groups`, whose own references expand in
-    turn.
-    """
-    if not entry.startswith("@group:"):
-        return [entry]
-    if (members := groups.get(name := entry.removeprefix("@group:"))) is None:
-        fail(f"no input group named {name!r} in .mise/config.toml")
-    return [path for member in members for path in input_group(member, groups)]
-
-
 def labels() -> int:
     """
     Report every drift between the label registry at `.github/labels.toml` and
@@ -343,10 +323,8 @@ def labels() -> int:
         MULTILINE
     )
 
-    failed    = 0
-    templates = Path(".github/ISSUE_TEMPLATE")
-    for path in sorted([*templates.glob("*.y*ml"), *templates.glob("*.md")]):
-        form = next(load_all(read(path), Loader=BaseLoader))
+    failed = 0
+    for path, form in templates():
         if isinstance(applied := form.get("labels") or [], str):
             applied = applied.split(",")
         if unknown := sorted({label.strip() for label in applied} - registry.keys()):
@@ -440,10 +418,20 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
         (f"Cargo.toml members ↔ {home}", owned, cargo_manifests(paths))
         for home, paths in [
             (".github/workflows/warm.yml path filter", workflow_paths("warm")),
-            (".mise/tasks/lock/check sources", task_sources("lock/check")),
-            (".mise/tasks/lock/sync sources", task_sources("lock/sync"))
+            (".mise/tasks/lock/sync sources", task_paths("lock:sync", "sources"))
         ]
     ]
+
+
+def mise_json(*args: str) -> dict | list:
+    """
+    Return the report mise prints for the `args` subcommand run with `--json`,
+    failing when the subcommand prints none.
+    """
+    report = run(["mise", *args, "--json"], capture_output=True, text=True)
+    if not report.stdout:
+        fail(report.stderr.strip() or f"mise {' '.join(args)} wrote no report")
+    return json_loads(report.stdout)
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
@@ -509,13 +497,18 @@ def parity() -> int:
             cargo_lock_version("wasm-bindgen")
         ),
         (
+            ".mise/tasks/lock/check sources ↔ .mise/tasks/lock/sync sources and outputs",
+            task_paths("lock:check", "sources"),
+            task_paths("lock:sync", "sources", "outputs")
+        ),
+        (
             ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
-            task_sources("site/test"),
-            task_sources("site/press")
+            task_paths("site:test", "sources"),
+            task_paths("site:press", "sources")
         ),
         (
             ".mise/tasks/wasm/pack sources ↔ restore-wasm hashFiles paths",
-            task_sources("wasm/pack"),
+            task_paths("wasm:pack", "sources"),
             sorted(hashed_paths("restore-wasm"))
         ),
         *action_pins(),
@@ -562,16 +555,28 @@ def placeholder_pins(version: str) -> list[tuple[str, str, str]]:
             field["attributes"].get("placeholder"),
             version
         )
-        for path in sorted(Path(".github/ISSUE_TEMPLATE").glob("*.y*ml"))
-        for field in yaml(path).get("body", [])
+        for path, form in templates()
+        for field in form.get("body", [])
         if field.get("id") == "version"
+    ]
+
+
+def pull_request_workflows() -> list[tuple[Path, dict]]:
+    """
+    Return every workflow a `pull_request` event triggers beside its parsed
+    mapping.
+    """
+    return [
+        (path, flow)
+        for path in sorted(Path(".github/workflows").glob("*.y*ml"))
+        if "pull_request" in (flow := yaml(path))["on"]
     ]
 
 
 def read(path: str | Path) -> str:
     """
     Return the text of the file at `path`, recording the path in `READ` for
-    `reads` to check.
+    `filters` to check.
     """
     READ.add(Path(path).as_posix())
     return Path(path).read_text(encoding="utf-8")
@@ -584,18 +589,25 @@ def repeated(values: list[str]) -> set[str]:
     return {value for value, count in Counter(values).items() if count > 1}
 
 
-def task_sources(task: str) -> list[str]:
+def rooted(entry: str, base: str) -> str:
     """
-    Return the `sources` the `task` file's `#MISE` frontmatter declares, sorted,
-    with every `@group:` reference replaced by the input group it names.
+    Return a `sources` or `outputs` entry, which mise resolves against the `base`
+    directory, as a path relative to the project root, keeping any leading `!`.
     """
-    lines  = read(f".mise/tasks/{task}").splitlines()
-    marked = (line.removeprefix("#MISE") for line in lines if line.startswith("#MISE"))
-    table  = loads("\n".join(marked))
-    if "sources" not in table:
-        fail(f"no sources declaration in .mise/tasks/{task}")
-    groups = toml(".mise/config.toml")["task_config"]["input_groups"]
-    return sorted(path for entry in table["sources"] for path in input_group(entry, groups))
+    bare = entry.removeprefix("!")
+    return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())
+
+
+def task_paths(task: str, *keys: str) -> list[str]:
+    """
+    Return every path the `task` declares under `keys`, sorted and deduplicated,
+    with every `@group:` reference expanded by mise.
+    """
+    table = tasks_listed()[task]
+    for key in keys:
+        if not isinstance(table.get(key), list):
+            fail(f"no {key} declaration in the {task} task")
+    return sorted({rooted(entry, table["dir"]) for key in keys for entry in table[key]})
 
 
 def tasks() -> int:
@@ -603,12 +615,8 @@ def tasks() -> int:
     Report every error `mise tasks validate` finds across the task tree, such as
     an alias two tasks share or a dependency naming a task that does not exist.
     """
-    report = run(["mise", "tasks", "validate", "--json"], capture_output=True, text=True)
-    if not report.stdout:
-        fail(report.stderr.strip() or "mise tasks validate wrote no report")
-
     failed = 0
-    for issue in json_loads(report.stdout)["issues"]:
+    for issue in mise_json("tasks", "validate")["issues"]:
         message = f"{issue['task']}: {issue['message']}"
         if details := issue.get("details"):
             message = f"{message} ({details})"
@@ -618,6 +626,26 @@ def tasks() -> int:
         else:
             print(f"::warning::{message}")
     return failed
+
+
+@cache
+def tasks_listed() -> dict[str, dict]:
+    """
+    Return every task `mise tasks ls --json` lists, keyed by name.
+    """
+    return {task["name"]: task for task in mise_json("tasks", "ls")}
+
+
+def templates() -> list[tuple[Path, dict]]:
+    """
+    Return every issue template beside its parsed form, which for a Markdown
+    template is its frontmatter.
+    """
+    folder = Path(".github/ISSUE_TEMPLATE")
+    return [
+        (path, yaml(path))
+        for path in sorted([*folder.glob("*.y*ml"), *folder.glob("*.md")])
+    ]
 
 
 def toml(path: str | Path) -> dict:
@@ -638,27 +666,22 @@ def triggers() -> int:
     return 0
 
 
-def workflow(name: str) -> str:
-    """
-    Return the path of the `name` workflow file.
-    """
-    return f".github/workflows/{name}.yml"
-
-
 def workflow_paths(name: str) -> list[str]:
     """
     Return the paths the `name` workflow's push trigger filters on.
     """
-    if (paths := yaml(workflow(name))["on"].get("push", {}).get("paths")) is None:
+    flow = yaml(f".github/workflows/{name}.yml")
+    if (paths := flow["on"].get("push", {}).get("paths")) is None:
         fail(f"no push paths filter in {name}.yml")
     return paths
 
 
 def yaml(path: str | Path) -> dict:
     """
-    Return the YAML mapping at `path`, every scalar in it read as a string.
+    Return the first YAML document in the file at `path`, every scalar in it
+    read as a string, which for a Markdown file is its frontmatter.
     """
-    return load(read(path), Loader=BaseLoader)
+    return next(load_all(read(path), Loader=BaseLoader))
 
 
 if __name__ == "__main__":
