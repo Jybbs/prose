@@ -4,8 +4,28 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
 ---
 {
   "$defs": {
+    "AlignColonsConfig": {
+      "description": "Configuration for the `align-colons` rule.",
+      "properties": {
+        "align-docstring-entries": {
+          "default": true,
+          "description": "Lines up the `:` of a docstring's `name: description` entries, and\nputs each parenthesized type in a column of its own. `false` leaves\nno padding in docstring entries, so each `:` sits right after the\nname or type, while dicts, annotations, and parameters still align.",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "max-shift": {
+          "$ref": "#/$defs/MaxShift",
+          "default": 16,
+          "description": "How far apart the widest and narrowest rows of a run may be for the\nrun to still align on one column. A positive `N` caps that gap, `0`\nforbids any padding so every row sits flush, and `false` lifts the\ncap so a run of any width aligns on one column. A row marked\n`# prose: skip` stays out of its group."
+        }
+      },
+      "type": "object"
+    },
     "AlignmentConfig": {
-      "description": "Alignment-rule config shared by every rule that aligns a token\nacross consecutive lines.",
+      "description": "Config for the alignment rules whose only settings are `enabled`\nand `max-shift`.",
       "properties": {
         "enabled": {
           "default": true,
@@ -486,10 +506,11 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
               "type": "boolean"
             },
             {
-              "$ref": "#/$defs/AlignmentConfig"
+              "$ref": "#/$defs/AlignColonsConfig"
             }
           ],
           "default": {
+            "align-docstring-entries": true,
             "enabled": true,
             "max-shift": 16
           }
@@ -1169,6 +1190,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "$ref": "#/$defs/RuleConfigs",
       "default": {
         "align-colons": {
+          "align-docstring-entries": true,
           "enabled": true,
           "max-shift": 16
         },

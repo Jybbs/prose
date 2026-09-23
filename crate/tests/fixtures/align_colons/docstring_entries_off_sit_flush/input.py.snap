@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/docstring_entries_off_sit_flush/input.py
+---
+class Pipeline:
+    name         : str
+    retry_budget : int
+
+    def run(self, steps, verbose, destination):
+        """
+        Args:
+            steps: The names of the steps to compute.
+            verbose: Whether to print the records.
+            destination: Where the results land.
+        """

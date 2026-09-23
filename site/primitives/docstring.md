@@ -121,6 +121,10 @@ Section headings, blank lines between entries, and verbatim continuations *(inde
 
 The facet itself lives in the `[rules]` table, carried by `alphabetize-siblings` as `sort-docstring-entries` and defaulting to `true`. Setting `alphabetize-siblings = { sort-docstring-entries = false }` keeps the AST-level sorts running and turns off the docstring-entry reorder, for a project that orders its entries to follow a narrative rather than the signature.
 
+## How `align-colons` Composes
+
+[[align-colons]] reads `entry_runs` through [[colon-targets]], which builds a `:` row for every entry and a `(` row for every entry naming a parenthesized type, and the rule pads both columns in one pass. Its `align-docstring-entries` facet defaults to `true`, as `sort-docstring-entries` does on [[alphabetize-siblings]], and turns off those two columns while the rule keeps aligning code. A docstring parser reads everything before the `:` as the parameter's name, padding included, so a project that builds help text or API docs from its docstrings sets `align-colons = { align-docstring-entries = false }`, which leaves each `:` right after its name or type.
+
 ## How `wrap-docstrings` Composes
 
 [[wrap-docstrings]] reads the walker and the body helper together. For each docstring, the rule extracts the body, splits it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part to its budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or one budget for both when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.

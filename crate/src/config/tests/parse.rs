@@ -1,8 +1,7 @@
 //! String-parsing-surface tests for `Config::from_prose_toml_str` and
 //! `Config::from_pyproject_str`.
 
-use std::assert_matches;
-use std::fmt::Debug;
+use std::{assert_matches, fmt::Debug};
 
 use rstest::rstest;
 
@@ -55,6 +54,19 @@ fn max_params_cap(config: &Config) -> Option<usize> {
 /// default.
 fn parsed_defaults() -> Config {
     Config::from_pyproject_str("[tool.prose]\n").expect("parses")
+}
+
+#[test]
+fn align_colons_facet_false_in_sub_table_leaves_siblings_default() {
+    let config = Config::from_pyproject_str(
+        "[tool.prose.rules.align-colons]\nalign-docstring-entries = false\n",
+    )
+    .expect("parses");
+
+    let rules = &config.rules.align_colons;
+    assert!(!rules.align_docstring_entries);
+    assert!(rules.enabled);
+    assert_eq!(rules.max_shift, MaxShift::default());
 }
 
 #[test]
@@ -248,20 +260,9 @@ fn inlinable_bindings_explicit_allow_pattern_takes_effect() {
     )
     .expect("parses");
 
-    assert!(
-        config
-            .rules
-            .inlinable_bindings
-            .allow_pattern
-            .matches("tmp_x")
-    );
-    assert!(
-        !config
-            .rules
-            .inlinable_bindings
-            .allow_pattern
-            .matches("xtmp_")
-    );
+    let pattern = &config.rules.inlinable_bindings.allow_pattern;
+    assert!(pattern.matches("tmp_x"));
+    assert!(!pattern.matches("xtmp_"));
 }
 
 #[rstest]
@@ -386,12 +387,13 @@ fn rules_bare_bool_false_leaves_other_knobs_default() {
     let config = Config::from_pyproject_str("[tool.prose.rules]\nalphabetize-siblings = false\n")
         .expect("parses");
 
-    assert!(!config.rules.alphabetize_siblings.enabled);
-    assert!(config.rules.alphabetize_siblings.group_methods);
-    assert!(config.rules.alphabetize_siblings.sort_definitions);
-    assert!(config.rules.alphabetize_siblings.sort_dict_keys);
-    assert!(config.rules.alphabetize_siblings.sort_docstring_entries);
-    assert!(config.rules.alphabetize_siblings.sort_dunder_lists);
+    let rules = &config.rules.alphabetize_siblings;
+    assert!(!rules.enabled);
+    assert!(rules.group_methods);
+    assert!(rules.sort_definitions);
+    assert!(rules.sort_dict_keys);
+    assert!(rules.sort_docstring_entries);
+    assert!(rules.sort_dunder_lists);
 }
 
 #[rstest]
@@ -414,14 +416,9 @@ fn rules_inline_table_compiles_regex_knob() {
     )
     .expect("parses");
 
-    assert!(
-        config
-            .rules
-            .inlinable_bindings
-            .allow_pattern
-            .matches("tmp_x")
-    );
-    assert!(config.rules.inlinable_bindings.enabled);
+    let rules = &config.rules.inlinable_bindings;
+    assert!(rules.allow_pattern.matches("tmp_x"));
+    assert!(rules.enabled);
 }
 
 #[test]

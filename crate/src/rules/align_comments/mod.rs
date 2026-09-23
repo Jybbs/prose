@@ -32,7 +32,7 @@ impl AlignComments {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             settings: config
-                .align_settings(&config.rules.align_comments, config.code_width())
+                .align_settings(config.rules.align_comments.max_shift, config.code_width())
                 .with_buffer(TRAILING_GAP.len()),
         }
     }

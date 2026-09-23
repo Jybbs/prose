@@ -12,8 +12,36 @@ use super::{
     json_schema::{cap_or_false_schema, optional_cap_schema},
 };
 
-/// Alignment-rule config shared by every rule that aligns a token
-/// across consecutive lines.
+/// Configuration for the `align-colons` rule.
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
+#[serde(default, rename_all = "kebab-case")]
+pub struct AlignColonsConfig {
+    /// Lines up the `:` of a docstring's `name: description` entries, and
+    /// puts each parenthesized type in a column of its own. `false` leaves
+    /// no padding in docstring entries, so each `:` sits right after the
+    /// name or type, while dicts, annotations, and parameters still align.
+    pub align_docstring_entries: bool,
+    pub enabled: bool,
+    /// How far apart the widest and narrowest rows of a run may be for the
+    /// run to still align on one column. A positive `N` caps that gap, `0`
+    /// forbids any padding so every row sits flush, and `false` lifts the
+    /// cap so a run of any width aligns on one column. A row marked
+    /// `# prose: skip` stays out of its group.
+    pub max_shift: MaxShift,
+}
+
+impl Default for AlignColonsConfig {
+    fn default() -> Self {
+        Self {
+            align_docstring_entries: true,
+            enabled: true,
+            max_shift: MaxShift::default(),
+        }
+    }
+}
+
+/// Config for the alignment rules whose only settings are `enabled`
+/// and `max-shift`.
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct AlignmentConfig {
@@ -710,6 +738,7 @@ macro_rules! impl_rule_toggle {
 }
 
 impl_rule_toggle!(
+    AlignColonsConfig,
     AlignmentConfig,
     AlphabetizeSiblingsConfig,
     BandConstantsConfig,

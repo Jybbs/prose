@@ -27,6 +27,8 @@ A `name (type):` head at the docstring body indent under no Title-case heading a
 
 `max-shift` limits how much padding one key may take. The rule reads each group of `:` entries in source order and extends a column while the gap between the widest and narrowest keys stays within the limit, starting a new column at the first key that would exceed it. Setting `max-shift` to `false` removes the limit, so a group of any width aligns on one column, and `0` forbids padding altogether, so every `:` sits flush against its key. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
 
+`align-docstring-entries` switches the docstring columns off without touching the code contexts. A docstring parser reads everything before the `:` as the parameter's name, padding included, so a project that builds help text or API docs from its docstrings sets the facet to `false`. Each entry's `:` then sits right after its name or type, as it would under `max-shift = 0`, while dict entries, annotations, and signature parameters keep their shared columns.
+
 </template>
 
 </RuleLayout>

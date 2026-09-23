@@ -1,0 +1,33 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/thematic/flush_args_wrap_under_their_own_descriptions/input.py
+---
+[
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 24,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 18,
+      "row": 1
+    },
+    "message": "Parameter `markup` has no type annotation"
+  },
+  {
+    "code": "signature-annotations",
+    "end_location": {
+      "column": 33,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 1
+    },
+    "message": "Parameter `options` has no type annotation"
+  }
+]

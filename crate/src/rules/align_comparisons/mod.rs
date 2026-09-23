@@ -32,7 +32,10 @@ impl AlignComparisons {
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
-            settings: config.align_settings(&config.rules.align_comparisons, config.code_width()),
+            settings: config.align_settings(
+                config.rules.align_comparisons.max_shift,
+                config.code_width(),
+            ),
         }
     }
 }

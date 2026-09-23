@@ -12,12 +12,12 @@ use serde_json::Map;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig, BareImportsConfig, Config,
-        InlinableBindingsConfig, LineOverflowConfig, MiscasedConstantsConfig,
-        ModernizeAnnotationsConfig, NormalizeComparisonsConfig, NormalizeLiteralsConfig,
-        PreferFstringConfig, PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
-        ReflowCollectionsConfig, ReflowImportsConfig, ReflowSignaturesConfig,
-        StackMethodChainsConfig, ToggleOnly, rule_schema,
+        AlignColonsConfig, AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig,
+        BareImportsConfig, Config, InlinableBindingsConfig, LineOverflowConfig,
+        MiscasedConstantsConfig, ModernizeAnnotationsConfig, NormalizeComparisonsConfig,
+        NormalizeLiteralsConfig, PreferFstringConfig, PruneInertImportsConfig,
+        ReassignedConstantsConfig, ReflowCallsConfig, ReflowCollectionsConfig, ReflowImportsConfig,
+        ReflowSignaturesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -315,7 +315,7 @@ register_rules! {
     "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "strip-trailing-commas", "reflow-parentheses", "frame-docstrings", "expand-docstrings", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"] => ["shed-redundant-base"],
     "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
     "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "space-statements", "align-imports"],
+    "align-colons":                 align_colons:                 AlignColonsConfig          => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "space-statements", "align-imports"],
     "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"] => ["shed-redundant-base", "align-match-case", "space-statements", "align-imports"],
     "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"] => ["shed-redundant-base", "space-statements", "align-imports", "wrap-docstrings"],
     "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["reflow-parentheses", "normalize-comparisons", "reflow-calls", "reflow-collections"] => ["prune-inert-imports", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-imports", "band-constants", "alphabetize-siblings", "space-statements", "align-imports", "wrap-docstrings"],
@@ -467,6 +467,19 @@ mod tests {
     }
 
     #[rstest]
+    #[case("strip-trailing-commas", "normalize-literals", true)]
+    #[case("normalize-literals", "strip-trailing-commas", false)]
+    #[case("align-equals", "align-colons", false)]
+    #[case("align-equals", "not-a-rule", false)]
+    fn independent_reads_the_pair_in_registry_order(
+        #[case] later: &str,
+        #[case] earlier: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(independent(later, earlier), expected);
+    }
+
+    #[rstest]
     #[case("reflow-collections", "align-equals", true)]
     #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
@@ -502,18 +515,5 @@ mod tests {
         assert!(slug_bytes_equal(b"foo", b"foo"));
         assert!(!slug_bytes_equal(b"foo", b"food"));
         assert!(!slug_bytes_equal(b"foo", b"bar"));
-    }
-
-    #[rstest]
-    #[case("strip-trailing-commas", "normalize-literals", true)]
-    #[case("normalize-literals", "strip-trailing-commas", false)]
-    #[case("align-equals", "align-colons", false)]
-    #[case("align-equals", "not-a-rule", false)]
-    fn independent_reads_the_pair_in_registry_order(
-        #[case] later: &str,
-        #[case] earlier: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(independent(later, earlier), expected);
     }
 }
