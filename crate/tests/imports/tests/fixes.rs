@@ -95,7 +95,7 @@ fn rows_map_back_through_an_equal_a_replaced_and_an_inserted_block() {
 }
 
 #[test]
-fn the_hunk_centres_on_the_changed_line_naming_the_name() {
+fn the_hunk_centers_on_the_changed_line_naming_the_name() {
     let mut after = LINES;
     after[2] = "L3";
     after[5] = "MARK";

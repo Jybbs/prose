@@ -6,7 +6,8 @@ Usage: probe.py <record> <name> <module> <tree>...
 An import at this level loads the interpreter's own copy into `sys.modules`
 ahead of the tree's, so the probe imports nothing beyond what is already
 loaded when it runs. `Probe.package` imports after `sys.path` puts the trees
-first, so its import resolves against the tree.
+first, so its import resolves against the tree, and a package that raises
+ends the run there, as it ends an import of the module.
 """
 
 from _frozen_importlib          import module_from_spec
@@ -44,13 +45,15 @@ class Probe:
         self.name    = name
         self.rows    = []
 
-    def bound(self, module: object):
+    def bound(self, module: object, annotated: object):
         """
-        Record every name the module bound and each plain constant among
-        them.
+        Record every name the module bound, each plain constant among them,
+        and the names its annotations cover.
 
         Args:
-            module: The module whose namespace to read.
+            module    : The module whose namespace to read.
+            annotated : The module's annotations, as a read of the attribute
+                        returns them.
         """
         self.rows.append(("kind", "ok"))
 
@@ -60,22 +63,29 @@ class Probe:
             if (spelt := constant(value)) is not None:
                 self.rows.append(("const", name, spelt))
 
+        names = tuple(sorted(annotated, key=str)) if isinstance(annotated, dict) else None
+
+        if (spelt := constant(names)) is not None:
+            self.rows.append(("const", "__annotations__", spelt))
+
     def load(self):
         """
-        Execute the module, then record what it bound and what it pulled in.
+        Import the package holding the module, execute the module, and read
+        its annotations the way a consumer reads them, then record what it
+        bound or what any step raised, beside what the run pulled in.
         """
-        self.package()
-
-        spec               = spec_from_file_location(self.name, self.located)
-        module             = module_from_spec(spec)
-        modules[self.name] = module
+        spec   = spec_from_file_location(self.name, self.located)
+        module = module_from_spec(spec)
 
         try:
+            self.package()
+            modules[self.name] = module
             spec.loader.exec_module(module)
+            annotated = module.__annotations__
         except BaseException as exc:
             self.raised(exc)
         else:
-            self.bound(module)
+            self.bound(module, annotated)
 
         self.rows += [
             ("loaded", held.__file__)
@@ -85,22 +95,20 @@ class Probe:
 
     def package(self):
         """
-        Import the package the module sits in, so a package whose
-        `__init__` reads the module reaches a bound one rather than the
-        empty module this probe is about to register under that name. A
-        package that raises leaves the module's own run to record it.
+        Import the package the module sits in, as an import of the module
+        imports it first, so a package whose `__init__` reads the module
+        reaches a bound one rather than the empty module this probe is about
+        to register under that name.
         """
         held, _, _ = self.name.rpartition(".")
 
         if held:
-            try:
-                __import__(held)
-            except BaseException:
-                pass
+            __import__(held)
 
     def raised(self, exc: BaseException):
         """
-        Record an exception, the name it turns on, and the frames it passed.
+        Record an exception, the name it turns on, the module a failed
+        import read from, and the frames it passed.
 
         Args:
             exc: The exception the module raised.
@@ -110,6 +118,9 @@ class Probe:
 
         if missing := getattr(exc, "name_from", None) or getattr(exc, "name", None):
             self.rows.append(("missing", missing))
+
+        if isinstance(exc, ImportError) and exc.name:
+            self.rows.append(("importing", exc.name))
 
         self.rows += frames(exc)
 
@@ -193,8 +204,9 @@ def main(located: str, name: str, record: str, trees: list):
         located : The path the module sits at.
         name    : The dotted name an import binds it to.
         record  : The path to write the record to.
-        trees   : The trees to search ahead of the interpreter's own
-                  library.
+        trees   : The directories to search ahead of the interpreter's own
+                  library, each tree beside the directory its
+                  distributions are installed in.
     """
     path[:0] = trees
     roots.extend(trees)

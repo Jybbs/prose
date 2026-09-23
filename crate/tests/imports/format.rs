@@ -2,7 +2,7 @@
 //! safe fix rewrote, which is what an attribution reads back.
 
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     ops::Range,
     path::{Path, PathBuf},
 };
@@ -17,22 +17,30 @@ use crate::{
     records::{EditRows, Fixes},
 };
 
-/// What formatting one tree in place left behind.
+/// What formatting one tree in place left behind, each file named relative
+/// to the tree.
 #[derive(Default)]
 pub(crate) struct Formatted {
     /// The safe fixes each file's run recorded.
     pub(crate) fixes: Fixes,
-    /// How many modules the pipeline could not read, parse, or write.
-    pub(crate) refused: usize,
-    /// The modules the run rewrote, each named relative to the tree.
+    /// Every file the pipeline read.
+    pub(crate) read: BTreeSet<String>,
+    /// Each file the pipeline read and could not format, beside the error it
+    /// returned.
+    pub(crate) rejected: BTreeMap<String, String>,
+    /// The files the run rewrote.
     pub(crate) rewritten: BTreeSet<String>,
+    /// How many files the pipeline could not read or parse.
+    pub(crate) unread: usize,
 }
 
 impl Absorbing for Formatted {
     fn absorb(&mut self, other: Self) {
         self.fixes.extend(other.fixes);
-        self.refused += other.refused;
+        self.read.extend(other.read);
+        self.rejected.extend(other.rejected);
         self.rewritten.extend(other.rewritten);
+        self.unread += other.unread;
     }
 }
 
@@ -48,13 +56,12 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
     start..end + 1
 }
 
-/// Formats every module of a tree in place and returns the modules it
-/// rewrote and the safe fixes each file's run recorded, beside how many
-/// modules the pipeline refused.
+/// Formats every file of a tree in place and returns the files it read,
+/// rejected, and rewrote, the safe fixes each file's run recorded, and how
+/// many files it could not read or parse.
 ///
-/// A module the pipeline refuses is left as it was and counted, since a run
-/// that quietly formats less than it walked reports fewer breaks for a reason
-/// that never reaches the report.
+/// A file the pipeline could not read, parse, or format is left as it was,
+/// the first two counted and the third named beside its error.
 pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Formatted {
     let files: Vec<PathBuf> = python_files(tree).collect();
     swept(&files, |path| formatted(path, pipeline, tree))
@@ -65,31 +72,39 @@ pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
     lines.line_index(offset(at)).get()
 }
 
-/// What formatting one module of `tree` in place left behind, a module the
-/// pipeline refuses counting itself and recording no fix.
+/// What formatting one file of `tree` in place left behind, a file the
+/// pipeline could not read or parse counting itself and nothing else.
 fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
-    let refused = Formatted {
-        refused: 1,
-        ..Formatted::default()
-    };
     let _slot = Slot::open(path.display().to_string());
-    let relative = path
-        .strip_prefix(tree)
-        .unwrap_or_else(|_| unreachable!("invariant: the walk is rooted at the tree"));
     let Ok(source) = Source::from_path(path) else {
-        return refused;
+        return Formatted {
+            unread: 1,
+            ..Formatted::default()
+        };
     };
+    let module = path
+        .strip_prefix(tree)
+        .unwrap_or_else(|_| unreachable!("invariant: the walk is rooted at the tree"))
+        .to_string_lossy()
+        .into_owned();
     let text = source.text().to_owned();
     let lines = LineIndex::from_source_text(&text);
     let diagnostics = pipeline.diagnose(&source);
-    let Ok(written) = pipeline.format(source) else {
-        return refused;
+    let read = BTreeSet::from([module.clone()]);
+    let written = match pipeline.format(source) {
+        Ok(written) => written,
+        Err(error) => {
+            return Formatted {
+                read,
+                rejected: BTreeMap::from([(module, error.to_string())]),
+                ..Formatted::default()
+            };
+        }
     };
     let changed = written.text() != text;
-    if changed && fs_err::write(path, written.text()).is_err() {
-        return refused;
+    if changed {
+        fs_err::write(path, written.text()).expect("write a formatted file into the stage");
     }
-    let module = relative.to_string_lossy().into_owned();
     let fixes: Vec<_> = diagnostics
         .into_iter()
         .filter_map(|diagnostic| {
@@ -113,8 +128,9 @@ fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
         .collect();
     Formatted {
         fixes: Fixes::from_iter((!fixes.is_empty()).then(|| (module.clone(), fixes))),
-        refused: 0,
+        read,
         rewritten: changed.then_some(module).into_iter().collect(),
+        ..Formatted::default()
     }
 }
 

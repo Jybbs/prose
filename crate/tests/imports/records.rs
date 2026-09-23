@@ -1,36 +1,23 @@
 //! The records one sweep leaves, meaning a module the rewrite breaks, the
 //! frame it points at, one edit of a recorded fix, why a module could not be
-//! compared, one width's tallies and findings, and the corpus the run read.
+//! compared, the names a comparison left out, one width's tallies and
+//! findings, and the corpus the run read.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::{self, Display, Formatter},
     ops::Range,
 };
 
 use prose::rules::RuleId;
-use serde::{Deserialize, Serialize};
 
-use crate::outcome::{Kind, Outcome};
+use crate::{
+    outcome::{Kind, Outcome},
+    reach::Reach,
+};
 
-/// The exception a module raises where the machine lacks a package it
-/// imports.
-const ABSENT: &str = "ModuleNotFoundError";
-
-/// The platform tokens that appear in the path of a module written for another
-/// operating system. Such a module's own error message often does not name the
-/// platform, so the path is what identifies it.
-const PLATFORMS: &[&str] = &["darwin", "emscripten", "macos", "win32", "windows"];
-
-/// What one uncomparable module's own run left, the exception it named
-/// beside the sentence a report shows, so a later read matches the
-/// exception rather than searching the sentence for it, and the reach saying
-/// how far this machine gets with the module.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(default)]
+/// What one uncomparable module's own run left, the sentence a report shows
+/// beside the reach saying how far this machine gets with the module.
 pub(crate) struct Blocked {
-    /// The exception the run named, empty where it named none.
-    pub(crate) raised: String,
     /// How far a run on this machine reaches the module.
     pub(crate) reach: Reach,
     /// The sentence a report shows.
@@ -38,13 +25,11 @@ pub(crate) struct Blocked {
 }
 
 impl Blocked {
-    /// What blocked the module at `relative`, whose run raised `raised`
-    /// and reads as `reason`.
-    pub(crate) fn of(relative: &str, raised: &str, reason: &str) -> Self {
+    /// What blocked the module at `relative`, whose run left `ran`.
+    pub(crate) fn of(relative: &str, ran: &Outcome) -> Self {
         Self {
-            raised: raised.to_owned(),
-            reach: Reach::of(relative, raised),
-            reason: reason.to_owned(),
+            reach: Reach::of(relative, ran),
+            reason: ran.error.clone(),
         }
     }
 }
@@ -59,14 +44,10 @@ pub(crate) struct Break {
     pub(crate) frame: Frame,
     /// The diff lines around that row.
     pub(crate) hunk: Vec<String>,
-    /// What kind of difference this is, stable under any rewording.
-    pub(crate) kind: &'static str,
     /// The module, relative to its tree.
     pub(crate) module: String,
     /// The name it turns on, where it has one.
     pub(crate) name: Option<String>,
-    /// Every name the difference turns on, sorted.
-    pub(crate) names: Vec<String>,
     /// What the run from the original tree left behind.
     pub(crate) original: Outcome,
     /// Why the two runs differ, as a sentence predicate.
@@ -85,16 +66,11 @@ impl Break {
     }
 }
 
-/// What one run swept, naming the interpreter that owns the corpus beside the
-/// distributions installed next to it, so a corpus that changed between two
-/// runs is reported as that rather than as counts that no longer add up.
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(default)]
+/// What one run swept, the files the walk read beside the distributions
+/// installed next to the standard library.
 pub(crate) struct Corpus {
     /// How many files the walk read.
     pub(crate) files: usize,
-    /// The version of the interpreter the corpus belongs to.
-    pub(crate) interpreter: String,
     /// Every distribution installed beside the standard library, each as
     /// the name and version its `dist-info` directory carries.
     pub(crate) vendored: Vec<String>,
@@ -122,51 +98,10 @@ pub(crate) struct Frame {
     pub(crate) row: Option<usize>,
 }
 
-/// How far a run on this machine gets with a module the sweep could not
-/// compare. It separates the modules nothing here could import from the ones
-/// that fail on their own terms.
-#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub(crate) enum Reach {
-    /// The module imports a package this machine does not carry.
-    Absent,
-    /// The module runs here and fails on its own terms.
-    #[default]
-    Module,
-    /// The module is written for another platform.
-    Platform,
-}
-
-impl Reach {
-    /// The reach of the module at `relative`, whose run raised `raised`. The
-    /// exception is read first and the path second, since a module written for
-    /// another platform often raises an error that does not name one.
-    pub(crate) fn of(relative: &str, raised: &str) -> Self {
-        if raised == ABSENT {
-            Self::Absent
-        } else if PLATFORMS.iter().any(|token| relative.contains(token)) {
-            Self::Platform
-        } else {
-            Self::Module
-        }
-    }
-
-    /// Reports whether a run here reaches the module at all. One naming an
-    /// absent package or another platform does not.
-    pub(crate) const fn reachable(self) -> bool {
-        matches!(self, Self::Module)
-    }
-}
-
-impl Display for Reach {
-    fn fmt(&self, form: &mut Formatter<'_>) -> fmt::Result {
-        form.write_str(match self {
-            Self::Absent => "absent",
-            Self::Module => "module",
-            Self::Platform => "platform",
-        })
-    }
-}
+/// The names the comparison left out of each module, each beside the clause
+/// naming where the original bound it and the rules whose fixes removed it,
+/// keyed by module.
+pub(crate) type Removed = BTreeMap<String, BTreeMap<String, String>>;
 
 /// One width's tallies and findings.
 #[derive(Default)]
@@ -184,16 +119,31 @@ pub(crate) struct Width {
     pub(crate) flaky: BTreeMap<String, BTreeSet<String>>,
     /// The width, or `default` where none was pinned.
     pub(crate) label: String,
-    /// How many modules the format run could not read, parse, or write.
-    pub(crate) refused: usize,
+    /// Each file the pipeline read and could not format, beside the error it
+    /// returned, every one counting as a break.
+    pub(crate) rejected: BTreeMap<String, String>,
+    /// The names the comparison left out, since a recorded fix removed the
+    /// binding of each.
+    pub(crate) removed: Removed,
+    /// How many files the format run rewrote.
+    pub(crate) rewritten: usize,
     /// The modules the original tree did not run cleanly, each beside
     /// what its run left, which a run therefore never judges.
     pub(crate) uncomparable: BTreeMap<String, Blocked>,
     /// The modules a run left no record for.
     pub(crate) unmeasured: Vec<String>,
+    /// How many files the pipeline could not read or parse, which the run
+    /// leaves out.
+    pub(crate) unread: usize,
 }
 
 impl Width {
+    /// How many breaks this width found, counting a file the pipeline could
+    /// not format beside a module the rewrite broke.
+    pub(crate) fn broken(&self) -> usize {
+        self.breaks.len() + self.rejected.len()
+    }
+
     /// How many of this width's breaks left a run of `kind`, which
     /// separates a module that raised from one the deadline killed and
     /// from one that ran and bound a different namespace.
@@ -204,10 +154,15 @@ impl Width {
             .count()
     }
 
+    /// How many names the comparison left out across every module.
+    pub(crate) fn left_out(&self) -> usize {
+        self.removed.values().map(BTreeMap::len).sum()
+    }
+
     /// How this width's uncomparable modules divide by reach, each class
     /// paired with its count, in the order a report names them.
-    pub(crate) fn reaches(&self) -> [(Reach, usize); 3] {
-        [Reach::Absent, Reach::Platform, Reach::Module].map(|reach| {
+    pub(crate) fn reaches(&self) -> [(Reach, usize); 4] {
+        [Reach::Absent, Reach::Platform, Reach::Module, Reach::Loader].map(|reach| {
             let counted = self
                 .uncomparable
                 .values()
@@ -215,38 +170,6 @@ impl Width {
                 .count();
             (reach, counted)
         })
-    }
-
-    /// How many modules this machine could reach, being the ones it compared
-    /// beside the ones no run here could import. A module bound to another
-    /// platform or naming an absent package holds this count where it moves
-    /// `comparable`, so the floor reads the same on every machine.
-    pub(crate) fn reachable(&self) -> usize {
-        let unreachable = self
-            .uncomparable
-            .values()
-            .filter(|left| !left.reach.reachable())
-            .count();
-        self.comparable + unreachable
-    }
-
-    /// The breaks at this width the baseline does not already hold.
-    pub(crate) fn uncarried<'a>(
-        &'a self,
-        carried: &'a BTreeSet<String>,
-    ) -> impl Iterator<Item = &'a Break> {
-        self.breaks
-            .iter()
-            .filter(move |brk| !carried.contains(&brk.module))
-    }
-
-    /// How many of this width's breaks never imported at all, counting a
-    /// module that raised beside one the deadline killed.
-    pub(crate) fn unimported(&self) -> usize {
-        self.breaks
-            .iter()
-            .filter(|brk| brk.formatted.kind != Kind::Ok)
-            .count()
     }
 
     /// How many names this width set aside across its flaky modules,

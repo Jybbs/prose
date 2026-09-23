@@ -59,16 +59,14 @@ fn identity_counts_every_file_the_widened_walk_reads() {
     write("mod.py", "x = 1\n");
     write("notes.txt", "left out\n");
     write("book.ipynb", "{}\n");
-    let bare = identity(root, "3.14.6");
+    let bare = identity(root);
     assert_eq!(bare.files, 1);
     assert_eq!(bare.vendored, Vec::<String>::new());
     write("script.pyw", "y = 2\n");
     write("stub.pyi", "z: int\n");
-    let widened = identity(root, "3.14.6");
-    assert_eq!(widened.files, 3);
-    assert_eq!(widened.interpreter, "3.14.6");
+    assert_eq!(identity(root).files, 3);
     fs_err::create_dir_all(root.join("site-packages/pip-26.2.dist-info")).expect("a dist-info");
-    assert_eq!(identity(root, "3.14.6").vendored, ["pip-26.2"]);
+    assert_eq!(identity(root).vendored, ["pip-26.2"]);
 }
 
 #[rstest]

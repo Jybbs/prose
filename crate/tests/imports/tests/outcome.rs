@@ -49,12 +49,24 @@ fn a_raise_row_composes_its_sentence_beside_the_other_endings() {
     let read = Outcome::parse(&record, &[Path::new("/tree")]);
     assert_eq!(read.kind, Kind::Raised);
     assert_eq!(read.error, "raises NameError: name 'x' is not defined");
+    assert_eq!(read.importing, None);
     assert_eq!(read.name, Some("x".to_owned()));
     assert_eq!(read.raised, "NameError");
 }
 
 #[test]
-fn an_unrecognised_kind_row_reads_as_unmeasured() {
+fn an_importing_row_names_the_module_a_failed_import_read_from() {
+    let record = [
+        ["kind", "raised"].join("\0"),
+        ["importing", "pkg.mod"].join("\0"),
+    ]
+    .join("\u{1e}");
+    let read = Outcome::parse(&record, &[]);
+    assert_eq!(read.importing, Some("pkg.mod".to_owned()));
+}
+
+#[test]
+fn an_unrecognized_kind_row_reads_as_unmeasured() {
     let read = Outcome::parse(&["kind", "wat"].join("\0"), &[]);
     assert_eq!(read.kind, Kind::Unmeasured);
 }
@@ -64,9 +76,11 @@ fn parsing_a_record_filters_loader_names_and_reads_frames() {
     let record = [
         ["kind", "ok"].join("\0"),
         ["bound", "__file__"].join("\0"),
+        ["bound", "__annotate__"].join("\0"),
         ["bound", "__all__"].join("\0"),
         ["bound", "N"].join("\0"),
         ["const", "__all__", "('a',)"].join("\0"),
+        ["const", "__annotations__", "('N',)"].join("\0"),
         ["const", "N", "1"].join("\0"),
         ["frame", "9", "/tree/m.py"].join("\0"),
         ["loaded", "/tree/m.py"].join("\0"),
@@ -76,7 +90,14 @@ fn parsing_a_record_filters_loader_names_and_reads_frames() {
     let read = Outcome::parse(&record, &[Path::new("/tree")]);
     assert_eq!(read.kind, Kind::Ok);
     assert_eq!(read.names, ["N", "__all__"]);
-    assert_eq!(read.constants, [("N".to_owned(), "1".to_owned())].into());
+    assert_eq!(
+        read.constants,
+        [
+            ("N".to_owned(), "1".to_owned()),
+            ("__annotations__".to_owned(), "('N',)".to_owned()),
+        ]
+        .into()
+    );
     assert_eq!(read.frames, [("/tree/m.py".to_owned(), 9)]);
     assert_eq!(read.loaded, ["m.py"]);
 }

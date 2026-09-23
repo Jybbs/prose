@@ -75,12 +75,16 @@ An own-line comment directly above an import keeps the whole statement, because 
 
 `from __future__ import annotations` is removed wherever the directive changes nothing at runtime:
 
-1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation.
+1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation until something reads the annotations, and every annotated name resolves by then to an unconditional module-scope binding or to a builtin, whichever side of the annotation it sits on.
 2. No annotation runs at module scope, and every annotated name resolves to an unconditional module-scope binding written before it.
 
 A `del` of an annotated name leaves that name unresolved whatever else binds it, because removing the directive makes the annotation evaluate against the namespace the `del` left rather than against a string.
 
-An annotation at module scope keeps the directive whatever its names resolve to, because the directive decides whether Python stores that annotation in the module's `__annotations__` as a string or evaluates it at import time, so removing it changes what the module presents. An annotation on a `def` or inside a `class` body is stored on that object instead, and the directive can be removed once every name the annotation reads is bound ahead of it.
+Deferral moves the moment an annotation evaluates rather than removing it, so on 3.14 a name imported only under `if TYPE_CHECKING:` keeps the directive, because reading the annotations after the module has run would raise `NameError` where the directive left a string.
+
+<Fixture rule="prune_inert_imports" case="py314_target_holds_directive_for_type_checking_name" />
+
+Below a 3.14 target, an annotation at module scope keeps the directive whatever its names resolve to, because the directive decides whether Python stores that annotation in the module's `__annotations__` as a string or evaluates it at import time, so removing it changes what the module presents. An annotation on a `def` or inside a `class` body is stored on that object instead, and the directive can be removed once every name the annotation reads is bound ahead of it.
 
 Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort moves definitions after this rule has run. A directive covering such a reference therefore stays in whichever order the sort writes. Where [[band-constants]] runs in the same pipeline, a binding it hoists above the annotation naming it counts as written before that annotation, whether the hoist moves a constant into the leading band or an import into the import run, because the rule reads the module as the band places it once the directive is gone.
 
@@ -104,7 +108,7 @@ The branch does not run, the same as on 3.10.
 The branch does not run, the same as on 3.10.
 
 == Python 3.14
-The version-gated branch runs, because PEP 749 defers annotation evaluation and the directive changes nothing at runtime.
+The version-gated branch runs, reading each annotated name once the module has run, so the directive goes wherever every such name resolves to an unconditional module-scope binding or a builtin.
 :::
 
 <template #configuration>

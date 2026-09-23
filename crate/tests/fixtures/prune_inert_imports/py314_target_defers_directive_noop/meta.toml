@@ -1,7 +1,7 @@
 [docs]
 previewable = false
-title       = "A 3.14 Target Removes the Directive Whatever the Annotations"
+title       = "A 3.14 Target Removes the Directive Once Every Annotated Name Resolves"
 
 description = '''
-`target-version = "3.14"` is set, and `add` annotates both parameters and its return as `int`. **`from __future__ import annotations` is removed even though annotations are present**, because PEP 749 defers annotation evaluation on 3.14 and the directive changes nothing at runtime there.
+`target-version = "3.14"` is set, and `add` annotates both parameters and its return as `int`. **`from __future__ import annotations` is removed even though annotations are present**, because PEP 749 defers annotation evaluation on 3.14 until something reads the annotations, and `int` resolves as a builtin whenever that happens.
 '''

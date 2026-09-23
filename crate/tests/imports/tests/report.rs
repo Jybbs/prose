@@ -2,8 +2,6 @@
 //! block of counts, the reach split beneath it, the listings capped at a
 //! shown limit, and the command that reproduces one break alone.
 
-use std::collections::BTreeSet;
-
 use super::*;
 use crate::{common::SHOWN, records::Width, report::render};
 
@@ -21,12 +19,11 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
         breaks: vec![brk],
         candidates: 4,
         comparable: 3,
-        refused: 1,
+        unread: 1,
         ..width()
     };
-    let shown = render(&["kept.py".to_owned()].into(), &found);
-    shows(&shown, "  carried          1");
-    shows(&shown, "  refused          1");
+    let shown = render(&found);
+    shows(&shown, "  unread           1");
     hides(&shown, "uncomparable by reach");
     shows(
         &shown,
@@ -37,13 +34,33 @@ fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
 }
 
 #[test]
+fn a_file_the_pipeline_rejected_counts_as_a_break_and_lists_its_error() {
+    let found = Width {
+        rejected: [(
+            "stub.pyi".to_owned(),
+            "rule `x` produced output that did not parse".to_owned(),
+        )]
+        .into(),
+        ..width()
+    };
+    let shown = render(&found);
+    shows(&shown, "  breaks           1");
+    shows(&shown, "  rejected         1");
+    shows(&shown, "rejected, the pipeline could not format it (1):");
+    shows(
+        &shown,
+        "stub.pyi  rule `x` produced output that did not parse",
+    );
+}
+
+#[test]
 fn a_repro_at_a_pinned_width_carries_the_width_knob() {
     let found = Width {
         breaks: vec![losing("pydoc.py", "pydoc.py", "textwrap")],
         label: "100".to_owned(),
         ..Width::default()
     };
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     shows(&shown, "PROSE_SETTLE_WIDTHS=100 mise run imports pydoc.py");
 }
 
@@ -54,10 +71,64 @@ fn an_unmeasured_module_replaces_the_uncomparable_count() {
         unmeasured: vec!["u.py".to_owned()],
         ..width()
     };
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     shows(&shown, "  uncomparable unmeasured");
     shows(&shown, "unmeasured, a run left no record (1):");
     shows(&shown, "u.py");
+}
+
+#[test]
+fn each_name_left_out_lists_its_binding_and_the_fix_that_removed_it() {
+    let found = Width {
+        removed: [
+            (
+                "pydoc.py".to_owned(),
+                [(
+                    "textwrap".to_owned(),
+                    "`textwrap` bound at pydoc.py:62, dropped by `prune-inert-imports`".to_owned(),
+                )]
+                .into(),
+            ),
+            (
+                "tools.py".to_owned(),
+                [
+                    (
+                        "List".to_owned(),
+                        "`List` bound at tools.py:3, dropped by `modernize-annotations`".to_owned(),
+                    ),
+                    (
+                        "b".to_owned(),
+                        "`b` bound at tools.py:4, dropped by `prune-inert-imports`".to_owned(),
+                    ),
+                ]
+                .into(),
+            ),
+        ]
+        .into(),
+        ..width()
+    };
+    let shown = render(&found);
+    shows(&shown, "  removed          3");
+    shows(&shown, "left out, a recorded fix removed the binding (3):");
+    shows(
+        &shown,
+        "`textwrap` bound at pydoc.py:62, dropped by `prune-inert-imports`",
+    );
+    shows(
+        &shown,
+        "`List` bound at tools.py:3, dropped by `modernize-annotations`",
+    );
+}
+
+#[test]
+fn each_uncomparable_module_lists_its_reach_beside_its_exception() {
+    let found = stalling([blocked("encodings/mbcs.py", "ImportError")].into());
+    let shown = render(&found);
+    shows(&shown, "uncomparable, the original did not run (1):");
+    shows(
+        &shown,
+        "encodings/mbcs.py  module, raises ImportError: no thing",
+    );
 }
 
 #[test]
@@ -70,7 +141,7 @@ fn the_flaky_list_caps_at_the_shown_limit() {
             .collect(),
         ..width()
     };
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     shows(
         &shown,
         &format!("flaky, a second run varied ({}):", SHOWN + 3),
@@ -91,7 +162,7 @@ fn the_flaky_listing_names_each_module_beside_the_names_it_varies_on() {
         ]),
         ..width()
     };
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     shows(&shown, "  flaky            2");
     shows(&shown, "  varying          3");
     shows(&shown, "flaky, a second run varied (2):");
@@ -112,9 +183,9 @@ fn the_reach_split_names_every_class_beneath_the_block() {
         ]
         .into(),
     );
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     shows(&shown, "uncomparable by reach (3):");
-    shows(&shown, "1 absent, 1 platform, 1 module");
+    shows(&shown, "1 absent, 1 platform, 1 module, 0 loader");
 }
 
 #[test]
@@ -125,7 +196,7 @@ fn the_summary_block_holds_every_count_in_one_column() {
         uncomparable: stalled(["a.py", "b.py", "c.py"]),
         ..width()
     };
-    let shown = render(&BTreeSet::new(), &found);
+    let shown = render(&found);
     assert_eq!(
         shown
             .split("\n\n")
@@ -133,15 +204,17 @@ fn the_summary_block_holds_every_count_in_one_column() {
             .expect("the block opens the render"),
         concat!(
             "  candidates      12\n",
+            "  rewritten        0\n",
             "  comparable       9\n",
             "  uncomparable     3\n",
             "  breaks           0\n",
             "  raises           0\n",
             "  rebinds          0\n",
             "  timeouts         0\n",
+            "  rejected         0\n",
             "  flaky            0\n",
             "  varying          0\n",
-            "  carried          0",
+            "  removed          0",
         )
     );
 }

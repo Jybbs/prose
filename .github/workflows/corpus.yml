@@ -211,7 +211,7 @@ jobs:
 
       - *provision-cargo
 
-      - name : Import every rewritten module against the tracked break set
+      - name : Import every module of the corpus before and after formatting
         run  : mise run imports
 
   subsets:

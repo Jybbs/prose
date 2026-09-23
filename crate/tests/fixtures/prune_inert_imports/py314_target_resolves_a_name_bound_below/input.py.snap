@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/py314_target_resolves_a_name_bound_below/input.py
+---
+
+
+def convert(value: Alias) -> Alias:
+    return value
+
+
+Alias = int

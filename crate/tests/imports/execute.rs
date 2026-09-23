@@ -14,6 +14,7 @@ use std::{
 
 use crate::{
     common::setting,
+    corpus::{VENDORED, asked},
     outcome::{Kind, Outcome},
     stage::Stage,
 };
@@ -80,9 +81,12 @@ impl Runner {
     }
 
     /// Runs one module of `trees` in a fresh interpreter and returns what it
-    /// left behind. The child gets a scratch `HOME` and `TMPDIR` and leads
-    /// its own process group, and the harness holds the deadline, killing
-    /// the child alone once it passes.
+    /// left behind. Each tree goes on the search path beside its [`VENDORED`]
+    /// directory, and the interpreter skips its `site` module, so every module
+    /// a run imports comes from a tree or from the standard library.
+    /// The child gets a scratch `HOME` and `TMPDIR` and leads its own
+    /// process group, and the harness holds the deadline, killing the child
+    /// alone once it passes.
     pub(crate) fn run(&self, module: &str, trees: &[&Path]) -> Outcome {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let at = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -97,13 +101,18 @@ impl Runner {
         let mut command = Command::new(&self.python);
         command
             .arg("-P")
+            .arg("-S")
             .arg("-s")
             .arg("-B")
             .arg(self.stage.probe())
             .arg(&record)
             .arg(module_name(module))
             .arg(located)
-            .args(trees)
+            .args(
+                trees
+                    .iter()
+                    .flat_map(|tree| [tree.to_path_buf(), tree.join(VENDORED)]),
+            )
             .current_dir(&self.stage.tmp)
             .env_clear()
             .env("HOME", &self.stage.home)
@@ -159,14 +168,25 @@ pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
     Outcome::of(Kind::Raised, format!("ends on {status}{tail}"))
 }
 
-/// The interpreter every module runs under, [`PYTHON_VAR`] naming it and
-/// [`PYTHON`] standing in where it is unset.
+/// The interpreter every module runs under, resolved to the executable it
+/// runs as, with [`PYTHON_VAR`] naming it and [`PYTHON`] standing in where it
+/// is unset. A version manager's shim reads configuration the cleared
+/// environment of a run leaves out of reach, so a run launches the executable
+/// the shim resolves to instead.
 pub(crate) fn interpreter() -> String {
-    setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned())
+    asked(
+        &setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned()),
+        "import sys; print(sys.executable)",
+    )
 }
 
-/// The dotted name an import binds one module to.
+/// The dotted name an import binds one module to, a module under
+/// [`VENDORED`] naming itself from that directory rather than from the tree.
 pub(crate) fn module_name(module: &str) -> String {
+    let module = module
+        .strip_prefix(VENDORED)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .unwrap_or(module);
     let stem = module.strip_suffix(".py").unwrap_or(module);
     stem.strip_suffix("/__init__")
         .unwrap_or(stem)

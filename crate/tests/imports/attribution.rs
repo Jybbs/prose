@@ -2,26 +2,22 @@
 //! recorded fixes reach that frame or drop the binding it turns on, and the
 //! rules reproducing it under one rule alone where no record does.
 
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    ops::Range,
-    path::Path,
-    slice::from_ref,
-};
+use std::{collections::BTreeMap, path::Path, slice::from_ref};
 
-use prose::{config::Config, pipeline::Pipeline, rules::render_slugs};
+use prose::{config::Config, pipeline::Pipeline};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use similar::TextDiff;
 
 use crate::{
-    bindings::binding_rows,
+    bindings::bound_at,
     compare::divergence,
     diff::{hunk, mapped_rows},
     execute::Runner,
-    fixes::{drops, reaches},
+    fixes::{fitting, listed, reaches},
     format::format_tree,
     outcome::relative_to,
-    records::{Break, EditRows, Fixes, Frame},
+    records::{Break, Fixes, Frame},
+    removed::dropped,
 };
 
 /// One width's formatted tree and the fixes its format run recorded, with
@@ -42,8 +38,8 @@ pub(crate) struct Attributor<'a> {
 impl Attributor<'_> {
     /// Re-formats every module a break's run loaded under each rule on its
     /// own and returns the rules reproducing it for the same reason, joined
-    /// in pipeline order.
-    fn alone(&self, brk: &Break) -> String {
+    /// in pipeline order, `None` where no rule does.
+    fn alone(&self, brk: &Break) -> Option<String> {
         let loaded = brk.loaded();
         let reproducing: Vec<_> = Pipeline::known_ids()
             .par_iter()
@@ -61,27 +57,15 @@ impl Attributor<'_> {
             })
             .copied()
             .collect();
-        render_slugs(&reproducing).to_string()
+        listed(&reproducing)
     }
 
     /// The clause naming where the name a break turns on was bound and the
-    /// rules whose fixes dropped it, empty where no fix did.
-    fn binding(&self, brk: &Break, name: &str) -> String {
+    /// rules whose fixes dropped it, `None` where no fix did.
+    fn binding(&self, brk: &Break, name: &str) -> Option<String> {
         brk.loaded()
             .into_iter()
-            .find_map(|module| {
-                let (rows, text) = bound_at(&self.runner.stage.original, &module, name)?;
-                let listed = self.fitting(&module, |edits| {
-                    reaches(edits, &rows, "") && drops(edits, name, &text)
-                });
-                (!listed.is_empty()).then(|| {
-                    format!(
-                        "`{name}` bound at {module}:{}, dropped by {listed}",
-                        rows.start
-                    )
-                })
-            })
-            .unwrap_or_default()
+            .find_map(|module| dropped(self.fixes, &self.runner.stage.original, &module, name))
     }
 
     /// The attribution and hunk one break carries, which is the rules the
@@ -98,22 +82,17 @@ impl Attributor<'_> {
         if let Some(row) = *row {
             let rows = mapped_rows(&diff, row);
             let line = now.get(row - 1).map_or("", |line| line.trim());
-            let under = self.fitting(file, |edits| reaches(edits, &rows, line));
-            if !under.is_empty() {
-                clauses.push(format!("under {under}"));
-            }
+            clauses.extend(
+                fitting(self.fixes, file, |edits| reaches(edits, &rows, line))
+                    .map(|under| format!("under {under}")),
+            );
         }
-        if let Some(name) = brk.name.as_deref() {
-            let clause = self.binding(brk, name);
-            if !clause.is_empty() {
-                clauses.push(clause);
-            }
-        }
+        clauses.extend(brk.name.as_deref().and_then(|name| self.binding(brk, name)));
         let attribution = if clauses.is_empty() {
-            match self.alone(brk) {
-                alone if alone.is_empty() => "no single rule reproduces it".to_owned(),
-                alone => format!("reproduced by {alone} alone"),
-            }
+            self.alone(brk).map_or_else(
+                || "no single rule reproduces it".to_owned(),
+                |alone| format!("reproduced by {alone} alone"),
+            )
         } else {
             clauses.join(", ")
         };
@@ -121,25 +100,6 @@ impl Attributor<'_> {
             attribution,
             hunk(&diff, *row, brk.name.as_deref().unwrap_or_default()),
         )
-    }
-
-    /// The rules whose fixes to one file satisfy a test, joined in pipeline
-    /// order.
-    fn fitting(&self, file: &str, fits: impl Fn(&[EditRows]) -> bool) -> String {
-        let hit: BTreeSet<_> = self
-            .fixes
-            .get(file)
-            .into_iter()
-            .flatten()
-            .filter(|(_, edits)| fits(edits))
-            .map(|(rule, _)| *rule)
-            .collect();
-        let ordered: Vec<_> = Pipeline::known_ids()
-            .iter()
-            .filter(|rule| hit.contains(rule))
-            .copied()
-            .collect();
-        render_slugs(&ordered).to_string()
     }
 
     /// The file and row a break points at, which is the deepest traceback
@@ -189,12 +149,4 @@ impl Attributor<'_> {
             breaks[at].hunk.clone_from(hunk);
         }
     }
-}
-
-/// The rows binding `name` in one module of `tree`, beside that module's
-/// text, `None` where the module does not read or does not bind it.
-fn bound_at(tree: &Path, module: &str, name: &str) -> Option<(Range<usize>, String)> {
-    let text = fs_err::read_to_string(tree.join(module)).ok()?;
-    let rows = binding_rows(&text).get(name)?.clone();
-    Some((rows, text))
 }

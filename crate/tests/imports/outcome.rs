@@ -11,9 +11,10 @@ use std::{
 /// therefore leaves out.
 const REORDERED: &[&str] = &["__all__", "__slots__"];
 
-/// The names every module binds through the loader rather than through its
-/// own code, which a comparison leaves out.
+/// The names every module binds through the loader or the compiler rather
+/// than through its own statements, which a comparison leaves out.
 const UNBOUND: &[&str] = &[
+    "__annotate__",
     "__builtins__",
     "__cached__",
     "__doc__",
@@ -57,6 +58,8 @@ pub(crate) struct Outcome {
     pub(crate) error: String,
     /// The file and row of every frame a raise passed through.
     pub(crate) frames: Vec<(String, usize)>,
+    /// The module a raised import read from, where the raise names one.
+    pub(crate) importing: Option<String>,
     /// What the run amounted to.
     pub(crate) kind: Kind,
     /// Every module the run took from a tree, relative to it, sorted.
@@ -104,6 +107,7 @@ impl Outcome {
                         read.frames.push((file.to_owned(), row));
                     }
                 }
+                (Some("importing"), Some(module), _) => read.importing = Some(module.to_owned()),
                 (Some("kind"), Some(kind), _) => read.kind = Kind::of(kind),
                 (Some("loaded"), Some(path), _) => {
                     if let Some(relative) = relative_to(path, trees) {

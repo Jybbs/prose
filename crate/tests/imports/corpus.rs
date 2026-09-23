@@ -1,6 +1,6 @@
 //! Which modules of a corpus a sweep runs, meaning the interpreter owning
-//! the corpus and the version it reports, the entry points a run leaves out,
-//! the modules a format run rewrote, and what identifies the corpus a run
+//! the corpus and the versions it reports, the entry points a run leaves out,
+//! the modules a format run read, and what identifies the corpus a run
 //! swept.
 
 use std::{
@@ -8,6 +8,8 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+
+use ruff_python_ast::PythonVersion;
 
 use crate::{common::python_files, records::Corpus};
 
@@ -24,11 +26,29 @@ const ENTRY_POINTS: &[&str] = &["antigravity", "idlelib/idle", "webbrowser"];
 /// The directories a walk leaves out wholesale.
 const ENTRY_TREES: &[&str] = &["idle_test", "test", "tests", "turtledemo"];
 
+/// The directory beside the standard library that the distributions it
+/// carries are installed into, which an import searches as a root of its own.
+pub(crate) const VENDORED: &str = "site-packages";
+
+/// What `python` prints for `code`, trimmed. Panics if the interpreter does not
+/// run or the snippet fails.
+pub(crate) fn asked(python: &str, code: &str) -> String {
+    let ran = Command::new(python)
+        .args(["-I", "-c", code])
+        .output()
+        .unwrap_or_else(|error| panic!("{python} does not run: {error}"));
+    assert!(
+        ran.status.success(),
+        "{python} does not run: {}",
+        String::from_utf8_lossy(&ran.stderr).trim()
+    );
+    String::from_utf8_lossy(&ran.stdout).trim().to_owned()
+}
+
 /// The modules a sweep runs, which is every importable module the format
-/// run rewrote outside the entry points, sorted.
-pub(crate) fn candidates(rewritten: &BTreeSet<String>) -> Vec<String> {
-    rewritten
-        .iter()
+/// run read outside the entry points, sorted.
+pub(crate) fn candidates(read: &BTreeSet<String>) -> Vec<String> {
+    read.iter()
         .filter(|relative| importable(relative) && !excluded(relative))
         .cloned()
         .collect()
@@ -48,15 +68,12 @@ pub(crate) fn excluded(relative: &str) -> bool {
             .any(|part| ENTRY_TREES.contains(&part))
 }
 
-/// What identifies the corpus at `root` belonging to `interpreter`, being how
-/// many files the walk reads beside the distributions installed next to the
-/// standard library. Both hold across platforms, where the tree's own bytes do
-/// not, since the build scaffolding and `_sysconfigdata` carry the platform in
-/// their names and contents.
-pub(crate) fn identity(root: &Path, interpreter: &str) -> Corpus {
+/// What the run's header names about the corpus at `root`, being how many
+/// files the walk reads beside the distributions installed next to the
+/// standard library.
+pub(crate) fn identity(root: &Path) -> Corpus {
     Corpus {
         files: python_files(root).count(),
-        interpreter: interpreter.to_owned(),
         vendored: vendored(root),
     }
 }
@@ -79,31 +96,24 @@ pub(crate) fn standard_library(python: &str) -> PathBuf {
     .expect("the interpreter names a standard library")
 }
 
+/// The `major.minor` version the interpreter at `python` reports, which a
+/// format run takes as its `target-version`.
+pub(crate) fn target(python: &str) -> PythonVersion {
+    asked(python, "import sys; print(*sys.version_info[:2], sep='.')")
+        .parse()
+        .expect("the interpreter reports a `major.minor` version")
+}
+
 /// The version the interpreter at `python` reports.
 pub(crate) fn version(python: &str) -> String {
     asked(python, "import sys; print(sys.version.split()[0])")
 }
 
-/// What `python` prints for `code`, trimmed. Panics if the interpreter does not
-/// run or the snippet fails.
-fn asked(python: &str, code: &str) -> String {
-    let ran = Command::new(python)
-        .args(["-I", "-c", code])
-        .output()
-        .unwrap_or_else(|error| panic!("{python} does not run: {error}"));
-    assert!(
-        ran.status.success(),
-        "{python} does not run: {}",
-        String::from_utf8_lossy(&ran.stderr).trim()
-    );
-    String::from_utf8_lossy(&ran.stdout).trim().to_owned()
-}
-
 /// Every distribution installed beside the standard library at `root`, read
 /// off the `dist-info` directory each one leaves, sorted. A tree carrying no
-/// `site-packages` directory names none.
+/// [`VENDORED`] directory names none.
 fn vendored(root: &Path) -> Vec<String> {
-    let Ok(entries) = fs_err::read_dir(root.join("site-packages")) else {
+    let Ok(entries) = fs_err::read_dir(root.join(VENDORED)) else {
         return Vec::new();
     };
     let mut found: Vec<_> = entries

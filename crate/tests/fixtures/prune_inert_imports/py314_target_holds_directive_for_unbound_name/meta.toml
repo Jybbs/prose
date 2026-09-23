@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A 3.14 Target Keeps the Directive for a Name the Module Never Binds"
+
+description = '''
+`target-version = "3.14"` is set, and `parse` names `Document` as its return annotation, which nothing in the module binds. **`from __future__ import annotations` stays**, because reading the function's annotations would raise `NameError` without it.
+'''

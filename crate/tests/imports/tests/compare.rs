@@ -27,7 +27,6 @@ fn a_constant_rebound_names_both_values(#[case] spelt: &[(&str, &str)], #[case] 
     assert_eq!(
         divergence(&bound(&["N"], spelt), &bound(&["N"], &[("N", "1")])),
         Some(Divergence {
-            kind: "rebound",
             names: vec!["N".to_owned()],
             reason: why.to_owned(),
         })
@@ -41,7 +40,6 @@ fn a_dropped_name_and_an_added_name_report_their_direction() {
     assert_eq!(
         divergence(&formatted, &original),
         Some(Divergence {
-            kind: "unbound",
             names: vec!["b".to_owned()],
             reason: "leaves `b` unbound".to_owned(),
         })
@@ -49,7 +47,6 @@ fn a_dropped_name_and_an_added_name_report_their_direction() {
     assert_eq!(
         divergence(&original, &formatted),
         Some(Divergence {
-            kind: "extra",
             names: vec!["b".to_owned()],
             reason: "binds `b` the original does not".to_owned(),
         })
@@ -67,7 +64,6 @@ fn a_raised_run_returns_its_error_and_name() {
     assert_eq!(
         divergence(&raised, &bound(&[], &[])),
         Some(Divergence {
-            kind: "raises",
             names: vec!["x".to_owned()],
             reason: raised.error.clone(),
         })
