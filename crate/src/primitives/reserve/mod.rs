@@ -69,6 +69,17 @@ pub(crate) struct Columns {
 }
 
 impl Columns {
+    /// Builds an empty table, used when the alignment rule is off and no
+    /// column is reserved.
+    fn unreserved() -> Self {
+        Self {
+            buffer: None,
+            runs: Vec::new(),
+            shifts: Vec::new(),
+            widenings: Vec::new(),
+        }
+    }
+
     /// Each run as its scope, its shifts, and its widenings, ascending,
     /// the form two tables compare in whatever order their runs were
     /// numbered.
@@ -109,17 +120,6 @@ impl Columns {
         item_holding(&self.shifts, offset)
             .filter(|shift| shift.span.contains(offset))
             .map_or(0, |shift| shift.columns)
-    }
-
-    /// The table an alignment rule that is off leaves, reserving no
-    /// column.
-    fn unreserved() -> Self {
-        Self {
-            buffer: None,
-            runs: Vec::new(),
-            shifts: Vec::new(),
-            widenings: Vec::new(),
-        }
     }
 
     /// The column `offset` lands at, `fallback` moved by the shift the
@@ -609,7 +609,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        config::{AlignmentConfig, Config},
+        config::{Config, MaxShift},
         testing::parse,
     };
 
@@ -689,9 +689,9 @@ mod tests {
         #[case] name: usize,
         #[case] expected: usize,
     ) {
-        let settings = aligner::Settings::from(&AlignmentConfig::default());
         assert_eq!(
-            columns_under(Some(settings)).keyword_value_column(indent, name),
+            columns_under(Some(aligner::Settings::aligned(MaxShift::default())))
+                .keyword_value_column(indent, name),
             Some(expected),
         );
     }

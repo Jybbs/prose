@@ -133,14 +133,29 @@ impl Config {
         Ok((config, notices))
     }
 
-    /// The alignment settings `config` resolves within `width`, each
-    /// line read at the padding and comment rules this config predicts.
-    pub(crate) fn align_settings(
-        &self,
-        config: &AlignmentConfig,
-        width: usize,
-    ) -> aligner::Settings {
-        aligner::Settings::from(config).within(
+    /// Returns which of `align-comments` and `normalize-comment-spacing`
+    /// this config runs, each by slug, so a rule measuring a line can allow
+    /// for the gap and opener they give a trailing comment.
+    fn comment_settling(&self) -> comments::Settling {
+        comments::Settling {
+            gap: self
+                .rules
+                .align_comments
+                .enabled
+                .then_some(AlignComments::SLUG),
+            opener: self
+                .rules
+                .normalize_comment_spacing
+                .enabled
+                .then_some(NormalizeCommentSpacing::SLUG),
+        }
+    }
+
+    /// Builds a rule's alignment settings from its `max_shift`, with
+    /// `width` as the line limit. Each line is measured as it will read
+    /// after this config's padding and comment rules run.
+    pub(crate) fn align_settings(&self, max_shift: MaxShift, width: usize) -> aligner::Settings {
+        aligner::Settings::aligned(max_shift).within(
             width,
             self.stranded_padding(),
             self.comment_settling(),
@@ -159,24 +174,6 @@ impl Config {
         self.code_line_length
             .expect("Config::default synthesizes Some(88)")
             .get()
-    }
-
-    /// The two comment rules a measuring rule predicts, so a trailing
-    /// comment reads at the gap `align-comments` seats it at and the
-    /// opener `normalize-comment-spacing` settles it to.
-    fn comment_settling(&self) -> comments::Settling {
-        comments::Settling {
-            gap: self
-                .rules
-                .align_comments
-                .enabled
-                .then_some(AlignComments::SLUG),
-            opener: self
-                .rules
-                .normalize_comment_spacing
-                .enabled
-                .then_some(NormalizeCommentSpacing::SLUG),
-        }
     }
 
     pub(crate) fn docstring_width(&self) -> usize {
@@ -199,7 +196,7 @@ impl Config {
     /// The alignment settings `align-equals` runs under, resolving
     /// within the code width and releasing a group's head.
     pub(crate) fn equals_settings(&self) -> aligner::Settings {
-        self.align_settings(&self.rules.align_equals, self.code_width())
+        self.align_settings(self.rules.align_equals.max_shift, self.code_width())
             .releasing_heads()
     }
 
@@ -228,7 +225,7 @@ impl Config {
     /// within the import width, read by the rule itself and by the
     /// forecast `reflow-imports` packs against.
     pub(crate) fn import_align_settings(&self) -> aligner::Settings {
-        self.align_settings(&self.rules.align_imports, self.import_width())
+        self.align_settings(self.rules.align_imports.max_shift, self.import_width())
     }
 
     /// The budget governing import wrapping, falling back to the code

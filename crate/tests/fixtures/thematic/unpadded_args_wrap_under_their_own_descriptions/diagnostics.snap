@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/thematic/unpadded_args_wrap_under_their_own_descriptions/input.py
+---
+frame-docstrings@42..42
+signature-annotations@17..23
+signature-annotations@25..32

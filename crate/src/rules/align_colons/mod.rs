@@ -1,17 +1,18 @@
-//! Aligns `:` vertically in dict literals, annotated assignments,
-//! annotated function parameters, and docstring entry runs, leaving
-//! single-line, single-item, and differing-baseline groups to
-//! `strip_stranded_padding`. Each aligned `:` keeps a one-space buffer
-//! before it, the dict, annotation, and parameter contexts collapse
-//! the gap after it and resolve within `code_line_length`, and a
-//! docstring run has no cap, settling its parenthesized type groups
-//! into a column first so the `:` column measures the widths that
-//! padding leaves.
+//! Pads the space before `:` so consecutive dict entries, annotated
+//! assignments, annotated parameters, and docstring entries share one
+//! column, leaving a lone row, a one-line group, or rows at different
+//! baselines to `strip_stranded_padding`. Every aligned `:` keeps one
+//! space before it. In the dict, annotation, and parameter contexts the
+//! space after it shrinks to one, and a row that would run past
+//! `code_line_length` starts a new column. A docstring run aligns under
+//! no line limit, padding its parenthesized types onto a column of their
+//! own before the `:` column is measured, and resolves as it would under
+//! `max-shift = 0` when `align-docstring-entries` is off.
 
 use ruff_diagnostics::Edit;
 
 use crate::{
-    config::Config,
+    config::{Config, MaxShift},
     primitives::{
         aligner,
         colon_targets::{ColonEmitter, EntryColumns},
@@ -37,12 +38,18 @@ impl AlignColons {
     pub(crate) const PRESERVES_TREE: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
-        let type_settings = aligner::Settings::from(&config.rules.align_colons);
+        let align_colons = &config.rules.align_colons;
+        let docstring_shift = if align_colons.align_docstring_entries {
+            align_colons.max_shift
+        } else {
+            MaxShift::NoShift
+        };
+        let type_settings = aligner::Settings::aligned(docstring_shift);
         Self {
             docstring_settings: type_settings.with_singleton_strip(),
             reservations: config.equals_reservations(),
             settings: config
-                .align_settings(&config.rules.align_colons, config.code_width())
+                .align_settings(align_colons.max_shift, config.code_width())
                 .with_singleton_strip(),
             type_settings,
         }

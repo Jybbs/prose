@@ -10,7 +10,7 @@
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    config::{AlignmentConfig, MaxShift},
+    config::MaxShift,
     primitives::{comments::Settling, padding::Stranding},
     rules::RuleId,
     source::Source,
@@ -126,21 +126,11 @@ pub(crate) struct Settings {
     strip_singleton: bool,
 }
 
-/// The line length a run resolves within, the padding rule whose later
-/// edits the cap check reads each line at, and the comment rules whose
-/// settled width it reads a trailing comment at.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct Cap {
-    line_length: usize,
-    settling: Settling,
-    stranding: Stranding,
-}
-
 impl Settings {
-    /// Builds the alignment settings carried by an alignment rule, with
-    /// a one-space buffer, `strip_singleton` off, and no line cap until
-    /// a rule opts in.
-    fn aligned(max_shift: MaxShift) -> Self {
+    /// Builds alignment settings from `max_shift` with a one-space buffer,
+    /// `strip_singleton` off, and no line limit, which a rule then adjusts
+    /// through the builder methods below.
+    pub(crate) fn aligned(max_shift: MaxShift) -> Self {
         Self {
             buffer: 1,
             cap: None,
@@ -167,16 +157,16 @@ impl Settings {
         self.buffer
     }
 
+    /// Returns a copy of `self` with `release_heads` enabled.
+    pub(crate) fn releasing_heads(mut self) -> Self {
+        self.release_heads = true;
+        self
+    }
+
     /// Returns a copy of `self` carrying `width` as the gap an aligned
     /// row holds ahead of the aligned token.
     pub(crate) fn with_buffer(mut self, width: usize) -> Self {
         self.buffer = width;
-        self
-    }
-
-    /// Returns a copy of `self` with `release_heads` enabled.
-    pub(crate) fn releasing_heads(mut self) -> Self {
-        self.release_heads = true;
         self
     }
 
@@ -205,8 +195,12 @@ impl Settings {
     }
 }
 
-impl From<&AlignmentConfig> for Settings {
-    fn from(c: &AlignmentConfig) -> Self {
-        Self::aligned(c.max_shift)
-    }
+/// The line limit an aligned run must fit within, with the padding rule
+/// and the comment rules whose later edits the cap check counts when it
+/// measures each line.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Cap {
+    line_length: usize,
+    settling: Settling,
+    stranding: Stranding,
 }
