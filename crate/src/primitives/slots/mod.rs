@@ -5,6 +5,11 @@ use std::ops::Range;
 
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
+/// True where one of the start-ascending `items` spans exactly `range`.
+pub(crate) fn holds_exactly<T: Ranged>(items: &[T], range: TextRange) -> bool {
+    item_holding(items, range.start()).is_some_and(|held| held.range() == range)
+}
+
 /// The item of `items` whose start is at or before `offset`, `None`
 /// ahead of the first item.
 pub(crate) fn item_holding<T: Ranged>(items: &[T], offset: TextSize) -> Option<&T> {
@@ -81,6 +86,22 @@ mod tests {
     /// A comment ahead of two statements, the first starting at 7 and
     /// the second at 14.
     const LEAD_COMMENT: &str = "# lead\nx = 1\n\ny = 2\n";
+
+    #[rstest]
+    #[case::the_first_item_whole(7, 12, true)]
+    #[case::a_prefix_of_an_item(7, 9, false)]
+    #[case::a_range_between_items(12, 14, false)]
+    fn holds_exactly_matches_an_item_spanning_the_whole_range(
+        #[case] start: u32,
+        #[case] end: u32,
+        #[case] expected: bool,
+    ) {
+        let source = parse(LEAD_COMMENT);
+        assert_eq!(
+            holds_exactly(&source.ast().body, range(start, end)),
+            expected
+        );
+    }
 
     #[rstest]
     #[case::ahead_of_the_first_item(0, None)]

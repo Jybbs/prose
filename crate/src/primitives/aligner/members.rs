@@ -12,7 +12,7 @@ use ruff_text_size::{TextLen, TextRange, TextSize};
 
 use super::Member;
 use crate::{
-    primitives::{inline::display_width, padding::delimiter_padding_width},
+    primitives::{inline::display_width, padding::Stranding},
     source::Source,
 };
 
@@ -21,8 +21,12 @@ use crate::{
 /// non-whitespace character to the last non-whitespace character
 /// before the gap, leaving the gap free for the rule to rewrite, the
 /// baseline is the indent ahead of that content, and the settled width
-/// reads past the delimiter padding `strip-stranded-padding` deletes.
-pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member {
+/// reads past the delimiter padding `stranding` deletes.
+pub(crate) fn line_anchored_member(
+    source: &Source,
+    anchor: TextSize,
+    stranding: Stranding,
+) -> Member {
     let gap = line_gap_before(source, anchor);
     let head = TextRange::new(source.text().line_start(anchor), gap.start());
     let text = source.slice(head);
@@ -32,6 +36,7 @@ pub(crate) fn line_anchored_member(source: &Source, anchor: TextSize) -> Member 
         TextRange::new(head.start() + indent, head.end()),
         anchor,
         0,
+        stranding,
     )
 }
 
@@ -43,9 +48,10 @@ pub(crate) fn line_anchored_member_at_kind(
     lhs_start: TextSize,
     search: TextRange,
     kind: TokenKind,
+    stranding: Stranding,
 ) -> Option<Member> {
     single_line_anchor(source, lhs_start, search, |t| t.kind() == kind)
-        .map(|anchor| line_anchored_member(source, anchor))
+        .map(|anchor| line_anchored_member(source, anchor, stranding))
 }
 
 /// Builds a `Member` anchored on the first `kind` token between
@@ -58,12 +64,14 @@ pub(crate) fn line_anchored_member_between(
     lhs: TextRange,
     rhs_start: TextSize,
     kind: TokenKind,
+    stranding: Stranding,
 ) -> Option<Member> {
     line_anchored_member_at_kind(
         source,
         lhs.start(),
         TextRange::new(lhs.end(), rhs_start),
         kind,
+        stranding,
     )
 }
 
@@ -102,19 +110,20 @@ pub(crate) fn range_anchored_member_single_line<F>(
     search: TextRange,
     predicate: F,
     extra_width: usize,
+    stranding: Stranding,
 ) -> Option<Member>
 where
     F: FnMut(&Token) -> bool,
 {
     single_line_anchor(source, target.start(), search, predicate)
-        .map(|anchor| anchored_member(source, target, anchor, extra_width))
+        .map(|anchor| anchored_member(source, target, anchor, extra_width, stranding))
 }
 
 /// Builds a `Member` for a row whose aligned token sits at `anchor`,
 /// measuring `span` plus `extra_width` as the left-hand side, its
 /// baseline the indent ahead of `span`, its gap `span`'s end through
 /// the anchor, and its settled width past the delimiter padding
-/// `strip-stranded-padding` deletes. `extra_width` is zero where the
+/// `stranding` deletes. `extra_width` is zero where the
 /// left-hand side is exactly `span` (`x = 1`) and the columns the
 /// side extends past `span` otherwise (the `+` of `x += 1`).
 fn anchored_member(
@@ -122,6 +131,7 @@ fn anchored_member(
     span: TextRange,
     anchor: TextSize,
     extra_width: usize,
+    stranding: Stranding,
 ) -> Member {
     let width = display_width(source.slice(span)) + extra_width;
     let line_start = source.text().line_start(anchor);
@@ -130,7 +140,7 @@ fn anchored_member(
         gap: TextRange::new(span.end(), anchor),
         line_start,
         op_width: 0,
-        settled_width: width - delimiter_padding_width(source, span),
+        settled_width: width - stranding.stripped_width(source, span),
         value_gap: None,
         width,
     }
@@ -154,8 +164,29 @@ where
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::testing::parse;
+    use crate::{rules::RuleId, testing::parse};
+
+    /// The `strip-stranded-padding` terms, running where `enabled` holds.
+    fn stranding(enabled: bool) -> Stranding {
+        Stranding::new(RuleId::from("strip-stranded-padding"), enabled)
+    }
+
+    #[rstest]
+    #[case::padding_stripped("( a ) = 1\n", true, 3)]
+    #[case::rule_off("( a ) = 1\n", false, 5)]
+    #[case::row_held("( a ) = 1  # prose: skip[strip-stranded-padding]\n", true, 5)]
+    fn line_anchored_member_settles_past_the_padding_the_rule_strips(
+        #[case] src: &str,
+        #[case] enabled: bool,
+        #[case] settled: usize,
+    ) {
+        let source = parse(src);
+        let member = line_anchored_member(&source, TextSize::new(6), stranding(enabled));
+        assert_eq!((member.width, member.settled_width), (5, settled));
+    }
 
     #[test]
     fn line_anchored_member_at_kind_admits_same_line_anchor() {
@@ -166,6 +197,7 @@ mod tests {
             TextSize::new(1),
             TextRange::new(TextSize::new(2), TextSize::new(4)),
             TokenKind::Colon,
+            stranding(true),
         );
         assert!(member.is_some());
     }
@@ -180,6 +212,7 @@ mod tests {
             TextSize::new(6),
             TextRange::new(TextSize::new(7), TextSize::new(14)),
             TokenKind::Colon,
+            stranding(true),
         );
         assert!(member.is_none());
     }
@@ -187,7 +220,7 @@ mod tests {
     #[test]
     fn line_anchored_member_collapses_gap_at_line_start() {
         let source = parse("xy\n");
-        let member = line_anchored_member(&source, TextSize::new(0));
+        let member = line_anchored_member(&source, TextSize::new(0), stranding(true));
 
         // The anchor sits at line start, with an empty gap and zero
         // width.

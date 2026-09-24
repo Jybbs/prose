@@ -23,6 +23,7 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
+        slots::item_holding,
     },
     source::Source,
 };
@@ -148,6 +149,12 @@ impl<'a> Settings<'a> {
         )?;
         out.push(')');
         Some(out)
+    }
+
+    /// True where `reflow-calls` is enabled, read off the rejoin terms
+    /// these settings carry.
+    pub(crate) fn closes(&self) -> bool {
+        self.rejoin.closes()
     }
 
     /// `expr`'s one-row form rebuilt at the canonical spacing, whatever
@@ -302,11 +309,7 @@ impl<'a> Settings<'a> {
 
     /// True where a forecast rewrite replaces the text at `offset`.
     pub(crate) fn rewritten(&self, offset: TextSize) -> bool {
-        let next = self
-            .rewrites
-            .partition_point(|rewrite| rewrite.start() <= offset);
-        next.checked_sub(1)
-            .is_some_and(|at| self.rewrites[at].range().contains(offset))
+        item_holding(self.rewrites, offset).is_some_and(|rewrite| rewrite.range().contains(offset))
     }
 
     /// The display width `text` settles to over `range`, the settled

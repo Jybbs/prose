@@ -176,6 +176,15 @@ impl Config {
             .get()
     }
 
+    /// The alignment settings `align-colons` runs its code contexts
+    /// under, resolving within the code width and stripping a lone
+    /// row's gap, read by the rule itself and by the forecast
+    /// `reflow-collections` seats an expanded dict's values against.
+    pub(crate) fn colon_settings(&self) -> aligner::Settings {
+        self.align_settings(self.rules.align_colons.max_shift, self.code_width())
+            .with_singleton_strip()
+    }
+
     pub(crate) fn docstring_width(&self) -> usize {
         self.docstring_line_length
             .expect("Config::default synthesizes Some(76)")
@@ -190,7 +199,12 @@ impl Config {
             .align_equals
             .enabled
             .then(|| self.equals_settings());
-        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
+        reserve::Reservations::new(
+            AlignEquals::SLUG,
+            settings,
+            self.one_row_settings(),
+            self.stranded_padding(),
+        )
     }
 
     /// The alignment settings `align-equals` runs under, resolving

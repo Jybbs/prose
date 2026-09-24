@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Key Spanning Rows Closes the Colon Run"
+
+description = '''
+The tuple key of the second `TABLE` entry is written across rows and runs past the budget once joined, so [[reflow-collections]] keeps it expanded. **A key spanning rows closes the `:` run**, so `"a"` above it stands alone and `"bb"` and `"c"` beneath it align on a column of their own.
+'''

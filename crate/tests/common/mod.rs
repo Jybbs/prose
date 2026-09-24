@@ -36,7 +36,8 @@ pub(crate) struct HarnessOptions {
 /// and `thematic` fixtures exercise the full default pipeline.
 /// `binding_analysis` and `identity` run an empty pipeline because their
 /// fixtures pin parser and no-op behavior. Every other directory matches
-/// a rule slug and runs that rule in isolation.
+/// a rule slug and runs that rule beside any the sidecar's
+/// `[harness] rules` lists, every other rule resolving to off.
 pub(crate) fn build_pipeline(
     directory: &str,
     config: &Config,
@@ -46,8 +47,12 @@ pub(crate) fn build_pipeline(
         "composition" => subset(config, &harness.rules),
         "notebook" | "suppression" | "thematic" => Pipeline::with_defaults(config),
         "binding_analysis" | "identity" => Pipeline::empty(),
-        _ => Pipeline::for_rule(directory, config)
-            .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
+        _ => {
+            let own: RuleId = directory.replace('_', "-").parse().unwrap_or_else(|_| {
+                panic!("no rule registered for fixture directory `{directory}`")
+            });
+            subset(config, &[&[own], harness.rules.as_slice()].concat())
+        }
     }
 }
 

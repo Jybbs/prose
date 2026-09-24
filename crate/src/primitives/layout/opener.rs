@@ -1,0 +1,116 @@
+//! The bracket a layout rule breaks a value open at once its row
+//! crosses the cap, and the width of the opening row that expansion
+//! leaves.
+
+use ruff_python_ast::Expr;
+use ruff_text_size::{Ranged, TextRange, TextSize};
+
+use crate::{
+    primitives::{one_row, slots::holds_exactly},
+    source::Source,
+};
+
+/// Returns the display width from `start` through the bracket a layout
+/// rule breaks `expr` open at, meaning the `(` of a call
+/// [`Source::explodable_arguments`] lists where
+/// [`one_row::Settings::closes`] holds, or the opener of a literal
+/// [`Source::expandable_literals`] lists, measured through `one_row`'s
+/// forecast rewrites. `None` for any other expression, for a bracket a
+/// forecast rewrite replaces, and for a bracket on a later row than
+/// `start`.
+pub(crate) fn opener_width(
+    source: &Source,
+    one_row: &one_row::Settings,
+    expr: &Expr,
+    start: TextSize,
+) -> Option<usize> {
+    let opener = match expr {
+        Expr::Call(call) => {
+            let arguments = call.arguments.range();
+            (one_row.closes() && holds_exactly(source.explodable_arguments(), arguments))
+                .then_some(arguments.start())?
+        }
+        _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
+    };
+    let through = TextRange::new(start, opener + TextSize::of('('));
+    (!one_row.rewritten(opener) && source.same_line(start, through.end()))
+        .then(|| one_row.form_width(source, source.slice(through), through))
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
+
+    use super::*;
+    use crate::{
+        config::Config,
+        testing::{first_value, parse},
+    };
+
+    #[rstest]
+    #[case::call_arguments("x = frobnicate(a, b)\n", Some(11))]
+    #[case::chained_call_takes_its_own_list("x = a.b(c).d(e)\n", Some(9))]
+    #[case::list_literal("x = [a, b]\n", Some(1))]
+    #[case::one_entry_dict("x = {a: b}\n", Some(1))]
+    #[case::call_without_arguments("x = frobnicate()\n", None)]
+    #[case::single_element_list("x = [a]\n", None)]
+    #[case::commented_arguments("x = f(\n    a,  # note\n    b,\n)\n", None)]
+    #[case::opener_on_a_later_row("x = (\n    f\n)(a)\n", None)]
+    #[case::name("x = value\n", None)]
+    fn opener_width_reaches_the_bracket_a_layout_rule_opens(
+        #[case] src: &str,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(src);
+        let value = first_value(&source);
+        let one_row = Config::default().one_row_settings();
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case::call_arguments("x = frobnicate(a, b)\n", None)]
+    #[case::list_literal("x = [a, b]\n", Some(1))]
+    fn opener_width_leaves_calls_out_where_none_explode(
+        #[case] src: &str,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(src);
+        let value = first_value(&source);
+        let mut config = Config::default();
+        config.rules.reflow_calls.enabled = false;
+        let one_row = config.one_row_settings();
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case::read_as_written(false, Some(15))]
+    #[case::replaced_by_its_fstring(true, None)]
+    fn opener_width_leaves_out_a_bracket_a_forecast_rewrite_replaces(
+        #[case] forecast: bool,
+        #[case] expected: Option<usize>,
+    ) {
+        let config = Config {
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("x = \"{} {}\".format(a, b)\n");
+        let value = first_value(&source);
+        let rewrites = if forecast {
+            config.fstrings().forecast(&source)
+        } else {
+            Vec::new()
+        };
+        let one_row = config.one_row_settings().forecasting(&rewrites);
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
+    }
+}

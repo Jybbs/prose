@@ -1,7 +1,7 @@
 //! Token-kind predicates over the bracket delimiters and the
 //! interpolated-string openers, the characters those delimiters are
-//! written with, and the reading of a `[` against the token ahead of
-//! it.
+//! written with, the nearest code token before an offset, and the
+//! reading of a `[` against that token.
 
 use ruff_python_ast::token::{Token, TokenKind, Tokens};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -15,6 +15,15 @@ pub(crate) const CLOSERS: [char; 3] = [')', ']', '}'];
 /// The characters a bracket opens with, the char-level counterpart to
 /// [`is_opener`].
 pub(crate) const OPENERS: [char; 3] = ['(', '[', '{'];
+
+/// Returns the nearest token before `offset` that is not a comment or a
+/// non-logical newline, `None` where no such token precedes it.
+pub(crate) fn code_token_before(tokens: &Tokens, offset: TextSize) -> Option<&Token> {
+    tokens
+        .before(offset)
+        .iter()
+        .rfind(|token| !token.kind().is_trivia())
+}
 
 /// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
 pub(crate) fn is_closer(kind: TokenKind) -> bool {
@@ -68,18 +77,14 @@ pub(crate) fn tokens_within(source: &Source, range: TextRange) -> impl Iterator<
 /// as a name subscripts, whereas an operator, a keyword, or a line start
 /// opens a list.
 pub(crate) fn opens_subscript(tokens: &Tokens, offset: TextSize) -> bool {
-    tokens
-        .before(offset)
-        .iter()
-        .rfind(|token| !token.kind().is_trivia())
-        .is_some_and(|prev| {
-            let kind = prev.kind();
-            is_closer(kind)
-                || !(kind.is_operator()
-                    || kind.is_any_newline()
-                    || matches!(kind, TokenKind::Indent | TokenKind::Dedent)
-                    || (kind.is_non_soft_keyword() && !kind.is_singleton()))
-        })
+    code_token_before(tokens, offset).is_some_and(|prev| {
+        let kind = prev.kind();
+        is_closer(kind)
+            || !(kind.is_operator()
+                || kind.is_any_newline()
+                || matches!(kind, TokenKind::Indent | TokenKind::Dedent)
+                || (kind.is_non_soft_keyword() && !kind.is_singleton()))
+    })
 }
 
 #[cfg(test)]
@@ -88,6 +93,22 @@ mod tests {
 
     use super::*;
     use crate::testing::{at, parse};
+
+    #[rstest]
+    #[case::past_a_comment_and_a_line_break("x = (  # c\n    y)\n", "y", Some(TokenKind::Lpar))]
+    #[case::an_unpacking_operator("f(**kw)\n", "kw", Some(TokenKind::DoubleStar))]
+    #[case::at_the_module_start("x = 1\n", "x", None)]
+    fn code_token_before_skips_trivia(
+        #[case] src: &str,
+        #[case] needle: &str,
+        #[case] expected: Option<TokenKind>,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            code_token_before(source.tokens(), at(src, needle).start()).map(Token::kind),
+            expected
+        );
+    }
 
     #[rstest]
     #[case(TokenKind::Rpar, true)]

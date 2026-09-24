@@ -5,5 +5,5 @@ input_file: crate/tests/fixtures/composition/over_budget_colon_row_partitions/in
 ---
 x = {
     "aaaaaaaaaaaaa": 0,
-    "b": {"application/json": {"schema": {}}, "k": "kkkkkkkkkkkkkkkkkkkkkkkkk"}
+    "b": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
 }

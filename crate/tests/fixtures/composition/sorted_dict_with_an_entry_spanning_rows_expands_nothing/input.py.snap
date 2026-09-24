@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/sorted_dict_with_an_entry_spanning_rows_expands_nothing/input.py
+---
+MUTATIONS = {
+    "cache": [
+        delete, purge
+    ],
+    "pr": {"close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"},
+    "variable": {"delete", "set"}
+}

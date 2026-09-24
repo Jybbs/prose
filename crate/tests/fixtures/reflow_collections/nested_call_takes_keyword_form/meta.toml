@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Inside an Expanded List Explodes Into Keyword Form"
 
 description = '''
-`pairs` lists `None` after a call to `build`, a function the module defines above it, and the call runs past the default budget even once the list expands. **The list expands one entry per row and the call explodes one argument per row, each positional named after its parameter in `build`**, because `reflow-collections` reshapes a call inside an entry it moves under the same triggers and keyword form `reflow-calls` applies. The rewrite changes the tree, which is why `reflow-collections` declares `PRESERVES_TREE` as `false`.
+`pairs` lists `None` after a call to `build`, a function the module defines above it, and the call runs past the default budget even once the list expands. **The list expands one entry per row and the call explodes one argument per row, each positional named after its parameter in `build`**, because `reflow-collections` reshapes a call inside an entry it moves under the same triggers and keyword form `reflow-calls` applies, which it borrows only while `reflow-calls` runs. The rewrite changes the tree, which is why `reflow-collections` declares `PRESERVES_TREE` as `false`.
 '''

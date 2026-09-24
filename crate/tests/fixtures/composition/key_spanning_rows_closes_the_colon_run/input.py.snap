@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/key_spanning_rows_closes_the_colon_run/input.py
+---
+TABLE = {
+    "a": 1,
+    (
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    ): 2,
+    "bb" : 3,
+    "c"  : 4
+}

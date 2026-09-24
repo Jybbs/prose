@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Entry the Sort Moves Up Is Measured With the Comma It Gains"
+
+description = '''
+`"pr"` is the last entry as written, so it carries no comma, and its row lands exactly on the budget at the column `"variable"` sets. [[alphabetize-siblings]] moves it ahead of `"variable"`, where it gains a comma that carries the row one column past the budget. **[[reflow-collections]] reads the order and the comma the sort leaves, so it expands the `"pr"` set** in the same pass rather than leaving [[align-colons]] a row it cannot pad.
+'''

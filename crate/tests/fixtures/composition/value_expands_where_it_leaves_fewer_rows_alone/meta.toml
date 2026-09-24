@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Expands Where It Leaves Fewer Rows Standing Alone"
+
+description = '''
+Padded to the column `"bbbbbbbb"` sets, the `"a"` row would cross the budget, so with every value on one row `"a"` stands unpadded above a column `"bbbbbbbb"`, `"cccccccccccccccccccc"`, and `"ddddddddddddd"` share. Expanding the list still leaves the dict in two columns, because `"cccccccccccccccccccc"` is 19 columns wider than `"a"`, past the `max-shift` limit of 16. **No row stands alone once the list expands**, so [[reflow-collections]] expands it, `"a"` aligns with `"bbbbbbbb"`, and the two wider keys align beneath them.
+'''

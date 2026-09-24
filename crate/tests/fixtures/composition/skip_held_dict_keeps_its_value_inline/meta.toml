@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skip on `align-colons` Keeps a Dict's Values From Expanding"
+
+description = '''
+The `# prose: skip[align-colons]` comment holds `MUTATIONS` from [[align-colons]], so no `:` column forms for [[reflow-collections]] to measure a value against. **The `"pr"` set stays on one row** once the dict expands, because it fits the budget beside its own key, and every `:` stays flush against its key.
+'''

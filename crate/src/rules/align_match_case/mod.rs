@@ -13,7 +13,7 @@ use ruff_python_ast::statement_visitor::StatementVisitor;
 
 use crate::{
     config::Config,
-    primitives::{INDENT_STEP, aligner, colon_targets},
+    primitives::{INDENT_STEP, aligner, colon_targets, padding::Stranding},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -26,6 +26,7 @@ use walk::Visitor;
 pub(crate) struct AlignMatchCase {
     code_line_length: usize,
     settings: aligner::Settings,
+    stranding: Stranding,
 }
 
 impl AlignMatchCase {
@@ -40,6 +41,7 @@ impl AlignMatchCase {
             code_line_length: config.code_width(),
             settings: aligner::Settings::aligned(config.rules.align_match_case.max_shift)
                 .with_singleton_strip(),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -48,6 +50,7 @@ impl Rule for AlignMatchCase {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
             code_line_length: self.code_line_length,
+            stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
