@@ -2,7 +2,7 @@
 #MISE description="Render a workflow step summary and exit with its gate verdict"
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["jinja2==3.1.6", "pyyaml==6.0.3"]
+# dependencies = ["jinja2==3.1.6", "markupsafe==3.0.3", "pyyaml==6.0.3"]
 # ///
 """
 Render a Prose step summary and gate the workflow's exit code.

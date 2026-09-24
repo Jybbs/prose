@@ -1,5 +1,5 @@
-//! The per-rule config sub-tables, the rule-toggle macro, and the
-//! shared `MaxShift` and docstring-policy enums.
+//! The per-rule config sub-tables, the alignment-config and rule-toggle
+//! macros, and the shared `MaxShift` and docstring-policy enums.
 
 use std::{borrow::Cow, fmt, num::NonZeroUsize, str::FromStr};
 
@@ -12,58 +12,60 @@ use super::{
     json_schema::{cap_or_false_schema, optional_cap_schema},
 };
 
-/// Configuration for the `align-colons` rule.
-#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct AlignColonsConfig {
-    /// Pads the space before the `:` of each docstring `name: description`
-    /// entry so a run shares one column, and the space before each
-    /// parenthesized type so the types share a second column. `false`
-    /// removes that padding, including any the source already carries, and
-    /// leaves each `(` one space past its name and each `:` flush against the
-    /// name or the closing paren, while dicts, annotations, and parameters
-    /// still align.
-    pub align_docstring_entries: bool,
-    pub enabled: bool,
-    /// How far apart the widest and narrowest rows of a run may be for the
-    /// run to still align on one column. A positive `N` caps that gap, `0`
-    /// forbids any padding so every row sits flush, and `false` removes the
-    /// cap so a run of any width aligns on one column. A row marked
-    /// `# prose: skip` stays out of its group.
-    pub max_shift: MaxShift,
+/// Declares an alignment rule's sub-table with the `enabled` and
+/// `max-shift` facets every alignment rule reads. Any facets listed in
+/// the braces come first, and `Default` sets each one to its `=` value.
+macro_rules! alignment_config {
+    (
+        $(#[$config_attr:meta])*
+        $config:ident {
+            $($(#[$facet_attr:meta])* $facet:ident: $facet_ty:ty = $default:expr,)*
+        }
+    ) => {
+        $(#[$config_attr])*
+        #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
+        #[serde(default, rename_all = "kebab-case")]
+        pub struct $config {
+            $($(#[$facet_attr])* pub $facet: $facet_ty,)*
+            pub enabled: bool,
+            /// How far apart the widest and narrowest rows of a run may be for the
+            /// run to still align on one column. A positive `N` caps that gap, `0`
+            /// forbids any padding so every row sits flush, and `false` removes the
+            /// cap so a run of any width aligns on one column. A row marked
+            /// `# prose: skip` stays out of its group.
+            pub max_shift: MaxShift,
+        }
+
+        impl Default for $config {
+            fn default() -> Self {
+                Self {
+                    $($facet: $default,)*
+                    enabled: true,
+                    max_shift: MaxShift::default(),
+                }
+            }
+        }
+    };
 }
 
-impl Default for AlignColonsConfig {
-    fn default() -> Self {
-        Self {
-            align_docstring_entries: true,
-            enabled: true,
-            max_shift: MaxShift::default(),
-        }
+alignment_config! {
+    /// Configuration for the `align-colons` rule.
+    AlignColonsConfig {
+        /// Pads the space before the `:` of each docstring `name: description`
+        /// entry so a run shares one column, and the space before each
+        /// parenthesized type so the types share a second column. `false`
+        /// removes that padding, including any the source already carries, and
+        /// leaves each `(` one space past its name and each `:` flush against the
+        /// name or the closing paren, while dicts, annotations, and parameters
+        /// still align.
+        align_docstring_entries: bool = true,
     }
 }
 
-/// Configuration for the alignment rules whose only facets are
-/// `enabled` and `max-shift`.
-#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
-#[serde(default, rename_all = "kebab-case")]
-pub struct AlignmentConfig {
-    pub enabled: bool,
-    /// How far apart the widest and narrowest rows of a run may be for the
-    /// run to still align on one column. A positive `N` caps that gap, `0`
-    /// forbids any padding so every row sits flush, and `false` removes the
-    /// cap so a run of any width aligns on one column. A row marked
-    /// `# prose: skip` stays out of its group.
-    pub max_shift: MaxShift,
-}
-
-impl Default for AlignmentConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            max_shift: MaxShift::default(),
-        }
-    }
+alignment_config! {
+    /// Configuration for the alignment rules whose only facets are
+    /// `enabled` and `max-shift`.
+    AlignmentConfig {}
 }
 
 /// A glob a lint matches names against as a whole, where the empty

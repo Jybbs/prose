@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/py314_target_keeps_directive_for_class_below_a_decorated_reader/input.py
+---
+from __future__ import annotations
+
+import inspect
+
+
+def register(handler):
+    inspect.signature(handler)
+    return handler
+
+
+@register
+def visit(node: Node) -> Node:
+    return node
+
+
+class Node:
+    pass

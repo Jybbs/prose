@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "subsets"
-#MISE description = "Probe every rule alone and every ordered rule pair for one-pass settling over a corpus"
+#MISE description = "Probe every rule alone and every ordered rule pair over a corpus for one-pass settling and for a rewrite that changes a tree its rule declares it keeps"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 

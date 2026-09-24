@@ -14,19 +14,13 @@ use std::{
 
 use crate::{
     common::setting,
+    corpus::VENDORED,
     outcome::{Kind, Outcome},
     stage::Stage,
 };
 
 /// How often the harness asks whether a run has finished.
 const POLL: Duration = Duration::from_millis(20);
-
-/// The interpreter a sweep runs absent [`PYTHON_VAR`].
-const PYTHON: &str = "python3";
-
-/// The environment variable naming the interpreter whose standard library
-/// the sweep runs.
-pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
 
 /// How many seconds one module may run for absent [`TIMEOUT_VAR`]. Every
 /// module of the pinned interpreter's library that imports at all lands
@@ -48,11 +42,11 @@ pub(crate) struct Runner {
 }
 
 impl Runner {
-    /// Builds the runner, copying the corpus into a fresh stage and
-    /// compiling it ahead of the runs that read it.
-    pub(crate) fn new(corpus: &Path) -> Self {
+    /// Builds the runner over `python`, copying the corpus into a fresh
+    /// stage and compiling it ahead of the runs that read it.
+    pub(crate) fn new(corpus: &Path, python: String) -> Self {
         let runner = Self {
-            python: interpreter(),
+            python,
             seconds: setting(TIMEOUT_VAR).map_or(TIMEOUT, |held| {
                 held.parse()
                     .unwrap_or_else(|_| panic!("`{TIMEOUT_VAR}` is a number of seconds"))
@@ -80,9 +74,12 @@ impl Runner {
     }
 
     /// Runs one module of `trees` in a fresh interpreter and returns what it
-    /// left behind. The child gets a scratch `HOME` and `TMPDIR` and leads
-    /// its own process group, and the harness holds the deadline, killing
-    /// the child alone once it passes.
+    /// left behind. Each tree goes on the search path beside its [`VENDORED`]
+    /// directory, and the interpreter skips its `site` module, so every module
+    /// a run imports comes from a tree or from the standard library.
+    /// The child gets a scratch `HOME` and `TMPDIR` and leads its own
+    /// process group, and the harness holds the deadline, killing the child
+    /// alone once it passes.
     pub(crate) fn run(&self, module: &str, trees: &[&Path]) -> Outcome {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let at = NEXT.fetch_add(1, Ordering::Relaxed);
@@ -97,13 +94,18 @@ impl Runner {
         let mut command = Command::new(&self.python);
         command
             .arg("-P")
+            .arg("-S")
             .arg("-s")
             .arg("-B")
             .arg(self.stage.probe())
             .arg(&record)
             .arg(module_name(module))
             .arg(located)
-            .args(trees)
+            .args(
+                trees
+                    .iter()
+                    .flat_map(|tree| [tree.to_path_buf(), tree.join(VENDORED)]),
+            )
             .current_dir(&self.stage.tmp)
             .env_clear()
             .env("HOME", &self.stage.home)
@@ -159,14 +161,14 @@ pub(crate) fn ending(status: ExitStatus, printed: &str) -> Outcome {
     Outcome::of(Kind::Raised, format!("ends on {status}{tail}"))
 }
 
-/// The interpreter every module runs under, [`PYTHON_VAR`] naming it and
-/// [`PYTHON`] standing in where it is unset.
-pub(crate) fn interpreter() -> String {
-    setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned())
-}
-
-/// The dotted name an import binds one module to.
+/// The dotted name an import binds one module to, a module under
+/// [`VENDORED`] taking its dotted name from its path below that directory
+/// rather than below the tree.
 pub(crate) fn module_name(module: &str) -> String {
+    let module = module
+        .strip_prefix(VENDORED)
+        .and_then(|rest| rest.strip_prefix('/'))
+        .unwrap_or(module);
     let stem = module.strip_suffix(".py").unwrap_or(module);
     stem.strip_suffix("/__init__")
         .unwrap_or(stem)

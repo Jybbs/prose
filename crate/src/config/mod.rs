@@ -28,7 +28,7 @@ use crate::{
     primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{
         align_comments::AlignComments, align_equals::AlignEquals, alphabetize_siblings::Reorders,
-        normalize_comment_spacing::NormalizeCommentSpacing,
+        normalize_comment_spacing::NormalizeCommentSpacing, prefer_fstring::PreferFstring,
         strip_stranded_padding::StripStrandedPadding,
     },
 };
@@ -208,6 +208,13 @@ impl Config {
     /// none where `reflow-calls` is off.
     pub(crate) fn fracture_settings(&self) -> fracture::Settings<'static> {
         fracture::Settings::from(&self.rules.reflow_calls)
+    }
+
+    /// The f-string rewrites a measuring rule predicts, so a `%` or
+    /// `str.format()` interpolation reads at the width `prefer-fstring`
+    /// leaves it at, predicting none where that rule is off.
+    pub(crate) fn fstrings(&self) -> PreferFstring {
+        PreferFstring::from_config(self)
     }
 
     pub(crate) fn group_imports_enabled(&self) -> bool {

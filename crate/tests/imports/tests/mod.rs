@@ -18,16 +18,23 @@ mod compare;
 mod corpus;
 mod execute;
 mod fixes;
+mod format;
+mod gate;
 mod outcome;
-mod ratchet;
+mod reach;
 mod records;
+mod removed;
 mod report;
+mod stage;
 mod sweep;
 
 /// The uncomparable entry for the module at `relative`, whose run raised
 /// `raised`.
 fn blocked(relative: &str, raised: &str) -> (String, Blocked) {
-    (relative.to_owned(), Blocked::of(relative, raised, "raises"))
+    (
+        relative.to_owned(),
+        Blocked::of(relative, &raising(raised, None)),
+    )
 }
 
 /// An outcome that ran cleanly, binding `names` and the constants `spelt`.
@@ -47,20 +54,18 @@ fn bound(names: &[&str], spelt: &[(&str, &str)]) -> Outcome {
     }
 }
 
-/// A break at `frame` for `module`, diverging for `reason`.
+/// A break at `frame` for `module`, whose formatted run raised for `reason`.
 fn broken(module: &str, frame: &str, reason: &str) -> Break {
     Break {
         attribution: String::new(),
-        formatted: Outcome::default(),
+        formatted: Outcome::of(Kind::Raised, reason),
         frame: Frame {
             file: frame.to_owned(),
             row: None,
         },
         hunk: Vec::new(),
-        kind: "unbound",
         module: module.to_owned(),
         name: None,
-        names: Vec::new(),
         original: Outcome::default(),
         reason: reason.to_owned(),
     }
@@ -76,11 +81,25 @@ fn hides(rendered: &str, unwanted: &str) {
     );
 }
 
-/// A break at `frame` for `module`, losing `name` and nothing else.
+/// A break at `frame` for `module`, whose formatted run bound a namespace
+/// lacking `name` and nothing else.
 fn losing(module: &str, frame: &str, name: &str) -> Break {
     Break {
-        names: vec![name.to_owned()],
+        formatted: bound(&[], &[]),
+        name: Some(name.to_owned()),
         ..broken(module, frame, &format!("leaves `{name}` unbound"))
+    }
+}
+
+/// A run that raised `raised`, its failed import naming `importing` where it
+/// names one.
+fn raising(raised: &str, importing: Option<&str>) -> Outcome {
+    Outcome {
+        error: format!("raises {raised}: no thing"),
+        importing: importing.map(str::to_owned),
+        kind: Kind::Raised,
+        raised: raised.to_owned(),
+        ..Outcome::default()
     }
 }
 

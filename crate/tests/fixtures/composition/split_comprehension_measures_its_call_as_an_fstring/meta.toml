@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Split Comprehension Measures Its `str.format()` Call as the f-string It Becomes"
+
+description = '''
+At an 80-column budget, `args`'s comprehension written across two rows overflows one row while its element calls `"{}={!r}".format(name, value)`, whereas the f-string fits. **`reflow-collections` measures the call at the width of `f"{name}={value!r}"` and rejoins the comprehension in the same pass that converts it.**
+'''

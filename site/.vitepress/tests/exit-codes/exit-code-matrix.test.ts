@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ExitCodeMatrix       from '../../theme/components/exit-codes/ExitCodeMatrix.vue'
-import { expectAccessible } from '../axe'
+import ExitCodeMatrix        from '../../theme/components/exit-codes/ExitCodeMatrix.vue'
+import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/exit-codes/exit-codes.data', () => ({
   data: [
@@ -33,7 +33,5 @@ describe('ExitCodeMatrix', () => {
     expect(w.get('.exit-code-entry-label').text()).toBe('Parse failure')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountMatrix().html())
-  })
+  rendersAccessibly(() => mountMatrix().html())
 })

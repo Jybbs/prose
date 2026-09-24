@@ -35,6 +35,8 @@ impl AlignColons {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let align_colons = &config.rules.align_colons;
         let docstring_shift = if align_colons.align_docstring_entries {

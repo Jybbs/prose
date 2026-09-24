@@ -3,4 +3,4 @@
 #MISE description = "Build the `maturin` wheel into the active virtualenv"
 #MISE dir         = "crate"
 
-maturin develop
+maturin develop --locked

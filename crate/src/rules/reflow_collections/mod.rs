@@ -9,8 +9,8 @@
 //! it lands on, and `keep_multiline_literals` re-expands an authored
 //! flush column rather than joining it. Every measure reads the value
 //! at the column `align_equals` shifts it to, the width the padding
-//! rule settles it at, and the separator `alphabetize-siblings` leaves
-//! closing its row.
+//! rule and `prefer-fstring` settle it at, and the separator
+//! `alphabetize-siblings` leaves closing its row.
 
 use std::borrow::Cow;
 
@@ -26,13 +26,12 @@ use crate::{
         inline::{end_column, indent_width, last_line, spans_rows},
         layout::{is_collapsible, is_layoutable, requires_expand},
         one_row,
-        padding::Stranding,
+        padding::{self, Stranding},
         reserve,
         travel::Landing,
         walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
-    rules::alphabetize_siblings::Reorders,
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring},
     source::Source,
 };
 
@@ -47,6 +46,7 @@ const CANONICAL_SEPARATOR: usize = 2;
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
     explode: bool,
+    fstrings: PreferFstring,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
@@ -60,11 +60,14 @@ impl ReflowCollections {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
             explode: rules.explode,
+            fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
@@ -91,14 +94,16 @@ impl Rule for ReflowCollections {
         });
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
-        let padding = source.stranded_padding(self.stranding);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
         let mut layouter = Layouter {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             explode: self.explode,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
-            one_row: self.one_row.against(&targets),
+            one_row: self.one_row.against(&targets).forecasting(&rewrites),
             padding: &padding,
             reorders: self.reorders,
             reservations: &reservations,
