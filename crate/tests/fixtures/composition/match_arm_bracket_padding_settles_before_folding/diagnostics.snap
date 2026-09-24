@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/match_arm_bracket_padding_settles_before_folding/input.py
+---
+align-match-case@44..57
+strip-stranded-padding@122..123
+strip-stranded-padding@75..76

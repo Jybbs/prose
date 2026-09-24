@@ -179,6 +179,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "strip-trailing-commas",
       "reflow-parentheses"
     ],
     "imperative": "align consecutive `case` colons",

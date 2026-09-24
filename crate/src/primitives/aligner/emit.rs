@@ -36,6 +36,21 @@ pub(crate) struct Extent {
     pub(crate) inline: usize,
 }
 
+/// The columns a trailing comment on `anchor`'s line stands past the
+/// width `settling`'s comment rules settle it to, zero where the line
+/// has no trailing comment, per [`Settling::slack`] with `own` left out.
+pub(crate) fn comment_slack(
+    source: &Source,
+    anchor: TextSize,
+    own: TextRange,
+    settling: Settling,
+) -> isize {
+    trailing_comment(source, anchor).map_or(0, |comment| {
+        let gap = line_gap_before(source, comment.start());
+        settling.slack(source, comment, gap, own)
+    })
+}
+
 /// Aligns `members` by splitting the source-ordered run into the
 /// contiguous groups `reading_order_groups` yields and emitting each at
 /// its widest member. A singleton group collapses its gap to the
@@ -79,8 +94,9 @@ pub(crate) fn forecast_columns(
 /// `emit_group`'s column math, each line read with `widenings` and at
 /// the width `joined` names where a later rule writes the row. A
 /// candidate group reports its shared column, any other group the
-/// settings' buffer past each member's width, and the value sits
-/// [`VALUE_OFFSET`](super::VALUE_OFFSET) columns past the token.
+/// padding a group of one takes past each member's width, and the
+/// value sits [`VALUE_OFFSET`](super::VALUE_OFFSET) columns past the
+/// token.
 pub(crate) fn operator_columns(
     source: &Source,
     members: &[Member],
@@ -109,7 +125,12 @@ pub(crate) fn settled_tail(
 ) -> usize {
     let tail = display_width(source.slice(source.row_tail(code_end)));
     settings.cap.map_or(tail, |cap| {
-        tail.saturating_add_signed(-comment_slack(source, member, cap.settling))
+        tail.saturating_add_signed(-comment_slack(
+            source,
+            member.line_start,
+            member.gap,
+            cap.settling,
+        ))
     })
 }
 
@@ -151,8 +172,8 @@ pub(crate) fn written_groups(
 }
 
 /// The per-member columns of a run, the group math where `candidate`
-/// holds and the settings' buffer past each member's own width
-/// otherwise.
+/// holds and otherwise each member's own width plus the padding a group
+/// of one takes, which a singleton strip leaves at zero.
 fn columns(
     source: &Source,
     members: &[Member],
@@ -164,22 +185,11 @@ fn columns(
     if !candidate {
         return members
             .iter()
-            .map(|m| m.baseline + m.settled_width + settings.buffer)
+            .map(|m| m.baseline + m.settled_width + settings.suffix_len(1))
             .collect();
     }
     let extents = emitted_extents(source, members, settings, widenings, joined);
     group_columns(members, &extents, settings)
-}
-
-/// The columns a trailing comment on `member`'s line stands past the
-/// width `settling`'s comment rules settle it to, zero where the line
-/// has no trailing comment, per [`Settling::slack`] with the gap
-/// `member` rewrites itself left out.
-fn comment_slack(source: &Source, member: Member, settling: Settling) -> isize {
-    trailing_comment(source, member.line_start).map_or(0, |comment| {
-        let gap = line_gap_before(source, comment.start());
-        settling.slack(source, comment, gap, member.gap)
-    })
 }
 
 /// The width of `member`'s line as the aligner emits it: less the
@@ -196,8 +206,10 @@ fn emitted_base_width(source: &Source, member: Member, cap: Cap, joined: Option<
         Some(width) => (width, TextRange::new(line.start(), member.gap.end())),
         None => (display_width(source.slice(line)), line),
     };
-    let slack = joined.map_or_else(|| comment_slack(source, member, cap.settling), |_| 0)
-        + padding_slack(source, member, padded, cap.stranding);
+    let slack = joined.map_or_else(
+        || comment_slack(source, member.line_start, member.gap, cap.settling),
+        |_| 0,
+    ) + padding_slack(source, member, padded, cap.stranding);
     let base = (written - display_width(source.slice(member.gap))).saturating_add_signed(-slack);
     member
         .rewritten_value_gap(source)
@@ -798,6 +810,24 @@ mod tests {
                 &[],
             ),
             vec![4],
+        );
+    }
+
+    #[test]
+    fn operator_columns_keeps_a_lone_member_flush_under_the_singleton_strip() {
+        let (source, members) = rows(&[(3, 5)]);
+
+        // The strip writes a group of one flush, so the operator lands
+        // directly past the width-3 name, where the emitter puts it.
+        assert_eq!(
+            operator_columns(
+                &source,
+                &members,
+                Settings::aligned(cap(8)).with_singleton_strip(),
+                &Widenings::default(),
+                &[],
+            ),
+            vec![3],
         );
     }
 

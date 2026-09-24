@@ -133,24 +133,6 @@ impl Config {
         Ok((config, notices))
     }
 
-    /// Returns which of `align-comments` and `normalize-comment-spacing`
-    /// this config runs, each by slug, so a rule measuring a line can allow
-    /// for the gap and opener they give a trailing comment.
-    fn comment_settling(&self) -> comments::Settling {
-        comments::Settling {
-            gap: self
-                .rules
-                .align_comments
-                .enabled
-                .then_some(AlignComments::SLUG),
-            opener: self
-                .rules
-                .normalize_comment_spacing
-                .enabled
-                .then_some(NormalizeCommentSpacing::SLUG),
-        }
-    }
-
     /// Builds a rule's alignment settings from its `max_shift`, with
     /// `width` as the line limit. Each line is measured as it will read
     /// after this config's padding and comment rules run.
@@ -183,6 +165,24 @@ impl Config {
     pub(crate) fn colon_settings(&self) -> aligner::Settings {
         self.align_settings(self.rules.align_colons.max_shift, self.code_width())
             .with_singleton_strip()
+    }
+
+    /// Returns which of `align-comments` and `normalize-comment-spacing`
+    /// this config runs, each by slug, so a rule measuring a line can allow
+    /// for the gap and opener they give a trailing comment.
+    pub(crate) fn comment_settling(&self) -> comments::Settling {
+        comments::Settling {
+            gap: self
+                .rules
+                .align_comments
+                .enabled
+                .then_some(AlignComments::SLUG),
+            opener: self
+                .rules
+                .normalize_comment_spacing
+                .enabled
+                .then_some(NormalizeCommentSpacing::SLUG),
+        }
     }
 
     pub(crate) fn docstring_width(&self) -> usize {

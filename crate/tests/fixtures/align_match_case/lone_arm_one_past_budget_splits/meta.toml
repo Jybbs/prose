@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Arm One Column Past the Budget Splits"
+
+description = '''
+`case Point()` is the only arm in its `match`, folded with its `return` onto a line that reaches 89 columns with its `:` flush against the pattern, one past the 88-column `code-line-length`. **The body moves onto its own line beneath the `case`**, the one form of the arm that fits.
+'''

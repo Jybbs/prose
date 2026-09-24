@@ -24,8 +24,8 @@ mod walker;
 mod widen;
 
 pub(crate) use emit::{
-    Extent, forecast_columns, operator_columns, settled_tail, space_padding_edit, written_columns,
-    written_groups,
+    Extent, comment_slack, forecast_columns, operator_columns, settled_tail, space_padding_edit,
+    written_columns, written_groups,
 };
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,

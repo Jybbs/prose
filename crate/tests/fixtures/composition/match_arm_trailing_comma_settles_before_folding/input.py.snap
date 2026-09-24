@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/match_arm_trailing_comma_settles_before_folding/input.py
+---
+def f(p):
+    match p:
+        case Point(): return frobnicate(alpha_argument, beta_argument, gamma_xxxxxxxxxx)

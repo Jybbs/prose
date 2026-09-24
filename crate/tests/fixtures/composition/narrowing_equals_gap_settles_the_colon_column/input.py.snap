@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/narrowing_equals_gap_settles_the_colon_column/input.py
+---
+xyz : int = 1
+b   : int = frobnicate(alpha_argument, beta_argument, gxxxxxxxxxxxxxxxxxxxxxxxxxx)

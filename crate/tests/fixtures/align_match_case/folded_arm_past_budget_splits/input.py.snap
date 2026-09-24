@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/folded_arm_past_budget_splits/input.py
+---
+def pending(args):
+    match args:
+        case ("gh", group, verb, *_): return verb in {"close", "merge"}
+        case ("mise", *_):
+            return pending_labels + pending_rulesets + pending_flows
+    return 0

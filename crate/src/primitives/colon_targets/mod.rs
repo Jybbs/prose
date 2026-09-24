@@ -24,7 +24,7 @@ use columns::docstring_runs_within;
 use contexts::{
     annotated_assignment_groups, dict_member_groups, match_case_members, parameter_groups,
 };
-pub(crate) use contexts::{dict_entry_slot, match_case, match_case_pre_colon_end};
+pub(crate) use contexts::{dict_entry_slot, match_case};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for annotated assignments, dict entries, and parameters, with

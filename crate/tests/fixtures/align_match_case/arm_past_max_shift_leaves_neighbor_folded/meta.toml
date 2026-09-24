@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Patterns Further Apart Than `max-shift` Leave the Short Arm Folded"
+
+description = '''
+`case "b"` holds an assignment that fits at 86 columns folded with its `:` flush, whereas padding its `:` out to the column `"an_arm_past_the_shift_cap"` sets would carry the line to 111. **Both arms fold with their `:` flush against their patterns**, because the two patterns differ by more than `max-shift`, so the run splits before any shared column forms and `"b"` never takes that padding.
+'''

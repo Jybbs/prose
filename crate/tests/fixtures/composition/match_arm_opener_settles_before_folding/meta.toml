@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Opener Counts at the Width `normalize-comment-spacing` Leaves"
+
+description = '''
+The body of `case "tag"` carries `#pinned stable`, which `normalize-comment-spacing` rewrites to `# pinned stable`. Folded with its `:` padded out to the column `"other"` sets, the arm would fit at exactly 88 columns as written and reach 89 once the opener gains its space. **`"tag"` keeps its multi-line form in one pass**, rather than folding and splitting back on the next run, and `"other"` folds alone with its `:` flush against the pattern.
+'''

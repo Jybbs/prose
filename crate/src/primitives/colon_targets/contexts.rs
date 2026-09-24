@@ -73,7 +73,10 @@ pub(crate) fn match_case(
     case: &MatchCase,
     stranding: Stranding,
 ) -> Option<aligner::Member> {
-    let pre_colon_end = match_case_pre_colon_end(case);
+    let pre_colon_end = case
+        .guard
+        .as_deref()
+        .map_or(case.pattern.end(), Ranged::end);
     let body_start = case.body.first()?.start();
     aligner::line_anchored_member_between(
         source,
@@ -94,14 +97,6 @@ pub(super) fn match_case_members(
         .iter()
         .filter_map(|c| match_case(source, c, stranding))
         .collect()
-}
-
-/// The offset where a `match` arm's pre-colon left-hand side ends, the
-/// guard's end when the arm is guarded and the pattern's end otherwise.
-pub(crate) fn match_case_pre_colon_end(case: &MatchCase) -> TextSize {
-    case.guard
-        .as_deref()
-        .map_or(case.pattern.end(), Ranged::end)
 }
 
 /// Walks `params` in source order and returns one group per run of
