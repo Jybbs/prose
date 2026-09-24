@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Off Region Inside a Class Leaves the Rest of the File Sorting"
+
+description = '''
+`zeta` and `alpha` sit inside a `# prose: off` region in `Station`. **They stay as written while `beta` sorts above `omega` below the region and `os` sorts above `sys` at the top of the module**, because the region holds only the lines between its markers.
+'''

@@ -4,7 +4,7 @@ description: "Covers `# fmt: off / on`, `# fmt: skip`, the `# yapf` aliases, `# 
 
 # Suppression Directives
 
-A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or dict-literal scope. The [**Suppression**](/usage/suppression) chapter covers when to reach for each, and this page is the complete list.
+A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or construct scope. The [**Suppression**](/usage/suppression) chapter covers when to reach for each, and this page is the complete list.
 
 A pragma from another tool *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, and the rest of the Python tooling pragmas)* is invisible to *Prose* wherever it is not named below. The walker reads it as an ordinary comment and the rules ignore it, so it sits beside the directives further down with no further setup.
 
@@ -59,6 +59,8 @@ A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewr
 
 A skip reaches the rewrite rules only, so a lint finding on the statement still prints, and silencing it takes a `# prose: ignore` beside the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
+A skipped statement and every statement inside an exempt region hold their slots when a rule reorders the body around them. [[alphabetize-siblings]] sorts the classes and functions around a skipped statement past it and the imports above and below it as two separate runs. A region's `# prose: off` and `# prose: on` lines stay where they stand and divide the body, so the siblings on each side of a region sort as runs of their own. [[group-imports]] groups the imports on either side of a skipped statement or a region apart, and the rewrites inside a class or function holding an exempt line still reach every other line of it.
+
 ### Lint Suppression
 
 `# prose: ignore` and its bracketed forms silence lint findings on the same line:
@@ -71,9 +73,9 @@ helper = build_helper()  # prose: ignore
 
 A bare `# prose: ignore` silences every lint rule on the line. A bracketed list names the rules.
 
-## Dict-Literal Order Preservation
+## Construct Order Preservation
 
-`# prose: keep` on the opening `{` line or the closing `}` line of a dict literal keeps the entries in the order written, so [[alphabetize-siblings]] leaves them alone:
+`# prose: keep` holds one construct in the order written, and which construct it covers depends on where it sits. On the opening `{` line or the closing `}` line of a dict literal, it keeps the entry order, so [[alphabetize-siblings]] leaves the entries alone:
 
 ```python
 config = {  # prose: keep
@@ -85,9 +87,37 @@ config = {  # prose: keep
 
 The directive covers that one literal, where [[alphabetize-siblings]] keeps the entry order and [[band-constants]] leaves the statement out of the band, and the same marker on an `__all__` or `__slots__` list keeps that one list as written.
 
+On the `class` line, or on the line holding a wrapped header's closing `:`, the marker keeps the statements of the class body in the order written. That fits a class whose field order means something to the library reading it, such as a `pandera.DataFrameModel`, whose columns follow the order its fields are declared in:
+
+```python
+class StationSchema(DataFrameModel):  # prose: keep
+    """
+    Describes the station table.
+    """
+
+    station  : Index[str] = Column(check_name=True)
+    name     : str        = Column()
+    latitude : float      = Column()
+```
+
+At the level of the class body, the marker holds every order a rule would otherwise change:
+
+- [[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, including those inside an `if`, a `try`, or a `with` at that level, since none of them opens a scope of its own
+- [[reflow-imports]] merges the members of one module only across consecutive statements, since a merge across another statement moves a member above it
+- The entries under each heading of the class docstring that name a field follow the order of the fields, and an entry naming no field keeps its written slot among them
+- [[unsorted-positionals]] passes over the field run, since the marker states that the order written is deliberate
+
+Every expression and every nested scope inside the body still sorts, and so does the class itself among its siblings, because the marker holds the body rather than the class's place:
+
+- A dict in a field's default and the keywords of a call
+- The names one import statement binds
+- The items of a `__slots__` or `__all__` list, which take a `# prose: keep` of their own on the list's bracket line
+- The body of a method
+- The body of a nested class carrying no marker of its own
+
 ## Composition
 
-One line can carry a block marker, `# fmt: skip` or `# prose: skip` directives, and `# prose: ignore[...]` directives together. *Prose* parses each on its own, so they combine in any order. A bare `# prose: ignore` *(no bracket list)* widens any `# prose: ignore[<rule>]` on the same line so every lint on the line is silenced, and a bare `# prose: skip` widens a bracketed `# prose: skip[<rule>]` the same way for rewrites. Two bracketed directives of the same family on one line combine their slugs:
+One line can carry a block marker, `# fmt: skip` or `# prose: skip` directives, `# prose: ignore[...]` directives, and `# prose: keep` together. *Prose* parses each on its own, so they combine in any order. A bare `# prose: ignore` *(no bracket list)* widens any `# prose: ignore[<rule>]` on the same line so every lint on the line is silenced, and a bare `# prose: skip` widens a bracketed `# prose: skip[<rule>]` the same way for rewrites. Two bracketed directives of the same family on one line combine their slugs:
 
 ```python
 # fmt: off

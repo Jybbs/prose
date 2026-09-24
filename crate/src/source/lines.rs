@@ -77,7 +77,8 @@ impl Source {
     }
 
     /// Returns the line ending this source uses, the first one it
-    /// carries, or `LineEnding::Lf` when it carries none.
+    /// carries outside a string literal, or `LineEnding::Lf` when it
+    /// carries none.
     pub(crate) fn line_ending(&self) -> LineEnding {
         self.line_ending
     }
@@ -262,7 +263,10 @@ mod tests {
     #[case("a\nb\r\n", LineEnding::Lf)]
     #[case("a\r\nb\n", LineEnding::CrLf)]
     #[case("x = 1", LineEnding::Lf)]
-    fn line_ending_reads_the_first_break_and_falls_back_to_lf(
+    #[case("\"\"\"a\nb\"\"\"\r\nx = 1\r\n", LineEnding::CrLf)]
+    #[case("\r\n\"\"\"a\nb\"\"\"\r\n", LineEnding::CrLf)]
+    #[case("x = \"\"\"a\r\nb\"\"\"", LineEnding::CrLf)]
+    fn line_ending_reads_the_first_break_outside_a_string(
         #[case] src: &str,
         #[case] expected: LineEnding,
     ) {

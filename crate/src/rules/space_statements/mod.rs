@@ -24,7 +24,7 @@ use crate::{
     config::Config,
     primitives::{
         blanks::whitespace_start_before,
-        comments::{anchors_in_place, leading_comment_block},
+        comments::{anchors_in_place, closing_comments_end, leading_comment_block},
         edit::{repeat_edit, singleton_groups},
         scope::{BodyScope, scoped_body},
     },
@@ -150,9 +150,15 @@ impl Walker<'_> {
         self.pair_siblings(body, scope);
     }
 
+    /// Normalizes the gap between each pair of siblings in `body`,
+    /// measured from the end of the comments closing the earlier sibling's
+    /// body per [`closing_comments_end`].
     fn pair_siblings(&mut self, body: &[Stmt], scope: BodyScope) {
         for (prev, curr) in body.iter().tuple_windows() {
-            self.pair_with_end(prev, prev.end(), curr, scope);
+            let line_end = self.source.text().line_end(prev.end());
+            let prev_end = closing_comments_end(self.source, prev.start(), line_end, curr.start())
+                .unwrap_or(prev.end());
+            self.pair_with_end(prev, prev_end, curr, scope);
         }
     }
 
@@ -211,6 +217,8 @@ fn newlines_below_block(source: &Source, block: TextRange) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::testing::{applied_text, notebook, parse};
 
@@ -254,6 +262,23 @@ mod tests {
             edits_of(&source).is_empty(),
             "a lone comment with no newline after it has no run below to seat",
         );
+    }
+
+    #[rstest]
+    #[case::module(
+        "def alpha():\n    pass\n    # tail\ndef zeta():\n    pass\n",
+        "def alpha():\n    pass\n    # tail\n\n\ndef zeta():\n    pass\n"
+    )]
+    #[case::class(
+        "class C:\n\n    def alpha(self):\n        pass\n        # tail\n    def zeta(self):\n        pass\n",
+        "class C:\n\n    def alpha(self):\n        pass\n        # tail\n\n    def zeta(self):\n        pass\n"
+    )]
+    fn pair_siblings_seats_the_gap_below_the_comments_closing_a_body(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        assert_eq!(applied_text(&source, edits_of(&source).concat()), expected);
     }
 
     #[test]

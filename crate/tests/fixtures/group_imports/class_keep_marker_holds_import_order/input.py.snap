@@ -1,0 +1,21 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/group_imports/class_keep_marker_holds_import_order/input.py
+---
+class Kept:  # prose: keep
+    from collections import abc
+    import sys
+
+    if TYPE_CHECKING:
+        from os import path
+        import re
+
+    def load(self):
+        import sys
+        from collections import abc
+
+
+class Grouped:
+    import sys
+    from collections import abc

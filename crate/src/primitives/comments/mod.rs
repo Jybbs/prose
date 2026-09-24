@@ -5,8 +5,9 @@
 //! pragma, and binds to the member otherwise, whatever blank line sits
 //! between the two. The trailing-comment gap the banding and spacing
 //! rules seat lives here too, with the width a comment takes behind
-//! it, and the [`Settling`] a measuring rule reads a trailing comment's
-//! settled width from.
+//! it, the [`Settling`] a measuring rule reads a trailing comment's
+//! settled width from, and the `# prose: keep` marker trailing a
+//! dict's or a dunder list's bracket line or a class header.
 
 use ruff_python_trivia::{CommentRanges, PythonWhitespace, is_pragma_comment};
 use ruff_source_file::{LineRanges, UniversalNewlines};
@@ -20,9 +21,11 @@ use crate::{
 };
 
 mod banners;
+mod keep;
 mod noqa;
 
 pub(crate) use banners::is_banner_block;
+pub(crate) use keep::{class_keeps_order, has_keep_marker};
 pub(crate) use noqa::{noqa_marker, noqa_names};
 
 /// The characters whose appearance directly after a comment's hash run
@@ -117,6 +120,40 @@ pub(super) fn bound_block_start(
         .map_or(line_start, TextRange::start)
 }
 
+/// Returns the end of the comments closing the body of the statement
+/// opening at `stmt_start`. The scan starts at `line_end`, the end of the
+/// statement's last line, and runs up to `upper` across blank lines,
+/// taking each own-line comment indented deeper than the statement. It
+/// stops at a comment at the statement's indent or shallower, at code, and
+/// at a notebook cell wall, and returns `None` where no comment closes the
+/// body.
+pub(crate) fn closing_comments_end(
+    source: &Source,
+    stmt_start: TextSize,
+    line_end: TextSize,
+    upper: TextSize,
+) -> Option<TextSize> {
+    let text = source.text();
+    let indent = source.line_indent_width(stmt_start);
+    let mut end = None;
+    for comment in source
+        .comment_ranges()
+        .comments_in_range(TextRange::new(line_end, upper.max(line_end)))
+    {
+        if !text[TextRange::new(end.unwrap_or(line_end), comment.start())]
+            .trim()
+            .is_empty()
+            || !CommentRanges::is_own_line(comment.start(), text)
+            || source.line_indent_width(comment.start()) <= indent
+            || !source.same_cell(stmt_start, comment.start())
+        {
+            break;
+        }
+        end = Some(comment.end());
+    }
+    end
+}
+
 /// True when an own-line comment block leads the item at `item_start`,
 /// reached across the blank run between the two and stopped at a
 /// notebook cell wall.
@@ -147,20 +184,17 @@ pub(crate) fn comments_held_by(
         })
 }
 
-/// True when the line containing `literal`'s opening bracket or the one
-/// containing its closing bracket carries a trailing `# prose: keep`
-/// comment, the marker that pins a dict or a dunder list against entry
-/// reordering and a dict against module-constant banding.
-pub(crate) fn has_keep_marker(source: &Source, literal: impl Ranged) -> bool {
-    let text = source.text();
-    [literal.start(), literal.end()]
+/// True when `marks` accepts the text of the trailing comment on the
+/// row holding `span`'s start or on the row holding its end.
+pub(super) fn end_rows_carry(
+    source: &Source,
+    span: impl Ranged,
+    marks: impl Fn(&str) -> bool,
+) -> bool {
+    [span.start(), span.end()]
         .into_iter()
-        .flat_map(|offset| {
-            source
-                .comment_ranges()
-                .comments_in_range(text.full_line_range(offset))
-        })
-        .any(|c| source.slice(c).trim_start_matches('#').trim() == "prose: keep")
+        .filter_map(|offset| trailing_comment(source, offset))
+        .any(|comment| marks(source.slice(comment)))
 }
 
 /// Returns the range spanning every own-line comment between `lower`
@@ -328,6 +362,22 @@ mod tests {
         assert!(!comment_leads(&s, item.start()));
     }
 
+    #[rstest]
+    #[case::no_comment_in_the_gap(range(0, 5), 0..0, true)]
+    #[case::a_standing_block_holds_it(range(5, 19), 1..2, true)]
+    #[case::no_standing_block_holds_it(range(5, 19), 0..1, false)]
+    #[case::no_standing_block_at_all(range(5, 19), 0..0, false)]
+    fn comments_held_by_reads_whether_a_standing_block_covers_each_comment(
+        #[case] gap: TextRange,
+        #[case] slots: std::ops::Range<usize>,
+        #[case] expected: bool,
+    ) {
+        let source = parse("x = 1\n# lead\ny = 2\n");
+        let blocks = [range(0, 5), range(6, 19)];
+
+        assert_eq!(comments_held_by(&source, gap, &blocks, slots), expected);
+    }
+
     #[test]
     fn leading_comment_block_returns_block_for_chain_of_own_line_comments() {
         let s = parse("x = 1\n# a\n# b\ndef f(): pass\n");
@@ -403,21 +453,5 @@ mod tests {
             trailing_comment(&source, start).map(|range| source.slice(range)),
             expected,
         );
-    }
-
-    #[rstest]
-    #[case::no_comment_in_the_gap(range(0, 5), 0..0, true)]
-    #[case::a_standing_block_holds_it(range(5, 19), 1..2, true)]
-    #[case::no_standing_block_holds_it(range(5, 19), 0..1, false)]
-    #[case::no_standing_block_at_all(range(5, 19), 0..0, false)]
-    fn comments_held_by_reads_whether_a_standing_block_covers_each_comment(
-        #[case] gap: TextRange,
-        #[case] slots: std::ops::Range<usize>,
-        #[case] expected: bool,
-    ) {
-        let source = parse("x = 1\n# lead\ny = 2\n");
-        let blocks = [range(0, 5), range(6, 19)];
-
-        assert_eq!(comments_held_by(&source, gap, &blocks, slots), expected);
     }
 }

@@ -33,6 +33,15 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/reference/suppression-directives#lint-suppression'
   },
 
+  '# prose: keep': {
+    definition : '`# prose: keep` holds one construct in the order written. On a bracket line of '
+               + 'a dict literal, `__all__`, or `__slots__`, it holds the entries, and on the '
+               + '`class` line or the closing `:` line of a class header, it holds the '
+               + 'statements of the body.',
+    families   : ['ordering', 'engine'],
+    href       : '/reference/suppression-directives#construct-order-preservation'
+  },
+
   '--ignore': {
     definition : '`--ignore` removes the named rules from a single run. The flag repeats, and '
                + 'combined with `--select` it subtracts from the selected set.',
@@ -609,9 +618,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'pinned statement': {
     aliases    : ['pinned member', 'pinned constant', 'pinned definition'],
     definition : 'A pinned statement stays where the author put it while its siblings sort or '
-               + 'band around it. A `# prose: keep` marker pins a dict literal or a dunder '
-               + 'list, a reference that must resolve at evaluation time pins a definition '
-               + 'below the sibling it names, and a `# noqa: E402` pins an import on its line.',
+               + 'band around it. A `# prose: keep` marker pins a dict literal, a dunder list, '
+               + 'or every statement of a class body. A reference that must resolve at '
+               + 'evaluation time pins a definition below the sibling it names, and a '
+               + '`# noqa: E402` pins an import on its line.',
     families   : ['ordering']
   },
 

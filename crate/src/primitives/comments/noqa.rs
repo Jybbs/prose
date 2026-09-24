@@ -4,9 +4,9 @@
 //! reaches, an import kept for its re-export or held at its position.
 
 use ruff_python_ast::Stmt;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{TextRange, TextSize};
 
-use super::trailing_comment;
+use super::{end_rows_carry, trailing_comment};
 use crate::source::Source;
 
 /// The marker a suppression comment opens with, matched case-insensitively.
@@ -23,14 +23,11 @@ pub(crate) fn noqa_marker(source: &Source, offset: TextSize) -> Option<TextRange
 /// several rows carries its marker on the row it opens or the row it
 /// closes, so both are read.
 pub(crate) fn noqa_names(source: &Source, stmt: &Stmt, code: &str) -> bool {
-    let marks = |offset| {
-        trailing_comment(source, offset).is_some_and(|range| {
-            noqa_codes(source.slice(range)).is_some_and(|codes| {
-                codes.is_empty() || codes.iter().any(|named| named.eq_ignore_ascii_case(code))
-            })
+    end_rows_carry(source, stmt, |comment| {
+        noqa_codes(comment).is_some_and(|codes| {
+            codes.is_empty() || codes.iter().any(|named| named.eq_ignore_ascii_case(code))
         })
-    };
-    marks(stmt.start()) || (source.contains_line_break(stmt) && marks(stmt.end()))
+    })
 }
 
 /// True for a `flake8`-shaped code, one or more ASCII letters closed by
@@ -41,23 +38,6 @@ fn is_rule_code(code: &str) -> bool {
     !letters.is_empty()
         && letters.len() < code.len()
         && letters.chars().all(|c| c.is_ascii_alphabetic())
-}
-
-/// The codes a `noqa` comment names, reading tokens until one fails the
-/// code shape and the rest reads as prose. Empty for the bare form
-/// covering every code, `None` where the comment carries no `noqa`.
-fn noqa_codes(comment: &str) -> Option<Vec<&str>> {
-    let opened = marker_end(comment)?;
-    let Some(listed) = comment[opened..].trim_start().strip_prefix(':') else {
-        return Some(Vec::new());
-    };
-    Some(
-        listed
-            .split([',', ' ', '\t'])
-            .filter(|code| !code.is_empty())
-            .take_while(|code| is_rule_code(code))
-            .collect(),
-    )
 }
 
 /// The offset just past the `noqa` marker of `comment`, which opens a
@@ -80,6 +60,23 @@ fn marker_end(comment: &str) -> Option<usize> {
     })
 }
 
+/// The codes a `noqa` comment names, reading tokens until one fails the
+/// code shape and the rest reads as prose. Empty for the bare form
+/// covering every code, `None` where the comment carries no `noqa`.
+fn noqa_codes(comment: &str) -> Option<Vec<&str>> {
+    let opened = marker_end(comment)?;
+    let Some(listed) = comment[opened..].trim_start().strip_prefix(':') else {
+        return Some(Vec::new());
+    };
+    Some(
+        listed
+            .split([',', ' ', '\t'])
+            .filter(|code| !code.is_empty())
+            .take_while(|code| is_rule_code(code))
+            .collect(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -94,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn a_marker_on_one_statement_leaves_its_neighbour_alone() {
+    fn a_marker_on_one_statement_leaves_its_neighbor_alone() {
         let source = parse("import os  # noqa: F401\nimport sys\n");
         let body = &source.ast().body;
         assert!(noqa_names(&source, &body[0], "F401"));

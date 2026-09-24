@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/comment_closing_a_body_stays_with_it/input.py
+---
+def alpha():
+    return 1
+    # the fallback path lives in beta
+
+
+def beta():
+    return 2

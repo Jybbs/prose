@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment at a List's Continuation Indent Moves With the List"
+
+description = '''
+The comment about `disk_usage` sits below the `__all__` list at the list's continuation indent, deeper than the constants on either side. **The comment moves with `__all__`, and `ALPHA_CAP` sorts above `ZETA_CAP`**, because a comment indented deeper than the statement after it closes the statement above it rather than standing between the two.
+'''

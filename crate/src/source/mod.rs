@@ -4,7 +4,10 @@ use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
-use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
+use ruff_python_ast::{
+    ModModule, PySourceType,
+    token::{TokenKind, Tokens},
+};
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
@@ -109,7 +112,7 @@ impl Source {
         tokens: Tokens,
     ) -> Self {
         let comment_ranges = CommentRanges::from(&tokens);
-        let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
+        let line_ending = detect_line_ending(&text, &tokens);
         let file = SourceFileBuilder::new(name, text).finish();
         let first_code_offset = ast.body.first().map(Ranged::start);
         let suppression = Box::new(SuppressionMap::from_comments(
@@ -336,6 +339,24 @@ pub enum SourceError {
     Notebook(#[from] NotebookError),
     #[error(transparent)]
     Parse(#[from] ParseError),
+}
+
+/// Returns the line ending of the first break a `Newline` or
+/// `NonLogicalNewline` token in `tokens` covers, a break inside a string
+/// literal counting only where no other break exists, and
+/// `LineEnding::Lf` where `text` carries none.
+fn detect_line_ending(text: &str, tokens: &Tokens) -> LineEnding {
+    tokens
+        .iter()
+        .filter(|token| {
+            matches!(
+                token.kind(),
+                TokenKind::Newline | TokenKind::NonLogicalNewline
+            )
+        })
+        .find_map(|token| find_newline(&text[token.range()]))
+        .or_else(|| find_newline(text))
+        .map_or(LineEnding::Lf, |(_, ending)| ending)
 }
 
 /// Parses `text` in `source_type`'s mode as a module.

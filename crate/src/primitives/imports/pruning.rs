@@ -31,15 +31,16 @@ pub(crate) struct Dropping<'a> {
 /// The body slot whose import a comment-led `slot`'s drop lands on.
 /// Within the run of `runs` holding `slot`, the landing sibling comes
 /// later, `survives` the drops, holds its line alone with no comment
-/// leading it, and shares `slot`'s module where `merges` is set, or is
-/// the next such sibling where `slot` heads its run and `sorted_heads`
-/// seats another member ahead of it. `None` leaves the drop held under
-/// its comment.
+/// leading it, and shares `slot`'s module where `merges` is set. Where
+/// `heads`, each band's head beside the member its sort seats first,
+/// names `slot` as the head of a band whose sort seats another member
+/// first, the landing is that member, or the next such sibling where it
+/// cannot take the line. `None` leaves the drop held under its comment.
 pub(crate) fn fold_landing(
     source: &Source,
     body: &[Stmt],
     runs: &[Vec<usize>],
-    sorted_heads: &[usize],
+    heads: &[(usize, usize)],
     merges: bool,
     slot: usize,
     survives: impl Fn(usize) -> bool,
@@ -59,10 +60,14 @@ pub(crate) fn fold_landing(
     if merges && let Some(sibling) = after.clone().find(|&other| same_module(other)) {
         return Some(sibling);
     }
-    let reseated = sorted_heads
-        .get(index)
-        .is_some_and(|&head| run[0] == slot && head != slot);
-    reseated.then(|| after.next()).flatten()
+    let (head, sorted) = *heads.get(index)?;
+    (head == slot && sorted != slot)
+        .then(|| {
+            Some(sorted)
+                .filter(|&sorted| landable(sorted))
+                .or_else(|| after.next())
+        })
+        .flatten()
 }
 
 /// One fix group per statement of `drops` losing an alias, the drops
@@ -197,15 +202,27 @@ mod tests {
     #[rstest]
     #[case::same_module_sibling("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], true, Some(2))]
     #[case::merges_off("# c\nfrom p import a\nfrom q import x\nfrom p import b\n", &[], false, None)]
-    #[case::band_head_reseated("# c\nfrom .p import a\nfrom ..q import x\n", &[1], false, Some(1))]
-    #[case::band_head_sorts_first("# c\nfrom ..p import a\nfrom .q import x\n", &[0], false, None)]
-    #[case::not_the_head("from ..q import x\n# c\nfrom .p import a\nfrom .r import y\n", &[0], false, None)]
+    #[case::band_head_reseated("# c\nfrom .p import a\nfrom ..q import x\n", &[(0, 1)], false, Some(1))]
+    #[case::band_head_sorts_first("# c\nfrom ..p import a\nfrom .q import x\n", &[(0, 0)], false, None)]
+    #[case::not_the_head("from ..q import x\n# c\nfrom .p import a\nfrom .r import y\n", &[(0, 0)], false, None)]
+    #[case::grouped_head_lands_on_the_sorted_head(
+        "from ..q import x\n# c\nfrom .p import a\nfrom .r import y\nfrom .s import z\n",
+        &[(1, 3)],
+        false,
+        Some(3),
+    )]
+    #[case::sorted_head_led_by_a_comment(
+        "# c\nfrom .p import a\nfrom .q import x\n# d\nfrom .r import y\n",
+        &[(0, 2)],
+        false,
+        Some(1),
+    )]
     #[case::sibling_led_by_a_comment("# c\nfrom p import a\n# d\nfrom p import b\n", &[], true, None)]
     #[case::sibling_sharing_its_line("# c\nfrom p import a\nfrom p import b; x = 1\n", &[], true, None)]
     #[case::lone_import("# c\nfrom p import a\nx = 1\n", &[], true, None)]
     fn fold_landing_names_the_import_the_comment_heads_next(
         #[case] src: &str,
-        #[case] sorted_heads: &[usize],
+        #[case] heads: &[(usize, usize)],
         #[case] merges: bool,
         #[case] expected: Option<usize>,
     ) {
@@ -222,7 +239,7 @@ mod tests {
             &source,
             body,
             &merge_runs(&source),
-            sorted_heads,
+            heads,
             merges,
             slot,
             |_| true,

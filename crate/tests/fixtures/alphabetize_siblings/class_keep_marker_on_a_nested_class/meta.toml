@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Kept Class Nested in an Unmarked One Holds Its Own Body"
+
+description = '''
+`Registry` carries no marker, and `Stages`, nested inside it, carries `# prose: keep`. **`alpha` and `zeta` sort in `Registry`, whereas `fetch`, `parse`, and `emit` stay in the order written**, because the marker is read off each class header in turn, a nested one included.
+'''

@@ -1,10 +1,10 @@
 ---
-description: "Covers `# fmt: off`, `# fmt: skip`, and `# prose: ignore[<rule>]`, one directive per scope."
+description: "Covers `# fmt: off`, `# fmt: skip`, `# prose: ignore[<rule>]`, and `# prose: keep`, one directive per scope."
 ---
 
 # Suppression
 
-*Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and dict-literal scopes, and choosing a directive means choosing the narrowest scope that covers the exception.
+*Prose* is opinionated by design, and most projects run every rule at its default. A suppression directive exempts one place from a rule without turning that rule off for the whole project. *Prose* offers suppression at the file, block, line, and construct scopes, and choosing a directive means choosing the narrowest scope that covers the exception.
 
 ## Scope Decisions
 
@@ -12,9 +12,9 @@ Each directive covers exceptions at one scope, and the colored brackets in the g
 
 <ScopeSpecimen />
 
-## When to Reach for Each
+## Choosing a Directive
 
-The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Whichever scope a directive takes, it is recorded in the file's [[suppression-map]], and each rule checks that map before writing an edit or reporting a finding.
+The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Every directive but `# prose: keep` is recorded in the file's [[suppression-map]], which each rule checks before writing an edit or reporting a finding, whereas `# prose: keep` is read off the construct it marks.
 
 ### Disabling a Whole File
 
@@ -33,19 +33,19 @@ weights = [[0.7, 0.1, 0.1, 0.1],
 # fmt: on
 ```
 
-The markers exempt only the lines between them, so [[alphabetize-siblings]] still reorders the module-level assignments above and below the bracket, and the bracketed region itself stays exactly as written.
+The markers exempt only the lines between them, so [[alphabetize-siblings]] still sorts the classes, functions, and imports on either side of the bracket, each side as a run of its own, while the marker lines stay where they stand and the bracketed region itself stays exactly as written.
 
 ### Tagging a Line
 
 Line-level directives come in two families, one for rewrites and one for lints, because the two need different escapes.
 
-The **`skip`** family exempts a line from rewrites, where `# fmt: skip` *(or its equivalent `# prose: skip`)* at the end of a statement exempts the whole logical line from every auto-fix rule, so a statement spanning several physical lines is exempt from its first line through the line carrying the directive. It fits a statement whose spacing is deliberate *(a hand-padded dict, a one-off argument list laid out to read a certain way)*. `# prose: skip[<rule>]` narrows the exemption to the named rules, where `# prose: skip[align-equals]` exempts one statement from `align-equals` and leaves every other rewrite rule free to run. When the exempted statement is a single line inside an alignment group, the other rows still align around it, so the exempt row reads as a deliberate exception rather than breaking the group.
+The **`skip`** family exempts a line from rewrites, where `# fmt: skip` *(or its equivalent `# prose: skip`)* at the end of a statement exempts the whole logical line from every auto-fix rule, so a statement spanning several physical lines is exempt from its first line through the line carrying the directive. It fits a statement whose spacing is deliberate *(a hand-padded dict, a one-off argument list laid out to read a certain way)*. `# prose: skip[<rule>]` narrows the exemption to the named rules, where `# prose: skip[align-equals]` exempts one statement from `align-equals` and leaves every other rewrite rule free to run. When the exempted statement is a single line inside an alignment group, the other rows still align around it, so the exempt row reads as a deliberate exception rather than breaking the group. An exempted statement holds its place when its siblings sort in the same way, and the rewrites inside a class or function holding it still reach every other line.
 
 The **`ignore`** family silences lints, where `# prose: ignore[<rule>]` at the end of a line silences the named lint rules on it, for a case where the lint's suggested change does not apply *(a constant the project reassigns on purpose, a binding whose name explains a value the inlined expression would leave unnamed)*. A bare `# prose: ignore` silences every lint on the line.
 
-The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. Only the block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses.
+The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. The block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses. `# prose: keep` on a class header also reaches one lint beside the rules that reorder, in that [[unsorted-positionals]] passes over the field run of that class.
 
-### Pinning a Dict Literal
+### Pinning a Dict or a Class Body
 
 `# prose: keep` on the opening `{` line or the closing `}` line of a dict literal keeps that one literal's order as written, and it is the one directive tied to a single construct. The default it overrides is [[alphabetize-siblings]] sorting dict entries by key, which is wrong where the source order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*. [[band-constants]] reads the same marker and leaves the statement where the author put it rather than gathering it into the band. Where a whole project reads its dicts in order, the `sort-dict-keys` facet turns the sort off everywhere, leaving the directive for the remaining exceptions. The same marker on an `__all__` or `__slots__` list keeps that one hand-ordered list, and the `sort-dunder-lists` facet is its project-wide counterpart.
 
@@ -56,6 +56,15 @@ stages = {  # prose: keep
     "validate" : validate_schema,
     "render"   : render_html
 }
+```
+
+The same marker on a `class` line holds the statements of that class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*. The fields, methods, and nested classes keep their order, and the docstring entries naming a field follow the order of the fields. The body of a method, the body of an unmarked nested class, and each dict, call, import name list, or dunder list inside a statement still sort, a dunder list taking a `# prose: keep` of its own.
+
+```python
+class StationSchema(DataFrameModel):  # prose: keep
+    station  : Index[str] = Column(check_name=True)
+    name     : str        = Column()
+    latitude : float      = Column()
 ```
 
 ## See Also

@@ -1,0 +1,25 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_leaves_nested_sorts/input.py
+---
+class Pipeline:  # prose: keep
+    stages = {"fetch": 1, "parse": 2}
+
+    def run(self):
+        emit(level=2, stage="run")
+
+    def build(self):
+        pass
+
+    def load(self):
+        import abc
+        import sys
+
+    if TYPE_CHECKING:
+        def zed(self): ...
+        def aye(self): ...
+
+    class Settings:
+        strict  = True
+        verbose = False

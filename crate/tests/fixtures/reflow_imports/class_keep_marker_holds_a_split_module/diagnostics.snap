@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_imports/class_keep_marker_holds_a_split_module/input.py
+---
+reflow-imports@115..143
+reflow-imports@183..223

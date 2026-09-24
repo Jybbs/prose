@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Indented Past an Import Moves With It"
+
+description = '''
+A comment sits on its own line below `import zlib`, at a two-space indent deeper than either import, with a blank line on each side. **The sort puts `import os` first and the comment moves down with `import zlib`**, because a comment indented deeper than the statement after it closes the statement above it.
+'''

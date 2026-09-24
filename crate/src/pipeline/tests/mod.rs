@@ -31,6 +31,7 @@ mod as_written;
 mod batch;
 mod carry;
 mod diagnose;
+mod keep;
 mod registry;
 mod run;
 mod second_pass;

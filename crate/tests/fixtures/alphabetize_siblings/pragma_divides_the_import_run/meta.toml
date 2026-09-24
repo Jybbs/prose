@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Pragma Line Divides the Import Run"
+
+description = '''
+`# isort: split` sits on its own line between two pairs of imports. **`abc` moves above `zlib` and `os` above `sys`, and no import crosses the pragma**, because a comment that anchors in place, a pragma, a suppression directive, or a banner, divides the run into sections that each sort on their own.
+'''

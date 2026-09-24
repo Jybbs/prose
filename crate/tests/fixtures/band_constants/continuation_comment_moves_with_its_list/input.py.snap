@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/continuation_comment_moves_with_its_list/input.py
+---
+ALPHA_CAP = 2
+ZETA_CAP = 1
+__all__ = ["copyfile",
+           "copytree"]
+           # disk_usage is added later, if available on the platform
