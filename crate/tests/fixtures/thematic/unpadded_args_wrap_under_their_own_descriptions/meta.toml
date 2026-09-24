@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Unpadded `Args:` Entries Wrap Under Their Own Descriptions"
+
+description = '''
+`config.toml` sets `align-docstring-entries = false`, and both `Args:` entries of `render` run past the budget. The opening `"""` moves onto its own line, and with no shared `:` column **each wrapped entry's continuation hangs under the start of its own description**, so the continuations of `markup` and `options` start at different columns.
+'''

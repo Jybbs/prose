@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/class_body_builtin_removes_directive/input.py
+---
+
+
+class Config:
+    x: int
+    y: int

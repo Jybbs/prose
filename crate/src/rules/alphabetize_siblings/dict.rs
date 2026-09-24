@@ -127,6 +127,13 @@ pub(super) fn rewrite_dict_text(
     Some((span, assembled))
 }
 
+/// True once two or more of `spanning` hold, each saying whether a keyed
+/// entry spans lines, which is the count at which the sort sets a blank
+/// line on either side of every such entry.
+pub(crate) fn sets_dividers(spanning: impl IntoIterator<Item = bool>) -> bool {
+    spanning.into_iter().filter(|&spans| spans).nth(1).is_some()
+}
+
 /// Returns the new-order slot indices after which a blank-line divider
 /// sits, one on either side of each keyed entry whose block spans
 /// lines. A dict with fewer than two such entries yields none.
@@ -138,7 +145,7 @@ fn partition_divider_slots(
 ) -> Vec<usize> {
     let spans_lines =
         |i: usize| items[i].key.is_some() && source.contains_line_break(item_ranges[i]);
-    if order.iter().filter(|&&i| spans_lines(i)).nth(1).is_none() {
+    if !sets_dividers(order.iter().map(|&i| spans_lines(i))) {
         return Vec::new();
     }
     adjacent_slots(order, |_, a, b| spans_lines(a) || spans_lines(b))

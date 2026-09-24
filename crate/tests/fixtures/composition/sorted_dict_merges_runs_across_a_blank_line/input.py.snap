@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/sorted_dict_merges_runs_across_a_blank_line/input.py
+---
+MUTATIONS = {
+    "pr"       : {
+        "close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"
+    },
+    "variable" : {"delete", "set"},
+    "xy"       : {"delete"}
+}

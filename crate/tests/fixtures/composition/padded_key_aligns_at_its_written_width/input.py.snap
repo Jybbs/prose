@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/padded_key_aligns_at_its_written_width/input.py
+---
+MUTATIONS = {
+    "cache"        : {"delete"},
+    ( "pp", "qq" ) : {"delete", "set"},
+    "variable"     : {"delete", "set"},
+}

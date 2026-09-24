@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Unpadded Docstring Entries Get No Edit With the Facet Off"
+
+description = '''
+`config.toml` sets `align-docstring-entries = false`, and every entry in the `Attributes:` section of `Pipeline` and the `Args:` section of `run` is already unpadded, each `(` one space past its name and each `:` flush against the name or the closing paren. **The rule makes no edit**, so a project that writes its Google-style docstrings this way keeps them as written.
+'''

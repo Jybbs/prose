@@ -597,10 +597,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'PEP 749': {
     aliases    : ['pep 749', 'PEP-749', 'deferred annotation', 'deferred annotations'],
-    definition : 'PEP 749 is the deferred-annotation-evaluation PEP, landing in Python 3.14. '
-               + 'Annotations are no longer evaluated when a definition runs, so '
-               + '`from __future__ import annotations` does nothing there and '
-               + '`prune-inert-imports` removes it on a project targeting 3.14 or later.',
+    definition : 'PEP 749 is the implementation PEP for PEP 649\'s deferred annotation '
+               + 'evaluation, from Python 3.14. Annotations are evaluated when something reads '
+               + 'them rather than when the statement carrying them runs, so '
+               + '`prune-inert-imports` removes `from __future__ import annotations` on a '
+               + 'project targeting 3.14 or later wherever every name the annotations read is '
+               + 'bound ahead of the annotation.',
     rule       : 'prune-inert-imports'
   },
 

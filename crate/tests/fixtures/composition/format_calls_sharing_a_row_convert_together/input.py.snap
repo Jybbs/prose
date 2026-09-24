@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/format_calls_sharing_a_row_convert_together/input.py
+---
+class CompletedProcess:
+    def __repr__(self):
+        args = [f'args={self.args!r}', f'returncode={self.returncode!r}']
+        return args

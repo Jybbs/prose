@@ -7,12 +7,14 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [],
     "imperative": "remove a backslash line continuation",
     "position": 1,
+    "preserves_tree": true,
     "slug": "shed-backslash-continuations"
   },
   {
     "after": [],
     "imperative": "normalize a literal's quotes, prefix, and numeric spelling",
     "position": 2,
+    "preserves_tree": true,
     "slug": "normalize-literals"
   },
   {
@@ -22,30 +24,35 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "remove an import nothing references, or one that repeats an earlier import",
     "position": 3,
+    "preserves_tree": false,
     "slug": "prune-inert-imports"
   },
   {
     "after": [],
     "imperative": "remove a redundant `-> None` return annotation",
     "position": 4,
+    "preserves_tree": false,
     "slug": "strip-none-return"
   },
   {
     "after": [],
     "imperative": "rewrite a legacy `typing` annotation to its builtin or PEP 604 form",
     "position": 5,
+    "preserves_tree": false,
     "slug": "modernize-annotations"
   },
   {
     "after": [],
     "imperative": "remove a trailing comma",
     "position": 6,
+    "preserves_tree": true,
     "slug": "strip-trailing-commas"
   },
   {
     "after": [],
     "imperative": "rewrite a comparison to state its test directly",
     "position": 7,
+    "preserves_tree": false,
     "slug": "normalize-comparisons"
   },
   {
@@ -55,12 +62,14 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "remove a redundant grouping parenthesis pair, or break one that runs past the line budget",
     "position": 8,
+    "preserves_tree": true,
     "slug": "reflow-parentheses"
   },
   {
     "after": [],
     "imperative": "remove a redundant `object` base or empty class parentheses",
     "position": 9,
+    "preserves_tree": false,
     "slug": "shed-redundant-base"
   },
   {
@@ -69,12 +78,14 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "remove a redundant collection constructor",
     "position": 10,
+    "preserves_tree": false,
     "slug": "simplify-comprehensions"
   },
   {
     "after": [],
     "imperative": "rewrite a docstring's quotes to `\"\"\"` with the opener and closer on their own lines",
     "position": 11,
+    "preserves_tree": false,
     "slug": "frame-docstrings"
   },
   {
@@ -83,18 +94,21 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "expand a single-line docstring onto its own lines",
     "position": 12,
+    "preserves_tree": false,
     "slug": "expand-docstrings"
   },
   {
     "after": [],
     "imperative": "group imports into bare, external, and local sections",
     "position": 13,
+    "preserves_tree": false,
     "slug": "group-imports"
   },
   {
     "after": [],
     "imperative": "remove the arguments a `super()` call restates",
     "position": 14,
+    "preserves_tree": false,
     "slug": "shed-super-args"
   },
   {
@@ -103,6 +117,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "break a long method chain to one link per line",
     "position": 15,
+    "preserves_tree": true,
     "slug": "stack-method-chains"
   },
   {
@@ -115,6 +130,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "lay out a call's arguments against the line budget",
     "position": 16,
+    "preserves_tree": false,
     "slug": "reflow-calls"
   },
   {
@@ -124,6 +140,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "lay out a function signature on one line or one parameter per line",
     "position": 17,
+    "preserves_tree": false,
     "slug": "reflow-signatures"
   },
   {
@@ -135,6 +152,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "lay out a collection literal against the line budget",
     "position": 18,
+    "preserves_tree": false,
     "slug": "reflow-collections"
   },
   {
@@ -144,6 +162,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "convert `%` or `str.format()` interpolation to an f-string",
     "position": 19,
+    "preserves_tree": false,
     "slug": "prefer-fstring"
   },
   {
@@ -155,6 +174,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "stack an implicitly concatenated string run one literal per line",
     "position": 20,
+    "preserves_tree": true,
     "slug": "stack-adjacent-strings"
   },
   {
@@ -164,6 +184,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive `case` colons",
     "position": 21,
+    "preserves_tree": true,
     "slug": "align-match-case"
   },
   {
@@ -174,6 +195,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "lay out an import block one module per line",
     "position": 22,
+    "preserves_tree": false,
     "slug": "reflow-imports"
   },
   {
@@ -183,6 +205,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "gather module constants into bands below the imports",
     "position": 23,
+    "preserves_tree": false,
     "slug": "band-constants"
   },
   {
@@ -201,6 +224,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "alphabetize these siblings",
     "position": 24,
+    "preserves_tree": false,
     "slug": "alphabetize-siblings"
   },
   {
@@ -212,6 +236,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "set the blank lines between adjacent statements",
     "position": 25,
+    "preserves_tree": true,
     "slug": "space-statements"
   },
   {
@@ -223,6 +248,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive `import`s",
     "position": 26,
+    "preserves_tree": true,
     "slug": "align-imports"
   },
   {
@@ -237,6 +263,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive `:` separators",
     "position": 27,
+    "preserves_tree": false,
     "slug": "align-colons"
   },
   {
@@ -247,6 +274,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "wrap docstring prose to its line budget",
     "position": 28,
+    "preserves_tree": false,
     "slug": "wrap-docstrings"
   },
   {
@@ -260,6 +288,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive `=` operators",
     "position": 29,
+    "preserves_tree": true,
     "slug": "align-equals"
   },
   {
@@ -271,6 +300,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive comparison operators",
     "position": 30,
+    "preserves_tree": true,
     "slug": "align-comparisons"
   },
   {
@@ -284,12 +314,14 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "remove padding that aligns with nothing",
     "position": 31,
+    "preserves_tree": false,
     "slug": "strip-stranded-padding"
   },
   {
     "after": [],
     "imperative": "normalize comment spacing",
     "position": 32,
+    "preserves_tree": true,
     "slug": "normalize-comment-spacing"
   },
   {
@@ -300,48 +332,56 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "align consecutive trailing comments",
     "position": 33,
+    "preserves_tree": true,
     "slug": "align-comments"
   },
   {
     "after": [],
     "imperative": "replace a bare import with a `from` import naming the attributes it uses",
     "position": 34,
+    "preserves_tree": true,
     "slug": "bare-imports"
   },
   {
     "after": [],
     "imperative": "rename a module constant to SCREAMING_CASE",
     "position": 35,
+    "preserves_tree": true,
     "slug": "miscased-constants"
   },
   {
     "after": [],
     "imperative": "rename a reassigned SCREAMING_CASE name lowercase, or assign it once",
     "position": 36,
+    "preserves_tree": true,
     "slug": "reassigned-constants"
   },
   {
     "after": [],
     "imperative": "extract each numbered step of a comment into a named function",
     "position": 37,
+    "preserves_tree": true,
     "slug": "step-narration"
   },
   {
     "after": [],
     "imperative": "inline a binding read once, where the value inlines with nothing recomputed, moved under a guard, or pushed past the line budget",
     "position": 38,
+    "preserves_tree": true,
     "slug": "inlinable-bindings"
   },
   {
     "after": [],
     "imperative": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site",
     "position": 39,
+    "preserves_tree": true,
     "slug": "unsorted-positionals"
   },
   {
     "after": [],
     "imperative": "annotate a parameter or return type that has none",
     "position": 40,
+    "preserves_tree": true,
     "slug": "signature-annotations"
   },
   {
@@ -352,6 +392,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "remove a docstring type the annotation already states",
     "position": 41,
+    "preserves_tree": true,
     "slug": "restated-types"
   },
   {
@@ -362,6 +403,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     ],
     "imperative": "shorten a line that runs past its length budget, or take the string split the fix offers",
     "position": 42,
+    "preserves_tree": true,
     "slug": "line-overflow"
   }
 ]

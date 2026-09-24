@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/call_value_stays_inline_without_reflow_calls/input.py
+---
+align-colons@24..43
+reflow-collections@155..156

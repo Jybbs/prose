@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/dict_call_value_explodes_into_its_column/input.py
+---
+HANDLERS = {
+    "cache"    : clear(),
+    "pr"       : dispatch(
+        close,
+        comment,
+        lock,
+        merge,
+        ready,
+        reopen,
+        review,
+        unlock,
+        abc
+    ),
+    "variable" : assign(delete, set)
+}

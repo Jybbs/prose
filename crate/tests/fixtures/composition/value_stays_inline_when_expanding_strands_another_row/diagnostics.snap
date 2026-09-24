@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/value_stays_inline_when_expanding_strands_another_row/input.py
+---
+align-colons@84..594
+reflow-collections@608..609

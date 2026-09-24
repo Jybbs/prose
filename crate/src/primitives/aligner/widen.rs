@@ -86,12 +86,12 @@ pub(crate) fn widening_entries(
 mod tests {
     use super::*;
     use crate::{
-        config::AlignmentConfig,
+        config::MaxShift,
         testing::{align_member, parse, range},
     };
 
     fn settings() -> Settings {
-        Settings::from(&AlignmentConfig::default())
+        Settings::aligned(MaxShift::default())
     }
 
     #[test]

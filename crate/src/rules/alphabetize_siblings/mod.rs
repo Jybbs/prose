@@ -31,7 +31,8 @@ use crate::{
     rules::{Rule, RuleId},
     source::Source,
 };
-pub(crate) use reorders::Reorders;
+pub(crate) use dict::sets_dividers;
+pub(crate) use reorders::{Reorders, Sorted};
 
 mod class_graph;
 mod dict;
@@ -60,6 +61,8 @@ impl AlphabetizeSiblings {
     pub(crate) const MESSAGE: &'static str = "alphabetize these siblings";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
+
+    pub(crate) const PRESERVES_TREE: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let alphabetize_siblings = &config.rules.alphabetize_siblings;

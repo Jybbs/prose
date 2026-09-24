@@ -18,6 +18,7 @@ use crate::{
         padding::Stranding,
         reserve::{Carry, Columns, Reservations},
     },
+    rules::prefer_fstring::PreferFstring,
     suppression::SuppressionMap,
 };
 
@@ -36,7 +37,8 @@ pub(crate) mod trace;
 /// line index, the `CommentRanges` and `SuppressionMap` indexes derived
 /// from that token stream, and the `BindingAnalysis`, alignment-column,
 /// and stranded-padding walks each built on first read or carried
-/// across a reparse from the source before it. `source_type` is the
+/// across a reparse from the source before it, beside the f-string
+/// forecast each reparse drops. `source_type` is the
 /// parse mode and `line_ending` the sequence the text breaks its lines
 /// with, leaving `cell_offsets` and `cell_numbers` to carry a
 /// notebook's cell boundaries and positions, empty for a module.
@@ -50,7 +52,9 @@ pub struct Source {
     columns_carry: OnceLock<Box<(Reservations, Carry)>>,
     comment_ranges: CommentRanges,
     expandable_literals: OnceLock<Vec<TextRange>>,
+    explodable_arguments: OnceLock<Vec<TextRange>>,
     file: SourceFile,
+    fstring_rewrites: OnceLock<Box<(PreferFstring, Vec<Edit>)>>,
     interpolation_spans: OnceLock<Vec<TextRange>>,
     line_ending: LineEnding,
     paren_followers: OnceLock<FxHashSet<TextSize>>,
@@ -124,7 +128,9 @@ impl Source {
             columns_carry: OnceLock::new(),
             comment_ranges,
             expandable_literals: OnceLock::new(),
+            explodable_arguments: OnceLock::new(),
             file,
+            fstring_rewrites: OnceLock::new(),
             interpolation_spans: OnceLock::new(),
             line_ending,
             paren_followers: OnceLock::new(),
@@ -295,7 +301,9 @@ impl Clone for Source {
             columns_carry: OnceLock::new(),
             comment_ranges: self.comment_ranges.clone(),
             expandable_literals: OnceLock::new(),
+            explodable_arguments: OnceLock::new(),
             file: self.file.clone(),
+            fstring_rewrites: OnceLock::new(),
             interpolation_spans: OnceLock::new(),
             line_ending: self.line_ending,
             paren_followers: OnceLock::new(),

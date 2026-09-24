@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Blank Line Above an Unpacking Survives the Expansion"
+
+description = '''
+The `"gamma"` list crosses the budget, so the rule expands it inside `CONFIG` and writes the dict's other entries back around it. **The blank line written above `**DEFAULTS` stays in place**, because the rule reads an unpacking's row from its `**` rather than from the value that follows it.
+'''

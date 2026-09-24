@@ -29,6 +29,8 @@ impl ReassignedConstants {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow: Config::allow_set(&config.rules.reassigned_constants.allow),

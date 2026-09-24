@@ -103,7 +103,7 @@ impl Visitor<'_> {
     /// `Overflow` where the arm's folded line alone exceeds `code_line_length`.
     fn qualify_case(&self, case: &MatchCase) -> CaseOutcome {
         let source = self.walker.source;
-        let Some(member) = colon_targets::match_case(source, case) else {
+        let Some(member) = colon_targets::match_case(source, case, self.stranding) else {
             return CaseOutcome::Disqualify(None);
         };
         let [body_first] = case.body.as_slice() else {

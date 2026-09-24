@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/explode_merges_two_columns_into_one/input.py
+---
+align-colons@28..142
+reflow-collections@72..146

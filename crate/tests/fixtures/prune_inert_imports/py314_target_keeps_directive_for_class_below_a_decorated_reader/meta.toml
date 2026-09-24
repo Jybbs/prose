@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A 3.14 Target Keeps the Directive for a Class Defined Below a Decorated Reader"
+
+description = '''
+`target-version = "3.14"` is set, and `visit` annotates its parameter and its return with `Node`, a class defined below it, while its decorator `register` calls `inspect.signature` as the function is defined. **`from __future__ import annotations` stays**, because the decorator reads the annotations during import, before `Node` is bound, so without the directive the import raises `NameError`.
+'''

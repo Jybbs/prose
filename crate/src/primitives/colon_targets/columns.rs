@@ -8,6 +8,7 @@ use crate::{
     primitives::{
         aligner,
         docstring::{entry_runs, walk_docstrings},
+        padding::Stranding,
         range::overlaps,
     },
     source::Source,
@@ -72,7 +73,11 @@ impl EntryColumns {
 /// entry anchored on its head line's unbracketed `:` and a `(` row per
 /// entry naming a parenthesized type. Each run is its own group, so one
 /// run's widths never shift another's column.
-pub(super) fn docstring_runs_within(source: &Source, windows: &[TextRange]) -> Vec<EntryColumns> {
+pub(super) fn docstring_runs_within(
+    source: &Source,
+    windows: &[TextRange],
+    stranding: Stranding,
+) -> Vec<EntryColumns> {
     let mut literals = Vec::new();
     walk_docstrings(source, |_, lit| {
         if overlaps(lit.range(), windows) {
@@ -87,10 +92,10 @@ pub(super) fn docstring_runs_within(source: &Source, windows: &[TextRange]) -> V
                 .iter()
                 .map(|entry| {
                     (
-                        aligner::line_anchored_member(source, entry.colon),
+                        aligner::line_anchored_member(source, entry.colon, stranding),
                         entry
                             .column_anchor(source)
-                            .map(|at| aligner::line_anchored_member(source, at)),
+                            .map(|at| aligner::line_anchored_member(source, at, stranding)),
                     )
                 })
                 .unzip();

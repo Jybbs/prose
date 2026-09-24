@@ -1,0 +1,5 @@
+code-line-length = 19
+target-version   = "3.10"
+
+[harness]
+rules = ["reflow-collections", "prefer-fstring", "strip-stranded-padding"]

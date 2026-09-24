@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Sorted Dict With an Entry Already Spanning Rows Expands Nothing"
+
+description = '''
+[[alphabetize-siblings]] sorts `MUTATIONS`, and the `"cache"` list already spans rows. **Expanding the `"pr"` set as well would leave two entries spanning rows**, and the sort sets a blank line on either side of each once two do, which would put each expanded entry in a run of its own. [[reflow-collections]] therefore expands nothing, and since padding `"pr"` out to the column `"cache"` sets would carry its row past the budget, every row is left unpadded.
+'''
