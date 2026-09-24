@@ -386,17 +386,11 @@ pub(super) fn banded_gap(
 /// where `rule.group_imports` and the first import otherwise. `None` for
 /// an empty band.
 fn grouped_head(body: &[Stmt], rule: &BandConstants, imports: &[usize]) -> Option<usize> {
-    let &first = imports.first()?;
+    let run = imports.chunk_by(|&a, &b| b == a + 1).next()?;
     if !rule.group_imports {
-        return Some(first);
+        return Some(run[0]);
     }
-    let run = 1 + imports
-        .iter()
-        .tuple_windows()
-        .take_while(|&(&a, &b)| b == a + 1)
-        .count();
-    imports[..run]
-        .iter()
+    run.iter()
         .copied()
         .min_by_key(|&idx| import_group(&body[idx], &rule.first_party))
 }

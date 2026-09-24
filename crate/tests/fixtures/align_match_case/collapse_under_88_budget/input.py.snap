@@ -1,13 +1,13 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/align_match_case/collapse_under_88_budget/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/collapse_under_88_budget/input.py
 ---
 def dispatch(event):
     match event.kind:
         case "under_88_columns"   : counter = 1
         case "exactly_88_columns" : counter = build(event.timestamp, event.src, event.k)
-        case "longer_pattern_name":
+        case "longer_pattern_label":
             counter = build(event.timestamp, event.src, event.k)
         case "kind_with_descriptive_long_label":
             counter = build_for_long_kind(event.timestamp, event.source, event.kind)

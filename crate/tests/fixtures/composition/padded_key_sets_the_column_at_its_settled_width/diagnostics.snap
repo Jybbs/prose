@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_key_sets_the_column_at_its_settled_width/input.py
+---
+align-colons@25..136
+strip-stranded-padding@123..124
+strip-stranded-padding@134..135

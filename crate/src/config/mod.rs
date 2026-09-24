@@ -28,7 +28,7 @@ use crate::{
     primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{
         align_comments::AlignComments, align_equals::AlignEquals, alphabetize_siblings::Reorders,
-        normalize_comment_spacing::NormalizeCommentSpacing,
+        normalize_comment_spacing::NormalizeCommentSpacing, prefer_fstring::PreferFstring,
         strip_stranded_padding::StripStrandedPadding,
     },
 };
@@ -133,14 +133,11 @@ impl Config {
         Ok((config, notices))
     }
 
-    /// The alignment settings `config` resolves within `width`, each
-    /// line read at the padding and comment rules this config predicts.
-    pub(crate) fn align_settings(
-        &self,
-        config: &AlignmentConfig,
-        width: usize,
-    ) -> aligner::Settings {
-        aligner::Settings::from(config).within(
+    /// Builds a rule's alignment settings from its `max_shift`, with
+    /// `width` as the line limit. Each line is measured as it will read
+    /// after this config's padding and comment rules run.
+    pub(crate) fn align_settings(&self, max_shift: MaxShift, width: usize) -> aligner::Settings {
+        aligner::Settings::aligned(max_shift).within(
             width,
             self.stranded_padding(),
             self.comment_settling(),
@@ -161,10 +158,19 @@ impl Config {
             .get()
     }
 
-    /// The two comment rules a measuring rule predicts, so a trailing
-    /// comment reads at the gap `align-comments` seats it at and the
-    /// opener `normalize-comment-spacing` settles it to.
-    fn comment_settling(&self) -> comments::Settling {
+    /// The alignment settings `align-colons` runs its code contexts
+    /// under, resolving within the code width and stripping a lone
+    /// row's gap, read by the rule itself and by the forecast
+    /// `reflow-collections` seats an expanded dict's values against.
+    pub(crate) fn colon_settings(&self) -> aligner::Settings {
+        self.align_settings(self.rules.align_colons.max_shift, self.code_width())
+            .with_singleton_strip()
+    }
+
+    /// Returns which of `align-comments` and `normalize-comment-spacing`
+    /// this config runs, each by slug, so a rule measuring a line can allow
+    /// for the gap and opener they give a trailing comment.
+    pub(crate) fn comment_settling(&self) -> comments::Settling {
         comments::Settling {
             gap: self
                 .rules
@@ -193,13 +199,18 @@ impl Config {
             .align_equals
             .enabled
             .then(|| self.equals_settings());
-        reserve::Reservations::new(AlignEquals::SLUG, settings, self.one_row_settings())
+        reserve::Reservations::new(
+            AlignEquals::SLUG,
+            settings,
+            self.one_row_settings(),
+            self.stranded_padding(),
+        )
     }
 
     /// The alignment settings `align-equals` runs under, resolving
     /// within the code width and releasing a group's head.
     pub(crate) fn equals_settings(&self) -> aligner::Settings {
-        self.align_settings(&self.rules.align_equals, self.code_width())
+        self.align_settings(self.rules.align_equals.max_shift, self.code_width())
             .releasing_heads()
     }
 
@@ -213,6 +224,13 @@ impl Config {
         fracture::Settings::from(&self.rules.reflow_calls)
     }
 
+    /// The f-string rewrites a measuring rule predicts, so a `%` or
+    /// `str.format()` interpolation reads at the width `prefer-fstring`
+    /// leaves it at, predicting none where that rule is off.
+    pub(crate) fn fstrings(&self) -> PreferFstring {
+        PreferFstring::from_config(self)
+    }
+
     pub(crate) fn group_imports_enabled(&self) -> bool {
         self.rules.group_imports.enabled
     }
@@ -221,7 +239,7 @@ impl Config {
     /// within the import width, read by the rule itself and by the
     /// forecast `reflow-imports` packs against.
     pub(crate) fn import_align_settings(&self) -> aligner::Settings {
-        self.align_settings(&self.rules.align_imports, self.import_width())
+        self.align_settings(self.rules.align_imports.max_shift, self.import_width())
     }
 
     /// The budget governing import wrapping, falling back to the code

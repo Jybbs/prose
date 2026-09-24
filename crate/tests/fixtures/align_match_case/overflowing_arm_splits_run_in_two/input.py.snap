@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/overflowing_arm_splits_run_in_two/input.py
+---
+def classify(event):
+    match event.kind:
+        case "created"  : label = "new"
+        case "archived" : label = "old"
+        case "moved":
+            label = moved(event.source_path, event.target_path, event.kind)
+        case "deleted_forever" : label = "gone"
+        case "restored"        : label = "back"

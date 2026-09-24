@@ -25,7 +25,7 @@ concurrency:
 jobs:
   check:
     name            : ${{ matrix.name }}
-    runs-on         : &ubuntu ubuntu-latest
+    runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
     strategy:

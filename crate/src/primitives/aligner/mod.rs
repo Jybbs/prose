@@ -10,7 +10,7 @@
 use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
-    config::{AlignmentConfig, MaxShift},
+    config::MaxShift,
     primitives::{comments::Settling, padding::Stranding},
     rules::RuleId,
     source::Source,
@@ -23,7 +23,10 @@ mod members;
 mod walker;
 mod widen;
 
-pub(crate) use emit::{forecast_columns, operator_columns, settled_tail, space_padding_edit};
+pub(crate) use emit::{
+    Extent, comment_slack, forecast_columns, operator_columns, settled_tail, space_padding_edit,
+    written_columns, written_groups,
+};
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
 };
@@ -63,6 +66,21 @@ pub(crate) struct Member {
 }
 
 impl Member {
+    /// Builds a row a layout rule writes on a line of its own, opening
+    /// at `baseline` and `width` wide ahead of its aligned token, its
+    /// `gap` and `line_start` left empty.
+    fn written(baseline: usize, width: usize) -> Self {
+        Self {
+            baseline,
+            gap: TextRange::default(),
+            line_start: TextSize::default(),
+            op_width: 0,
+            settled_width: width,
+            value_gap: None,
+            width,
+        }
+    }
+
     /// The post-operator gap an aligned row rewrites to one space,
     /// `None` when the rule leaves that spacing alone or the value
     /// opens on a later line.
@@ -112,7 +130,9 @@ impl Member {
 /// `strip_singleton` collapses a size-one group's gap to zero width.
 /// `cap` carries the governing line length when the rule resolves
 /// within one, so a member whose aligned line would cross it
-/// partitions out of the run the way an over-`max_shift` outlier does.
+/// partitions out of the run the way an over-`max_shift` outlier does,
+/// unless a layout rule can expand its value and the opening row the
+/// expansion leaves fits.
 /// `release_heads` lets a group's head row stand down as a singleton
 /// where the cap would otherwise strand the row that cut the group,
 /// which a rule opts into only where its rows reach their settled width
@@ -126,21 +146,11 @@ pub(crate) struct Settings {
     strip_singleton: bool,
 }
 
-/// The line length a run resolves within, the padding rule whose later
-/// edits the cap check reads each line at, and the comment rules whose
-/// settled width it reads a trailing comment at.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct Cap {
-    line_length: usize,
-    settling: Settling,
-    stranding: Stranding,
-}
-
 impl Settings {
-    /// Builds the alignment settings carried by an alignment rule, with
-    /// a one-space buffer, `strip_singleton` off, and no line cap until
-    /// a rule opts in.
-    fn aligned(max_shift: MaxShift) -> Self {
+    /// Builds alignment settings from `max_shift` with a one-space buffer,
+    /// `strip_singleton` off, and no line limit, which a rule then adjusts
+    /// through the builder methods below.
+    pub(crate) fn aligned(max_shift: MaxShift) -> Self {
         Self {
             buffer: 1,
             cap: None,
@@ -167,16 +177,16 @@ impl Settings {
         self.buffer
     }
 
+    /// Returns a copy of `self` with `release_heads` enabled.
+    pub(crate) fn releasing_heads(mut self) -> Self {
+        self.release_heads = true;
+        self
+    }
+
     /// Returns a copy of `self` carrying `width` as the gap an aligned
     /// row holds ahead of the aligned token.
     pub(crate) fn with_buffer(mut self, width: usize) -> Self {
         self.buffer = width;
-        self
-    }
-
-    /// Returns a copy of `self` with `release_heads` enabled.
-    pub(crate) fn releasing_heads(mut self) -> Self {
-        self.release_heads = true;
         self
     }
 
@@ -205,8 +215,12 @@ impl Settings {
     }
 }
 
-impl From<&AlignmentConfig> for Settings {
-    fn from(c: &AlignmentConfig) -> Self {
-        Self::aligned(c.max_shift)
-    }
+/// The line limit an aligned run must fit within, with the padding rule
+/// and the comment rules whose later edits the cap check counts when it
+/// measures each line.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct Cap {
+    line_length: usize,
+    settling: Settling,
+    stranding: Stranding,
 }

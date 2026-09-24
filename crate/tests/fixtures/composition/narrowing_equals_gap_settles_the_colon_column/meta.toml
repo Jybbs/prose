@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Narrowing `=` Gap Lets the Colon Column Form in One Pass"
+
+description = '''
+`b: int` carries nine spaces before its `=`, which `align-equals` narrows to one space once the two rows share a `:` column. `align-colons` measures the `b` row with that gap already narrowed, so **the `:` column forms in the same pass**, `xyz : int = 1` over `b   : int = frobnicate(...)`, rather than on a second run once the gap has closed.
+'''

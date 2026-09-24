@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/sorted_dict_merges_runs_across_a_blank_line/input.py
+---
+align-colons@58..146
+alphabetize-siblings@19..134
+reflow-collections@61..159

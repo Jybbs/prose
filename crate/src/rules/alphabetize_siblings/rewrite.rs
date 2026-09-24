@@ -225,18 +225,17 @@ fn held_edits(
     parent_scope: BodyScope,
 ) -> Vec<Edit> {
     let source = ctx.source;
-    let bodies: Vec<(&[Stmt], TextRange, RewriteCtx<'_>, BodyScope)> = match scoped_body(stmt) {
-        Some((body, scope)) => vec![(body, stmt.range(), scoped_ctx(ctx, stmt), scope)],
-        None => sub_bodies(stmt)
-            .into_iter()
-            .map(|(body, outer)| (body, outer, ctx, parent_scope))
-            .collect(),
-    };
+    let (body_ctx, scope) = scoped_body(stmt).map_or((ctx, parent_scope), |(_, scope)| {
+        (scoped_ctx(ctx, stmt), scope)
+    });
     let mut edits = Vec::new();
     let mut cursor = block.start();
     let mut stretches = Vec::new();
-    for (body, outer, ctx, scope) in bodies.into_iter().filter(|(body, ..)| !body.is_empty()) {
-        let layout = body_layout(ctx, body, outer, scope);
+    for (body, outer) in sub_bodies(stmt)
+        .into_iter()
+        .filter(|(body, _)| !body.is_empty())
+    {
+        let layout = body_layout(body_ctx, body, outer, scope);
         let span = blocks_span(&layout.assembly.blocks);
         stretches.push(TextRange::new(cursor, span.start()));
         cursor = span.end();

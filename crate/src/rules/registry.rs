@@ -12,12 +12,12 @@ use serde_json::Map;
 
 use crate::{
     config::{
-        AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig, BareImportsConfig, Config,
-        InlinableBindingsConfig, LineOverflowConfig, MiscasedConstantsConfig,
-        ModernizeAnnotationsConfig, NormalizeComparisonsConfig, NormalizeLiteralsConfig,
-        PreferFstringConfig, PruneInertImportsConfig, ReassignedConstantsConfig, ReflowCallsConfig,
-        ReflowCollectionsConfig, ReflowImportsConfig, ReflowSignaturesConfig,
-        StackMethodChainsConfig, ToggleOnly, rule_schema,
+        AlignColonsConfig, AlignmentConfig, AlphabetizeSiblingsConfig, BandConstantsConfig,
+        BareImportsConfig, Config, InlinableBindingsConfig, LineOverflowConfig,
+        MiscasedConstantsConfig, ModernizeAnnotationsConfig, NormalizeComparisonsConfig,
+        NormalizeLiteralsConfig, PreferFstringConfig, PruneInertImportsConfig,
+        ReassignedConstantsConfig, ReflowCallsConfig, ReflowCollectionsConfig, ReflowImportsConfig,
+        ReflowSignaturesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
     pipeline::Pipeline,
@@ -108,10 +108,12 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 /// single source consumed by `RuleId::from_str`, the
 /// `[tool.prose.rules.<slug>]` section name, the
 /// `# prose: ignore[<slug>]` directive, and `--select` / `--ignore`.
-/// Each rule's one-line imperative lives on its own type as `MESSAGE`
-/// and whether its edits leave every binding standing as
-/// `PRESERVES_BINDINGS`, which [`message_for_id`] and
-/// [`preserves_bindings_for_id`] read back per slug.
+/// Each rule's type declares its one-line imperative as `MESSAGE`,
+/// whether its edits leave every binding standing as
+/// `PRESERVES_BINDINGS`, and whether its output parses to the tree its
+/// input does as `PRESERVES_TREE`. [`message_for_id`],
+/// [`preserves_bindings_for_id`], and [`preserves_tree`] read each one
+/// back per slug.
 ///
 /// Row order is pipeline order.
 ///
@@ -132,13 +134,17 @@ macro_rules! register_rules {
         /// The slugs each rule runs behind, indexed alongside [`KNOWN_IDS`].
         pub(super) const PIPELINE_DEPENDENCIES: &[&[&str]] = &[$(&[$($after),*]),*];
 
-        /// The slugs each rule shares a splice and a parse with,
-        /// indexed alongside [`KNOWN_IDS`].
-        const SHARES: &[&[&str]] = &[$(&[$($shares),*]),*];
-
         /// Whether each rule's edits leave every binding standing,
         /// indexed alongside [`KNOWN_IDS`].
         const PRESERVES_BINDINGS: &[bool] = &[$($ty::PRESERVES_BINDINGS),*];
+
+        /// Whether each rule's output parses to the tree its input does,
+        /// indexed alongside [`KNOWN_IDS`].
+        const PRESERVES_TREE: &[bool] = &[$($ty::PRESERVES_TREE),*];
+
+        /// The slugs each rule shares a splice and a parse with,
+        /// indexed alongside [`KNOWN_IDS`].
+        const SHARES: &[&[&str]] = &[$(&[$($shares),*]),*];
 
         // Asserts each declared dependency names a rule seated earlier.
         $($(const _: () = assert!(
@@ -309,13 +315,13 @@ register_rules! {
     "reflow-collections":           reflow_collections:           ReflowCollectionsConfig    => ReflowCollections          => ["simplify-comprehensions", "stack-method-chains", "reflow-calls", "reflow-signatures"] => ["prune-inert-imports", "frame-docstrings", "expand-docstrings", "group-imports"],
     "prefer-fstring":               prefer_fstring:               PreferFstringConfig        => PreferFstring              => ["normalize-literals", "reflow-collections"] => [],
     "stack-adjacent-strings":       stack_adjacent_strings:       ToggleOnly                 => StackAdjacentStrings       => ["stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures"] => ["frame-docstrings", "expand-docstrings"],
-    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["reflow-parentheses"] => ["strip-none-return", "strip-trailing-commas", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-signatures"],
+    "align-match-case":             align_match_case:             AlignmentConfig            => AlignMatchCase             => ["strip-trailing-commas", "reflow-parentheses"] => ["strip-none-return", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-signatures"],
     "reflow-imports":               reflow_imports:               ReflowImportsConfig        => ReflowImports              => ["shed-backslash-continuations", "prune-inert-imports", "group-imports"] => ["strip-none-return", "strip-trailing-commas", "normalize-comparisons", "reflow-parentheses", "shed-redundant-base", "simplify-comprehensions", "frame-docstrings", "expand-docstrings", "shed-super-args", "stack-method-chains", "reflow-calls", "reflow-signatures", "reflow-collections"],
     "band-constants":               band_constants:               BandConstantsConfig        => BandConstants              => ["simplify-comprehensions", "reflow-imports"] => ["strip-none-return", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "reflow-signatures"],
     "alphabetize-siblings":         alphabetize_siblings:         AlphabetizeSiblingsConfig  => AlphabetizeSiblings        => ["normalize-literals", "strip-trailing-commas", "reflow-parentheses", "frame-docstrings", "expand-docstrings", "stack-method-chains", "reflow-collections", "reflow-calls", "reflow-signatures", "reflow-imports", "band-constants"] => ["shed-redundant-base"],
     "space-statements":             space_statements:             ToggleOnly                 => SpaceStatements            => ["prune-inert-imports", "group-imports", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
     "align-imports":                align_imports:                AlignmentConfig            => AlignImports               => ["reflow-imports", "alphabetize-siblings", "band-constants", "space-statements"] => ["shed-redundant-base", "stack-adjacent-strings", "align-match-case"],
-    "align-colons":                 align_colons:                 AlignmentConfig            => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "space-statements", "align-imports"],
+    "align-colons":                 align_colons:                 AlignColonsConfig          => AlignColons                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "reflow-signatures", "stack-adjacent-strings", "alphabetize-siblings", "band-constants"] => ["shed-redundant-base", "space-statements", "align-imports"],
     "wrap-docstrings":              wrap_docstrings:              ToggleOnly                 => WrapDocstrings             => ["frame-docstrings", "expand-docstrings", "align-colons"] => ["shed-redundant-base", "align-match-case", "space-statements", "align-imports"],
     "align-equals":                 align_equals:                 AlignmentConfig            => AlignEquals                => ["strip-trailing-commas", "reflow-parentheses", "reflow-collections", "alphabetize-siblings", "band-constants", "align-colons"] => ["shed-redundant-base", "space-statements", "align-imports", "wrap-docstrings"],
     "align-comparisons":            align_comparisons:            AlignmentConfig            => AlignComparisons           => ["reflow-parentheses", "normalize-comparisons", "reflow-calls", "reflow-collections"] => ["prune-inert-imports", "shed-redundant-base", "frame-docstrings", "expand-docstrings", "group-imports", "reflow-imports", "band-constants", "alphabetize-siblings", "space-statements", "align-imports", "wrap-docstrings"],
@@ -357,10 +363,18 @@ pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
     }
 }
 
+/// Reports whether the rule named `slug` declares that its output parses
+/// to a tree whose `ComparableModModule` equals its input's, a form that
+/// ignores positions, parentheses, comments, and implicit string
+/// concatenation. `false` for an unknown slug.
+pub fn preserves_tree(slug: &str) -> bool {
+    slug_index(slug).is_some_and(|seat| PRESERVES_TREE[seat])
+}
+
 /// Whether `later`'s dependency column reaches `earlier`, directly or
 /// through the column of a rule it already names. `false` for an
 /// unknown slug on either side. Takes its pair in the opposite order
-/// from [`precedes`], which reads registration order rather than the
+/// from `precedes`, which reads registration order rather than the
 /// declared column.
 pub fn runs_behind(later: &str, earlier: &str) -> bool {
     slug_index(later).is_some_and(|seat| reaches(seat, earlier))
@@ -467,6 +481,19 @@ mod tests {
     }
 
     #[rstest]
+    #[case("strip-trailing-commas", "normalize-literals", true)]
+    #[case("normalize-literals", "strip-trailing-commas", false)]
+    #[case("align-equals", "align-colons", false)]
+    #[case("align-equals", "not-a-rule", false)]
+    fn independent_reads_the_pair_in_registry_order(
+        #[case] later: &str,
+        #[case] earlier: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(independent(later, earlier), expected);
+    }
+
+    #[rstest]
     #[case("reflow-collections", "align-equals", true)]
     #[case("align-equals", "reflow-collections", false)]
     #[case("align-equals", "not-a-rule", false)]
@@ -477,6 +504,16 @@ mod tests {
         #[case] expected: bool,
     ) {
         assert_eq!(precedes(earlier, later), expected);
+    }
+
+    #[rstest]
+    #[case("align-equals", true)]
+    #[case("line-overflow", true)]
+    #[case("reflow-imports", false)]
+    #[case("strip-none-return", false)]
+    #[case("not-a-rule", false)]
+    fn preserves_tree_reads_each_rules_declaration(#[case] slug: &str, #[case] expected: bool) {
+        assert_eq!(preserves_tree(slug), expected);
     }
 
     #[test]
@@ -502,18 +539,5 @@ mod tests {
         assert!(slug_bytes_equal(b"foo", b"foo"));
         assert!(!slug_bytes_equal(b"foo", b"food"));
         assert!(!slug_bytes_equal(b"foo", b"bar"));
-    }
-
-    #[rstest]
-    #[case("strip-trailing-commas", "normalize-literals", true)]
-    #[case("normalize-literals", "strip-trailing-commas", false)]
-    #[case("align-equals", "align-colons", false)]
-    #[case("align-equals", "not-a-rule", false)]
-    fn independent_reads_the_pair_in_registry_order(
-        #[case] later: &str,
-        #[case] earlier: &str,
-        #[case] expected: bool,
-    ) {
-        assert_eq!(independent(later, earlier), expected);
     }
 }

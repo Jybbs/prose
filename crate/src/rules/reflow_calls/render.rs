@@ -19,7 +19,7 @@ use crate::primitives::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    slots::starting_within,
+    slots::{holds_exactly, starting_within},
     tokens::{is_opener, opens_subscript, tokens_within},
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
@@ -170,12 +170,13 @@ impl<'a> Exploder<'a> {
     /// grouping `(` always qualifies, whereas a bracket opening a
     /// literal qualifies only where `reflow-collections` can expand it
     /// and no literal earlier on the row explodes first, and a
-    /// subscript's `[` never does.
+    /// subscript's `[` never does, nor does a bracket inside a forecast
+    /// f-string rewrite.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         let literals = self.source.expandable_literals();
         tokens_within(self.source, range)
             .find(|token| {
-                if !is_opener(token.kind()) {
+                if !is_opener(token.kind()) || self.one_row.rewritten(token.start()) {
                     return false;
                 }
                 if token.kind() == TokenKind::Lsqb
@@ -318,14 +319,16 @@ impl<'a> Exploder<'a> {
         }
     }
 
-    /// The width `arguments` takes on its row, which is the width of
-    /// `form` for a list written across rows and the settled width of
+    /// The width `arguments` takes on its row, which is the
+    /// [`form_width`](crate::primitives::one_row::Settings::form_width)
+    /// of `form` for a list written across rows and the settled width of
     /// the source slice for one already on a single row, whose spacing
     /// stays as the author wrote it less the padding
     /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
-            display_width(form)
+            self.one_row
+                .form_width(self.source, form, arguments.range())
         } else {
             settled_slice_width(self.source, self.padding, arguments.range())
         }
@@ -337,10 +340,14 @@ impl<'a> Exploder<'a> {
     /// `column`. A keyword-expressible call renders one keyword per
     /// line, any other call renders positionally under the length
     /// trigger alone, and where no trigger fires a fractured list
-    /// rejoins onto one line through the same one-row form.
+    /// rejoins onto one line through the same one-row form. Returns
+    /// `None` where `reflow-calls` is off or
+    /// [`Source::explodable_arguments`] leaves the list out.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if arguments.is_empty() || self.source.intersects_comment(arguments.inner_range()) {
+        if !self.one_row.closes()
+            || !holds_exactly(self.source.explodable_arguments(), arguments.range())
+        {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);
@@ -376,12 +383,17 @@ impl<'a> Exploder<'a> {
     /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
     /// there, whereas a subscript's `[` never breaks and charges whole.
+    /// Each forecast f-string rewrite in the charged text reads at the
+    /// width of its f-string.
     pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
         if let Some(offset) = self.first_breaking_opener(tail) {
-            return self.source.width_between(end, offset + TextSize::from(1));
+            let through = TextRange::new(end, offset + TextSize::from(1));
+            return self
+                .one_row
+                .form_width(self.source, self.source.slice(through), through);
         }
         let written = self.settled_width(tail, self.source.tail_width(tail));
         if clipped {

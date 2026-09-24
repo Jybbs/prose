@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/unpadded_args_wrap_under_their_own_descriptions/input.py
+---
+def render(self, markup, options):
+    """
+    Render.
+
+    Args:
+        markup (str): A string containing console markup that will overflow
+                      the line budget for sure yes.
+        options: The render options, which also run long enough to wrap onto
+                 a second line here.
+    """

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Bracket Padding Counts as Written Where Nothing Strips It"
+
+description = '''
+The `return` under `case Point()` carries a space just inside each bracket of its call, and with `strip-stranded-padding` off nothing removes that padding. Measured as written, the folded line would reach 89 columns even with its `:` flush against the pattern, past the 88-column `code-line-length`, so **the arm keeps its multi-line form** and its padding stays where it is.
+'''

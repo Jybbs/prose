@@ -1,0 +1,5 @@
+code-line-length = 50
+target-version   = "3.10"
+
+[harness]
+rules = ["reflow-calls", "reflow-collections", "prefer-fstring"]

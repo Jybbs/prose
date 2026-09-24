@@ -17,7 +17,7 @@ pub(crate) use sweep::{
     pointed_corpus, python_files, report_verified, setting, swept, unread, verifying,
     watch_for_a_runaway, widths_or,
 };
-pub(crate) use tally::{Hit, SHOWN, Tally, remainder};
+pub(crate) use tally::{Hit, SHOWN, Tally, more, remainder, with_rest};
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.
@@ -36,18 +36,23 @@ pub(crate) struct HarnessOptions {
 /// and `thematic` fixtures exercise the full default pipeline.
 /// `binding_analysis` and `identity` run an empty pipeline because their
 /// fixtures pin parser and no-op behavior. Every other directory matches
-/// a rule slug and runs that rule in isolation.
+/// a rule slug and runs that rule beside any the sidecar's
+/// `[harness] rules` lists, every other rule resolving to off.
 pub(crate) fn build_pipeline(
     directory: &str,
     config: &Config,
     harness: &HarnessOptions,
 ) -> Pipeline {
     match directory {
-        "composition" => Pipeline::with_filters(config, &harness.rules, &[]),
+        "composition" => subset(config, &harness.rules),
         "notebook" | "suppression" | "thematic" => Pipeline::with_defaults(config),
         "binding_analysis" | "identity" => Pipeline::empty(),
-        _ => Pipeline::for_rule(directory, config)
-            .unwrap_or_else(|| panic!("no rule registered for fixture directory `{directory}`")),
+        _ => {
+            let own: RuleId = directory.replace('_', "-").parse().unwrap_or_else(|_| {
+                panic!("no rule registered for fixture directory `{directory}`")
+            });
+            subset(config, &[&[own], harness.rules.as_slice()].concat())
+        }
     }
 }
 
@@ -96,6 +101,12 @@ pub(crate) fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
     }, {
         f();
     });
+}
+
+/// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
+/// flag the way a `--select` run does.
+pub(crate) fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
+    Pipeline::with_filters(config, rules, &[])
 }
 
 fn sidecar_contents(path: &Path) -> Option<String> {

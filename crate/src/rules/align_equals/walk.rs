@@ -26,6 +26,7 @@ impl Run {
 
 pub(super) struct Visitor<'a> {
     pub(super) runs: Vec<Run>,
+    pub(super) stranding: Stranding,
     pub(super) walker: aligner::AlignWalker<'a>,
 }
 
@@ -33,7 +34,12 @@ impl Visitor<'_> {
     /// Collects each adjacent assignment run in `body` as a buffered
     /// run.
     fn process_body(&mut self, body: &[Stmt]) {
-        let groups = equal_targets::assignment_groups(self.walker.source, self.walker.rule, body);
+        let groups = equal_targets::assignment_groups(
+            self.walker.source,
+            self.walker.rule,
+            body,
+            self.stranding,
+        );
         self.runs.extend(groups.into_iter().map(Run::Buffered));
     }
 
@@ -45,8 +51,13 @@ impl Visitor<'_> {
     /// keyword sharing its line with another argument keeps its tight
     /// `name=value`, and a single-line call or a held row is skipped.
     fn process_call(&mut self, call: &ExprCall) {
-        for group in equal_targets::keyword_groups(self.walker.source, self.walker.rule, call, true)
-        {
+        for group in equal_targets::keyword_groups(
+            self.walker.source,
+            self.walker.rule,
+            call,
+            true,
+            self.stranding,
+        ) {
             self.runs.push(Run::Buffered(group));
         }
     }
@@ -56,7 +67,12 @@ impl Visitor<'_> {
     /// multi-line default closes the run after it, so the parameters
     /// past it align as a separate group.
     fn process_parameters(&mut self, params: &Parameters) {
-        let groups = equal_targets::parameter_groups(self.walker.source, self.walker.rule, params);
+        let groups = equal_targets::parameter_groups(
+            self.walker.source,
+            self.walker.rule,
+            params,
+            self.stranding,
+        );
         self.runs.extend(groups.into_iter().map(Run::Candidate));
     }
 }

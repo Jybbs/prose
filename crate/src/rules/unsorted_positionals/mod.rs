@@ -35,6 +35,8 @@ impl UnsortedPositionals {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }

@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 
 import { directiveHref, SCOPE_ORDER } from '../../lib/suppression/scopes'
 import ScopeSpecimen                  from '../../theme/components/suppression/ScopeSpecimen.vue'
-import { expectAccessible }           from '../axe'
+import { rendersAccessibly }          from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', async () =>
   ({ data: (await import('../../lib/suppression/directives')).DIRECTIVES }))
@@ -31,7 +31,5 @@ describe('ScopeSpecimen', () => {
     expect(lines.map(l => l.attributes('data-bracket'))).toStrictEqual(['open', 'mid', 'close', 'solo'])
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mount(ScopeSpecimen).html())
-  })
+  rendersAccessibly(() => mount(ScopeSpecimen).html())
 })

@@ -8,7 +8,10 @@ use ruff_python_ast::{Alias, ModModule, Stmt, name::UnqualifiedName};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::inventory::ImportNode;
-use crate::primitives::walk::{Descent, filter_map_over_exprs};
+use crate::primitives::{
+    binding::bare_import_bound_name,
+    walk::{Descent, filter_map_over_exprs},
+};
 
 /// True when `alias`, a dotted bare import such as `import a.b.c`, loads
 /// the `a.b` submodule an attribute chain in `module` reads, per
@@ -43,14 +46,11 @@ fn submodule_reads(module: &ModModule) -> FxHashSet<String> {
         .filter_map(Stmt::as_import_stmt)
         .flat_map(|node| &node.names)
         .map(|alias| {
-            let path = alias.name.as_str();
-            match &alias.asname {
-                Some(asname) => (asname.as_str(), path),
-                None => {
-                    let root = path.split('.').next().unwrap_or(path);
-                    (root, root)
-                }
-            }
+            let bound = bare_import_bound_name(alias);
+            (
+                bound,
+                alias.asname.as_ref().map_or(bound, |_| alias.name.as_str()),
+            )
         })
         .collect();
     if packages.is_empty() {

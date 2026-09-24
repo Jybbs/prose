@@ -77,14 +77,28 @@ An own-line comment directly above an import keeps the whole statement, because 
 
 ## The `__future__` Directive
 
-`from __future__ import annotations` is removed wherever the directive changes nothing at runtime:
+`from __future__ import annotations` is removed wherever either condition below holds:
 
-1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation.
-2. No annotation runs at module scope, and every annotated name resolves to an unconditional module-scope binding written before it.
+1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation until something reads the annotations, and every annotated name resolves.
+2. No annotation runs at module scope, and every annotated name resolves.
 
-A `del` of an annotated name leaves that name unresolved whatever else binds it, because removing the directive makes the annotation evaluate against the namespace the `del` left rather than against a string.
+An annotated name resolves where it is a builtin the module never writes, or where an unconditional module-scope write binds it before the annotation. A builtin the module rebinds anywhere else counts as unresolved, because the annotation reads the builtin once the directive is gone and the rebinding once the directive has stored a string.
 
-An annotation at module scope keeps the directive whatever its names resolve to, because the directive decides whether Python stores that annotation in the module's `__annotations__` as a string or evaluates it at import time, so removing it changes what the module presents. An annotation on a `def` or inside a `class` body is stored on that object instead, and the directive can be removed once every name the annotation reads is bound ahead of it.
+<Fixture rule="prune_inert_imports" case="builtin_the_module_rebinds_keeps_directive" />
+
+A `del` of an annotated name leaves that name unresolved whatever else binds it, because removing the directive makes the annotation evaluate against the namespace the `del` left rather than against a string. A name a function writes through `global` stays unresolved as well, because that write runs only when the function is called.
+
+<Fixture rule="prune_inert_imports" case="name_a_function_writes_globally_keeps_directive" />
+
+Deferral changes when an annotation evaluates rather than whether it does, so on 3.14 a name imported only under `if TYPE_CHECKING:` keeps the directive, because reading the annotations after the module has run would raise `NameError` where the directive left a string.
+
+<Fixture rule="prune_inert_imports" case="py314_target_keeps_directive_for_type_checking_name" />
+
+A read during import evaluates the annotations as well, as `inspect.signature` does from a decorator or a module-level call, which is why a name bound below the annotation reading it keeps the directive on 3.14 too.
+
+<Fixture rule="prune_inert_imports" case="py314_target_keeps_directive_for_name_bound_below" />
+
+Below a 3.14 target, an annotation at module scope keeps the directive whatever its names resolve to, because without the directive Python evaluates that annotation at import time, so removing it runs the annotation's expression when the module loads where the directive stored a string. An annotation on a `def` or inside a `class` body is stored on that object instead, and the directive can be removed once every name the annotation reads is bound ahead of it.
 
 Where [[alphabetize-siblings]] sorts definitions in the same pipeline, a name a module-level class or function binds counts as unresolved whichever side of the annotation it sits on, since the sort moves definitions after this rule has run. A directive covering such a reference therefore stays in whichever order the sort writes. Where [[band-constants]] runs in the same pipeline, a binding it hoists above the annotation naming it counts as written before that annotation, whether the hoist moves a constant into the leading band or an import into the import run, because the rule reads the module as the band places it once the directive is gone.
 
@@ -96,7 +110,7 @@ Every other `__future__` feature stays, because `division` and its siblings chan
 
 ::: tabs key:prose-target-version
 == Python 3.10
-The version-gated branch does not run, so the directive goes only where the module carries no annotation or every annotation resolves against an earlier module-scope binding.
+The version-gated branch does not run, so the directive goes only where the module carries no annotation, or where no annotation runs at module scope and every annotated name is a builtin the module never writes or has an earlier module-scope binding.
 
 == Python 3.11
 The branch does not run, the same as on 3.10.
@@ -108,7 +122,7 @@ The branch does not run, the same as on 3.10.
 The branch does not run, the same as on 3.10.
 
 == Python 3.14
-The version-gated branch runs, because PEP 749 defers annotation evaluation and the directive changes nothing at runtime.
+The version-gated branch runs, so an annotation may sit at module scope, while every annotated name still has to be a builtin the module never writes or be bound by an unconditional module-scope write ahead of the annotation.
 :::
 
 <template #configuration>

@@ -1,10 +1,13 @@
 //! Shared layout helpers for laying a construct out across lines,
-//! covering one-per-line expansion, greedy line filling, and reading
-//! the bracket shape a block already carries.
+//! covering one-per-line expansion, greedy line filling, reading the
+//! bracket shape a block already carries, and finding the bracket a
+//! layout rule breaks a value open at.
 
+mod opener;
 mod pack;
 mod shapes;
 
+pub(crate) use opener::opener_width;
 use pack::flush_bracket_open;
 pub(crate) use pack::{explode_parens, item_indent, pack, requires_expand};
 pub(crate) use shapes::{

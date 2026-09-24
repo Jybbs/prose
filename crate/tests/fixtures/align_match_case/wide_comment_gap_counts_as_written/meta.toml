@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Gap No Rule Narrows Counts as Written"
+
+description = '''
+`case "tag"` carries a trailing comment five spaces past its body, and with `align-comments` off nothing narrows that gap. Folded with its `:` padded out to the column `"other"` sets, the line would reach 90 columns, past the 88-column `code-line-length`. **`"tag"` keeps its multi-line form**, since the rule counts the gap as written when it measures the fold, and `"other"` folds alone with its `:` flush against the pattern.
+'''
