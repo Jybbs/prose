@@ -5,6 +5,8 @@ use std::ops::RangeBounds;
 use itertools::Itertools;
 use similar::{DiffOp, DiffTag, TextDiff};
 
+use super::{more, with_rest};
+
 /// How many lines of a diff an excerpt keeps before it reports the
 /// remainder as a count.
 pub(crate) const EXCERPT: usize = 16;
@@ -35,14 +37,12 @@ pub(crate) fn excerpt(
         "--- {from}\n+++ {to}\n{}",
         lines.iter().take(EXCERPT).format("\n")
     );
-    let more_lines = lines.len().saturating_sub(EXCERPT);
-    let hunks = if rest == 1 { "hunk" } else { "hunks" };
-    match (more_lines, rest) {
-        (0, 0) => shown,
-        (0, rest) => format!("{shown}\n... and {rest} more {hunks}"),
-        (lines, 0) => format!("{shown}\n... {lines} more lines"),
-        (lines, rest) => format!("{shown}\n... {lines} more lines and {rest} more {hunks}"),
-    }
+    let head = match lines.len().saturating_sub(EXCERPT) {
+        0 if rest == 0 => return shown,
+        0 => "...".to_owned(),
+        cut => format!("... {}", more(cut, "line")),
+    };
+    format!("{shown}\n{}", with_rest(&head, rest, "hunk"))
 }
 
 /// The whole unified diff from `expected` to `actual`, headed by those

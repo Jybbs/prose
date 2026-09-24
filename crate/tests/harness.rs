@@ -43,6 +43,24 @@ fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
 }
 
 #[test]
+fn excerpt_counts_one_line_past_its_cap_in_the_singular() {
+    let before = numbered("line", 20);
+    let after: String = (1..=20)
+        .map(|n| {
+            if (6..=10).contains(&n) {
+                format!("row {n}\n")
+            } else {
+                format!("line {n}\n")
+            }
+        })
+        .collect();
+
+    let shown = excerpt("before", "after", &before, &after, ..);
+
+    assert!(shown.ends_with("\n... 1 more line"), "{shown}");
+}
+
+#[test]
 fn excerpt_counts_the_lines_past_its_cap() {
     let before = numbered("line", 40);
     let after = numbered("row", 40);

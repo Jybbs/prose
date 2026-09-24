@@ -1,10 +1,22 @@
 //! Tests for which modules of a corpus a sweep runs, covering the entry
 //! points the walk leaves out, the files that name no importable module,
-//! and the identity a run digests its corpus into.
+//! the target a version names, and what the run's header names about the
+//! corpus.
 
 use rstest::rstest;
+use ruff_python_ast::PythonVersion;
 
-use crate::corpus::{candidates, excluded, identity, importable, version};
+use crate::corpus::{candidates, excluded, identity, importable, target, version};
+
+#[rstest]
+#[case("3.14.6", PythonVersion::PY314)]
+#[case("3.15.0a1", PythonVersion::PY315)]
+fn a_target_takes_the_major_and_minor_a_version_names(
+    #[case] version: &str,
+    #[case] want: PythonVersion,
+) {
+    assert_eq!(target(version), want);
+}
 
 #[test]
 #[should_panic(expected = "does not run")]
@@ -13,19 +25,19 @@ fn an_interpreter_that_does_not_run_names_itself() {
 }
 
 #[test]
-fn candidates_drop_the_entry_points_from_the_rewritten_set() {
-    let rewritten = ["os.py", "test/x.py", "turtledemo/y.py", "re/_parser.py"]
+fn candidates_drop_the_entry_points_from_the_read_set() {
+    let read = ["os.py", "test/x.py", "turtledemo/y.py", "re/_parser.py"]
         .map(str::to_owned)
         .into();
-    assert_eq!(candidates(&rewritten), ["os.py", "re/_parser.py"]);
+    assert_eq!(candidates(&read), ["os.py", "re/_parser.py"]);
 }
 
 #[test]
 fn candidates_drop_the_files_naming_no_importable_module() {
-    let rewritten = ["idlelib/idle.pyw", "os.py", "typing.pyi"]
+    let read = ["idlelib/idle.pyw", "os.py", "typing.pyi"]
         .map(str::to_owned)
         .into();
-    assert_eq!(candidates(&rewritten), ["os.py"]);
+    assert_eq!(candidates(&read), ["os.py"]);
 }
 
 #[rstest]
@@ -59,16 +71,14 @@ fn identity_counts_every_file_the_widened_walk_reads() {
     write("mod.py", "x = 1\n");
     write("notes.txt", "left out\n");
     write("book.ipynb", "{}\n");
-    let bare = identity(root, "3.14.6");
+    let bare = identity(root);
     assert_eq!(bare.files, 1);
     assert_eq!(bare.vendored, Vec::<String>::new());
     write("script.pyw", "y = 2\n");
     write("stub.pyi", "z: int\n");
-    let widened = identity(root, "3.14.6");
-    assert_eq!(widened.files, 3);
-    assert_eq!(widened.interpreter, "3.14.6");
+    assert_eq!(identity(root).files, 3);
     fs_err::create_dir_all(root.join("site-packages/pip-26.2.dist-info")).expect("a dist-info");
-    assert_eq!(identity(root, "3.14.6").vendored, ["pip-26.2"]);
+    assert_eq!(identity(root).vendored, ["pip-26.2"]);
 }
 
 #[rstest]

@@ -3,7 +3,6 @@
 #MISE description = "Verify every lockfile is in sync with its manifest"
 #MISE sources     = [
 #MISE   "@group:manifests",
-#MISE   ".mise/locks/**/*",
 #MISE   ".mise/mise.lock",
 #MISE   "Cargo.lock",
 #MISE   "crate/uv.lock",
@@ -12,7 +11,13 @@
 
 (cd site && bun install --dry-run --frozen-lockfile)
 cargo update --dry-run --locked --workspace
-stale=$(mise lock --dry-run --json)
-[[ "$stale" == "[]" ]] || { echo "$stale" >&2; exit 1; }
+snapshot=$(mktemp)
+trap 'rm -f "$snapshot"' EXIT
+cp .mise/mise.lock "$snapshot"
+mise lock --quiet
+diff -u "$snapshot" .mise/mise.lock >&2 || {
+  mv "$snapshot" .mise/mise.lock
+  exit 1
+}
 MISE_LOCKED_SCOPES=project mise install --dry-run --force --locked
 uv lock --check --project crate

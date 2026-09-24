@@ -1,9 +1,0 @@
----
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/unused_future_annotations/py314_target_defers_directive_noop/input.py
----
-
-
-def add(x: int, y: int) -> int:
-    return x + y

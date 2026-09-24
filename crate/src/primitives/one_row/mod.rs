@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
@@ -20,7 +20,7 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
-        inline::{display_width, settled_slice_width, settled_text_width, spans_rows},
+        inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
     },
@@ -36,14 +36,17 @@ use render::Writer;
 
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
-/// closes a fracture at all, and `max_dict_entries` is `None` where the
-/// `explode` facet leaves the entry cap inert.
+/// closes a fracture at all, `max_dict_entries` is `None` where the
+/// `explode` facet leaves the entry cap inert, and `rewrites` holds the
+/// f-string rewrites a form is measured through, none until
+/// [`forecasting`](Self::forecasting) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
+    rewrites: &'a [Edit],
 }
 
 impl<'a> Settings<'a> {
@@ -70,7 +73,7 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
         let form = self.written(source, expr, range, hold)?;
-        self.fits(column + display_width(&form) + tail)
+        self.fits(column + self.form_width(source, &form, range) + tail)
             .then_some(form)
     }
 
@@ -97,12 +100,16 @@ impl<'a> Settings<'a> {
     /// These settings resolving each call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
     /// builds for one source.
-    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
+    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t>
+    where
+        'a: 't,
+    {
         Settings {
             code_line_length: self.code_line_length,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
+            rewrites: self.rewrites,
         }
     }
 
@@ -187,10 +194,24 @@ impl<'a> Settings<'a> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
     }
 
+    /// The display width of `form`, a one-row form written over `range`,
+    /// once each forecast rewrite inside `range` lands.
+    pub(crate) fn form_width(&self, source: &Source, form: &str, range: TextRange) -> usize {
+        settled_width(source, self.rewrites, range, display_width(form))
+    }
+
+    /// These settings measuring each one-row form through `rewrites`,
+    /// the f-string rewrites [`Source::fstring_rewrites`] forecasts for
+    /// the source the form is written over.
+    pub(crate) fn forecasting(self, rewrites: &'a [Edit]) -> Self {
+        Self { rewrites, ..self }
+    }
+
     /// The narrower of the width `range` settles to as written and the
     /// width `expr`'s canonical rebuild carries. `padding` is the edit
-    /// list `strip-stranded-padding` emits, discounted from the
-    /// as-written reading alone.
+    /// list `strip-stranded-padding` emits merged with the forecast
+    /// rewrites, discounted from the as-written reading, whereas the
+    /// rebuild carries no padding and takes off the rewrites alone.
     pub(crate) fn narrowest_width(
         &self,
         source: &Source,
@@ -203,7 +224,7 @@ impl<'a> Settings<'a> {
         let condensed = self
             .condensed(source, expr, parent)
             .map_or(settled, |text| {
-                settled_text_width(source, padding, &text, range)
+                self.text_width(source, padding, &text, range)
             });
         settled.min(condensed)
     }
@@ -278,6 +299,33 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
     }
+
+    /// True where a forecast rewrite replaces the text at `offset`.
+    pub(crate) fn rewritten(&self, offset: TextSize) -> bool {
+        let next = self
+            .rewrites
+            .partition_point(|rewrite| rewrite.start() <= offset);
+        next.checked_sub(1)
+            .is_some_and(|at| self.rewrites[at].range().contains(offset))
+    }
+
+    /// The display width `text` settles to over `range`, the settled
+    /// width of `range` under `padding` where `text` is that source slice
+    /// as written, and the [`form_width`](Self::form_width) of a rewrite,
+    /// which carries no padding.
+    pub(crate) fn text_width(
+        &self,
+        source: &Source,
+        padding: &[Edit],
+        text: &str,
+        range: TextRange,
+    ) -> usize {
+        if source.slice(range) == text {
+            settled_slice_width(source, padding, range)
+        } else {
+            self.form_width(source, text, range)
+        }
+    }
 }
 
 impl From<&Config> for Settings<'_> {
@@ -291,6 +339,7 @@ impl From<&Config> for Settings<'_> {
                 .cap()
                 .filter(|_| collection.explode),
             rejoin: config.fracture_settings(),
+            rewrites: &[],
         }
     }
 }
@@ -311,6 +360,7 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::{first_expr, parse};
@@ -360,6 +410,34 @@ mod tests {
                 .fitted(&source, expr, expr.into(), column, tail)
                 .is_some(),
             fits,
+        );
+    }
+
+    #[rstest]
+    #[case::as_written(false, None)]
+    #[case::through_the_forecast(true, Some("[\"%s\" % (a,)]"))]
+    fn fitted_measures_a_forecast_rewrite_at_its_fstring_width(
+        #[case] forecast: bool,
+        #[case] expected: Option<&str>,
+    ) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(12),
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("[\n    \"%s\" % (a,)]");
+        let expr = first_expr(&source);
+        let rewrites = if forecast {
+            config.fstrings().forecast(&source)
+        } else {
+            Vec::new()
+        };
+        assert_eq!(
+            Settings::from(&config)
+                .forecasting(&rewrites)
+                .fitted(&source, expr, expr.into(), 0, 0)
+                .as_deref(),
+            expected,
         );
     }
 

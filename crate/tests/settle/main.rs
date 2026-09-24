@@ -38,7 +38,7 @@ use rustc_hash::{FxBuildHasher, FxHashMap};
 
 use common::{
     Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list_of, note_verified,
-    pointed_corpus, report_verified, setting, swept, unread, verifying, widths_or,
+    pointed_corpus, report_verified, setting, subset, swept, unread, verifying, widths_or,
 };
 use trees::check_trees;
 
@@ -668,12 +668,6 @@ fn shard_of(spec: Option<&str>) -> (usize, usize) {
 /// `spliced` rejects counting as a divergence.
 fn spliced_matches(spliced: &Pipeline, source: &Source, chained: &str) -> bool {
     matches!(folded_text(spliced, source), Ok(out) if out == chained)
-}
-
-/// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
-/// flag the way a `--select` run does.
-fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
-    Pipeline::with_filters(config, rules, &[])
 }
 
 /// Folds `probe`'s pair over `text` and panics where the fold's text or

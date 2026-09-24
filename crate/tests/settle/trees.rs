@@ -17,7 +17,7 @@ use ruff_python_ast::{
 use ruff_text_size::Ranged;
 
 use super::*;
-use crate::common::excerpt;
+use crate::common::{excerpt, subset};
 
 /// Every statement a walk reaches, each ahead of the statements nested
 /// in it.
@@ -173,11 +173,7 @@ fn statements(source: &Source) -> Vec<&Stmt> {
 #[test]
 fn check_trees_files_a_joint_run_that_changes_the_tree() {
     let mut probes = Probes::build(88);
-    probes.joint = Some(Pipeline::with_filters(
-        &Config::default(),
-        &[rule("strip-none-return")],
-        &[],
-    ));
+    probes.joint = Some(subset(&Config::default(), &[rule("strip-none-return")]));
     let source = parsed("def f() -> None:\n    pass\n");
     let memo = Memo::new(&probes, source.clone());
     let mut findings = Findings::default();

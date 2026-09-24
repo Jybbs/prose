@@ -17,7 +17,7 @@ use super::{
 use crate::{
     primitives::{
         INDENT_STEP,
-        inline::{display_width, end_column, settled_text_width, spans_rows},
+        inline::{display_width, end_column, spans_rows},
         layout::item_indent,
         travel::{Landing, placed_block},
     },
@@ -92,7 +92,7 @@ impl<'a> Layouter<'a> {
             elts.iter().enumerate().map(|(i, e)| {
                 let tail = tail(i, elts.len(), e.range());
                 let text = self.serialize_expr(e, node, indent, indent, tail);
-                let width = settled_text_width(
+                let width = self.one_row.text_width(
                     self.source,
                     self.padding,
                     &text,
@@ -160,7 +160,10 @@ impl<'a> Layouter<'a> {
         let value_range = self.range_with_parens(&item.value, parent);
         let Some(key) = &item.key else {
             let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent, tail);
-            let width = 2 + settled_text_width(self.source, self.padding, &value_text, value_range);
+            let width =
+                2 + self
+                    .one_row
+                    .text_width(self.source, self.padding, &value_text, value_range);
             return (Cow::Owned(format!("**{value_text}")), width);
         };
         let key_text = self.repaired_key(key, parent, indent);
@@ -191,9 +194,13 @@ impl<'a> Layouter<'a> {
                 || self.placed_slice(&item.value, parent, landing, tail),
                 Cow::Owned,
             );
-        let width = settled_text_width(self.source, self.padding, &key_text, key.range())
+        let width = self
+            .one_row
+            .text_width(self.source, self.padding, &key_text, key.range())
             + 2
-            + settled_text_width(self.source, self.padding, &value_text, value_range);
+            + self
+                .one_row
+                .text_width(self.source, self.padding, &value_text, value_range);
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(
                 self.source

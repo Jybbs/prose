@@ -48,7 +48,7 @@ concurrency:
 jobs:
   checks:
     name            : ${{ matrix.name }}
-    runs-on         : &ubuntu ubuntu-latest
+    runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
     strategy:
@@ -158,9 +158,10 @@ jobs:
         id   : publish
         uses : cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
         with:
-          accountId : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          apiToken  : ${{ secrets.CLOUDFLARE_TOKEN }}
-          command   : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
+          accountId       : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken        : ${{ secrets.CLOUDFLARE_TOKEN }}
+          command         : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
+          wranglerVersion : "4.137.0"
 
   prune:
     name            : 🍂 Prune

@@ -51,7 +51,7 @@ jobs:
   plan:
     name            : 🗺️ Plan
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
-    runs-on         : &ubuntu ubuntu-latest
+    runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
     steps:
@@ -211,7 +211,7 @@ jobs:
 
       - *provision-cargo
 
-      - name : Import every rewritten module against the tracked break set
+      - name : Import every module of the corpus before and after formatting
         run  : mise run imports
 
   subsets:

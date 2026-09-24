@@ -434,6 +434,17 @@ def mise_json(*args: str) -> dict | list:
     return json_loads(report.stdout)
 
 
+def mise_pins(config: dict) -> dict[str, str]:
+    """
+    Map each tool `.mise/config.toml` declares to the version it pins, read off
+    the `version` key where the entry is a table.
+    """
+    return {
+        tool: spec["version"] if isinstance(spec, dict) else spec
+        for tool, spec in config["tools"].items()
+    }
+
+
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Return one parity pair per `overrides` entry the manifest also pins as a
@@ -457,13 +468,10 @@ def parity() -> int:
     from its pair.
     """
     cargo   = toml("Cargo.toml")
-    mise    = toml(".mise/config.toml")
     package = json_loads(read("site/package.json"))
+    pins    = mise_pins(toml(".mise/config.toml"))
     project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
-
-    if isinstance(mise_rust := mise["tools"]["rust"], dict):
-        mise_rust = mise_rust["version"]
 
     pairs = [
         (
@@ -474,7 +482,7 @@ def parity() -> int:
         (
             "Cargo.toml rust-version ↔ .mise/config.toml rust pin",
             major_minor(rust),
-            major_minor(mise_rust)
+            major_minor(pins["rust"])
         ),
         (
             "README.md Python badge ↔ crate/pyproject.toml requires-python",
@@ -483,17 +491,17 @@ def parity() -> int:
         ),
         (
             ".mise/config.toml maturin pin ↔ build-wheel action maturin-version",
-            mise["tools"]["maturin"],
+            pins["maturin"],
             action_pin("build-wheel", "maturin-version")
         ),
         (
             ".mise/config.toml maturin pin ↔ crate/pyproject.toml build requirement",
-            mise["tools"]["maturin"],
+            pins["maturin"],
             build_requirement("maturin")
         ),
         (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
-            mise["tools"]["github:rustwasm/wasm-bindgen"],
+            pins["github:rustwasm/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
         ),
         (

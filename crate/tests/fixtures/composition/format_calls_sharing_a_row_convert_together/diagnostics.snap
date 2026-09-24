@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/format_calls_sharing_a_row_convert_together/input.py
+---
+prefer-fstring@111..152
+prefer-fstring@64..93
+reflow-collections@94..110
