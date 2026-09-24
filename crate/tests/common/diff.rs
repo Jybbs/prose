@@ -1,35 +1,48 @@
 //! Unified-diff excerpts a sweep report shows beside a defect.
 
+use std::ops::RangeBounds;
+
 use itertools::Itertools;
-use similar::TextDiff;
+use similar::{DiffOp, DiffTag, TextDiff};
+
+use super::{more, with_rest};
 
 /// How many lines of a diff an excerpt keeps before it reports the
 /// remainder as a count.
 pub(crate) const EXCERPT: usize = 16;
 
-/// The first hunk of the unified diff from `before` to `after`, headed
-/// `from` and `to`, capped at [`EXCERPT`] lines with the remainder of
-/// the diff reported as a hunk count and a line count.
-pub(crate) fn excerpt(from: &str, to: &str, before: &str, after: &str) -> String {
+/// Renders the first hunk of the unified diff from `before` to `after`
+/// that changes one of the zero-based `rows` of `before`, headed `from`
+/// and `to`. The excerpt stops at [`EXCERPT`] lines and reports the rest
+/// of the diff as a hunk count and a line count.
+pub(crate) fn excerpt(
+    from: &str,
+    to: &str,
+    before: &str,
+    after: &str,
+    rows: impl RangeBounds<usize>,
+) -> String {
     let diff = TextDiff::from_lines(before, after);
-    let mut hunks = diff.unified_diff().iter_hunks();
-    let Some(first) = hunks.next() else {
+    let hunks = diff.unified_diff().iter_hunks().collect_vec();
+    let Some(first) = hunks
+        .iter()
+        .find(|hunk| hunk.ops().iter().any(|op| changes(op, &rows)))
+    else {
         return String::new();
     };
-    let rest = hunks.count();
+    let rest = hunks.len() - 1;
     let first = first.to_string();
     let lines: Vec<&str> = first.lines().collect();
     let shown = format!(
         "--- {from}\n+++ {to}\n{}",
         lines.iter().take(EXCERPT).format("\n")
     );
-    let more_lines = lines.len().saturating_sub(EXCERPT);
-    match (more_lines, rest) {
-        (0, 0) => shown,
-        (0, hunks) => format!("{shown}\n... and {hunks} more hunks"),
-        (lines, 0) => format!("{shown}\n... {lines} more lines"),
-        (lines, hunks) => format!("{shown}\n... {lines} more lines and {hunks} more hunks"),
-    }
+    let head = match lines.len().saturating_sub(EXCERPT) {
+        0 if rest == 0 => return shown,
+        0 => "...".to_owned(),
+        cut => format!("... {}", more(cut, "line")),
+    };
+    format!("{shown}\n{}", with_rest(&head, rest, "hunk"))
 }
 
 /// The whole unified diff from `expected` to `actual`, headed by those
@@ -40,4 +53,12 @@ pub(crate) fn unified_diff(expected: &str, actual: &str) -> String {
         .unified_diff()
         .header("expected", "actual")
         .to_string()
+}
+
+/// Reports whether `op` deletes, replaces, or inserts at one of `rows`, an
+/// insertion counting at the row it lands ahead of.
+fn changes(op: &DiffOp, rows: &impl RangeBounds<usize>) -> bool {
+    let old = op.old_range();
+    op.tag() != DiffTag::Equal
+        && (old.start..old.end.max(old.start + 1)).any(|row| rows.contains(&row))
 }

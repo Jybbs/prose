@@ -4,7 +4,7 @@ label     = "🐧 Linux x86_64"
 manylinux = "2_17"
 name      = "linux-x86_64"
 pattern   = "*manylinux*x86_64.whl"
-runner    = "ubuntu-latest"
+runner    = "ubuntu-24.04"
 smoke     = true
 target    = "x86_64-unknown-linux-gnu"
 
@@ -21,21 +21,21 @@ target    = "aarch64-unknown-linux-gnu"
 label   = "🍎 macOS x86_64"
 name    = "macos-x86_64"
 pattern = "*macosx*x86_64.whl"
-runner  = "macos-latest"
+runner  = "macos-26"
 target  = "x86_64-apple-darwin"
 
 [[platforms]]
 label   = "🍎 macOS aarch64"
 name    = "macos-aarch64"
 pattern = "*macosx*arm64.whl"
-runner  = "macos-latest"
+runner  = "macos-26"
 target  = "aarch64-apple-darwin"
 
 [[platforms]]
 label   = "🪟 Windows x86_64"
 name    = "windows-x86_64"
 pattern = "*win_amd64.whl"
-runner  = "windows-latest"
+runner  = "windows-2025"
 target  = "x86_64-pc-windows-msvc"
 
 [[platforms]]

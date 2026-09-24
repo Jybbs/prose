@@ -92,4 +92,12 @@ impl<'a> Layouter<'a> {
             self.reservations.column_in(self.source, offset),
         )
     }
+
+    /// The display width `text` settles to over `range`, read through
+    /// [`one_row::Settings::text_width`](crate::primitives::one_row::Settings::text_width)
+    /// against this walk's padding and forecast rewrites.
+    pub(super) fn text_width(&self, text: &str, range: TextRange) -> usize {
+        self.one_row
+            .text_width(self.source, self.padding, text, range)
+    }
 }

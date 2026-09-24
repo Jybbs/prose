@@ -2,10 +2,10 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import InlineProse          from '../../theme/components/base/InlineProse.vue'
-import InlineRuleLink       from '../../theme/components/rules/InlineRuleLink.vue'
-import PerRuleFacets        from '../../theme/components/reference/PerRuleFacets.vue'
-import { expectAccessible } from '../axe'
+import InlineProse           from '../../theme/components/base/InlineProse.vue'
+import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
+import PerRuleFacets         from '../../theme/components/reference/PerRuleFacets.vue'
+import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub())
@@ -157,7 +157,5 @@ describe('PerRuleFacets', () => {
     expect(mountFacets().findAll('.per-rule-facets-section')[1].attributes('data-family')).toBe('layout')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountFacets().html())
-  })
+  rendersAccessibly(() => mountFacets().html())
 })

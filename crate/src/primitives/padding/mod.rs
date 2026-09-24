@@ -3,9 +3,13 @@
 //! [`Stranding`] names the padding rule and whether it runs, so a row
 //! its skip directive holds stays out of the prediction and a disabled
 //! rule predicts nothing, [`Stranding::edits`] lists every deletion and
-//! collapse the rule emits over a source, and [`slack`] sums the
-//! columns those edits take off one span.
+//! collapse the rule emits over a source, [`beside`] merges in the
+//! rewrites a later rule forecasts, and [`slack`] sums the columns
+//! those edits take off one span.
 
+use std::borrow::Cow;
+
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
 
@@ -135,13 +139,34 @@ impl ColonEmitter for Emitter<'_> {
     }
 }
 
+/// The edits a measure reads a row through once `rewrites` land beside
+/// the padding rule, ascending by start with each rewrite ahead of the
+/// padding sharing its start. [`slack`] over a range covering a rewrite
+/// counts that rewrite and passes over the padding inside it, whereas a
+/// range inside the rewrite counts the padding alone. Both lists arrive
+/// ascending, and `rewrites` disjoint.
+pub(crate) fn beside<'a>(padding: &'a [Edit], rewrites: &[Edit]) -> Cow<'a, [Edit]> {
+    if rewrites.is_empty() {
+        return Cow::Borrowed(padding);
+    }
+    Cow::Owned(
+        padding
+            .iter()
+            .merge_by(rewrites, |edit, rewrite| edit.start() < rewrite.start())
+            .cloned()
+            .collect(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use rstest::rstest;
     use ruff_text_size::TextSize;
 
     use super::*;
-    use crate::testing::{align_member, parse, range};
+    use crate::testing::{align_member, parse, range, replacement};
 
     fn run_strip(source: &Source, members: &[aligner::Member]) -> Vec<Edit> {
         let mut emitter = Emitter {
@@ -151,6 +176,50 @@ mod tests {
         };
         emitter.handle(members);
         emitter.edits
+    }
+
+    #[test]
+    fn beside_borrows_the_padding_where_no_rewrite_lands() {
+        let padding = [Edit::range_deletion(range(1, 2))];
+        assert_matches!(beside(&padding, &[]), Cow::Borrowed(_));
+    }
+
+    #[test]
+    fn beside_orders_a_rewrite_ahead_of_the_padding_sharing_its_start() {
+        let padding = [
+            Edit::range_deletion(range(1, 2)),
+            Edit::range_deletion(range(4, 5)),
+            Edit::range_deletion(range(10, 11)),
+        ];
+        let rewrites = [replacement("f", 4, 10)];
+        let ranges: Vec<_> = beside(&padding, &rewrites)
+            .iter()
+            .map(Ranged::range)
+            .collect();
+        assert_eq!(
+            ranges,
+            [range(1, 2), range(4, 10), range(4, 5), range(10, 11)]
+        );
+    }
+
+    #[rstest]
+    #[case::covering_the_rewrite(0, 16, 6)]
+    #[case::inside_the_rewrite(11, 16, 2)]
+    fn slack_counts_a_rewrite_or_the_padding_inside_it_but_never_both(
+        #[case] start: u32,
+        #[case] end: u32,
+        #[case] expected: isize,
+    ) {
+        let source = parse("x = \"%s\" % ( a )\n");
+        let padding = [
+            Edit::range_deletion(range(12, 13)),
+            Edit::range_deletion(range(14, 15)),
+        ];
+        let rewrites = [replacement("f\"{a}\"", 4, 16)];
+        assert_eq!(
+            slack(&source, &beside(&padding, &rewrites), range(start, end)),
+            expected
+        );
     }
 
     #[rstest]

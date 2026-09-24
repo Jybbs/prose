@@ -3,42 +3,50 @@
 //! leaves.
 
 use ruff_python_ast::Expr;
-use ruff_text_size::{Ranged, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::slots::holds_exactly, source::Source};
+use crate::{
+    primitives::{one_row, slots::holds_exactly},
+    source::Source,
+};
 
 /// Returns the display width from `start` through the bracket a layout
 /// rule breaks `expr` open at, meaning the `(` of a call
-/// [`Source::explodable_arguments`] lists while `explodes_calls` holds,
-/// or the opener of a literal [`Source::expandable_literals`] lists.
-/// `None` for any other expression and for a bracket on a later row
-/// than `start`.
+/// [`Source::explodable_arguments`] lists where
+/// [`one_row::Settings::closes`] holds, or the opener of a literal
+/// [`Source::expandable_literals`] lists, measured through `one_row`'s
+/// forecast rewrites. `None` for any other expression, for a bracket a
+/// forecast rewrite replaces, and for a bracket on a later row than
+/// `start`.
 pub(crate) fn opener_width(
     source: &Source,
+    one_row: &one_row::Settings,
     expr: &Expr,
     start: TextSize,
-    explodes_calls: bool,
 ) -> Option<usize> {
     let opener = match expr {
         Expr::Call(call) => {
             let arguments = call.arguments.range();
-            (explodes_calls && holds_exactly(source.explodable_arguments(), arguments))
+            (one_row.closes() && holds_exactly(source.explodable_arguments(), arguments))
                 .then_some(arguments.start())?
         }
         _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
     };
-    let end = opener + TextSize::of('(');
-    source
-        .same_line(start, end)
-        .then(|| source.width_between(start, end))
+    let through = TextRange::new(start, opener + TextSize::of('('));
+    (!one_row.rewritten(opener) && source.same_line(start, through.end()))
+        .then(|| one_row.form_width(source, source.slice(through), through))
 }
 
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{first_value, parse};
+    use crate::{
+        config::Config,
+        testing::{first_value, parse},
+    };
 
     #[rstest]
     #[case::call_arguments("x = frobnicate(a, b)\n", Some(11))]
@@ -56,7 +64,11 @@ mod tests {
     ) {
         let source = parse(src);
         let value = first_value(&source);
-        assert_eq!(opener_width(&source, value, value.start(), true), expected);
+        let one_row = Config::default().one_row_settings();
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
     }
 
     #[rstest]
@@ -68,6 +80,37 @@ mod tests {
     ) {
         let source = parse(src);
         let value = first_value(&source);
-        assert_eq!(opener_width(&source, value, value.start(), false), expected);
+        let mut config = Config::default();
+        config.rules.reflow_calls.enabled = false;
+        let one_row = config.one_row_settings();
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case::read_as_written(false, Some(15))]
+    #[case::replaced_by_its_fstring(true, None)]
+    fn opener_width_leaves_out_a_bracket_a_forecast_rewrite_replaces(
+        #[case] forecast: bool,
+        #[case] expected: Option<usize>,
+    ) {
+        let config = Config {
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("x = \"{} {}\".format(a, b)\n");
+        let value = first_value(&source);
+        let rewrites = if forecast {
+            config.fstrings().forecast(&source)
+        } else {
+            Vec::new()
+        };
+        let one_row = config.one_row_settings().forecasting(&rewrites);
+        assert_eq!(
+            opener_width(&source, &one_row, value, value.start()),
+            expected
+        );
     }
 }

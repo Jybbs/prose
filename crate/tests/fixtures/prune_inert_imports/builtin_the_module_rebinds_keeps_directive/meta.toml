@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Builtin the Module Rebinds Keeps the Directive"
+
+description = '''
+`scale` annotates `int`, which the module rebinds to `long` below it wherever that name exists. **The directive stays**, because a builtin resolves only where the module never writes its name, and here the annotation reads the builtin when `scale` is defined but reads `long` once the rebinding has run.
+'''

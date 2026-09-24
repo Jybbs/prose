@@ -34,10 +34,12 @@ impl AlignMatchCase {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
-            settings: aligner::Settings::from(&config.rules.align_match_case)
+            settings: aligner::Settings::aligned(config.rules.align_match_case.max_shift)
                 .with_singleton_strip(),
             stranding: config.stranded_padding(),
         }

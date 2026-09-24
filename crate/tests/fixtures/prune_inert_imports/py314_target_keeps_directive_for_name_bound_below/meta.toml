@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A 3.14 Target Keeps the Directive for a Name Bound Below Its Reader"
+
+description = '''
+`target-version = "3.14"` is set, and `convert` annotates its parameter with `Alias`, which is assigned below a module-level `inspect.signature(convert)` call. **`from __future__ import annotations` stays**, because deferral changes when an annotation evaluates rather than whether it does. `inspect.signature` reads the annotations while the module is still loading, before `Alias` is bound, so without the directive the import raises `NameError`, whereas with it the annotation stays a string.
+'''

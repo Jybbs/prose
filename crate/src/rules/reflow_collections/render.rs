@@ -16,7 +16,6 @@ use super::{
 };
 use crate::{
     primitives::{
-        inline::settled_text_width,
         layout::item_indent,
         travel::{Landing, placed_block},
     },
@@ -90,12 +89,7 @@ impl<'a> Layouter<'a> {
             elts.iter().enumerate().map(|(i, e)| {
                 let tail = tail(i, elts.len(), e.range());
                 let text = self.serialize_expr(e, node, indent, indent, tail);
-                let width = settled_text_width(
-                    self.source,
-                    self.padding,
-                    &text,
-                    self.range_with_parens(e, node),
-                );
+                let width = self.text_width(&text, self.range_with_parens(e, node));
                 (text, width, is_atomic(e), e.range())
             }),
         )

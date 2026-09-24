@@ -20,7 +20,7 @@ use crate::{
         INDENT_STEP,
         aligner::{self, Extent, Slot},
         colon_targets::dict_entry_slot,
-        inline::{display_width, end_column, opening_width, settled_text_width, spans_rows},
+        inline::{display_width, end_column, opening_width, spans_rows},
         layout::opener_width,
         tokens::code_token_before,
         travel::Landing,
@@ -62,7 +62,7 @@ impl<'a> Layouter<'a> {
         let value_range = self.range_with_parens(&item.value, parent);
         let Some(key) = &item.key else {
             let value_text = self.serialize_expr(&item.value, parent, indent + 2, indent, tail);
-            let width = 2 + settled_text_width(self.source, self.padding, &value_text, value_range);
+            let width = 2 + self.text_width(&value_text, value_range);
             return Entry {
                 key: None,
                 key_width: 0,
@@ -96,10 +96,8 @@ impl<'a> Layouter<'a> {
                 || self.placed_slice(&item.value, parent, landing, tail),
                 Cow::Owned,
             );
-        let key_width = settled_text_width(self.source, self.padding, &key_text, key.range());
-        let width = key_width
-            + CANONICAL_SEPARATOR
-            + settled_text_width(self.source, self.padding, &value_text, value_range);
+        let key_width = self.text_width(&key_text, key.range());
+        let width = key_width + CANONICAL_SEPARATOR + self.text_width(&value_text, value_range);
         let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
             Cow::Borrowed(
                 self.source
@@ -201,9 +199,9 @@ impl<'a> Layouter<'a> {
                 Extent {
                     expanded: opener_width(
                         self.source,
+                        &self.one_row,
                         &item.value,
                         entry.value_start,
-                        self.one_row.closes(),
                     )
                     .map(|width| indent + entry.key_width + CANONICAL_SEPARATOR + width),
                     inline: indent + entry.width + tail,
