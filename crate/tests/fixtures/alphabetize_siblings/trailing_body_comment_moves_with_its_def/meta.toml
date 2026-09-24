@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment Closing a Function Body Moves With the Function"
+
+description = '''
+The last line of `zeta` is a comment at the indent of its body. **`alpha` sorts above `zeta` and the comment moves down with `zeta`**, because a comment indented deeper than the statement after it belongs to the body above it rather than standing between the two.
+'''

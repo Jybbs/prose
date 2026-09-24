@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_list_template_converts_in_one_pass/input.py
+---
+prefer-fstring@6..23
+strip-stranded-padding@14..15
+strip-stranded-padding@21..22
+strip-stranded-padding@26..27
+strip-stranded-padding@5..6

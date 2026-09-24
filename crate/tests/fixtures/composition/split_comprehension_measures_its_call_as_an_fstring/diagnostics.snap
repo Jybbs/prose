@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/split_comprehension_measures_its_call_as_an_fstring/input.py
+---
+prefer-fstring@54..83
+reflow-collections@83..99

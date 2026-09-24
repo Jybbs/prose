@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` Leaves a Class Docstring's `Raises:` as Written"
+
+description = '''
+`Stations` carries `# prose: keep` and documents its fields under `Attributes:` in the reverse of their declared order, beside a `Raises:` section listing `ValueError` above `KeyError`. **The `Attributes:` entries follow the fields while the `Raises:` entries stay as written**, because under the marker an entry naming no field keeps its place rather than sorting.
+'''

@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_value_held_by_a_skip_stays_inline/input.py
+---
+HANDLERS = {
+    "cache" : clear(),
+    "pr"    : dispatch(close, comment, lock, merge, ready, reopen, review, unlock, abc),
+    "variable": assign(delete, set)
+}  # prose: skip[reflow-calls]

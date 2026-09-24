@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A New Entry in an Aligned Dict Expands Into Its Column"
+
+description = '''
+`ENDPOINTS` is already aligned, the `reviewers` entry padded out to the column the `attempts` key sets, when the one-row `comments` entry is added beneath it. **[[reflow-collections]] measures the opening row of `reviewers` at the canonical `": "` rather than with the padding it already holds**, so that row stays in the run, and the `comments` list, whose row would cross the budget at the column, expands so `comments` joins it. The dict comes out the same as it would from input carrying no padding at all.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/off_region_in_a_class_holds_its_members/input.py
+---
+alphabetize-siblings@7..223

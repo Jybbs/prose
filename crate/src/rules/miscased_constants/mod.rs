@@ -32,6 +32,8 @@ impl MiscasedConstants {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             allow_pattern: config.rules.miscased_constants.allow_pattern.clone(),

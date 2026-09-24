@@ -5,7 +5,8 @@
 //!     members        Each class body's members reordered behind its docstring.
 //!     parenthesized  Every argument of a sample of calls wrapped in parentheses.
 //!     shuffled       Top-level statements reordered, each keeping its lines.
-//!     suppressed     A `# prose: off` region and a logical-line `# prose: skip`.
+//!     suppressed     A `# prose: off` region, a logical-line `# prose: skip`,
+//!                    and a `# prose: keep` class header.
 //!     widened        Identifiers lengthened or shortened.
 //!
 //! Each mutation takes source text and returns source text, running on
@@ -40,7 +41,7 @@ use libcst_native::{
 use rand::{
     RngExt, SeedableRng,
     rngs::StdRng,
-    seq::{IndexedRandom, SliceRandom, index},
+    seq::{IndexedRandom, IteratorRandom, SliceRandom, index},
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::{
@@ -348,7 +349,9 @@ fn spliced(
 }
 
 /// Returns `text` with a `# prose: off` region wrapped around one top-level
-/// statement and a `# prose: skip` closing one simple line.
+/// statement, a `# prose: skip` closing one simple line, and a
+/// `# prose: keep` trailing the header of one top-level class whose header
+/// carries no comment.
 fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
     let simple = module
@@ -378,6 +381,24 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
         None => &mut module.footer,
     };
     lines.insert(0, led("# prose: on"));
+    let kept = module
+        .body
+        .iter_mut()
+        .filter_map(|statement| match statement {
+            Statement::Compound(CompoundStatement::ClassDef(ClassDef {
+                body: Suite::IndentedBlock(block),
+                ..
+            })) if block.header.comment.is_none() => Some(&mut block.header),
+            _ => None,
+        })
+        .choose(rng);
+    if let Some(header) = kept {
+        *header = TrailingWhitespace {
+            comment: Some(Comment("# prose: keep")),
+            whitespace: SimpleWhitespace("  "),
+            ..Default::default()
+        };
+    }
     Some(render(&module))
 }
 

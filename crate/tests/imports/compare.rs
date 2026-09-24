@@ -3,8 +3,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use itertools::Itertools;
+
 use crate::{
-    outcome::{Kind, Outcome},
+    common::with_rest,
+    outcome::{ANNOTATED, Kind, Outcome},
     records::{Blocked, Break, Frame},
 };
 
@@ -12,20 +15,18 @@ use crate::{
 /// that name.
 const MISSING: &str = "no plain constant";
 
-/// Why one run counts as broken beside another, as the tag and names a
-/// baseline keys on beside the sentence a report shows.
+/// Why one run counts as broken beside another, as the names it turns on
+/// beside the sentence a report shows.
 #[derive(Debug, Eq, PartialEq)]
 pub(crate) struct Divergence {
-    /// What kind of difference this is, stable under any rewording.
-    pub(crate) kind: &'static str,
     /// Every name the difference turns on, sorted.
     pub(crate) names: Vec<String>,
     /// The sentence a report shows.
     pub(crate) reason: String,
 }
 
-/// How one width's candidates divide, the breaks found among the comparable
-/// ones beside the names the verdict reads.
+/// How one width's candidates divide, meaning the breaks found among the
+/// comparable ones beside the modules no comparison could judge.
 pub(crate) struct Partition {
     /// Every module the rewrite breaks.
     pub(crate) breaks: Vec<Break>,
@@ -57,8 +58,7 @@ pub(crate) fn compare(
                 let Some(ran) = before.get(module) else {
                     unreachable!("invariant: a run that raised or timed out left a record")
                 };
-                let left = Blocked::of(module, &ran.raised, &ran.error);
-                uncomparable.insert(module.clone(), left);
+                uncomparable.insert(module.clone(), Blocked::of(module, ran));
             }
         }
     }
@@ -73,10 +73,8 @@ pub(crate) fn compare(
                 formatted: formatted.clone(),
                 frame: Frame::default(),
                 hunk: Vec::new(),
-                kind: diverged.kind,
                 module: module.clone(),
                 name: diverged.names.first().cloned(),
-                names: diverged.names,
                 original: original.clone(),
                 reason: diverged.reason,
             })
@@ -91,30 +89,28 @@ pub(crate) fn compare(
 }
 
 /// Says why one run counts as broken beside another, or `None` where both
-/// bound the same namespace.
+/// bound the same namespace and every definition whose annotations evaluate
+/// in the original evaluates in the formatted run too.
 pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
     if formatted.kind != Kind::Ok {
         return Some(Divergence {
-            kind: if formatted.kind == Kind::Timeout {
-                "times out"
-            } else {
-                "raises"
-            },
             names: formatted.name.clone().into_iter().collect(),
             reason: formatted.error.clone(),
         });
     }
-    if let Some(lost) = sided(&original.names, &formatted.names, "unbound", |whom| {
+    if let Some(lost) = sided(&original.names, &formatted.names, |whom| {
         format!("leaves {whom} unbound")
     }) {
         return Some(lost);
     }
-    if let Some(gained) = sided(&formatted.names, &original.names, "extra", |whom| {
+    if let Some(gained) = sided(&formatted.names, &original.names, |whom| {
         format!("binds {whom} the original does not")
     }) {
         return Some(gained);
     }
-    let differing = respelt(original, formatted).min()?;
+    let Some(differing) = respelt(original, formatted).min() else {
+        return unevaluated(formatted, original);
+    };
     let was = original
         .constants
         .get(differing)
@@ -123,20 +119,43 @@ pub(crate) fn divergence(formatted: &Outcome, original: &Outcome) -> Option<Dive
         .constants
         .get(differing)
         .map_or(MISSING, String::as_str);
+    let reason = if differing == ANNOTATED {
+        format!("annotates {now} at module scope where the original annotates {was}")
+    } else {
+        format!("binds `{differing}` to {now} where the original binds {was}")
+    };
     Some(Divergence {
-        kind: "rebound",
         names: vec![differing.clone()],
-        reason: format!("binds `{differing}` to {now} where the original binds {was}"),
+        reason,
     })
 }
 
+/// The names of `from` that `held` does not carry. Both slices arrive
+/// sorted, which is what lets the lookup bisect `held`.
+pub(crate) fn missing<'a>(
+    from: &'a [String],
+    held: &'a [String],
+) -> impl Iterator<Item = &'a String> {
+    from.iter()
+        .filter(move |name| held.binary_search(name).is_err())
+}
+
 /// Every name two runs of one tree bound differently, covering a name only
-/// one side bound and a constant the two spelt differently. [`divergence`]
-/// stops at the first of these it finds, where this returns every one.
+/// one side bound, a constant the two spelt differently, and a definition
+/// whose annotations raised in one run alone or raised differently in each.
+/// [`divergence`] stops at the first of these it finds, where this returns
+/// every one.
 pub(crate) fn varying(one: &Outcome, other: &Outcome) -> BTreeSet<String> {
+    let raising = |held: &&String| one.unevaluated.get(*held) != other.unevaluated.get(*held);
     missing(&one.names, &other.names)
         .chain(missing(&other.names, &one.names))
         .chain(respelt(one, other))
+        .chain(
+            one.unevaluated
+                .keys()
+                .chain(other.unevaluated.keys())
+                .filter(raising),
+        )
         .cloned()
         .collect()
 }
@@ -146,23 +165,6 @@ pub(crate) fn varying(one: &Outcome, other: &Outcome) -> BTreeSet<String> {
 fn kind(held: &BTreeMap<String, Outcome>, module: &str) -> Kind {
     held.get(module)
         .map_or(Kind::Unmeasured, |outcome| outcome.kind)
-}
-
-/// The names of `from` that `held` does not carry. Both slices arrive
-/// sorted, which is what lets the lookup bisect `held`.
-fn missing<'a>(from: &'a [String], held: &'a [String]) -> impl Iterator<Item = &'a String> {
-    from.iter()
-        .filter(move |name| held.binary_search(name).is_err())
-}
-
-/// One name and however many followed it, which is the sentence a report
-/// shows rather than the key a baseline holds.
-fn named(first: &str, rest: usize) -> String {
-    match rest {
-        0 => format!("`{first}`"),
-        1 => format!("`{first}` and 1 more name"),
-        _ => format!("`{first}` and {rest} more names"),
-    }
 }
 
 /// The names under which two runs spelt a plain constant differently. A
@@ -177,20 +179,42 @@ fn respelt<'a>(one: &'a Outcome, other: &'a Outcome) -> impl Iterator<Item = &'a
 /// The divergence one direction of a name difference makes, `None` where
 /// `held` carries every name `from` binds. `reason` takes the first name
 /// beside however many followed it.
-fn sided(
-    from: &[String],
-    held: &[String],
-    kind: &'static str,
-    reason: impl Fn(&str) -> String,
-) -> Option<Divergence> {
+fn sided(from: &[String], held: &[String], reason: impl Fn(&str) -> String) -> Option<Divergence> {
     let names: Vec<_> = missing(from, held).cloned().collect();
     let [first, rest @ ..] = names.as_slice() else {
         return None;
     };
-    let reason = reason(&named(first, rest.len()));
-    Some(Divergence {
-        kind,
-        names,
-        reason,
-    })
+    let reason = reason(&with_rest(&format!("`{first}`"), rest.len(), "name"));
+    Some(Divergence { names, reason })
+}
+
+/// The divergence made by each definition whose annotations raise in
+/// `formatted` but not with the same exception on the same name in
+/// `original`, `None` where there is none. Each name it turns on is the one
+/// an exception could not find, or the definition's own where none is named.
+fn unevaluated(formatted: &Outcome, original: &Outcome) -> Option<Divergence> {
+    let raising: Vec<_> = formatted
+        .unevaluated
+        .iter()
+        .filter(|(held, raise)| original.unevaluated.get(*held) != Some(*raise))
+        .collect();
+    let [(first, raise), rest @ ..] = raising.as_slice() else {
+        return None;
+    };
+    let on = raise
+        .missing
+        .as_deref()
+        .map_or_else(String::new, |name| format!(" on `{name}`"));
+    let reason = format!(
+        "reading the annotations of {} raises {}{on} where the original's do not",
+        with_rest(&format!("`{first}`"), rest.len(), "definition"),
+        raise.raised,
+    );
+    let names = raising
+        .iter()
+        .map(|(held, raise)| raise.missing.as_ref().unwrap_or(held).clone())
+        .sorted()
+        .dedup()
+        .collect();
+    Some(Divergence { names, reason })
 }

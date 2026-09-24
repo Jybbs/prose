@@ -33,7 +33,10 @@ use crate::{
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
-    rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_signatures},
+    rules::{
+        Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
+        reflow_signatures,
+    },
     source::Source,
 };
 
@@ -43,6 +46,7 @@ mod render;
 #[derive(Debug)]
 pub(crate) struct ReflowCalls {
     expands_literals: bool,
+    fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
     reservations: reserve::Reservations,
@@ -55,10 +59,13 @@ impl ReflowCalls {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let collections = &config.rules.reflow_collections;
         Self {
             expands_literals: collections.enabled && collections.explode,
+            fstrings: config.fstrings(),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
@@ -76,10 +83,12 @@ impl ReflowCalls {
     ) -> Vec<Edit> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
-        let padding = source.stranded_padding(self.stranding);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
         let held = self
             .signatures
-            .over(source, &targets, &padding)
+            .over(source, &targets, &padding, &rewrites)
             .exploding_parameters(&source.ast().body);
         let mut exploder = Exploder {
             edits: Vec::new(),
@@ -87,7 +96,7 @@ impl ReflowCalls {
             held: &held,
             indent: None,
             line_shift: 0,
-            one_row: self.one_row.against(&targets),
+            one_row: self.one_row.against(&targets).forecasting(&rewrites),
             origin_column: 0,
             padding: &padding,
             region: source.module_range(),
@@ -242,8 +251,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
     /// Leaves a literal `reflow-collections` expands unwalked, the calls
     /// inside it reshaping where its entries land, and records the seat of
     /// each call and attribute access it reaches inside a relocated region
-    /// into `seats`, where set, leaving out every one inside an argument
-    /// list a skip directive holds for this rule.
+    /// into `seats`, where set.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if is_layoutable(expr) && self.expands_later(expr) {
             return;
@@ -265,16 +273,9 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
         let column = self.open_paren_column(call);
-        let held = self.seats.take_if(|_| {
-            self.source
-                .suppression_map()
-                .suppresses(call.arguments.range(), ReflowCalls::SLUG)
-        });
-        let exploded = self.explode_args(call, column);
-        self.seats = self.seats.or(held);
         // The rendered list already carries every nested reshape, so the
         // arguments go unwalked.
-        if let Some(text) = exploded {
+        if let Some(text) = self.explode_args(call, column) {
             if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
                 insert_edit(&mut self.edits, edit);
             }

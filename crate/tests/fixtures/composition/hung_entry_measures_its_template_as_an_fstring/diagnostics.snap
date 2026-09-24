@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/hung_entry_measures_its_template_as_an_fstring/input.py
+---
+reflow-calls@46..105
+reflow-collections@47..104

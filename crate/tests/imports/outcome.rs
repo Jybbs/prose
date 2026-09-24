@@ -11,9 +11,13 @@ use std::{
 /// therefore leaves out.
 const REORDERED: &[&str] = &["__all__", "__slots__"];
 
-/// The names every module binds through the loader rather than through its
-/// own code, which a comparison leaves out.
+/// The name the probe records the names a module annotates under.
+pub(crate) const ANNOTATED: &str = "__annotations__";
+
+/// The names a module binds through the loader or the compiler rather than
+/// through its own statements, which a comparison leaves out.
 const UNBOUND: &[&str] = &[
+    "__annotate__",
     "__builtins__",
     "__cached__",
     "__doc__",
@@ -51,12 +55,15 @@ impl Kind {
 /// What one run of a module left behind, as the probe records it.
 #[derive(Clone, Default)]
 pub(crate) struct Outcome {
-    /// The plain constants the run bound, each spelt.
+    /// The plain constants the run bound, each spelt, beside the names the
+    /// module annotates, spelt under [`ANNOTATED`].
     pub(crate) constants: BTreeMap<String, String>,
     /// The predicate of a sentence naming the module.
     pub(crate) error: String,
     /// The file and row of every frame a raise passed through.
     pub(crate) frames: Vec<(String, usize)>,
+    /// The module a failed import named, where the exception names one.
+    pub(crate) importing: Option<String>,
     /// What the run amounted to.
     pub(crate) kind: Kind,
     /// Every module the run took from a tree, relative to it, sorted.
@@ -67,6 +74,9 @@ pub(crate) struct Outcome {
     pub(crate) names: Vec<String>,
     /// The exception a raised run named, empty where it named none.
     pub(crate) raised: String,
+    /// The qualified name of each function and class an `ok` run defined
+    /// whose annotations raised when read, beside what each raised.
+    pub(crate) unevaluated: BTreeMap<String, Raise>,
 }
 
 impl Outcome {
@@ -104,6 +114,7 @@ impl Outcome {
                         read.frames.push((file.to_owned(), row));
                     }
                 }
+                (Some("importing"), Some(module), _) => read.importing = Some(module.to_owned()),
                 (Some("kind"), Some(kind), _) => read.kind = Kind::of(kind),
                 (Some("loaded"), Some(path), _) => {
                     if let Some(relative) = relative_to(path, trees) {
@@ -115,6 +126,15 @@ impl Outcome {
                     read.error = format!("raises {raised}: {message}");
                     read.raised = raised.to_owned();
                 }
+                (Some("unevaluated"), Some(held), Some(raised)) => {
+                    let missing = fields
+                        .next()
+                        .filter(|name| !name.is_empty())
+                        .map(str::to_owned);
+                    let raised = raised.to_owned();
+                    read.unevaluated
+                        .insert(held.to_owned(), Raise { missing, raised });
+                }
                 _ => {}
             }
         }
@@ -124,14 +144,25 @@ impl Outcome {
         read
     }
 
-    /// This run with `names` left out of both the names it bound and the
-    /// constants among them.
+    /// This run with `names` left out of the names it bound, the constants
+    /// among them, and the definitions whose annotations raised.
     pub(crate) fn without(&self, names: &BTreeSet<String>) -> Self {
         let mut kept = self.clone();
         kept.constants.retain(|name, _| !names.contains(name));
         kept.names.retain(|name| !names.contains(name));
+        kept.unevaluated.retain(|held, _| !names.contains(held));
         kept
     }
+}
+
+/// What reading one definition's annotations raised, as the exception
+/// beside the name it turned on.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct Raise {
+    /// The name the exception turned on, where it named one.
+    pub(crate) missing: Option<String>,
+    /// The exception raised.
+    pub(crate) raised: String,
 }
 
 /// A path named relative to whichever of `trees` carries it, `None` for one

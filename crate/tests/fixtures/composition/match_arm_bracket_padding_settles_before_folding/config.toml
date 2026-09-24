@@ -1,0 +1,2 @@
+[harness]
+rules = ["align-match-case", "strip-stranded-padding"]

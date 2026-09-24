@@ -1,0 +1,25 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/off_region_divides_its_siblings/input.py
+---
+def mango():
+    return 2
+
+
+def zebra():
+    return 1
+
+
+# prose: off
+def middle():
+    return 3
+# prose: on
+
+
+def apple():
+    return 5
+
+
+def pear():
+    return 4

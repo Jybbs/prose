@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/pragma_divides_the_import_run/input.py
+---
+import abc
+import zlib
+# isort: split
+import os
+import sys
+
+print(abc, os, sys, zlib)

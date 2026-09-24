@@ -14,13 +14,21 @@ use ruff_source_file::OneIndexed;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
-use crate::{primitives::aligner, rules::RuleId, source::Source};
+use crate::{
+    primitives::{aligner, padding::Stranding},
+    rules::RuleId,
+    source::Source,
+};
 
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
 /// side paren-aware. `None` for any other shape or when the span up to
 /// the operator breaks across lines.
-pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member> {
+pub(crate) fn assignment(
+    source: &Source,
+    stmt: &Stmt,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     match stmt {
         Stmt::AnnAssign(a) => {
             let value = a.value.as_deref()?;
@@ -30,6 +38,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member
                 a.target.range().cover(annotation),
                 value.into(),
                 a.into(),
+                stranding,
             )
         }
         Stmt::Assign(a) => {
@@ -41,6 +50,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member
                 source.paren_aware_range(target.into(), a.into()),
                 a.value.as_ref().into(),
                 a.into(),
+                stranding,
             )
         }
         Stmt::AugAssign(a) => {
@@ -55,6 +65,7 @@ pub(crate) fn assignment(source: &Source, stmt: &Stmt) -> Option<aligner::Member
                 TextRange::new(target_range.end(), value_start),
                 |t| t.kind().as_augmented_assign_operator().is_some(),
                 op.len(),
+                stranding,
             )?;
             // `op` is the binary form (`+`), so the augmented operator
             // runs one column longer for its trailing `=`.
@@ -77,6 +88,7 @@ pub(crate) fn keyword_groups(
     rule: RuleId,
     call: &ExprCall,
     break_after_multiline: bool,
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
     if !source.contains_line_break(call.arguments.range()) {
         return Vec::new();
@@ -92,7 +104,7 @@ pub(crate) fn keyword_groups(
         call.arguments.iter_source_order(),
         break_after_multiline,
         |arg| {
-            let Some(member) = keyword(source, arg) else {
+            let Some(member) = keyword(source, arg, stranding) else {
                 return aligner::Slot::Break;
             };
             if shared_lines.contains(&source.line_index(member.line_start)) {
@@ -108,7 +120,11 @@ pub(crate) fn keyword_groups(
 /// the parameter name through the annotation's paren-aware end, and the
 /// value-side gap is recovered against the parameter-with-default node so
 /// a parenthesized default keeps its `(`.
-pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<aligner::Member> {
+pub(crate) fn parameter(
+    source: &Source,
+    param: AnyParameterRef<'_>,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let AnyParameterRef::NonVariadic(with_default) = param else {
         return None;
     };
@@ -122,6 +138,7 @@ pub(crate) fn parameter(source: &Source, param: AnyParameterRef<'_>) -> Option<a
         TextRange::new(param.name().start(), annotation_end),
         default.into(),
         with_default.into(),
+        stranding,
     )
 }
 
@@ -131,8 +148,11 @@ pub(crate) fn assignment_groups(
     source: &Source,
     rule: RuleId,
     body: &[Stmt],
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |stmt| assignment(source, stmt))
+    aligner::line_adjacent_groups(source, body, rule, |stmt| {
+        assignment(source, stmt, stranding)
+    })
 }
 
 /// The runs of `params`' annotated defaults, where a multi-line default
@@ -141,9 +161,10 @@ pub(crate) fn parameter_groups(
     source: &Source,
     rule: RuleId,
     params: &Parameters,
+    stranding: Stranding,
 ) -> Vec<Vec<aligner::Member>> {
     aligner::adjacent_member_groups(source, params.iter_source_order(), true, |param| {
-        parameter(source, param).into()
+        parameter(source, param, stranding).into()
     })
     .into_iter()
     .map(|group| aligner::retain_unheld(source, rule, group))
@@ -159,6 +180,7 @@ fn equal_member(
     target: TextRange,
     value: ExprRef,
     parent: AnyNodeRef,
+    stranding: Stranding,
 ) -> Option<aligner::Member> {
     let value_start = source.paren_aware_range(value, parent).start();
     let member = aligner::range_anchored_member_single_line(
@@ -167,6 +189,7 @@ fn equal_member(
         TextRange::new(target.end(), value_start),
         |t| t.kind() == TokenKind::Equal,
         0,
+        stranding,
     )?;
     Some(member.with_value_gap(TextSize::of('='), value_start))
 }
@@ -175,7 +198,11 @@ fn equal_member(
 /// `None` for a positional argument or a `**` unpacking. A keyword whose
 /// value spans lines still qualifies, since its `=` sits on the keyword's
 /// first line where [`equal_member`] anchors it.
-fn keyword(source: &Source, arg: ArgOrKeyword<'_>) -> Option<aligner::Member> {
+fn keyword(
+    source: &Source,
+    arg: ArgOrKeyword<'_>,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
     let ArgOrKeyword::Keyword(keyword) = arg else {
         return None;
     };
@@ -185,5 +212,6 @@ fn keyword(source: &Source, arg: ArgOrKeyword<'_>) -> Option<aligner::Member> {
         name.range(),
         (&keyword.value).into(),
         keyword.into(),
+        stranding,
     )
 }

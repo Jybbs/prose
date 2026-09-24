@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/class_keep_marker_silences_the_field_run/input.py
+---
+@dataclass
+class Point:  # prose: keep
+    y: int
+    x: int
+
+
+@dataclass
+class Pair:
+    second: int
+    first: int

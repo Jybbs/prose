@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Disqualified Arm Sheds the Padding Before Its Colon"
+
+description = '''
+`case "apprenticeship"` holds two statements, so it stays multi-line and ends the run, yet its `:` still carries the padding an earlier alignment wrote. **The rule removes that padding, leaving the `:` flush against the pattern**, while `"certification"` and `"program"` below it stay folded and move their `:` to the column `"certification"` sets.
+'''

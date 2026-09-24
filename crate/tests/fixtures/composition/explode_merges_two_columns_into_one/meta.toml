@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Exploding a Call Merges Two Columns Into One"
+
+description = '''
+Padded to the column `"aaaaaaaaaaaaaaaa"` sets, the `"cc"` row would cross the budget, so with every value on one row `X` splits into two columns, `"aaaaaaaaaaaaaaaa"` and `"bbbbbbbb"` in one and `"cc"` and `"dd"` in the other. **[[reflow-collections]] explodes the `configure` call because that leaves the dict in one column rather than two**, even though no row stands alone either way.
+'''

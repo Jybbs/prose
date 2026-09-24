@@ -1,6 +1,7 @@
 //! The scratch stage one sweep works in, meaning the original copy of the
-//! corpus, each formatted copy, the overlays formatted under one rule, and
-//! the home, records, and temporary directories the runs write to.
+//! corpus, each formatted copy, the overlays formatted under one rule, each
+//! removed once its run ends, and the home, records, and temporary
+//! directories the runs write to.
 
 use std::{
     collections::BTreeSet,
@@ -11,6 +12,8 @@ use std::{
 
 use ignore::WalkBuilder;
 use tempfile::TempDir;
+
+use crate::corpus::VENDORED;
 
 /// The probe the sweep writes into the stage and runs each module through.
 const PROBE: &str = include_str!("probe.py");
@@ -66,34 +69,48 @@ impl Stage {
 
     /// Builds a tree holding the original of the top-level module or package
     /// carrying each of `files`, ready to be formatted under one rule ahead
-    /// of the original tree.
+    /// of the original tree, and removed when the returned directory drops.
+    /// A file under [`VENDORED`] takes its top-level package from the
+    /// component below that directory.
     pub(crate) fn overlay(
         &self,
         files: &[String],
         label: &str,
         module: &str,
         slug: &str,
-    ) -> PathBuf {
-        let tree = self
+    ) -> TempDir {
+        let parent = self
             .root
             .join("alone")
             .join(label)
-            .join(module.replace('/', "+"))
-            .join(slug);
-        fs_err::create_dir_all(&tree).expect("create an overlay");
+            .join(module.replace('/', "+"));
+        fs_err::create_dir_all(&parent).expect("create an overlay parent");
+        let held = tempfile::Builder::new()
+            .prefix(&format!("{slug}."))
+            .tempdir_in(&parent)
+            .expect("create an overlay");
+        let tree = held.path();
         for top in files
             .iter()
-            .map(|file| file.split_once('/').map_or(file.as_str(), |(top, _)| top))
+            .map(|file| {
+                let path = Path::new(file);
+                let depth = if path.starts_with(VENDORED) { 2 } else { 1 };
+                path.iter().take(depth).collect::<PathBuf>()
+            })
             .collect::<BTreeSet<_>>()
         {
-            let source = self.original.join(top);
+            let source = self.original.join(&top);
+            let target = tree.join(&top);
             if source.is_dir() {
-                copy_tree(&source, &tree.join(top));
+                copy_tree(&source, &target);
             } else if source.is_file() {
-                fs_err::copy(&source, tree.join(top)).expect("copy an overlay module");
+                if let Some(parent) = target.parent() {
+                    fs_err::create_dir_all(parent).expect("create an overlay parent");
+                }
+                fs_err::copy(&source, target).expect("copy an overlay module");
             }
         }
-        tree
+        held
     }
 
     /// Releases the stage from removal, so a failed run leaves its tree

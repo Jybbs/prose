@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call in a Parameter Default Explodes Into Keyword Form"
+
+description = '''
+`run`'s `fallback` default is a call to `build`, a function the module defines above it, and the call still runs past the default budget once the signature expands. **The signature expands one parameter per row and the call explodes one argument per row, each positional named after its parameter in `build`**, because `reflow-signatures` reshapes a call inside a default it moves under the same triggers and keyword form `reflow-calls` applies, which it borrows only while `reflow-calls` runs. The rewrite changes the tree, which is why `reflow-signatures` declares `PRESERVES_TREE` as `false`.
+'''

@@ -17,7 +17,7 @@ use crate::{
         imports::{import_group, sectioned_import_runs},
         orderer::{any_sibling_shares_line, assemble_blocks, member_blocks, permute_full},
         range::blocks_span,
-        scope::sub_bodies,
+        scope::{sub_bodies, sub_bodies_keep_order},
         sections::Sections,
     },
     rules::{Rule, RuleId},
@@ -35,6 +35,8 @@ impl GroupImports {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             first_party: config.first_party(),
@@ -49,7 +51,7 @@ impl Rule for GroupImports {
             first_party: &self.first_party,
             source,
         };
-        walker.group_body(&source.ast().body, source.module_range());
+        walker.group_body(&source.ast().body, source.module_range(), false);
         singleton_groups(walker.edits)
     }
 
@@ -65,20 +67,24 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
-    /// Partitions each import run in `body`, then recurses into every
-    /// nested body. A run reorders within one section, and a body whose
-    /// siblings share a physical line through `;` keeps source order.
-    fn group_body(&mut self, body: &[Stmt], outer: TextRange) {
-        if !body.is_empty() && !any_sibling_shares_line(self.source, body) {
+    /// Partitions each import run in `body` within its section, an
+    /// import a suppression covers sitting in a section of its own, then
+    /// recurses into every nested body. A body keeps source order when its
+    /// siblings share a line through `;` or under `keeps_order`, which
+    /// [`sub_bodies_keep_order`] sets for a class body under a
+    /// `# prose: keep` header and for every arm in it.
+    fn group_body(&mut self, body: &[Stmt], outer: TextRange, keeps_order: bool) {
+        if !keeps_order && !body.is_empty() && !any_sibling_shares_line(self.source, body) {
             let blocks = member_blocks(self.source, body, outer);
-            let sections = Sections::of(self.source, &blocks);
+            let sections = Sections::pinning(self.source, &blocks, GroupImports::SLUG);
             for run in sectioned_import_runs(&sections, body) {
                 self.group_run(body, &blocks, run);
             }
         }
         for stmt in body {
+            let keeps_order = sub_bodies_keep_order(self.source, stmt, keeps_order);
             for (sub, sub_outer) in sub_bodies(stmt) {
-                self.group_body(sub, sub_outer);
+                self.group_body(sub, sub_outer, keeps_order);
             }
         }
     }

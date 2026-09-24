@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` on a Class Keeps Its Body in Source Order"
+
+description = '''
+`KeptStations` and `SortedStations` declare the same three fields in the same order, and the only difference between them is the `# prose: keep` trailing the header of `KeptStations`. **The fields of `SortedStations` sort alphabetically, whereas those of `KeptStations` stay in the order written, with `station` above `name` above `latitude`**, which is the order a schema class such as a `pandera.DataFrameModel` gives its columns.
+'''

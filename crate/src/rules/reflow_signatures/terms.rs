@@ -36,19 +36,22 @@ impl Terms {
     }
 
     /// These terms over one source, `targets` the map
-    /// [`module_call_params`] builds for it and `padding` the edits
-    /// `strip-stranded-padding` emits over it.
+    /// [`module_call_params`] builds for it, `rewrites` the f-string
+    /// rewrites `prefer-fstring` forecasts over it, and `padding` the
+    /// edits `strip-stranded-padding` emits over it merged with those
+    /// rewrites.
     pub(crate) fn over<'a>(
         self,
         source: &'a Source,
         targets: &'a CallTargets<'a>,
         padding: &'a [Edit],
+        rewrites: &'a [Edit],
     ) -> Expansion<'a> {
         Expansion {
             code_line_length: self.code_line_length,
             expands_literals: self.expands_literals,
             max_params: self.max_params,
-            one_row: self.one_row.against(targets),
+            one_row: self.one_row.against(targets).forecasting(rewrites),
             padding,
             source,
         }

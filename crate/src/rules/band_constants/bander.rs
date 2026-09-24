@@ -48,8 +48,13 @@ impl<'a> Bander<'a> {
     }
 
     /// The divider [`banded_gap`] places after new-order slot `i` of
-    /// `layout`, `None` when no band applies or the ranks abut with no gap.
+    /// `layout`, `None` when no band applies, the ranks abut with no gap,
+    /// or slot `i + 1` opens a section, whose source gap holds the comment
+    /// dividing it.
     fn band_gap(&self, layout: &BandLayout<'_>, body: &[Stmt], i: usize) -> Option<&'static str> {
+        if layout.sections.is_boundary(i + 1) {
+            return None;
+        }
         layout.band.as_ref().and_then(|b| {
             banded_gap(
                 b,
@@ -70,16 +75,20 @@ impl<'a> Bander<'a> {
         let mut assembly = rendered_member_blocks(self.source, body, outer, |stmt, block| {
             self.band_stmt(stmt, block)
         });
+        let sections = Sections::of(self.source, &assembly.blocks);
         let band = (!any_sibling_shares_line(self.source, body))
             .then(|| {
-                let sections = Sections::of(self.source, &assembly.blocks);
                 self.band_module_constants(body, &assembly.blocks, &sections, &mut assembly.order)
             })
             .flatten();
         if let Some(b) = &band {
             apply_band_comments(self.source, body, b, &mut assembly.rendered);
         }
-        BandLayout { assembly, band }
+        BandLayout {
+            assembly,
+            band,
+            sections,
+        }
     }
 
     /// Builds the hoist plan over `body` and applies it to `order`,
@@ -122,11 +131,13 @@ impl<'a> Bander<'a> {
 }
 
 /// The banding layout of a module body, its assembly beside the band
-/// applied over it. The combined [`Bander::band_body`] and the per-cell
+/// applied over it and the sections that band never crosses. The
+/// combined [`Bander::band_body`] and the per-cell
 /// [`Bander::band_edits`] read it.
 struct BandLayout<'a> {
     assembly: Assembly<'a>,
     band: Option<Banding>,
+    sections: Sections,
 }
 
 impl BandLayout<'_> {

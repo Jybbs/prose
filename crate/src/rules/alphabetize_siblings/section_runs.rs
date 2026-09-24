@@ -88,7 +88,7 @@ impl<'a, 'src> SectionRuns<'a, 'src> {
             run.permute(order, body, holds, |tier, key| (tier, key));
         }
         if let Some(run) = &self.assigns {
-            run.permute(order, body, keyword_fields_from);
+            run.permute(order, body, holds, keyword_fields_from);
         }
         if let Some(run) = &self.functions {
             run.permute(order, body, holds, |tier, key| (tier, key));

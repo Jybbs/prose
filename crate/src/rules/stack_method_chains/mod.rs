@@ -52,7 +52,7 @@ pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,
     max_shift: MaxShift,
-    reflow_calls: Option<ReflowCalls>,
+    reflow_calls: ReflowCalls,
     rejoin: fracture::Settings<'static>,
     reservations: reserve::Reservations,
 }
@@ -61,6 +61,8 @@ impl StackMethodChains {
     pub(crate) const MESSAGE: &'static str = "break a long method chain to one link per line";
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
+
+    pub(crate) const PRESERVES_TREE: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.stack_method_chains;
@@ -84,7 +86,7 @@ impl Rule for StackMethodChains {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
-            reflow_calls: self.reflow_calls.as_ref(),
+            reflow_calls: &self.reflow_calls,
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
             seats: OnceCell::new(),
@@ -108,7 +110,7 @@ struct Breaker<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
-    reflow_calls: Option<&'a ReflowCalls>,
+    reflow_calls: &'a ReflowCalls,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
     seats: OnceCell<FxHashMap<TextRange, Seat>>,
@@ -202,14 +204,14 @@ impl<'a> Breaker<'a> {
     /// column `range` lands at on a row at its source indent, with no move
     /// and no trailing text.
     fn placed(&self, expr: &Expr, range: TextRange, ancestors: &[AnyNodeRef]) -> Seat {
-        if let Some(rule) = self.reflow_calls
+        if self.rejoin.closes()
             && self.source.same_line(range.start(), expr.start())
             && ancestors
                 .iter()
                 .any(|node| matches!(node, AnyNodeRef::Arguments(_)))
             && let Some(&seat) = self
                 .seats
-                .get_or_init(|| rule.seats(self.source))
+                .get_or_init(|| self.reflow_calls.seats(self.source))
                 .get(&expr.range())
         {
             return seat;

@@ -27,17 +27,20 @@ mod lint_directive;
 mod parse_common;
 
 use lint_directive::{RuleEntry, parse_ignore};
-use parse_common::{after_prose_prefix, parse_entry};
+use parse_common::{parse_entry, prose_bodies};
 
 /// Sorted byte-range lists for the `# prose: off` regions and the bare
 /// `# prose: skip` spans, paired with the `# prose: skip[<id>]` per-rule
 /// spans and a per-line `OneIndexed` map of `# prose: ignore` lint
 /// directives. An off region suppresses rewrites and lint diagnostics
 /// alike, whereas a skip span suppresses rewrites alone and leaves lints
-/// to the `ignore` directives. Span queries run in O(log n) against
-/// `spans` and `skip_spans`, O(n) against `skips`, and O(1) per line.
+/// to the `ignore` directives. `closes` holds the line start of each
+/// `# prose: on` that closes a region. Span queries run in O(log n)
+/// against `spans` and `skip_spans`, O(n) against `skips` and `closes`,
+/// and O(1) per line.
 #[derive(Clone, Debug)]
 pub(crate) struct SuppressionMap {
+    closes: Vec<TextSize>,
     file_suppressed: bool,
     lints: FxHashMap<OneIndexed, RuleEntry>,
     skip_spans: Vec<TextRange>,
@@ -59,6 +62,7 @@ impl SuppressionMap {
         cell_offsets: &CellOffsets,
     ) -> Self {
         let source_text = source.text();
+        let mut closes: Vec<TextSize> = Vec::new();
         let mut lints: FxHashMap<OneIndexed, RuleEntry> = FxHashMap::default();
         let mut skip_spans: Vec<TextRange> = Vec::new();
         let mut skips: Vec<(TextRange, RuleEntry)> = Vec::new();
@@ -75,9 +79,11 @@ impl SuppressionMap {
                         open_off.get_or_insert_with(|| source_text.line_start(range.start()));
                     }
                     SuppressionKind::On => {
-                        spans.extend(open_off.take().map(|start| {
-                            TextRange::new(start, source_text.line_start(range.start()))
-                        }))
+                        if let Some(start) = open_off.take() {
+                            let close = source_text.line_start(range.start());
+                            closes.push(close);
+                            spans.push(TextRange::new(start, close));
+                        }
                     }
                     SuppressionKind::Skip => {}
                 }
@@ -102,6 +108,7 @@ impl SuppressionMap {
         });
         spans.extend(unmatched_span);
         Self {
+            closes,
             file_suppressed,
             lints,
             skip_spans: merged_spans(skip_spans),
@@ -143,6 +150,15 @@ impl SuppressionMap {
         self.lints.get(&line).is_some_and(|e| e.matches(rule))
     }
 
+    /// Returns `true` when a reorder by `rule` leaves `ranged` in place,
+    /// meaning `ranged` overlaps a span [`Self::suppresses`] reports for
+    /// `rule` or holds the line of a `# prose: on` that closes an off
+    /// region.
+    pub(crate) fn pins<R: Ranged>(&self, ranged: R, rule: RuleId) -> bool {
+        let range = ranged.range();
+        self.suppresses(range, rule) || self.closes.iter().any(|&close| range.contains(close))
+    }
+
     /// Returns `true` when `ranged` overlaps a `# prose: off` region, a
     /// bare `# prose: skip` span, or a `# prose: skip[<id>]` span
     /// listing `rule`.
@@ -171,6 +187,12 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
     found.region.is_some() || found.skip.is_some() || found.lint.is_some()
 }
 
+/// True when a `#` chunk of `comment` reads `prose: keep`, the marker
+/// holding a dict, a dunder list, or a class body in the order written.
+pub(crate) fn is_keep_marker(comment: &str) -> bool {
+    prose_bodies(comment).any(|body| body == "keep")
+}
+
 /// The offset an unmatched `# prose: off` opened at `start` closes at,
 /// the end of the notebook cell holding `start` or the buffer's end for
 /// an ordinary module whose `cell_offsets` are empty.
@@ -192,7 +214,7 @@ fn directives(comment: &str) -> Directives {
     if memchr(b':', comment.as_bytes()).is_none() {
         return found;
     }
-    for body in comment.split('#').skip(1).filter_map(after_prose_prefix) {
+    for body in prose_bodies(comment) {
         match body {
             "off" => {
                 found.region.get_or_insert(SuppressionKind::Off);
@@ -250,10 +272,9 @@ mod tests {
     use rstest::rstest;
     use ruff_source_file::OneIndexed;
 
-    use super::{SuppressionKind, directives, is_directive_comment};
+    use super::{SuppressionKind, directives, is_directive_comment, is_keep_marker};
     use crate::{
-        rules::RuleId,
-        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        rules::{RuleId, align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{at, notebook, parse, range},
     };
 
@@ -262,17 +283,17 @@ mod tests {
     }
 
     #[test]
-    fn a_listed_skip_beside_an_off_still_opens_the_region() {
-        let source = parse("# prose: skip[align-equals]  # prose: off\naa = 1\nb = 2\n");
-        assert!(source.suppression_map().file_is_suppressed());
-    }
-
-    #[test]
     fn a_bare_skip_after_a_listed_one_widens_to_every_rule() {
         let source = parse("x = 1  # prose: skip[align-equals]  # prose: skip\n");
         let map = source.suppression_map();
         assert!(map.suppresses(range(0, 5), AlignEquals::SLUG));
         assert!(map.suppresses(range(0, 5), AlphabetizeSiblings::SLUG));
+    }
+
+    #[test]
+    fn a_listed_skip_beside_an_off_still_opens_the_region() {
+        let source = parse("# prose: skip[align-equals]  # prose: off\naa = 1\nb = 2\n");
+        assert!(source.suppression_map().file_is_suppressed());
     }
 
     #[rstest]
@@ -370,12 +391,25 @@ mod tests {
     #[case("# fmt: off", true)]
     #[case("# prose: skip[align-equals]", true)]
     #[case("# prose: ignore", true)]
+    #[case("# prose: keep", false)]
     #[case("# a plain note", false)]
     fn is_directive_comment_spots_format_and_lint_directives(
         #[case] comment: &str,
         #[case] expected: bool,
     ) {
         assert_eq!(is_directive_comment(comment), expected);
+    }
+
+    #[rstest]
+    #[case::spaced("# prose: keep", true)]
+    #[case::tight("#prose:keep", true)]
+    #[case::doubled_hash("## prose: keep", true)]
+    #[case::after_another_chunk("# noqa  # prose: keep", true)]
+    #[case::trailing_words("# prose: keep the order", false)]
+    #[case::longer_word("# prose: keeps", false)]
+    #[case::bare_word("# keep", false)]
+    fn is_keep_marker_reads_a_prose_keep_chunk(#[case] comment: &str, #[case] expected: bool) {
+        assert_eq!(is_keep_marker(comment), expected);
     }
 
     #[rstest]
@@ -449,6 +483,28 @@ mod tests {
         let map = source.suppression_map();
         assert!(!map.suppresses(at(source.text(), "x = 1"), AlignEquals::SLUG));
         assert!(!map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
+    }
+
+    #[rstest]
+    #[case::skipped_line("x = 1  # prose: skip\n", "x = 1", true)]
+    #[case::closing_line(
+        "# prose: off\nx = 1\n# prose: on\ny = 2\n",
+        "# prose: on\ny = 2",
+        true
+    )]
+    #[case::below_the_close("# prose: off\nx = 1\n# prose: on\ny = 2\n", "y = 2", false)]
+    #[case::stray_on("# prose: on\ny = 2\n", "# prose: on\ny = 2", false)]
+    #[case::other_rule("x = 1  # prose: skip[align-equals]\n", "x = 1", false)]
+    fn pins_a_suppressed_span_and_the_line_closing_a_region(
+        #[case] src: &str,
+        #[case] needle: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let pinned = source
+            .suppression_map()
+            .pins(at(source.text(), needle), AlphabetizeSiblings::SLUG);
+        assert_eq!(pinned, expected);
     }
 
     #[rstest]

@@ -4,7 +4,10 @@ use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
-use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
+use ruff_python_ast::{
+    ModModule, PySourceType,
+    token::{TokenKind, Tokens},
+};
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
@@ -18,6 +21,7 @@ use crate::{
         padding::Stranding,
         reserve::{Carry, Columns, Reservations},
     },
+    rules::prefer_fstring::PreferFstring,
     suppression::SuppressionMap,
 };
 
@@ -36,7 +40,8 @@ pub(crate) mod trace;
 /// line index, the `CommentRanges` and `SuppressionMap` indexes derived
 /// from that token stream, and the `BindingAnalysis`, alignment-column,
 /// and stranded-padding walks each built on first read or carried
-/// across a reparse from the source before it. `source_type` is the
+/// across a reparse from the source before it, beside the f-string
+/// forecast each reparse drops. `source_type` is the
 /// parse mode and `line_ending` the sequence the text breaks its lines
 /// with, leaving `cell_offsets` and `cell_numbers` to carry a
 /// notebook's cell boundaries and positions, empty for a module.
@@ -50,7 +55,9 @@ pub struct Source {
     columns_carry: OnceLock<Box<(Reservations, Carry)>>,
     comment_ranges: CommentRanges,
     expandable_literals: OnceLock<Vec<TextRange>>,
+    explodable_arguments: OnceLock<Vec<TextRange>>,
     file: SourceFile,
+    fstring_rewrites: OnceLock<Box<(PreferFstring, Vec<Edit>)>>,
     interpolation_spans: OnceLock<Vec<TextRange>>,
     line_ending: LineEnding,
     paren_followers: OnceLock<FxHashSet<TextSize>>,
@@ -105,7 +112,7 @@ impl Source {
         tokens: Tokens,
     ) -> Self {
         let comment_ranges = CommentRanges::from(&tokens);
-        let line_ending = find_newline(&text).map_or(LineEnding::Lf, |(_, ending)| ending);
+        let line_ending = detect_line_ending(&text, &tokens);
         let file = SourceFileBuilder::new(name, text).finish();
         let first_code_offset = ast.body.first().map(Ranged::start);
         let suppression = Box::new(SuppressionMap::from_comments(
@@ -124,7 +131,9 @@ impl Source {
             columns_carry: OnceLock::new(),
             comment_ranges,
             expandable_literals: OnceLock::new(),
+            explodable_arguments: OnceLock::new(),
             file,
+            fstring_rewrites: OnceLock::new(),
             interpolation_spans: OnceLock::new(),
             line_ending,
             paren_followers: OnceLock::new(),
@@ -295,7 +304,9 @@ impl Clone for Source {
             columns_carry: OnceLock::new(),
             comment_ranges: self.comment_ranges.clone(),
             expandable_literals: OnceLock::new(),
+            explodable_arguments: OnceLock::new(),
             file: self.file.clone(),
+            fstring_rewrites: OnceLock::new(),
             interpolation_spans: OnceLock::new(),
             line_ending: self.line_ending,
             paren_followers: OnceLock::new(),
@@ -328,6 +339,24 @@ pub enum SourceError {
     Notebook(#[from] NotebookError),
     #[error(transparent)]
     Parse(#[from] ParseError),
+}
+
+/// Returns the line ending of the first break a `Newline` or
+/// `NonLogicalNewline` token in `tokens` covers, a break inside a string
+/// literal counting only where no other break exists, and
+/// `LineEnding::Lf` where `text` carries none.
+fn detect_line_ending(text: &str, tokens: &Tokens) -> LineEnding {
+    tokens
+        .iter()
+        .filter(|token| {
+            matches!(
+                token.kind(),
+                TokenKind::Newline | TokenKind::NonLogicalNewline
+            )
+        })
+        .find_map(|token| find_newline(&text[token.range()]))
+        .or_else(|| find_newline(text))
+        .map_or(LineEnding::Lf, |(_, ending)| ending)
 }
 
 /// Parses `text` in `source_type`'s mode as a module.

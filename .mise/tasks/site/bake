@@ -1,7 +1,9 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "bake"
-#MISE description = "Install bun dependencies against the frozen lockfile"
+#MISE description = "Install bun dependencies against the frozen lockfile, then copy that lockfile into `node_modules`"
 #MISE dir         = "site"
+#MISE outputs     = ["node_modules/.bun.lock"]
 #MISE sources     = ["bun.lock", "package.json"]
 
 bun install --frozen-lockfile --ignore-scripts
+cp bun.lock node_modules/.bun.lock

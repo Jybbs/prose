@@ -3,5 +3,5 @@ previewable = false
 title       = "A Constant Under a Pragma Keeps Its Blank Line When the Band Rewrites"
 
 description = '''
-`# noqa` sits on its own line above `LIMIT = 3`, with a blank line separating the pair from `ZETA` and `ALPHA` above. **`ALPHA` and `ZETA` sort while the blank line above the pragma stays as the source wrote it**, because a pragma keeps its slot and keeps the constant beneath it in place, and only a constant the reference analysis itself pinned spaces as a band member.
+`# noqa` sits on its own line above `LIMIT = 3`, with a blank line separating the pair from `ZETA` and `ALPHA` above. **`ALPHA` and `ZETA` sort while the blank line above the pragma stays as the source wrote it**, because a pragma keeps its slot and opens a section below it, and the gap at a section boundary stays as the source wrote it.
 '''

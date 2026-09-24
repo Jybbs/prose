@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Outdented Inside a Class Divides Its Methods"
+
+description = '''
+A comment at column zero sits between `zeta` and `beta` inside the class body, shallower than the methods around it. **`alpha` and `beta` trade places below the comment while `zeta` stays above it**, because a comment that binds to neither neighbor stays where it stands and divides the methods into sections that each sort on their own.
+'''

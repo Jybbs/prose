@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/unsorted_positionals/class_keep_marker_silences_the_field_run/input.py
+---
+unsorted-positionals@90..116

@@ -11,7 +11,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{aligner, range::overlaps, walk::walk_stmt},
+    primitives::{aligner, padding::Stranding, range::overlaps, walk::walk_stmt},
     rules::RuleId,
     source::Source,
 };
@@ -24,7 +24,7 @@ use columns::docstring_runs_within;
 use contexts::{
     annotated_assignment_groups, dict_member_groups, match_case_members, parameter_groups,
 };
-pub(crate) use contexts::{match_case, match_case_pre_colon_end};
+pub(crate) use contexts::{dict_entry_slot, match_case};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for annotated assignments, dict entries, and parameters, with
@@ -47,6 +47,8 @@ pub(crate) trait ColonEmitter {
 
     fn rule(&self) -> RuleId;
 
+    fn stranding(&self) -> Stranding;
+
     /// Drives `self` across every `:` context in `source`'s module
     /// body, recursing into nested classes, functions, matches, and
     /// expressions.
@@ -66,7 +68,7 @@ pub(crate) trait ColonEmitter {
     where
         Self: Sized,
     {
-        for run in &docstring_runs_within(source, windows) {
+        for run in &docstring_runs_within(source, windows, self.stranding()) {
             self.docstring_entries(run);
         }
         let mut visitor = ContextVisitor {
@@ -86,7 +88,12 @@ struct ContextVisitor<'a, E> {
 
 impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     fn visit_body(&mut self, body: &'a [Stmt]) {
-        for group in annotated_assignment_groups(self.source, self.emitter.rule(), body) {
+        for group in annotated_assignment_groups(
+            self.source,
+            self.emitter.rule(),
+            body,
+            self.emitter.stranding(),
+        ) {
             self.emitter.handle(&group);
         }
         for stmt in body {
@@ -98,7 +105,12 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
 
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Dict(d) = expr {
-            for group in dict_member_groups(self.source, self.emitter.rule(), d) {
+            for group in dict_member_groups(
+                self.source,
+                self.emitter.rule(),
+                d,
+                self.emitter.stranding(),
+            ) {
                 self.emitter.handle(&group);
             }
         }
@@ -106,7 +118,12 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
     }
 
     fn visit_parameters(&mut self, parameters: &'a Parameters) {
-        for group in parameter_groups(self.source, self.emitter.rule(), parameters) {
+        for group in parameter_groups(
+            self.source,
+            self.emitter.rule(),
+            parameters,
+            self.emitter.stranding(),
+        ) {
             self.emitter.handle(&group);
         }
         walk_parameters(self, parameters);
@@ -114,8 +131,11 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
 
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::Match(m) = stmt {
-            self.emitter
-                .match_arms(&match_case_members(self.source, &m.cases));
+            self.emitter.match_arms(&match_case_members(
+                self.source,
+                &m.cases,
+                self.emitter.stranding(),
+            ));
         }
         walk_stmt(self, stmt);
     }

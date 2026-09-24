@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/sorted_dict_with_an_entry_spanning_rows_expands_nothing/input.py
+---
+align-colons@28..60
+alphabetize-siblings@19..186
+reflow-collections@79..189

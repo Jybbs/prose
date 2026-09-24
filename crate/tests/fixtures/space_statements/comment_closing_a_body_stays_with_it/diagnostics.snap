@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/space_statements/comment_closing_a_body_stays_with_it/input.py
+---
+space-statements@63..64

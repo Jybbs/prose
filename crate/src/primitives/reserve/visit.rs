@@ -28,6 +28,7 @@ pub(super) struct ReserveVisitor<'a> {
     /// The statement the walk is inside, the scope a keyword or
     /// parameter run forms over, the module ahead of any.
     pub(super) stmt: TextRange,
+    pub(super) stranding: Stranding,
     /// The completion of a carried table, the walk forming a body's
     /// runs over the slices it names and descending into the statements
     /// its windows reach alone, or `None` for a walk over the whole
@@ -82,7 +83,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         let owner = self.stmt;
         let Some(reform) = self.reform else {
             self.record(
-                equal_targets::assignment_groups(self.source, self.rule, body),
+                equal_targets::assignment_groups(self.source, self.rule, body, self.stranding),
                 false,
                 owner,
                 true,
@@ -95,7 +96,12 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         };
         for slice in reform.slices(owner, body) {
             self.record(
-                equal_targets::assignment_groups(self.source, self.rule, &body[slice.clone()]),
+                equal_targets::assignment_groups(
+                    self.source,
+                    self.rule,
+                    &body[slice.clone()],
+                    self.stranding,
+                ),
                 false,
                 owner,
                 true,
@@ -112,7 +118,7 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
     fn visit_expr(&mut self, expr: &'a Expr) {
         if let Expr::Call(call) = expr {
             self.record(
-                equal_targets::keyword_groups(self.source, self.rule, call, true),
+                equal_targets::keyword_groups(self.source, self.rule, call, true, self.stranding),
                 false,
                 self.stmt,
                 false,
@@ -131,7 +137,12 @@ impl<'a> Visitor<'a> for ReserveVisitor<'a> {
         let outer = std::mem::replace(&mut self.stmt, stmt.range());
         if let Stmt::FunctionDef(def) = stmt {
             self.record(
-                equal_targets::parameter_groups(self.source, self.rule, &def.parameters),
+                equal_targets::parameter_groups(
+                    self.source,
+                    self.rule,
+                    &def.parameters,
+                    self.stranding,
+                ),
                 true,
                 stmt.range(),
                 false,

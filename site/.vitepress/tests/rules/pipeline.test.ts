@@ -1,27 +1,32 @@
 import { parsePipelineJson, readPipeline } from '../../lib/rules/pipeline'
 
+const ENTRY = { after: [], imperative: 'x', position: 1, preserves_tree: true, slug: 'a' }
+
+function payloadWith(fields: object): string {
+  return JSON.stringify([{ ...ENTRY, ...fields }])
+}
+
 describe('parsePipelineJson', () => {
   it('parses entries through the field validation', () => {
-    const payload = '[{"after":["align-colons"],"imperative":"align things","position":1,"slug":"align-equals"}]'
-    expect(parsePipelineJson(payload)).toStrictEqual([
-      { after: ['align-colons'], imperative: 'align things', position: 1, slug: 'align-equals' }
-    ])
+    expect(parsePipelineJson(payloadWith({ after: ['b'] }))).toStrictEqual([{ ...ENTRY, after: ['b'] }])
   })
 
   it.each([
-    ['an empty array',        '[]',                                                        /emitted no pipeline entries/],
-    ['a non-array payload',   '{}',                                                        /emitted no pipeline entries/],
-    ['a missing slug',        '[{"after":[],"imperative":"x","position":1}]',              /invalid or missing slug/],
-    ['a missing position',    '[{"after":[],"imperative":"x","slug":"a"}]',                /invalid or missing position/],
-    ['a missing imperative',  '[{"after":[],"position":1,"slug":"a"}]',                    /invalid or missing imperative/],
-    ['a missing after list',  '[{"imperative":"x","position":1,"slug":"a"}]',              /invalid or missing after list/],
-    ['a non-slug dependency', '[{"after":[7],"imperative":"x","position":1,"slug":"a"}]',  /dependency 0 is not a slug/]
+    ['an empty array',                 '[]',                                       /emitted no pipeline entries/],
+    ['a non-array payload',            '{}',                                       /emitted no pipeline entries/],
+    ['a missing slug',                 payloadWith({ slug: undefined }),           /invalid or missing slug/],
+    ['a missing position',             payloadWith({ position: undefined }),       /invalid or missing position/],
+    ['a missing tree declaration',     payloadWith({ preserves_tree: undefined }), /invalid or missing preserves_tree/],
+    ['a non-boolean tree declaration', payloadWith({ preserves_tree: 'true' }),    /invalid or missing preserves_tree/],
+    ['a missing imperative',           payloadWith({ imperative: undefined }),     /invalid or missing imperative/],
+    ['a missing after list',           payloadWith({ after: undefined }),          /invalid or missing after list/],
+    ['a non-slug dependency',          payloadWith({ after: [7] }),                /dependency 0 is not a slug/]
   ])('rejects %s', (_name, payload, message) => {
     expect(() => parsePipelineJson(payload)).toThrow(message)
   })
 
   it('throws a TypeError when position is not a number', () => {
-    expect(() => parsePipelineJson('[{"after":[],"imperative":"x","slug":"a"}]')).toThrow(TypeError)
+    expect(() => parsePipelineJson(payloadWith({ position: '1' }))).toThrow(TypeError)
   })
 })
 

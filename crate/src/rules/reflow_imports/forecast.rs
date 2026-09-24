@@ -25,6 +25,7 @@ use crate::{
     },
     rules::{
         align_imports::{AlignImports, qualify_from},
+        alphabetize_siblings::AlphabetizeSiblings,
         band_constants::Carry,
     },
     source::Source,
@@ -140,7 +141,8 @@ impl Seat<'_> {
 impl<'a> Layout<'a> {
     /// The `align-imports` runs of `body` as the later rules seat them,
     /// the merges in `groups` folded into their leads, each section's
-    /// run sorted where `alphabetize-siblings` or a band sorts it, each
+    /// run sorted where `alphabetize-siblings` or a band sorts it around
+    /// every import a suppression pins against `alphabetize-siblings`, each
     /// comment the banding carries read on the row it lands on, and a
     /// run closing where two rows land apart or change canonical
     /// group. A row held for `align-imports` bridges its run without
@@ -171,6 +173,8 @@ impl<'a> Layout<'a> {
             lead_of.get(&slot).copied().unwrap_or(slot)
         });
         let sorts = (rule.sorts || runs.banded) && !any_sibling_shares_line(source, body);
+        let suppression = source.suppression_map();
+        let pinned = |slot: usize| suppression.pins(blocks[slot], AlphabetizeSiblings::SLUG);
         let mut seated: Vec<Vec<Seat<'a>>> = Vec::new();
         for run in &runs.runs {
             for section in run.chunk_by(|_, &next| !sections.is_boundary(next)) {
@@ -181,14 +185,16 @@ impl<'a> Layout<'a> {
                     .collect();
                 let mut order = survivors.clone();
                 if sorts {
-                    order.sort_by_key(|&slot| {
-                        import_sort_key(&body[slot], &rule.first_party, rule.group_imports)
-                    });
+                    for piece in order.split_mut(|&slot| pinned(slot)) {
+                        piece.sort_by_key(|&slot| {
+                            import_sort_key(&body[slot], &rule.first_party, rule.group_imports)
+                        });
+                    }
                 }
                 let mut key = None;
                 for (position, &slot) in order.iter().enumerate() {
                     let stmt = &body[slot];
-                    let Some(member) = qualify_from(source, stmt) else {
+                    let Some(member) = qualify_from(source, stmt, rule.stranding) else {
                         key = None;
                         continue;
                     };
@@ -217,7 +223,7 @@ impl<'a> Layout<'a> {
                             blocks,
                             [survivors[position - 1], survivors[position]],
                             [order[position - 1], slot],
-                            sorts,
+                            sorts && !pinned(order[position - 1]) && !pinned(slot),
                         );
                     if !adjacent || key != Some(group) {
                         seated.push(Vec::new());

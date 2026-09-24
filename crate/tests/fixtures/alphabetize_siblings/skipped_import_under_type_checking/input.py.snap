@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/skipped_import_under_type_checking/input.py
+---
+import os
+import sys
+
+if TYPE_CHECKING:
+    import re
+    import abc  # prose: skip
+    from pkg import Alpha
+    from zoo import Beta

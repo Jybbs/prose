@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Comment at a Foreign Indent Keeps Its Slot"
-
-description = '''
-The comment about `disk_usage` sits at the continuation indent of the `__all__` list above it, which matches neither the indent of `__all__` nor that of `ALPHA_CAP` below it. **Nothing moves**, because a comment at another indent attaches to neither neighbour and keeps the slot the source gave it, and the constant beneath it stays put rather than sorting above `ZETA_CAP`.
-'''

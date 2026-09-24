@@ -1,0 +1,2 @@
+[harness]
+rules = ["align-colons", "align-equals", "alphabetize-siblings", "expand-docstrings", "space-statements"]

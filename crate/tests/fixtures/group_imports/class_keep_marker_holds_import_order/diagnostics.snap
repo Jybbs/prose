@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/group_imports/class_keep_marker_holds_import_order/input.py
+---
+group-imports@172..218
+group-imports@240..282

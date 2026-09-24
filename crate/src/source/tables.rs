@@ -23,12 +23,13 @@ use crate::{
         range::overlaps,
         reserve::{Carry, Columns, Reservations, Weave},
     },
-    rules::RuleId,
+    rules::{RuleId, prefer_fstring::PreferFstring},
 };
 
 /// The label each table reports its builds and carries under.
 const BINDINGS: &str = "bindings";
 const COLUMNS: &str = "columns";
+const FSTRINGS: &str = "fstrings";
 const STRANDED: &str = "stranded";
 
 impl Source {
@@ -110,6 +111,17 @@ impl Source {
                     || reservations.columns(self),
                     |carry| carry.0.completed(self, &carry.1),
                 )
+        })
+    }
+
+    /// Returns the edits `fstrings` forecasts over this source, walking
+    /// the tree on the first read. A reparse drops the walk, so the
+    /// source it builds walks again. Every rule of a run measures
+    /// against the same forecast and reads the walk back, whereas a
+    /// read carrying a different one walks for itself.
+    pub(crate) fn fstring_rewrites(&self, fstrings: PreferFstring) -> Cow<'_, [Edit]> {
+        keyed(&self.fstring_rewrites, FSTRINGS, fstrings, |fstrings| {
+            fstrings.forecast(self)
         })
     }
 
