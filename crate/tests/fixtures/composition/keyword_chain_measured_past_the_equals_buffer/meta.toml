@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Passed as a Keyword Is Measured Past the `=` Buffer"
+
+description = '''
+`advise(flist=..., skip=hide)` crosses the 42-column budget, so [[reflow-calls]] puts each keyword on its own row and [[align-equals]] writes a space on either side of each `=`. `self.folders.listdir(a).sort()` and the comma closing its row would fit right after a bare `flist=`, but **the chain is measured past the buffered `flist = ` and breaks**, because those two columns take the row past the budget.
+'''

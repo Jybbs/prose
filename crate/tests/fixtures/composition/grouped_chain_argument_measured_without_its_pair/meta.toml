@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Chain Argument Is Measured Without Its Pair"
+
+description = '''
+`advise(...)` crosses the 25-column budget, so [[reflow-calls]] puts each argument on its own row, where a one-row argument sheds its grouping pair and `gamma.get(key).strip()` would start at the row's indent. **The chain is measured from that column** and runs one column past the budget, so it breaks, and the pair the source wrote stays to hold the broken rows together.
+'''

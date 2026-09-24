@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_under_a_pair_opened_above_hangs_from_that_row/input.py
+---
+result = advise(
+    alpha_value,
+    (
+        gamma.get(key)
+             .strip()
+             .lower()
+    )
+)

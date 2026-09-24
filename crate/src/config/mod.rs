@@ -29,7 +29,7 @@ use crate::{
     rules::{
         align_comments::AlignComments, align_equals::AlignEquals, alphabetize_siblings::Reorders,
         normalize_comment_spacing::NormalizeCommentSpacing, prefer_fstring::PreferFstring,
-        strip_stranded_padding::StripStrandedPadding,
+        reflow_calls::ReflowCalls, strip_stranded_padding::StripStrandedPadding,
     },
 };
 
@@ -150,6 +150,12 @@ impl Config {
 
     pub(crate) fn alphabetize_siblings_enabled(&self) -> bool {
         self.rules.alphabetize_siblings.enabled
+    }
+
+    /// The `reflow-calls` rule a measuring rule reads the seat of a
+    /// relocated call through, recording no seat where that rule is off.
+    pub(crate) fn call_seating(&self) -> ReflowCalls {
+        ReflowCalls::from_config(self)
     }
 
     pub(crate) fn code_width(&self) -> usize {
