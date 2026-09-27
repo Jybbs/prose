@@ -19,7 +19,7 @@ use crate::{
     source::Source,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct ExpandDocstrings;
 
 impl ExpandDocstrings {
@@ -32,10 +32,11 @@ impl ExpandDocstrings {
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
-}
 
-impl Rule for ExpandDocstrings {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+    /// Walks `source` for the edit groups expanding each single-line
+    /// docstring onto its own lines, the walk
+    /// [`Source::expanded_docstrings`] holds.
+    pub(crate) fn expanded(&self, source: &Source) -> Vec<Vec<Edit>> {
         rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = triple_quoted_body(source, lit).filter(|b| !b.is_multiline()) else {
                 return;
@@ -49,6 +50,12 @@ impl Rule for ExpandDocstrings {
             let candidate = format!("{newline}{indent}{trimmed}{newline}{indent}");
             edits.extend(narrowed_replacement(source, body.range, candidate));
         })
+    }
+}
+
+impl Rule for ExpandDocstrings {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        source.expanded_docstrings(*self).into_owned()
     }
 
     fn id(&self) -> RuleId {

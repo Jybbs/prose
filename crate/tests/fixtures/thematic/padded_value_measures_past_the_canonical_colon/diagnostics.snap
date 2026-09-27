@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/thematic/padded_value_measures_past_the_canonical_colon/input.py
+---
+align-colons@31..241
+reflow-collections@18..297
+strip-stranded-padding@112..126
+strip-stranded-padding@182..196
+strip-stranded-padding@252..266
+strip-stranded-padding@47..61
+strip-trailing-commas@285..286

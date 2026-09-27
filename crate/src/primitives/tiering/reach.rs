@@ -2,12 +2,13 @@
 //! off the binding table and widened along the call edges between
 //! definitions.
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, slice};
 
 use itertools::Itertools;
 
 use ruff_python_ast::{
     Expr, Stmt,
+    helpers::any_over_body,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
@@ -92,6 +93,13 @@ pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     let mut calls = Calls(Vec::new());
     calls.visit_stmt(stmt);
     calls.0.into_iter().unique().collect()
+}
+
+/// True where `stmt` runs anything a name roots.
+pub(super) fn calls_a_name(stmt: &Stmt) -> bool {
+    any_over_body(slice::from_ref(stmt), |expr| {
+        invoked(expr).and_then(root_name).is_some()
+    })
 }
 
 #[cfg(test)]

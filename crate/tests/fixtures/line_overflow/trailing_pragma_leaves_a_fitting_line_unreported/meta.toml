@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Trailing Pragma Leaves a Line Whose Code Fits Unreported"
+
+description = '''
+`reader`, `handler`, and `mapping` each fit the 88-column budget on their code, and a run of tool comments carries each past it: a `# type: ignore[...]`, a `# noqa` after a note, and a `# prose: skip[...]` directive stacked ahead of a `# noqa`. **None of the three is reported, whereas `fallback` and `summary` are**, because a pragma governs the line it sits on and cannot move off it, so only the run of tool comments ending a line is set aside. `fallback` runs past on an ordinary comment, and `summary`'s ordinary note runs past the budget ahead of its closing `# prose: ignore[...]`, so each note counts toward the width.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/line_overflow/disabled_layout_rule_still_reports/input.py
+---
+line-overflow@0..94
+line-overflow@95..187

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/generator_set_in_a_dict_value_expands/input.py
+---
+def flags(commands: list[tuple[str, ...]]) -> dict[str, bool]:
+    return {
+        "pr": any(
+            args[:3] in {
+                ("gh", "pr", "create"),
+                ("gh", "pr", "edit"),
+                ("gh", "pr", "view")
+            } for args in commands
+        )
+    }

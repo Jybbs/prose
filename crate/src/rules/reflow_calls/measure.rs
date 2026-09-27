@@ -1,19 +1,22 @@
-//! The columns the walk measures: where a call's `(` lands once the
-//! walk's earlier edits place the text ahead of it, the indent an
-//! exploded closing `)` drops to, whether a literal holding a call is
-//! one `reflow-collections` expands once its row lands, and the seat of
-//! each call and attribute access inside a relocated region.
+//! The columns and layouts the walk measures: where a call's `(` lands
+//! once the walk's earlier edits place the text ahead of it, the indent
+//! an exploded closing bracket drops to, whether a literal holding a
+//! call is one `reflow-collections` expands once its row lands, the seat
+//! of each call and attribute access inside a relocated region, and the
+//! layout a construct takes where it lands there.
 
-use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
+use std::borrow::Cow;
+
+use ruff_python_ast::{Expr, ExprCall, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use super::{Exploder, Seat};
+use super::{CollectionLayout, Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
-    layout::requires_expand,
     tokens::{is_closer, is_opener},
+    travel::{Travel, shifted_block},
 };
 
 impl<'a> Exploder<'a> {
@@ -80,41 +83,36 @@ impl<'a> Exploder<'a> {
     }
 
     /// True where `reflow-collections` expands `literal` once its row
-    /// lands, leaving every call inside to the reshape that rule runs
-    /// where the entries land: a multi-entry literal whose one-row form
-    /// overflows from the column it lands at with the columns trailing
-    /// it on its row, one written across rows that no rejoin reaches,
-    /// or one holding a dict past the entry cap.
+    /// lands, per [`Settings::expands`](crate::primitives::one_row::Settings::expands),
+    /// leaving every call inside to the reshape that rule runs where the
+    /// entries land.
     pub(super) fn expands_later(&self, literal: &Expr) -> bool {
-        let range = literal.range();
-        if !self.expands_literals
-            || !requires_expand(literal)
-            || self.source.intersects_comment(range)
+        if !self.one_row.expands_literals()
+            || self
+                .source
+                .expandable_literals()
+                .binary_search_by_key(&literal.start(), Ranged::start)
+                .is_err()
         {
             return false;
         }
-        let over_count = self.one_row.dict_entry_cap().is_some_and(|cap| {
-            any_over_expr(literal, |e| e.as_dict_expr().is_some_and(|d| d.len() > cap))
-        });
-        if over_count {
-            return true;
-        }
-        let column = self.placed_column(range.start(), true);
-        let tail = self.row_tail(range.end());
-        if self.source.contains_line_break(range) {
-            return self
-                .one_row
-                .rejoined(self.source, literal, literal.into(), column, tail)
-                .is_none();
-        }
-        let width =
-            self.one_row
-                .narrowest_width(self.source, literal, literal.into(), range, self.padding);
-        !self.one_row.fits(column + width + tail)
+        let column = self.placed_column(literal.start(), true);
+        let tail = self.row_tail(literal.end());
+        self.one_row
+            .rejoined(self.source, literal, literal.into(), column, tail)
+            .is_none()
+            && self.one_row.expands(
+                self.source,
+                literal,
+                literal.into(),
+                column,
+                tail,
+                self.padding,
+            )
     }
 
     /// The indent of the row `offset` settles on, which an exploded
-    /// closing `)` drops to where `offset` opens an argument list: this
+    /// closing bracket drops to where `offset` opens a construct: this
     /// walk's own indent where that row is the one the region opens on,
     /// and otherwise the placed indent of the row
     /// [`Self::settled_row_anchor`] resolves for `offset`.
@@ -127,6 +125,22 @@ impl<'a> Exploder<'a> {
         }
         let placed = placed_head(self.source, &self.edits, anchor, self.region.start());
         indent_width(last_line(&placed))
+    }
+
+    /// Returns `expr`'s replacement under `layout` at its [`Self::seat`].
+    /// The replacement is measured at the indent its row takes after this
+    /// walk's rows move, and written at the indent before that move, so
+    /// the move shifts each of its rows into place.
+    pub(super) fn laid_out(&self, layout: &dyn CollectionLayout, expr: &Expr) -> Option<String> {
+        let seat = self.seat(expr);
+        let indent = seat.indent.saturating_add_signed(seat.line_shift);
+        let text = layout.laid_out(expr, seat.column, indent, seat.tail)?;
+        Some(
+            match shifted_block(&text, Travel::rigid(-seat.line_shift)) {
+                Cow::Borrowed(_) => text,
+                Cow::Owned(moved) => moved,
+            },
+        )
     }
 
     /// The column `call`'s `(` reaches once this walk's earlier edits
