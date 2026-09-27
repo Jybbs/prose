@@ -179,6 +179,7 @@ impl ReflowCalls {
             reorders: self.reorders,
             reservations: &reservations,
             seating,
+            seats_elements: false,
             source,
             tail: 0,
             targets: &targets,
@@ -293,6 +294,7 @@ impl<'a> Reshaper<'a> {
             reorders: self.reorders,
             reservations: self.reservations,
             seating: None,
+            seats_elements: false,
             source: self.source,
             tail,
             targets: self.targets,
@@ -361,6 +363,9 @@ impl Seating {
 /// `layout` the layout a collapsible construct takes where the walk
 /// reaches it, unset where `reflow-collections` walks the text later in
 /// the fold, and `seating`, where set, collects what the walk records.
+/// `seats_elements` is true for a walk landed at the seat a stacked
+/// chain's segment takes, which seats the elements of each literal
+/// `reflow-collections` expands later.
 struct Exploder<'a> {
     edits: Vec<Edit>,
     held: &'a [TextSize],
@@ -374,6 +379,7 @@ struct Exploder<'a> {
     reorders: Reorders,
     reservations: &'a reserve::Columns,
     seating: Option<&'a RefCell<Seating>>,
+    seats_elements: bool,
     source: &'a Source,
     tail: usize,
     targets: &'a CallTargets<'a>,
@@ -464,7 +470,7 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{applied_text, at, parse};
+    use crate::testing::{applied_text, at, first_value, parse};
 
     /// `source` with every edit the rule under `config` emits applied.
     fn applied(config: &Config, source: &Source) -> String {
@@ -618,6 +624,41 @@ mod tests {
         );
     }
 
+    #[test]
+    fn landed_walk_seats_the_elements_of_a_literal_expanded_later() {
+        let src =
+            "result = advise(alpha_value, [beta_value, gamma.get(key).strip(), delta_value])\n";
+        let config = Config {
+            code_line_length: NonZeroUsize::new(40),
+            ..Config::default()
+        };
+        let source = parse(src);
+        let reflow_calls = ReflowCalls::from_config(&config);
+        let call = first_value(&source)
+            .as_call_expr()
+            .expect("the value is a call");
+        let seat = Seat {
+            column: 9,
+            indent: 0,
+            line_shift: 0,
+            tail: 0,
+        };
+        let landed = LazySeating::new(&reflow_calls, &source).landed(Reach::Arguments {
+            call,
+            region: call.range(),
+            seat,
+        });
+        assert_eq!(
+            landed.seat(at(src, "gamma.get(key).strip()")).map(|seat| (
+                seat.column,
+                seat.indent,
+                seat.line_shift,
+                seat.tail
+            )),
+            Some((8, 8, 0, 0)),
+        );
+    }
+
     #[rstest]
     #[case::argument_on_the_exploded_row(
         "result = advise(alpha, beta, gamma.get(key).strip())\n",
@@ -665,10 +706,10 @@ mod tests {
         None
     )]
     #[case::call_the_walk_leaves_in_place("x = f(a.b().c())\n", "a.b().c()", None)]
-    #[case::element_of_a_literal_expanded_later(
+    #[case::expanding_literal_left_unwalked(
         "result = advise(alpha_value, [beta_value, gamma.get(key).strip(), delta_value])\n",
         "gamma.get(key).strip()",
-        Some((8, 8, 0, 0))
+        None
     )]
     fn seats_place_each_call_where_its_relocated_argument_lands(
         #[case] src: &str,

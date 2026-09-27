@@ -372,13 +372,16 @@ impl<'a> Exploder<'a> {
     }
 
     /// Relocates this walk to answer for `region` once it lands at
-    /// `seat`, an exploded closing bracket dropping to the seat's indent.
+    /// `seat`, an exploded closing bracket dropping to the seat's indent
+    /// and each literal `reflow-collections` expands later seating its
+    /// elements.
     pub(super) fn landed(self, region: TextRange, seat: Seat) -> Self {
         Self {
             indent: Some(seat.indent),
             line_shift: seat.line_shift,
             origin_column: seat.column,
             region,
+            seats_elements: true,
             tail: seat.tail,
             ..self
         }
@@ -388,10 +391,12 @@ impl<'a> Exploder<'a> {
     /// `reflow-collections` expands later, from where that expansion
     /// writes it, one indent step past the row `literal` opens on with no
     /// trailing text, recording into `seating` the seat of each call and
-    /// attribute access inside. The walk emits no edit and runs only
-    /// where `seating` is set.
+    /// attribute access inside. The walk emits no edit and runs only in
+    /// a landed walk that records a seating.
     pub(super) fn seat_elements(&self, literal: &'a Expr) {
-        let (Some(_), Some(elements)) = (self.seating, sequence_elts(literal)) else {
+        let (Some(_), true, Some(elements)) =
+            (self.seating, self.seats_elements, sequence_elts(literal))
+        else {
             return;
         };
         let indent = item_indent(self.indent_for(literal.start()));
