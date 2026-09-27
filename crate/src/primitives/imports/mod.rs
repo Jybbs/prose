@@ -19,8 +19,6 @@ pub(crate) use runs::{
     sectioned_import_runs,
 };
 
-use runs::lines_under_blank_run;
-
 const FUTURE_ANNOTATIONS: &str = "annotations";
 const FUTURE_MODULE: &str = "__future__";
 

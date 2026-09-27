@@ -27,6 +27,17 @@ fn edit(content: &str, range: Range<usize>, text: &str) -> EditRows {
 }
 
 #[test]
+fn a_deletion_of_whole_rows_leaves_the_row_after_it_out() {
+    let text = "x = 1\nfrom m import a\n\n\ndef f(x: a): ...\n";
+    let edits = [edit("", 6..24, text)];
+    assert_eq!(
+        rewritten(&edits, text),
+        ("from m import a\n\n".to_owned(), String::new())
+    );
+    assert!(drops(&edits, "a", text));
+}
+
+#[test]
 fn dropping_a_name_reads_whole_words_only() {
     let text = "from m import a, b\n";
     let edits = [edit("from m import a", 0..18, text)];

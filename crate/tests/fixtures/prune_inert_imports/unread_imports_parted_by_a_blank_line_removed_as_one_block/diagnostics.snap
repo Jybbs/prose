@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/unread_imports_parted_by_a_blank_line_removed_as_one_block/input.py
+---
+prune-inert-imports@25..39
+prune-inert-imports@39..50
