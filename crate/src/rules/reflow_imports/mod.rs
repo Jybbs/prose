@@ -30,7 +30,7 @@ use crate::{
         inline::display_width,
         layout::pack,
         padding::Stranding,
-        scope::{scoped_body, sub_bodies},
+        scope::{scoped_body, sub_bodies, sub_bodies_keep_order},
     },
     rules::{Rule, RuleId, band_constants::BandConstants},
     source::Source,
@@ -100,7 +100,7 @@ impl Rule for ReflowImports {
             rule: self,
             source,
         };
-        layout.layout_scope(&source.ast().body, source.module_range(), true);
+        layout.layout_scope(&source.ast().body, source.module_range(), true, false);
         layout.groups
     }
 
@@ -131,13 +131,21 @@ impl<'a> Layout<'a> {
 
     /// Lays out `body` and then every body beneath it, a class or
     /// function suite leaving module scope so no band forecast reaches
-    /// the imports inside it.
-    fn layout_scope(&mut self, body: &'a [Stmt], outer: TextRange, module_scope: bool) {
-        self.process_body(body, outer, module_scope);
+    /// the imports inside it, and `keeps_order` passing to each sub-body
+    /// per [`sub_bodies_keep_order`].
+    fn layout_scope(
+        &mut self,
+        body: &'a [Stmt],
+        outer: TextRange,
+        module_scope: bool,
+        keeps_order: bool,
+    ) {
+        self.process_body(body, outer, module_scope, keeps_order);
         for stmt in body {
             let nested = module_scope && scoped_body(stmt).is_none();
+            let keeps_order = sub_bodies_keep_order(self.source, stmt, keeps_order);
             for (sub, sub_outer) in sub_bodies(stmt) {
-                self.layout_scope(sub, sub_outer, nested);
+                self.layout_scope(sub, sub_outer, nested, keeps_order);
             }
         }
     }
@@ -222,8 +230,15 @@ impl<'a> Layout<'a> {
     /// Folds each repeated module in `body` into one statement and
     /// splits every comma-joined bare import, one fix group apiece. At
     /// module scope a repeated module gathers across the constants
-    /// `band-constants` hoists from between its statements.
-    fn process_body(&mut self, body: &'a [Stmt], outer: TextRange, module_scope: bool) {
+    /// `band-constants` hoists from between its statements, whereas under
+    /// `keeps_order` it gathers only across consecutive statements.
+    fn process_body(
+        &mut self,
+        body: &'a [Stmt],
+        outer: TextRange,
+        module_scope: bool,
+        keeps_order: bool,
+    ) {
         let rule = self.rule;
         let source = self.source;
         let runs = MergeRuns::of(
@@ -240,7 +255,7 @@ impl<'a> Layout<'a> {
             return;
         }
         let groups = if rule.merge_members {
-            module_groups(self.source, body, outer, &runs)
+            module_groups(self.source, body, outer, &runs, keeps_order)
         } else {
             Vec::new()
         };

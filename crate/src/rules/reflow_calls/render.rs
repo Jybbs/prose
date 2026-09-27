@@ -365,14 +365,15 @@ impl<'a> Exploder<'a> {
         if !count_trips && let Some(form) = form {
             return is_fractured(self.source, arguments.range()).then_some(form);
         }
+        let indent = self.indent_for(arguments.start());
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {
-                Some(self.explode_keywords(&keywords, arguments, self.indent_for(call)))
+                Some(self.explode_keywords(&keywords, arguments, indent))
             }
             // A call that cannot take keyword form explodes positionally
             // on the length trigger alone, so the count trigger leaves
             // such calls inline.
-            _ => length_trips.then(|| self.explode_source_order(call, self.indent_for(call))),
+            _ => length_trips.then(|| self.explode_source_order(call, indent)),
         }
     }
 

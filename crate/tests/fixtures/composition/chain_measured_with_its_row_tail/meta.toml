@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Is Measured With the Text Trailing It on Its Row"
+
+description = '''
+`int(...)` crosses the 40-column budget, so [[reflow-calls]] puts its argument on its own row. The joined `_os.uname().release.split(".")` fits there, but the `[0]` after it takes the row past the budget, so **the chain is measured with that trailing text counted in and breaks**, rather than staying joined and leaving `reflow-calls` to explode `split(".")` around its one argument.
+'''

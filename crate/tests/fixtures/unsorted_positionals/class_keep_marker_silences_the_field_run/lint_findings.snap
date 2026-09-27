@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/unsorted_positionals/class_keep_marker_silences_the_field_run/input.py
+---
+[
+  {
+    "code": "unsorted-positionals",
+    "end_location": {
+      "column": 15,
+      "row": 10
+    },
+    "fix": null,
+    "location": {
+      "column": 5,
+      "row": 9
+    },
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+  }
+]

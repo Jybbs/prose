@@ -16,6 +16,7 @@ use super::{
     inventory::ImportNode,
     is_package_init,
     reexports::{REEXPORT_CODE, Reexports, defines_no_own_name, reexports_a_private_member},
+    submodules::loads_a_read_submodule,
 };
 use crate::{
     diagnostics::Diagnostic,
@@ -65,6 +66,7 @@ impl<'a> Plan<'a> {
             .collect();
         let package_init = is_package_init(source);
         let shim = !reexports.declares_a_surface() && defines_no_own_name(analysis, body);
+        let submodules = OnceCell::new();
         let type_names = OnceCell::new();
         let directive_is_inert =
             rule.unreferenced && defers_annotations(body) && annotations_are_inert(rule, source);
@@ -95,8 +97,9 @@ impl<'a> Plan<'a> {
                 } else if private_source {
                     None
                 } else {
-                    is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
-                        .then_some(Candidacy::Unreferenced)
+                    (is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
+                        && !loads_a_read_submodule(node, alias, &submodules, source.ast()))
+                    .then_some(Candidacy::Unreferenced)
                 };
                 let held = if package_init {
                     Some(Held::PackageInit)

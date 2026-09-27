@@ -2,6 +2,7 @@
 #MISE depends     = ["rust:build", "site:bake"]
 #MISE description = "Run the docs-site `vitest` suite"
 #MISE dir         = "site"
+#MISE env         = { NODE_COMPILE_CACHE = "../.cache/node" }
 #MISE sources     = ["@group:crate", "@group:site"]
 
 bunx vitest run --project docs "$@"

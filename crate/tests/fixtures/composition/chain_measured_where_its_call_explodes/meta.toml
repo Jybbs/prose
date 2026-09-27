@@ -1,0 +1,8 @@
+[docs]
+canonical   = false
+previewable = true
+title       = "A Chain Is Measured on the Row Its Exploding Call Gives It"
+
+description = '''
+`advise(...)` runs past the 88-column budget, so [[reflow-calls]] puts each argument on its own row one indent step in. From where it sits as written, the joined `payload.get("command_name", "").lstrip("/")` would overflow as well, but **the chain is measured on the argument row it lands on and stays joined** rather than stacking inside a parenthesis pair the source never had.
+'''

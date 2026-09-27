@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_vs_sorted/input.py
+---
+class KeptStations(DataFrameModel):  # prose: keep
+    station  : Index[str] = Column(check_name=True)
+    name     : str        = Column()
+    latitude : float      = Column()
+
+
+class SortedStations(DataFrameModel):
+    latitude : float      = Column()
+    name     : str        = Column()
+    station  : Index[str] = Column(check_name=True)

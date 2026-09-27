@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/grouped_chain_argument_stays_joined_without_its_pair/input.py
+---
+reflow-calls@16..65

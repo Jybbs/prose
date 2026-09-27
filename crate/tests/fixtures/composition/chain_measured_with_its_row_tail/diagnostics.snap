@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_measured_with_its_row_tail/input.py
+---
+reflow-calls@23..56
+stack-method-chains@23..52

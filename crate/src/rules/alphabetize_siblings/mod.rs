@@ -3,17 +3,19 @@
 //! keyword-only parameters, call kwargs, dict keys, set elements,
 //! import names and alias lists within each section, `global` /
 //! `nonlocal` / `del` name lists, and the strings inside `__all__` /
-//! `__slots__`. Sorting runs through the `primitives::orderer`
-//! permute and assemble primitives, a recursive rewriter folding inner
-//! sorts into the outer scope's replacement text so each outermost
-//! scope emits one edit, or one per notebook cell. Positional-or-
-//! keyword parameters never reorder and only the keyword-only block
-//! past `*` sorts, a class whose header generates a field-ordered
-//! constructor holds its field run, and a decorated definition holds
-//! its slot at module scope while sorting inside a class body.
+//! `__slots__`. A recursive rewriter over the `primitives::orderer`
+//! permute and assemble primitives folds inner sorts into the outer
+//! scope's replacement, so each outermost scope emits one edit, or one
+//! per notebook cell. Positional-or-keyword parameters, the field run
+//! of a class whose header generates its constructor, the statements of
+//! a class under a `# prose: keep` header, and a decorated definition at
+//! module scope each keep their order, and a statement a suppression
+//! covers keeps its slot while the rewrites inside it land as edits of
+//! their own.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::TextSize;
+use ruff_python_ast::StmtAssign;
+use ruff_text_size::{Ranged, TextSize};
 
 use self::{
     docstring_entries::collect_docstring_entry_edits,
@@ -22,12 +24,9 @@ use self::{
     reorders::{joined_key, joined_text},
     rewrite::{RewriteCtx, body_layout, import_gap},
 };
-use ruff_python_ast::StmtAssign;
-
-use crate::primitives::binding::single_name_target;
 use crate::{
     config::Config,
-    primitives::{imports::defers_annotations, scope::BodyScope},
+    primitives::{binding::single_name_target, imports::defers_annotations, scope::BodyScope},
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -95,6 +94,10 @@ impl Rule for AlphabetizeSiblings {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
         }
+        let suppression = source.suppression_map();
+        if suppression.has_format_suppression() {
+            leaf_edits.retain(|edit| !suppression.suppresses(edit, Self::SLUG));
+        }
         let enumerations = Enumerations::of(body);
         let ctx = RewriteCtx {
             defer_annotations: defers_annotations(body),
@@ -102,6 +105,7 @@ impl Rule for AlphabetizeSiblings {
             first_party: &self.first_party,
             group_imports: self.group_imports,
             group_methods: self.group_methods,
+            keeps_order: false,
             keyword_fields_from: TextSize::default(),
             leaf_edits: &leaf_edits,
             orders_members: false,
@@ -109,11 +113,20 @@ impl Rule for AlphabetizeSiblings {
             source,
         };
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        layout
+        let groups = layout
             .assembly
             .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
                 import_gap(source, &layout.import_run_slots, i)
-            })
+            });
+        if layout.held.is_empty() {
+            return groups;
+        }
+        let mut edits: Vec<Edit> = groups.into_iter().flatten().chain(layout.held).collect();
+        edits.sort_unstable();
+        edits
+            .chunk_by(|a, b| source.same_cell(a.start(), b.start()))
+            .map(<[Edit]>::to_vec)
+            .collect()
     }
 
     fn id(&self) -> RuleId {

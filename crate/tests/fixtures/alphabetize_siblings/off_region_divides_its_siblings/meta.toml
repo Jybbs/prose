@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Off Region Divides the Siblings Around It"
+
+description = '''
+`middle` sits inside a `# prose: off` region, with `zebra` and `mango` above it and `pear` and `apple` below. **`mango` moves above `zebra` and `apple` above `pear`, while `middle` stays where it is and no function crosses the region**, because the `# prose: off` and `# prose: on` lines stay in place and divide the functions into sections that each sort on their own.
+'''
