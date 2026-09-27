@@ -8,7 +8,8 @@ tree="$RUNNER_TEMP/parent"
 
 git fetch --depth=1 -q origin "$parent"
 
-if [[ -n "$restored" ]]; then
+if [[ -n "$restored" ]] \
+  && git diff --quiet "$parent" HEAD -- .mise/lib .mise/tasks/rust/bake; then
   baked="${restored##*-}"
   if [[ "$baked" == "$parent" ]] \
     || { git fetch --depth=1 -q origin "$baked" \
@@ -18,8 +19,8 @@ if [[ -n "$restored" ]]; then
     printf 'the stage baked at %s serves %s\n' "$baked" "$parent"
     exit 0
   fi
-  rm -rf "$stage"
 fi
+rm -rf "$stage"
 
 git worktree add -q "$tree" "$parent"
 CARGO_TARGET_DIR="$PWD/target" PROSE_DELTA_BASELINE="$tree" PROSE_DELTA_STAGE="$stage" \

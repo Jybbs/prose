@@ -4,8 +4,8 @@
 //! every file's output. A run that panics or is rejected is recorded
 //! against its file rather than ending the sweep, and a file passing
 //! `BUDGET` stops the sweep and names itself. Each width in [`WIDTHS`]
-//! runs once per axis in [`Axis::ALL`], one budget varied and the rest at
-//! their defaults.
+//! runs once per axis in [`Axis::ALL`] and per `target-version` in
+//! [`TARGETS`], one budget varied and the rest at their defaults.
 
 use std::{
     cell::RefCell,
@@ -15,7 +15,7 @@ use std::{
     path::Path,
 };
 
-use itertools::Itertools;
+use itertools::{Itertools, iproduct};
 use prose::{
     config::Config,
     diagnostics::Severity,
@@ -23,10 +23,11 @@ use prose::{
     rules::{RuleId, render_slugs},
     source::Source,
 };
+use ruff_python_ast::PythonVersion;
 
 use common::{
-    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list, excerpt,
-    note_verified, report_verified, swept, unread, verifying, widths_or,
+    Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified,
+    report_verified, repro_command, swept, target_name, targets_or, unread, verifying, widths_or,
 };
 
 mod common;
@@ -63,32 +64,26 @@ impl Axis {
     /// each varying the budget it names.
     const ALL: [Self; 4] = [Self::Code, Self::Docstring, Self::Fallback, Self::Import];
 
-    /// The phrase a finding and a `Slot` label name this axis and
-    /// width by.
-    fn clause(self, width: usize) -> String {
-        format!("{} {width}", self.label())
-    }
-
-    /// The default configuration with this axis's budget at `width`.
-    fn config(self, width: usize) -> Config {
+    /// The `shipped` configuration with this axis's budget at `width`.
+    fn config(self, width: usize, shipped: &Config) -> Config {
         let budget = NonZeroUsize::new(width);
         match self {
             Self::Code => Config {
                 code_line_length: budget,
-                ..Config::default()
+                ..shipped.clone()
             },
             Self::Docstring => Config {
                 docstring_line_length: budget,
-                ..Config::default()
+                ..shipped.clone()
             },
             Self::Fallback => Config {
                 code_line_length: budget,
                 import_line_length: None,
-                ..Config::default()
+                ..shipped.clone()
             },
             Self::Import => Config {
                 import_line_length: budget,
-                ..Config::default()
+                ..shipped.clone()
             },
         }
     }
@@ -111,15 +106,6 @@ impl Axis {
             Self::Fallback => "fallback",
             Self::Import => "import",
         }
-    }
-
-    /// The command sweeping `path` alone on this axis at `width`.
-    fn repro(self, width: usize, path: &Path) -> String {
-        format!(
-            "{CORPUS}={} {AXES_VAR}={} {WIDTHS_VAR}={width} cargo test --test corpus",
-            path.display(),
-            self.name(),
-        )
     }
 }
 
@@ -162,26 +148,32 @@ struct Plan {
 }
 
 impl Plan {
-    /// Builds the slices `axes` and `widths` cross, the `code` axis
-    /// leading so a budget-narrowed slice finds its trunk. A pipeline
-    /// matching an earlier one drops as a duplicate, every other slice
-    /// attaches behind the earliest earlier slice sharing its longest
-    /// run of leading seat fingerprints, and the slice matching the
-    /// shipped default keeps the lint pass.
-    fn build(axes: &[Axis], widths: &[usize]) -> Self {
-        let default_print = Pipeline::with_defaults(&Config::default()).fingerprint();
+    /// Builds the slices `targets`, `axes`, and `widths` cross, the
+    /// `code` axis leading within each target so a budget-narrowed slice
+    /// finds its trunk. A pipeline matching an earlier one at the same
+    /// target drops as a duplicate, every other slice attaches behind the
+    /// earliest earlier slice at its target sharing its longest run of
+    /// leading seat fingerprints, and the slice matching the shipped
+    /// default at its target keeps the lint pass.
+    fn build(targets: &[Option<PythonVersion>], axes: &[Axis], widths: &[usize]) -> Self {
         let mut slices: Vec<Slice> = Vec::new();
-        for &axis in axes {
-            for &width in widths {
-                let config = axis.config(width);
-                let pipeline = Pipeline::with_defaults(&config);
+        for &target in targets {
+            let shipped = Config {
+                target_version: target,
+                ..Config::default()
+            };
+            let default_print = Pipeline::with_defaults(&shipped).fingerprint();
+            let first = slices.len();
+            for (&axis, &width) in iproduct!(axes, widths) {
+                let pipeline = Pipeline::with_defaults(&axis.config(width, &shipped));
                 let prints = pipeline.fingerprints();
-                if slices.iter().any(|held| held.prints == prints) {
+                let peers = &slices[first..];
+                if peers.iter().any(|held| held.prints == prints) {
                     continue;
                 }
                 let mut cut = 0;
                 let mut parent = None;
-                for (seat, held) in slices.iter().enumerate() {
+                for (seat, held) in peers.iter().enumerate() {
                     let shared = held
                         .prints
                         .iter()
@@ -190,7 +182,7 @@ impl Plan {
                         .count();
                     if shared > cut {
                         cut = shared;
-                        parent = Some(seat);
+                        parent = Some(first + seat);
                     }
                 }
                 debug_assert!(
@@ -204,6 +196,7 @@ impl Plan {
                     parent,
                     pipeline,
                     prints,
+                    target,
                     width,
                 });
             }
@@ -233,7 +226,30 @@ struct Slice {
     parent: Option<usize>,
     pipeline: Pipeline,
     prints: Vec<String>,
+    target: Option<PythonVersion>,
     width: usize,
+}
+
+impl Slice {
+    /// The phrase a finding and a `Slot` label name this slice by.
+    fn clause(&self) -> String {
+        format!("{} {}", self.label(), self.width)
+    }
+
+    /// The phrase naming this slice's target and axis ahead of its width.
+    fn label(&self) -> String {
+        format!(
+            "`target-version` {}, {}",
+            target_name(self.target),
+            self.axis.label()
+        )
+    }
+
+    /// The command sweeping `path` alone through this slice.
+    fn repro(&self, path: &Path) -> String {
+        let narrowing = format!("{AXES_VAR}={} ", self.axis.name());
+        repro_command("corpus", path, &narrowing, self.target, self.width)
+    }
 }
 
 /// The axes this run sweeps, [`AXES_VAR`] narrowing [`Axis::ALL`] as a
@@ -261,15 +277,11 @@ fn probe(
     findings: &mut Findings,
 ) -> Option<BTreeMap<usize, String>> {
     let hit = |detail: Option<String>| Hit {
-        clause: Some((slice.axis.label().to_owned(), slice.width)),
+        clause: Some((slice.label(), slice.width)),
         detail,
-        repro: Some(slice.axis.repro(slice.width, path)),
+        repro: Some(slice.repro(path)),
     };
-    let slot = Slot::open(format!(
-        "{} at {}",
-        path.display(),
-        slice.axis.clause(slice.width)
-    ));
+    let slot = Slot::open(format!("{} at {}", path.display(), slice.clause()));
     let recorded = RefCell::new(BTreeMap::new());
     let ran = panic::catch_unwind(AssertUnwindSafe(|| {
         let mut current = entry;
@@ -390,7 +402,7 @@ fn verify_resumed(slice: &Slice, formatted: &Source, path: &Path) {
         full.as_ref().map(Source::text),
         Some(formatted.text()),
         "resumed fold differs at {} on {}",
-        slice.axis.clause(slice.width),
+        slice.clause(),
         path.display(),
     );
     note_verified();
@@ -435,10 +447,11 @@ fn every_width_settles_and_applies_what_it_reports() {
         PANIC.with(|cell| cell.replace(Some(format!("the run panicked{at}: {message}"))));
     }));
     let axes = axes();
+    let targets = targets_or(TARGETS);
     let widths = widths_or(WIDTHS);
-    let plan = Plan::build(&axes, &widths);
+    let plan = Plan::build(&targets, &axes, &widths);
     eprintln!(
-        "{} slices, {} resumed behind a parent, at {} widths on {} axes",
+        "{} slices, {} resumed behind a parent, at {} widths on {} axes with `target-version` {}",
         plan.slices.len(),
         plan.slices
             .iter()
@@ -446,6 +459,7 @@ fn every_width_settles_and_applies_what_it_reports() {
             .count(),
         widths.len(),
         axes.len(),
+        targets.iter().copied().map(target_name).format(", "),
     );
     let findings = swept(&files, |path| sweep(&plan, path));
     panic::set_hook(previous);
@@ -462,10 +476,54 @@ fn every_width_settles_and_applies_what_it_reports() {
     );
     assert!(
         report.is_empty(),
-        "{} distinct defects across {} files{unread} at {} widths on {} axes:{report}",
+        "{} distinct defects across {} files{unread} at {} widths on {} axes with \
+         `target-version` {}:{report}",
         findings.total(),
         files.len(),
         widths.len(),
         axes.len(),
+        targets.iter().copied().map(target_name).format(", "),
+    );
+}
+
+#[test]
+fn plan_build_resumes_and_lints_each_slice_at_its_own_target() {
+    let targets = [None, Some(PythonVersion::PY314)];
+
+    let plan = Plan::build(&targets, &Axis::ALL, &[88, 100]);
+
+    let resumed = plan
+        .slices
+        .iter()
+        .filter_map(|slice| Some((slice, &plan.slices[slice.parent?])))
+        .collect_vec();
+    assert!(!resumed.is_empty(), "no slice resumed behind a parent");
+    assert!(
+        resumed
+            .iter()
+            .all(|(slice, parent)| slice.target == parent.target)
+    );
+    assert_eq!(
+        plan.slices
+            .iter()
+            .filter(|slice| slice.lint)
+            .map(|slice| slice.target)
+            .collect_vec(),
+        targets,
+    );
+}
+
+#[test]
+fn slice_names_its_target_in_the_clause_and_the_reproduction() {
+    let plan = Plan::build(&[Some(PythonVersion::PY314)], &[Axis::Code], &[88]);
+    let [slice] = plan.slices.as_slice() else {
+        panic!("one target, axis, and width build one slice");
+    };
+
+    assert_eq!(slice.clause(), "`target-version` 3.14, code width 88");
+    assert_eq!(
+        slice.repro(Path::new("a.py")),
+        "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_AXES=code PROSE_SETTLE_TARGETS=3.14 \
+         PROSE_SETTLE_WIDTHS=88 cargo test --test corpus",
     );
 }

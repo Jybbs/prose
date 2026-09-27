@@ -16,7 +16,7 @@ mutation_pass() {
   (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
   read -r seen unstable < <(jq -r '"\(.files_visited) \(.unstable | length)"' "$record")
   printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
-    "$name" "$unstable" "$seen"
+    "$name with \`target-version\` $target" "$unstable" "$seen"
   (( unstable == 0 )) || second_pass "$name" "$record" "$unstable"
 }
 
@@ -46,6 +46,7 @@ second_pass() {
 corpus=$(corpus_root "${1:-}")
 budget="${2:-60}"
 binary=$(built_binary)
+target=$(corpus_target)
 corpus_build
 lock_task "$@"
 
@@ -55,6 +56,7 @@ if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then
   mutate_corpus "$corpus" "$mutations" "$budget"
 fi
 rm -f "$mutations/.generated"
+printf 'target-version = "%s"\n' "$target" > "$mutations/prose.toml"
 
 while IFS= read -r variant; do
   mutation_pass "$variant"

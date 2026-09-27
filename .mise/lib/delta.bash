@@ -36,10 +36,13 @@ fail_width() {
 }
 
 format_tagged() {
-  local side="$1" binary="$2" width="$3" status=0
+  local side="$1" binary="$2" width="$3" target="$4" status=0
   local record="$stage/.git/$side-$width"
   staged reset --hard -q pristine
-  printf 'code-line-length = %s\nreport-unstable-output = false\n' "$width" \
+  printf '%s\n' \
+    "code-line-length = $width" \
+    'report-unstable-output = false' \
+    "target-version = \"$target\"" \
     > "$stage/prose.toml"
   "$binary" format --no-cache --output-format json "$stage" \
     2> "$record.log" \
@@ -59,7 +62,7 @@ format_widths() {
   local width
   for width in $(delta_widths); do
     printf '%s at width %s\n' "$1" "$width"
-    format_tagged "$1" "$2" "$width"
+    format_tagged "$1" "$2" "$width" "$3"
   done
 }
 

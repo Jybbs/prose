@@ -15,6 +15,10 @@ corpus_run() {
   cargo run --bin "$bin" --locked -p prose_corpus --profile probe --quiet -- "$@"
 }
 
+corpus_target() {
+  python -c 'import sys; print(*sys.version_info[:2], sep=".")'
+}
+
 lock_task() {
   [[ -z "${PROSE_SWEEP_LOCKED:-}" ]] || return 0
   sweep_locked "$0" "$@"
@@ -31,9 +35,10 @@ scratch_dir() {
 }
 
 settle_corpus() {
-  local corpus
+  local corpus targets
   corpus=$(corpus_root "$1") || return
-  PROSE_SETTLE_CORPUS="$corpus" sweep_test "${@:2}"
+  targets=${PROSE_SETTLE_TARGETS:-$(corpus_target)} || return
+  PROSE_SETTLE_CORPUS="$corpus" PROSE_SETTLE_TARGETS="$targets" sweep_test "${@:2}"
 }
 
 sweep_locked() {

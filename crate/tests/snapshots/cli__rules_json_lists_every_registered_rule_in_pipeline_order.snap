@@ -123,6 +123,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "shed-backslash-continuations",
+      "modernize-annotations",
       "reflow-parentheses",
       "simplify-comprehensions",
       "shed-super-args",
@@ -136,6 +137,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "strip-none-return",
+      "modernize-annotations",
       "reflow-parentheses"
     ],
     "imperative": "lay out a function signature on one line or one parameter per line",
@@ -145,6 +147,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "modernize-annotations",
       "simplify-comprehensions",
       "stack-method-chains",
       "reflow-calls",
@@ -191,6 +194,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "after": [
       "shed-backslash-continuations",
       "prune-inert-imports",
+      "modernize-annotations",
       "group-imports"
     ],
     "imperative": "lay out an import block one module per line",
@@ -201,6 +205,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "simplify-comprehensions",
+      "prefer-fstring",
       "reflow-imports"
     ],
     "imperative": "gather module constants into bands below the imports",
@@ -230,6 +235,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "prune-inert-imports",
+      "modernize-annotations",
       "group-imports",
       "alphabetize-siblings",
       "band-constants"
@@ -241,6 +247,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "modernize-annotations",
       "reflow-imports",
       "alphabetize-siblings",
       "band-constants",
@@ -253,6 +260,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "modernize-annotations",
       "strip-trailing-commas",
       "reflow-parentheses",
       "reflow-collections",
@@ -279,9 +287,11 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [
+      "modernize-annotations",
       "strip-trailing-commas",
       "reflow-parentheses",
       "reflow-collections",
+      "prefer-fstring",
       "alphabetize-siblings",
       "band-constants",
       "align-colons"

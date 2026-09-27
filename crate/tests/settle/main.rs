@@ -13,15 +13,15 @@
 //! on any file where that run differs from the chained one, whereas a
 //! pointed sweep reports which undeclared pairs agree on every file
 //! they edit together. The fixture tree runs the sweep at every line
-//! length the harness carries, because a subset that settles at one
-//! `code-line-length` can still edit its own output at another. The
-//! `trees` module holds every rule declaring `PRESERVES_TREE` to its
+//! length and `target-version` the harness carries, because a subset
+//! that settles at one budget can still edit its own output at another.
+//! The `trees` module holds every rule declaring `PRESERVES_TREE` to its
 //! input's tree over the same runs.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
 };
 
@@ -33,12 +33,14 @@ use prose::{
     rules::{RuleId, independent, preserves_tree, render_slugs, runs_behind},
     source::Source,
 };
-use rstest::rstest;
+use rstest::{fixture, rstest};
+use ruff_python_ast::PythonVersion;
 use rustc_hash::{FxBuildHasher, FxHashMap};
 
 use common::{
-    Absorbing, CORPUS, Hit, Slot, Tally, WIDTHS, WIDTHS_VAR, corpus, env_list_of, note_verified,
-    pointed_corpus, report_verified, setting, subset, swept, unread, verifying, widths_or,
+    Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified,
+    pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
+    targets_or, unread, verifying, widths_or,
 };
 use trees::check_trees;
 
@@ -131,9 +133,9 @@ impl Claim {
 /// the same shape across many files reports once.
 #[derive(Default)]
 struct Findings {
-    /// Each reported rule declaring `PRESERVES_TREE` as `false` that
-    /// rewrote a fixture, beside whether any of those rewrites changed the
-    /// tree.
+    /// Each reported rule declaring `PRESERVES_TREE` as `false` over the
+    /// fixture tree, beside whether any of its rewrites changed the tree,
+    /// so a rule that rewrote no fixture holds `false`.
     changing: BTreeMap<RuleId, bool>,
     /// Declared-independent pairs whose spliced run differs from their
     /// chained one.
@@ -155,8 +157,8 @@ struct Findings {
 }
 
 impl Findings {
-    /// Lists the rules declaring `PRESERVES_TREE` as `false` whose every
-    /// rewrite kept the tree.
+    /// Lists the rules declaring `PRESERVES_TREE` as `false` whose
+    /// rewrites changed no tree, including a rule that rewrote no fixture.
     fn kept(&self) -> impl Iterator<Item = &RuleId> {
         self.changing
             .iter()
@@ -172,7 +174,7 @@ impl Findings {
             return String::new();
         }
         format!(
-            "\nrules declaring `PRESERVES_TREE` as `false` whose every rewrite keeps the tree ({}):\n{}",
+            "\nrules declaring `PRESERVES_TREE` as `false` that no rewrite shows changing a tree ({}):\n{}",
             kept.len(),
             kept.iter().format("\n"),
         )
@@ -330,12 +332,12 @@ struct Pair {
 /// Every pipeline one budget's sweep runs, built once and shared across
 /// the corpus rather than rebuilt per file.
 struct Probes {
-    /// The `code-line-length` clause every defect this budget files
-    /// carries.
+    /// The `code-line-length` and `target-version` clause every defect
+    /// this budget files carries.
     budget: String,
-    /// Whether the corpus is the fixture tree, over which a reported rule
-    /// declaring `PRESERVES_TREE` as `false` that rewrites any file fails
-    /// unless one of those rewrites changes the tree.
+    /// Whether the corpus is the fixture tree, over which each reported
+    /// rule declaring `PRESERVES_TREE` as `false` fails unless one of its
+    /// rewrites changes the tree.
     fixtures: bool,
     /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
     /// this run claims that subset against the rules it reports.
@@ -351,13 +353,19 @@ struct Probes {
     singles: Vec<Single>,
     /// The seat in `singles` of each rule constructed alone.
     solo: BTreeMap<RuleId, usize>,
+    /// The `target-version` this budget runs at, which a reproduction
+    /// command names.
+    target: Option<PythonVersion>,
+    /// The `code-line-length` this budget runs at, which a reproduction
+    /// command names.
     width: usize,
 }
 
 impl Probes {
-    fn build(width: usize) -> Self {
+    fn build(width: usize, target: Option<PythonVersion>) -> Self {
         let config = Config {
             code_line_length: NonZeroUsize::new(width),
+            target_version: target,
             ..Config::default()
         };
         let scope = scope();
@@ -415,7 +423,10 @@ impl Probes {
             .filter(|rule| preserves_tree(rule.as_str()))
             .collect_vec();
         Self {
-            budget: format!("at `code-line-length` {width}"),
+            budget: format!(
+                "at `code-line-length` {width} with `target-version` {}",
+                target_name(target)
+            ),
             fixtures,
             joint: claim
                 .claims(&preserving, |rule| reported.contains(rule))
@@ -424,6 +435,7 @@ impl Probes {
             reported,
             singles,
             solo,
+            target,
             width,
         }
     }
@@ -437,13 +449,40 @@ impl Probes {
             format!("{RULES_VAR}='{}' ", rules.iter().format(" "))
         };
         Hit {
-            repro: Some(format!(
-                "{CORPUS}={} {scope}{WIDTHS_VAR}={} cargo test --test settle",
-                path.display(),
+            repro: Some(repro_command(
+                "settle",
+                path,
+                &scope,
+                self.target,
                 self.width,
             )),
             ..Hit::default()
         }
+    }
+
+    /// The findings a sweep at this budget starts from, recording each
+    /// reported rule declaring `PRESERVES_TREE` as `false` as having
+    /// changed no tree until a rewrite shows otherwise, and nothing off
+    /// the fixture tree.
+    fn opening(&self) -> Findings {
+        Findings {
+            changing: self
+                .reported
+                .iter()
+                .filter(|rule| self.fixtures && !preserves_tree(rule.as_str()))
+                .map(|&rule| (rule, false))
+                .collect(),
+            ..Findings::default()
+        }
+    }
+
+    /// Sweeps `files` at this budget, starting from the findings
+    /// [`Probes::opening`] records, so [`Findings::kept`] lists a reported
+    /// rule declaring `PRESERVES_TREE` as `false` that rewrites no file.
+    fn sweep(&self, files: &[PathBuf]) -> Findings {
+        let mut findings = self.opening();
+        findings.absorb(swept(files, |path| probe(self, path)));
+        findings
     }
 }
 
@@ -613,6 +652,13 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     findings
 }
 
+/// The probes one budget builds, at the shipped default width and
+/// `target-version` 3.14.
+#[fixture]
+fn probes() -> Probes {
+    Probes::build(88, Some(PythonVersion::PY314))
+}
+
 /// Parses `slug` into the rule it names.
 fn rule(slug: &str) -> RuleId {
     slug.parse().expect("a registered slug")
@@ -745,16 +791,19 @@ fn claims_reads_the_first_rule_when_owned_and_any_when_touching(
 fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() {
     let files = corpus();
     let lengths = lengths();
+    let targets = targets_or(TARGETS);
     let mut findings = Findings::default();
-    for &length in &lengths {
-        let probes = Probes::build(length);
+    for (&target, &length) in targets.iter().cartesian_product(&lengths) {
+        let probes = Probes::build(length, target);
         eprintln!(
-            "{} single-rule pipelines serve {} solos and {} pairs at width {length}",
+            "{} single-rule pipelines serve {} solos and {} pairs at width {length} with \
+             `target-version` {}",
             probes.singles.len(),
             probes.solo.len(),
             probes.pairs.len(),
+            target_name(target),
         );
-        findings.absorb(swept(&files, |path| probe(&probes, path)));
+        findings.absorb(probes.sweep(&files));
     }
     report_verified("chained pairs against the two-rule fold");
     if pointed_corpus().is_some() {
@@ -776,10 +825,11 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
     assert!(
         report.is_empty(),
         "{} distinct defects across the corpus's {} files{unread}, swept at \
-         `code-line-length` {}:{report}",
+         `code-line-length` {} with `target-version` {}:{report}",
         findings.total(),
         files.len(),
         lengths.iter().format(", "),
+        targets.iter().copied().map(target_name).format(", "),
     );
 }
 
@@ -808,21 +858,45 @@ fn findings_absorb_reads_a_rule_as_reshaping_where_any_run_did() {
 }
 
 #[rstest]
-#[case(&[], "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_WIDTHS=88 cargo test --test settle")]
+#[case(
+    &[],
+    "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_TARGETS=3.14 PROSE_SETTLE_WIDTHS=88 cargo test --test settle",
+)]
 #[case(
     &["align-equals"],
-    "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_RULES='align-equals' PROSE_SETTLE_WIDTHS=88 cargo test --test settle",
+    "PROSE_SETTLE_CORPUS=a.py PROSE_SETTLE_RULES='align-equals' PROSE_SETTLE_TARGETS=3.14 PROSE_SETTLE_WIDTHS=88 cargo test --test settle",
 )]
-fn hit_scopes_its_command_to_the_rules_it_names(#[case] slugs: &[&str], #[case] command: &str) {
+fn hit_scopes_its_command_to_the_rules_it_names(
+    probes: Probes,
+    #[case] slugs: &[&str],
+    #[case] command: &str,
+) {
     let rules = slugs.iter().copied().map(rule).collect_vec();
 
-    let hit = Probes::build(88).hit(Path::new("a.py"), &rules);
+    let hit = probes.hit(Path::new("a.py"), &rules);
 
     assert_eq!(hit.repro.as_deref(), Some(command));
 }
 
+#[rstest]
+#[case::over_the_fixture_tree(true, &["reflow-calls"])]
+#[case::over_a_pointed_corpus(false, &[])]
+fn opening_holds_each_reported_changing_rule_unchanged_over_the_fixture_tree(
+    mut probes: Probes,
+    #[case] fixtures: bool,
+    #[case] held: &[&str],
+) {
+    probes.fixtures = fixtures;
+    probes.reported = BTreeSet::from([rule("align-equals"), rule("reflow-calls")]);
+
+    assert_eq!(
+        probes.opening().changing,
+        held.iter().map(|&slug| (rule(slug), false)).collect(),
+    );
+}
+
 #[test]
-fn render_kept_lists_each_rule_whose_every_rewrite_kept_the_tree() {
+fn render_kept_lists_each_rule_no_rewrite_shows_changing_a_tree() {
     let findings = Findings {
         changing: BTreeMap::from([
             (rule("band-constants"), true),
@@ -833,7 +907,7 @@ fn render_kept_lists_each_rule_whose_every_rewrite_kept_the_tree() {
 
     assert_eq!(
         findings.render_kept(),
-        "\nrules declaring `PRESERVES_TREE` as `false` whose every rewrite keeps the tree (1):\n  `reflow-calls`",
+        "\nrules declaring `PRESERVES_TREE` as `false` that no rewrite shows changing a tree (1):\n  `reflow-calls`",
     );
     assert!(Findings::default().render_kept().is_empty());
 }
@@ -873,4 +947,14 @@ fn shard_of_counts_its_share_from_one(#[case] spec: Option<&str>, #[case] share:
 #[should_panic(expected = "takes `k/n`")]
 fn shard_of_rejects_a_share_outside_one_through_n(#[case] spec: &str) {
     let _ = shard_of(Some(spec));
+}
+
+#[rstest]
+fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes) {
+    probes.fixtures = true;
+    probes.reported = BTreeSet::from([rule("reflow-calls")]);
+
+    let findings = probes.sweep(&[]);
+
+    assert_eq!(findings.kept().collect_vec(), [&rule("reflow-calls")]);
 }
