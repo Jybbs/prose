@@ -76,20 +76,24 @@ impl Measure<'_> {
 
     /// Measures the width from the start of `range`, the span of `expr`,
     /// through the bracket a layout rule breaks the value open at, per
-    /// [`opener_width`]. A value on one row reads the first such bracket in
-    /// source order anywhere inside it, and a value spanning rows reads its
-    /// own bracket alone.
-    fn opener(&self, expr: &Expr, range: TextRange) -> Option<usize> {
+    /// [`opener_width`], beside whether that bracket sits inside the value
+    /// rather than opening it. A value on one row falls back to the first
+    /// such bracket in source order inside it, and a value spanning rows
+    /// reads its own bracket alone.
+    fn opener(&self, expr: &Expr, range: TextRange) -> Option<(usize, bool)> {
         let opens = |inner: &Expr| opener_width(self.source, &self.one_row, inner, range.start());
+        if let Some(width) = opens(expr) {
+            return Some((width, false));
+        }
         if self.source.contains_line_break(range) {
-            return opens(expr);
+            return None;
         }
         let mut width = None;
         any_over_expr_within(expr, Interpolations::Skip, |inner| {
             width = opens(inner);
             width.is_some()
         });
-        width
+        width.map(|width| (width, true))
     }
 
     /// Measures the width the code past `end` takes on its row once the
@@ -100,20 +104,22 @@ impl Measure<'_> {
 
     /// Measures the widths a statement row whose value `expr` opens at
     /// `column` reaches on one row and broken open at the bracket
-    /// [`Self::opener`] finds, returning `None` where no layout rule breaks
-    /// `expr` open or, for a value spanning rows, joins it back onto one row.
+    /// [`Self::opener`] finds, beside whether that bracket sits inside the
+    /// value, returning `None` where no layout rule breaks `expr` open or,
+    /// for a value spanning rows, joins it back onto one row.
     pub(super) fn breakable(
         &self,
         expr: &Expr,
         parent: AnyNodeRef,
         column: usize,
-    ) -> Option<aligner::Breakable> {
+    ) -> Option<(aligner::Breakable, bool)> {
         let range = self.source.paren_aware_range(expr.into(), parent);
-        let opener = self.opener(expr, range)?;
-        Some(aligner::Breakable {
+        let (opener, inside) = self.opener(expr, range)?;
+        let row = aligner::Breakable {
             code: column + self.one_row_width(expr, parent, range)? + self.tail(range.end()),
             opener: column + opener,
-        })
+        };
+        Some((row, inside))
     }
 
     /// Computes the shift `align-colons` gives each annotated row of `runs`,
@@ -177,7 +183,7 @@ impl Measure<'_> {
         if !self.source.contains_line_break(range) {
             return None;
         }
-        if statement && let Some(row) = self.breakable(expr, parent, column) {
+        if statement && let Some((row, _)) = self.breakable(expr, parent, column) {
             return Some(row.code);
         }
         let tail = self.source.row_tail_width(range.end());
@@ -227,8 +233,8 @@ mod tests {
 
     /// Returns the widths [`Measure::breakable`] measures for the first
     /// statement of `src` under the default configuration, its value opening
-    /// at column 4.
-    fn breakable(src: &str) -> Option<(usize, usize)> {
+    /// at column 4, beside whether its bracket sits inside the value.
+    fn breakable(src: &str) -> Option<(usize, usize, bool)> {
         let source = parse(src);
         let stmt = &source.ast().body[0];
         Config::default()
@@ -236,22 +242,22 @@ mod tests {
             .measured(&source, |measure| {
                 measure
                     .breakable(first_value(&source), stmt.into(), 4)
-                    .map(|row| (row.code, row.opener))
+                    .map(|(row, inside)| (row.code, row.opener, inside))
             })
     }
 
     #[rstest]
-    #[case::one_row_call("x = frob(a, b)\n", Some((14, 9)))]
-    #[case::fractured_call("x = frob(a,\n         b)\n", Some((14, 9)))]
-    #[case::fractured_list("x = [a,\n     b]\n", Some((10, 5)))]
-    #[case::inner_call("x = frob(a, b).match\n", Some((20, 9)))]
+    #[case::one_row_call("x = frob(a, b)\n", Some((14, 9, false)))]
+    #[case::fractured_call("x = frob(a,\n         b)\n", Some((14, 9, false)))]
+    #[case::fractured_list("x = [a,\n     b]\n", Some((10, 5, false)))]
+    #[case::inner_call("x = frob(a, b).match\n", Some((20, 9, true)))]
     #[case::interpolated_call("x = f\"{frob(a, b)}\"\n", None)]
     #[case::column_shaped_call("x = frob(\n    a,\n    b\n)\n", None)]
-    #[case::trailing_comment("x = frob(a, b)  # note\n", Some((14, 9)))]
+    #[case::trailing_comment("x = frob(a, b)  # note\n", Some((14, 9, false)))]
     #[case::name("x = value\n", None)]
     fn breakable_reads_a_row_on_one_line_and_broken_open(
         #[case] src: &str,
-        #[case] expected: Option<(usize, usize)>,
+        #[case] expected: Option<(usize, usize, bool)>,
     ) {
         assert_eq!(breakable(src), expected);
     }

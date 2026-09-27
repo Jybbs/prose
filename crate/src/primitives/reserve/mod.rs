@@ -392,11 +392,16 @@ impl Reservations {
                 let statements: Vec<aligner::Statement> = values
                     .iter()
                     .zip(&run.members)
-                    .map(|(&found, member)| aligner::Statement {
-                        breaks: found.and_then(|(expr, parent, column)| {
+                    .map(|(&found, member)| {
+                        let colon = colons.get(&member.line_start).copied().unwrap_or_default();
+                        let row = found.and_then(|(expr, parent, column)| {
                             measure.breakable(expr, parent, column)
-                        }),
-                        ..colons.get(&member.line_start).copied().unwrap_or_default()
+                        });
+                        aligner::Statement {
+                            breaks: row.map(|(breaks, _)| breaks),
+                            holds: colon.holds || row.is_some_and(|(_, inside)| inside),
+                            shift: colon.shift,
+                        }
                     })
                     .collect();
                 aligner::breaking_columns(
@@ -883,16 +888,6 @@ mod tests {
     }
 
     #[test]
-    fn columns_end_a_run_at_a_row_breaking_inside_its_value() {
-        // `declaration_match` crosses a cap of 40 at its own column, so its
-        // `compile` call breaks open inside the `.match` access and ends the
-        // run, leaving `close` to stand at its own column.
-        let text = "declaration_match = compile(r\"[a-z][-_.a-z0-9]*\").match\n\
-                    close = compile(r\"--\\s*>\\s*\")\n";
-        assert_eq!(landed(text, 40, &[64]), vec![8]);
-    }
-
-    #[test]
     fn columns_count_a_keyword_the_rule_widens_on_the_same_line() {
         // Aligning `x` to `longer` lands its line on 15 columns, inside
         // a cap of 16 until the stacked `k=1` keyword the rule buffers
@@ -906,6 +901,16 @@ mod tests {
         };
         assert_eq!(under(16), vec![4]);
         assert_eq!(under(18), vec![9]);
+    }
+
+    #[test]
+    fn columns_end_a_run_at_a_row_breaking_inside_its_value() {
+        // `declaration_match` crosses a cap of 40 at its own column, so its
+        // `compile` call breaks open inside the `.match` access and ends the
+        // run, leaving `close` to stand at its own column.
+        let text = "declaration_match = compile(r\"[a-z][-_.a-z0-9]*\").match\n\
+                    close = compile(r\"--\\s*>\\s*\")\n";
+        assert_eq!(landed(text, 40, &[64]), vec![8]);
     }
 
     #[test]
@@ -947,6 +952,17 @@ mod tests {
         let text = "xxxxxxxxxxxx = 1\nc = frobnicate(first_argument_value, \
                     second_argument_value, third_argument_v)\ndd = 4\n";
         assert_eq!(landed(text, 80, &[21, 100]), vec![5, 5]);
+    }
+
+    #[test]
+    fn columns_leave_a_row_breaking_inside_its_value_where_it_fits_alone() {
+        // `keys_to_move` fits a cap of 62 at its own column but crosses it
+        // padded to `adapters[prefix]`'s column, and its bracket sits inside
+        // the comprehension, so no layout rule breaks it open to join that
+        // column and it stands at its own.
+        let text = "adapters[prefix] = adapter\n\
+                    keys_to_move = [k for k in adapters if len(k) < len(prefix)]\n";
+        assert_eq!(landed(text, 62, &[42]), vec![15]);
     }
 
     #[test]

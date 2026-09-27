@@ -26,9 +26,10 @@ pub(crate) struct Breakable {
 /// A statement row as the rules seated ahead of the alignment leave it:
 /// `shift` how far an earlier column moves everything past the row's
 /// name, `breaks` the widths the row reaches where a layout rule can
-/// break its value open, and `holds` set where breaking it open would
-/// split that earlier column's run, so the row breaks only where its
-/// code crosses the cap at the buffer alone.
+/// break its value open, and `holds` set where the row breaks only where
+/// its code crosses the cap at the buffer alone, meaning breaking it open
+/// would split that earlier column's run or its bracket sits inside its
+/// value.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Statement {
     pub(crate) breaks: Option<Breakable>,
