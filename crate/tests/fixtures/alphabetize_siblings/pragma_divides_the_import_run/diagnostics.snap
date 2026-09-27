@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/pragma_divides_the_import_run/input.py
+---
+alphabetize-siblings@7..57

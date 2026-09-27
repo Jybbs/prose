@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/indented_comment_moves_with_the_import_above/input.py
+---
+import os
+import zlib
+
+  # migration note pinned between the runs

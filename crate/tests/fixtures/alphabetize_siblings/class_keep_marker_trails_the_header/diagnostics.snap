@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_trails_the_header/input.py
+---
+alphabetize-siblings@46..69

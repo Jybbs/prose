@@ -71,7 +71,7 @@ impl Folds {
             source,
             body,
             &runs.runs,
-            &runs.sorted_heads,
+            &runs.heads,
             self.merges,
             slot,
             survives,
@@ -96,10 +96,11 @@ pub(super) struct MergeRuns {
     pub(super) banded: bool,
     blocks: OnceCell<Vec<TextRange>>,
     pub(super) carries: Vec<Carry>,
+    /// The slot heading each band once `group-imports` has run beside the
+    /// slot its sort seats first, in step with `runs` and empty where the
+    /// runs are the imports as written.
+    pub(super) heads: Vec<(usize, usize)>,
     pub(super) runs: Vec<Vec<usize>>,
-    /// The slot each band's sort seats first, in step with `runs` and
-    /// empty where the runs are the imports as written.
-    pub(super) sorted_heads: Vec<usize>,
 }
 
 impl MergeRuns {
@@ -127,24 +128,24 @@ impl MergeRuns {
                 imports,
                 ..
             }) => {
-                let (runs, sorted_heads) = imports
+                let (runs, heads) = imports
                     .into_iter()
-                    .map(|band| (band.slots, band.sorted_head))
+                    .map(|band| (band.slots, (band.head, band.sorted_head)))
                     .unzip();
                 Self {
                     banded: true,
                     blocks: OnceCell::from(blocks),
                     carries,
+                    heads,
                     runs,
-                    sorted_heads,
                 }
             }
             None => Self {
                 banded: false,
                 blocks: OnceCell::new(),
                 carries: Vec::new(),
+                heads: Vec::new(),
                 runs,
-                sorted_heads: Vec::new(),
             },
         }
     }
@@ -195,12 +196,15 @@ pub(super) fn comments_beside(
 
 /// Slot groups of two or more mergeable `from`-imports sharing one
 /// module within one of `runs`, each group spanning one notebook cell
-/// and gathering cleanly per [`gathers_cleanly`].
+/// and gathering cleanly per [`gathers_cleanly`]. Under `keeps_order` a
+/// group holds consecutive slots alone, since a gather across another
+/// statement moves a member above it.
 pub(super) fn module_groups(
     source: &Source,
     body: &[Stmt],
     outer: TextRange,
     runs: &MergeRuns,
+    keeps_order: bool,
 ) -> Vec<Vec<usize>> {
     let mut groups = Vec::new();
     for run in &runs.runs {
@@ -222,6 +226,7 @@ pub(super) fn module_groups(
             by_module
                 .into_iter()
                 .map(|(_, slots)| slots)
+                .filter(|slots| !keeps_order || slots.windows(2).all(|pair| pair[1] == pair[0] + 1))
                 .filter(|slots| gathers_cleanly(source, body, outer, slots, runs)),
         );
     }
@@ -310,7 +315,7 @@ mod tests {
         let body = &source.ast().body;
         let runs = MergeRuns::of(None, &source, body, source.module_range(), |_| true);
 
-        assert!(module_groups(&source, body, source.module_range(), &runs).is_empty());
+        assert!(module_groups(&source, body, source.module_range(), &runs, false).is_empty());
     }
 
     #[test]
@@ -320,8 +325,28 @@ mod tests {
         let runs = MergeRuns::of(None, &source, body, source.module_range(), |_| true);
 
         assert_eq!(
-            module_groups(&source, body, source.module_range(), &runs),
+            module_groups(&source, body, source.module_range(), &runs, false),
             [vec![0, 1]],
+        );
+    }
+
+    #[rstest]
+    #[case("from pkg import a\nfrom pkg import b\n", false, vec![vec![0, 1]])]
+    #[case("from pkg import a\nfrom pkg import b\n", true, vec![vec![0, 1]])]
+    #[case("from pkg import a\nimport sys\nfrom pkg import b\n", false, vec![vec![0, 2]])]
+    #[case("from pkg import a\nimport sys\nfrom pkg import b\n", true, vec![])]
+    fn module_groups_gather_across_a_statement_unless_order_is_kept(
+        #[case] src: &str,
+        #[case] keeps_order: bool,
+        #[case] expected: Vec<Vec<usize>>,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let runs = MergeRuns::of(None, &source, body, source.module_range(), |_| true);
+
+        assert_eq!(
+            module_groups(&source, body, source.module_range(), &runs, keeps_order),
+            expected,
         );
     }
 }

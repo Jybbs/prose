@@ -64,6 +64,8 @@ The three values a finalizer reads together, one member block per slot, the text
 
 `block_range` extends each item's source extent upward to include every comment-only line directly above it *(with no intervening blank line)* and downward to the end of its last line. A comment directly above a function definition moves with that function, because the comment is part of the function's *"block"*. A blank line acts as a divider, leaving comments above the blank line attached to whatever sits above them rather than to the next item.
 
+A statement body takes its blocks through `member_blocks` instead, which binds a comment run to the statement below it across a blank line unless the run anchors in place or sits at a shallower indent. Each block also reaches down over the own-line comments indented deeper than its statement, so a note closing a function body moves with that function. A comment neither statement binds stays in the gap between their blocks, where it divides the body into sections that no reorder crosses.
+
 A member's trailing inline comment moves with it too. For a comma-separated group reordered through `reorder_separated`, the separating comma is re-emitted per slot so the comment stays on its member's line rather than staying behind in the slot the member vacated. A comment reached only over a closing `}`, `)`, or `]` belongs to the whole group rather than the last member, so it stays in source position.
 
 The text between adjacent items *(blank lines, sectioning comments)* stays in source position by default. A caller that needs a custom gap per slot passes a `gap_override` closure that returns `Some(text)` for slot `i` to substitute the gap after that slot.

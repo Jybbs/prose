@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useElementHover, useElementSize, useMouseInElement } from '@vueuse/core'
-import { computed, useTemplateRef }                           from 'vue'
+import { useElementHover }               from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import { provideAriaHidden } from '../../../../lib/composables/use-aria-hidden'
 import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
@@ -31,11 +31,19 @@ const rootRef = useTemplateRef<HTMLElement>('root')
 
 const active = useElementHover(rootRef)
 
-const { elementX: rx, elementY: ry } = useMouseInElement(rootRef)
-const { width: rw, height: rh }      = useElementSize(rootRef)
+const spotlightX = ref(SPOTLIGHT_FALLBACK_PCT)
+const spotlightY = ref(SPOTLIGHT_FALLBACK_PCT)
 
-const spotlightX = computed(() => rw.value ? (rx.value / rw.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
-const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * SPOTLIGHT_PCT_SCALE : SPOTLIGHT_FALLBACK_PCT)
+function onPointerLeave() {
+  spotlightX.value = SPOTLIGHT_FALLBACK_PCT
+  spotlightY.value = SPOTLIGHT_FALLBACK_PCT
+}
+
+function onPointerMove(event: PointerEvent) {
+  const rect       = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  spotlightX.value = (event.clientX - rect.left) / rect.width * SPOTLIGHT_PCT_SCALE
+  spotlightY.value = (event.clientY - rect.top) / rect.height * SPOTLIGHT_PCT_SCALE
+}
 </script>
 
 <template>
@@ -50,6 +58,8 @@ const spotlightY = computed(() => rh.value ? (ry.value / rh.value) * SPOTLIGHT_P
       '--spotlight-x' : `${spotlightX}%`,
       '--spotlight-y' : `${spotlightY}%`
     }"
+    @pointermove="onPointerMove"
+    @pointerleave="onPointerLeave"
   >
     <a
       class="surface-card-cover-link"

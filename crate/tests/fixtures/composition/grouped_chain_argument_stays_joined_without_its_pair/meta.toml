@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Parenthesized Chain Argument That Fits Without Its Pair Stays Joined"
+
+description = '''
+`advise(...)` crosses the 26-column budget, so [[reflow-calls]] puts each argument on its own row, where the one-row `(gamma.get(key).strip())` sheds its grouping pair and the chain starts at the row's indent. **The chain is measured from that column and fits exactly**, so it stays joined and [[reflow-calls]] writes the argument without the pair the source wrote.
+'''

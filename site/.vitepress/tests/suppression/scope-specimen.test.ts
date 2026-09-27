@@ -1,27 +1,17 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ScopeSpecimen         from '../../theme/components/suppression/ScopeSpecimen.vue'
-import { rendersAccessibly } from '../axe'
+import { directiveHref, SCOPE_ORDER } from '../../lib/suppression/scopes'
+import ScopeSpecimen                  from '../../theme/components/suppression/ScopeSpecimen.vue'
+import { rendersAccessibly }          from '../axe'
 
-vi.mock('../../lib/suppression/directives.data', () => ({
-  data: [
-    { form : '# prose: off',              id : 'prose-off',          scope : 'file'  },
-    { form : '# fmt: off',                id : 'fmt-off',            scope : 'block',
-      pairId : 'fmt-on', pairRole : 'opens' },
-    { form : '# fmt: on',                 id : 'fmt-on',             scope : 'block',
-      pairId : 'fmt-off', pairRole : 'closes' },
-    { form : '# fmt: skip',               id : 'fmt-skip',           scope : 'line'  },
-    { form : '# prose: skip[<rule>, ...]', id : 'prose-skip-rules',  scope : 'line'  },
-    { form : '# prose: ignore[<rule>, ...]', id : 'prose-ignore-rules', scope : 'line' },
-    { form : '# prose: keep',             id : 'prose-keep',         scope : 'dict'  }
-  ]
-}))
+vi.mock('../../lib/suppression/directives.data', async () =>
+  ({ data: (await import('../../lib/suppression/directives')).DIRECTIVES }))
 
 describe('ScopeSpecimen', () => {
   it('renders one legend band per scope in the shared order', () => {
     const rows = mount(ScopeSpecimen).findAll('.scope-specimen-legend-row')
-    expect(rows.map(r => r.attributes('data-scope'))).toStrictEqual(['file', 'block', 'line', 'dict'])
+    expect(rows.map(r => r.attributes('data-scope'))).toStrictEqual([...SCOPE_ORDER])
   })
 
   it('composes the paired display form from the registry', () => {
@@ -31,15 +21,9 @@ describe('ScopeSpecimen', () => {
   })
 
   it('derives each legend href from the directive scope', () => {
-    const links = mount(ScopeSpecimen).findAll('.scope-specimen-legend-directive a')
-    expect(links.map(a => a.attributes('href'))).toStrictEqual([
-      '/reference/suppression-directives#file-level-suppression',
-      '/reference/suppression-directives#block-markers',
-      '/reference/suppression-directives#line-markers',
-      '/reference/suppression-directives#line-markers',
-      '/reference/suppression-directives#line-markers',
-      '/reference/suppression-directives#dict-literal-order-preservation'
-    ])
+    const links  = mount(ScopeSpecimen).findAll('.scope-specimen-legend-directive a')
+    const scopes = ['file', 'block', 'line', 'line', 'line', 'construct'] as const
+    expect(links.map(a => a.attributes('href'))).toStrictEqual(scopes.map(scope => directiveHref(scope)))
   })
 
   it('brackets the skipped statement across every line it spans', () => {

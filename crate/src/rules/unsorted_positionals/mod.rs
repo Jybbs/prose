@@ -4,7 +4,8 @@
 //! run of a class whose header generates a positional constructor.
 //! Lint-only, emits no edits.
 //!
-//! A positional-binding-decorated function is skipped whole. `self` /
+//! A positional-binding-decorated function is skipped whole, as is the
+//! field run of a class whose header carries `# prose: keep`. `self` /
 //! `cls`, the positional-only parameters, a `ClassVar` declaration, and
 //! the `KW_ONLY` sentinel drop from the run, leaving the rest of it
 //! still evaluated.
@@ -16,6 +17,7 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
+        comments::class_keeps_order,
         constructor::{classify_field, keyword_field_start},
         params::{params_unsorted, pins_positional_params},
         range::blocks_span,
@@ -49,7 +51,8 @@ impl Rule for UnsortedPositionals {
         let message = self.message();
         let rule = self.id();
         filter_map_over_stmts(&source.ast().body, |stmt| {
-            unsorted_run(stmt).map(|range| Diagnostic::lint(rule, range, message.to_owned()))
+            unsorted_run(source, stmt)
+                .map(|range| Diagnostic::lint(rule, range, message.to_owned()))
         })
     }
 }
@@ -71,10 +74,12 @@ fn unsorted_field_run(class: &StmtClassDef) -> Option<TextRange> {
 
 /// The extent of the positional run `stmt` declares, returned only where
 /// sorting that run would change its order. `None` for a statement
-/// declaring no run, for a decorator-bound signature, and for a run
+/// declaring no run, for a decorator-bound signature, for the field run
+/// of a class whose header carries `# prose: keep`, and for a run
 /// already in order.
-fn unsorted_run(stmt: &Stmt) -> Option<TextRange> {
+fn unsorted_run(source: &Source, stmt: &Stmt) -> Option<TextRange> {
     match stmt {
+        Stmt::ClassDef(class) if class_keeps_order(source, class) => None,
         Stmt::ClassDef(class) => unsorted_field_run(class),
         Stmt::FunctionDef(f) => (!pins_positional_params(f) && params_unsorted(&f.parameters))
             .then(|| f.parameters.range()),

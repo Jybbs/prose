@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_measured_where_its_call_explodes/input.py
+---
+def dispatch(payload):
+    return advise(
+        payload.get("command_args") or "",
+        payload.get("command_name", "").lstrip("/")
+    )

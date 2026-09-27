@@ -1,13 +1,14 @@
-//! The columns an explode decision reads: where a call's `(` lands once
-//! the walk's earlier edits place the text ahead of it, the indent an
-//! exploded closing `)` drops to, and whether a literal holding a call
-//! is one `reflow-collections` expands once its row lands.
+//! The columns the walk measures: where a call's `(` lands once the
+//! walk's earlier edits place the text ahead of it, the indent an
+//! exploded closing `)` drops to, whether a literal holding a call is
+//! one `reflow-collections` expands once its row lands, and the seat of
+//! each call and attribute access inside a relocated region.
 
 use ruff_python_ast::{Expr, ExprCall, helpers::any_over_expr, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use super::Exploder;
+use super::{Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
@@ -112,14 +113,13 @@ impl<'a> Exploder<'a> {
         !self.one_row.fits(column + width + tail)
     }
 
-    /// The indent an exploded closing `)` drops to for `call`: this
-    /// walk's own indent where the argument list settles on the row the
-    /// region opens on, and otherwise the placed indent of the row
-    /// [`Self::settled_row_anchor`] resolves for the `(`.
-    pub(super) fn indent_for(&self, call: &ExprCall) -> usize {
-        let anchor = self
-            .settled_row_anchor(call.arguments.start())
-            .max(self.region.start());
+    /// The indent of the row `offset` settles on, which an exploded
+    /// closing `)` drops to where `offset` opens an argument list: this
+    /// walk's own indent where that row is the one the region opens on,
+    /// and otherwise the placed indent of the row
+    /// [`Self::settled_row_anchor`] resolves for `offset`.
+    pub(super) fn indent_for(&self, offset: TextSize) -> usize {
+        let anchor = self.settled_row_anchor(offset).max(self.region.start());
         if let Some(indent) = self.indent
             && self.source.same_line(self.region.start(), anchor)
         {
@@ -136,5 +136,20 @@ impl<'a> Exploder<'a> {
     pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
         let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
         self.placed_column(call.arguments.start(), !spans_rows(&callee))
+    }
+
+    /// Where `expr` sits once this walk's earlier edits place the text
+    /// ahead of it. Its start reaches the column [`Self::placed_column`]
+    /// reads, its row is written at the indent [`Self::indent_for`]
+    /// reads, and the columns [`Self::row_tail`] reads trail it on that
+    /// row.
+    pub(super) fn seat(&self, expr: &Expr) -> Seat {
+        let offset = expr.start();
+        Seat {
+            column: self.placed_column(offset, true),
+            indent: self.indent_for(offset),
+            line_shift: self.line_shift,
+            tail: self.row_tail(expr.end()),
+        }
     }
 }

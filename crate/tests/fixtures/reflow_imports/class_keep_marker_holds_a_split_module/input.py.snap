@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/class_keep_marker_holds_a_split_module/input.py
+---
+class Kept:  # prose: keep
+    from os import sep
+    import sys
+    from os import path
+    from json import dumps, loads
+
+
+class Gathered:
+    from os import sep, path
+    import sys

@@ -14,7 +14,7 @@ use super::{BandConstants, Bands};
 use crate::primitives::{
     blanks::{blank_gap, module_blank_lines},
     group_map,
-    imports::{import_blank_lines, import_sort_key},
+    imports::{import_blank_lines, import_group, import_sort_key},
     sections::Sections,
 };
 
@@ -100,10 +100,10 @@ impl BandPlan<'_> {
     /// run sorted to the front, the leading constants below it, the
     /// definitions in incoming order, the trailing constants last. The
     /// import run sorts by group then name when `rule.group_imports`,
-    /// flat otherwise, and is recorded as one import band. Both constant
-    /// bands sort by `(tier, subcategory, name)`. Records a `(from, to)`
-    /// shift for every sorted band whose head member changed. Clears
-    /// `region`.
+    /// flat otherwise, and is recorded as one import band whose head is
+    /// the import [`grouped_head`] names. Both constant bands sort by
+    /// `(tier, subcategory, name)`. Records a `(from, to)` shift for every
+    /// sorted band whose head member changed. Clears `region`.
     fn drain_region(
         &self,
         body: &[Stmt],
@@ -122,7 +122,8 @@ impl BandPlan<'_> {
         let definitions = take(BandRank::Definition);
         let mut trailing = take(BandRank::Trailing);
         let heads = |bands: [&[usize]; 3]| bands.map(|band| band.first().copied());
-        let source_heads = heads([&imports, &leading, &trailing]);
+        let head = grouped_head(body, rule, &imports);
+        let source_heads = [head, leading.first().copied(), trailing.first().copied()];
         let slots = imports.clone();
         imports.sort_by_key(|&idx| {
             import_sort_key(&body[idx], &rule.first_party, rule.group_imports)
@@ -132,12 +133,13 @@ impl BandPlan<'_> {
         trailing.sort_by_key(|idx| self.keys[idx]);
         let banded = [imports.as_slice(), &leading, &definitions, &trailing].concat();
         let holds = self.region_holds_its_references(&banded);
-        if let Some(&sorted_head) = if holds {
-            imports.first()
-        } else {
-            slots.first()
-        } {
-            drained.imports.push(ImportBand { slots, sorted_head });
+        if let Some(head) = head {
+            let sorted_head = if holds { imports[0] } else { head };
+            drained.imports.push(ImportBand {
+                head,
+                slots,
+                sorted_head,
+            });
         }
         if !holds {
             drained.banded.extend(incoming);
@@ -313,9 +315,11 @@ pub(crate) struct Carry {
     pub(crate) trails: bool,
 }
 
-/// One import band: its body slots in source order and the slot the
-/// sort seats first, whose line the band's heading then reads over.
+/// One import band: its body slots in source order, the slot heading it
+/// once `group-imports` has run, and the slot the sort seats first, whose
+/// line the band's heading then reads over.
 pub(crate) struct ImportBand {
+    pub(crate) head: usize,
     pub(crate) slots: Vec<usize>,
     pub(crate) sorted_head: usize,
 }
@@ -374,6 +378,21 @@ pub(super) fn banded_gap(
             .unwrap_or(1),
     };
     Some(blank_gap(ending, blanks))
+}
+
+/// The import of `imports`, body slots in source order, that heads the
+/// band once `group-imports` has partitioned each run of consecutive
+/// slots by group, the first member of the leading run's first group
+/// where `rule.group_imports` and the first import otherwise. `None` for
+/// an empty band.
+fn grouped_head(body: &[Stmt], rule: &BandConstants, imports: &[usize]) -> Option<usize> {
+    let run = imports.chunk_by(|&a, &b| b == a + 1).next()?;
+    if !rule.group_imports {
+        return Some(run[0]);
+    }
+    run.iter()
+        .copied()
+        .min_by_key(|&idx| import_group(&body[idx], &rule.first_party))
 }
 
 #[cfg(test)]

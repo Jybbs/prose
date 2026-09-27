@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_trailing_a_call_measured_where_it_sits/input.py
+---
+def total(payload):
+    value = explode_me(alpha_argument, beta_argument, gamma_argument, delta) + (
+        payload.get("command_name", "")
+               .lstrip("/")
+    )
+    return value
