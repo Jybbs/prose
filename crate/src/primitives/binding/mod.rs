@@ -163,6 +163,12 @@ impl BindingAnalysis {
         self.deleted.contains(name)
     }
 
+    /// Returns `true` when a function writes `name` through a `global`
+    /// declaration.
+    pub(crate) fn is_written_globally(&self, name: &str) -> bool {
+        self.global_writes.contains_key(name)
+    }
+
     /// Returns the number of distinct attributes read off the
     /// module-scope binding for `name` (`os.environ` and `os.getcwd`
     /// count as two), or `0` when `name` is unbound at module scope.

@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { mount } from '@vue/test-utils'
 
-import { expectAccessible }                 from '../axe'
+import { AXE_TIMEOUT_MS, expectAccessible } from '../axe'
 import { componentFixtures, loadComponent } from '../fixture-tree'
 
 describe('component fixtures', () => {
@@ -14,7 +14,7 @@ describe('component fixtures', () => {
     })
     await expect(w.html()).toMatchFileSnapshot(path.join(fixture.dir, 'output.html.snap'))
     await expectAccessible(w.html(), fixture.axeIgnore)
-  })
+  }, AXE_TIMEOUT_MS)
 
   it('fails loud on a component path outside the tree', async () => {
     await expect(loadComponent('base/Missing')).rejects.toThrow(/no component at theme\/components/)

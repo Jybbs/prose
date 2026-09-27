@@ -33,6 +33,15 @@ export const glossary: Record<string, GlossaryEntry> = {
     href       : '/reference/suppression-directives#lint-suppression'
   },
 
+  '# prose: keep': {
+    definition : '`# prose: keep` holds one construct in the order written. On a bracket line of '
+               + 'a dict literal, `__all__`, or `__slots__`, it holds the entries, and on the '
+               + '`class` line or the closing `:` line of a class header, it holds the '
+               + 'statements of the body.',
+    families   : ['ordering', 'engine'],
+    href       : '/reference/suppression-directives#construct-order-preservation'
+  },
+
   '--ignore': {
     definition : '`--ignore` removes the named rules from a single run. The flag repeats, and '
                + 'combined with `--select` it subtracts from the selected set.',
@@ -597,19 +606,22 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'PEP 749': {
     aliases    : ['pep 749', 'PEP-749', 'deferred annotation', 'deferred annotations'],
-    definition : 'PEP 749 is the deferred-annotation-evaluation PEP, landing in Python 3.14. '
-               + 'Annotations are no longer evaluated when a definition runs, so '
-               + '`from __future__ import annotations` does nothing there and '
-               + '`prune-inert-imports` removes it on a project targeting 3.14 or later.',
+    definition : 'PEP 749 is the implementation PEP for PEP 649\'s deferred annotation '
+               + 'evaluation, from Python 3.14. Annotations are evaluated when something reads '
+               + 'them rather than when the statement carrying them runs, so '
+               + '`prune-inert-imports` removes `from __future__ import annotations` on a '
+               + 'project targeting 3.14 or later wherever every name the annotations read is '
+               + 'bound ahead of the annotation.',
     rule       : 'prune-inert-imports'
   },
 
   'pinned statement': {
     aliases    : ['pinned member', 'pinned constant', 'pinned definition'],
     definition : 'A pinned statement stays where the author put it while its siblings sort or '
-               + 'band around it. A `# prose: keep` marker pins a dict literal or a dunder '
-               + 'list, a reference that must resolve at evaluation time pins a definition '
-               + 'below the sibling it names, and a `# noqa: E402` pins an import on its line.',
+               + 'band around it. A `# prose: keep` marker pins a dict literal, a dunder list, '
+               + 'or every statement of a class body. A reference that must resolve at '
+               + 'evaluation time pins a definition below the sibling it names, and a '
+               + '`# noqa: E402` pins an import on its line.',
     families   : ['ordering']
   },
 

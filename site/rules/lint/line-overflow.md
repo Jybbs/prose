@@ -18,6 +18,7 @@ A line inside an import statement is measured against `import-line-length` and e
 - A signature carrying parameters
 - A single-statement match arm
 - An implicitly concatenated string run outside a docstring slot
+- A method chain `stack-method-chains` breaks across rows
 - A row of docstring prose `wrap-docstrings` rewraps
 
 Written on one row, a construct leaves that whole row to its rule. Written across rows, it leaves only a row holding two of its parts that the rule separates, such as two arguments, a bracket and the item beside it, or a dict entry's key and value. A construct already laid out one part per row leaves no row to its rule, so a row holding one long argument is reported. A docstring works the same way, in that one still awaiting `frame-docstrings` or `expand-docstrings` leaves every row to that rule, whereas a framed one leaves only the rows `wrap-docstrings` rewraps, so a URL it leaves as written is reported. A signature leaves its row to `reflow-signatures` only where that rule lays it out one parameter per row, so a stub whose `(` through `:` fits the cap while its ` ...` body runs past it is reported. A bare tuple, such as the `name, entry` a comprehension binds, is not among these constructs, because it carries no bracket to break at. A line holding one of them is still reported when:

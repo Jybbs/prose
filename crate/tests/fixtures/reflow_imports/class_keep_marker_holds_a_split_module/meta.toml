@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` on a Class Holds a Split Module Apart"
+
+description = '''
+`Kept` and `Gathered` each import `from os import sep` and `from os import path` on either side of `import sys`, and only `Kept` carries `# prose: keep` on its header. **The two `os` statements merge in `Gathered` and stay apart in `Kept`**, because a merge across `import sys` moves `path` above it. The consecutive `json` statements in `Kept` still merge onto one line, since that merge leaves every statement in the order written.
+'''

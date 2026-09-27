@@ -23,6 +23,24 @@ pub(crate) fn remainder(total: usize) -> String {
     }
 }
 
+/// `count` further items of `noun`, written as `1 more {noun}` or
+/// `N more {noun}s`.
+pub(crate) fn more(count: usize, noun: &str) -> String {
+    match count {
+        1 => format!("1 more {noun}"),
+        _ => format!("{count} more {noun}s"),
+    }
+}
+
+/// `first` beside how many more followed it, written as `and 1 more {noun}`
+/// or `and N more {noun}s`.
+pub(crate) fn with_rest(first: &str, rest: usize, noun: &str) -> String {
+    match rest {
+        0 => first.to_owned(),
+        _ => format!("{first} and {}", more(rest, noun)),
+    }
+}
+
 /// What one hit of a defect carries past its wording and its file.
 #[derive(Default)]
 pub(crate) struct Hit {

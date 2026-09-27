@@ -8,9 +8,11 @@
 //! replacement field, or a folded multi-line string holds a construct
 //! at its source shape, a held member travels with the row it lands on,
 //! and `keep_multiline_literals` re-expands an authored flush column
-//! rather than joining it. Every measure reads the value at the column
-//! `align_equals` shifts it to, the width the padding rule settles it
-//! at, and the separator `alphabetize-siblings` leaves closing its row.
+//! rather than joining it. Every measure reads the width the padding
+//! rule and `prefer-fstring` settle a value at and the separator
+//! `alphabetize-siblings` leaves closing its row, placing the value at
+//! the column `align-equals` shifts it to or, inside an expanded dict,
+//! the column `align-colons` seats it at.
 
 use std::borrow::Cow;
 
@@ -21,21 +23,26 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{
     config::Config,
     primitives::{
+        aligner,
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, placed_head, singleton_groups},
         inline::{end_column, indent_width, last_line, spans_rows},
         layout::is_collapsible,
         one_row,
-        padding::Stranding,
+        padding::{self, Stranding},
         reserve,
         travel::Landing,
         walk::{Interpolations, ParentedProbe, walk_parented_exprs},
     },
-    rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_calls::CollectionLayout},
+    rules::{
+        Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
+        reflow_calls::CollectionLayout,
+    },
     source::Source,
 };
 
 mod classify;
+mod entries;
 mod flow;
 mod measure;
 mod render;
@@ -45,6 +52,8 @@ const CANONICAL_SEPARATOR: usize = 2;
 #[derive(Debug)]
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
+    colons: Option<aligner::Settings>,
+    fstrings: PreferFstring,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
@@ -58,10 +67,18 @@ impl ReflowCollections {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
+            colons: config
+                .rules
+                .align_colons
+                .enabled
+                .then(|| config.colon_settings()),
+            fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
@@ -76,13 +93,16 @@ impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
-        let padding = source.stranded_padding(self.stranding);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
         let mut layouter = Layouter {
             code_line_length: self.code_line_length,
+            colons: self.colons,
             edits: Vec::new(),
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
-            one_row: self.one_row.against(&targets),
+            one_row: self.one_row.against(&targets).forecasting(&rewrites),
             padding: &padding,
             reorders: self.reorders,
             reservations: &reservations,
@@ -101,6 +121,7 @@ impl Rule for ReflowCollections {
 
 struct Layouter<'a> {
     pub(super) code_line_length: usize,
+    pub(super) colons: Option<aligner::Settings>,
     pub(super) edits: Vec<Edit>,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
@@ -182,7 +203,8 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
     const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     /// Descends past any expression the rule does not lay out or leaves
-    /// as written.
+    /// as written, except a literal [`one_row::Settings::holds_its_row`]
+    /// holds.
     fn probe(
         &mut self,
         expr: &'a Expr,
@@ -227,7 +249,11 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         let grandparent = ancestors[ancestors.len().saturating_sub(2)];
         let tail = self.row_tail(expr, parent, grandparent);
         let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {
-            return TraversalSignal::Traverse;
+            return if self.one_row.holds_its_row(self.source, expr) {
+                TraversalSignal::Skip
+            } else {
+                TraversalSignal::Traverse
+            };
         };
         self.edits
             .extend(narrowed_replacement(self.source, range, text));

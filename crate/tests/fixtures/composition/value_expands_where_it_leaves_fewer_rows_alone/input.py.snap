@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 61
+expression: snapshot
+input_file: crate/tests/fixtures/composition/value_expands_where_it_leaves_fewer_rows_alone/input.py
+---
+X = {
+    "a"        : [
+        alpha_00, alpha_01, alpha_02, alpha_03, alpha_04, alpha_05, alpha_long_06
+    ],
+    "bbbbbbbb" : 2,
+    "cccccccccccccccccccc" : 3,
+    "ddddddddddddd"        : 4
+}

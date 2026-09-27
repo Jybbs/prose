@@ -1,8 +1,21 @@
 // @vitest-environment happy-dom
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, type Ref } from 'vue'
 
 import { useCarouselVelocity }     from '../../lib/composables/use-carousel-velocity'
 import { mountSetup, rectElement } from '../dom'
+
+// The mock hands the composable a visibility ref the test flips, since
+// happy-dom observes no intersections.
+const visibility = vi.hoisted(() => ({ current: undefined as Ref<boolean> | undefined }))
+
+vi.mock('@vueuse/core', async importOriginal => {
+  const actual          = await importOriginal<typeof import('@vueuse/core')>()
+  const { ref: vueRef } = await import('vue')
+  return {
+    ...actual,
+    useElementVisibility: () => (visibility.current = vueRef(true))
+  }
+})
 
 const OPTIONS = { baseSpeedPxPerSec: 100, edgeMarginPx: 10, magnetGain: 2, maxPullPxPerSec: 400 }
 
@@ -120,6 +133,23 @@ describe('useCarouselVelocity', () => {
     fits.value = true
     await nextTick()
     expect(api.offset.value).toBe(0)
+  })
+
+  it('pauses the drift off screen and resumes it without a jump', async () => {
+    const api = mountVelocity(1000)
+    step(1000)
+    step(2000)
+    visibility.current!.value = false
+    await nextTick()
+    step(3000)
+    step(4000)
+    expect(api.offset.value).toBe(100)
+
+    visibility.current!.value = true
+    await nextTick()
+    step(9000)
+    step(10000)
+    expect(api.offset.value).toBe(200)
   })
 
   it('resumes the base drift after the pointer leaves', () => {

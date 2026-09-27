@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Blank Line the Sort Drops No Longer Splits the Colon Run"
+
+description = '''
+[[alphabetize-siblings]] rewrites `MUTATIONS` in sorted order and drops the blank line above `"pr"`, so `"pr"`, `"variable"`, and `"xy"` share one run. **[[reflow-collections]] measures the `"pr"` set at the column `"variable"` sets in that run and expands it**, whereas the blank line as written would have kept `"pr"` in a narrower run beside `"xy"`, where the set fits on one row.
+'''

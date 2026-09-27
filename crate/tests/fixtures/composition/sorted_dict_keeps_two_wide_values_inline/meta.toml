@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Two Values Too Wide for a Sorted Dict's Column Both Stay on One Row"
+
+description = '''
+The rows of `"pr"` and `"qq"` would both cross the budget at the column `"variable"` sets. [[alphabetize-siblings]] sets a blank line on either side of each entry spanning rows once two do, so expanding both would leave each alone in a run of its own. **[[reflow-collections]] therefore expands neither**, and the two sets stay on their rows, aligned as a pair on the narrower column their own keys set, with `"cache"` above and `"variable"` below left unpadded.
+'''

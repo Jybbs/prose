@@ -1,0 +1,4 @@
+code-line-length = 42
+
+[harness]
+rules = ["reflow-calls", "stack-method-chains", "align-equals"]

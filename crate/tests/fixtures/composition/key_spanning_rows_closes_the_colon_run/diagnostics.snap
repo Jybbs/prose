@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/key_spanning_rows_closes_the_colon_run/input.py
+---
+align-colons@160..172
+reflow-collections@140..176

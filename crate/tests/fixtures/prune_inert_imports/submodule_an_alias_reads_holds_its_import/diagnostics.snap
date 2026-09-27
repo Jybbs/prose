@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/prune_inert_imports/submodule_an_alias_reads_holds_its_import/input.py
+---
+

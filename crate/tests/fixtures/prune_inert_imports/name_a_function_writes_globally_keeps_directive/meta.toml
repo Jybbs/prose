@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Name Bound Only Through `global` Keeps the Directive"
+
+description = '''
+`Alias` is bound only when `setup` runs, through its `global` declaration. **The directive stays**, because that write runs whenever the function is called, so without the directive `Alias` would be read when `convert` is defined, before anything has bound it.
+'''

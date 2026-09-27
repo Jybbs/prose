@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/sorted_dict_keeps_two_wide_values_inline/input.py
+---
+MUTATIONS = {
+    "cache": {"delete"},
+    "pr" : {"close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"},
+    "qq" : {"close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"},
+    "variable": {"delete", "set"}
+}

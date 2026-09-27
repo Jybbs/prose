@@ -3,6 +3,7 @@
 #MISE depends     = ["site:bake"]
 #MISE description = "Type-check the docs-site TypeScript with `vue-tsc`"
 #MISE dir         = "site"
+#MISE env         = { NODE_COMPILE_CACHE = "../.cache/node" }
 #MISE sources     = ["@group:site"]
 
-bunx vue-tsc --noEmit
+bunx vue-tsc --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo

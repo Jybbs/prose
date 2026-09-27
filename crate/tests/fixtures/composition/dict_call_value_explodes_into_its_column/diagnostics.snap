@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/dict_call_value_explodes_into_its_column/input.py
+---
+align-colons@24..43
+reflow-collections@54..156

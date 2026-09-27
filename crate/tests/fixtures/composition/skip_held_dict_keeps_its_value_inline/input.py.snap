@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/skip_held_dict_keeps_its_value_inline/input.py
+---
+MUTATIONS = {
+    "cache": {"delete"},
+    "pr": {"close", "comment", "lock", "merge", "ready", "reopen", "review", "unlock"},
+    "variable": {"delete", "set"}
+}  # prose: skip[align-colons]

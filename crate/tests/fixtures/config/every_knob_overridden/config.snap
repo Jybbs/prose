@@ -165,7 +165,8 @@ Config {
                 4,
             ),
         },
-        align_colons: AlignmentConfig {
+        align_colons: AlignColonsConfig {
+            align_docstring_entries: false,
             enabled: false,
             max_shift: Cap(
                 4,

@@ -46,6 +46,8 @@ second_pass() {
 corpus=$(corpus_root "${1:-}")
 budget="${2:-60}"
 binary=$(built_binary)
+corpus_build
+lock_task "$@"
 
 mutations="${PROSE_SETTLE_MUTATIONS:-}"
 if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then

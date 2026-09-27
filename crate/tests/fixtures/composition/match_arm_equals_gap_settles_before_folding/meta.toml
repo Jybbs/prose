@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An `=` Gap Counts at the Width `align-equals` Leaves"
+
+description = '''
+The assignment under `case Point()` carries five spaces before its `=`, which `align-equals` narrows to one because the assignment stands alone. Measured with that gap as written, the folded line would run past the 88-column `code-line-length`, whereas at one space it reaches 86. **The arm folds in one pass**, rather than staying multi-line on the first run and folding on the next.
+'''

@@ -1,11 +1,14 @@
 //! The gate deciding whether `from __future__ import annotations` is
-//! inert. It clears when the target version defers annotation
-//! evaluation per PEP 749, or when no module-scope statement declares
-//! an annotation and every name every annotation reads is bound ahead
-//! of it, which a module carrying no annotation at all satisfies with
-//! nothing to check.
+//! inert. It clears when every name every annotation reads is bound ahead of
+//! the statement carrying that annotation, since code running during import
+//! can read an annotation as soon as that statement has run. Under a target
+//! version deferring annotation evaluation per PEP 749, a builtin also
+//! resolves and an annotation may sit at module scope, whereas under any
+//! other target no module-scope statement may declare one. A module carrying
+//! no annotation at all clears with nothing to check.
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
+use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextSize};
 
 use super::PruneInertImports;
@@ -16,61 +19,81 @@ use crate::{
         slots::{slot_holding, slot_positions},
         walk::for_each_annotation,
     },
-    rules::band_constants::BandConstants,
     source::Source,
 };
 
 /// What settles whether a name is bound ahead of the annotation reading
-/// it: the binding table, the definition sort, and the seat
-/// `band-constants` gives each module-body statement once the directive
-/// is gone, the source order where that rule is off or declines the
-/// body. A binding the band seats ahead of its reader counts as bound
-/// whatever its offset, whereas a name a module-level definition binds
-/// reads as unbound while `alphabetize-siblings` sorts definitions.
+/// it: the binding table, the definition sort, the seat `band-constants`
+/// gives each module-body statement once the directive is gone, the source
+/// order where that rule is off or declines the body, and the target's
+/// builtins. A binding the band seats ahead of its reader counts as bound
+/// whatever its offset, whereas a name a module-level definition binds reads
+/// as unbound while `alphabetize-siblings` sorts definitions.
 struct Resolution<'a> {
     analysis: &'a BindingAnalysis,
     body: &'a [Stmt],
+    /// The target's `minor` version beside whether the source is a notebook,
+    /// which together name the builtins a name resolves to.
+    builtins: (u8, bool),
+    /// The offset every write in the module precedes.
+    end: TextSize,
     seats: Vec<usize>,
     sorts_definitions: bool,
 }
 
 impl<'a> Resolution<'a> {
-    fn of(source: &'a Source, bands: Option<&BandConstants>, sorts_definitions: bool) -> Self {
+    /// Builds the resolution for `source` under `rule`, seating each
+    /// statement where the rule's band forecast places it once the directive
+    /// is gone, and reading builtins at the rule's target.
+    fn of(source: &'a Source, rule: &PruneInertImports) -> Self {
         let body = &source.ast().body;
         Self {
             analysis: source.binding_analysis(),
             body,
-            seats: bands
-                .and_then(|rule| rule.forecast(source, body, source.module_range(), false))
+            builtins: (
+                rule.target_version.unwrap_or_default().minor,
+                source.is_notebook(),
+            ),
+            end: source.module_range().end(),
+            seats: rule
+                .folds
+                .bands()
+                .and_then(|band| band.forecast(source, body, source.module_range(), false))
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
                 ),
-            sorts_definitions,
+            sorts_definitions: rule.sorts_definitions,
         }
     }
 
-    /// True when an unconditional module-scope write of `name` precedes
-    /// the read at `offset` in the statement at `reader`, as written or
-    /// as seated. A `del` of the name leaves it unresolved, since the
-    /// annotation evaluates against the namespace the directive's
-    /// removal exposes it to.
+    /// True when `name`, read at `offset` in the statement at `reader`, is a
+    /// builtin of the target the module never writes or has an unconditional
+    /// module-scope write preceding the read, as written or as seated. A `del`
+    /// of the name or a function's `global` write of it leaves it unresolved,
+    /// since the annotation evaluates against the namespace the directive's
+    /// removal exposes it to, whatever either has done to it by then.
     fn binds_ahead(&self, name: &str, reader: usize, offset: TextSize) -> bool {
-        if self.analysis.is_deleted(name) {
+        if self.analysis.is_deleted(name) || self.analysis.is_written_globally(name) {
             return false;
         }
-        if self.sorts_definitions && binds_a_definition(self.analysis, name) {
-            return false;
+        let (minor, notebook) = self.builtins;
+        if is_python_builtin(name, minor, notebook)
+            && !self.analysis.is_bound_before(name, self.end)
+        {
+            return true;
         }
-        self.analysis
-            .first_unconditional_write(name)
-            .is_some_and(|write| {
-                write < offset || self.seats[slot_of(self.body, write)] < self.seats[reader]
-            })
+        !(self.sorts_definitions && binds_a_definition(self.analysis, name))
+            && self
+                .analysis
+                .first_unconditional_write(name)
+                .is_some_and(|write| {
+                    write < offset || self.seats[slot_of(self.body, write)] < self.seats[reader]
+                })
     }
 
-    /// True when every annotation in the body loads only names bound
-    /// ahead of it.
+    /// True when every annotation in the body loads only names bound ahead
+    /// of it.
     fn holds_every_annotation(&self) -> bool {
         let mut resolved = true;
         for_each_annotation(self.body, |annotation| {
@@ -91,16 +114,16 @@ impl<'a> Resolution<'a> {
     }
 }
 
-/// True when removing the `annotations` directive leaves every
-/// annotation in `source` evaluating as it did, a binding `rule`'s band
-/// forecast seats ahead of its reader resolving and a definition's
-/// binding reading as unresolved while the rule sorts definitions.
+/// True when removing the `annotations` directive leaves every annotation in
+/// `source` evaluating without raising. Every name an annotation reads has
+/// to be a builtin the module never writes or be bound ahead of it, and under
+/// a target deferring evaluation an annotation may run at module scope.
 pub(super) fn annotations_are_inert(rule: &PruneInertImports, source: &Source) -> bool {
-    rule.target_version
-        .is_some_and(PythonVersion::defers_annotations)
-        || (!annotates_module_scope(&source.ast().body)
-            && Resolution::of(source, rule.folds.bands(), rule.sorts_definitions)
-                .holds_every_annotation())
+    let deferred = rule
+        .target_version
+        .is_some_and(PythonVersion::defers_annotations);
+    (deferred || !annotates_module_scope(&source.ast().body))
+        && Resolution::of(source, rule).holds_every_annotation()
 }
 
 /// True where a statement running at module scope declares an
@@ -149,16 +172,58 @@ mod tests {
 
     #[rstest]
     #[case::no_annotation_anywhere("value = 1\n", None, false, false, true)]
-    #[case::builtin_annotation_unresolved(
+    #[case::builtin_annotation_resolves(
         "def f(x: int) -> int:\n    return x\n",
+        None,
+        false,
+        false,
+        true
+    )]
+    #[case::py313_resolves_a_builtin(
+        "def scale(value: int, factor: float) -> float:\n    return value * factor\n",
+        Some(PythonVersion::PY313),
+        false,
+        false,
+        true
+    )]
+    #[case::builtin_the_module_writes_later_stays_unresolved(
+        "def f(x: int) -> int:\n    return x\n\n\nint = str\n",
         None,
         false,
         false,
         false
     )]
-    #[case::py313_keeps_the_directive(
-        "def f(x: int) -> int:\n    return x\n",
+    #[case::builtin_a_conditional_write_shadows_stays_unresolved(
+        "if flag:\n    int = str\n\n\ndef f(x: int) -> int:\n    return x\n",
         Some(PythonVersion::PY313),
+        false,
+        false,
+        false
+    )]
+    #[case::builtin_a_global_write_shadows_stays_unresolved(
+        "def rebind():\n    global int\n    int = str\n\n\ndef f(x: int) -> int:\n    return x\n",
+        None,
+        false,
+        false,
+        false
+    )]
+    #[case::name_a_function_writes_globally_stays_unresolved(
+        "def setup():\n    global Alias\n    Alias = int\n\n\ndef f(x: Alias) -> Alias:\n    return x\n",
+        None,
+        false,
+        false,
+        false
+    )]
+    #[case::builtin_written_ahead_resolves_as_a_module_binding(
+        "int = str\n\n\ndef f(x: int) -> int:\n    return x\n",
+        Some(PythonVersion::PY313),
+        false,
+        false,
+        true
+    )]
+    #[case::py314_holds_a_builtin_the_module_writes_later(
+        "def f(x: int) -> int:\n    return x\n\n\nint = str\n",
+        Some(PythonVersion::PY314),
         false,
         false,
         false
@@ -179,12 +244,82 @@ mod tests {
         false,
         true
     )]
-    #[case::py314_defers_evaluation_under_the_sort(
+    #[case::py314_sorted_definition_reads_unresolved(
         CLASS_ABOVE_ITS_READER,
         Some(PythonVersion::PY314),
         true,
         false,
+        false
+    )]
+    #[case::py314_holds_a_name_bound_below_its_reader(
+        CONSTANT_BELOW_ITS_READER,
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_resolves_a_name_the_band_hoists(
+        CONSTANT_BELOW_ITS_READER,
+        Some(PythonVersion::PY314),
+        false,
+        true,
         true
+    )]
+    #[case::py314_holds_a_class_a_decorated_reader_names_below_it(
+        "import inspect\n\n\ndef deco(f):\n    inspect.signature(f)\n    return f\n\n\n@deco\ndef visit(node: Node) -> Node:\n    return node\n\n\nclass Node:\n    pass\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_resolves_a_module_scope_annotation(
+        "from typing import Final\n\nLIMIT: Final = 3\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        true
+    )]
+    #[case::py314_holds_a_type_checking_import(
+        "from typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from typing import IO\n\ntrace: IO[str] | None = None\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_holds_a_name_never_bound(
+        "def f(x: Missing) -> None:\n    return None\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_holds_a_class_annotation_naming_an_unbound_name(
+        "class Point:\n    x: Missing\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_holds_a_name_only_a_try_binds(
+        "try:\n    from fast import Alias\nexcept ImportError:\n    Alias = int\n\n\ndef f(x: Alias) -> Alias:\n    return x\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
+    )]
+    #[case::py314_resolves_a_quoted_forward_reference(
+        "def f(x: \"Missing\") -> None:\n    return None\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        true
+    )]
+    #[case::py314_holds_a_deleted_name(
+        "def f(x: Alias) -> Alias:\n    return x\n\n\nAlias = int\ndel Alias\n",
+        Some(PythonVersion::PY314),
+        false,
+        false,
+        false
     )]
     #[case::constant_below_its_reader_unresolved(
         CONSTANT_BELOW_ITS_READER,

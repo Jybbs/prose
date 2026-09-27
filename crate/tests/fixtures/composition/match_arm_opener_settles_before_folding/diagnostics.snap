@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/match_arm_opener_settles_before_folding/input.py
+---
+align-match-case@129..138
+normalize-comment-spacing@98..98

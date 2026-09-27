@@ -10,17 +10,19 @@ import { discoverRuleSlugs }  from '../../lib/rules/discovery'
 import * as paths             from '../../lib/shared/paths'
 import * as registries        from '../../lib/shared/registries'
 import * as ruleSchema        from '../../lib/shared/rule-schema'
+import { SCOPE_ORDER }        from '../../lib/suppression/scopes'
 import { RULE_DEFS, SCHEMA }  from '../schema'
 
 const styles = (name: string): string =>
   fs.readFileSync(path.join(import.meta.dirname, '..', '..', 'theme', 'styles', name), 'utf8')
 
-const accentSlugs = (): string[] => {
-  const slugs = new Set<string>()
+const accentKeys = (attribute: string): string[] => {
+  const keys    = new Set<string>()
+  const pattern = new RegExp(`\\[data-${attribute}="([a-z]+)"\\]`, 'g')
   parse(styles('accents.css')).walkRules(rule => {
-    for (const m of rule.selector.matchAll(/\[data-family="([a-z]+)"\]/g)) slugs.add(m[1])
+    for (const m of rule.selector.matchAll(pattern)) keys.add(m[1])
   })
-  return [...slugs].sort()
+  return [...keys].sort()
 }
 
 const glossaryFamilies = Object.keys(registries.GLOSSARY_FAMILY_META).sort()
@@ -47,12 +49,18 @@ const facetedPages = discovered.flatMap(rule => {
 
 describe('family registry and stylesheet parity', () => {
   it('every glossary family has a [data-family] accent, with no orphans', () => {
-    expect(accentSlugs()).toStrictEqual(glossaryFamilies)
+    expect(accentKeys('family')).toStrictEqual(glossaryFamilies)
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {
     expect.soft([...registries.FAMILY_ORDER].sort()).toStrictEqual(Object.keys(registries.FAMILY_META).sort())
     expect.soft(glossaryFamilies).toStrictEqual([...Object.keys(registries.FAMILY_META), 'cli', 'engine'].sort())
+  })
+})
+
+describe('suppression scope registry and stylesheet parity', () => {
+  it('every scope in SCOPE_ORDER has a [data-scope] tint, with no orphans', () => {
+    expect(accentKeys('scope')).toStrictEqual([...SCOPE_ORDER].sort())
   })
 })
 

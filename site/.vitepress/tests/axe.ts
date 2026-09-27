@@ -1,6 +1,8 @@
 import axe       from 'axe-core'
 import { JSDOM } from 'jsdom'
 
+export const AXE_TIMEOUT_MS = 15_000
+
 export async function expectAccessible(
   html   : string,
   ignore : readonly string[] = []
@@ -15,11 +17,17 @@ export async function expectAccessible(
         region           : { enabled: false }
       }
     })
-    // The violations array comes from the JSDOM realm axe runs in, so its
-    // prototype differs from this realm's and a strict compare never matches.
-    expect(run.violations.filter(v => !ignore.includes(v.id))).toEqual([])
+    // Copies the violations out of the JSDOM realm axe runs in, whose array
+    // prototype differs from this realm's and fails a strict compare.
+    expect([...run.violations].filter(v => !ignore.includes(v.id))).toStrictEqual([])
   }
   finally {
     dom.window.close()
   }
+}
+
+export function rendersAccessibly(html: () => string): void {
+  it('renders with no axe violations', async () => {
+    await expectAccessible(html())
+  }, AXE_TIMEOUT_MS)
 }

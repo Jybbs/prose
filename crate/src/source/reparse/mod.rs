@@ -234,11 +234,13 @@ impl Source {
 mod tests {
     use rstest::rstest;
     use ruff_diagnostics::Edit;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::{
+        config::Config,
         primitives::padding::Stranding,
-        rules::RuleId,
+        rules::{RuleId, prefer_fstring::PreferFstring},
         testing::{parse, range, replacement, woven},
     };
 
@@ -263,6 +265,28 @@ mod tests {
         next.inherit(bindings, &map, RuleId::from("align-equals"), true);
 
         assert!(next.assert_carried_bindings_are_fresh("the spliced source"));
+    }
+
+    #[test]
+    fn a_spliced_source_drops_the_fstring_forecast() {
+        let text = "x = \"%s\" % (a,)\ny = 2\n";
+        let fstrings = PreferFstring::from_config(&Config {
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        });
+        let (rewritten, map) = woven(text, vec![replacement("22", 20, 21)]);
+        let source = parse(text);
+        assert!(
+            !source.fstring_rewrites(fstrings).is_empty(),
+            "the case holds a forecast to drop"
+        );
+        let splice = source
+            .splice_of(&rewritten, &map)
+            .expect("the splice applies");
+
+        let next = source.spliced(rewritten, &map, splice, RuleId::from("reflow-calls"));
+
+        assert!(next.fstring_rewrites.get().is_none());
     }
 
     #[rstest]

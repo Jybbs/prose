@@ -1,0 +1,49 @@
+#!/usr/bin/env -S uv run --script
+#MISE alias="labels"
+#MISE confirm="Create or update every label .github/labels.toml declares on GitHub?"
+#MISE description="Sync the GitHub labels to .github/labels.toml, listing every live label it omits"
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""
+Create or update every label `.github/labels.toml` declares on the repository
+`gh` resolves from the working tree, then list every live label the registry
+omits, deleting none of them.
+
+`gh label create --force` creates a missing label and updates the color and
+description of one that exists, so a label renamed in the registry is created
+as a new label beside the old one. The old label stays on GitHub and is listed
+for a maintainer to rename or delete by hand.
+"""
+
+from pathlib    import Path
+from subprocess import check_output, run
+from tomllib    import loads
+
+
+if __name__ == "__main__":
+
+    labels = loads(Path(".github/labels.toml").read_text(encoding="utf-8"))["labels"]
+
+    for name, label in labels.items():
+        run(
+            [
+                "gh", "label", "create",
+                name,
+                "--color",
+                label["color"],
+                "--description",
+                label["description"],
+                "--force"
+            ],
+            check = True
+        )
+
+    live = check_output(
+        ["gh", "api", "--paginate", "repos/{owner}/{repo}/labels", "--jq", ".[].name"],
+        text = True
+    )
+
+    if omitted := sorted(set(live.splitlines()) - labels.keys()):
+        print("labels on GitHub that .github/labels.toml omits:")
+        print("\n".join(f"  {name}" for name in omitted))

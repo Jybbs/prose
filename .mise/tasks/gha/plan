@@ -64,7 +64,9 @@ def corpus():
     Emit the subset probe's matrix, one row per rule family, scoped to
     the rules a pull request touches or carrying the whole family. A run
     carrying whole families partitions the rules, so each row claims the
-    pairs its own family opens and no pair is probed twice.
+    pairs its own family opens, the row holding the first rule declaring
+    `PRESERVES_TREE` claims the run of every such rule together, and
+    nothing is probed twice.
     """
     slugs   = scoped(changed()) if environ.get("GITHUB_EVENT_NAME") == "pull_request" else []
     meta    = badges()

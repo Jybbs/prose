@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/lone_arm_at_budget_folds/input.py
+---
+def describe(point):
+    match point:
+        case Point(): return frobnicate(alpha_argument, beta_argument, gamma_argument_x)
+
+
+def summarize(point):
+    match point:
+        case Point(): return frobnicate(alpha_argument, beta_argument, gamma_argument_x)

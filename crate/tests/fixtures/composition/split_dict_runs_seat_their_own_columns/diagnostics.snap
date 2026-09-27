@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/split_dict_runs_seat_their_own_columns/input.py
+---
+align-colons@184..197
+reflow-collections@50..201

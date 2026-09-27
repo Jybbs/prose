@@ -1,9 +1,9 @@
-//! The columns and layouts an explode decision reads: where a call's
-//! `(` lands once the walk's earlier edits place the text ahead of it,
-//! the indent an exploded closing bracket drops to, whether
-//! `reflow-collections` expands a literal holding a call once its row
-//! lands, and the layout a construct takes where it lands inside a
-//! relocated expression.
+//! The columns and layouts the walk measures: where a call's `(` lands
+//! once the walk's earlier edits place the text ahead of it, the indent
+//! an exploded closing bracket drops to, whether a literal holding a
+//! call is one `reflow-collections` expands once its row lands, the seat
+//! of each call and attribute access inside a relocated region, and the
+//! layout a construct takes where it lands there.
 
 use std::borrow::Cow;
 
@@ -11,7 +11,7 @@ use ruff_python_ast::{Expr, ExprCall, token::TokenKind};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
-use super::{CollectionLayout, Exploder};
+use super::{CollectionLayout, Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
@@ -111,11 +111,11 @@ impl<'a> Exploder<'a> {
             )
     }
 
-    /// Returns the indent an exploded closing bracket drops to, for the
-    /// construct opening at `offset`. [`Self::settled_row_anchor`]
-    /// resolves the row that construct settles on. Where that row is the
-    /// region's first, the indent is this walk's own, and otherwise it is
-    /// the row's placed indent.
+    /// The indent of the row `offset` settles on, which an exploded
+    /// closing bracket drops to where `offset` opens a construct: this
+    /// walk's own indent where that row is the one the region opens on,
+    /// and otherwise the placed indent of the row
+    /// [`Self::settled_row_anchor`] resolves for `offset`.
     pub(super) fn indent_for(&self, offset: TextSize) -> usize {
         let anchor = self.settled_row_anchor(offset).max(self.region.start());
         if let Some(indent) = self.indent
@@ -127,19 +127,16 @@ impl<'a> Exploder<'a> {
         indent_width(last_line(&placed))
     }
 
-    /// Returns `expr`'s replacement under `layout` once its row lands. The
-    /// replacement is measured at the indent its row takes after this
+    /// Returns `expr`'s replacement under `layout` at its [`Self::seat`].
+    /// The replacement is measured at the indent its row takes after this
     /// walk's rows move, and written at the indent before that move, so
     /// the move shifts each of its rows into place.
     pub(super) fn laid_out(&self, layout: &dyn CollectionLayout, expr: &Expr) -> Option<String> {
-        let column = self.placed_column(expr.start(), true);
-        let tail = self.row_tail(expr.end());
-        let indent = self
-            .indent_for(expr.start())
-            .saturating_add_signed(self.line_shift);
-        let text = layout.laid_out(expr, column, indent, tail)?;
+        let seat = self.seat(expr);
+        let indent = seat.indent.saturating_add_signed(seat.line_shift);
+        let text = layout.laid_out(expr, seat.column, indent, seat.tail)?;
         Some(
-            match shifted_block(&text, Travel::rigid(-self.line_shift)) {
+            match shifted_block(&text, Travel::rigid(-seat.line_shift)) {
                 Cow::Borrowed(_) => text,
                 Cow::Owned(moved) => moved,
             },
@@ -153,5 +150,20 @@ impl<'a> Exploder<'a> {
     pub(super) fn open_paren_column(&self, call: &ExprCall) -> usize {
         let callee = apply_inline_edits(self.source, call.func.range(), &self.edits);
         self.placed_column(call.arguments.start(), !spans_rows(&callee))
+    }
+
+    /// Where `expr` sits once this walk's earlier edits place the text
+    /// ahead of it. Its start reaches the column [`Self::placed_column`]
+    /// reads, its row is written at the indent [`Self::indent_for`]
+    /// reads, and the columns [`Self::row_tail`] reads trail it on that
+    /// row.
+    pub(super) fn seat(&self, expr: &Expr) -> Seat {
+        let offset = expr.start();
+        Seat {
+            column: self.placed_column(offset, true),
+            indent: self.indent_for(offset),
+            line_shift: self.line_shift,
+            tail: self.row_tail(expr.end()),
+        }
     }
 }

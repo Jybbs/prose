@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Suppressed Sibling Keeps Its Place While the Rest Sort"
-
-description = '''
-`middle` sits inside a `# prose: off` region between `zebra` and `apple`. **`apple` and `zebra` trade places around it and `middle` stays where it is**, because the sort edits only the siblings it moves rather than rewriting the whole run that spans the suppressed one.
-'''

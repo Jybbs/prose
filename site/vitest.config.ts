@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment         : 'node',
     globals             : true,
+    pool                : 'threads',
     reporters           : process.env.GITHUB_ACTIONS
                         ? ['default', ['github-actions', { jobSummary: { enabled: false } }]]
                         : ['default'],

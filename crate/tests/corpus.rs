@@ -325,6 +325,7 @@ fn probe(
                 &format!("`{rule}` on a second pass"),
                 formatted.text(),
                 &second,
+                ..,
             )
         });
         findings.unsettled.record_hit(

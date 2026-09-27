@@ -11,16 +11,17 @@ use super::{
 };
 use crate::{
     pipeline::Pipeline,
-    rules::{dependencies_of, message_for_id},
+    rules::{dependencies_of, message_for_id, preserves_tree},
 };
 
-/// One registered rule, carrying its one-based pipeline position and
-/// the slugs it must run behind.
+/// One registered rule, carrying its one-based pipeline position, the
+/// slugs it must run behind, and whether it declares `PRESERVES_TREE`.
 #[derive(Serialize)]
 struct RuleInfo {
     after: &'static [&'static str],
     imperative: &'static str,
     position: usize,
+    preserves_tree: bool,
     slug: &'static str,
 }
 
@@ -30,11 +31,15 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
     let rules: Vec<RuleInfo> = Pipeline::known_ids()
         .iter()
         .enumerate()
-        .map(|(index, id)| RuleInfo {
-            after: dependencies_of(id.as_str()),
-            imperative: message_for_id(*id),
-            position: index + 1,
-            slug: id.as_str(),
+        .map(|(index, id)| {
+            let slug = id.as_str();
+            RuleInfo {
+                after: dependencies_of(slug),
+                imperative: message_for_id(*id),
+                position: index + 1,
+                preserves_tree: preserves_tree(slug),
+                slug,
+            }
         })
         .collect();
     match args.output_format {
@@ -61,7 +66,14 @@ fn write_table<W: Write>(mut stdout: W, rules: &[RuleInfo]) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+    use serde_json::{Value, json};
+
     use super::*;
+
+    fn json() -> Vec<Value> {
+        serde_json::from_str(&render(RulesFormat::Json)).expect("valid JSON array")
+    }
 
     fn render(output_format: RulesFormat) -> String {
         crate::testing::rendered(|out| {
@@ -69,26 +81,22 @@ mod tests {
         })
     }
 
-    #[test]
-    fn json_carries_each_rule_dependency_list() {
-        let rules: Vec<serde_json::Value> =
-            serde_json::from_str(&render(RulesFormat::Json)).expect("valid JSON array");
-        for rule in &rules {
+    #[rstest]
+    #[case::dependency_list("after", |slug: &str| json!(dependencies_of(slug)))]
+    #[case::tree_declaration("preserves_tree", |slug: &str| json!(preserves_tree(slug)))]
+    fn json_carries_each_rules_registry_column(
+        #[case] key: &str,
+        #[case] column: fn(&str) -> Value,
+    ) {
+        for rule in &json() {
             let slug = rule["slug"].as_str().expect("slug renders as a string");
-            let after: Vec<&str> = rule["after"]
-                .as_array()
-                .expect("after renders as an array")
-                .iter()
-                .map(|name| name.as_str().expect("dependency renders as a string"))
-                .collect();
-            assert_eq!(after, dependencies_of(slug));
+            assert_eq!(rule[key], column(slug), "`{slug}`'s `{key}`");
         }
     }
 
     #[test]
     fn json_lists_every_registered_rule_in_pipeline_order() {
-        let rules: Vec<serde_json::Value> =
-            serde_json::from_str(&render(RulesFormat::Json)).expect("valid JSON array");
+        let rules = json();
         assert_eq!(rules.len(), Pipeline::known_ids().len());
         assert_eq!(rules[0]["position"].as_u64(), Some(1));
         assert_eq!(

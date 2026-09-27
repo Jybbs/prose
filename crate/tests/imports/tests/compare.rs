@@ -9,7 +9,7 @@ use rstest::rstest;
 use super::*;
 use crate::{
     compare::{Divergence, compare, divergence, varying},
-    outcome::{Kind, Outcome},
+    outcome::{Kind, Outcome, Raise},
 };
 
 #[test]
@@ -27,8 +27,74 @@ fn a_constant_rebound_names_both_values(#[case] spelt: &[(&str, &str)], #[case] 
     assert_eq!(
         divergence(&bound(&["N"], spelt), &bound(&["N"], &[("N", "1")])),
         Some(Divergence {
-            kind: "rebound",
             names: vec!["N".to_owned()],
+            reason: why.to_owned(),
+        })
+    );
+}
+
+#[test]
+fn a_definition_raising_in_one_run_alone_or_differently_counts_as_varying() {
+    assert_eq!(
+        varying(
+            &unevaluating(&[
+                ("C.m", "NameError", "A"),
+                ("f", "NameError", "B"),
+                ("g", "NameError", "C")
+            ]),
+            &unevaluating(&[("f", "NameError", "B"), ("g", "NameError", "D")])
+        ),
+        ["C.m".to_owned(), "g".to_owned()].into()
+    );
+}
+
+#[test]
+fn a_definition_raising_the_same_way_in_the_original_is_left_out() {
+    let raising = unevaluating(&[("f", "NameError", "A")]);
+    assert_eq!(divergence(&raising, &raising), None);
+    assert_eq!(divergence(&unevaluating(&[]), &raising), None);
+}
+
+#[test]
+fn a_definition_raising_on_another_name_than_the_original_breaks_on_that_name() {
+    let diverged = divergence(
+        &unevaluating(&[("f", "NameError", "B")]),
+        &unevaluating(&[("f", "NameError", "A")]),
+    )
+    .expect("diverges");
+    assert_eq!(diverged.names, ["B"]);
+    assert_eq!(
+        diverged.reason,
+        "reading the annotations of `f` raises NameError on `B` where the original's do not"
+    );
+}
+
+#[rstest]
+#[case::one(
+    &[("C.m", "NameError", "Sequence")],
+    &["Sequence"],
+    "reading the annotations of `C.m` raises NameError on `Sequence` where the original's do not"
+)]
+#[case::two(
+    &[("C", "NameError", "A"), ("f", "AttributeError", "b")],
+    &["A", "b"],
+    "reading the annotations of `C` and 1 more definition raises NameError on `A` where the \
+     original's do not"
+)]
+#[case::unnamed(
+    &[("f", "ValueError", "")],
+    &["f"],
+    "reading the annotations of `f` raises ValueError where the original's do not"
+)]
+fn a_definition_raising_only_when_formatted_breaks_on_the_name_it_misses(
+    #[case] raising: &[(&str, &str, &str)],
+    #[case] names: &[&str],
+    #[case] why: &str,
+) {
+    assert_eq!(
+        divergence(&unevaluating(raising), &unevaluating(&[])),
+        Some(Divergence {
+            names: names.iter().map(|name| (*name).to_owned()).collect(),
             reason: why.to_owned(),
         })
     );
@@ -41,7 +107,6 @@ fn a_dropped_name_and_an_added_name_report_their_direction() {
     assert_eq!(
         divergence(&formatted, &original),
         Some(Divergence {
-            kind: "unbound",
             names: vec!["b".to_owned()],
             reason: "leaves `b` unbound".to_owned(),
         })
@@ -49,7 +114,6 @@ fn a_dropped_name_and_an_added_name_report_their_direction() {
     assert_eq!(
         divergence(&original, &formatted),
         Some(Divergence {
-            kind: "extra",
             names: vec!["b".to_owned()],
             reason: "binds `b` the original does not".to_owned(),
         })
@@ -67,7 +131,6 @@ fn a_raised_run_returns_its_error_and_name() {
     assert_eq!(
         divergence(&raised, &bound(&[], &[])),
         Some(Divergence {
-            kind: "raises",
             names: vec!["x".to_owned()],
             reason: raised.error.clone(),
         })
@@ -82,6 +145,16 @@ fn a_run_losing_several_names_carries_every_one(#[case] original: &[&str], #[cas
     let diverged = divergence(&bound(&["a"], &[]), &bound(original, &[])).expect("diverges");
     assert_eq!(diverged.reason, why);
     assert_eq!(diverged.names, &original[1..]);
+}
+
+#[test]
+fn an_annotations_divergence_reads_as_what_the_module_annotates() {
+    let was = bound(&[], &[("__annotations__", "('a', 'b')")]);
+    let now = bound(&[], &[("__annotations__", "('a',)")]);
+    assert_eq!(
+        divergence(&now, &was).map(|diverged| diverged.reason),
+        Some("annotates ('a',) at module scope where the original annotates ('a', 'b')".to_owned())
+    );
 }
 
 #[test]
@@ -145,4 +218,23 @@ fn varying_reads_both_directions_and_the_constants_where_divergence_stops_at_one
         ["c".to_owned()]
     );
     assert_eq!(varying(&one, &one), BTreeSet::new());
+}
+
+/// A run binding `C`, `f`, and `g` whose definitions in `raising` raised the
+/// exception beside each on the name after it, an empty name standing for
+/// none, when their annotations were read.
+fn unevaluating(raising: &[(&str, &str, &str)]) -> Outcome {
+    Outcome {
+        unevaluated: raising
+            .iter()
+            .map(|(held, raised, missing)| {
+                let raise = Raise {
+                    missing: Some((*missing).to_owned()).filter(|name| !name.is_empty()),
+                    raised: (*raised).to_owned(),
+                };
+                ((*held).to_owned(), raise)
+            })
+            .collect(),
+        ..bound(&["C", "f", "g"], &[])
+    }
 }

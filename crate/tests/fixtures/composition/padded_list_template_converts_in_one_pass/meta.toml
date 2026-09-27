@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Padded List Converts Its `%` Template in One Pass"
+
+description = '''
+`x`'s list carries bracket padding `strip-stranded-padding` removes, and with that padding gone and `"%s" % ( alpha, )` converted, the row takes exactly the 19-column budget. **`prefer-fstring` measures the row with the padding already cleared, as the layout rules forecast it**, so the template converts in the pass that keeps the list on one row.
+'''

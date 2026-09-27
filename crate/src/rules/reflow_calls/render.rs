@@ -168,16 +168,19 @@ impl<'a> Exploder<'a> {
     /// opens a construct a later pass lays out across rows: the `(` of
     /// an argument list this rule can explode, or the bracket of a
     /// literal `reflow-collections` expands where no literal earlier on
-    /// the row explodes first. Any other bracket holds its row.
+    /// the row explodes first. A bracket inside a forecast f-string
+    /// rewrite holds its row, as does any other bracket.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
         let call = starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .next()
-            .map(Ranged::start);
+            .map(Ranged::start)
+            .find(|&start| !self.one_row.rewritten(start));
         let ahead = TextRange::new(range.start(), call.unwrap_or(range.end()));
         let literal = starting_within(self.source.expandable_literals(), ahead, Ranged::start)
             .map(Ranged::start)
             .find(|&start| {
-                self.one_row.expands_literals() && !self.earlier_literal_explodes(start)
+                self.one_row.expands_literals()
+                    && !self.one_row.rewritten(start)
+                    && !self.earlier_literal_explodes(start)
             });
         literal.or(call)
     }
@@ -309,14 +312,16 @@ impl<'a> Exploder<'a> {
         }
     }
 
-    /// The width `arguments` takes on its row, which is the width of
-    /// `form` for a list written across rows and the settled width of
+    /// The width `arguments` takes on its row, which is the
+    /// [`form_width`](crate::primitives::one_row::Settings::form_width)
+    /// of `form` for a list written across rows and the settled width of
     /// the source slice for one already on a single row, whose spacing
     /// stays as the author wrote it less the padding
     /// `strip-stranded-padding` drops from it.
     fn written_width(&self, arguments: &Arguments, form: &str) -> usize {
         if self.source.contains_line_break(arguments.range()) {
-            display_width(form)
+            self.one_row
+                .form_width(self.source, form, arguments.range())
         } else {
             settled_slice_width(self.source, self.padding, arguments.range())
         }
@@ -328,10 +333,12 @@ impl<'a> Exploder<'a> {
     /// `column`. A keyword-expressible call renders one keyword per
     /// line, any other call renders positionally under the length
     /// trigger alone, and where no trigger fires a fractured list
-    /// rejoins onto one line through the same one-row form.
+    /// rejoins onto one line through the same one-row form. Returns
+    /// `None` where `reflow-calls` is off or
+    /// [`Source::explodable_arguments`] leaves the list out.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if !self.source.is_explodable(arguments) {
+        if !self.one_row.explodes_arguments(self.source, arguments) {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);
@@ -349,17 +356,15 @@ impl<'a> Exploder<'a> {
         if !count_trips && let Some(form) = form {
             return is_fractured(self.source, arguments.range()).then_some(form);
         }
+        let indent = self.indent_for(arguments.start());
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
-            Some(keywords) if !keywords.has_posonly_prefix => Some(self.explode_keywords(
-                &keywords,
-                arguments,
-                self.indent_for(arguments.start()),
-            )),
+            Some(keywords) if !keywords.has_posonly_prefix => {
+                Some(self.explode_keywords(&keywords, arguments, indent))
+            }
             // A call that cannot take keyword form explodes positionally
             // on the length trigger alone, so the count trigger leaves
             // such calls inline.
-            _ => length_trips
-                .then(|| self.explode_source_order(call, self.indent_for(arguments.start()))),
+            _ => length_trips.then(|| self.explode_source_order(call, indent)),
         }
     }
 
@@ -369,13 +374,16 @@ impl<'a> Exploder<'a> {
     /// trailing comment closing the measure either way. A tail holding
     /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
-    /// there, whereas a tail holding none is charged whole.
+    /// there, whereas a tail holding none is charged whole. Each forecast
+    /// f-string rewrite in the charged text reads at the width of its
+    /// f-string.
     pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
         if let Some(offset) = self.first_breaking_opener(tail) {
-            return self.source.width_between(end, offset + TextSize::from(1));
+            let through = TextRange::new(end, offset + TextSize::from(1));
+            return self.one_row.slice_width(self.source, through);
         }
         let written = self.settled_width(tail, self.source.tail_width(tail));
         if clipped {

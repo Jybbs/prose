@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Value Too Wide for the Column Expands So Its Row Joins It"
+
+description = '''
+The `"pr"` set in `MUTATIONS` fits the budget beside its own key, but padding the `:` of `"pr"` out to the column `"variable"` sets would carry the set six columns past it. **[[reflow-collections]] measures the set at that padded column and expands it**, so `"pr"` joins the column [[align-colons]] pads every other key out to rather than standing unpadded and splitting the run in two.
+'''

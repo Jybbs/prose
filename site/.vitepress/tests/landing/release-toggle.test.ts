@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ReleaseToggle        from '../../theme/components/landing/ReleaseToggle.vue'
-import { expectAccessible } from '../axe'
+import ReleaseToggle         from '../../theme/components/landing/ReleaseToggle.vue'
+import { rendersAccessibly } from '../axe'
 
 const mountToggle = (open: boolean) => mount(ReleaseToggle, { props: { open } })
 
@@ -27,7 +27,5 @@ describe('ReleaseToggle', () => {
     expect(w.emitted('toggle')).toHaveLength(1)
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountToggle(false).html())
-  })
+  rendersAccessibly(() => mountToggle(false).html())
 })

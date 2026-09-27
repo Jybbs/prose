@@ -6,14 +6,20 @@ source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
 head_bin=$(built_binary)
+corpus_build
 
-if [[ -n "${PROSE_DELTA_STAGE:-}" ]]; then
-  stage="$PROSE_DELTA_STAGE"
-else
+if [[ -z "${PROSE_DELTA_STAGE:-}" ]]; then
   base_tree=$(baseline_root "${1:-}")
   [[ "$base_tree" != "$(git rev-parse --show-toplevel)" ]] \
     || { echo "baseline $base_tree is this tree" >&2; exit 1; }
   base_bin=$(baseline_binary "$base_tree")
+fi
+
+lock_task "$@"
+
+if [[ -n "${PROSE_DELTA_STAGE:-}" ]]; then
+  stage="$PROSE_DELTA_STAGE"
+else
   corpus=$(corpus_root "${2:-}")
   stage=$(scratch_dir delta)
   stage_corpus "$corpus"

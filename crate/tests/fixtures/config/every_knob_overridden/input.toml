@@ -14,7 +14,7 @@ max-size-mib = 250
 first-party = ["acme", "internal"]
 
 [rules]
-align-colons                 = { enabled = false, max-shift = 4 }
+align-colons                 = { align-docstring-entries = false, enabled = false, max-shift = 4 }
 align-comments               = { enabled = false, max-shift = 4 }
 align-comparisons            = { enabled = false, max-shift = 4 }
 align-equals                 = { enabled = false, max-shift = 4 }

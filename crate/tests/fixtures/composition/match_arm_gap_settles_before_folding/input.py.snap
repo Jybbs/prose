@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/match_arm_gap_settles_before_folding/input.py
+---
+match event.kind:
+    case "tag":
+        release = tag_of(event.release_name, event.channel_a)  # pinned stable
+    case "other": release = None

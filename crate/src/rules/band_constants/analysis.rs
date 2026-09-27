@@ -21,9 +21,7 @@ use crate::{
         binding::{
             is_explicit_type_alias, is_screaming_case, module_bound_names, single_name_assignment,
         },
-        comments::{
-            anchors_in_place, has_keep_marker, leading_comment_block, noqa_names, trailing_width,
-        },
+        comments::{has_keep_marker, leading_comment_block, noqa_names, trailing_width},
         effect::value_is_effectful,
         group_map,
         tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels},
@@ -94,26 +92,15 @@ pub(super) fn module_band_plan<'src>(
     for (idx, stmt) in body.iter().enumerate() {
         // A `# prose: off` span, a skip directive, a `noqa` naming
         // `POSITION_CODE`, and a row a `\` join continues each pin their
-        // statement. So does an own-line comment run left standing
-        // between two blocks, one `member_block` declined to bind because
-        // it anchors in place, opens at another indent, or sits behind a
-        // notebook cell wall, except above a constant when the run sits
-        // in another cell and does not itself anchor in place. A pinned
-        // member holds its slot and bounds the bands to its side, while
-        // its name still binds below, so a reference to a pinned
-        // definition or import reads as resolved.
-        let gap_comment = idx.checked_sub(1).and_then(|prev| {
-            leading_comment_block(source, blocks[prev].end(), blocks[idx].start())
-        });
+        // statement. A pinned member holds its slot and bounds the bands
+        // to its side, while its name still binds below, so a reference to
+        // a pinned definition or import reads as resolved. An own-line
+        // comment run left standing between two blocks pins nothing, since
+        // `Sections` opens a section below it.
         let const_target = const_binding(stmt);
         let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
             || noqa_names(source, stmt, POSITION_CODE)
-            || source.continues_a_logical_line(stmt.start())
-            || gap_comment.is_some_and(|block| {
-                const_target.is_none()
-                    || anchors_in_place(source, block)
-                    || source.same_cell(block.start(), stmt.start())
-            });
+            || source.continues_a_logical_line(stmt.start());
         // The run this member's block folds in ahead of its code. One
         // sitting directly below the previous member and a blank line
         // off this one documents that member and carries backward onto
@@ -452,7 +439,7 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
-        primitives::orderer::member_blocks,
+        primitives::{orderer::member_blocks, sections::Sections},
         testing::{notebook, parse},
     };
 
@@ -616,14 +603,19 @@ mod tests {
     #[case::directive_above_a_constant("def f():\n    pass\n\n# fmt: on\n\nX = 1\n")]
     #[case::directive_above_a_definition("X = 1\n\n# fmt: on\n\ndef f():\n    pass\n")]
     #[case::pragma_below_a_constant("ZETA = 1\n# type: ignore\n\nALPHA = 2\n")]
-    fn module_band_plan_pins_a_member_below_an_anchor(#[case] src: &str) {
+    fn module_band_plan_opens_a_section_below_an_anchor(#[case] src: &str) {
         let source = parse(src);
         let plan = plan_of(&source).expect("acyclic module plans");
         assert!(
-            !plan.ranks.contains_key(&1),
-            "a banner, a directive, and a pragma all anchor in place, so the member below pins"
+            plan.ranks.contains_key(&1),
+            "a banner, a directive, and a pragma each leave the member below banded"
         );
         assert!(plan.carries.is_empty(), "the comment binds to neither side");
+        let blocks = member_blocks(&source, &source.ast().body, source.module_range());
+        assert!(
+            Sections::of(&source, &blocks).is_boundary(1),
+            "the anchor opens a section at the member below"
+        );
     }
 
     #[test]

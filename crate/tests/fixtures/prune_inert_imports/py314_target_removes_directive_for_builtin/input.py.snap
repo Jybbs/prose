@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/py314_target_removes_directive_for_builtin/input.py
+---
+
+
+def add(x: int, y: int) -> int:
+    return x + y

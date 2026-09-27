@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import EditorRunOnSave      from '../../theme/components/integrations/EditorRunOnSave.vue'
-import { expectAccessible } from '../axe'
-import { isHidden }         from '../dom'
+import EditorRunOnSave       from '../../theme/components/integrations/EditorRunOnSave.vue'
+import { rendersAccessibly } from '../axe'
+import { isHidden }          from '../dom'
 
 vi.mock('../../lib/integrations/editor-configs.data', () => ({
   data: [
@@ -50,7 +50,5 @@ describe('EditorRunOnSave', () => {
     expect(w.findAll('.editor-card-face')[1].get('.editor-card-face-target').text()).toBe('init.el')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountCard().html())
-  })
+  rendersAccessibly(() => mountCard().html())
 })

@@ -6,8 +6,8 @@ use ruff_diagnostics::Edit;
 use ruff_text_size::{TextRange, TextSize};
 
 use super::{
-    Member, Settings, Widenings, emit::emit_group, holds::shares_column, is_held, retain_unheld,
-    space_padding_edit,
+    Member, Settings, Widenings, emit::emit_group, holds::shares_column, is_held, operator_columns,
+    retain_unheld, space_padding_edit,
 };
 use crate::{
     primitives::{
@@ -44,12 +44,6 @@ impl<'a> AlignWalker<'a> {
             source,
             widenings: Widenings::default(),
         }
-    }
-
-    /// Installs the widening entries the rule's collected groups seat,
-    /// read by every later line-cap check.
-    pub(crate) fn set_widenings(&mut self, widenings: Widenings) {
-        self.widenings = widenings;
     }
 
     /// Computes the alignment edits for `members` under `settings`
@@ -185,6 +179,13 @@ impl<'a> AlignWalker<'a> {
         is_held(self.source, self.rule, anchor)
     }
 
+    /// Returns the display column each member's aligned token lands on
+    /// under this walker's settings and widenings, per the free
+    /// [`operator_columns`](super::operator_columns).
+    pub(crate) fn operator_columns(&self, members: &[Member]) -> Vec<usize> {
+        operator_columns(self.source, members, self.settings, &self.widenings, &[])
+    }
+
     /// Records `edits` as one fix group, dropping an empty group so a
     /// no-op pass emits no diagnostic.
     pub(crate) fn push_group(&mut self, edits: Vec<Edit>) {
@@ -194,5 +195,11 @@ impl<'a> AlignWalker<'a> {
             }
             self.groups.push(edits);
         }
+    }
+
+    /// Installs the widening entries the rule's collected groups seat,
+    /// read by every later line-cap check.
+    pub(crate) fn set_widenings(&mut self, widenings: Widenings) {
+        self.widenings = widenings;
     }
 }

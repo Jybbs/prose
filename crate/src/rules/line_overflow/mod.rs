@@ -12,6 +12,7 @@
 use std::{iter, slice};
 
 use itertools::Itertools;
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Alias, Arguments, Expr, ExprStringLiteral, InterpolatedStringElement, Stmt, StmtFunctionDef,
     StmtMatch, StringLike, StringLiteral,
@@ -27,11 +28,9 @@ use crate::{
     config::Config,
     diagnostics::Diagnostic,
     primitives::{
-        call_keywords::module_call_params,
-        comments::{is_keep_marker, trailing_comment},
+        comments::trailing_comment,
         docstring::docstring_slots,
         inline::{display_width, spliced_rows},
-        padding,
         slots::{item_holding, slot_holding},
         walk::walk_stmt,
     },
@@ -43,12 +42,13 @@ use crate::{
         reflow_calls::ReflowCalls,
         reflow_collections::ReflowCollections,
         reflow_imports::ReflowImports,
-        reflow_signatures::{self, ReflowSignatures},
+        reflow_signatures::ReflowSignatures,
         stack_adjacent_strings::{StackAdjacentStrings, concatenated_run},
+        stack_method_chains::StackMethodChains,
         wrap_docstrings::WrapDocstrings,
     },
     source::Source,
-    suppression::is_directive_comment,
+    suppression::{is_directive_comment, is_keep_marker},
 };
 
 mod split;
@@ -62,9 +62,11 @@ pub(crate) struct LineOverflow {
     import_line_length: usize,
     /// Each layout rule the configuration keeps from splitting a row.
     off: Vec<Off>,
-    /// The terms `reflow-signatures` decides a signature's shape under.
-    signatures: reflow_signatures::Terms,
-    stranding: padding::Stranding,
+    /// The rule whose shape decision names the signatures it lays out one
+    /// parameter per row.
+    signatures: ReflowSignatures,
+    /// The rule whose edits name the rows a method chain breaks across.
+    stack_method_chains: StackMethodChains,
     suggest_string_splits: bool,
     /// The rule whose edits name the docstring rows it rewrites.
     wrap_docstrings: WrapDocstrings,
@@ -75,6 +77,8 @@ impl LineOverflow {
         "shorten a line that runs past its length budget, or take the string split the fix offers";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
+
+    pub(crate) const PRESERVES_TREE: bool = true;
 
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
@@ -99,8 +103,8 @@ impl LineOverflow {
                     }
                 })
                 .collect(),
-            signatures: reflow_signatures::Terms::from_config(config),
-            stranding: config.stranded_padding(),
+            signatures: ReflowSignatures::from_config(config),
+            stack_method_chains: StackMethodChains::from_config(config),
             suggest_string_splits: config.rules.line_overflow.suggest_string_splits,
             wrap_docstrings: WrapDocstrings::from_config(config),
         }
@@ -118,14 +122,7 @@ impl Rule for LineOverflow {
             blocked: Vec::new(),
             budgets: Vec::new(),
             docstrings: docstring_slots(&source.ast().body),
-            exploding: self
-                .signatures
-                .over(
-                    source,
-                    &module_call_params(source),
-                    &source.stranded_padding(self.stranding),
-                )
-                .exploding_parameters(&source.ast().body),
+            exploding: self.signatures.exploding_parameters(source),
             imports: Vec::new(),
             off: &self.off,
             reach: Vec::new(),
@@ -134,6 +131,9 @@ impl Rule for LineOverflow {
             strings: Vec::new(),
         };
         spans.note_docstrings(&self.wrap_docstrings);
+        for edit in self.stack_method_chains.apply(source).into_iter().flatten() {
+            spans.note_rewrite(StackMethodChains::SLUG, &edit);
+        }
         spans.visit_body(&source.ast().body);
         spans.index();
         let floor = spans.budgets.iter().filter_map(|&(_, budget)| budget).fold(
@@ -362,18 +362,8 @@ impl<'a> Spans<'a> {
                 }
             }
         }
-        // A row whose text survives its rewrap whole stays as written.
         for edit in wrapped {
-            let rewrite = spliced_rows(source, edit.range(), slice::from_ref(&edit));
-            let kept: FxHashSet<&str> = rewrite
-                .universal_newlines()
-                .map(|row| row.as_str())
-                .collect();
-            let rows = source.text().lines_range(edit.range());
-            let splits = UniversalNewlineIterator::with_offset(source.slice(rows), rows.start())
-                .filter(|row| !kept.contains(row.as_str()))
-                .map(|row| row.range());
-            self.note(edit.range(), WrapDocstrings::SLUG, splits);
+            self.note_rewrite(WrapDocstrings::SLUG, &edit);
         }
     }
 
@@ -430,6 +420,22 @@ impl<'a> Spans<'a> {
                 self.note(case.range(), AlignMatchCase::SLUG, splits);
             }
         }
+    }
+
+    /// Records each row `edit`, one of `rule`'s rewrites, changes. A row
+    /// whose text survives the rewrite whole stays as written.
+    fn note_rewrite(&mut self, rule: RuleId, edit: &Edit) {
+        let source = self.source;
+        let rewrite = spliced_rows(source, edit.range(), slice::from_ref(edit));
+        let kept: FxHashSet<&str> = rewrite
+            .universal_newlines()
+            .map(|row| row.as_str())
+            .collect();
+        let rows = source.text().lines_range(edit.range());
+        let splits = UniversalNewlineIterator::with_offset(source.slice(rows), rows.start())
+            .filter(|row| !kept.contains(row.as_str()))
+            .map(|row| row.range());
+        self.note(edit.range(), rule, splits);
     }
 
     /// Records a signature carrying parameters that `reflow-signatures`

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Pragma Below a Constant Keeps Its Slot"
 
 description = '''
-`# type: ignore` sits on its own line directly below `ZETA_CAP = 1`, with `ALPHA_CAP = 2` below the blank line after it. **Nothing moves**, because folding the pragma onto a constant's line as a trailing note would make it a live pragma on that line, so it keeps its own line, and `ALPHA_CAP` stays beneath it rather than sorting above `ZETA_CAP`.
+`# type: ignore` sits on its own line directly below `ZETA_CAP = 1`, with `ALPHA_CAP = 2` below the blank line after it. **Nothing moves**, because folding the pragma onto a constant's line as a trailing note would make it a live pragma on that line, so it keeps its own line and divides the constants into sections, and `ALPHA_CAP` stays beneath it rather than sorting above `ZETA_CAP`.
 '''

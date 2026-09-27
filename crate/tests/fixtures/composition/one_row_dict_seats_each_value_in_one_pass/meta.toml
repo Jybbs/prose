@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Each Value of a One-Row Dict Is Measured at Its Aligned Column"
+
+description = '''
+`MUTATIONS` sits on one row far past the budget, so [[reflow-collections]] writes one entry per row. **Each value is measured at the column [[align-colons]] shifts it to once those rows align**, so the `"pr"` set, which fits beside its own key but not at that column, expands in the same pass that writes the rows.
+'''

@@ -1,0 +1,93 @@
+#!/usr/bin/env -S uv run --script
+#MISE alias="rulesets"
+#MISE confirm="Apply the rulesets under .github/rulesets and the repository settings on GitHub?"
+#MISE description="Apply the rulesets under .github/rulesets and the repository settings no ruleset covers"
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""
+Apply every ruleset under `.github/rulesets/` to the repository `gh` resolves
+from the working tree, then set the merge and Actions settings no ruleset
+covers.
+
+A ruleset is matched to a live one by name, replaced through `PUT` where a
+match exists and created through `POST` otherwise. A live ruleset no file
+names is listed rather than deleted. The settings allow the squash merge
+alone, take the squash commit's title and message from the pull request's
+title and body, delete the head branch on merge, require every action to be
+pinned to a commit, and give the workflow token read-only access.
+"""
+
+from json       import dumps, loads
+from pathlib    import Path
+from subprocess import check_output
+
+
+REPOSITORY = "repos/{owner}/{repo}"
+RULESETS   = f"{REPOSITORY}/rulesets"
+SETTINGS   = [
+    (
+        REPOSITORY, "PATCH",
+        {
+            "allow_merge_commit"          : False,
+            "allow_rebase_merge"          : False,
+            "allow_squash_merge"          : True,
+            "allow_update_branch"         : True,
+            "delete_branch_on_merge"      : True,
+            "squash_merge_commit_message" : "PR_BODY",
+            "squash_merge_commit_title"   : "PR_TITLE"
+        }
+    ),
+    (
+        f"{REPOSITORY}/actions/permissions",
+        "PUT",
+        {"allowed_actions": "all", "enabled": True, "sha_pinning_required": True}
+    ),
+    (
+        f"{REPOSITORY}/actions/permissions/workflow",
+        "PUT",
+        {
+            "can_approve_pull_request_reviews" : False,
+            "default_workflow_permissions"     : "read"
+        }
+    )
+]
+
+
+def gh(endpoint: str, method: str = "GET", body: dict | None = None) -> str:
+    """
+    Call `endpoint` through `gh api` with `method`, sending `body` as JSON on
+    standard input when one is given, and return what it prints.
+    """
+    return check_output(
+        [
+            "gh", "api", "--method", method, endpoint,
+            *(["--input", "-"] if body else [])
+        ],
+        input = dumps(body) if body else None,
+        text  = True
+    )
+
+
+if __name__ == "__main__":
+
+    live     = {ruleset["name"]: ruleset["id"] for ruleset in loads(gh(RULESETS))}
+    recorded = set()
+
+    for path in sorted(Path(".github/rulesets").glob("*.json")):
+        ruleset = loads(path.read_text(encoding="utf-8"))
+        recorded.add(name := ruleset["name"])
+        if name in live:
+            gh(f"{RULESETS}/{live[name]}", "PUT", ruleset)
+            print(f"updated {name!r} from {path}")
+        else:
+            gh(RULESETS, "POST", ruleset)
+            print(f"created {name!r} from {path}")
+
+    for endpoint, method, body in SETTINGS:
+        gh(endpoint, method, body)
+    print("merge and Actions settings applied")
+
+    if omitted := sorted(live.keys() - recorded):
+        print("rulesets on GitHub that .github/rulesets omits:")
+        print("\n".join(f"  {name}" for name in omitted))

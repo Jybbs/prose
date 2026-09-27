@@ -1,0 +1,26 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/skipped_method_holds_its_slot/input.py
+---
+import sys
+import re  # prose: skip
+import abc
+import os
+
+
+class Station:
+    def alpha(self):
+        return 2
+
+    def beta(self):
+        return 5
+
+    def legacy(self):  # prose: skip
+        return 3
+
+    def omega(self):
+        return 4
+
+    def zeta(self):
+        return 1

@@ -6,13 +6,13 @@ use std::ops::Range;
 use itertools::Itertools;
 use similar::{ChangeTag, DiffTag, TextDiff};
 
-/// How many diff lines a hunk shows either side of the row it centres on.
+/// How many diff lines a hunk shows either side of the row it centers on.
 const CONTEXT: usize = 3;
 
 /// The unified-diff lines around one row, cut to [`CONTEXT`] lines either
 /// side with an ellipsis marking each cut.
 ///
-/// Where the row is unknown the window centres on the first changed line
+/// Where the row is unknown the window centers on the first changed line
 /// naming `name`, and failing that on the first changed line at all.
 pub(crate) fn hunk(diff: &TextDiff<'_, '_, str>, row: Option<usize>, name: &str) -> Vec<String> {
     let shown: Vec<_> = diff

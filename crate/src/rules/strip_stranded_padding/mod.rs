@@ -25,6 +25,8 @@ impl StripStrandedPadding {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             stranding: config.stranded_padding(),

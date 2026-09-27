@@ -13,8 +13,8 @@ pub(crate) type Widening = (TextSize, TextRange, isize);
 /// The widening each collected member seats on its own line, the gap
 /// ahead of the token brought to the settings' buffer and the
 /// post-operator gap brought to one space. A line-cap check adds the
-/// entries of the other members sharing a member's line. No entry goes
-/// below zero.
+/// entries of the other members sharing a member's line, and an entry
+/// goes below zero where the rule narrows a gap.
 #[derive(Default)]
 pub(crate) struct Widenings(Vec<Widening>);
 
@@ -39,15 +39,24 @@ impl Widenings {
     /// The widening the other collected members seat on `member`'s
     /// line, zero where none share it.
     pub(crate) fn delta(&self, member: Member) -> isize {
-        let from = self
-            .0
-            .partition_point(|&(line, ..)| line < member.line_start);
-        self.0[from..]
-            .iter()
-            .take_while(|&&(line, ..)| line == member.line_start)
+        self.line(member.line_start)
             .filter(|&&(_, gap, _)| gap != member.gap)
             .map(|&(.., delta)| delta)
             .sum()
+    }
+
+    /// The widening every collected member seats on the line opening at
+    /// `line_start`, zero where none sits there.
+    pub(crate) fn on_line(&self, line_start: TextSize) -> isize {
+        self.line(line_start).map(|&(.., delta)| delta).sum()
+    }
+
+    /// The entries on the line opening at `line_start`.
+    fn line(&self, line_start: TextSize) -> impl Iterator<Item = &Widening> {
+        let from = self.0.partition_point(|&(line, ..)| line < line_start);
+        self.0[from..]
+            .iter()
+            .take_while(move |&&(line, ..)| line == line_start)
     }
 }
 
@@ -67,7 +76,7 @@ pub(crate) fn widening_entries(
             let value_part = m
                 .rewritten_value_gap(source)
                 .map_or(0, |g| 1 - display_width(source.slice(g)).cast_signed());
-            let delta = (gap_part + value_part).max(0);
+            let delta = gap_part + value_part;
             (delta != 0).then_some((m.line_start, m.gap, delta))
         })
         .collect()
@@ -77,12 +86,12 @@ pub(crate) fn widening_entries(
 mod tests {
     use super::*;
     use crate::{
-        config::AlignmentConfig,
+        config::MaxShift,
         testing::{align_member, parse, range},
     };
 
     fn settings() -> Settings {
-        Settings::from(&AlignmentConfig::default())
+        Settings::aligned(MaxShift::default())
     }
 
     #[test]
@@ -113,5 +122,24 @@ mod tests {
         let members = [align_member(range(1, 2), 0, 1)];
         let widenings = Widenings::of(&source, settings(), members.iter().copied());
         assert!(widenings.0.is_empty());
+    }
+
+    #[test]
+    fn of_keeps_a_negative_entry_where_the_gap_narrows() {
+        let source = parse("a   =1\n");
+        let members = [align_member(range(1, 4), 0, 1)];
+        let widenings = Widenings::of(&source, settings(), members.iter().copied());
+        assert_eq!(widenings.0, vec![(TextSize::new(0), range(1, 4), -2)]);
+    }
+
+    #[test]
+    fn on_line_sums_every_member_on_the_line() {
+        let source = parse("f(a=1, b=2)\n");
+        let members = [
+            align_member(range(3, 3), 0, 1),
+            align_member(range(8, 8), 0, 1),
+        ];
+        let widenings = Widenings::of(&source, settings(), members.iter().copied());
+        assert_eq!(widenings.on_line(TextSize::new(0)), 2);
     }
 }

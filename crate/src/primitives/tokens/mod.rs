@@ -1,9 +1,10 @@
 //! Token-kind predicates over the bracket delimiters and the
 //! interpolated-string openers, the characters those delimiters are
-//! written with, and the scans for the brackets a token run leaves
-//! open and the tokens opening inside a range.
+//! written with, the nearest code token before an offset, and the
+//! scans for the brackets a token run leaves open and the tokens
+//! opening inside a range.
 
-use ruff_python_ast::token::{Token, TokenKind};
+use ruff_python_ast::token::{Token, TokenKind, Tokens};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::source::Source;
@@ -15,6 +16,15 @@ pub(crate) const CLOSERS: [char; 3] = [')', ']', '}'];
 /// The characters a bracket opens with, the char-level counterpart to
 /// [`is_opener`].
 pub(crate) const OPENERS: [char; 3] = ['(', '[', '{'];
+
+/// Returns the nearest token before `offset` that is not a comment or a
+/// non-logical newline, `None` where no such token precedes it.
+pub(crate) fn code_token_before(tokens: &Tokens, offset: TextSize) -> Option<&Token> {
+    tokens
+        .before(offset)
+        .iter()
+        .rfind(|token| !token.kind().is_trivia())
+}
 
 /// Returns `true` when `kind` is a closing bracket `)` `]` `}`.
 pub(crate) fn is_closer(kind: TokenKind) -> bool {
@@ -67,6 +77,23 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::testing::{at, parse};
+
+    #[rstest]
+    #[case::past_a_comment_and_a_line_break("x = (  # c\n    y)\n", "y", Some(TokenKind::Lpar))]
+    #[case::an_unpacking_operator("f(**kw)\n", "kw", Some(TokenKind::DoubleStar))]
+    #[case::at_the_module_start("x = 1\n", "x", None)]
+    fn code_token_before_skips_trivia(
+        #[case] src: &str,
+        #[case] needle: &str,
+        #[case] expected: Option<TokenKind>,
+    ) {
+        let source = parse(src);
+        assert_eq!(
+            code_token_before(source.tokens(), at(src, needle).start()).map(Token::kind),
+            expected
+        );
+    }
 
     #[rstest]
     #[case(TokenKind::Rpar, true)]

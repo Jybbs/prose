@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/builtin_the_module_rebinds_keeps_directive/input.py
+---
+from __future__ import annotations
+
+
+def scale(value: int) -> int:
+    return value
+
+
+try:
+    int = long
+except NameError:
+    pass

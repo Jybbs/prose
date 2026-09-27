@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skipped Import Under `if TYPE_CHECKING:` Leaves Its Neighbors Sorting"
+
+description = '''
+`import abc` closes its line with `# prose: skip` inside an `if TYPE_CHECKING:` block. **It stays in place, `import re` staying above it while `from pkg import Alpha` sorts above `from zoo import Beta` beneath it**, because the skip divides the imports of the block into two runs that sort apart. The imports of the module sort as well, `os` moving above `sys`, since the edits inside the block leave the skipped line untouched.
+'''

@@ -2,7 +2,7 @@
 //! statement binding each name, walked into compound statements and not into
 //! a function, class, comprehension, or lambda.
 
-use std::{collections::BTreeMap, ops::Range, slice::from_ref};
+use std::{collections::BTreeMap, ops::Range, path::Path, slice::from_ref};
 
 use ruff_python_ast::{
     Expr, ExprContext, Stmt,
@@ -68,6 +68,15 @@ pub(crate) fn binding_rows(text: &str) -> BTreeMap<String, Range<usize>> {
     };
     walk.visit_body(&parsed.syntax().body);
     walk.rows
+}
+
+/// The rows binding `name` in one module of `tree`, beside that module's
+/// text, `None` where the file cannot be read or the module does not bind
+/// the name.
+pub(crate) fn bound_at(tree: &Path, module: &str, name: &str) -> Option<(Range<usize>, String)> {
+    let text = fs_err::read_to_string(tree.join(module)).ok()?;
+    let rows = binding_rows(&text).get(name)?.clone();
+    Some((rows, text))
 }
 
 /// The names one module-level statement binds, which is the name of a

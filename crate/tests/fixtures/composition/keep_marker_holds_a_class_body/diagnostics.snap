@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/keep_marker_holds_a_class_body/input.py
+---
+align-colons@102..178
+align-equals@154..186
+expand-docstrings@59..87
+space-statements@90..91

@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/thematic/padded_value_measures_past_the_canonical_colon/input.py
+---
+SORT_KEYS = {
+    "calls": (((1,-1),), "call count"),
+    "cumtime": (((3,-1),), "cumulative time"),
+    "cumulative": (
+        ((3,-1),),
+        "cumulative time"
+    ),
+    "name": (((6, 1),), "function name")
+}

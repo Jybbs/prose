@@ -162,7 +162,8 @@ Config {
                 16,
             ),
         },
-        align_colons: AlignmentConfig {
+        align_colons: AlignColonsConfig {
+            align_docstring_entries: true,
             enabled: true,
             max_shift: Cap(
                 16,

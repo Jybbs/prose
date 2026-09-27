@@ -2,7 +2,7 @@
 //! excerpts a report shows beside a defect and the tally that keys those
 //! defects by wording.
 
-use std::path::Path;
+use std::{ops::RangeBounds, path::Path};
 
 use rstest::rstest;
 
@@ -13,6 +13,15 @@ mod common;
 /// `count` lines reading `word 1` through `word count`.
 fn numbered(word: &str, count: usize) -> String {
     (1..=count).map(|n| format!("{word} {n}\n")).collect()
+}
+
+#[test]
+fn excerpt_counts_an_insertion_at_the_row_it_lands_ahead_of() {
+    let before = numbered("line", 20);
+    let after = before.replace("line 10\n", "line 10\ninserted\n");
+
+    assert!(excerpt("before", "after", &before, &after, 10..=10).contains("+inserted"));
+    assert!(excerpt("before", "after", &before, &after, 9..=9).is_empty());
 }
 
 #[test]
@@ -28,9 +37,27 @@ fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
         })
         .collect();
 
-    let shown = excerpt("before", "after", &before, &after);
+    let shown = excerpt("before", "after", &before, &after, ..);
 
-    assert!(shown.ends_with(" more lines and 1 more hunks"), "{shown}");
+    assert!(shown.ends_with(" more lines and 1 more hunk"), "{shown}");
+}
+
+#[test]
+fn excerpt_counts_one_line_past_its_cap_in_the_singular() {
+    let before = numbered("line", 20);
+    let after: String = (1..=20)
+        .map(|n| {
+            if (6..=10).contains(&n) {
+                format!("row {n}\n")
+            } else {
+                format!("line {n}\n")
+            }
+        })
+        .collect();
+
+    let shown = excerpt("before", "after", &before, &after, ..);
+
+    assert!(shown.ends_with("\n... 1 more line"), "{shown}");
 }
 
 #[test]
@@ -38,7 +65,7 @@ fn excerpt_counts_the_lines_past_its_cap() {
     let before = numbered("line", 40);
     let after = numbered("row", 40);
 
-    let shown = excerpt("before", "after", &before, &after);
+    let shown = excerpt("before", "after", &before, &after, ..);
 
     assert_eq!(shown.lines().count(), 2 + EXCERPT + 1, "{shown}");
     assert!(shown.ends_with(" more lines"), "{shown}");
@@ -49,15 +76,23 @@ fn excerpt_ends_on_the_hunk_when_nothing_is_cut() {
     let before = numbered("line", 10);
     let after = before.replace("line 2\n", "line two\n");
 
-    let shown = excerpt("before", "after", &before, &after);
+    let shown = excerpt("before", "after", &before, &after, ..);
 
     assert!(!shown.contains("..."), "{shown}");
     assert_eq!(shown.lines().count(), 2 + 7, "{shown}");
 }
 
 #[test]
+fn excerpt_is_empty_when_no_hunk_changes_the_rows_it_names() {
+    let before = numbered("line", 60);
+    let after = before.replace("line 2\n", "line two\n");
+
+    assert!(excerpt("before", "after", &before, &after, 30..40).is_empty());
+}
+
+#[test]
 fn excerpt_is_empty_when_the_texts_match() {
-    assert!(excerpt("before", "after", "x = 1\n", "x = 1\n").is_empty());
+    assert!(excerpt("before", "after", "x = 1\n", "x = 1\n", ..).is_empty());
 }
 
 #[test]
@@ -67,14 +102,33 @@ fn excerpt_shows_the_first_hunk_and_counts_the_rest() {
         .replace("line 2\n", "line two\n")
         .replace("line 50\n", "line fifty\n");
 
-    let shown = excerpt("first pass", "second pass", &before, &after);
+    let shown = excerpt("first pass", "second pass", &before, &after, ..);
 
     assert!(
         shown.starts_with("--- first pass\n+++ second pass\n@@"),
         "{shown}"
     );
     assert!(shown.contains("-line 2\n+line two\n"), "{shown}");
-    assert!(shown.ends_with("... and 1 more hunks"), "{shown}");
+    assert!(shown.ends_with("... and 1 more hunk"), "{shown}");
+}
+
+#[rstest]
+#[case(40..60, "-line 50\n+line fifty\n")]
+#[case(49..=49, "-line 50\n+line fifty\n")]
+#[case(0..10, "-line 2\n+line two\n")]
+fn excerpt_shows_the_first_hunk_changing_the_rows_it_names(
+    #[case] rows: impl RangeBounds<usize>,
+    #[case] hunk: &str,
+) {
+    let before = numbered("line", 60);
+    let after = before
+        .replace("line 2\n", "line two\n")
+        .replace("line 50\n", "line fifty\n");
+
+    let shown = excerpt("before", "after", &before, &after, rows);
+
+    assert!(shown.contains(hunk), "{shown}");
+    assert!(shown.ends_with("... and 1 more hunk"), "{shown}");
 }
 
 #[test]

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RunSummaryExplorer   from '../../theme/components/reference/RunSummaryExplorer.vue'
-import { expectAccessible } from '../axe'
-import { popperStubMount }  from '../popper-stub'
+import RunSummaryExplorer    from '../../theme/components/reference/RunSummaryExplorer.vue'
+import { rendersAccessibly } from '../axe'
+import { popperStubMount }   from '../popper-stub'
 
 const mountExplorer = () => mount(RunSummaryExplorer, { global: popperStubMount })
 
@@ -35,7 +35,5 @@ describe('RunSummaryExplorer', () => {
     expect(w.get('.run-summary-msg').text()).toBe('All clean.')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountExplorer().html())
-  })
+  rendersAccessibly(() => mountExplorer().html())
 })

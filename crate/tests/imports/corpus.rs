@@ -1,7 +1,7 @@
 //! Which modules of a corpus a sweep runs, meaning the interpreter owning
-//! the corpus and the version it reports, the entry points a run leaves out,
-//! the modules a format run rewrote, and what identifies the corpus a run
-//! swept.
+//! the corpus and the versions it reports, the entry points a run leaves out,
+//! the modules a format run read, and what the run's header names about the
+//! corpus.
 
 use std::{
     collections::BTreeSet,
@@ -9,7 +9,13 @@ use std::{
     process::Command,
 };
 
-use crate::{common::python_files, records::Corpus};
+use itertools::Itertools;
+use ruff_python_ast::PythonVersion;
+
+use crate::{
+    common::{python_files, setting},
+    records::Corpus,
+};
 
 /// The module names a walk leaves out wherever they sit, since running
 /// either one launches a program instead of binding a namespace.
@@ -24,11 +30,21 @@ const ENTRY_POINTS: &[&str] = &["antigravity", "idlelib/idle", "webbrowser"];
 /// The directories a walk leaves out wholesale.
 const ENTRY_TREES: &[&str] = &["idle_test", "test", "tests", "turtledemo"];
 
+/// The interpreter a sweep runs absent [`PYTHON_VAR`].
+const PYTHON: &str = "python3";
+
+/// The environment variable naming the interpreter whose standard library
+/// the sweep runs.
+pub(crate) const PYTHON_VAR: &str = "PROSE_IMPORTS_PYTHON";
+
+/// The directory beside the standard library that the distributions it
+/// carries are installed into, which an import searches as a root of its own.
+pub(crate) const VENDORED: &str = "site-packages";
+
 /// The modules a sweep runs, which is every importable module the format
-/// run rewrote outside the entry points, sorted.
-pub(crate) fn candidates(rewritten: &BTreeSet<String>) -> Vec<String> {
-    rewritten
-        .iter()
+/// run read outside the entry points, sorted.
+pub(crate) fn candidates(read: &BTreeSet<String>) -> Vec<String> {
+    read.iter()
         .filter(|relative| importable(relative) && !excluded(relative))
         .cloned()
         .collect()
@@ -48,15 +64,12 @@ pub(crate) fn excluded(relative: &str) -> bool {
             .any(|part| ENTRY_TREES.contains(&part))
 }
 
-/// What identifies the corpus at `root` belonging to `interpreter`, being how
-/// many files the walk reads beside the distributions installed next to the
-/// standard library. Both hold across platforms, where the tree's own bytes do
-/// not, since the build scaffolding and `_sysconfigdata` carry the platform in
-/// their names and contents.
-pub(crate) fn identity(root: &Path, interpreter: &str) -> Corpus {
+/// What the run's header names about the corpus at `root`, being how many
+/// files the walk reads beside the distributions installed next to the
+/// standard library.
+pub(crate) fn identity(root: &Path) -> Corpus {
     Corpus {
         files: python_files(root).count(),
-        interpreter: interpreter.to_owned(),
         vendored: vendored(root),
     }
 }
@@ -69,6 +82,18 @@ pub(crate) fn importable(relative: &str) -> bool {
     relative.ends_with(".py")
 }
 
+/// The interpreter every module runs under, resolved to the executable it
+/// runs as, with [`PYTHON_VAR`] naming it and [`PYTHON`] standing in where it
+/// is unset. A version manager's shim reads its configuration from the
+/// environment, which a run clears, so a run launches the executable the
+/// shim resolves to instead.
+pub(crate) fn interpreter() -> String {
+    asked(
+        &setting(PYTHON_VAR).unwrap_or_else(|| PYTHON.to_owned()),
+        "import sys; print(sys.executable)",
+    )
+}
+
 /// Asks an interpreter which standard library it owns.
 pub(crate) fn standard_library(python: &str) -> PathBuf {
     PathBuf::from(asked(
@@ -77,6 +102,17 @@ pub(crate) fn standard_library(python: &str) -> PathBuf {
     ))
     .canonicalize()
     .expect("the interpreter names a standard library")
+}
+
+/// The `major.minor` version a full `version` names, which a format run
+/// takes as its `target-version`.
+pub(crate) fn target(version: &str) -> PythonVersion {
+    let (major, minor) = version
+        .split('.')
+        .next_tuple()
+        .expect("the interpreter reports a `major.minor.patch` version");
+    PythonVersion::try_from((major, minor))
+        .expect("the interpreter reports a `major.minor` version")
 }
 
 /// The version the interpreter at `python` reports.
@@ -101,9 +137,9 @@ fn asked(python: &str, code: &str) -> String {
 
 /// Every distribution installed beside the standard library at `root`, read
 /// off the `dist-info` directory each one leaves, sorted. A tree carrying no
-/// `site-packages` directory names none.
+/// [`VENDORED`] directory names none.
 fn vendored(root: &Path) -> Vec<String> {
-    let Ok(entries) = fs_err::read_dir(root.join("site-packages")) else {
+    let Ok(entries) = fs_err::read_dir(root.join(VENDORED)) else {
         return Vec::new();
     };
     let mut found: Vec<_> = entries

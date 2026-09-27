@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/nested_call_takes_keyword_form/input.py
+---
+reflow-collections@99..198

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/match_arm_gap_settles_before_folding/input.py
+---
+align-comments@95..96
+align-match-case@129..138

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/name_a_function_writes_globally_keeps_directive/input.py
+---
+from __future__ import annotations
+
+
+def setup():
+    global Alias
+    Alias = int
+
+
+def convert(value: Alias) -> Alias:
+    return value

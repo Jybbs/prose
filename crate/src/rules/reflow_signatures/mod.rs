@@ -20,7 +20,10 @@ use crate::{
         splice::splice_parses,
         walk::filter_map_over_stmts,
     },
-    rules::{Rule, RuleId, alphabetize_siblings::Reorders, reflow_calls::Reshaper},
+    rules::{
+        Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
+        reflow_calls::Reshaper,
+    },
     source::Source,
 };
 
@@ -34,6 +37,7 @@ pub(crate) use terms::{Expansion, Terms};
 
 #[derive(Debug)]
 pub(crate) struct ReflowSignatures {
+    fstrings: PreferFstring,
     reorders: Reorders,
     reservations: reserve::Reservations,
     stranding: padding::Stranding,
@@ -46,22 +50,39 @@ impl ReflowSignatures {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
+            fstrings: config.fstrings(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
             stranding: config.stranded_padding(),
             terms: Terms::from_config(config),
         }
     }
+
+    /// Returns the start of every parameter list this rule lays out one
+    /// per line over `source`, ascending.
+    pub(crate) fn exploding_parameters(&self, source: &Source) -> Vec<TextSize> {
+        let targets = module_call_params(source);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
+        self.terms
+            .over(source, &targets, &padding, &rewrites)
+            .exploding_parameters(&source.ast().body)
+    }
 }
 
 impl Rule for ReflowSignatures {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let padding = source.stranded_padding(self.stranding);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
         let reservations = source.columns(self.reservations);
-        let expansion = self.terms.over(source, &targets, &padding);
+        let expansion = self.terms.over(source, &targets, &padding, &rewrites);
         let mut visitor = Layout {
             edits: Vec::new(),
             expansion,

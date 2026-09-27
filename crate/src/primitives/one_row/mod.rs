@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     config::Config,
@@ -20,11 +20,10 @@ use crate::{
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
-        inline::{display_width, settled_slice_width, settled_text_width, spans_rows},
-        layout::{
-            is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry, requires_expand,
-        },
+        inline::{display_width, settled_slice_width, settled_width, spans_rows},
+        layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
+        slots::{holds_exactly, item_holding},
         walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
@@ -38,8 +37,10 @@ use render::{Writer, write_joined};
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
 /// closes a fracture at all, `expands_literals` whether
-/// `reflow-collections` expands a literal, and `max_dict_entries` is
-/// `None` where it does not, leaving the entry cap inert.
+/// `reflow-collections` expands a literal, `max_dict_entries` is `None`
+/// where it does not, leaving the entry cap inert, and `rewrites` holds
+/// the f-string rewrites a form is measured through, none until
+/// [`forecasting`](Self::forecasting) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
@@ -47,9 +48,18 @@ pub(crate) struct Settings<'a> {
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
+    rewrites: &'a [Edit],
 }
 
 impl<'a> Settings<'a> {
+    /// True where [`Self::expands`] expands `literal` once it is written
+    /// across rows, meaning `reflow-collections` expands literals,
+    /// [`Source::is_expandable`] accepts `literal`, and no forecast
+    /// rewrite replaces it.
+    fn expands_across_rows(&self, source: &Source, literal: &Expr) -> bool {
+        self.expands_literals && source.is_expandable(literal) && !self.rewritten(literal.start())
+    }
+
     /// True for a literal the author laid out as a flush column while
     /// `keep_multiline_literals` holds it, which re-expands to that same
     /// column rather than joining.
@@ -73,14 +83,15 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         let range = source.paren_aware_range(expr.into(), parent);
         let form = self.written(source, expr, range, hold)?;
-        self.fits(column + display_width(&form) + tail)
+        self.fits(column + self.form_width(source, &form, range) + tail)
             .then_some(form)
     }
 
     /// The narrower of the width `range` settles to as written and the
     /// width `expr`'s canonical rebuild carries. `padding` is the edit
-    /// list `strip-stranded-padding` emits, discounted from the
-    /// as-written reading alone.
+    /// list `strip-stranded-padding` emits merged with the forecast
+    /// rewrites, discounted from the as-written reading, whereas the
+    /// rebuild carries no padding and takes off the rewrites alone.
     fn narrowest_width(
         &self,
         source: &Source,
@@ -93,7 +104,7 @@ impl<'a> Settings<'a> {
         let condensed = self
             .condensed(source, expr, parent)
             .map_or(settled, |text| {
-                settled_text_width(source, padding, &text, range)
+                self.text_width(source, padding, &text, range)
             });
         settled.min(condensed)
     }
@@ -121,13 +132,17 @@ impl<'a> Settings<'a> {
     /// These settings resolving each call against `targets`, the map
     /// [`module_call_params`](crate::primitives::call_keywords::module_call_params)
     /// builds for one source.
-    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
+    pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t>
+    where
+        'a: 't,
+    {
         Settings {
             code_line_length: self.code_line_length,
             expands_literals: self.expands_literals,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
+            rewrites: self.rewrites,
         }
     }
 
@@ -168,6 +183,12 @@ impl<'a> Settings<'a> {
         Some(out)
     }
 
+    /// True where `reflow-calls` is enabled, read off the rejoin terms
+    /// these settings carry.
+    pub(crate) fn closes(&self) -> bool {
+        self.rejoin.closes()
+    }
+
     /// `expr`'s one-row form rebuilt at the canonical spacing, whatever
     /// padding the source wrote inside it. `None` where no one-row form
     /// exists.
@@ -188,10 +209,10 @@ impl<'a> Settings<'a> {
     }
 
     /// True where `reflow-collections` expands `literal` at `column` with
-    /// `tail` columns after it. A comment-free literal passing
-    /// `requires_expand` expands where a later rule reopens it, where it
-    /// is written across rows, or where its narrowest width under
-    /// `padding` overflows. A caller tries [`Self::rejoined`] first.
+    /// `tail` columns after it. A literal [`Source::is_expandable`] accepts
+    /// and no forecast rewrite replaces expands where a later rule reopens
+    /// it, where it is written across rows, or where its narrowest width
+    /// under `padding` overflows. A caller tries [`Self::rejoined`] first.
     pub(crate) fn expands(
         &self,
         source: &'a Source,
@@ -202,9 +223,7 @@ impl<'a> Settings<'a> {
         padding: &[Edit],
     ) -> bool {
         let range = literal.range();
-        self.expands_literals
-            && requires_expand(literal)
-            && !source.intersects_comment(range)
+        self.expands_across_rows(source, literal)
             && (source.contains_line_break(range)
                 || self.reopens(source, literal)
                 || !self.fits(
@@ -216,6 +235,15 @@ impl<'a> Settings<'a> {
     /// is on and its `explode` facet is set.
     pub(crate) fn expands_literals(&self) -> bool {
         self.expands_literals
+    }
+
+    /// True where `reflow-calls` runs, [`Source::explodable_arguments`]
+    /// lists `arguments`, and no forecast rewrite replaces them, since the
+    /// f-string that rewrite writes holds the call in a replacement field.
+    pub(crate) fn explodes_arguments(&self, source: &Source, arguments: &Arguments) -> bool {
+        self.closes()
+            && holds_exactly(source.explodable_arguments(), arguments.range())
+            && !self.rewritten(arguments.start())
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -235,6 +263,26 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Holds)
+    }
+
+    /// These settings measuring each one-row form through `rewrites`,
+    /// the f-string rewrites [`Source::fstring_rewrites`] forecasts for
+    /// the source the form is written over.
+    pub(crate) fn forecasting(self, rewrites: &'a [Edit]) -> Self {
+        Self { rewrites, ..self }
+    }
+
+    /// The display width of `form`, a one-row form written over `range`,
+    /// once each forecast rewrite inside `range` lands.
+    pub(crate) fn form_width(&self, source: &Source, form: &str, range: TextRange) -> usize {
+        settled_width(source, self.rewrites, range, display_width(form))
+    }
+
+    /// True for a literal written on one row that [`Self::expands`]
+    /// expands once written across rows. A walk that leaves such a
+    /// literal as written leaves every literal inside it on that row.
+    pub(crate) fn holds_its_row(&self, source: &Source, literal: &Expr) -> bool {
+        !source.contains_line_break(literal.range()) && self.expands_across_rows(source, literal)
     }
 
     /// `param`'s one-row text, each row-spanning annotation and default
@@ -320,6 +368,35 @@ impl<'a> Settings<'a> {
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
     }
+
+    /// True where a forecast rewrite replaces the text at `offset`.
+    pub(crate) fn rewritten(&self, offset: TextSize) -> bool {
+        item_holding(self.rewrites, offset).is_some_and(|rewrite| rewrite.range().contains(offset))
+    }
+
+    /// The display width of the source slice over `range` once each
+    /// forecast rewrite inside it lands.
+    pub(crate) fn slice_width(&self, source: &Source, range: TextRange) -> usize {
+        self.form_width(source, source.slice(range), range)
+    }
+
+    /// The display width `text` settles to over `range`, the settled
+    /// width of `range` under `padding` where `text` is that source slice
+    /// as written, and the [`form_width`](Self::form_width) of a rewrite,
+    /// which carries no padding.
+    pub(crate) fn text_width(
+        &self,
+        source: &Source,
+        padding: &[Edit],
+        text: &str,
+        range: TextRange,
+    ) -> usize {
+        if source.slice(range) == text {
+            settled_slice_width(source, padding, range)
+        } else {
+            self.form_width(source, text, range)
+        }
+    }
 }
 
 impl From<&Config> for Settings<'_> {
@@ -334,6 +411,7 @@ impl From<&Config> for Settings<'_> {
                 .cap()
                 .filter(|_| config.expands_literals()),
             rejoin: config.fracture_settings(),
+            rewrites: &[],
         }
     }
 }
@@ -354,6 +432,7 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::{first_expr, parse};
@@ -437,6 +516,34 @@ mod tests {
     }
 
     #[rstest]
+    #[case::as_written(false, None)]
+    #[case::through_the_forecast(true, Some("[\"%s\" % (a,)]"))]
+    fn fitted_measures_a_forecast_rewrite_at_its_fstring_width(
+        #[case] forecast: bool,
+        #[case] expected: Option<&str>,
+    ) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(12),
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("[\n    \"%s\" % (a,)]");
+        let expr = first_expr(&source);
+        let rewrites = if forecast {
+            config.fstrings().forecast(&source)
+        } else {
+            Vec::new()
+        };
+        assert_eq!(
+            Settings::from(&config)
+                .forecasting(&rewrites)
+                .fitted(&source, expr, expr.into(), 0, 0)
+                .as_deref(),
+            expected,
+        );
+    }
+
+    #[rstest]
     #[case::already_flat("[a, b]", Some("[a, b]"))]
     #[case::fracture_closes("[\n    a, b]", Some("[a, b]"))]
     #[case::nested_literal_joins("{\n    'k': [\n        1, 2]}", Some("{'k': [1, 2]}"))]
@@ -470,6 +577,25 @@ mod tests {
         assert_eq!(
             form_under(&config, "{'a': 1,\n 'b': 2, 'c': 3}").as_deref(),
             Some("{'a': 1, 'b': 2, 'c': 3}"),
+        );
+    }
+
+    #[rstest]
+    #[case::one_row_list("[a, b]", true, true)]
+    #[case::explode_facet_cleared("[a, b]", false, false)]
+    #[case::written_across_rows("[\n    a,\n    b,\n]", true, false)]
+    #[case::one_element_list("[aaaa]", true, false)]
+    fn holds_its_row_reads_a_one_row_literal_the_rule_expands(
+        #[case] src: &str,
+        #[case] explode: bool,
+        #[case] expected: bool,
+    ) {
+        let mut config = Config::default();
+        config.rules.reflow_collections.explode = explode;
+        let source = parse(src);
+        assert_eq!(
+            Settings::from(&config).holds_its_row(&source, first_expr(&source)),
+            expected,
         );
     }
 

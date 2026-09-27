@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/new_entry_in_an_aligned_dict_expands_into_its_column/input.py
+---
+reflow-collections@179..280

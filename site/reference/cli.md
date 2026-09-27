@@ -138,7 +138,7 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 ## `prose rules`
 
-Lists every registered rule in pipeline order, one row per rule with its one-based position, its slug, and its imperative. The JSON form prints the same list as an array of `{after, imperative, position, slug}` records for a script to read.
+Lists every registered rule in pipeline order, one row per rule with its one-based position, its slug, and its imperative. The JSON form prints the same list as an array of `{after, imperative, position, preserves_tree, slug}` records for a script to read, where `preserves_tree` reports whether the rule declares that its output parses to the tree its input does.
 
 | Flag | Type | Default | Description |
 |---|---|---|---|

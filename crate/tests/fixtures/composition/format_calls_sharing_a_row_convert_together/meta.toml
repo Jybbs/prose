@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Two `str.format()` Calls Sharing a Row Convert Together"
+
+description = '''
+`args`'s list rejoins onto one row at the width its two f-strings take together, and each call alone would still leave that row past the 79-column budget. **`prefer-fstring` measures each rewrite with every other rewrite on its row in place, so both calls convert in the pass that joins the list**, where holding each call to the budget alone would leave the joined row too wide for either.
+'''

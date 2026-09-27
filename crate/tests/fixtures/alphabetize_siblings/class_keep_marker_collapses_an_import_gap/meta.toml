@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` Holds the Order but Closes an Import Gap"
+
+description = '''
+`Kept` carries `# prose: keep` on its header and a blank line between `import json` and `import abc`. **The blank line closes while `json` stays above `abc` and `zeta` above `alpha`**, because the marker holds the order of the statements in the class body rather than the blank lines between two imports of one group.
+'''

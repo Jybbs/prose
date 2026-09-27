@@ -41,6 +41,7 @@ Each concrete rule lives under `prose::rules`, a `pub` module. The registry macr
 - The pipeline constructors (`for_rule`, `with_defaults`, `with_filters`) that dispatch on slug.
 - The slug-validity and uniqueness assertions, checked at compile time, so adding a malformed slug fails the build.
 - The per-rule dependency column naming the slugs each rule runs behind, asserted at compile time to name only rules placed earlier and read back through `prose rules --output-format json`.
+- The per-rule `PRESERVES_TREE` declaration, which the corpus sweep holds each rule to and `prose rules --output-format json` reports as `preserves_tree`.
 - The per-rule message strings diagnostic emission reads.
 
 `Pipeline::known_ids() -> &'static [RuleId]` is the public entry point that exposes the canonical-order list to downstream consumers.

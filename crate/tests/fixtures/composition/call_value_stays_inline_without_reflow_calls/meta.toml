@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Value Stays on One Row Without `reflow-calls`"
+
+description = '''
+The `dispatch` call would cross the budget padded out to the column `"variable"` sets, yet with [[reflow-calls]] off **[[reflow-collections]] leaves the call on one row**, because exploding a call belongs to [[reflow-calls]]. `"cache"` and `"pr"` align on the narrower column their own keys set, and `"variable"` stands unpadded beneath them.
+'''

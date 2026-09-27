@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Stays on One Row When Expanding It Would Strand Another Row"
+
+description = '''
+`"python_version"` would cross the budget padded to the column `"platform_python_implementation"` sets, and [[reflow-collections]] could explode its `".".join(` call to join that column. **Expanding it would still leave one row unpadded**, because `"sys_platform"` is 18 columns narrower than `"platform_python_implementation"`, past the `max-shift` limit of 16, just as `"platform_python_implementation"` stands unpadded while every value stays on one row. The call therefore stays on one row, and `"python_version"` and `"sys_platform"` align as a pair beneath the unpadded row.
+'''

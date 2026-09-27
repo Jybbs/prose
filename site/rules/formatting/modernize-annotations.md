@@ -34,7 +34,7 @@ Both facets run, the same as on 3.10.
 Both facets run, the same as on 3.10.
 
 == Python 3.14
-Both facets run, and [[prune-inert-imports]] reads the same `target-version` to remove the `from __future__ import annotations` directive that PEP 749 makes redundant.
+Both facets run, and [[prune-inert-imports]] reads the same `target-version` to remove the `from __future__ import annotations` directive wherever PEP 749's deferred evaluation leaves it inert.
 :::
 
 Below 3.10 only `rewrite-generics` runs, since `X | Y` raises at runtime before the PEP 604 form arrives, and below 3.9 neither one does.

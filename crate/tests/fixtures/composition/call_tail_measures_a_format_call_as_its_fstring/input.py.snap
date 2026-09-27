@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_tail_measures_a_format_call_as_its_fstring/input.py
+---
+for i in range(0x20):
+    ESCAPE_DCT.setdefault(chr(i), f'\\u{i:04x}')

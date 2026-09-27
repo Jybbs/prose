@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skip on `reflow-calls` Keeps a Call Value on One Row"
+
+description = '''
+The `# prose: skip[reflow-calls]` comment holds `HANDLERS` from [[reflow-calls]], so **[[reflow-collections]] leaves the `dispatch` call on one row** rather than exploding it into the column `"variable"` sets. `"cache"` and `"pr"` align on the narrower column their own keys set, and `"variable"` stands unpadded beneath them.
+'''

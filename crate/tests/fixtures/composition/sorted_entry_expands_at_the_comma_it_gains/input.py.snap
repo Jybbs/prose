@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/sorted_entry_expands_at_the_comma_it_gains/input.py
+---
+MUTATIONS = {
+    "cache"    : {"delete"},
+    "pr"       : {
+        "close", "comment", "lock", "merge", "ready", "reopen", "review", "z"
+    },
+    "variable" : {"delete", "set"}
+}

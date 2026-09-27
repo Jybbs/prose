@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A One-Space Comment Gap Counts at the Two Spaces `align-comments` Leaves"
+
+description = '''
+The body of `case "tag"` carries a comment one space past it, which `align-comments` widens to two. Folded with its `:` padded out to the column `"other"` sets, the arm would fit at exactly 88 columns with the gap as written and reach 89 at two spaces, so **`"tag"` keeps its multi-line form** while `"other"` folds alone with its `:` flush against the pattern.
+'''

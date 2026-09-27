@@ -31,6 +31,8 @@ impl BareImports {
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
+    pub(crate) const PRESERVES_TREE: bool = true;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.bare_imports;
         Self {

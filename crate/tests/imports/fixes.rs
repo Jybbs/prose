@@ -1,17 +1,43 @@
 //! Which recorded fix reached a row or a binding, meaning the rows an edit
-//! rewrote and the span one fix's edits reach as written and as they leave
-//! it.
+//! rewrote, whether it removed a binding, the span one fix's edits reach as
+//! written and as they leave it, and the rules whose fixes pass a test.
 
-use std::ops::Range;
+use std::{collections::BTreeSet, ops::Range};
 
 use itertools::Itertools;
+use prose::{
+    pipeline::Pipeline,
+    rules::{RuleId, render_slugs},
+};
 
-use crate::records::EditRows;
+use crate::records::{EditRows, Fixes};
 
 /// Reports whether one fix's edits take a name out of the span they reach.
 pub(crate) fn drops(edits: &[EditRows], name: &str, text: &str) -> bool {
     let (was, now) = rewritten(edits, text);
     holds_word(&was, name) && !holds_word(&now, name)
+}
+
+/// The rules whose recorded fixes to one file satisfy a test, joined in
+/// pipeline order, `None` where no fix does.
+pub(crate) fn fitting(
+    fixes: &Fixes,
+    file: &str,
+    fits: impl Fn(&[EditRows]) -> bool,
+) -> Option<String> {
+    let hit: BTreeSet<_> = fixes
+        .get(file)
+        .into_iter()
+        .flatten()
+        .filter(|(_, edits)| fits(edits))
+        .map(|(rule, _)| *rule)
+        .collect();
+    let ordered: Vec<_> = Pipeline::known_ids()
+        .iter()
+        .filter(|rule| hit.contains(rule))
+        .copied()
+        .collect();
+    listed(&ordered)
 }
 
 /// Reports whether some text holds a name as a whole word.
@@ -25,6 +51,12 @@ pub(crate) fn holds_word(haystack: &str, name: &str) -> bool {
                     .next()
                     .is_some_and(inside)
         })
+}
+
+/// The rules rendered as their backticked slugs, `None` where there are
+/// none.
+pub(crate) fn listed(rules: &[RuleId]) -> Option<String> {
+    (!rules.is_empty()).then(|| render_slugs(rules).to_string())
 }
 
 /// Reports whether one fix's edits touch a row or write a given line.
@@ -61,4 +93,10 @@ pub(crate) fn rewritten(edits: &[EditRows], text: &str) -> (String, String) {
         text[low..high].to_owned(),
         edited[low..shifted.min(edited.len())].to_owned(),
     )
+}
+
+/// Reports whether one fix's edits reach the rows binding a name and take
+/// the name out of them.
+pub(crate) fn unbinds(edits: &[EditRows], rows: &Range<usize>, name: &str, text: &str) -> bool {
+    reaches(edits, rows, "") && drops(edits, name, text)
 }

@@ -5,5 +5,5 @@ title       = "An Arm Folds Only Where Its One-Line Form Fits the Budget"
 description = '''
 Five arms each hold one assignment, with patterns running from `"under_88_columns"` to `"kind_with_descriptive_long_label"`. **Only `"under_88_columns"` and `"exactly_88_columns"` fold onto their `case` lines and align their `:`**, because an arm folds only where its one-line form fits within the 88-column `code-line-length`.
 
-`"longer_pattern_name"` would reach 89 columns, `"kind_with_descriptive_long_label"` runs wider still, and the `if some_long_predicate_check(event.kind)` guard counts toward its arm's width, so those three arms stay multi-line.
+`"longer_pattern_label"` would reach 89 columns, `"kind_with_descriptive_long_label"` runs wider still, and the `if some_long_predicate_check(event.kind)` guard counts toward its arm's width, so those three arms stay multi-line.
 '''

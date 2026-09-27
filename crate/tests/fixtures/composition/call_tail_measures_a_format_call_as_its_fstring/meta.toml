@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call's Row Tail Measures a `str.format()` Call as Its f-string"
+
+description = '''
+`chr(i)` sits ahead of `'\\u{0:04x}'.format(i)` on a row that fits the 50-column budget once the call becomes an f-string. **`reflow-calls` measures the tail past `chr(i)` at the width of that f-string and passes over the `(` of `.format(`, which the conversion removes**, so `chr(i)` stays inline and the pass settles.
+'''

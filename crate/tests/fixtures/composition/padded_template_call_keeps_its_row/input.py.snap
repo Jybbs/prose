@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/padded_template_call_keeps_its_row/input.py
+---
+def collect(results, exc):
+    results.append({"faultCode": 1, "faultString": f"{type(exc)}:{exc}"})

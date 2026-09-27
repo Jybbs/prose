@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_template_tuple_counts_its_padding_once/input.py
+---
+reflow-calls@46..107
+reflow-collections@47..106
+strip-stranded-padding@104..105
+strip-stranded-padding@89..90

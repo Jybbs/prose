@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/blank_line_above_an_unpacking_survives_expansion/input.py
+---
+reflow-collections@73..157

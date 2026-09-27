@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Docstring Columns Collapse Even Under a `false` Cap"
+
+description = '''
+`config.toml` sets `align-docstring-entries = false` and `max-shift = false`, and the `Attributes:` section of `Session` arrives hand-padded. **The type column and the `:` column both collapse even though `max-shift = false` removes the cap**, so each `(` sits one space past its own name and each `:` sits flush against the closing paren. The `host`, `retry_budget`, and `cipher` fields below still align on one `:` column.
+'''

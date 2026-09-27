@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_colons/docstring_entries_off_keeps_unpadded_entries/input.py
+---
+class Pipeline:
+    """
+    Attributes:
+        name (str): The label on each record.
+        retry_budget (int): How many attempts remain.
+    """
+
+    def run(self, steps, verbose):
+        """
+        Args:
+            steps: The names of the steps to compute.
+            verbose: Whether to print the records.
+        """

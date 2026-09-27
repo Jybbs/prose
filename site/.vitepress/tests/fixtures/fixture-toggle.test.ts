@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount, type VueWrapper } from '@vue/test-utils'
 
-import FixtureNoChange      from '../../theme/components/fixtures/FixtureNoChange.vue'
-import FixtureToggle        from '../../theme/components/fixtures/FixtureToggle.vue'
-import { expectAccessible } from '../axe'
+import FixtureNoChange       from '../../theme/components/fixtures/FixtureNoChange.vue'
+import FixtureToggle         from '../../theme/components/fixtures/FixtureToggle.vue'
+import { rendersAccessibly } from '../axe'
 
 import type { FixtureTab } from '../../lib/shared/fixture-tab'
 
@@ -25,9 +25,7 @@ describe('FixtureToggle', () => {
     expect(w.emitted('update:modelValue')).toStrictEqual([['after']])
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountToggle('before').html())
-  })
+  rendersAccessibly(() => mountToggle('before').html())
 })
 
 describe('FixtureNoChange', () => {

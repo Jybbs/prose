@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Entry Measures Its `%` Value as the f-string It Becomes"
+
+description = '''
+At a 50-column budget, the value `"%s:%s" % (type(exc), exc)` runs `"faultString"`'s entry past the budget, whereas the f-string `prefer-fstring` writes for it fits. **`reflow-collections` measures the value at the width of `f"{type(exc)}:{exc}"`, so the entry stays on one row and a second pass finds nothing left to join.**
+'''

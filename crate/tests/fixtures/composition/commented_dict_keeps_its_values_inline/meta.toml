@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Comment in a Dict Keeps Its Values From Expanding Into the Column"
+
+description = '''
+The trailing comment on `"cache"` keeps `MUTATIONS` as written, since [[reflow-collections]] lays out no literal a comment sits inside. **The `"pr"` set therefore never expands, so `"pr"` stays unpadded**, because padding it to the column of either neighbor would carry its row past the budget. With `"pr"` out of the run, `"cache"` and `"variable"` each stand alone, and every `:` stays flush against its key.
+'''

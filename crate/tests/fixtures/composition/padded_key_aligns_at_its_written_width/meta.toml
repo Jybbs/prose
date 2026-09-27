@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Padded Key Aligns at Its Written Width Without `strip-stranded-padding`"
+
+description = '''
+The key `( "pp", "qq" )` carries a space inside each parenthesis, and with [[strip-stranded-padding]] off nothing removes them. **[[align-colons]] measures the key at the 14 columns it is written in**, so every `:` in `MUTATIONS` lands on one column rather than the key's `:` standing two columns past the others.
+'''

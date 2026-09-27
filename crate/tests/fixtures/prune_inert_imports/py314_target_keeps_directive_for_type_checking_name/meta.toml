@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A 3.14 Target Keeps the Directive for a Name Imported Only Under `TYPE_CHECKING`"
+
+description = '''
+`target-version = "3.14"` is set, and `trace_file` is annotated with `IO`, which is imported only under `if TYPE_CHECKING:`. **`from __future__ import annotations` stays**, because `IO` is still unbound once the module has run, so reading the module's annotations without the directive raises `NameError`. With the directive, the annotation stays a string and the read succeeds.
+'''

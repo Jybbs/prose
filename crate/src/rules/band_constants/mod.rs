@@ -43,6 +43,8 @@ impl BandConstants {
 
     pub(crate) const PRESERVES_BINDINGS: bool = false;
 
+    pub(crate) const PRESERVES_TREE: bool = false;
+
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.band_constants;
         Self {
@@ -147,13 +149,17 @@ mod tests {
     }
 
     #[rstest]
-    #[case::hoist_joins_the_runs("from p import a\nX = 1\nfrom q import b\n\nprint(a, b, X)\n", Some((vec![0, 2], 0)))]
-    #[case::sort_reseats_the_head("from .p import a\nfrom ..q import b\n", Some((vec![0, 1], 1)))]
-    #[case::pinned_anchor_splits_the_band("from p import a\nprint(a)\nfrom q import b\n", Some((vec![0], 0)))]
+    #[case::hoist_joins_the_runs("from p import a\nX = 1\nfrom q import b\n\nprint(a, b, X)\n", Some((vec![0, 2], 0, 0)))]
+    #[case::sort_reseats_the_head("from .p import a\nfrom ..q import b\n", Some((vec![0, 1], 0, 1)))]
+    #[case::group_partition_heads_the_band(
+        "from p import a\n# c\nimport q.r\nimport q as s\n",
+        Some((vec![0, 1, 2], 1, 2)),
+    )]
+    #[case::pinned_anchor_splits_the_band("from p import a\nprint(a)\nfrom q import b\n", Some((vec![0], 0, 0)))]
     #[case::shared_line_declines("from p import a; from q import b\n", None)]
     fn forecast_reads_the_band_the_hoist_seats(
         #[case] src: &str,
-        #[case] first: Option<(Vec<usize>, usize)>,
+        #[case] first: Option<(Vec<usize>, usize, usize)>,
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
@@ -164,7 +170,7 @@ mod tests {
                     .imports
                     .into_iter()
                     .next()
-                    .map(|band| (band.slots, band.sorted_head))
+                    .map(|band| (band.slots, band.head, band.sorted_head))
             }),
             first,
         );

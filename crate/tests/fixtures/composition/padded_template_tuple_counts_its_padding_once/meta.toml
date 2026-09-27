@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Padding Inside a `%` Tuple Counts Once Against the f-string"
+
+description = '''
+`( type(exc), exc )` carries padding `strip-stranded-padding` removes, and the f-string `prefer-fstring` writes replaces that tuple whole. **At a 46-column budget the one-row entry reads one column over with each space counted once, so the value hangs after `:`**, where counting the padding twice would rejoin a row the conversion then leaves too wide to take.
+'''

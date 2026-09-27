@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/disqualified_arm_sheds_stale_padding/input.py
+---
+match credential.kind:
+    case "apprenticeship":
+        icon = "wrench"
+        notes.append("hands-on")
+    case "certification" : icon = "scroll"
+    case "program"       : icon = "cap"

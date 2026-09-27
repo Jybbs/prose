@@ -113,7 +113,7 @@ pub(crate) struct SectionEntry<'a> {
 
 `entry_carrying_sections` returns one `Section` per section whose body carries at least one entry-shaped line, each carrying the heading that opened it beside its entries. Each `SectionEntry` carries the parameter name, the source offset of the `:` on its head line, the byte range from the entry's head line through every line attached to it, and the range of the parenthesized type where the head carries one. `entry_runs` returns those same entries plus every contiguous run of type-bearing heads standing at the body indent outside any section, so [[colon-targets]] aligns the wider set from `entry_runs` and [[alphabetize-siblings]] sorts the narrower set from `entry_carrying_sections`. `SectionEntry::column_anchor` narrows a type group to the ones written in the Google `name (type)` form, since a `(` flush against its name documents a call and opens no type column, leaving that entry to join a run on its `:` alone. The pass drops a section whose body is prose only, since no line in it reads as an entry, and drops any docstring whose body is single-line or not triple-quoted. Continuation attachment reuses the fence and list-indent state the leaf classifiers expose, so a section entry whose description embeds an indented code block keeps the block attached through any downstream reorder.
 
-## How `alphabetize-siblings` Composes
+## Composing With `alphabetize-siblings`
 
 [[alphabetize-siblings]] reads the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule reads `entry_carrying_sections` and reorders the entries within each section, passing the result through the shared `reorder_text` from [[orderer]], so the no-op case allocates nothing. An entry naming a parameter of the documented signature takes that parameter's position as the rule leaves the signature (*source order for the positional run, sorted for the keyword-only block*), and every other entry sinks below the mirrored ones, alphabetized by name. Module and class docstrings carry no signature, so their sections alphabetize throughout. Each section emits one [[edit]] when its entries are out of order, with the edit's range covering the section's entries and leaving the heading and the trailing blank line as written.
 
@@ -121,15 +121,19 @@ Section headings, blank lines between entries, and verbatim continuations *(inde
 
 The facet itself lives in the `[rules]` table, carried by `alphabetize-siblings` as `sort-docstring-entries` and defaulting to `true`. Setting `alphabetize-siblings = { sort-docstring-entries = false }` keeps the AST-level sorts running and turns off the docstring-entry reorder, for a project that orders its entries to follow a narrative rather than the signature.
 
-## How `wrap-docstrings` Composes
+## Composing With `align-colons`
+
+[[align-colons]] reads `entry_runs` through [[colon-targets]], which builds a `:` row for every entry and a `(` row for every entry written in the `name (type)` form, and the rule pads both columns in one pass. The rule's `align-docstring-entries` facet defaults to `true`, as `sort-docstring-entries` does on [[alphabetize-siblings]]. Setting it to `false` resolves both columns as `max-shift = 0` would while the dict, annotation, and parameter contexts keep aligning, and the [[align-colons]] page covers when a project turns the facet off.
+
+## Composing With `wrap-docstrings`
 
 [[wrap-docstrings]] reads the walker and the body helper together. For each docstring, the rule extracts the body, splits it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part to its budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or one budget for both when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.
 
-## How `restated-types` Composes
+## Composing With `restated-types`
 
 [[restated-types]] reads `documented_definitions` and the entry iterator together. For each definition carrying a docstring, the rule reads every entry-bearing section, resolves the parameter-documenting headings against that definition's parameters and `Attributes:` against its class body's annotated fields, and reports each entry whose `type_group` names a type the code already declares. The report points at the type group alone rather than at the whole entry, and the rule emits no [[edit]], since choosing between two disagreeing types needs a reader.
 
-## How Multi-Line and Single-Line Rules Compose
+## Composing the Multi-Line and Single-Line Rules
 
 [[frame-docstrings]] requotes each docstring to the `"""` frame whatever quotes the source used, and puts a multi-line opener and closer on their own lines. [[expand-docstrings]] rewrites a docstring that fits on one line into the canonical multi-line form. Both rules read the literal's source position and emit edits that move the quotes without touching the body text.
 
@@ -158,6 +162,7 @@ A new docstring rule's `apply` body is one `rewrite_docstrings` call carrying it
 <template #related>
 
 - [[alphabetize-siblings]] orders the `name: description` entries within each Title-case-headed section, mirroring the documented signature's parameters.
+- [[align-colons]] pads the `:` and type columns of each entry run, reading the runs through [[colon-targets]].
 - [[wrap-docstrings]] wraps description prose and structured sections to their budgets.
 - [[frame-docstrings]] requotes to `"""` and puts a multi-line docstring's opener and closer on their own lines.
 - [[expand-docstrings]] rewrites a single-line docstring into the multi-line form.

@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/trailing_comment_counts_toward_budget/input.py
+---
+def mutates(args):
+    match args:
+        case "tag":
+            return tag_of(args.release_name, args.channel)  # pins the release channel
+        case "other": return 0
+    return False

@@ -29,8 +29,8 @@ vi.mock('vitepress', async importOriginal => ({
   useData: () => ({ frontmatter })
 }))
 
-import FixtureConvergence   from '../../theme/components/fixtures/FixtureConvergence.vue'
-import { expectAccessible } from '../axe'
+import FixtureConvergence    from '../../theme/components/fixtures/FixtureConvergence.vue'
+import { rendersAccessibly } from '../axe'
 
 const mountCase = (name: string) =>
   mount(FixtureConvergence, { props: { case: name, rule: 'band_constants' } })
@@ -54,7 +54,5 @@ describe('FixtureConvergence', () => {
     expect(w.text()).not.toContain('Run 2')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountCase('hoists_a_constant').html())
-  })
+  rendersAccessibly(() => mountCase('hoists_a_constant').html())
 })

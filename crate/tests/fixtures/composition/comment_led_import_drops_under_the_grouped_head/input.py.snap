@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/comment_led_import_drops_under_the_grouped_head/input.py
+---
+# loaded for its side effect
+import abc
+from functools import partial
+
+
+def run():
+    return abc, partial

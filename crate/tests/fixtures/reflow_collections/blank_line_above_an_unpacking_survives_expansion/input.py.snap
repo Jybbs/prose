@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/blank_line_above_an_unpacking_survives_expansion/input.py
+---
+CONFIG = {
+    "alpha": 1,
+    "beta": 2,
+
+    **DEFAULTS,
+    "gamma": [
+        aaaaaaaaaaaa, bbbbbbbbbbbbbbb, cccccccccccccc,
+        dddddddddddddddd, eeeeeeeeeeeeeeeee
+    ]
+}

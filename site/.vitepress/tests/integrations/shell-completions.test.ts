@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import InlineProse          from '../../theme/components/base/InlineProse.vue'
-import ShellCompletions     from '../../theme/components/integrations/ShellCompletions.vue'
-import { expectAccessible } from '../axe'
+import InlineProse           from '../../theme/components/base/InlineProse.vue'
+import ShellCompletions      from '../../theme/components/integrations/ShellCompletions.vue'
+import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/integrations/shell-completions.data', () => ({
   data: [
@@ -50,7 +50,5 @@ describe('ShellCompletions', () => {
     expect(w.get('.shell-card-modal .kicker').text()).toBe('completions fish')
   })
 
-  it('renders with no axe violations', async () => {
-    await expectAccessible(mountCard().html())
-  })
+  rendersAccessibly(() => mountCard().html())
 })

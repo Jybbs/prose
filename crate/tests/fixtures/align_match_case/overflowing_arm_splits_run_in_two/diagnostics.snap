@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/align_match_case/overflowing_arm_splits_run_in_two/input.py
+---
+align-match-case@272..338
+align-match-case@65..130

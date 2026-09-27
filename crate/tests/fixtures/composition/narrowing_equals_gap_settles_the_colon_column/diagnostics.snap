@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/narrowing_equals_gap_settles_the_colon_column/input.py
+---
+align-colons@3..14
+align-equals@19..28

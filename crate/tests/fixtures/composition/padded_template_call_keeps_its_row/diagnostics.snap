@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_template_call_keeps_its_row/input.py
+---
+prefer-fstring@78..106
+strip-stranded-padding@104..105
+strip-stranded-padding@89..90

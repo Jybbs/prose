@@ -28,6 +28,7 @@ use crate::{
         equal_targets,
         inline::display_width,
         one_row,
+        padding::Stranding,
         range::{covers, overlaps},
         scope::sub_bodies,
         slots::item_holding,
@@ -69,6 +70,17 @@ pub(crate) struct Columns {
 }
 
 impl Columns {
+    /// Builds an empty table, used when the alignment rule is off and no
+    /// column is reserved.
+    fn unreserved() -> Self {
+        Self {
+            buffer: None,
+            runs: Vec::new(),
+            shifts: Vec::new(),
+            widenings: Vec::new(),
+        }
+    }
+
     /// Each run as its scope, its shifts, and its widenings, ascending,
     /// the form two tables compare in whatever order their runs were
     /// numbered.
@@ -109,17 +121,6 @@ impl Columns {
         item_holding(&self.shifts, offset)
             .filter(|shift| shift.span.contains(offset))
             .map_or(0, |shift| shift.columns)
-    }
-
-    /// The table an alignment rule that is off leaves, reserving no
-    /// column.
-    fn unreserved() -> Self {
-        Self {
-            buffer: None,
-            runs: Vec::new(),
-            shifts: Vec::new(),
-            widenings: Vec::new(),
-        }
     }
 
     /// The column `offset` lands at, `fallback` moved by the shift the
@@ -264,26 +265,31 @@ impl Reform {
 /// The alignment a layout rule measures against, resolved from
 /// configuration once and carried as a value. `settings` is `None`
 /// where the alignment rule is off, leaving every column unreserved,
-/// and `one_row` names the terms a value joins onto its row under.
+/// `one_row` names the terms a value joins onto its row under, and
+/// `stranding` the padding rule whose deletions each row settles past.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Reservations {
     one_row: one_row::Settings<'static>,
     rule: RuleId,
     settings: Option<aligner::Settings>,
+    stranding: Stranding,
 }
 
 impl Reservations {
     /// The reservation for `rule` running under `settings`, each value
-    /// joined under `one_row`.
+    /// joined under `one_row` and each row settled past what
+    /// `stranding` deletes.
     pub(crate) fn new(
         rule: RuleId,
         settings: Option<aligner::Settings>,
         one_row: one_row::Settings<'static>,
+        stranding: Stranding,
     ) -> Self {
         Self {
             one_row,
             rule,
             settings,
+            stranding,
         }
     }
 
@@ -297,6 +303,7 @@ impl Reservations {
             runs: Vec::new(),
             source,
             stmt: source.module_range(),
+            stranding: self.stranding,
             values: FxHashMap::default(),
         };
         visitor.visit_body(&source.ast().body);
@@ -609,7 +616,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        config::{AlignmentConfig, Config},
+        config::{Config, MaxShift},
         testing::parse,
     };
 
@@ -620,6 +627,7 @@ mod tests {
             RuleId::from("align-equals"),
             settings,
             one_row::Settings::from(&Config::default()),
+            Config::default().stranded_padding(),
         )
         .columns(&parse("a = 1\n"))
     }
@@ -689,9 +697,9 @@ mod tests {
         #[case] name: usize,
         #[case] expected: usize,
     ) {
-        let settings = aligner::Settings::from(&AlignmentConfig::default());
         assert_eq!(
-            columns_under(Some(settings)).keyword_value_column(indent, name),
+            columns_under(Some(aligner::Settings::aligned(MaxShift::default())))
+                .keyword_value_column(indent, name),
             Some(expected),
         );
     }

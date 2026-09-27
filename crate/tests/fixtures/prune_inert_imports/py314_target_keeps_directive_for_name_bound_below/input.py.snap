@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/py314_target_keeps_directive_for_name_bound_below/input.py
+---
+from __future__ import annotations
+
+import inspect
+
+
+def convert(value: Alias) -> None:
+    return None
+
+
+SIGNATURE = inspect.signature(convert)
+
+Alias = int
