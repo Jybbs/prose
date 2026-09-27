@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_leaves_raises_as_written/input.py
+---
+class Stations:  # prose: keep
+    """
+    Loads the station table.
+
+    Attributes:
+        station: The station identifier.
+        name: The station name.
+
+    Raises:
+        ValueError: The table holds no station.
+        KeyError: A station repeats.
+    """
+
+    station: str
+    name: str

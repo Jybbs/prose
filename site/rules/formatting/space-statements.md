@@ -19,7 +19,7 @@ A module-level `def` or `class` takes two blank lines before it and two after, w
 
 Inside a function body the rule leaves the blank lines alone, since the in-body rhythm stays a per-author choice.
 
-An own-line comment block that reads as a description of the statement below it binds tight against that statement, with no blank line between them whether or not the author left one, so the reordering rules move the comment with the statement it heads. A block that anchors in place instead of binding keeps one blank line below it, so it reads as a divider, and the canonical gap above is measured from the topmost comment in the block either way.
+An own-line comment block that reads as a description of the statement below it binds tight against that statement, with no blank line between them whether or not the author left one, so the reordering rules move the comment with the statement it heads. A block that anchors in place instead of binding keeps one blank line below it, so it reads as a divider, and the canonical gap above is measured from the topmost comment in the block either way. A comment indented deeper than the statement below it closes the body above instead, so the canonical gap opens below that comment rather than above it.
 
 A block counts as a divider where any of its lines carries one of these:
 

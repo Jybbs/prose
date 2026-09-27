@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_under_a_pair_opened_above_hangs_from_that_row/input.py
+---
+reflow-calls@29..66
+stack-method-chains@49..57

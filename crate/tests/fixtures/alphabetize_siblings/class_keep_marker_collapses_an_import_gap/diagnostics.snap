@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/class_keep_marker_collapses_an_import_gap/input.py
+---
+alphabetize-siblings@43..44

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment-Led Import Drops Once Grouping Would Move Its Comment"
+
+description = '''
+`import readline` is unread and carries a comment, and `from functools import partial` sits above it. **`import readline` drops in the first pass and its comment lands on `import abc`**, because `group-imports` puts the bare imports first and `band-constants` then moves the comment heading them onto `import abc`, the import it sorts first.
+'''
