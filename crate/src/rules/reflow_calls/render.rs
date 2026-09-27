@@ -370,6 +370,19 @@ impl<'a> Exploder<'a> {
         }
     }
 
+    /// Explodes `call`'s argument list where a trigger fires from the
+    /// column its `(` reaches, and otherwise walks each argument.
+    pub(super) fn lay_out_arguments(&mut self, call: &'a ExprCall) {
+        let column = self.open_paren_column(call);
+        // The rendered list already carries every nested reshape, so the
+        // arguments go unwalked.
+        if let Some(text) = self.explode_args(call, column) {
+            self.replace(call.arguments.range(), text);
+            return;
+        }
+        self.visit_arguments(&call.arguments);
+    }
+
     /// Replaces the text over `range` with `text`, narrowed to the span
     /// that differs, keeping the edits sorted by start.
     pub(super) fn replace(&mut self, range: TextRange, text: String) {

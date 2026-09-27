@@ -22,7 +22,7 @@ use std::cell::{OnceCell, RefCell};
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Expr, InterpolatedStringElement, Stmt,
+    Expr, ExprCall, InterpolatedStringElement, Stmt,
     visitor::source_order::{self, SourceOrderVisitor},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -88,11 +88,42 @@ impl<'a> LazySeating<'a> {
         self.reflow_calls.forecasts(self.source, range) && self.seating().converts(range)
     }
 
+    /// True where `range` sits inside an interpolation a walk over the
+    /// argument list of `call` leaves for `prefer-fstring` once the link
+    /// closing with `call`, spanning `region`, lands at `seat`, the walk
+    /// running only where a forecast rewrite covers `range`.
+    pub(crate) fn converts_landed(
+        &self,
+        range: TextRange,
+        call: &ExprCall,
+        region: TextRange,
+        seat: Seat,
+    ) -> bool {
+        self.reflow_calls.forecasts(self.source, range)
+            && self
+                .reflow_calls
+                .recorded(self.source, Reach::Link { call, region, seat })
+                .converts(range)
+    }
+
     /// The seat the walk records for the call or attribute access
     /// spanning `range`, `None` where it records none.
     pub(crate) fn seat(&self, range: TextRange) -> Option<Seat> {
         self.seating().seat(range)
     }
+}
+
+/// What one walk spans, the whole module or the argument list of `call`
+/// once the chain link closing with it, spanning `region`, lands at
+/// `seat`.
+#[derive(Clone, Copy)]
+enum Reach<'a> {
+    Module,
+    Link {
+        call: &'a ExprCall,
+        region: TextRange,
+        seat: Seat,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -123,10 +154,10 @@ impl ReflowCalls {
         }
     }
 
-    /// Walks `source` and returns the edits that explode or rejoin its
-    /// argument lists, recording what it reaches into `seating` when one
-    /// is given.
-    fn walk(&self, source: &Source, seating: Option<&RefCell<Seating>>) -> Vec<Edit> {
+    /// Walks what `reach` spans in `source` and returns the edits that
+    /// explode or rejoin its argument lists, recording what it reaches
+    /// into `seating` when one is given.
+    fn walk(&self, source: &Source, reach: Reach, seating: Option<&RefCell<Seating>>) -> Vec<Edit> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
@@ -153,8 +184,24 @@ impl ReflowCalls {
             tail: 0,
             targets: &targets,
         };
-        exploder.visit_body(&source.ast().body);
-        exploder.edits
+        match reach {
+            Reach::Module => {
+                exploder.visit_body(&source.ast().body);
+                exploder.edits
+            }
+            Reach::Link { call, region, seat } => {
+                let mut landed = Exploder {
+                    indent: Some(seat.indent),
+                    line_shift: seat.line_shift,
+                    origin_column: seat.column,
+                    region,
+                    tail: seat.tail,
+                    ..exploder
+                };
+                landed.lay_out_arguments(call);
+                landed.edits
+            }
+        }
     }
 
     /// True where a rewrite `prefer-fstring` forecasts over `source`
@@ -169,15 +216,21 @@ impl ReflowCalls {
     /// `reflow-collections` expands, an interpolation `prefer-fstring`
     /// converts, or a replacement field, where the walk does not reach.
     pub(crate) fn seating(&self, source: &Source) -> Seating {
+        self.recorded(source, Reach::Module)
+    }
+
+    /// The [`Seating`] this rule's walk over what `reach` spans in
+    /// `source` records.
+    fn recorded(&self, source: &Source, reach: Reach) -> Seating {
         let seating = RefCell::default();
-        self.walk(source, Some(&seating));
+        self.walk(source, reach, Some(&seating));
         seating.into_inner()
     }
 }
 
 impl Rule for ReflowCalls {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(self.walk(source, None))
+        singleton_groups(self.walk(source, Reach::Module, None))
     }
 
     fn id(&self) -> RuleId {
@@ -376,14 +429,7 @@ impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
         // The callee settles first, so the argument list measures against
         // the row a reshaped receiver leaves it on.
         self.visit_expr(&call.func);
-        let column = self.open_paren_column(call);
-        // The rendered list already carries every nested reshape, so the
-        // arguments go unwalked.
-        if let Some(text) = self.explode_args(call, column) {
-            self.replace(call.arguments.range(), text);
-            return;
-        }
-        self.visit_arguments(&call.arguments);
+        self.lay_out_arguments(call);
     }
 
     /// Leaves a replacement field unwalked.

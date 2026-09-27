@@ -167,6 +167,23 @@ impl<'a> Breaker<'a> {
         Some(text)
     }
 
+    /// True where `expr`, inside `chain`'s segment at `segment` written
+    /// from `seat`, sits in an interpolation `prefer-fstring` converts. A
+    /// link reads the `reflow_calls` walk over its argument list once the
+    /// link lands at `seat`, and the receiver reads the walk over the
+    /// source as written.
+    fn converts(&self, chain: &Chain, segment: usize, expr: &Expr, seat: Seat) -> bool {
+        match segment.checked_sub(1) {
+            None => self.seating.converts(expr.range()),
+            Some(link) => self.seating.converts_landed(
+                expr.range(),
+                chain.calls[link],
+                chain.links[link],
+                seat,
+            ),
+        }
+    }
+
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
@@ -270,7 +287,7 @@ impl<'a> Breaker<'a> {
             };
             match self
                 .broken(expr, &nested, nested_range, nested_seat)
-                .filter(|_| !seated && !self.seating.converts(expr.range()))
+                .filter(|_| !seated && !self.converts(chain, segment, expr, seat))
             {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),

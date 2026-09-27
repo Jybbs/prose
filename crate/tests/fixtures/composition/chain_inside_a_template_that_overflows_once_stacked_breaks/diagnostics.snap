@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_inside_a_template_that_overflows_once_stacked_breaks/input.py
+---
+reflow-calls@20..69
+stack-method-chains@7..90
