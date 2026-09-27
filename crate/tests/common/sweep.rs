@@ -19,7 +19,7 @@ use std::{
 use ignore::WalkBuilder;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use ruff_python_ast::PySourceType;
+use ruff_python_ast::{PySourceType, PythonVersion};
 
 /// The wall clock one probe may take before a sweep treats its run as
 /// non-terminating.
@@ -27,11 +27,23 @@ const BUDGET: Duration = Duration::from_mins(1);
 
 /// The environment variable aiming a sweep at a directory other than
 /// the fixture tree.
-pub(crate) const CORPUS: &str = "PROSE_SETTLE_CORPUS";
+const CORPUS: &str = "PROSE_SETTLE_CORPUS";
 
 /// The probes reading right now, keyed by an opening order the watchdog
 /// reads back.
 static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMap::new());
+
+/// The `target-version` settings a sweep covers absent [`TARGETS_VAR`],
+/// the shipped default of none beside the newest version the parser
+/// models, which sits at or above every rule's version floor.
+pub(crate) const TARGETS: &[Option<PythonVersion>] = &[None, Some(PythonVersion::latest())];
+
+/// The environment variable naming the `target-version` settings a sweep
+/// covers, [`UNSET`] standing for the shipped default.
+const TARGETS_VAR: &str = "PROSE_SETTLE_TARGETS";
+
+/// The [`TARGETS_VAR`] entry naming an unset `target-version`.
+const UNSET: &str = "unset";
 
 /// How many probes this run has verified against their reference
 /// readings.
@@ -110,15 +122,6 @@ pub(crate) fn pointed_corpus() -> Option<PathBuf> {
     setting(CORPUS).map(PathBuf::from)
 }
 
-/// Prints how many probes were verified, `what` naming them, when any
-/// were.
-pub(crate) fn report_verified(what: &str) {
-    let verified = VERIFIED.load(Ordering::Relaxed);
-    if verified > 0 {
-        eprintln!("verified {verified} {what}");
-    }
-}
-
 /// The Python sources under `root`, covering the `.py`, `.pyw`, and `.pyi`
 /// files the walker formats and leaving notebooks to the surface that reads
 /// a `SourceMap`. The walk carries no standard filter, so a hidden directory
@@ -133,6 +136,32 @@ pub(crate) fn python_files(root: &Path) -> impl Iterator<Item = PathBuf> {
         .filter(|path| {
             PySourceType::try_from_path(path).is_some_and(PySourceType::is_py_file_or_stub)
         })
+}
+
+/// Prints how many probes were verified, `what` naming them, when any
+/// were.
+pub(crate) fn report_verified(what: &str) {
+    let verified = VERIFIED.load(Ordering::Relaxed);
+    if verified > 0 {
+        eprintln!("verified {verified} {what}");
+    }
+}
+
+/// The command sweeping `path` alone through the `test` binary at
+/// `target` and `width`, `narrowing` naming any further setting ahead of
+/// them.
+pub(crate) fn repro_command(
+    test: &str,
+    path: &Path,
+    narrowing: &str,
+    target: Option<PythonVersion>,
+    width: usize,
+) -> String {
+    format!(
+        "{CORPUS}={} {narrowing}{TARGETS_VAR}={} {WIDTHS_VAR}={width} cargo test --test {test}",
+        path.display(),
+        target_name(target),
+    )
 }
 
 /// The value `var` carries, `None` where it is unset or blank.
@@ -152,6 +181,29 @@ pub(crate) fn swept<F: Absorbing>(
             held.absorb(next);
             held
         })
+}
+
+/// The [`TARGETS_VAR`] entry naming `target`, which a report and a
+/// reproduction command both print.
+pub(crate) fn target_name(target: Option<PythonVersion>) -> String {
+    target.map_or_else(|| UNSET.to_owned(), |version| version.to_string())
+}
+
+/// The `target-version` a [`TARGETS_VAR`] entry names, [`UNSET`] reading
+/// as none.
+pub(crate) fn target_of(token: &str) -> Option<PythonVersion> {
+    (token != UNSET).then(|| {
+        token.parse().unwrap_or_else(|error| {
+            panic!("every `{TARGETS_VAR}` entry is `{UNSET}` or a version: {error}")
+        })
+    })
+}
+
+/// The `target-version` settings this run sweeps, [`TARGETS_VAR`]
+/// overriding `defaults` as a space-separated list of `major.minor`
+/// versions and [`UNSET`].
+pub(crate) fn targets_or(defaults: &[Option<PythonVersion>]) -> Vec<Option<PythonVersion>> {
+    env_list(TARGETS_VAR, defaults, target_of)
 }
 
 /// The clause a report carries for the files a sweep could not read,

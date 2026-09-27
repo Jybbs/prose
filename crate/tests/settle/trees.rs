@@ -3,8 +3,8 @@
 //! such a rule, pair runs included, whose output's `ComparableModModule`
 //! differs from its input's, and runs every such rule together in one
 //! pipeline held to the same comparison, a rejection there filing too.
-//! Over the fixture tree it also files a rule declaring `false` whose
-//! every rewrite keeps the tree.
+//! Over the fixture tree it also records whether each run of a rule
+//! declaring `false` changed the tree.
 
 use std::{iter::successors, ops::RangeInclusive};
 
@@ -170,9 +170,8 @@ fn statements(source: &Source) -> Vec<&Stmt> {
     walk.0
 }
 
-#[test]
-fn check_trees_files_a_joint_run_that_changes_the_tree() {
-    let mut probes = Probes::build(88);
+#[rstest]
+fn check_trees_files_a_joint_run_that_changes_the_tree(mut probes: Probes) {
     probes.joint = Some(subset(&Config::default(), &[rule("strip-none-return")]));
     let source = parsed("def f() -> None:\n    pass\n");
     let memo = Memo::new(&probes, source.clone());
@@ -203,6 +202,7 @@ fn check_trees_files_a_joint_run_that_changes_the_tree() {
 #[case::a_solo_run_of_an_unreported_rule("align-equals", 1, &[], true, 0, None)]
 #[case::a_changing_rule_off_the_fixture_tree("reflow-calls", 1, &["reflow-calls"], false, 0, None)]
 fn check_trees_files_a_run_in_the_sweep_that_reports_it(
+    mut probes: Probes,
     #[case] slug: &str,
     #[case] solo: usize,
     #[case] reported: &[&str],
@@ -210,7 +210,6 @@ fn check_trees_files_a_run_in_the_sweep_that_reports_it(
     #[case] reshaped: usize,
     #[case] changing: Option<bool>,
 ) {
-    let mut probes = Probes::build(88);
     probes.fixtures = fixtures;
     probes.joint = None;
     probes.reported = reported.iter().copied().map(rule).collect();
@@ -237,6 +236,7 @@ fn check_trees_files_a_run_in_the_sweep_that_reports_it(
 #[case::a_kept_tree_under_a_changing_rule("reflow-calls", "x=1\n", "x = 1\n", 0, Some(false))]
 #[case::a_changed_tree_under_a_changing_rule("reflow-calls", "x = 1\n", "x = 2\n", 0, Some(true))]
 fn check_trees_holds_each_run_to_its_rules_declaration(
+    mut probes: Probes,
     #[case] slug: &str,
     #[case] input: &str,
     #[case] output: &str,
@@ -244,7 +244,6 @@ fn check_trees_holds_each_run_to_its_rules_declaration(
     #[case] changing: Option<bool>,
 ) {
     let rule = rule(slug);
-    let mut probes = Probes::build(88);
     probes.fixtures = true;
     probes.reported = BTreeSet::from([rule]);
     let memo = rewriting(&probes, rule, input, output);
