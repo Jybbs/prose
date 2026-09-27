@@ -17,7 +17,7 @@
 use std::cell::OnceCell;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr};
+use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::FxHashMap;
 
@@ -31,8 +31,8 @@ use crate::{
         layout::item_indent,
         reserve,
         walk::{
-            Descent, ParentedCollector, ParentedProbe, walk_parented_arguments, walk_parented_expr,
-            walk_parented_exprs,
+            Interpolations, ParentedCollector, ParentedProbe, walk_parented_arguments,
+            walk_parented_expr, walk_parented_exprs,
         },
     },
     rules::{
@@ -47,7 +47,7 @@ mod spine;
 
 use spine::Chain;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,
@@ -75,10 +75,11 @@ impl StackMethodChains {
             reservations: config.equals_reservations(),
         }
     }
-}
 
-impl Rule for StackMethodChains {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+    /// Walks `source` for the break each over-long or over-count chain
+    /// needs, one group per chain, the walk [`Source::chain_breaks`]
+    /// holds.
+    pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let mut breaker = Breaker {
@@ -94,6 +95,12 @@ impl Rule for StackMethodChains {
         };
         walk_parented_exprs(source.ast(), &mut breaker);
         singleton_groups(breaker.edits)
+    }
+}
+
+impl Rule for StackMethodChains {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        source.chain_breaks(*self).into_owned()
     }
 
     fn id(&self) -> RuleId {
@@ -182,10 +189,13 @@ impl<'a> Breaker<'a> {
         segment: usize,
     ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
         let source = self.source;
-        let mut nested =
-            ParentedCollector::new(Descent::Over, Descent::Over, |expr: &'a Expr, parent| {
+        let mut nested = ParentedCollector::new(
+            Interpolations::Skip,
+            TraversalSignal::Skip,
+            |expr: &'a Expr, parent| {
                 outermost_chain(source, expr, parent).map(|chain| (expr, parent, chain))
-            });
+            },
+        );
         match segment.checked_sub(1) {
             None => walk_parented_expr(
                 chain.receiver,
@@ -284,26 +294,26 @@ impl<'a> Breaker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     fn probe(
         &mut self,
         expr: &'a Expr,
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         let range = self.source.paren_aware_range(expr.into(), parent);
         let Some(edit) = self
             .broken(expr, &chain, range, self.placed(expr, range, ancestors))
             .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         insert_edit(&mut self.edits, edit);
-        Descent::Over
+        TraversalSignal::Skip
     }
 }
 

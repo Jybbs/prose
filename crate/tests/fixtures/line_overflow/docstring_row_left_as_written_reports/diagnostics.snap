@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/line_overflow/docstring_row_left_as_written_reports/input.py
+---
+line-overflow@117..213
+wrap-docstrings@96..291

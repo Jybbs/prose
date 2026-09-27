@@ -32,7 +32,7 @@ Each move sits behind its own facet, so a project can switch one off without tou
 
 ### `merge-members`
 
-`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
+`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Each folded statement's line is removed together with the blank lines on whichever side of it holds fewer, or with those above it where it closes the file, as [[prune-inert-imports]] removes an import. Folded statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
 
 ### `split-multi-module`
 

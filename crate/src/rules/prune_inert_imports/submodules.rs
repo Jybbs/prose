@@ -11,7 +11,7 @@ use super::inventory::ImportNode;
 use crate::{
     primitives::{
         binding::{bare_import_bound_name, bare_import_path},
-        walk::{Descent, filter_map_over_exprs},
+        walk::{Interpolations, filter_map_over_exprs},
     },
     source::Source,
 };
@@ -53,7 +53,7 @@ fn submodule_reads(source: &Source) -> FxHashSet<String> {
     if packages.is_empty() {
         return FxHashSet::default();
     }
-    filter_map_over_exprs(body, Descent::Into, |expr| {
+    filter_map_over_exprs(body, Interpolations::Read, |expr| {
         if !expr.is_attribute_expr() {
             return None;
         }

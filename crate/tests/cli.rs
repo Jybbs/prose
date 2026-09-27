@@ -223,6 +223,20 @@ const UNPARSEABLE_CELL: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// A two-cell notebook whose first cell closes on an unread `import json`
+/// one blank row below `x = 1`, a name the module binds of its own.
+const UNREAD_CLOSING_CELL: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "\n", "import json"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["print(x)"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 fn assert_cache_hit_matches_miss(name: &str, source: &str) {
     let (_dir, path) = fixture(name, source);
     assert_warm_run_matches_cold(&[&path]);
@@ -757,6 +771,30 @@ fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
     assert_stderr_has(&assert, "build\tbindings\n");
     assert_stderr_has(&assert, "carry\tprune-inert-imports\tbindings\tdeclined\n");
     assert_stderr_has(&assert, "second\tnarrowed\tprune-inert-imports\n");
+}
+
+#[rstest]
+fn check_builds_each_table_line_overflow_shares_once(
+    #[values("chains", "expanded", "framed", "rewraps")] table: &str,
+) {
+    let (dir, path) = fixture(
+        "shared.py",
+        "def f():\n    \"\"\"Summary.\n\n    Body.\n    \"\"\"\n    return items.filter(a).map(b).sort()\n",
+    );
+
+    let assert = prose()
+        .env("PROSE_CARRY_TRACE", "1")
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .current_dir(dir.path())
+        .assert();
+
+    assert_eq!(
+        stderr_utf8(&assert)
+            .matches(&format!("build\t{table}\n"))
+            .count(),
+        1,
+    );
 }
 
 #[test]
@@ -1537,6 +1575,18 @@ fn notebook_discovered_in_a_directory_walk() {
 #[test]
 fn notebook_empty_is_a_clean_no_op() {
     run_fixture("nb.ipynb", EMPTY, &["format", "--no-cache"]).success();
+}
+
+#[test]
+fn notebook_format_ends_a_cell_on_the_row_above_its_dropped_import() {
+    let (assert, after) =
+        rewrite_fixture("nb.ipynb", UNREAD_CLOSING_CELL, &["format", "--no-cache"]);
+    assert.success();
+
+    assert_eq!(
+        json(&after)["cells"][0]["source"],
+        serde_json::json!(["x = 1"])
+    );
 }
 
 #[test]

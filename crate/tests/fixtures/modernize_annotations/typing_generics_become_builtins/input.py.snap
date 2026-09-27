@@ -3,8 +3,6 @@ source: crate/tests/integration.rs
 expression: snapshot
 input_file: crate/tests/fixtures/modernize_annotations/typing_generics_become_builtins/input.py
 ---
-
-
 def sizes(
     a : list[int],
     b : dict[str, int],

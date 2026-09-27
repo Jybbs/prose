@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/drop_future_collapse_leading_blanks/input.py
 ---
-prune-inert-imports@0..35
+prune-inert-imports@0..36
 space-statements@47..51

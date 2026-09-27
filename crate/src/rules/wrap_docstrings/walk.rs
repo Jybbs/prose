@@ -65,7 +65,9 @@ impl<'a> Walker<'a> {
         self.region = Region::SectionEntry;
     }
 
-    pub(super) fn consume(&mut self, offset: TextSize, line: &'a str) {
+    /// Takes the next line of the body, returning the budget it wraps to,
+    /// or `None` where it passes through as written.
+    pub(super) fn consume(&mut self, offset: TextSize, line: &'a str) -> Option<usize> {
         let ScannedLine {
             indent,
             indent_chars,
@@ -76,16 +78,16 @@ impl<'a> Walker<'a> {
         match scan {
             LineScan::Fence | LineScan::ListMarker | LineScan::VerbatimOpen => {
                 self.flush_verbatim(line);
-                return;
+                return None;
             }
             LineScan::InFence | LineScan::ListContinuation | LineScan::Verbatim => {
                 self.emit_verbatim(line);
-                return;
+                return None;
             }
             LineScan::Blank => {
                 self.flush_paragraph();
                 self.out.push_str(self.newline);
-                return;
+                return None;
             }
             LineScan::Body => {}
         }
@@ -94,14 +96,14 @@ impl<'a> Walker<'a> {
         if indent_chars == body_indent && section_heading(trimmed).is_some() {
             self.flush_verbatim(line);
             self.region = Region::Section;
-            return;
+            return None;
         }
 
         let text = without_continuation(trimmed, self.raw).trim_end();
         if self.region == Region::SectionEntry {
             if self.is_entry_continuation(indent_chars, text) {
                 self.paragraph.lines.push(text);
-                return;
+                return Some(self.rule.description_width);
             }
             self.flush_paragraph();
         }
@@ -113,7 +115,7 @@ impl<'a> Walker<'a> {
         };
         if indent_chars > prose_indent {
             self.flush_verbatim(line);
-            return;
+            return None;
         }
 
         if self.region == Region::Section && indent_chars < prose_indent {
@@ -123,12 +125,16 @@ impl<'a> Walker<'a> {
         match self.region {
             Region::Description if self.paragraph.lines.is_empty() && typed_entry_head(text) => {
                 self.flush_verbatim(line);
+                None
             }
-            Region::Description => self.buffer_description(indent, text),
+            Region::Description => {
+                self.buffer_description(indent, text);
+                Some(self.rule.description_width)
+            }
             Region::Section => {
                 if let Some(head) = sibling_entry_head(indent_chars, prose_indent, text) {
                     self.start_entry(indent, indent_chars, text, head.desc_start, offset);
-                    return;
+                    return Some(self.rule.description_width);
                 }
                 // Section prose wraps one line at a time with no
                 // paragraph rejoin, under the first-fit algorithm, whose
@@ -138,6 +144,7 @@ impl<'a> Walker<'a> {
                 for piece in textwrap::wrap(&collapsed([text]), opts) {
                     self.emit_verbatim(&piece);
                 }
+                Some(self.rule.section_width)
             }
             Region::SectionEntry => unreachable!("entries handled above"),
         }

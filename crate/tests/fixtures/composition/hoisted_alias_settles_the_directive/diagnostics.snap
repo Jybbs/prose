@@ -4,4 +4,4 @@ expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/hoisted_alias_settles_the_directive/input.py
 ---
 band-constants@36..103
-prune-inert-imports@0..35
+prune-inert-imports@0..37

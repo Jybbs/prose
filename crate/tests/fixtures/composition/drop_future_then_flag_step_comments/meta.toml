@@ -3,5 +3,5 @@ previewable = false
 title       = "The Future Import Drops and the Step Reports Follow Their Comments"
 
 description = '''
-`process` narrates its steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, and the module opens with `from __future__ import annotations`. `prune-inert-imports` removes the directive, and `step-narration` reports both comments and rewrites nothing, **each finding landing on the comment's row in the output** after the removal shifts the file up by one line.
+`process` narrates its steps with `# 1. Filter empties.` and `# 2. Sort ascending.`, and the module opens with `from __future__ import annotations` above two blank lines. `prune-inert-imports` removes the directive together with those blank lines, shifting the file up by three lines, and `step-narration` reports both comments without rewriting them, **each finding landing on the comment's row in the output**.
 '''

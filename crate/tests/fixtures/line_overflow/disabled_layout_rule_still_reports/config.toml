@@ -1,0 +1,6 @@
+[rules]
+reflow-calls       = false
+reflow-collections = { explode = false }
+
+[harness]
+rules = ["reflow-collections"]

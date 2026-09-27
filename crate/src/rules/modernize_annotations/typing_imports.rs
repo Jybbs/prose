@@ -14,7 +14,7 @@ use crate::{
         },
         imports::Dropping,
     },
-    rules::reflow_imports::Folds,
+    rules::{modernize_annotations::ModernizeAnnotations, reflow_imports::Folds},
     source::Source,
 };
 
@@ -124,7 +124,7 @@ impl<'a> TypingImports<'a> {
             })
             .filter(|drop| !drop.dropped.is_empty())
             .collect();
-        folds.prune(source, &drops)
+        folds.prune(source, &drops, ModernizeAnnotations::SLUG)
     }
 }
 
@@ -144,8 +144,7 @@ impl TypingImport<'_> {
         if !self.bare {
             return unread(from_import_bound_name(alias));
         }
-        (alias.asname.is_some() || !alias.name.contains('.'))
-            && unread(bare_import_bound_name(alias))
+        bare_import_path(alias) == alias.name.as_str() && unread(bare_import_bound_name(alias))
     }
 }
 

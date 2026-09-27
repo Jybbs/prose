@@ -3,5 +3,5 @@ previewable = false
 title       = "The Literal Crossing the Budget Is the One Offered a Split"
 
 description = '''
-`LOOKUP`'s 75-column line carries two literals, `"key"` and its long value, and `"key"` sits well inside the 40-column budget. **The suggested split is placed on the value literal, the one that crosses the budget, rather than on the first literal in source order**, because splitting `"key"` would shorten nothing.
+The 73-column assignment to `LOOKUP["key"]` carries two literals, the `"key"` index and the long value, and `"key"` sits well inside the 40-column budget. **The suggested split is placed on the value literal, the one that crosses the budget, rather than on the first literal in source order**, because splitting `"key"` would shorten nothing.
 '''

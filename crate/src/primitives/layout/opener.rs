@@ -25,16 +25,14 @@ pub(crate) fn opener_width(
     start: TextSize,
 ) -> Option<usize> {
     let opener = match expr {
-        Expr::Call(call) => {
-            let arguments = call.arguments.range();
-            (one_row.closes() && holds_exactly(source.explodable_arguments(), arguments))
-                .then_some(arguments.start())?
-        }
+        Expr::Call(call) => one_row
+            .explodes_arguments(source, &call.arguments)
+            .then_some(call.arguments.start())?,
         _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
     };
     let through = TextRange::new(start, opener + TextSize::of('('));
     (!one_row.rewritten(opener) && source.same_line(start, through.end()))
-        .then(|| one_row.form_width(source, source.slice(through), through))
+        .then(|| one_row.slice_width(source, through))
 }
 
 #[cfg(test)]

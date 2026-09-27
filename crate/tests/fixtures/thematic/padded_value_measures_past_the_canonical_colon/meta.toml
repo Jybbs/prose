@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A One-Row Value Beside a Padded `:` Is Laid Out Past the Canonical Separator"
+
+description = '''
+`SORT_KEYS` pads every key to the `"cumulative"` column and writes each value as a tuple on one row, padded inside with spaces `strip-stranded-padding` removes. At the `46`-column budget the dict is laid out one entry per row, `"cumulative"` breaks its value across rows, and `align-colons` drops the padding before each `:`. **Each value written on one row is laid out at the column past its key and the canonical `": "`**, the column it is measured at and the one it sits at once the padding goes, so `"cumtime"` keeps its value on the key's row in the first run rather than hanging it below the `:` there and rejoining it in the second.
+'''
