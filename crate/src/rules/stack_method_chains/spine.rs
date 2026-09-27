@@ -48,11 +48,13 @@ impl<'a> Chain<'a> {
                     attribute
                 }
                 Expr::Call(call) => match call.func.as_ref() {
-                    Expr::Attribute(attribute)
-                        if !rewritten_across(rewrites, expr.start(), attribute.value.end()) =>
-                    {
+                    Expr::Attribute(attribute) => {
+                        let dot = dot_offset(source, attribute);
+                        if rewritten_across(rewrites, expr.start(), dot) {
+                            break;
+                        }
                         calls.push(call);
-                        dots.push(dot_offset(source, attribute));
+                        dots.push(dot);
                         attribute
                     }
                     _ => break,

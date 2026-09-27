@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/parenthesized_template_receiver_hangs_links_from_its_fstring/input.py
+---
+prefer-fstring@7..24
+stack-method-chains@8..47

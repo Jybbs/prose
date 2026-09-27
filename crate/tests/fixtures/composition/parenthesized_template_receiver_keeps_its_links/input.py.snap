@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/parenthesized_template_receiver_keeps_its_links/input.py
+---
+rows = (
+    f"{gamma.get(key).strip().lower()}:{delta}"
+    .upper()
+    .strip()
+    .lower()
+)
