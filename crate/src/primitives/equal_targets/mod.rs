@@ -76,6 +76,22 @@ pub(crate) fn assignment(
     }
 }
 
+/// Collects the line-adjacent assignment runs of `rows`, each statement
+/// paired with whether it opens on the line directly below the row before
+/// it. A multi-line statement closes its run unless `joins` names it, and
+/// a held one is transparent.
+pub(crate) fn assignment_groups<'a>(
+    source: &'a Source,
+    rule: RuleId,
+    rows: impl IntoIterator<Item = (&'a Stmt, bool)>,
+    stranding: Stranding,
+    joins: impl Fn(&'a Stmt) -> bool,
+) -> Vec<Vec<aligner::Member>> {
+    aligner::line_adjacent_groups(source, rows, rule, joins, |stmt| {
+        assignment(source, stmt, stranding)
+    })
+}
+
 /// Groups `call`'s keyword arguments into the runs `align_equals`
 /// aligns, empty for a single-line call whose keywords stay condensed. A
 /// positional argument, a `**` unpacking, or a keyword sharing its
@@ -140,19 +156,6 @@ pub(crate) fn parameter(
         with_default.into(),
         stranding,
     )
-}
-
-/// The line-adjacent assignment runs of `body`, where a multi-line
-/// statement closes its run and a held one is transparent.
-pub(crate) fn assignment_groups(
-    source: &Source,
-    rule: RuleId,
-    body: &[Stmt],
-    stranding: Stranding,
-) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |stmt| {
-        assignment(source, stmt, stranding)
-    })
 }
 
 /// The runs of `params`' annotated defaults, where a multi-line default

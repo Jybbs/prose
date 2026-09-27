@@ -17,6 +17,20 @@ use crate::primitives::{
 use super::Source;
 
 impl Source {
+    /// Pairs each of `items` with whether it opens on the source line
+    /// directly below the item before it.
+    pub(crate) fn adjacent_rows<'a, T: Ranged>(
+        &'a self,
+        items: &'a [T],
+    ) -> impl Iterator<Item = (&'a T, bool)> {
+        items.iter().enumerate().map(move |(index, item)| {
+            let below = index
+                .checked_sub(1)
+                .is_some_and(|prev| self.consecutive_lines(items[prev].end(), item.start()));
+            (item, below)
+        })
+    }
+
     /// Returns the zero-indexed character column of `offset` on its line.
     pub fn column_of(&self, offset: TextSize) -> usize {
         self.line_column(offset).column.to_zero_indexed()
@@ -213,6 +227,17 @@ mod tests {
             source.consecutive_lines(body[0].end(), body[1].start()),
             expected,
         );
+    }
+
+    #[test]
+    fn adjacent_rows_flag_each_item_opening_below_its_neighbor() {
+        let source = parse("a = 1\nb = 2\n\nc = 3\n");
+        let flags: Vec<bool> = source
+            .adjacent_rows(&source.ast().body)
+            .map(|(_, below)| below)
+            .collect();
+
+        assert_eq!(flags, vec![false, true, false]);
     }
 
     #[rstest]

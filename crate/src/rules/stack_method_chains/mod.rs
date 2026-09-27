@@ -70,7 +70,7 @@ impl StackMethodChains {
 impl Rule for StackMethodChains {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let mut breaker = Breaker {
             cap: self.max_links,
             code_line_length: self.code_line_length,

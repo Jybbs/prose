@@ -3,11 +3,13 @@
 //! `Some(key)` redistribute across the remaining slots in `key`
 //! order. Each item's extent comes from its `Ranged` impl, and
 //! interstitial text between adjacent items stays in source
-//! position.
+//! position. [`seated_rows`] reads back the rows an assembly seats and
+//! [`Seatings`] holds them per body, for a rule forecasting a reorder.
 
 use ruff_python_ast::token::TokenKind;
 use ruff_source_file::{LineRanges, UniversalNewlines};
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{inline::display_width, range::blocks_span, tokens::tokens_within},
@@ -19,7 +21,13 @@ mod blocks;
 mod permute;
 mod separated;
 
-pub(crate) use assemble::{Assembly, assemble_blocks, reorder_text};
+pub(crate) use assemble::{Assembly, assemble_blocks, reorder_text, seated_rows};
+
+/// The rows of each body a reorder rule seats other than as written,
+/// keyed by the start of the body's first statement, each slot in its
+/// seated order beside whether it opens on the line directly below the
+/// slot before it.
+pub(crate) type Seatings = FxHashMap<TextSize, Vec<(usize, bool)>>;
 pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
 pub(crate) use permute::{permute_full, permute_in_place, permute_runs};
 pub(crate) use separated::{assemble_separated, reorder_separated};

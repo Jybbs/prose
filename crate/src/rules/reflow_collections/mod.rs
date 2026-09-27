@@ -70,11 +70,7 @@ impl ReflowCollections {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
-            colons: config
-                .rules
-                .align_colons
-                .enabled
-                .then(|| config.colon_settings()),
+            colons: config.colon_forecast(),
             explode: rules.explode,
             fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
@@ -102,7 +98,7 @@ impl Rule for ReflowCollections {
             })
         });
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);

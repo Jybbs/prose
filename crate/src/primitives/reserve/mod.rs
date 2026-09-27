@@ -1,11 +1,11 @@
 //! Predicts the column an alignment rule shifts each assignment,
 //! keyword, and parameter-default value to, and reads that prediction
-//! back per offset through [`Columns`]. The runs are built the way
-//! `align_equals` builds them, a statement or keyword whose value spans
-//! lines closing its run and a held statement staying transparent, the
-//! widenings the rule's other groups seat on a line read the way the
-//! rule reads them, and a row whose value a later rule joins onto it
-//! measured at that joined width. No column is reserved for a value
+//! back per offset through [`Columns`]. Runs form the way `align_equals`
+//! forms them over the source the layout and reorder rules leave: a
+//! value those rules join onto one row extends its run, one they break
+//! open to join its column ends it, a body reads in the order a reorder
+//! rule seats it, and an annotated row shifts by the padding
+//! `align-colons` gives its `:`. No column is reserved for a value
 //! inside an f-string or t-string replacement field.
 
 use std::ops::Range;
@@ -21,25 +21,30 @@ use rustc_hash::FxHashMap;
 use rustc_hash::FxHashSet;
 
 use crate::{
+    config::Config,
     primitives::{
         aligner,
         call_keywords::module_call_params,
         edit::{forward_range, forward_start},
-        equal_targets,
-        inline::display_width,
-        one_row,
-        padding::Stranding,
+        equal_targets, one_row,
+        orderer::Seatings,
+        padding::{self, Stranding},
         range::{covers, overlaps},
         scope::sub_bodies,
         slots::item_holding,
         walk,
     },
-    rules::RuleId,
+    rules::{
+        RuleId, alphabetize_siblings::AlphabetizeSiblings, band_constants::BandConstants,
+        prefer_fstring::PreferFstring,
+    },
     source::Source,
 };
 
+mod measure;
 mod visit;
 
+use measure::Measure;
 use visit::{ReserveVisitor, widenings_over};
 
 /// The table a splice carries into the source it produced: the runs
@@ -265,97 +270,109 @@ impl Reform {
 /// The alignment a layout rule measures against, resolved from
 /// configuration once and carried as a value. `settings` is `None`
 /// where the alignment rule is off, leaving every column unreserved,
-/// `one_row` names the terms a value joins onto its row under, and
-/// `stranding` the padding rule whose deletions each row settles past.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// `one_row` names the terms a value joins onto its row or breaks open
+/// under, `fstrings` the rewrites each value is measured through,
+/// `stranding` the padding rule whose deletions each row settles past,
+/// `bands` and `sorts` the rules whose seating each body is read in, and
+/// `colons` the settings `align-colons` pads an annotated row's `:`
+/// under, each `None` where that rule is off.
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Reservations {
+    bands: Option<BandConstants>,
+    colons: Option<aligner::Settings>,
+    fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,
     rule: RuleId,
     settings: Option<aligner::Settings>,
+    sorts: Option<AlphabetizeSiblings>,
     stranding: Stranding,
 }
 
 impl Reservations {
-    /// The reservation for `rule` running under `settings`, each value
-    /// joined under `one_row` and each row settled past what
-    /// `stranding` deletes.
-    pub(crate) fn new(
-        rule: RuleId,
-        settings: Option<aligner::Settings>,
-        one_row: one_row::Settings<'static>,
-        stranding: Stranding,
-    ) -> Self {
+    /// Builds the reservation for `rule` running under `settings`, reading
+    /// every other term off `config`.
+    pub(crate) fn new(rule: RuleId, settings: Option<aligner::Settings>, config: &Config) -> Self {
         Self {
-            one_row,
+            bands: config.band_forecast(),
+            colons: config.colon_forecast(),
+            fstrings: config.fstrings(),
+            one_row: config.one_row_settings(),
             rule,
             settings,
-            stranding,
+            sorts: config
+                .alphabetize_siblings_enabled()
+                .then(|| AlphabetizeSiblings::from_config(config)),
+            stranding: config.stranded_padding(),
         }
     }
 
-    /// Walks `source` collecting the runs the reserved rule builds,
-    /// over the whole tree or, given `reform`, over the slices and
-    /// windows a carried table's completion names.
-    fn collected<'a>(&self, source: &'a Source, reform: Option<&'a Reform>) -> ReserveVisitor<'a> {
+    /// Walks `source` collecting the runs the reserved rule builds, over the
+    /// whole tree or, given `reform`, over the slices and windows a carried
+    /// table's completion names. The completion forms whole each body holding
+    /// one of the `seated` runs, which name their owner and row span, and each
+    /// statement whose value `measure` joins or breaks open extends its run.
+    fn collected<'a>(
+        &self,
+        source: &'a Source,
+        measure: &'a Measure<'a>,
+        reform: Option<&'a Reform>,
+        seated: &'a [(TextRange, TextRange)],
+    ) -> ReserveVisitor<'a> {
         let mut visitor = ReserveVisitor {
+            colons: Vec::new(),
+            measure,
             reform,
             rule: self.rule,
             runs: Vec::new(),
+            seated,
             source,
             stmt: source.module_range(),
             stranding: self.stranding,
             values: FxHashMap::default(),
+            whole: Vec::new(),
         };
         visitor.visit_body(&source.ast().body);
         visitor
     }
 
-    /// The table `carried` grows into once `visitor`'s runs form on top
-    /// of it: each run's scope, widening entries, and shifts, every
-    /// joined width read against the module's call targets.
+    /// Builds the table `carried` grows into once `visitor`'s runs form on
+    /// top of it, adding each run's scope, widening entries, and shifts, with
+    /// every joined and broken width read through `measure`. A statement run
+    /// cuts after each value a layout rule breaks open, per
+    /// [`aligner::breaking_columns`], each annotated row shifted by the
+    /// padding `align-colons` gives its `:`. Each colon run adds a scope
+    /// holding no shift, so a splice reaching one of its rows forms every
+    /// statement run it shifts afresh.
     fn formed(
-        self,
-        source: &Source,
+        &self,
         settings: aligner::Settings,
+        measure: &Measure,
         visitor: &ReserveVisitor,
         carried: Forwarded,
     ) -> Columns {
+        let source = measure.source;
         let Forwarded {
             mut runs,
             mut shifts,
             mut widenings,
-        } = carried;
+        } = carried.without(&visitor.whole);
         let base = runs.len();
         for (index, run) in visitor.runs.iter().enumerate() {
-            let span = run
-                .members
-                .first()
-                .zip(run.members.last())
-                .map_or(run.scope, |(first, last)| {
-                    TextRange::new(first.line_start, last.gap.end())
-                });
-            runs.push(Scope {
-                body: run.body,
-                span,
-                stmt: run.scope,
-            });
+            runs.push(Scope::of(run));
             let entries = aligner::widening_entries(source, settings, run.members.iter().copied());
             widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
         }
+        runs.extend(visitor.colons.iter().map(Scope::of));
         let seated =
             aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
-        let targets = module_call_params(source);
-        let one_row = self.one_row.against(&targets);
+        let colons = measure.colon_shifts(&visitor.colons, &seated);
         let place = |member: aligner::Member| {
             let start = member.rewritten_value_gap(source)?.end();
             Some((start, source.column_of(start)))
         };
-        let joined = |(start, column): (TextSize, usize)| {
+        let value = |(start, column): (TextSize, usize)| {
             let &(expr, parent) = visitor.values.get(&start)?;
-            let end = source.paren_aware_range(expr.into(), parent).end();
-            let tail = source.row_tail_width(end);
-            let form = one_row.rejoined(source, expr, parent, column, tail)?;
-            Some(column + display_width(&form) + tail)
+            Some((expr, parent, column))
         };
         for (index, run) in visitor.runs.iter().enumerate() {
             if run.candidate && !aligner::is_alignment_candidate(&run.members) {
@@ -363,9 +380,36 @@ impl Reservations {
             }
             let placed: Vec<Option<(TextSize, usize)>> =
                 run.members.iter().map(|&m| place(m)).collect();
-            let joined: Vec<Option<usize>> = placed.iter().map(|&at| joined(at?)).collect();
-            let columns =
-                aligner::operator_columns(source, &run.members, settings, &seated, &joined);
+            let values: Vec<_> = placed.iter().map(|&at| at.and_then(value)).collect();
+            let joined: Vec<Option<usize>> = values
+                .iter()
+                .map(|&found| {
+                    let (expr, parent, column) = found?;
+                    measure.joined(expr, parent, column, run.body)
+                })
+                .collect();
+            let columns = if run.body {
+                let statements: Vec<aligner::Statement> = values
+                    .iter()
+                    .zip(&run.members)
+                    .map(|(&found, member)| aligner::Statement {
+                        breaks: found.and_then(|(expr, parent, column)| {
+                            measure.breakable(expr, parent, column)
+                        }),
+                        ..colons.get(&member.line_start).copied().unwrap_or_default()
+                    })
+                    .collect();
+                aligner::breaking_columns(
+                    source,
+                    &run.members,
+                    settings,
+                    &seated,
+                    &joined,
+                    &statements,
+                )
+            } else {
+                aligner::operator_columns(source, &run.members, settings, &seated, &joined)
+            };
             shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
                 let (start, at) = placed?;
                 Some(Shift {
@@ -382,6 +426,30 @@ impl Reservations {
             shifts,
             widenings,
         }
+    }
+
+    /// Calls `read` with the [`Measure`] this reservation reads `source`'s
+    /// values under, each body the reorder rules seat other than as written
+    /// read in that seating.
+    fn measured<R>(&self, source: &Source, read: impl FnOnce(&Measure) -> R) -> R {
+        let targets = module_call_params(source);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
+        let seatings: Seatings = self
+            .bands
+            .iter()
+            .map(|bands| bands.seatings(source))
+            .chain(self.sorts.iter().map(|sorts| sorts.seatings(source)))
+            .flatten()
+            .collect();
+        read(&Measure {
+            colons: self.colons,
+            one_row: self.one_row.against(&targets).forecasting(&rewrites),
+            padding: &padding,
+            seatings: &seatings,
+            source,
+        })
     }
 
     /// What a splice over `held` carries of `carried`, the table over
@@ -436,6 +504,7 @@ impl Reservations {
             slots[run] = Some(forwarded.runs.len());
             forwarded.runs.push(Scope {
                 body: scope.body,
+                seated: scope.seated,
                 span: forward_range(scope.span, map)?,
                 stmt: slide_owner(scope.stmt)?,
             });
@@ -475,23 +544,34 @@ impl Reservations {
     /// lands at once the run is aligned. A value the run leaves where it
     /// sits maps to that same column, so a lookup is a no-op for a value
     /// the alignment does not move.
-    pub(crate) fn columns(self, source: &Source) -> Columns {
+    pub(crate) fn columns(&self, source: &Source) -> Columns {
         let Some(settings) = self.settings else {
             return Columns::unreserved();
         };
-        let visitor = self.collected(source, None);
-        self.formed(source, settings, &visitor, Forwarded::default())
+        self.measured(source, |measure| {
+            let visitor = self.collected(source, measure, None, &[]);
+            self.formed(settings, measure, &visitor, Forwarded::default())
+        })
     }
 
-    /// The table `carry` completes to over `source`, the text the
-    /// splice produced: the carried runs on top of the runs the
-    /// completion forms.
-    pub(crate) fn completed(self, source: &Source, carry: &Carry) -> Columns {
+    /// Builds the table `carry` completes to over `source`, the text the
+    /// splice produced, laying the carried runs, less those of each body the
+    /// completion forms whole, on top of the runs it forms.
+    pub(crate) fn completed(&self, source: &Source, carry: &Carry) -> Columns {
         let Some(settings) = self.settings else {
             return Columns::unreserved();
         };
-        let visitor = self.collected(source, Some(&carry.reform));
-        self.formed(source, settings, &visitor, carry.forwarded.clone())
+        let seated: Vec<(TextRange, TextRange)> = carry
+            .forwarded
+            .runs
+            .iter()
+            .filter(|scope| scope.body && scope.seated)
+            .map(|scope| (scope.stmt, scope.span))
+            .collect();
+        self.measured(source, |measure| {
+            let visitor = self.collected(source, measure, Some(&carry.reform), &seated);
+            self.formed(settings, measure, &visitor, carry.forwarded.clone())
+        })
     }
 
     /// The widening the reserved rule seats on each line, empty where
@@ -500,7 +580,13 @@ impl Reservations {
         let Some(settings) = self.settings else {
             return aligner::Widenings::default();
         };
-        widenings_over(source, settings, &self.collected(source, None))
+        self.measured(source, |measure| {
+            widenings_over(
+                source,
+                settings,
+                &self.collected(source, measure, None, &[]),
+            )
+        })
     }
 }
 
@@ -511,8 +597,30 @@ impl Reservations {
 pub(crate) struct Scope {
     /// True for a run formed over a body's statements.
     body: bool,
+    /// True for a run formed over a body a reorder rule seats other than
+    /// as written.
+    seated: bool,
     span: TextRange,
     stmt: TextRange,
+}
+
+impl Scope {
+    /// Builds the scope `run` formed in, spanning its members' rows from the
+    /// first one's line start to the end of the last one's gap, or the run's
+    /// own scope where it holds no member.
+    fn of(run: &visit::Run) -> Self {
+        Self {
+            body: run.body,
+            seated: run.seated,
+            span: run
+                .members
+                .iter()
+                .map(|member| TextRange::new(member.line_start, member.gap.end()))
+                .reduce(TextRange::cover)
+                .unwrap_or(run.scope),
+            stmt: run.scope,
+        }
+    }
 }
 
 /// The geometry of one splice, as a carry reads it: the weave its
@@ -539,6 +647,50 @@ struct Forwarded {
     runs: Vec<Scope>,
     shifts: Vec<Shift>,
     widenings: Vec<(usize, aligner::Widening)>,
+}
+
+impl Forwarded {
+    /// Drops from this carry every statement run formed over one of `bodies`,
+    /// each named by its owner and range, along with the shifts and widenings
+    /// those runs hold.
+    fn without(self, bodies: &[(TextRange, TextRange)]) -> Self {
+        if bodies.is_empty() {
+            return self;
+        }
+        let mut runs = Vec::with_capacity(self.runs.len());
+        let slots: Vec<Option<usize>> = self
+            .runs
+            .into_iter()
+            .map(|scope| {
+                let dropped = scope.body
+                    && bodies.iter().any(|&(owner, range)| {
+                        scope.stmt == owner && range.contains_range(scope.span)
+                    });
+                (!dropped).then(|| {
+                    runs.push(scope);
+                    runs.len() - 1
+                })
+            })
+            .collect();
+        Self {
+            runs,
+            shifts: self
+                .shifts
+                .into_iter()
+                .filter_map(|shift| {
+                    Some(Shift {
+                        run: slots[shift.run]?,
+                        ..shift
+                    })
+                })
+                .collect(),
+            widenings: self
+                .widenings
+                .into_iter()
+                .filter_map(|(run, entry)| Some((slots[run]?, entry)))
+                .collect(),
+        }
+    }
 }
 
 /// One reservation's row-tail span, the columns the alignment shifts
@@ -623,24 +775,29 @@ mod tests {
     /// The reservation table an `align-equals` run under `settings`
     /// reads back, built over a source carrying one assignment.
     fn columns_under(settings: Option<aligner::Settings>) -> Columns {
-        Reservations::new(
-            RuleId::from("align-equals"),
-            settings,
-            one_row::Settings::from(&Config::default()),
-            Config::default().stranded_padding(),
-        )
-        .columns(&parse("a = 1\n"))
+        Reservations::new(RuleId::from("align-equals"), settings, &Config::default())
+            .columns(&parse("a = 1\n"))
+    }
+
+    /// Builds the default configuration capped at `line_length`.
+    fn capped(line_length: usize) -> Config {
+        Config {
+            code_line_length: NonZeroUsize::new(line_length),
+            ..Config::default()
+        }
     }
 
     /// The column each value in `text` lands at under the default
     /// configuration capped at `line_length`, one entry per `values`
     /// offset.
     fn landed(text: &str, line_length: usize, values: &[u32]) -> Vec<usize> {
+        landed_under(&capped(line_length), text, values)
+    }
+
+    /// Reads the column each value in `text` lands at under `config`, one
+    /// entry per `values` offset.
+    fn landed_under(config: &Config, text: &str, values: &[u32]) -> Vec<usize> {
         let source = parse(text);
-        let config = Config {
-            code_line_length: NonZeroUsize::new(line_length),
-            ..Config::default()
-        };
         let columns = config.equals_reservations().columns(&source);
         values
             .iter()
@@ -649,13 +806,118 @@ mod tests {
     }
 
     #[test]
+    fn columns_break_open_a_hand_wrapped_call_whose_joined_row_overflows_the_column() {
+        // Rejoined, `fontlist`'s call reaches 75 columns where it stands
+        // and 82 padded to `font_name_title`'s column, past a cap of 80,
+        // so the call breaks open and its row joins that column.
+        let text = "frame = Frame(parent)\nfont_name_title = Label(frame, justify=LEFT, \
+                    text=\"Font Face :\")\nfontlist = Listbox(frame, height=15,\n                   \
+                    takefocus=True, exportselection=FALSE)\n";
+        assert_eq!(landed(text, 80, &[98]), vec![18]);
+    }
+
+    #[rstest]
+    #[case::exploded("", true, 15)]
+    #[case::kept_without_reflow_calls("", false, 4)]
+    #[case::kept_under_a_skip("  # prose: skip[reflow-calls]", true, 4)]
+    fn columns_break_open_a_last_row_value_into_the_run_column(
+        #[case] trailing: &str,
+        #[case] explodes: bool,
+        #[case] expected: usize,
+    ) {
+        // `c`'s row crosses a cap of 80 padded to `bbbbbbbbbbbb`'s column,
+        // and breaking its call open leaves one column rather than two,
+        // wherever `reflow-calls` can explode the call.
+        let mut config = capped(80);
+        config.rules.reflow_calls.enabled = explodes;
+        let text = format!(
+            "a = 1\nbbbbbbbbbbbb = 2\nc = frobnicate(first_argument_value, \
+             second_argument_value, third_argument_v){trailing}\n"
+        );
+        assert_eq!(landed_under(&config, &text, &[27]), vec![expected]);
+    }
+
+    #[rstest]
+    #[case::within(12, 15)]
+    #[case::past(8, 4)]
+    fn columns_break_open_a_value_only_within_max_shift(
+        #[case] max_shift: usize,
+        #[case] expected: usize,
+    ) {
+        // Broken open, `c`'s call would join `bbbbbbbbbbbb`'s column
+        // eleven columns past its name, which a cap of 8 refuses.
+        let mut config = capped(80);
+        config.rules.align_equals.max_shift =
+            MaxShift::Cap(NonZeroUsize::new(max_shift).expect("the cap is non-zero"));
+        let text = "aaaaaaaaaa = 1\nbbbbbbbbbbbb = 2\nc = frobnicate(first_argument_value, \
+                    second_argument_value, third_argument_v)\n";
+        assert_eq!(landed_under(&config, text, &[36]), vec![expected]);
+    }
+
+    #[test]
+    fn columns_break_open_an_augmented_value_into_the_run_column() {
+        // `c`'s `+=` right-aligns on `bbbbbbbbbbbb`'s `=`, which pushes
+        // its row past a cap of 80, so the call breaks open.
+        let text = "a = 1\nbbbbbbbbbbbb = 2\nc += frobnicate(first_argument_value, \
+                    second_argument_value, third_argu)\n";
+        assert_eq!(landed(text, 80, &[28]), vec![15]);
+    }
+
+    #[test]
     fn columns_count_a_keyword_the_rule_widens_on_the_same_line() {
         // Aligning `x` to `longer` lands its line on 15 columns, inside
         // a cap of 16 until the stacked `k=1` keyword the rule buffers
         // to `k = 1` widens it past, so the run breaks and `x` stays put.
+        // With `reflow-calls` off, nothing joins or breaks open the call.
         let text = "longer = 2\nx = f(k=1,\n      j=2)\n";
-        assert_eq!(landed(text, 16, &[15]), vec![4]);
-        assert_eq!(landed(text, 18, &[15]), vec![9]);
+        let under = |line_length| {
+            let mut config = capped(line_length);
+            config.rules.reflow_calls.enabled = false;
+            landed_under(&config, text, &[15])
+        };
+        assert_eq!(under(16), vec![4]);
+        assert_eq!(under(18), vec![9]);
+    }
+
+    #[test]
+    fn columns_extend_a_run_past_a_value_a_layout_rule_rejoins() {
+        // `b`'s call rejoins onto one row, so its run reaches `cccc`
+        // below it and `a`'s value follows `cccc`'s to column 7.
+        let text = "a = 1\nb = frob(first,\n         second)\ncccc = 2\n";
+        assert_eq!(landed(text, 88, &[4]), vec![7]);
+    }
+
+    #[rstest]
+    #[case::held_by_its_colon_run(true, 43)]
+    #[case::read_as_written(false, 42)]
+    fn columns_hold_an_annotated_row_whose_colon_run_continues_below_it(
+        #[case] colons: bool,
+        #[case] expected: usize,
+    ) {
+        // Once `align-colons` pads its `:`, `input_trans`'s `=` sits five
+        // columns short of `keymap`'s, and padding it to that column pushes
+        // its row past a cap of 60. Breaking its call open would split the
+        // colon run above `input_trans_stack`, so the call keeps its row and
+        // the value lands past the `:` padding alone. With `align-colons` off,
+        // no padding widens the row and it stays where it stands.
+        let mut config = capped(60);
+        config.rules.align_colons.enabled = colons;
+        let text = "@dataclass\nclass Reader:\n    keymap: tuple[tuple[str, str], ...] = ()\n    \
+                    input_trans: input.KeymapTranslator = field(init=False)\n    \
+                    input_trans_stack: list[input.KeymapTranslator] = field(default_factory=list)\n";
+        let value = u32::try_from(text.find("field(init").expect("the row carries a call"))
+            .expect("the text fits u32");
+        assert_eq!(landed_under(&config, text, &[value]), vec![expected]);
+    }
+
+    #[test]
+    fn columns_leave_a_middle_row_on_its_row_where_breaking_moves_the_unpadded_row() {
+        // Breaking `c`'s call open into `xxxxxxxxxxxx`'s column would
+        // leave `dd` alone below it, just as `xxxxxxxxxxxx` stands alone
+        // while the call keeps its row, so `c` and `dd` align as a pair.
+        let text = "xxxxxxxxxxxx = 1\nc = frobnicate(first_argument_value, \
+                    second_argument_value, third_argument_v)\ndd = 4\n";
+        assert_eq!(landed(text, 80, &[21, 100]), vec![5, 5]);
     }
 
     #[test]
@@ -667,6 +929,40 @@ mod tests {
         let text = "aaaa = 2\nb = [\n    1234\n]\n";
         assert_eq!(landed(text, 12, &[13]), vec![4]);
         assert_eq!(landed(text, 16, &[13]), vec![7]);
+    }
+
+    #[rstest]
+    #[case::read_in_sorted_order(true, 8)]
+    #[case::read_as_written(false, 19)]
+    fn columns_read_a_class_body_in_the_order_alphabetize_siblings_sorts_it(
+        #[case] sorted: bool,
+        #[case] expected: usize,
+    ) {
+        // Sorted, `c` sits between `a` and `stroke_width`, where breaking
+        // its call open gains nothing. Read as written, `c` sits below
+        // `stroke_width` and its call breaks open into that column.
+        let mut config = capped(80);
+        config.rules.alphabetize_siblings.enabled = sorted;
+        let text = "class Palette:\n    stroke_width = 1\n    c = frobnicate(\
+                    first_argument_value, second_argument_value, third_arg)\n    a = 2\n";
+        assert_eq!(landed_under(&config, text, &[44]), vec![expected]);
+    }
+
+    #[rstest]
+    #[case::read_in_band_order(true, 14)]
+    #[case::read_as_written(false, 11)]
+    fn columns_read_a_module_body_in_the_order_band_constants_seats_it(
+        #[case] banded: bool,
+        #[case] expected: usize,
+    ) {
+        // Banded, `CHECK_DELAY` heads the run and `_openers` padded to its
+        // column crosses a cap of 40, so the dict breaks open into that
+        // column. Read as written, `_openers` heads the run and keeps its
+        // row.
+        let mut config = capped(40);
+        config.rules.band_constants.enabled = banded;
+        let text = "_openers = {')': '(',']': '[','}': '{'}\nCHECK_DELAY = 100\n";
+        assert_eq!(landed_under(&config, text, &[11]), vec![expected]);
     }
 
     #[test]
@@ -681,6 +977,71 @@ mod tests {
     fn columns_shift_each_value_to_the_run_column() {
         // `a`'s value follows `bbb`'s to column 6 while `bbb`'s stays.
         assert_eq!(landed("a = 1\nbbb = 2\n", 88, &[4, 12]), vec![6, 6]);
+    }
+
+    #[test]
+    fn columns_start_a_run_below_a_broken_value() {
+        // `c`'s call breaks open into `bbbbbbbbbbbb`'s column, which ends
+        // its run, so `d` stands alone at its own column.
+        let text = "a = 1\nbbbbbbbbbbbb = 2\nc = frobnicate(first_argument_value, \
+                    second_argument_value, third_argument_v)\nd = 4\n";
+        assert_eq!(landed(text, 80, &[27, 105]), vec![15, 4]);
+    }
+
+    #[test]
+    fn forwarded_without_drops_the_runs_of_each_named_body() {
+        let range = |start: u32, end: u32| TextRange::new(TextSize::new(start), TextSize::new(end));
+        let scope = |span: TextRange, stmt: TextRange, body| Scope {
+            body,
+            seated: false,
+            span,
+            stmt,
+        };
+        let shift = |run, span: TextRange| Shift {
+            columns: 1,
+            run,
+            span,
+        };
+        let widening = |line: u32| (TextSize::new(line), TextRange::default(), 1);
+        let owner = range(0, 40);
+        let forwarded = Forwarded {
+            runs: vec![
+                scope(range(2, 6), owner, true),
+                scope(range(4, 6), owner, false),
+                scope(range(20, 24), owner, true),
+                scope(range(50, 54), range(48, 60), true),
+            ],
+            shifts: vec![
+                shift(0, range(3, 5)),
+                shift(1, range(5, 6)),
+                shift(2, range(21, 23)),
+                shift(3, range(51, 53)),
+            ],
+            widenings: vec![(0, widening(2)), (2, widening(20))],
+        }
+        .without(&[(owner, range(2, 10))]);
+
+        // Only the statement run inside the named arm drops. The keyword
+        // run sharing its owner, the run of the sibling arm under that
+        // same owner, and another owner's run stay and take the slots the
+        // drop frees.
+        assert_eq!(
+            forwarded.runs,
+            vec![
+                scope(range(4, 6), owner, false),
+                scope(range(20, 24), owner, true),
+                scope(range(50, 54), range(48, 60), true),
+            ]
+        );
+        assert_eq!(
+            forwarded.shifts,
+            vec![
+                shift(0, range(5, 6)),
+                shift(1, range(21, 23)),
+                shift(2, range(51, 53)),
+            ]
+        );
+        assert_eq!(forwarded.widenings, vec![(1, widening(20))]);
     }
 
     #[test]

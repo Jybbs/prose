@@ -74,7 +74,7 @@ impl ReflowCalls {
 impl Rule for ReflowCalls {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);

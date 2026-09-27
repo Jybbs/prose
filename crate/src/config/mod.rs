@@ -28,8 +28,8 @@ use crate::{
     primitives::{aligner, comments, fracture, one_row, padding, reserve},
     rules::{
         align_comments::AlignComments, align_equals::AlignEquals, alphabetize_siblings::Reorders,
-        normalize_comment_spacing::NormalizeCommentSpacing, prefer_fstring::PreferFstring,
-        strip_stranded_padding::StripStrandedPadding,
+        band_constants::BandConstants, normalize_comment_spacing::NormalizeCommentSpacing,
+        prefer_fstring::PreferFstring, strip_stranded_padding::StripStrandedPadding,
     },
 };
 
@@ -152,16 +152,35 @@ impl Config {
         self.rules.alphabetize_siblings.enabled
     }
 
+    /// Returns `band-constants` as configured, or `None` where the rule is
+    /// off, for a rule forecasting the order that rule seats a body in.
+    pub(crate) fn band_forecast(&self) -> Option<BandConstants> {
+        self.rules
+            .band_constants
+            .enabled
+            .then(|| BandConstants::from_config(self))
+    }
+
     pub(crate) fn code_width(&self) -> usize {
         self.code_line_length
             .expect("Config::default synthesizes Some(88)")
             .get()
     }
 
-    /// The alignment settings `align-colons` runs its code contexts
-    /// under, resolving within the code width and stripping a lone
-    /// row's gap, read by the rule itself and by the forecast
-    /// `reflow-collections` seats an expanded dict's values against.
+    /// Returns the alignment settings `align-colons` runs under, or `None`
+    /// where the rule is off, for a rule forecasting the column it pads.
+    pub(crate) fn colon_forecast(&self) -> Option<aligner::Settings> {
+        self.rules
+            .align_colons
+            .enabled
+            .then(|| self.colon_settings())
+    }
+
+    /// Returns the alignment settings `align-colons` runs its code contexts
+    /// under, resolving within the code width and stripping a lone row's gap,
+    /// for the rule itself and, through
+    /// [`colon_forecast`](Self::colon_forecast), for each rule forecasting
+    /// its column.
     pub(crate) fn colon_settings(&self) -> aligner::Settings {
         self.align_settings(self.rules.align_colons.max_shift, self.code_width())
             .with_singleton_strip()
@@ -199,12 +218,7 @@ impl Config {
             .align_equals
             .enabled
             .then(|| self.equals_settings());
-        reserve::Reservations::new(
-            AlignEquals::SLUG,
-            settings,
-            self.one_row_settings(),
-            self.stranded_padding(),
-        )
+        reserve::Reservations::new(AlignEquals::SLUG, settings, self)
     }
 
     /// The alignment settings `align-equals` runs under, resolving

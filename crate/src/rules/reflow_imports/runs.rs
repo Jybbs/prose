@@ -39,7 +39,7 @@ impl Folds {
     pub(crate) fn from_config(config: &Config) -> Self {
         let rules = &config.rules.reflow_imports;
         Self {
-            bands: band_forecast(config),
+            bands: config.band_forecast(),
             merges: rules.enabled && rules.merge_members,
         }
     }
@@ -163,15 +163,6 @@ impl MergeRuns {
             member_blocks(source, &body[..reach], outer)
         })
     }
-}
-
-/// `band-constants` as configured, `None` when the rule is off.
-pub(super) fn band_forecast(config: &Config) -> Option<BandConstants> {
-    config
-        .rules
-        .band_constants
-        .enabled
-        .then(|| BandConstants::from_config(config))
 }
 
 /// True when a comment sits within or beside one of `runs`, from the

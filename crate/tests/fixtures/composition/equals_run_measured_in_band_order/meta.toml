@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An `=` Run Is Measured in the Order `band-constants` Seats It"
+
+description = '''
+[[band-constants]] seats `CHECK_DELAY` above `_openers`, and **the column `align-equals` pads each row to is read in that order**. Padded to the column `CHECK_DELAY` sets, the `_openers` row would reach 42 columns, past the 40-column budget, so [[reflow-collections]] expands the dict in the same pass and its opening row joins that column.
+'''

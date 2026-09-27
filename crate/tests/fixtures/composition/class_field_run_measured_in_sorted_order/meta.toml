@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Class Field Run Is Measured in the Order `alphabetize-siblings` Sorts It"
+
+description = '''
+[[alphabetize-siblings]] sorts the fields of `Palette` to `a`, `c`, `stroke_width`, and **the column `align-equals` pads each row to is read in that order**. Padded to the column `stroke_width` sets, the `c` row would reach 85 columns, past the 80-column budget, yet breaking its call open would gain nothing, because a value broken open ends its run and `stroke_width` would stand alone below it either way. The call stays on one row, and `a` and `c` each keep a single space above `stroke_width`.
+'''

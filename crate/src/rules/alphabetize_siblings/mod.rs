@@ -13,21 +13,26 @@
 //! its slot at module scope while sorting inside a class body.
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::TextSize;
+use ruff_python_ast::{
+    Stmt, StmtAssign, StmtClassDef,
+    statement_visitor::{StatementVisitor, walk_stmt},
+};
+use ruff_text_size::{Ranged, TextSize};
 
 use self::{
     docstring_entries::collect_docstring_entry_edits,
     enums::Enumerations,
     leaves::collect_leaf_edits,
     reorders::{joined_key, joined_text},
-    rewrite::{RewriteCtx, body_layout, import_gap},
+    rewrite::{RewriteCtx, body_layout, class_rows, import_gap},
 };
-use ruff_python_ast::StmtAssign;
 
-use crate::primitives::binding::single_name_target;
 use crate::{
     config::Config,
-    primitives::{imports::defers_annotations, scope::BodyScope},
+    primitives::{
+        binding::single_name_target, imports::defers_annotations, orderer::Seatings,
+        scope::BodyScope,
+    },
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -45,7 +50,7 @@ mod reorders;
 mod rewrite;
 mod section_runs;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct AlphabetizeSiblings {
     code_width: usize,
     first_party: Vec<String>,
@@ -77,6 +82,46 @@ impl AlphabetizeSiblings {
             sort_dunder_lists: alphabetize_siblings.sort_dunder_lists,
         }
     }
+
+    /// Builds the context every body rewrite over `source` shares, with
+    /// `leaf_edits` rewriting the leaves inside each member.
+    fn ctx<'a>(
+        &'a self,
+        source: &'a Source,
+        enumerations: &'a Enumerations<'a>,
+        leaf_edits: &'a [Edit],
+    ) -> RewriteCtx<'a> {
+        RewriteCtx {
+            defer_annotations: defers_annotations(&source.ast().body),
+            enumerations,
+            first_party: &self.first_party,
+            group_imports: self.group_imports,
+            group_methods: self.group_methods,
+            keyword_fields_from: TextSize::default(),
+            leaf_edits,
+            orders_members: false,
+            sort_definitions: self.sort_definitions,
+            source,
+        }
+    }
+
+    /// Collects the rows of every class body the rule seats other than as
+    /// written, keyed by the start of the body's first statement, each slot
+    /// in the order the sort seats it beside whether it opens on the line
+    /// directly below the slot before it.
+    pub(crate) fn seatings(&self, source: &Source) -> Seatings {
+        let body = &source.ast().body;
+        let enumerations = Enumerations::of(body);
+        let ctx = self.ctx(source, &enumerations, &[]);
+        let mut classes = Classes(Vec::new());
+        classes.visit_body(body);
+        classes
+            .0
+            .into_iter()
+            .filter(|class| !class.body.is_empty())
+            .filter_map(|class| Some((class.body[0].start(), class_rows(ctx, class)?)))
+            .collect()
+    }
 }
 
 impl Rule for AlphabetizeSiblings {
@@ -96,18 +141,7 @@ impl Rule for AlphabetizeSiblings {
             leaf_edits.sort_unstable();
         }
         let enumerations = Enumerations::of(body);
-        let ctx = RewriteCtx {
-            defer_annotations: defers_annotations(body),
-            enumerations: &enumerations,
-            first_party: &self.first_party,
-            group_imports: self.group_imports,
-            group_methods: self.group_methods,
-            keyword_fields_from: TextSize::default(),
-            leaf_edits: &leaf_edits,
-            orders_members: false,
-            sort_definitions: self.sort_definitions,
-            source,
-        };
+        let ctx = self.ctx(source, &enumerations, &leaf_edits);
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
         layout
             .assembly
@@ -118,6 +152,19 @@ impl Rule for AlphabetizeSiblings {
 
     fn id(&self) -> RuleId {
         Self::SLUG
+    }
+}
+
+/// Every class definition a walk over a module reaches, nested ones
+/// included.
+struct Classes<'a>(Vec<&'a StmtClassDef>);
+
+impl<'a> StatementVisitor<'a> for Classes<'a> {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        if let Stmt::ClassDef(class) = stmt {
+            self.0.push(class);
+        }
+        walk_stmt(self, stmt);
     }
 }
 
@@ -189,5 +236,21 @@ mod tests {
             reorders.holds_as_laid_out(&source, first_value(&source).into()),
             expected
         );
+    }
+
+    #[rstest]
+    #[case::reseated("class K:\n    b = 1\n    a = 2\n", Some(vec![(1, false), (0, true)]))]
+    #[case::sorted("class K:\n    a = 1\n    b = 2\n", None)]
+    fn seatings_record_a_class_body_the_sort_seats_other_than_as_written(
+        #[case] src: &str,
+        #[case] expected: Option<Vec<(usize, bool)>>,
+    ) {
+        let source = parse(src);
+        let class = source.ast().body[0]
+            .as_class_def_stmt()
+            .expect("the source opens on a class");
+        let seatings = AlphabetizeSiblings::from_config(&Config::default()).seatings(&source);
+
+        assert_eq!(seatings.get(&class.body[0].start()).cloned(), expected);
     }
 }

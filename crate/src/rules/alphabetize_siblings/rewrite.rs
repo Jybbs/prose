@@ -1,12 +1,13 @@
 //! The body-rewrite recursion `alphabetize-siblings` drives: the
 //! per-body layout each scope resolves, the recursion splicing a
 //! rewritten body back into its parent, and the divider an import-run
-//! collapse seats.
+//! collapse seats, beside the rows a class body's sort seats, which a
+//! rule forecasting the sort reads.
 
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Stmt, helpers::is_compound_statement};
+use ruff_python_ast::{Stmt, StmtClassDef, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -21,7 +22,8 @@ use crate::{
         edit::{apply_inline_edits, splice_bodies},
         imports::{import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            Assembly, adjacent_slots, any_sibling_shares_line, permute_runs, rendered_member_blocks,
+            Assembly, adjacent_slots, any_sibling_shares_line, member_blocks, permute_runs,
+            rendered_member_blocks, seated_rows,
         },
         scope::{BodyScope, scoped_body, splice_compound_arms},
         sections::Sections,
@@ -60,102 +62,34 @@ pub(super) struct RewriteCtx<'a> {
     pub(super) source: &'a Source,
 }
 
+impl<'a> RewriteCtx<'a> {
+    /// Returns the context a class header sets for its own body, refreshing
+    /// the keyword-field boundary and the member-order hold.
+    fn for_class(self, class: &StmtClassDef) -> Self {
+        Self {
+            keyword_fields_from: keyword_field_start(class),
+            orders_members: class_orders_members(class, self.enumerations),
+            ..self
+        }
+    }
+}
+
 /// Computes the reorder of `body`: renders each member, then permutes the
-/// slots within each section by the family sorts and import grouping that
-/// `scope` enables, leaving the assembly to the caller. The section
-/// partition walls each notebook cell, so no permutation crosses a cell.
+/// slots through [`seat_body`], leaving the assembly to the caller.
 pub(super) fn body_layout<'a>(
     ctx: RewriteCtx<'a>,
     body: &'a [Stmt],
     outer: TextRange,
     scope: BodyScope,
 ) -> BodyLayout<'a> {
-    let RewriteCtx {
-        defer_annotations,
-        first_party,
-        group_imports,
-        group_methods,
-        keyword_fields_from,
-        orders_members,
-        sort_definitions,
-        source,
-        ..
-    } = ctx;
     let Assembly {
         blocks,
         mut order,
         rendered,
-    } = rendered_member_blocks(source, body, outer, |stmt, block| {
+    } = rendered_member_blocks(ctx.source, body, outer, |stmt, block| {
         rewrite_stmt(ctx, stmt, block, scope)
     });
-    let mut import_run_slots: Vec<usize> = Vec::new();
-    if !any_sibling_shares_line(source, body) {
-        let sections = Sections::of(source, &blocks);
-        let in_class = scope == BodyScope::Class;
-        if scope != BodyScope::Function {
-            let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
-            let refs = eval_time_refs_of(body, defer_annotations);
-            let defined = definition_names(body);
-            let reachable = if consults_call_graph(body, &refs, &defined) {
-                call_reachable(source.binding_analysis(), body)
-            } else {
-                CallReach::default()
-            };
-            let evaluated = Evaluated::of(body, &reachable, refs);
-            let evaluation = evaluated.evaluation();
-            let fences = fenced_slots(body, &defined);
-            let prepared: Vec<SectionRuns<'_, 'a>> = sections
-                .ranges()
-                .iter()
-                .flat_map(|section| fenced_runs(section, &fences))
-                .map(|section| {
-                    SectionRuns::of(
-                        body,
-                        section,
-                        evaluation,
-                        in_class,
-                        group_methods,
-                        orders_members,
-                        sort_definitions,
-                    )
-                })
-                .collect();
-            // A permutation reverted for a reference that a later
-            // permutation relocates becomes legal once that one lands, so
-            // the section's permutations run to a fixed point. Each run
-            // tiers once ahead of the loop, only the arrangement changing
-            // per pass.
-            let mut settled: Vec<usize> = Vec::with_capacity(order.len());
-            for _ in 0..body.len().max(1) {
-                settled.clear();
-                settled.extend_from_slice(&order);
-                for section in &prepared {
-                    section.permute(&mut order, body, holds, keyword_fields_from);
-                }
-                if order == settled {
-                    break;
-                }
-            }
-        }
-        permute_runs(
-            &mut order,
-            body,
-            sectioned_import_runs(&sections, body),
-            |s| import_sort_key(s, first_party, group_imports),
-        );
-        // Same-group import neighbors collapse to one line, except across a
-        // section marker. A slot gap holding a comment and a member block
-        // opening on a bound run both keep their source gap.
-        import_run_slots = adjacent_slots(&order, |slot, a, b| {
-            import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
-                && !sections.is_boundary(slot + 1)
-                && source
-                    .comment_ranges()
-                    .comments_in_range(TextRange::new(blocks[slot].end(), blocks[slot + 1].start()))
-                    .is_empty()
-                && blocks[b].start() == source.text().line_start(body[b].start())
-        });
-    }
+    let import_run_slots = seat_body(ctx, body, &blocks, &mut order, scope);
     BodyLayout {
         assembly: Assembly {
             blocks,
@@ -164,6 +98,32 @@ pub(super) fn body_layout<'a>(
         },
         import_run_slots,
     }
+}
+
+/// Returns the rows of `class`'s body wherever the sort seats them other
+/// than as written, each slot in the order the sort seats it beside
+/// whether it opens on the line directly below the slot before it, per
+/// [`seated_rows`].
+pub(super) fn class_rows(ctx: RewriteCtx, class: &StmtClassDef) -> Option<Vec<(usize, bool)>> {
+    let source = ctx.source;
+    let body = &class.body;
+    let blocks = member_blocks(source, body, class.range());
+    let mut order: Vec<usize> = (0..body.len()).collect();
+    let import_run_slots = seat_body(
+        ctx.for_class(class),
+        body,
+        &blocks,
+        &mut order,
+        BodyScope::Class,
+    );
+    seated_rows(
+        source,
+        body,
+        &blocks,
+        &order,
+        |i| import_gap(source, &import_run_slots, i),
+        |slot| source.slice(blocks[slot]),
+    )
 }
 
 /// The one-newline divider an import-run collapse inserts after new-order
@@ -235,11 +195,100 @@ fn rewrite_stmt<'a>(
     if body.is_empty() {
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
-    let ctx = stmt.as_class_def_stmt().map_or(ctx, |class| RewriteCtx {
-        keyword_fields_from: keyword_field_start(class),
-        orders_members: class_orders_members(class, ctx.enumerations),
-        ..ctx
-    });
+    let ctx = stmt
+        .as_class_def_stmt()
+        .map_or(ctx, |class| ctx.for_class(class));
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
+}
+
+/// Permutes `order`, seeded to source order over `body`'s member
+/// `blocks`, within each section by the family sorts and import grouping
+/// that `scope` enables, and returns the new-order slots whose import
+/// neighbor collapses onto one line. The section partition walls each
+/// notebook cell, so no permutation crosses a cell.
+fn seat_body<'a>(
+    ctx: RewriteCtx<'a>,
+    body: &'a [Stmt],
+    blocks: &[TextRange],
+    order: &mut Vec<usize>,
+    scope: BodyScope,
+) -> Vec<usize> {
+    let RewriteCtx {
+        defer_annotations,
+        first_party,
+        group_imports,
+        group_methods,
+        keyword_fields_from,
+        orders_members,
+        sort_definitions,
+        source,
+        ..
+    } = ctx;
+    let mut import_run_slots: Vec<usize> = Vec::new();
+    if !any_sibling_shares_line(source, body) {
+        let sections = Sections::of(source, blocks);
+        let in_class = scope == BodyScope::Class;
+        if scope != BodyScope::Function {
+            let holds = |stmt: &Stmt| !in_class && is_decorated(stmt);
+            let refs = eval_time_refs_of(body, defer_annotations);
+            let defined = definition_names(body);
+            let reachable = if consults_call_graph(body, &refs, &defined) {
+                call_reachable(source.binding_analysis(), body)
+            } else {
+                CallReach::default()
+            };
+            let evaluated = Evaluated::of(body, &reachable, refs);
+            let evaluation = evaluated.evaluation();
+            let fences = fenced_slots(body, &defined);
+            let prepared: Vec<SectionRuns<'_, 'a>> = sections
+                .ranges()
+                .iter()
+                .flat_map(|section| fenced_runs(section, &fences))
+                .map(|section| {
+                    SectionRuns::of(
+                        body,
+                        section,
+                        evaluation,
+                        in_class,
+                        group_methods,
+                        orders_members,
+                        sort_definitions,
+                    )
+                })
+                .collect();
+            // A permutation reverted for a reference that a later
+            // permutation relocates becomes legal once that one lands, so
+            // the section's permutations run to a fixed point. Each run
+            // tiers once ahead of the loop, only the arrangement changing
+            // per pass.
+            let mut settled: Vec<usize> = Vec::with_capacity(order.len());
+            for _ in 0..body.len().max(1) {
+                settled.clear();
+                settled.extend_from_slice(order);
+                for section in &prepared {
+                    section.permute(order, body, holds, keyword_fields_from);
+                }
+                if *order == settled {
+                    break;
+                }
+            }
+        }
+        permute_runs(order, body, sectioned_import_runs(&sections, body), |s| {
+            import_sort_key(s, first_party, group_imports)
+        });
+        // Same-group import neighbors collapse to one line, except across a
+        // section marker. A slot gap holding a comment and a member block
+        // opening on a bound run both keep their source gap.
+        import_run_slots = adjacent_slots(order, |slot, a, b| {
+            import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
+                && !sections.is_boundary(slot + 1)
+                && source
+                    .comment_ranges()
+                    .comments_in_range(TextRange::new(blocks[slot].end(), blocks[slot + 1].start()))
+                    .is_empty()
+                && blocks[b].start() == source.text().line_start(body[b].start())
+        });
+    }
+    import_run_slots
 }

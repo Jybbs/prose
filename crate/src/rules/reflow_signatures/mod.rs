@@ -69,7 +69,7 @@ impl Rule for ReflowSignatures {
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let expansion = self.terms.over(source, &targets, &padding, &rewrites);
         let mut visitor = Layout {
             edits: Vec::new(),

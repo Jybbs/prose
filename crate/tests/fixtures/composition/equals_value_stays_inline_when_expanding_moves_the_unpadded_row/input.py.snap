@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_value_stays_inline_when_expanding_moves_the_unpadded_row/input.py
+---
+xxxxxxxxxxxx = 1
+c  = frobnicate(first_argument_value, second_argument_value, third_argument_v)
+dd = 4

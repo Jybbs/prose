@@ -13,7 +13,7 @@ use super::*;
 
 pub(super) struct Visitor<'a> {
     pub(super) code_line_length: usize,
-    pub(super) reservations: reserve::Reservations,
+    pub(super) reservations: &'a reserve::Reservations,
     pub(super) settling: Settling,
     pub(super) stranding: Stranding,
     pub(super) walker: aligner::AlignWalker<'a>,

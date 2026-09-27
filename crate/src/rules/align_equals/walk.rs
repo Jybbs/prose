@@ -37,8 +37,9 @@ impl Visitor<'_> {
         let groups = equal_targets::assignment_groups(
             self.walker.source,
             self.walker.rule,
-            body,
+            self.walker.source.adjacent_rows(body),
             self.stranding,
+            |_| false,
         );
         self.runs.extend(groups.into_iter().map(Run::Buffered));
     }

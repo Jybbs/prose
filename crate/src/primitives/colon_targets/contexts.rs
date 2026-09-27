@@ -16,17 +16,19 @@ use crate::{
     source::Source,
 };
 
-/// Walks `body`, qualifying each statement through `annotated_assignment`,
+/// Walks `rows`, qualifying each statement through `annotated_assignment`,
 /// and returns one group per run of contiguous line-adjacent
-/// annotated-assignment statements. A single-line row held for `rule`
-/// drops out as a transparent hole per [`aligner::line_adjacent_groups`].
-pub(super) fn annotated_assignment_groups(
-    source: &Source,
+/// annotated-assignment statements, a multi-line statement closing its
+/// run unless `joins` names it. A single-line row held for `rule` drops
+/// out as a transparent hole per [`aligner::line_adjacent_groups`].
+pub(crate) fn annotated_assignment_groups<'a>(
+    source: &'a Source,
     rule: RuleId,
-    body: &[Stmt],
+    rows: impl IntoIterator<Item = (&'a Stmt, bool)>,
     stranding: Stranding,
+    joins: impl Fn(&'a Stmt) -> bool,
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |s| {
+    aligner::line_adjacent_groups(source, rows, rule, joins, |s| {
         annotated_assignment(source, s, stranding)
     })
 }

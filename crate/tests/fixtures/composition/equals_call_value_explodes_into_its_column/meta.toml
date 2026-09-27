@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Value Explodes Into Its `=` Column"
+
+description = '''
+`c`'s row reaches 77 columns on one line, inside the 80-column budget where it stands, but 88 padded out to the column `bbbbbbbbbbbb` sets. **[[reflow-calls]] explodes the `frobnicate` call so its opening row joins that column**, because breaking it open leaves the three rows in one column, whereas keeping it on one row would leave `c` unpadded beneath the other two.
+'''

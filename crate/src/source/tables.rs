@@ -102,7 +102,7 @@ impl Source {
     /// read. Every rule of a run measures against the same reservation
     /// and reads the walk back, whereas a read carrying a different one
     /// walks for itself.
-    pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
+    pub(crate) fn columns(&self, reservations: &Reservations) -> Cow<'_, Columns> {
         keyed(&self.columns, COLUMNS, reservations, |reservations| {
             self.columns_carry
                 .get()
@@ -120,7 +120,7 @@ impl Source {
     /// against the same forecast and reads the walk back, whereas a
     /// read carrying a different one walks for itself.
     pub(crate) fn fstring_rewrites(&self, fstrings: PreferFstring) -> Cow<'_, [Edit]> {
-        keyed(&self.fstring_rewrites, FSTRINGS, fstrings, |fstrings| {
+        keyed(&self.fstring_rewrites, FSTRINGS, &fstrings, |fstrings| {
             fstrings.forecast(self)
         })
     }
@@ -200,7 +200,7 @@ impl Source {
     /// reads the walk back, whereas a read carrying a different one
     /// walks for itself.
     pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
-        keyed(&self.stranded_padding, STRANDED, stranding, |stranding| {
+        keyed(&self.stranded_padding, STRANDED, &stranding, |stranding| {
             stranding.edits(self)
         })
     }
@@ -255,21 +255,21 @@ fn inherited<T>(
 /// The value `build` derives for `key`, read back from `slot` where it
 /// already holds that key's value and built afresh otherwise, the
 /// first read filling the slot and each build reported under `table`.
-fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
+fn keyed<'a, K: Clone + PartialEq, B: ?Sized + ToOwned>(
     slot: &'a OnceLock<Box<(K, B::Owned)>>,
     table: &'static str,
-    key: K,
+    key: &K,
     build: impl Fn(&K) -> B::Owned,
 ) -> Cow<'a, B> {
     let build = |key: &K| {
         trace::built(table);
         build(key)
     };
-    let held = slot.get_or_init(|| Box::new((key, build(&key))));
-    if held.0 == key {
+    let held = slot.get_or_init(|| Box::new((key.clone(), build(key))));
+    if held.0 == *key {
         Cow::Borrowed(held.1.borrow())
     } else {
-        Cow::Owned(build(&key))
+        Cow::Owned(build(key))
     }
 }
 
@@ -324,7 +324,7 @@ mod tests {
     fn with_every_table(source: Source) -> Source {
         let config = Config::default();
         source.binding_analysis();
-        source.columns(config.equals_reservations());
+        source.columns(&config.equals_reservations());
         source.stranded_padding(config.stranded_padding());
         source
     }
@@ -339,10 +339,13 @@ mod tests {
         let value = TextSize::new(4);
         let written = source.column_of(value);
 
-        let held = source.columns(aligned).column_in(&source, value);
+        let held = source.columns(&aligned).column_in(&source, value);
         assert!(held > written);
-        assert_eq!(source.columns(aligned).column_in(&source, value), held);
-        assert_eq!(source.columns(unaligned).column_in(&source, value), written);
+        assert_eq!(source.columns(&aligned).column_in(&source, value), held);
+        assert_eq!(
+            source.columns(&unaligned).column_in(&source, value),
+            written
+        );
     }
 
     #[rstest]

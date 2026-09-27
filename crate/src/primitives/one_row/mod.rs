@@ -37,13 +37,15 @@ use render::Writer;
 
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
-/// closes a fracture at all, `max_dict_entries` is `None` where the
-/// `explode` facet leaves the entry cap inert, and `rewrites` holds the
-/// f-string rewrites a form is measured through, none until
+/// closes a fracture at all, `expands` whether `reflow-collections`
+/// expands a literal, `max_dict_entries` is `None` where the `explode`
+/// facet leaves the entry cap inert, and `rewrites` holds the f-string
+/// rewrites a form is measured through, none until
 /// [`forecasting`](Self::forecasting) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
+    expands: bool,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
@@ -107,6 +109,7 @@ impl<'a> Settings<'a> {
     {
         Settings {
             code_line_length: self.code_line_length,
+            expands: self.expands,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
@@ -180,6 +183,12 @@ impl<'a> Settings<'a> {
     /// no count expands a dict.
     pub(crate) fn dict_entry_cap(&self) -> Option<usize> {
         self.max_dict_entries
+    }
+
+    /// Reports whether `reflow-collections` expands a literal, meaning the
+    /// rule is on with its `explode` facet set.
+    pub(crate) fn expands(&self) -> bool {
+        self.expands
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -336,6 +345,7 @@ impl From<&Config> for Settings<'_> {
         let collection = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
+            expands: collection.enabled && collection.explode,
             keep_multiline_literals: collection.keep_multiline_literals,
             max_dict_entries: collection
                 .max_dict_entries
