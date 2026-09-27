@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Explodes Once `modernize-annotations` Joins Its Annotation"
+
+description = '''
+`get_console_width`'s `Optional[...]` annotation spans three rows, leaving `getattr(...)` on a closing row that fits. `modernize-annotations` rewrites the annotation as `Callable[...] | None` on the assignment's own row, which then runs past `code-line-length`. **`reflow-calls` runs behind `modernize-annotations`, so it explodes the call in the same pass**, whereas the other order leaves `reflow-calls` a second edit to make.
+'''

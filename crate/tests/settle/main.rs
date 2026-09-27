@@ -21,7 +21,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     num::NonZeroUsize,
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
 };
 
@@ -475,6 +475,16 @@ impl Probes {
             ..Findings::default()
         }
     }
+
+    /// Sweeps `files` at this budget, opening from [`Probes::opening`] so
+    /// a reported rule declaring `PRESERVES_TREE` as `false` that no
+    /// rewrite shows changing a tree stays on record even where it
+    /// rewrites no file.
+    fn sweep(&self, files: &[PathBuf]) -> Findings {
+        let mut findings = self.opening();
+        findings.absorb(swept(files, |path| probe(self, path)));
+        findings
+    }
 }
 
 /// A rule run on its own, constructed against the selection its
@@ -794,8 +804,7 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
             probes.pairs.len(),
             target_name(target),
         );
-        findings.absorb(probes.opening());
-        findings.absorb(swept(&files, |path| probe(&probes, path)));
+        findings.absorb(probes.sweep(&files));
     }
     report_verified("chained pairs against the two-rule fold");
     if pointed_corpus().is_some() {
@@ -939,4 +948,14 @@ fn shard_of_counts_its_share_from_one(#[case] spec: Option<&str>, #[case] share:
 #[should_panic(expected = "takes `k/n`")]
 fn shard_of_rejects_a_share_outside_one_through_n(#[case] spec: &str) {
     let _ = shard_of(Some(spec));
+}
+
+#[rstest]
+fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes) {
+    probes.fixtures = true;
+    probes.reported = BTreeSet::from([rule("reflow-calls")]);
+
+    let findings = probes.sweep(&[]);
+
+    assert_eq!(findings.kept().collect_vec(), [&rule("reflow-calls")]);
 }

@@ -34,8 +34,8 @@ const CORPUS: &str = "PROSE_SETTLE_CORPUS";
 static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMap::new());
 
 /// The `target-version` settings a sweep covers absent [`TARGETS_VAR`],
-/// the shipped default of none beside the newest version the parser
-/// models, which sits at or above every rule's version floor.
+/// the shipped default of none beside the newest stable version the
+/// parser models, which sits at or above every rule's version floor.
 pub(crate) const TARGETS: &[Option<PythonVersion>] = &[None, Some(PythonVersion::latest())];
 
 /// The environment variable naming the `target-version` settings a sweep

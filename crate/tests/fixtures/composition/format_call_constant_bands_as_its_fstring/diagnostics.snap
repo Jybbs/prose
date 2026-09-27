@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/format_call_constant_bands_as_its_fstring/input.py
+---
+prefer-fstring@72..123

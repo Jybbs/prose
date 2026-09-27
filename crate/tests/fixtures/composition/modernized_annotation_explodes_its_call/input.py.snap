@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/modernized_annotation_explodes_its_call/input.py
+---
+from typing import Callable
+
+
+def measure(renderable: object) -> object:
+    get_console_width: Callable[["Console", "ConsoleOptions"], "Measurement"] | None = getattr(
+        renderable,
+        "__rich_measure__",
+        None
+    )
+    return get_console_width
