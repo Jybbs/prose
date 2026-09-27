@@ -354,11 +354,17 @@ impl<'a> Spans<'a> {
             wrapped.extend(rewrap.edit.as_ref());
         }
         let reshaped = [
-            (FrameDocstrings::SLUG, FrameDocstrings.apply(source)),
-            (ExpandDocstrings::SLUG, ExpandDocstrings.apply(source)),
+            (
+                FrameDocstrings::SLUG,
+                source.framed_docstrings(FrameDocstrings),
+            ),
+            (
+                ExpandDocstrings::SLUG,
+                source.expanded_docstrings(ExpandDocstrings),
+            ),
         ];
         for (rule, groups) in reshaped {
-            for edits in groups {
+            for edits in groups.iter() {
                 if let Some(first) = edits.first()
                     && let Some(&slot) = item_holding(&self.docstrings, first.start())
                     && !wrapped.iter().any(|edit| slot.contains_range(edit.range()))

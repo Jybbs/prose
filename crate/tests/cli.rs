@@ -759,8 +759,10 @@ fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
     assert_stderr_has(&assert, "second\tnarrowed\tprune-inert-imports\n");
 }
 
-#[test]
-fn check_builds_each_table_line_overflow_shares_once() {
+#[rstest]
+fn check_builds_each_table_line_overflow_shares_once(
+    #[values("chains", "expanded", "framed", "rewraps")] table: &str,
+) {
     let (dir, path) = fixture(
         "shared.py",
         "def f():\n    \"\"\"Summary.\n\n    Body.\n    \"\"\"\n    return items.filter(a).map(b).sort()\n",
@@ -773,9 +775,12 @@ fn check_builds_each_table_line_overflow_shares_once() {
         .current_dir(dir.path())
         .assert();
 
-    let stderr = stderr_utf8(&assert);
-    assert_eq!(stderr.matches("build\tchains\n").count(), 1);
-    assert_eq!(stderr.matches("build\trewraps\n").count(), 1);
+    assert_eq!(
+        stderr_utf8(&assert)
+            .matches(&format!("build\t{table}\n"))
+            .count(),
+        1,
+    );
 }
 
 #[test]
