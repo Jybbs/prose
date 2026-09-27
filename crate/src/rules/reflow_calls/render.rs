@@ -61,11 +61,13 @@ impl<'a> Exploder<'a> {
 
     /// True where an expandable literal opening earlier on the row than
     /// `offset` explodes, which relays the row's overflow to that
-    /// literal and leaves the later ones in place.
+    /// literal and leaves the later ones in place. A literal inside a
+    /// forecast f-string rewrite holds its row and relays nothing.
     fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
         let row = TextRange::new(self.source.text().line_start(offset), offset);
-        starting_within(self.source.expandable_literals(), row, Ranged::start)
-            .any(|literal| self.literal_explodes(*literal))
+        starting_within(self.source.expandable_literals(), row, Ranged::start).any(|literal| {
+            !self.one_row.rewritten(literal.start()) && self.literal_explodes(*literal)
+        })
     }
 
     /// Renders `count` arguments one per line at `indent` through

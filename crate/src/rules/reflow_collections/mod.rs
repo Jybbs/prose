@@ -167,10 +167,10 @@ impl<'a> Layouter<'a> {
         {
             return Some(inline.into_owned());
         }
-        (!self.seating.converts(expr.range())
-            && self
-                .one_row
-                .expands(self.source, expr, parent, column, tail, self.padding))
+        (self
+            .one_row
+            .expands(self.source, expr, parent, column, tail, self.padding)
+            && !self.seating.converts(expr.range()))
         .then(|| self.expand(expr, parent, indent))
     }
 
