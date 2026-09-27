@@ -21,7 +21,11 @@ use crate::{
         padding::Stranding,
         reserve::{Carry, Columns, Reservations},
     },
-    rules::prefer_fstring::PreferFstring,
+    rules::{
+        prefer_fstring::PreferFstring,
+        stack_method_chains::StackMethodChains,
+        wrap_docstrings::{Rewrap, WrapDocstrings},
+    },
     suppression::SuppressionMap,
 };
 
@@ -41,19 +45,22 @@ pub(crate) mod trace;
 /// from that token stream, and the `BindingAnalysis`, alignment-column,
 /// and stranded-padding walks each built on first read or carried
 /// across a reparse from the source before it, beside the f-string
-/// forecast each reparse drops. `source_type` is the
-/// parse mode and `line_ending` the sequence the text breaks its lines
-/// with, leaving `cell_offsets` and `cell_numbers` to carry a
-/// notebook's cell boundaries and positions, empty for a module.
+/// forecast, the chain breaks, and the docstring rewraps each reparse
+/// drops. `source_type` is the parse mode and `line_ending` the sequence
+/// the text breaks its lines with, leaving `cell_offsets` and
+/// `cell_numbers` to carry a notebook's cell boundaries and positions,
+/// empty for a module.
 #[derive(Debug)]
 pub struct Source {
     ast: ModModule,
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
+    chain_breaks: OnceLock<Box<(StackMethodChains, Vec<Vec<Edit>>)>>,
     columns: OnceLock<Box<(Reservations, Columns)>>,
     columns_carry: OnceLock<Box<(Reservations, Carry)>>,
     comment_ranges: CommentRanges,
+    docstring_rewraps: OnceLock<Box<(WrapDocstrings, Vec<Rewrap>)>>,
     expandable_literals: OnceLock<Vec<TextRange>>,
     explodable_arguments: OnceLock<Vec<TextRange>>,
     file: SourceFile,
@@ -127,9 +134,11 @@ impl Source {
             binding_analysis: OnceLock::new(),
             cell_numbers: Box::default(),
             cell_offsets,
+            chain_breaks: OnceLock::new(),
             columns: OnceLock::new(),
             columns_carry: OnceLock::new(),
             comment_ranges,
+            docstring_rewraps: OnceLock::new(),
             expandable_literals: OnceLock::new(),
             explodable_arguments: OnceLock::new(),
             file,
@@ -300,9 +309,11 @@ impl Clone for Source {
             binding_analysis: OnceLock::new(),
             cell_numbers: self.cell_numbers.clone(),
             cell_offsets: self.cell_offsets.clone(),
+            chain_breaks: OnceLock::new(),
             columns: OnceLock::new(),
             columns_carry: OnceLock::new(),
             comment_ranges: self.comment_ranges.clone(),
+            docstring_rewraps: OnceLock::new(),
             expandable_literals: OnceLock::new(),
             explodable_arguments: OnceLock::new(),
             file: self.file.clone(),

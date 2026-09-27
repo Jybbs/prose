@@ -39,6 +39,7 @@ pub(super) enum Region {
 }
 
 /// One multi-line docstring as this rule rewrites it.
+#[derive(Clone, Debug)]
 pub(crate) struct Rewrap {
     /// The budget each line of the body wraps to, keyed by the offset its
     /// first row opens at, `None` for a line passed through as written and
@@ -48,7 +49,7 @@ pub(crate) struct Rewrap {
     pub(crate) edit: Option<Edit>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct WrapDocstrings {
     pub(super) description_width: usize,
     pub(super) section_width: usize,
@@ -76,7 +77,7 @@ impl WrapDocstrings {
     }
 
     /// Returns the rewrap of each multi-line docstring this rule reads, in
-    /// source order.
+    /// source order, the walk [`Source::docstring_rewraps`] holds.
     pub(crate) fn rewraps(&self, source: &Source) -> Vec<Rewrap> {
         let padding = source.stranded_padding(self.stranding);
         let mut rewraps = Vec::new();
@@ -94,9 +95,10 @@ impl WrapDocstrings {
 impl Rule for WrapDocstrings {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         singleton_groups(
-            self.rewraps(source)
-                .into_iter()
-                .filter_map(|rewrap| rewrap.edit),
+            source
+                .docstring_rewraps(*self)
+                .iter()
+                .filter_map(|rewrap| rewrap.edit.clone()),
         )
     }
 

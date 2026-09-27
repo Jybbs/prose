@@ -130,9 +130,13 @@ impl Rule for LineOverflow {
             source,
             strings: Vec::new(),
         };
-        spans.note_docstrings(&self.wrap_docstrings);
-        for edit in self.stack_method_chains.apply(source).into_iter().flatten() {
-            spans.note_rewrite(StackMethodChains::SLUG, &edit);
+        spans.note_docstrings(self.wrap_docstrings);
+        for edit in source
+            .chain_breaks(self.stack_method_chains)
+            .iter()
+            .flatten()
+        {
+            spans.note_rewrite(StackMethodChains::SLUG, edit);
         }
         spans.visit_body(&source.ast().body);
         spans.index();
@@ -341,12 +345,13 @@ impl<'a> Spans<'a> {
     /// rules rewrite. Where `frame-docstrings` or `expand-docstrings`
     /// reshapes a docstring before `wrap-docstrings` reads it, every row of
     /// that docstring is left to the reshaping rule.
-    fn note_docstrings(&mut self, wrap: &WrapDocstrings) {
+    fn note_docstrings(&mut self, wrap: WrapDocstrings) {
         let source = self.source;
+        let rewraps = source.docstring_rewraps(wrap);
         let mut wrapped = Vec::new();
-        for rewrap in wrap.rewraps(source) {
-            self.budgets.extend(rewrap.budgets);
-            wrapped.extend(rewrap.edit);
+        for rewrap in rewraps.iter() {
+            self.budgets.extend_from_slice(&rewrap.budgets);
+            wrapped.extend(rewrap.edit.as_ref());
         }
         let reshaped = [
             (FrameDocstrings::SLUG, FrameDocstrings.apply(source)),
@@ -363,7 +368,7 @@ impl<'a> Spans<'a> {
             }
         }
         for edit in wrapped {
-            self.note_rewrite(WrapDocstrings::SLUG, &edit);
+            self.note_rewrite(WrapDocstrings::SLUG, edit);
         }
     }
 

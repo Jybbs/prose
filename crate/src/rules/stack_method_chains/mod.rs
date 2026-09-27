@@ -47,7 +47,7 @@ mod spine;
 
 use spine::Chain;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,
@@ -75,10 +75,11 @@ impl StackMethodChains {
             reservations: config.equals_reservations(),
         }
     }
-}
 
-impl Rule for StackMethodChains {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+    /// Walks `source` for the break each over-long or over-count chain
+    /// needs, one group per chain, the walk [`Source::chain_breaks`]
+    /// holds.
+    pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let mut breaker = Breaker {
@@ -94,6 +95,12 @@ impl Rule for StackMethodChains {
         };
         walk_parented_exprs(source.ast(), &mut breaker);
         singleton_groups(breaker.edits)
+    }
+}
+
+impl Rule for StackMethodChains {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        source.chain_breaks(*self).into_owned()
     }
 
     fn id(&self) -> RuleId {

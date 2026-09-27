@@ -760,6 +760,25 @@ fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
 }
 
 #[test]
+fn check_builds_each_table_line_overflow_shares_once() {
+    let (dir, path) = fixture(
+        "shared.py",
+        "def f():\n    \"\"\"Summary.\n\n    Body.\n    \"\"\"\n    return items.filter(a).map(b).sort()\n",
+    );
+
+    let assert = prose()
+        .env("PROSE_CARRY_TRACE", "1")
+        .args(["check", "--no-cache"])
+        .arg(&path)
+        .current_dir(dir.path())
+        .assert();
+
+    let stderr = stderr_utf8(&assert);
+    assert_eq!(stderr.matches("build\tchains\n").count(), 1);
+    assert_eq!(stderr.matches("build\trewraps\n").count(), 1);
+}
+
+#[test]
 fn check_clean_fixture_exits_zero() {
     run_fixture("clean.py", "x = 1\n", &["check"]).success();
 }

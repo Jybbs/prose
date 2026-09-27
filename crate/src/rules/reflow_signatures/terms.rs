@@ -16,7 +16,7 @@ use crate::{
 
 /// The terms this rule lays a signature out under, resolved from
 /// configuration.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Terms {
     code_line_length: usize,
     max_params: Option<usize>,

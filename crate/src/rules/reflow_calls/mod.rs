@@ -54,7 +54,7 @@ pub(crate) trait CollectionLayout {
     fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String>;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct ReflowCalls {
     fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,

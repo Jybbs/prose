@@ -49,19 +49,19 @@ struct Entry<'a> {
 /// The text a dict entry keeps between its key and its value, the
 /// `align-colons`-padded gap the source wrote or the canonical `": "`.
 #[derive(Clone, Copy)]
-enum Separator<'a> {
+enum ColonGap<'a> {
     Canonical,
     Padded(&'a str),
 }
 
-impl<'a> Separator<'a> {
-    /// The separator `gap`, the source text between a key and its value,
-    /// leaves the entry. A `rewritten_key` drops the source slice's
+impl<'a> ColonGap<'a> {
+    /// The gap an entry keeps where `written` is the source text between
+    /// its key and its value. A `rewritten_key` drops the source slice's
     /// alignment padding, so the padded gap holds only while the key
     /// passes through unchanged.
-    fn of(gap: &'a str, rewritten_key: bool) -> Self {
-        if is_align_colons_gap(gap) && !rewritten_key {
-            Self::Padded(gap)
+    fn of(written: &'a str, rewritten_key: bool) -> Self {
+        if is_align_colons_gap(written) && !rewritten_key {
+            Self::Padded(written)
         } else {
             Self::Canonical
         }
@@ -77,7 +77,7 @@ impl<'a> Separator<'a> {
         }
     }
 
-    /// The separator's text.
+    /// The gap's text.
     fn text(self) -> &'a str {
         match self {
             Self::Canonical => ": ",
@@ -91,7 +91,7 @@ impl<'a> Layouter<'a> {
     /// `**value`, its width counted at the canonical `": "` separator.
     /// The value is measured and lands at `seat` where one is given, and
     /// otherwise is measured past the key's last row and the canonical
-    /// separator, landing where [`Separator::landing_width`] places it. A
+    /// separator, landing where [`ColonGap::landing_width`] places it. A
     /// borrowed key and value over an `align-colons`-padded gap return
     /// the source slice whole.
     fn entry(
@@ -116,14 +116,14 @@ impl<'a> Layouter<'a> {
             };
         };
         let key_text = self.repaired_key(key, parent, indent);
-        let separator = Separator::of(
+        let gap = ColonGap::of(
             self.key_value_gap(key.end(), value_range.start()),
             matches!(key_text, Cow::Owned(_)),
         );
         let key_end = end_column(&key_text, indent);
         let across_rows = self.source.contains_line_break(value_range);
         let landing = Landing {
-            column: seat.unwrap_or(key_end + separator.landing_width(across_rows)),
+            column: seat.unwrap_or(key_end + gap.landing_width(across_rows)),
             indent,
             item: key.start(),
         };
@@ -144,12 +144,12 @@ impl<'a> Layouter<'a> {
         };
         let key_width = self.text_width(&key_text, key.range());
         let width = key_width + CANONICAL_SEPARATOR + self.text_width(&value_text, value_range);
-        let text = match (separator, &value_text) {
-            (Separator::Padded(_), Cow::Borrowed(_)) => Cow::Borrowed(
+        let text = match (gap, &value_text) {
+            (ColonGap::Padded(_), Cow::Borrowed(_)) => Cow::Borrowed(
                 self.source
                     .slice(TextRange::new(key.start(), value_range.end())),
             ),
-            _ => Cow::Owned(format!("{key_text}{}{value_text}", separator.text())),
+            _ => Cow::Owned(format!("{key_text}{}{value_text}", gap.text())),
         };
         Entry {
             key: Some(key_text),
@@ -423,18 +423,18 @@ mod tests {
     #[case::canonical(": ", false, ": ", 2)]
     #[case::padded("   : ", false, "   : ", 5)]
     #[case::padded_beside_a_rewritten_key("   : ", true, ": ", 2)]
-    fn separator_lands_a_value_past_its_gap_only_where_its_rows_move(
+    fn colon_gap_lands_a_value_past_its_padding_only_where_its_rows_move(
         #[case] gap: &str,
         #[case] rewritten_key: bool,
         #[case] text: &str,
         #[case] across_rows: usize,
     ) {
-        let separator = Separator::of(gap, rewritten_key);
+        let colon = ColonGap::of(gap, rewritten_key);
         assert_eq!(
             (
-                separator.text(),
-                separator.landing_width(false),
-                separator.landing_width(true),
+                colon.text(),
+                colon.landing_width(false),
+                colon.landing_width(true),
             ),
             (text, CANONICAL_SEPARATOR, across_rows),
         );

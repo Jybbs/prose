@@ -23,13 +23,20 @@ use crate::{
         range::overlaps,
         reserve::{Carry, Columns, Reservations, Weave},
     },
-    rules::{RuleId, prefer_fstring::PreferFstring},
+    rules::{
+        RuleId,
+        prefer_fstring::PreferFstring,
+        stack_method_chains::StackMethodChains,
+        wrap_docstrings::{Rewrap, WrapDocstrings},
+    },
 };
 
 /// The label each table reports its builds and carries under.
 const BINDINGS: &str = "bindings";
+const CHAINS: &str = "chains";
 const COLUMNS: &str = "columns";
 const FSTRINGS: &str = "fstrings";
+const REWRAPS: &str = "rewraps";
 const STRANDED: &str = "stranded";
 
 impl Source {
@@ -96,6 +103,17 @@ impl Source {
         })
     }
 
+    /// Returns the groups `chains` breaks over this source, walking the
+    /// tree on the first read. A reparse drops the walk, so the source
+    /// it builds walks again. The rule and `line-overflow` read the one
+    /// walk back, whereas a read carrying other settings walks for
+    /// itself.
+    pub(crate) fn chain_breaks(&self, chains: StackMethodChains) -> Cow<'_, [Vec<Edit>]> {
+        keyed(&self.chain_breaks, CHAINS, chains, |chains| {
+            chains.breaks(self)
+        })
+    }
+
     /// Returns the columns `reservations` shifts each aligned value to,
     /// completing the table a splice carried in where it holds one for
     /// this reservation and walking the tree otherwise, on the first
@@ -111,6 +129,17 @@ impl Source {
                     || reservations.columns(self),
                     |carry| carry.0.completed(self, &carry.1),
                 )
+        })
+    }
+
+    /// Returns each multi-line docstring as `wrap` rewrites it over this
+    /// source, walking the tree on the first read. A reparse drops the
+    /// walk, so the source it builds walks again. The rule and
+    /// `line-overflow` read the one walk back, whereas a read carrying
+    /// other settings walks for itself.
+    pub(crate) fn docstring_rewraps(&self, wrap: WrapDocstrings) -> Cow<'_, [Rewrap]> {
+        keyed(&self.docstring_rewraps, REWRAPS, wrap, |wrap| {
+            wrap.rewraps(self)
         })
     }
 
@@ -304,6 +333,7 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
+        rules::{Rule, line_overflow::LineOverflow},
         testing::{parse, range, woven},
     };
 
@@ -324,9 +354,27 @@ mod tests {
     fn with_every_table(source: Source) -> Source {
         let config = Config::default();
         source.binding_analysis();
+        source.chain_breaks(StackMethodChains::from_config(&config));
         source.columns(config.equals_reservations());
+        source.docstring_rewraps(WrapDocstrings::from_config(&config));
         source.stranded_padding(config.stranded_padding());
         source
+    }
+
+    #[test]
+    fn chain_breaks_and_docstring_rewraps_fill_from_each_rule_reading_them() {
+        let config = Config::default();
+        let text = "def f():\n    \"\"\"Summary.\n\n    Body.\n    \"\"\"\n    return items.filter(a).map(b)\n";
+        let applied = parse(text);
+        StackMethodChains::from_config(&config).apply(&applied);
+        WrapDocstrings::from_config(&config).apply(&applied);
+        let linted = parse(text);
+        LineOverflow::from_config(&config).lint(&linted);
+
+        for source in [&applied, &linted] {
+            assert!(source.chain_breaks.get().is_some());
+            assert!(source.docstring_rewraps.get().is_some());
+        }
     }
 
     #[test]
@@ -357,7 +405,9 @@ mod tests {
         let next = reparsed_with(source, vec![blank], preserves);
 
         assert_eq!(next.binding_analysis.get().is_some(), preserves);
+        assert!(next.chain_breaks.get().is_none());
         assert!(next.columns.get().is_none());
+        assert!(next.docstring_rewraps.get().is_none());
         assert!(next.stranded_padding.get().is_none());
         assert_eq!(
             next.assert_carried_bindings_are_fresh("the reparsed source"),
