@@ -318,7 +318,7 @@ mod tests {
     fn an_unread_import_drops_where_the_module_binds_a_name_of_its_own() {
         let source = parse("import json\n\nvalue = 1\n");
 
-        assert_eq!(pruned_text(&source), "\nvalue = 1\n");
+        assert_eq!(pruned_text(&source), "value = 1\n");
         assert!(rule().lint(&source).is_empty());
     }
 
@@ -326,7 +326,7 @@ mod tests {
     fn an_unread_import_drops_whole_outside_a_package_init() {
         let source = parse("import json\n\n__all__ = [\"value\"]\nvalue = 1\n");
 
-        assert_eq!(pruned_text(&source), "\n__all__ = [\"value\"]\nvalue = 1\n");
+        assert_eq!(pruned_text(&source), "__all__ = [\"value\"]\nvalue = 1\n");
         assert!(rule().lint(&source).is_empty());
     }
 

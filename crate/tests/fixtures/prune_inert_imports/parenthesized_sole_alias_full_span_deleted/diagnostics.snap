@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/prune_inert_imports/parenthesized_sole_alias_full_span_deleted/input.py
 ---
-prune-inert-imports@0..44
+prune-inert-imports@0..45

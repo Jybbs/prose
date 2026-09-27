@@ -16,6 +16,8 @@ The reference count runs per bound name, so one member drops off a shared `from`
 
 <Fixture rule="prune_inert_imports" case="every_member_unread_drops_the_whole_line" />
 
+A removed statement takes the blank lines on one side along with its own line, whichever side holds fewer, so the statements around it keep the spacing the source wrote beside the import. An import opening the file takes the blank lines below it, and one closing the file takes those above it.
+
 ## What Holds Its Line
 
 Whether a name is re-exported is a fact about *other* files, and *Prose* formats one file at a time, so it never sees the sibling doing `from shim import name`. Two shapes in the file itself say that removing an import could break such a sibling, and in both the rule reports the binding rather than removing it.

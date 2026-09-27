@@ -3,8 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/unused_future_annotations/async_def_return_resolves/input.py
 ---
-
-
 class Result:
     pass
 

@@ -68,6 +68,8 @@ pub(crate) fn reaches(edits: &[EditRows], rows: &Range<usize>, line: &str) -> bo
 }
 
 /// The lines one fix's edits reach, as written and as the edits leave them.
+/// A span closing on a line break ends with the row that break closes, so a
+/// deletion of whole rows leaves the row after it out.
 pub(crate) fn rewritten(edits: &[EditRows], text: &str) -> (String, String) {
     let spans: Vec<_> = edits
         .iter()
@@ -83,12 +85,15 @@ pub(crate) fn rewritten(edits: &[EditRows], text: &str) -> (String, String) {
         return (String::new(), String::new());
     }
     let low = text[..first].rfind('\n').map_or(0, |at| at + 1);
-    let high = text[last..].find('\n').map_or(text.len(), |at| last + at);
+    let high = match text[..last].strip_suffix('\n') {
+        Some(row) if last > first => row.len(),
+        _ => text[last..].find('\n').map_or(text.len(), |at| last + at),
+    };
     let mut edited = text.to_owned();
     for (start, end, content) in spans.into_iter().rev() {
         edited.replace_range(start..end, content);
     }
-    let shifted = (high + edited.len()).saturating_sub(text.len());
+    let shifted = (high.max(last) + edited.len()).saturating_sub(text.len());
     (
         text[low..high].to_owned(),
         edited[low..shifted.min(edited.len())].to_owned(),

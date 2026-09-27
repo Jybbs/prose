@@ -25,11 +25,12 @@ use crate::{
     primitives::{
         aligner,
         comments::noqa_marker,
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletion},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletions},
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
         layout::pack,
         padding::Stranding,
+        range::blocks_span,
         scope::{scoped_body, sub_bodies},
     },
     rules::{Rule, RuleId, band_constants::BandConstants},
@@ -144,10 +145,15 @@ impl<'a> Layout<'a> {
 
     /// Folds every member of `group` into its first statement, laying
     /// the gathered roster out under the shared head and clearing each
-    /// folded member's line. A group whose members already read that way
-    /// emits nothing.
-    fn merge_group(&mut self, body: &'a [Stmt], group: &[usize]) {
-        let [lead, .., last] = group else {
+    /// folded member's lines with the deletion `deletions` holds for its
+    /// slot. A group whose members already read that way emits nothing.
+    fn merge_group(
+        &mut self,
+        body: &'a [Stmt],
+        group: &[usize],
+        deletions: &mut FxHashMap<usize, Edit>,
+    ) {
+        let [lead, folded @ ..] = group else {
             unreachable!("invariant: a merge group holds two or more members");
         };
         let node = body[*lead]
@@ -159,14 +165,12 @@ impl<'a> Layout<'a> {
             .and_then(|rows| self.packed_edit(node, &names, &rows))
             .into_iter()
             .collect();
-        edits.extend(
-            group[1..]
-                .iter()
-                .map(|&slot| whole_line_deletion(self.source, body[slot].range())),
-        );
-        let span = self
-            .source
-            .full_lines_within_cell(TextRange::new(body[*lead].start(), body[*last].end()));
+        edits.extend(folded.iter().map(|slot| {
+            deletions
+                .remove(slot)
+                .expect("invariant: every folded member holds a deletion")
+        }));
+        let span = blocks_span(&edits);
         if apply_inline_edits(self.source, span, &edits) != self.source.slice(span) {
             self.groups.push(edits);
         }
@@ -250,8 +254,16 @@ impl<'a> Layout<'a> {
                 self.forecast(settings, body, outer, &runs, &groups)
             });
         let gathered: FxHashSet<usize> = groups.iter().flatten().copied().collect();
+        let folded: Vec<usize> = groups
+            .iter()
+            .flat_map(|group| &group[1..])
+            .copied()
+            .sorted_unstable()
+            .collect();
+        let deletions = whole_line_deletions(source, folded.iter().map(|&slot| body[slot].range()));
+        let mut deletions: FxHashMap<usize, Edit> = folded.into_iter().zip(deletions).collect();
         for group in &groups {
-            self.merge_group(body, group);
+            self.merge_group(body, group, &mut deletions);
         }
         for (slot, stmt) in body.iter().enumerate() {
             match stmt {
