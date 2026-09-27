@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/closing_unread_import_removed_with_the_blank_line_above/input.py
+---
+value = 1

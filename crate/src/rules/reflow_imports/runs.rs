@@ -21,7 +21,10 @@ use crate::{
         },
         orderer::member_blocks,
     },
-    rules::band_constants::{BandConstants, Bands, Carry},
+    rules::{
+        RuleId,
+        band_constants::{BandConstants, Bands, Carry},
+    },
     source::Source,
 };
 
@@ -78,10 +81,16 @@ impl Folds {
         )
     }
 
-    /// One fix group per statement of `drops`, a comment-led statement
-    /// losing every alias landing on the import this forecast names.
-    pub(crate) fn prune(&self, source: &Source, drops: &[Dropping]) -> Vec<Vec<Edit>> {
-        prune_import_statements(source, &source.ast().body, drops, |slot, survives| {
+    /// One fix group per statement of `drops` that `rule` prunes, a
+    /// comment-led statement losing every alias landing on the import
+    /// this forecast names.
+    pub(crate) fn prune(
+        &self,
+        source: &Source,
+        drops: &[Dropping],
+        rule: RuleId,
+    ) -> Vec<Vec<Edit>> {
+        prune_import_statements(source, &source.ast().body, drops, rule, |slot, survives| {
             self.landing(source, slot, survives)
         })
     }

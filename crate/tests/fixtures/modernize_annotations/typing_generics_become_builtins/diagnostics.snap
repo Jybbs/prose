@@ -1,9 +1,9 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/modernize_annotations/typing_generics_become_builtins/input.py
 ---
-modernize-annotations@0..59
+modernize-annotations@0..61
 modernize-annotations@123..124
 modernize-annotations@141..142
 modernize-annotations@166..173

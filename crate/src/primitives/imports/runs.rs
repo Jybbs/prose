@@ -4,19 +4,12 @@
 use std::ops::Range;
 
 use ruff_python_ast::{Stmt, StmtImportFrom};
-use ruff_source_file::LineRanges;
-use ruff_text_size::TextRange;
-
-use crate::{
-    primitives::{
-        blanks::whitespace_start_before,
-        sections::Sections,
-        slots::{runs_where, slot_runs},
-    },
-    source::Source,
-};
 
 use super::*;
+use crate::primitives::{
+    sections::Sections,
+    slots::{runs_where, slot_runs},
+};
 
 /// True when the module carries `from __future__ import annotations`,
 /// deferring every annotation's evaluation per PEP 563.
@@ -77,17 +70,6 @@ pub(crate) fn sectioned_import_runs(sections: &Sections, body: &[Stmt]) -> Vec<R
                 .map(move |run| section.start + run.start..section.start + run.end)
         })
         .collect()
-}
-
-/// The full lines `stmt` sits on together with the blank run directly
-/// above them, held within the statement's notebook cell.
-pub(super) fn lines_under_blank_run(source: &Source, stmt: TextRange) -> TextRange {
-    let lines = source.full_lines_within_cell(stmt);
-    let above = whitespace_start_before(source, lines.start());
-    TextRange::new(
-        source.text().full_line_end(above).min(lines.start()),
-        lines.end(),
-    )
 }
 
 #[cfg(test)]

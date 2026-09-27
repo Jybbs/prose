@@ -1,14 +1,13 @@
 //! Edit-shaping primitives shared across rules. `apply_edits_mapped`
-//! splices a sorted edit list into a source string, pairing it with a
-//! `SourceMap` of one start-and-end marker per applied edit, and
-//! `apply_inline_edits` folds a list of edits into a source range. Both
-//! decline overlapping edits, the first with `None` and the second with
-//! `Cow::Borrowed`. `narrowed_replacement` trims a replacement to the
-//! range that differs from the source, `insert_edit` keeps a rule's own
-//! accumulator sorted by start, the `forward_*` functions move an
-//! offset, a range, or a notebook's cell boundaries through the
-//! `SourceMap` of an applied edit set, and `shifted_past` reads the
-//! same map for a boundary no edit replaced.
+//! splices sorted edits into a string beside a `SourceMap` of one
+//! start-and-end marker per edit, and `apply_inline_edits` folds edits
+//! into a source range, the two declining an overlap with `None` and
+//! `Cow::Borrowed` in turn. `narrowed_replacement` trims a replacement
+//! to the range that differs, `insert_edit` keeps an accumulator sorted
+//! by start, the `forward_*` functions move an offset, a range, or cell
+//! boundaries through a `SourceMap`, `shifted_past` reads one for a
+//! boundary no edit replaced, and `whole_line_deletions` clears dropped
+//! statements, keeping one blank run where two would meet.
 
 use std::borrow::Cow;
 
@@ -18,9 +17,11 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use crate::{primitives::sorted_slot, source::Source};
 
 mod apply;
+mod deletions;
 mod offsets;
 
 pub(crate) use apply::{apply_edits_mapped, apply_inline_edits, splice_bodies};
+pub(crate) use deletions::whole_line_deletions;
 pub(crate) use offsets::{
     forward_offsets, forward_range, forward_start, narrowed_replacement, shifted_past,
 };
@@ -44,6 +45,15 @@ pub(crate) fn joins_an_identifier(c: char) -> bool {
     c.is_alphanumeric() || c == '_'
 }
 
+/// True where the character ahead of `offset` joins an identifier, so
+/// text opening with one placed there runs into it.
+pub(crate) fn joins_before(source: &Source, offset: TextSize) -> bool {
+    source.text()[..offset.to_usize()]
+        .chars()
+        .next_back()
+        .is_some_and(joins_an_identifier)
+}
+
 /// `text` carrying a leading space where the character before `start`
 /// would otherwise run into it, as `return[x for x in xs]` does.
 pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
@@ -52,15 +62,6 @@ pub(crate) fn padded(source: &Source, start: TextSize, text: String) -> String {
     } else {
         text
     }
-}
-
-/// True where the character ahead of `offset` joins an identifier, so
-/// text opening with one placed there runs into it.
-pub(crate) fn joins_before(source: &Source, offset: TextSize) -> bool {
-    source.text()[..offset.to_usize()]
-        .chars()
-        .next_back()
-        .is_some_and(joins_an_identifier)
 }
 
 /// The text ahead of `offset` on its logical line, clipped to `floor`
@@ -87,13 +88,6 @@ pub(crate) fn singleton_groups(edits: impl IntoIterator<Item = Edit>) -> Vec<Vec
     edits.into_iter().map(|edit| vec![edit]).collect()
 }
 
-/// The edit clearing every full line `range` sits on, its final line
-/// terminator included, held back from the newline closing a notebook
-/// cell.
-pub(crate) fn whole_line_deletion(source: &Source, range: TextRange) -> Edit {
-    Edit::range_deletion(source.full_lines_within_cell(range))
-}
-
 fn replacement_or_deletion(range: TextRange, content: String) -> Edit {
     if content.is_empty() {
         Edit::range_deletion(range)
@@ -107,7 +101,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::parse;
 
     #[rstest]
     #[case(6, "dict(", " dict(")]
@@ -124,14 +118,5 @@ mod tests {
             padded(&source, TextSize::new(start), text.to_owned()),
             expected,
         );
-    }
-
-    #[test]
-    fn whole_line_deletion_clears_through_the_line_terminator() {
-        let source = parse("import os\nimport sys\nx = 1\n");
-        let edit = whole_line_deletion(&source, range(10, 16));
-
-        assert_eq!(edit.range(), range(10, 21));
-        assert_eq!(edit.content(), None);
     }
 }

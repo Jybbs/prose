@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Unread Imports Parted by a Blank Line Are Removed as One Block"
+
+description = '''
+Two blank lines separate the module docstring from `import json`, one separates `import json` from `import os`, and two more separate `import os` from `value = 1`, and nothing reads `json` or `os`. **Both imports are removed as one block together with the blank line between them and the two blank lines above them**, so the docstring and `value = 1` keep the two blank lines the source wrote on each side of the imports.
+'''
