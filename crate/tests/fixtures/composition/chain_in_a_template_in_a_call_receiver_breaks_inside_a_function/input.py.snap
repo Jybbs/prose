@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_in_a_template_in_a_call_receiver_breaks_inside_a_function/input.py
+---
+def f():
+    (
+        fetch(
+            "%s:%s" % (
+                (
+                    gamma.get(key)
+                         .strip()
+                         .lower()
+                ),
+                delta
+            )
+        )
+        .order_by(name)
+        .all()
+    )

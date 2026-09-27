@@ -11,7 +11,7 @@ use ruff_python_ast::{
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::Exploder;
+use super::{Exploder, Seat};
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::{apply_inline_edits, insert_edit, narrowed_replacement},
@@ -367,6 +367,19 @@ impl<'a> Exploder<'a> {
             // on the length trigger alone, so the count trigger leaves
             // such calls inline.
             _ => length_trips.then(|| self.explode_source_order(call, indent)),
+        }
+    }
+
+    /// Relocates this walk to answer for `region` once it lands at
+    /// `seat`, an exploded closing bracket dropping to the seat's indent.
+    pub(super) fn landed(self, region: TextRange, seat: Seat) -> Self {
+        Self {
+            indent: Some(seat.indent),
+            line_shift: seat.line_shift,
+            origin_column: seat.column,
+            region,
+            tail: seat.tail,
+            ..self
         }
     }
 

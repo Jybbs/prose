@@ -2,13 +2,14 @@
 //! stopping at its last non-whitespace character so the text between two
 //! segments is the gap a break rewrites.
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     primitives::{
         fracture,
-        inline::{display_width, spans_rows},
+        inline::{display_width, settled_slice_width, spans_rows},
     },
     source::Source,
 };
@@ -77,10 +78,11 @@ impl<'a> Chain<'a> {
         std::iter::once(self.receiver_range).chain(self.links.iter().copied())
     }
 
-    /// The receiver's display width, the columns a hung link's dot sits
-    /// past the indent the broken chain opens at.
-    pub(super) fn receiver_width(&self, source: &Source) -> usize {
-        display_width(source.slice(self.receiver_range))
+    /// The receiver's display width once each forecast `prefer-fstring`
+    /// rewrite among `rewrites` inside it lands, the columns a hung
+    /// link's dot sits past the indent the broken chain opens at.
+    pub(super) fn receiver_width(&self, source: &Source, rewrites: &[Edit]) -> usize {
+        settled_slice_width(source, rewrites, self.receiver_range)
     }
 
     /// True when a segment still carries a line break once the

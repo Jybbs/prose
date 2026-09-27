@@ -88,21 +88,14 @@ impl<'a> LazySeating<'a> {
         self.reflow_calls.forecasts(self.source, range) && self.seating().converts(range)
     }
 
-    /// True where `range` sits inside an interpolation a walk over the
-    /// argument list of `call` leaves for `prefer-fstring` once the link
-    /// closing with `call`, spanning `region`, lands at `seat`, the walk
-    /// running only where a forecast rewrite covers `range`.
-    pub(crate) fn converts_landed(
-        &self,
-        range: TextRange,
-        call: &ExprCall,
-        region: TextRange,
-        seat: Seat,
-    ) -> bool {
+    /// True where `range` sits inside an interpolation a walk over what
+    /// `reach` spans leaves for `prefer-fstring`, the walk running only
+    /// where a forecast rewrite covers `range`.
+    pub(crate) fn converts_landed(&self, range: TextRange, reach: Reach) -> bool {
         self.reflow_calls.forecasts(self.source, range)
             && self
                 .reflow_calls
-                .recorded(self.source, Reach::Link { call, region, seat })
+                .recorded(self.source, reach)
                 .converts(range)
     }
 
@@ -113,14 +106,19 @@ impl<'a> LazySeating<'a> {
     }
 }
 
-/// What one walk spans, the whole module or the argument list of `call`
-/// once the chain link closing with it, spanning `region`, lands at
-/// `seat`.
+/// What one walk spans: the whole module, or the text over `region`
+/// once it lands at `seat`, the walk visiting the argument list of
+/// `call`, whose callee sits outside `region`, or the expression `expr`.
 #[derive(Clone, Copy)]
-enum Reach<'a> {
+pub(crate) enum Reach<'a> {
     Module,
-    Link {
+    Arguments {
         call: &'a ExprCall,
+        region: TextRange,
+        seat: Seat,
+    },
+    Expr {
+        expr: &'a Expr,
         region: TextRange,
         seat: Seat,
     },
@@ -189,16 +187,14 @@ impl ReflowCalls {
                 exploder.visit_body(&source.ast().body);
                 exploder.edits
             }
-            Reach::Link { call, region, seat } => {
-                let mut landed = Exploder {
-                    indent: Some(seat.indent),
-                    line_shift: seat.line_shift,
-                    origin_column: seat.column,
-                    region,
-                    tail: seat.tail,
-                    ..exploder
-                };
+            Reach::Arguments { call, region, seat } => {
+                let mut landed = exploder.landed(region, seat);
                 landed.lay_out_arguments(call);
+                landed.edits
+            }
+            Reach::Expr { expr, region, seat } => {
+                let mut landed = exploder.landed(region, seat);
+                landed.visit_expr(expr);
                 landed.edits
             }
         }

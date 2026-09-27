@@ -38,7 +38,8 @@ use crate::{
     },
     rules::{
         Rule, RuleId,
-        reflow_calls::{LazySeating, ReflowCalls, Seat},
+        prefer_fstring::PreferFstring,
+        reflow_calls::{LazySeating, Reach, ReflowCalls, Seat},
     },
     source::Source,
 };
@@ -51,6 +52,7 @@ use spine::Chain;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
+    fstrings: PreferFstring,
     max_links: Option<usize>,
     max_shift: MaxShift,
     reflow_calls: ReflowCalls,
@@ -69,6 +71,7 @@ impl StackMethodChains {
         let rules = &config.rules.stack_method_chains;
         Self {
             code_line_length: config.code_width(),
+            fstrings: config.fstrings(),
             max_links: rules.max_links.cap(),
             max_shift: rules.max_shift,
             reflow_calls: config.call_seating(),
@@ -83,6 +86,7 @@ impl StackMethodChains {
     pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
+        let rewrites = source.fstring_rewrites(self.fstrings);
         let mut breaker = Breaker {
             cap: self.max_links,
             code_line_length: self.code_line_length,
@@ -90,6 +94,7 @@ impl StackMethodChains {
             max_shift: self.max_shift,
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
+            rewrites: &rewrites,
             seating: LazySeating::new(&self.reflow_calls, source),
             source,
         };
@@ -109,9 +114,10 @@ impl Rule for StackMethodChains {
 }
 
 /// Emits the break edit each over-long or over-count chain needs as the
-/// parent-tracking walk reaches it. `seating` holds what the
-/// `reflow_calls` walk records, built in full the first time a chain
-/// reads it.
+/// parent-tracking walk reaches it. `rewrites` holds the f-string
+/// rewrites `prefer-fstring` forecasts over the source, and `seating`
+/// what the `reflow_calls` walk records, built in full the first time a
+/// chain reads it.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
@@ -119,6 +125,7 @@ struct Breaker<'a> {
     max_shift: MaxShift,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
+    rewrites: &'a [Edit],
     seating: LazySeating<'a>,
     source: &'a Source,
 }
@@ -168,27 +175,46 @@ impl<'a> Breaker<'a> {
     }
 
     /// True where `expr`, inside `chain`'s segment at `segment` written
-    /// from `seat`, sits in an interpolation `prefer-fstring` converts. A
-    /// link reads the `reflow_calls` walk over its argument list once the
-    /// link lands at `seat`, and the receiver reads the walk over the
-    /// source as written.
-    fn converts(&self, chain: &Chain, segment: usize, expr: &Expr, seat: Seat) -> bool {
-        match segment.checked_sub(1) {
-            None => self.seating.converts(expr.range()),
-            Some(link) => self.seating.converts_landed(
-                expr.range(),
-                chain.calls[link],
-                chain.links[link],
+    /// from `seat`, sits in an interpolation `prefer-fstring` converts,
+    /// read from the `reflow_calls` walk over that segment once it lands
+    /// at `seat`. A link's walk covers its argument list, and the
+    /// receiver's covers the receiver with the first link's settled width
+    /// trailing it where the links hang, since the head row holds both.
+    fn converts(
+        &self,
+        chain: &Chain<'a>,
+        segment: usize,
+        expr: &Expr,
+        seat: Seat,
+        joins: &fracture::Joins,
+    ) -> bool {
+        let reach = match segment.checked_sub(1) {
+            None => {
+                let tail = if self.hang(chain).is_some() {
+                    display_width(&joins.settled(self.source, chain.links[0]))
+                } else {
+                    0
+                };
+                Reach::Expr {
+                    expr: chain.receiver,
+                    region: chain.receiver_range,
+                    seat: Seat { tail, ..seat },
+                }
+            }
+            Some(link) => Reach::Arguments {
+                call: chain.calls[link],
+                region: chain.links[link],
                 seat,
-            ),
-        }
+            },
+        };
+        self.seating.converts_landed(expr.range(), reach)
     }
 
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
     fn hang(&self, chain: &Chain) -> Option<usize> {
-        let shift = chain.receiver_width(self.source);
+        let shift = chain.receiver_width(self.source, self.rewrites);
         match self.max_shift {
             MaxShift::Cap(cap) => (shift <= cap.get()).then_some(shift),
             MaxShift::NoShift => None,
@@ -287,7 +313,7 @@ impl<'a> Breaker<'a> {
             };
             match self
                 .broken(expr, &nested, nested_range, nested_seat)
-                .filter(|_| !seated && !self.converts(chain, segment, expr, seat))
+                .filter(|_| !seated && !self.converts(chain, segment, expr, seat, joins))
             {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),

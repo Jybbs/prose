@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_in_a_template_in_a_call_receiver_breaks_once_stacked/input.py
+---
+rows = (
+    fetch(
+        "%s:%s" % (
+            (
+                gamma.get(key)
+                     .strip()
+                     .lower()
+            ),
+            delta
+        )
+    )
+    .order_by(name)
+    .all()
+)
