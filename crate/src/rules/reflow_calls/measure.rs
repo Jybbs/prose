@@ -15,6 +15,7 @@ use super::{CollectionLayout, Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
+    slots::holds_exactly,
     tokens::{is_closer, is_opener},
     travel::{Travel, shifted_block},
 };
@@ -88,11 +89,7 @@ impl<'a> Exploder<'a> {
     /// entries land.
     pub(super) fn expands_later(&self, literal: &Expr) -> bool {
         if !self.one_row.expands_literals()
-            || self
-                .source
-                .expandable_literals()
-                .binary_search_by_key(&literal.start(), Ranged::start)
-                .is_err()
+            || !holds_exactly(self.source.expandable_literals(), literal.range())
         {
             return false;
         }

@@ -31,7 +31,7 @@ use crate::{
         comments::trailing_comment,
         docstring::docstring_slots,
         inline::{display_width, spliced_rows},
-        slots::{item_holding, slot_holding},
+        slots::{holds_exactly, item_holding, slot_holding},
         walk::walk_stmt,
     },
     rules::{
@@ -268,7 +268,7 @@ impl<'a> Spans<'a> {
     /// `stack-adjacent-strings` still breaks it, which leaves out a run
     /// filling a docstring slot.
     fn breakable_run<'e>(&self, expr: &'e Expr) -> Option<StringLike<'e>> {
-        concatenated_run(expr).filter(|_| !self.docstrings.contains(&expr.range()))
+        concatenated_run(expr).filter(|_| !holds_exactly(&self.docstrings, expr.range()))
     }
 
     /// Returns the budget `wrap-docstrings` wraps `line` to, `None` outside
@@ -337,8 +337,19 @@ impl<'a> Spans<'a> {
     /// row.
     fn note_arguments(&mut self, arguments: &Arguments) {
         let items = arguments.iter_source_order().map(|arg| arg.range());
-        let splits = row_gaps(self.source, bracketed(arguments.range(), items));
-        self.note(arguments.range(), ReflowCalls::SLUG, splits);
+        self.note_bracketed(arguments.range(), ReflowCalls::SLUG, items);
+    }
+
+    /// Records the rows a layout rule splits between the `items` bracketed
+    /// by `range`, which `rule` lays out one per row.
+    fn note_bracketed(
+        &mut self,
+        range: TextRange,
+        rule: RuleId,
+        items: impl IntoIterator<Item = TextRange>,
+    ) {
+        let splits = row_gaps(self.source, bracketed(range, items));
+        self.note(range, rule, splits);
     }
 
     /// Records each docstring row's wrap budget and the rows the docstring
@@ -412,8 +423,7 @@ impl<'a> Spans<'a> {
             })
         });
         let items = elts.iter().map(Ranged::range).chain(entries);
-        let splits = row_gaps(self.source, bracketed(expr.range(), items));
-        self.note(expr.range(), ReflowCollections::SLUG, splits);
+        self.note_bracketed(expr.range(), ReflowCollections::SLUG, items);
     }
 
     /// Records each single-statement match arm, whose body
@@ -457,8 +467,7 @@ impl<'a> Spans<'a> {
             return;
         }
         let items = params.iter_source_order().map(|param| param.range());
-        let splits = row_gaps(self.source, bracketed(params.range(), items));
-        self.note(params.range(), ReflowSignatures::SLUG, splits);
+        self.note_bracketed(params.range(), ReflowSignatures::SLUG, items);
     }
 
     /// Records a string literal written as one part on one source line,

@@ -35,8 +35,8 @@ use ignore::WalkBuilder;
 use itertools::Itertools;
 use libcst_native::{
     ClassDef, Codegen, CodegenState, Comment, CompoundStatement, EmptyLine, Expression, ImportFrom,
-    Module, NameOrAttribute, SimpleStatementLine, SimpleWhitespace, SmallStatement, Statement,
-    Suite, TrailingWhitespace, WithLeadingLines, parse_module,
+    IndentedBlock, Module, NameOrAttribute, SimpleStatementLine, SimpleWhitespace, SmallStatement,
+    Statement, Suite, TrailingWhitespace, WithLeadingLines, parse_module,
 };
 use rand::{
     RngExt, SeedableRng,
@@ -103,6 +103,19 @@ impl<'a> SourceOrderVisitor<'a> for Arguments {
 
 /// One mutation's rewrite of a module's text, `None` where it does not apply.
 type Mutation = fn(&str, &mut StdRng) -> Option<String>;
+
+/// Returns the body of each class `body` defines at its own level.
+fn class_blocks<'m, 'a>(
+    body: &'m mut [Statement<'a>],
+) -> impl Iterator<Item = &'m mut IndentedBlock<'a>> {
+    body.iter_mut().filter_map(|statement| match statement {
+        Statement::Compound(CompoundStatement::ClassDef(ClassDef {
+            body: Suite::IndentedBlock(block),
+            ..
+        })) => Some(block),
+        _ => None,
+    })
+}
 
 /// Returns `text` with a comment line leading a sample of its statements,
 /// each at that statement's own indent.
@@ -192,14 +205,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn members(text: &str, rng: &mut StdRng) -> Option<String> {
     let mut module = parse_module(text, None).ok()?;
     let mut moved = false;
-    for statement in &mut module.body {
-        let Statement::Compound(CompoundStatement::ClassDef(ClassDef {
-            body: Suite::IndentedBlock(block),
-            ..
-        })) = statement
-        else {
-            continue;
-        };
+    for block in class_blocks(&mut module.body) {
         moved |= reordered(&mut block.body, rng, |slot, held| {
             slot == 0 && is_docstring(held)
         });
@@ -367,11 +373,7 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
     else {
         unreachable!("invariant: `skipped` indexes a simple statement");
     };
-    *trailing_whitespace = TrailingWhitespace {
-        comment: Some(Comment("# prose: skip")),
-        whitespace: SimpleWhitespace("  "),
-        ..Default::default()
-    };
+    *trailing_whitespace = trailed("# prose: skip");
     let region = rng.random_range(0..module.body.len());
     module.body[region]
         .leading_lines()
@@ -381,25 +383,23 @@ fn suppressed(text: &str, rng: &mut StdRng) -> Option<String> {
         None => &mut module.footer,
     };
     lines.insert(0, led("# prose: on"));
-    let kept = module
-        .body
-        .iter_mut()
-        .filter_map(|statement| match statement {
-            Statement::Compound(CompoundStatement::ClassDef(ClassDef {
-                body: Suite::IndentedBlock(block),
-                ..
-            })) if block.header.comment.is_none() => Some(&mut block.header),
-            _ => None,
-        })
+    let kept = class_blocks(&mut module.body)
+        .map(|block| &mut block.header)
+        .filter(|header| header.comment.is_none())
         .choose(rng);
     if let Some(header) = kept {
-        *header = TrailingWhitespace {
-            comment: Some(Comment("# prose: keep")),
-            whitespace: SimpleWhitespace("  "),
-            ..Default::default()
-        };
+        *header = trailed("# prose: keep");
     }
     Some(render(&module))
+}
+
+/// Builds a trailing comment carrying `text`, two spaces past the code.
+fn trailed(text: &'static str) -> TrailingWhitespace<'static> {
+    TrailingWhitespace {
+        comment: Some(Comment(text)),
+        whitespace: SimpleWhitespace("  "),
+        ..Default::default()
+    }
 }
 
 /// Returns every Python source under `root` in a stable order, covering the

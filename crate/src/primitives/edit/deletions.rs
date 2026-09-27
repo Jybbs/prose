@@ -5,6 +5,7 @@ use std::iter;
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
+use ruff_python_ast::Stmt;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
@@ -13,6 +14,19 @@ use crate::{
     rules::RuleId,
     source::Source,
 };
+
+/// Returns each of `slots` beside the edit clearing its statement of
+/// `body` per [`whole_line_deletions`], ascending by slot.
+pub(crate) fn slot_deletions(
+    source: &Source,
+    body: &[Stmt],
+    slots: impl IntoIterator<Item = usize>,
+    rule: RuleId,
+) -> impl Iterator<Item = (usize, Edit)> {
+    let slots: Vec<usize> = slots.into_iter().sorted_unstable().collect();
+    let edits = whole_line_deletions(source, slots.iter().map(|&slot| body[slot].range()), rule);
+    slots.into_iter().zip(edits)
+}
 
 /// Returns one edit per range of `ranges` clearing its full lines, the
 /// ranges ascending and each holding its lines alone. Ranges parted only
@@ -23,7 +37,7 @@ use crate::{
 /// a block whose last row has no line break also clears the break
 /// closing the row above its run, unless a suppression of `rule` covers
 /// that break.
-pub(crate) fn whole_line_deletions(
+fn whole_line_deletions(
     source: &Source,
     ranges: impl IntoIterator<Item = TextRange>,
     rule: RuleId,
@@ -61,7 +75,7 @@ pub(crate) fn whole_line_deletions(
                 .chain(init.iter().map(Ranged::end))
                 .chain(iter::once(below.unwrap_or(last).end()))
                 .tuple_windows()
-                .map(|(start, end)| Edit::range_deletion(TextRange::new(start, end)))
+                .map(|(start, end)| Edit::deletion(start, end))
         })
         .collect()
 }

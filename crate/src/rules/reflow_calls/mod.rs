@@ -30,7 +30,7 @@ use crate::{
     config::Config,
     primitives::{
         call_keywords::{CallTargets, module_call_params},
-        edit::{apply_inline_edits, insert_edit, narrowed_replacement, singleton_groups},
+        edit::{apply_inline_edits, singleton_groups},
         layout::is_collapsible,
         one_row, padding, reserve,
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
@@ -272,9 +272,7 @@ impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
         match self.layout {
             Some(layout) if is_collapsible(expr) => {
                 if let Some(text) = self.laid_out(layout, expr) {
-                    if let Some(edit) = narrowed_replacement(self.source, expr.range(), text) {
-                        insert_edit(&mut self.edits, edit);
-                    }
+                    self.replace(expr.range(), text);
                     return;
                 }
                 if self.one_row.holds_its_row(self.source, expr) {
@@ -304,9 +302,7 @@ impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
         // The rendered list already carries every nested reshape, so the
         // arguments go unwalked.
         if let Some(text) = self.explode_args(call, column) {
-            if let Some(edit) = narrowed_replacement(self.source, call.arguments.range(), text) {
-                insert_edit(&mut self.edits, edit);
-            }
+            self.replace(call.arguments.range(), text);
             return;
         }
         self.visit_arguments(&call.arguments);

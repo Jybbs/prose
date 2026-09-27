@@ -25,7 +25,7 @@ use crate::{
     primitives::{
         aligner,
         comments::noqa_marker,
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletions},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, slot_deletions},
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
         layout::pack,
@@ -233,7 +233,7 @@ impl<'a> Layout<'a> {
     /// `band-constants` hoists from between its statements, whereas under
     /// `keeps_order` it gathers only across consecutive statements. The
     /// folded members of every group that emits clear together per
-    /// [`whole_line_deletions`].
+    /// [`slot_deletions`].
     fn process_body(
         &mut self,
         body: &'a [Stmt],
@@ -271,18 +271,13 @@ impl<'a> Layout<'a> {
             .iter()
             .filter_map(|group| Some((group.as_slice(), self.merge_head(body, group)?)))
             .collect();
-        let folded: Vec<usize> = merges
-            .iter()
-            .flat_map(|(group, _)| &group[1..])
-            .copied()
-            .sorted_unstable()
-            .collect();
-        let deletions = whole_line_deletions(
+        let mut deletions: FxHashMap<usize, Edit> = slot_deletions(
             source,
-            folded.iter().map(|&slot| body[slot].range()),
+            body,
+            merges.iter().flat_map(|(group, _)| &group[1..]).copied(),
             ReflowImports::SLUG,
-        );
-        let mut deletions: FxHashMap<usize, Edit> = folded.into_iter().zip(deletions).collect();
+        )
+        .collect();
         for (group, mut edits) in merges {
             edits.extend(group[1..].iter().map(|slot| {
                 deletions

@@ -13,7 +13,7 @@ use crate::{
     primitives::{
         binding::single_name_assignment,
         comments::class_keeps_order,
-        constructor::{classify_field, keyword_field_start},
+        constructor::positional_fields,
         docstring::{documented_definitions, entry_carrying_sections, rewrite_docstrings},
         edit::narrowed_replacement,
         orderer::{permute_full, reorder_text},
@@ -88,13 +88,8 @@ fn class_mirror<'a>(source: &Source, class: &'a StmtClassDef) -> Option<Mirror<'
             .map(|(name, _)| name.id.as_str())
             .collect()
     } else {
-        let keyword_start = keyword_field_start(class);
-        class
-            .body
-            .iter()
-            .take_while(|stmt| stmt.start() < keyword_start)
-            .filter_map(classify_field)
-            .map(|(_, name)| name)
+        positional_fields(class)
+            .map(|(_, (_, name))| name)
             .collect()
     };
     (!names.is_empty()).then_some(Mirror {

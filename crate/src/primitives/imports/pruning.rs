@@ -14,7 +14,7 @@ use super::*;
 use crate::{
     primitives::{
         comments::comment_leads,
-        edit::{apply_inline_edits, whole_line_deletions},
+        edit::{apply_inline_edits, slot_deletions},
         range::dropped_member_spans,
     },
     rules::RuleId,
@@ -124,7 +124,7 @@ pub(crate) fn fold_landing(
 /// under a leading comment gives its line to the import `landing`
 /// names, and of two statements landing on one import the later takes
 /// it. The lines of every statement dropping whole and of every import
-/// a drop lands on clear together per [`whole_line_deletions`], leaving
+/// a drop lands on clear together per [`slot_deletions`], leaving
 /// out a statement a suppression of `rule` pins, which neither lands nor
 /// clears.
 pub(crate) fn prune_import_statements(
@@ -156,7 +156,7 @@ pub(crate) fn prune_import_statements(
     let line_span =
         |range: TextRange| TextRange::new(range.start(), source.text().line_end(range.end()));
     let mut consumed = FxHashSet::default();
-    let mut cleared = BTreeMap::new();
+    let mut cleared = FxHashMap::default();
     let mut groups: Vec<(usize, Vec<Edit>)> = drops
         .iter()
         .enumerate()
@@ -191,10 +191,8 @@ pub(crate) fn prune_import_statements(
             )
         })
         .collect();
-    let deletions =
-        whole_line_deletions(source, cleared.keys().map(|&slot| body[slot].range()), rule);
-    for (&index, deletion) in cleared.values().zip(deletions) {
-        groups[index].1.push(deletion);
+    for (slot, deletion) in slot_deletions(source, body, cleared.keys().copied(), rule) {
+        groups[cleared[&slot]].1.push(deletion);
     }
     groups
         .into_iter()
@@ -260,7 +258,14 @@ mod tests {
     fn pruned_text(source: &Source, drop: &Dropping, folded: bool) -> String {
         let edits = match drop.pruning(source, folded) {
             Pruning::Members(edits) => edits,
-            Pruning::Whole => whole_line_deletions(source, [drop.range], PruneInertImports::SLUG),
+            Pruning::Whole => slot_deletions(
+                source,
+                &source.ast().body,
+                [drop.slot],
+                PruneInertImports::SLUG,
+            )
+            .map(|(_, edit)| edit)
+            .collect(),
         };
         applied_text(source, edits)
     }

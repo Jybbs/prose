@@ -33,8 +33,8 @@ mod names;
 use builder::Builder;
 pub(crate) use module_scan::{ModuleAssignment, module_assignments, module_bound_names};
 pub(crate) use names::{
-    ann_assign_with_named_field, bare_import_bound_name, from_import_bound_name, is_classvar,
-    is_explicit_type_alias, is_screaming_case, sequence_elts, single_name_assignment,
+    ann_assign_with_named_field, bare_import_bound_name, bare_import_path, from_import_bound_name,
+    is_classvar, is_explicit_type_alias, is_screaming_case, sequence_elts, single_name_assignment,
     single_name_target, tail_identifier, top_level_module, type_head_identifier,
 };
 
