@@ -304,7 +304,7 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Each row of this table names a check its workflows run and a task `mise tasks` lists, and every matrix check has a row. Every tracked file sits inside the path filter of some pull-request workflow, and every file the audit reads sits inside that of a workflow running the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. Each row of this table names a check its workflows run, every task a row names is one `mise tasks` lists, each task outside the `gha` group a check runs matches its row, and every matrix check has a row. Every tracked file sits inside the path filter of some pull-request workflow, and every file the audit reads sits inside that of a workflow running the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
@@ -328,7 +328,7 @@ The table lists each row beside the task that runs the same check locally:
 
 - A row naming no check or no workflow
 - A row naming a workflow or a check the workflows do not carry, or a task `mise tasks` does not list
-- A check running a task outside the `gha` group without its row naming that task
+- A check running a task outside the `gha` group that its row does not match
 - A matrix check with no row
 
 A check's task matches its row where the row names that task, one of its aliases, or a task it depends on, so the `☂️ Coverage` rows pass while running `rust:upload` and `site:upload`. The family subset rows and the per-platform `🎻` rows take their names from `gha:plan` when the workflow runs, so one row of the table covers each set by naming one of its checks or the job name's text outside its matrix expression, as the `🎻` row does.

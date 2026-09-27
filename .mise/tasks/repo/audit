@@ -24,9 +24,10 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
-               check its workflows run and a task `mise tasks` lists, every
-               task outside the `gha` group a check runs is one its row
-               names, and every matrix check has a row.
+               check its workflows run, every task a row names is one
+               `mise tasks` lists, every task outside the `gha` group a
+               check runs matches its row by name, alias, or `depends`
+               entry, and every matrix check has a row.
     tasks      Every task passes `mise tasks validate`, so no alias is shared
                and no dependency names a task that does not exist.
     filters    Every tracked file sits inside the `pull_request` path filter
@@ -270,7 +271,8 @@ def families() -> dict[str, tuple[str, str | None]]:
 def filled(template: str, entry: dict) -> str:
     """
     Return `template` with each `${{ matrix.<key> }}` expression replaced by the
-    value `entry` gives that key, or by nothing where `entry` gives none.
+    value `entry` gives that key, or by nothing where `entry` gives none, and
+    with its surrounding whitespace stripped.
     """
     return sub(
         r"\$\{\{\s*matrix\.([\w-]+)\s*\}\}",
@@ -790,7 +792,7 @@ def table(header: str) -> list[list[str]]:
         rf"\| \*\*{header}\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
     )
     return [
-        line.removeprefix("| ").removesuffix(" |").split(" | ")
+        [cell.strip() for cell in line.strip("|").split("|")]
         for line in body.splitlines()
     ]
 
