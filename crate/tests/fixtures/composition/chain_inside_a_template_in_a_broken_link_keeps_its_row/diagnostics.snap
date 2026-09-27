@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_inside_a_template_in_a_broken_link_keeps_its_row/input.py
+---
+prefer-fstring@20..69
+stack-method-chains@7..90

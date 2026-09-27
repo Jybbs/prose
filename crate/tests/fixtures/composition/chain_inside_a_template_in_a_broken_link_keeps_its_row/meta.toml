@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain Inside a Template in a Broken Chain's Link Keeps Its Row"
+
+description = '''
+`query.filter(...).order_by(name).all()` runs past the 88-column budget and breaks, and the `%` template inside `.filter(` holds `gamma.get(key).strip().lower()`, a chain of its own. **`stack-method-chains` leaves the inner chain joined inside a template `reflow-calls` leaves for `prefer-fstring`**, so the chain lands in a replacement field and the template converts in the same pass.
+'''

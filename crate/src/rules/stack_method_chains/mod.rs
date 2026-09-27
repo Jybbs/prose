@@ -13,8 +13,9 @@
 //! trips from the column the break lands it at. Neither trigger reaches
 //! a replacement field, a `%` or `str.format()` interpolation
 //! `prefer-fstring` converts where it lands outside a literal
-//! `reflow-collections` expands, a comment span, or a segment holding
-//! its break.
+//! `reflow-collections` expands and a signature `reflow-signatures` lays
+//! out one parameter per line, a comment span, or a segment holding its
+//! break.
 //! `spine` divides a chain and `render` builds the replacement.
 
 use std::cell::OnceCell;
@@ -163,6 +164,13 @@ impl<'a> Breaker<'a> {
         Some(text)
     }
 
+    /// True where `expr` sits inside an interpolation the `reflow_calls`
+    /// walk leaves for `prefer-fstring` to convert.
+    fn converts(&self, expr: &Expr) -> bool {
+        self.reflow_calls.forecasts(self.source, expr.range())
+            && self.seating().converts(expr.range())
+    }
+
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
@@ -270,7 +278,7 @@ impl<'a> Breaker<'a> {
             };
             match self
                 .broken(expr, &nested, nested_range, nested_seat)
-                .filter(|_| !seated)
+                .filter(|_| !seated && !self.converts(expr))
             {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),
@@ -301,9 +309,7 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
             return Descent::Into;
         };
-        if self.reflow_calls.forecasts(self.source, expr.range())
-            && self.seating().converts(expr.range())
-        {
+        if self.converts(expr) {
             return Descent::Over;
         }
         let range = self.source.paren_aware_range(expr.into(), parent);

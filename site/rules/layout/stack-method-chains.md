@@ -20,7 +20,7 @@ The chain reuses a parenthesis pair the source already carries and settles in th
 
 A chain spanning a comment keeps its source layout, because breaking it would move the links away from the row the comment describes. A link whose break never closes keeps the chain as written, which covers an argument list already written one argument per line, one past `max-args`, and a multi-line string.
 
-A chain inside an f-string or t-string replacement field is left as written whatever its width, because a line break inside one is PEP 701 syntax that fails to parse before Python 3.12, so an over-wide interpolation is left for [[line-overflow]] to report. A chain inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts where it lands stays joined in the same way, since the conversion places it in a replacement field, unless the template sits inside a collection [[reflow-collections]] expands.
+A chain inside an f-string or t-string replacement field is left as written whatever its width, because a line break inside one is PEP 701 syntax that fails to parse before Python 3.12, so an over-wide interpolation is left for [[line-overflow]] to report. A chain inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts where it lands stays joined in the same way outside a collection [[reflow-collections]] expands and a signature [[reflow-signatures]] lays out one parameter per line, since the conversion places it in a replacement field.
 
 <Fixture rule="composition" case="chain_inside_a_converting_template_keeps_its_row" />
 
