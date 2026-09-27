@@ -9,16 +9,19 @@
 //! trigger reaches a call inside an f-string or t-string, or inside a
 //! signature `reflow-signatures` lays out one parameter per line.
 //! Where no trigger fires, a fractured list rejoins onto one row,
-//! whereas the flush column shape holds its break. `measure` answers
-//! the columns a decision reads beside the seat `stack_method_chains`
-//! measures a relocated chain from, and `render` builds the replacement.
+//! whereas the flush column shape holds its break. Within an
+//! expression that `reflow-collections` moves, each collection literal,
+//! subscript, or comprehension takes that rule's layout where it lands.
+//! `measure` answers the columns a decision reads beside the seat
+//! `stack_method_chains` measures a relocated chain from, and `render`
+//! builds the replacement.
 
 use std::cell::RefCell;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Expr, InterpolatedStringElement, Stmt,
-    visitor::{Visitor as AstVisitor, walk_expr},
+    visitor::source_order::{self, SourceOrderVisitor},
 };
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
@@ -28,10 +31,9 @@ use crate::{
     primitives::{
         call_keywords::{CallTargets, module_call_params},
         edit::{apply_inline_edits, insert_edit, narrowed_replacement, singleton_groups},
-        layout::is_layoutable,
+        layout::is_collapsible,
         one_row, padding, reserve,
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
-        walk::walk_stmt,
     },
     rules::{
         Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
@@ -43,9 +45,17 @@ use crate::{
 mod measure;
 mod render;
 
-#[derive(Debug)]
+/// The layout `reflow-collections` gives a collapsible construct, read
+/// by a walk that relocates the expression holding it.
+pub(crate) trait CollectionLayout {
+    /// Returns `expr`'s replacement at `column`, or `None` where it stays
+    /// as written. Its closing bracket drops to `indent`, and `tail`
+    /// columns follow its last row.
+    fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String>;
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ReflowCalls {
-    expands_literals: bool,
     fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,
     reorders: Reorders,
@@ -62,9 +72,7 @@ impl ReflowCalls {
     pub(crate) const PRESERVES_TREE: bool = false;
 
     pub(crate) fn from_config(config: &Config) -> Self {
-        let collections = &config.rules.reflow_collections;
         Self {
-            expands_literals: collections.enabled && collections.explode,
             fstrings: config.fstrings(),
             one_row: config.one_row_settings(),
             reorders: config.reorders(),
@@ -92,9 +100,9 @@ impl ReflowCalls {
             .exploding_parameters(&source.ast().body);
         let mut exploder = Exploder {
             edits: Vec::new(),
-            expands_literals: self.expands_literals,
             held: &held,
             indent: None,
+            layout: None,
             line_shift: 0,
             one_row: self.one_row.against(&targets).forecasting(&rewrites),
             origin_column: 0,
@@ -134,10 +142,13 @@ impl Rule for ReflowCalls {
 }
 
 /// The terms one walk reshapes calls under, handed to a layout that
-/// relocates an expression and reshapes the calls inside it.
+/// relocates an expression and reshapes the calls inside it. `layout`
+/// lays out each collapsible construct the walk reaches, and where it
+/// is unset a literal `reflow-collections` expands is left to that
+/// rule's own pass.
 #[derive(Clone, Copy)]
 pub(crate) struct Reshaper<'a> {
-    pub(crate) expands_literals: bool,
+    pub(crate) layout: Option<&'a dyn CollectionLayout>,
     pub(crate) one_row: one_row::Settings<'a>,
     pub(crate) padding: &'a [Edit],
     pub(crate) reorders: Reorders,
@@ -147,12 +158,12 @@ pub(crate) struct Reshaper<'a> {
 }
 
 impl<'a> Reshaper<'a> {
-    /// `expr`'s text with every call inside it exploded once it lands
-    /// per `landing`, its source `range` covering any grouping pair, an
-    /// exploded closing `)` dropping to the landing indent and `tail`
-    /// columns following the text on its last row. A block written
-    /// across rows measures each call where its rows travel to and
-    /// moves the rows with the result, one running through a
+    /// `expr`'s text once it lands per `landing`, with every call inside it
+    /// exploded and, where `layout` is set, every collapsible construct laid
+    /// out. `range` covers any grouping pair, an exploded closing bracket
+    /// drops to the landing indent, and `tail` columns follow the last row.
+    /// A block written across rows measures each call where its rows travel
+    /// to and moves the rows with the result, one running through a
     /// row-spanning string part reshapes nothing, and `None` leaves the
     /// caller its own placement of the source slice.
     pub(crate) fn reshaped(
@@ -177,9 +188,9 @@ impl<'a> Reshaper<'a> {
         let rows = travel.map_or(0, |travel| travel.rows);
         let mut exploder = Exploder {
             edits: Vec::new(),
-            expands_literals: self.expands_literals,
             held: &[],
             indent: Some(landing.indent.saturating_add_signed(-rows)),
+            layout: self.layout,
             line_shift: rows,
             one_row: self.one_row,
             origin_column: landing.column,
@@ -222,18 +233,19 @@ pub(crate) struct Seat {
 /// `origin_column` the column its opening line lands at, `line_shift`
 /// the columns every later line moves by, `tail` the columns the text
 /// assembling the region writes after its last row, and `indent` is the
-/// indent an exploded closing `)` drops to, unset where each call
+/// indent an exploded closing bracket drops to, unset where each call
 /// answers to its own source line. `padding` is every edit
 /// `strip-stranded-padding` emits over the source, `held` the start of
 /// each parameter list `reflow-signatures` lays out one per line,
-/// `expands_literals` whether `reflow-collections` expands an
-/// overflowing literal, and `seats`, where set, collects the seat of
-/// each call and attribute access inside a relocated region.
+/// `layout` the layout a collapsible construct takes where the walk
+/// reaches it, unset where `reflow-collections` walks the text later in
+/// the fold, and `seats`, where set, collects the seat of each call and
+/// attribute access inside a relocated region.
 struct Exploder<'a> {
     edits: Vec<Edit>,
-    expands_literals: bool,
     held: &'a [TextSize],
     indent: Option<usize>,
+    layout: Option<&'a dyn CollectionLayout>,
     line_shift: isize,
     one_row: one_row::Settings<'a>,
     origin_column: usize,
@@ -247,14 +259,30 @@ struct Exploder<'a> {
     targets: &'a CallTargets<'a>,
 }
 
-impl<'a> AstVisitor<'a> for Exploder<'a> {
-    /// Leaves a literal `reflow-collections` expands unwalked, the calls
-    /// inside it reshaping where its entries land, and records the seat of
-    /// each call and attribute access it reaches inside a relocated region
-    /// into `seats`, where set.
+impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
+    /// Lays out each collapsible construct where it lands when `layout`
+    /// is set, leaving unwalked one it leaves as written that
+    /// [`Settings::holds_its_row`](one_row::Settings::holds_its_row)
+    /// holds, and otherwise leaves unwalked a literal
+    /// `reflow-collections` expands later. The calls inside either one
+    /// reshape where its entries land, and each call and attribute access
+    /// the walk reaches inside a relocated region records its seat into
+    /// `seats`, where set.
     fn visit_expr(&mut self, expr: &'a Expr) {
-        if is_layoutable(expr) && self.expands_later(expr) {
-            return;
+        match self.layout {
+            Some(layout) if is_collapsible(expr) => {
+                if let Some(text) = self.laid_out(layout, expr) {
+                    if let Some(edit) = narrowed_replacement(self.source, expr.range(), text) {
+                        insert_edit(&mut self.edits, edit);
+                    }
+                    return;
+                }
+                if self.one_row.holds_its_row(self.source, expr) {
+                    return;
+                }
+            }
+            None if self.expands_later(expr) => return,
+            _ => {}
         }
         if let Some(seats) = self.seats
             && self.indent.is_some()
@@ -266,7 +294,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
                 .or_insert_with(|| self.seat(expr));
         }
         let Expr::Call(call) = expr else {
-            walk_expr(self, expr);
+            source_order::walk_expr(self, expr);
             return;
         };
         // The callee settles first, so the argument list measures against
@@ -303,7 +331,7 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
             self.visit_body(&fd.body);
             return;
         }
-        walk_stmt(self, stmt);
+        source_order::walk_stmt(self, stmt);
     }
 }
 
@@ -340,6 +368,32 @@ mod tests {
                 .apply(&source)
                 .is_empty(),
             "replacement field should emit no edit:\n{src}",
+        );
+    }
+
+    #[rstest]
+    #[case::reflow_collections_expands_the_literal(
+        "x = [helper(a=1, b=2, c=3, d=4), b]\n",
+        true,
+        false
+    )]
+    #[case::reflow_collections_off("x = [helper(a=1, b=2, c=3, d=4), b]\n", false, true)]
+    #[case::reflow_collections_held_by_a_skip(
+        "x = [helper(a=1, b=2, c=3, d=4), b]  # prose: skip[reflow-collections]\n",
+        true,
+        true
+    )]
+    fn a_literal_holding_a_count_exploded_call_is_left_to_reflow_collections(
+        #[case] src: &str,
+        #[case] collections: bool,
+        #[case] edits: bool,
+    ) {
+        let source = parse(src);
+        let mut config = Config::default();
+        config.rules.reflow_collections.enabled = collections;
+        assert_eq!(
+            !ReflowCalls::from_config(&config).apply(&source).is_empty(),
+            edits
         );
     }
 
@@ -399,7 +453,7 @@ mod tests {
     #[case::call_inside_a_wider_expression_reads_its_own_tail(
         "result = advise(alpha, m.group().split(\".\")[0].strip())\n",
         "m.group().split(\".\")",
-        Some((4, 4, 0, 10))
+        Some((4, 4, 0, 11))
     )]
     #[case::call_on_a_moved_row(
         "result = advise(alpha_value, inner(\n    delta.get(key),\n))\n",

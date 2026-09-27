@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::{
-    ArgOrKeyword, Arguments, Expr, ExprCall, token::TokenKind, visitor::Visitor as AstVisitor,
+    ArgOrKeyword, Arguments, Expr, ExprCall, visitor::source_order::SourceOrderVisitor,
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -19,8 +19,7 @@ use crate::primitives::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
     layout::{Separator, explode_parens, is_fractured, item_indent},
-    slots::{holds_exactly, starting_within},
-    tokens::{is_opener, opens_subscript, tokens_within},
+    slots::starting_within,
     travel::{Landing, Travel, block_shift, shifted_block, spans_a_string_part},
 };
 
@@ -166,30 +165,24 @@ impl<'a> Exploder<'a> {
     }
 
     /// The offset of the first opening bracket inside `range` that
-    /// opens a construct a later pass lays out across rows: a call's or
-    /// grouping `(` always qualifies, whereas a bracket opening a
-    /// literal qualifies only where `reflow-collections` can expand it
-    /// and no literal earlier on the row explodes first, and a
-    /// subscript's `[` never does, nor does a bracket inside a forecast
-    /// f-string rewrite.
+    /// opens a construct a later pass lays out across rows: the `(` of
+    /// an argument list this rule can explode, or the bracket of a
+    /// literal `reflow-collections` expands where no literal earlier on
+    /// the row explodes first. A bracket inside a forecast f-string
+    /// rewrite holds its row, as does any other bracket.
     fn first_breaking_opener(&self, range: TextRange) -> Option<TextSize> {
-        let literals = self.source.expandable_literals();
-        tokens_within(self.source, range)
-            .find(|token| {
-                if !is_opener(token.kind()) || self.one_row.rewritten(token.start()) {
-                    return false;
-                }
-                if token.kind() == TokenKind::Lsqb
-                    && opens_subscript(self.source.tokens(), token.start())
-                {
-                    return false;
-                }
-                match literals.binary_search_by_key(&token.start(), Ranged::start) {
-                    Ok(_) => !self.earlier_literal_explodes(token.start()),
-                    Err(_) => token.kind() == TokenKind::Lpar,
-                }
-            })
+        let call = starting_within(self.source.explodable_arguments(), range, Ranged::start)
             .map(Ranged::start)
+            .find(|&start| !self.one_row.rewritten(start));
+        let ahead = TextRange::new(range.start(), call.unwrap_or(range.end()));
+        let literal = starting_within(self.source.expandable_literals(), ahead, Ranged::start)
+            .map(Ranged::start)
+            .find(|&start| {
+                self.one_row.expands_literals()
+                    && !self.one_row.rewritten(start)
+                    && !self.earlier_literal_explodes(start)
+            });
+        literal.or(call)
     }
 
     /// True where the expand fires on the literal at `range`: one
@@ -346,9 +339,7 @@ impl<'a> Exploder<'a> {
     /// leaves the list out.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
-        if !self.one_row.closes()
-            || !holds_exactly(self.source.explodable_arguments(), arguments.range())
-        {
+        if !self.one_row.explodes_arguments(self.source, arguments) {
             return None;
         }
         let count_trips = self.one_row.count_explodes(self.source, call);
@@ -384,18 +375,16 @@ impl<'a> Exploder<'a> {
     /// trailing comment closing the measure either way. A tail holding
     /// a bracket a later rule can break at is charged only through that
     /// bracket, since exploding the construct it opens ends the row
-    /// there, whereas a subscript's `[` never breaks and charges whole.
-    /// Each forecast f-string rewrite in the charged text reads at the
-    /// width of its f-string.
+    /// there, whereas a tail holding none is charged whole. Each forecast
+    /// f-string rewrite in the charged text reads at the width of its
+    /// f-string.
     pub(super) fn row_tail(&self, end: TextSize) -> usize {
         let row_end = self.source.row_tail(end).end();
         let clipped = self.region.end() <= row_end;
         let tail = TextRange::new(end, row_end.min(self.region.end()));
         if let Some(offset) = self.first_breaking_opener(tail) {
             let through = TextRange::new(end, offset + TextSize::from(1));
-            return self
-                .one_row
-                .form_width(self.source, self.source.slice(through), through);
+            return self.one_row.slice_width(self.source, through);
         }
         let written = self.settled_width(tail, self.source.tail_width(tail));
         if clipped {

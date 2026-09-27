@@ -61,6 +61,18 @@ impl ReflowSignatures {
             terms: Terms::from_config(config),
         }
     }
+
+    /// Returns the start of every parameter list this rule lays out one
+    /// per line over `source`, ascending.
+    pub(crate) fn exploding_parameters(&self, source: &Source) -> Vec<TextSize> {
+        let targets = module_call_params(source);
+        let rewrites = source.fstring_rewrites(self.fstrings);
+        let stranded = source.stranded_padding(self.stranding);
+        let padding = padding::beside(&stranded, &rewrites);
+        self.terms
+            .over(source, &targets, &padding, &rewrites)
+            .exploding_parameters(&source.ast().body)
+    }
 }
 
 impl Rule for ReflowSignatures {
@@ -76,7 +88,7 @@ impl Rule for ReflowSignatures {
             expansion,
             newline: source.newline_str(),
             reshaper: Reshaper {
-                expands_literals: expansion.expands_literals,
+                layout: None,
                 one_row: expansion.one_row,
                 padding: &padding,
                 reorders: self.reorders,

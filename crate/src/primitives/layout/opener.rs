@@ -12,10 +12,9 @@ use crate::{
 
 /// Returns the display width from `start` through the bracket a layout
 /// rule breaks `expr` open at, meaning the `(` of a call
-/// [`Source::explodable_arguments`] lists where
-/// [`one_row::Settings::closes`] holds, or the opener of a literal
-/// [`Source::expandable_literals`] lists where
-/// [`one_row::Settings::expands`] holds, measured through `one_row`'s
+/// [`one_row::Settings::explodes_arguments`] accepts, or the opener of a
+/// literal [`Source::expandable_literals`] lists where
+/// [`one_row::Settings::expands_literals`] holds, measured through `one_row`'s
 /// forecast rewrites. `None` for any other expression, for a bracket a
 /// forecast rewrite replaces, and for a bracket on a later row than
 /// `start`.
@@ -26,17 +25,16 @@ pub(crate) fn opener_width(
     start: TextSize,
 ) -> Option<usize> {
     let opener = match expr {
-        Expr::Call(call) => {
-            let arguments = call.arguments.range();
-            (one_row.closes() && holds_exactly(source.explodable_arguments(), arguments))
-                .then_some(arguments.start())?
-        }
-        _ => (one_row.expands() && holds_exactly(source.expandable_literals(), expr.range()))
-            .then_some(expr.start())?,
+        Expr::Call(call) => one_row
+            .explodes_arguments(source, &call.arguments)
+            .then_some(call.arguments.start())?,
+        _ => (one_row.expands_literals()
+            && holds_exactly(source.expandable_literals(), expr.range()))
+        .then_some(expr.start())?,
     };
     let through = TextRange::new(start, opener + TextSize::of('('));
     (!one_row.rewritten(opener) && source.same_line(start, through.end()))
-        .then(|| one_row.form_width(source, source.slice(through), through))
+        .then(|| one_row.slice_width(source, through))
 }
 
 #[cfg(test)]

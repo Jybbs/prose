@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/line_overflow/comprehension_tuple_target_reports/input.py
+---
+line-overflow@0..96

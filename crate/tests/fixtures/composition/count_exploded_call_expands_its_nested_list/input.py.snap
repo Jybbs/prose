@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/count_exploded_call_expands_its_nested_list/input.py
+---
+x = [
+    [
+        helper(
+            alpha=1,
+            beta=2,
+            gamma=3,
+            delta=4,
+            epsilon=5
+        ),
+        b
+    ],
+    another_long_item_name, yet_another
+]

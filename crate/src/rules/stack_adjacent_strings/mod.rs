@@ -8,7 +8,7 @@
 //! line break each stay as written.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr, StringLike};
+use ruff_python_ast::{AnyNodeRef, Expr, StringLike, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -20,7 +20,7 @@ use crate::{
         orderer::any_sibling_shares_line,
         reserve,
         tokens::open_brackets,
-        walk::{Descent, ParentedProbe, walk_parented_exprs},
+        walk::{Interpolations, ParentedProbe, walk_parented_exprs},
     },
     rules::{Rule, RuleId},
     source::Source,
