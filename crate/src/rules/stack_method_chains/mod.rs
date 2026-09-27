@@ -11,7 +11,9 @@
 //! counts at the width `reflow_calls` closes it to, and a chain inside a
 //! broken chain's receiver or argument breaks in the same text where it
 //! trips from the column the break lands it at. Neither trigger reaches
-//! a replacement field, a comment span, or a segment holding its break.
+//! a replacement field, a `%` or `str.format()` interpolation
+//! `prefer-fstring` converts where it lands, a comment span, or a
+//! segment holding its break.
 //! `spine` divides a chain and `render` builds the replacement.
 
 use std::cell::OnceCell;
@@ -19,7 +21,6 @@ use std::cell::OnceCell;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr};
 use ruff_text_size::{Ranged, TextRange};
-use rustc_hash::FxHashMap;
 
 use crate::{
     config::{Config, MaxShift},
@@ -37,7 +38,7 @@ use crate::{
     },
     rules::{
         Rule, RuleId,
-        reflow_calls::{ReflowCalls, Seat},
+        reflow_calls::{ReflowCalls, Seat, Seating},
     },
     source::Source,
 };
@@ -89,7 +90,7 @@ impl Rule for StackMethodChains {
             reflow_calls: &self.reflow_calls,
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
-            seats: OnceCell::new(),
+            seating: OnceCell::new(),
             source,
         };
         walk_parented_exprs(source.ast(), &mut breaker);
@@ -102,9 +103,9 @@ impl Rule for StackMethodChains {
 }
 
 /// Emits the break edit each over-long or over-count chain needs as the
-/// parent-tracking walk reaches it. `seats` holds the seat `reflow_calls`
-/// records for each call and attribute access inside an argument it
-/// relocates, built in full the first time a chain reads it.
+/// parent-tracking walk reaches it. `seating` holds what the
+/// `reflow_calls` walk records, built in full the first time a chain
+/// reads it.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
@@ -113,7 +114,7 @@ struct Breaker<'a> {
     reflow_calls: &'a ReflowCalls,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
-    seats: OnceCell<FxHashMap<TextRange, Seat>>,
+    seating: OnceCell<Seating>,
     source: &'a Source,
 }
 
@@ -209,10 +210,7 @@ impl<'a> Breaker<'a> {
             && ancestors
                 .iter()
                 .any(|node| matches!(node, AnyNodeRef::Arguments(_)))
-            && let Some(&seat) = self
-                .seats
-                .get_or_init(|| self.reflow_calls.seats(self.source))
-                .get(&expr.range())
+            && let Some(seat) = self.seating().seat(expr.range())
         {
             return seat;
         }
@@ -222,6 +220,13 @@ impl<'a> Breaker<'a> {
             line_shift: 0,
             tail: 0,
         }
+    }
+
+    /// What the `reflow_calls` walk over this source records, the walk
+    /// running the first time a chain reads it.
+    fn seating(&self) -> &Seating {
+        self.seating
+            .get_or_init(|| self.reflow_calls.seating(self.source))
     }
 
     /// `chain`'s segment at `segment`, settled and measured from the
@@ -295,6 +300,11 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
             return Descent::Into;
         };
+        if self.reflow_calls.forecasts(self.source, expr.range())
+            && self.seating().converts(expr.range())
+        {
+            return Descent::Over;
+        }
         let range = self.source.paren_aware_range(expr.into(), parent);
         let Some(edit) = self
             .broken(expr, &chain, range, self.placed(expr, range, ancestors))

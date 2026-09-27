@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Operand of a `%` Template Expands in One Pass"
+
+description = '''
+At a 32-column budget, the f-string `prefer-fstring` writes for `"%(name)s: %(value)s" % {...}` runs past the budget, so `reflow-collections` expands the dict. **`reflow-collections` reads the `(` of `describe(` as a bracket a layout rule can break, since the rewrite around it reaches past the dict it lays out**, so `align-colons` pads `"name"` and `describe(` explodes in the same pass.
+'''

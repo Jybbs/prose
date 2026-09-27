@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain Inside a Converting `%` Template Keeps Its Row"
+
+description = '''
+At a 39-column budget, `advise(` explodes, and the f-string `prefer-fstring` writes for `"%s:%s" % (gamma.get(key).strip(), delta)` reaches the budget exactly on the row its argument lands on. **`stack-method-chains` leaves `gamma.get(key).strip()` joined inside a template `reflow-calls` leaves for `prefer-fstring`**, so the chain lands in a replacement field and the template converts in the same pass.
+'''

@@ -168,15 +168,17 @@ impl<'a> Layouter<'a> {
     }
 
     /// Returns the `align-colons` slot for `entry`'s row, which opens at
-    /// `indent` with `tail` columns closing it: a bridge for a `**`
-    /// unpacking or for a row a skip holds for `align-colons`, a break for
-    /// a key spanning rows, and otherwise the key's settled width beside
-    /// the row's [`Extent`], which measures the value's opening row where
-    /// a layout rule can expand a one-row value.
+    /// `indent` with `tail` columns closing it inside the dict spanning
+    /// `dict`: a bridge for a `**` unpacking or for a row a skip holds
+    /// for `align-colons`, a break for a key spanning rows, and otherwise
+    /// the key's settled width beside the row's [`Extent`], which
+    /// measures the value's opening row where a layout rule can expand a
+    /// one-row value.
     fn row(
         &self,
         entry: &Entry<'a>,
         item: &DictItem,
+        dict: TextRange,
         indent: usize,
         tail: usize,
     ) -> Slot<(usize, Extent)> {
@@ -202,6 +204,7 @@ impl<'a> Layouter<'a> {
                         &self.one_row,
                         &item.value,
                         entry.value_start,
+                        dict,
                     )
                     .map(|width| indent + entry.key_width + CANONICAL_SEPARATOR + width),
                     inline: indent + entry.width + tail,
@@ -233,7 +236,13 @@ impl<'a> Layouter<'a> {
         let mut runs: Vec<Vec<(usize, (usize, Extent))>> = vec![Vec::new()];
         for position in 0..entries.len() {
             let index = order.map_or(position, |order| order[position]);
-            let row = self.row(&entries[index], &dict.items[index], indent, tails[index]);
+            let row = self.row(
+                &entries[index],
+                &dict.items[index],
+                dict.range(),
+                indent,
+                tails[index],
+            );
             if matches!(row, Slot::Break)
                 || (!reassembled
                     && position > 0

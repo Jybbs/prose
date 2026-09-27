@@ -200,7 +200,7 @@ impl<'a> Exploder<'a> {
             return true;
         }
         let column = self.source.column_of(range.start());
-        let width = settled_slice_width(self.source, self.padding, range);
+        let width = self.settled_slice_width(range);
         let tail = self.settled_width(
             self.source.row_tail(range.end()),
             self.source.row_tail_width(range.end()),
@@ -330,7 +330,7 @@ impl<'a> Exploder<'a> {
             self.one_row
                 .form_width(self.source, form, arguments.range())
         } else {
-            settled_slice_width(self.source, self.padding, arguments.range())
+            self.settled_slice_width(arguments.range())
         }
     }
 
@@ -404,8 +404,16 @@ impl<'a> Exploder<'a> {
         }
     }
 
+    /// `range`'s display width less the padding `strip-stranded-padding`
+    /// drops inside it, each forecast rewrite it covers whole measured at
+    /// its f-string width.
+    pub(super) fn settled_slice_width(&self, range: TextRange) -> usize {
+        settled_slice_width(self.source, self.padding, range)
+    }
+
     /// `width`, the display width `range` was measured at, less the
-    /// padding `strip-stranded-padding` drops inside `range`.
+    /// padding `strip-stranded-padding` drops inside `range`, each
+    /// forecast rewrite it covers whole measured at its f-string width.
     pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
         settled_width(self.source, self.padding, range, width)
     }

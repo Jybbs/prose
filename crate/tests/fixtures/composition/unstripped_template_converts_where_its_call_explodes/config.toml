@@ -1,0 +1,8 @@
+code-line-length = 68
+target-version   = "3.14"
+
+[rules]
+strip-stranded-padding = { enabled = false }
+
+[harness]
+rules = ["reflow-calls", "reflow-collections", "prefer-fstring"]

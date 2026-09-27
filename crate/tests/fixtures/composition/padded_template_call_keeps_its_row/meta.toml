@@ -3,5 +3,5 @@ previewable = true
 title       = "A Call Inside a Padded `%` Tuple Keeps Its Row"
 
 description = '''
-`type(exc)` sits inside `( type(exc), exc )`, whose padding `strip-stranded-padding` removes. **The row around `type(exc)` reads with that padding gone, as it would with no conversion ahead, because the measure covers only part of the `%` template**, so `type(exc)` stays on its row and the template converts in the same pass.
+`type(exc)` sits inside `( type(exc), exc )`, the operand of a `%` template `prefer-fstring` rewrites as `f"{type(exc)}:{exc}"`, and the tuple's padding falls inside the text that rewrite replaces. **`reflow-calls` measures the template at the width of that f-string, whose row reaches the 73-column budget exactly, and leaves the calls inside it unwalked**, so `type(exc)` stays on its row and the template converts in the same pass.
 '''

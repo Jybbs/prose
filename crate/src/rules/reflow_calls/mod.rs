@@ -6,8 +6,10 @@
 //! closable fracture inside the list shuts. The closing `)` drops to
 //! the indent of the row carrying the `(`, a nested call explodes in
 //! the same pass, and a chained call settles its receiver first. No
-//! trigger reaches a call inside an f-string or t-string, or inside a
-//! signature `reflow-signatures` lays out one parameter per line.
+//! trigger reaches a call inside an f-string or t-string, inside a `%`
+//! or `str.format()` interpolation `prefer-fstring` converts on the row
+//! it lands on, or inside a signature `reflow-signatures` lays out one
+//! parameter per line.
 //! Where no trigger fires, a fractured list rejoins onto one row,
 //! whereas the flush column shape holds its break. `measure` answers
 //! the columns a decision reads beside the seat `stack_method_chains`
@@ -30,6 +32,7 @@ use crate::{
         edit::{apply_inline_edits, insert_edit, narrowed_replacement, singleton_groups},
         layout::is_layoutable,
         one_row, padding, reserve,
+        slots::item_covering,
         travel::{Landing, block_shift, shifted_block, spans_a_string_part},
         walk::walk_stmt,
     },
@@ -75,12 +78,9 @@ impl ReflowCalls {
     }
 
     /// Walks `source` and returns the edits that explode or rejoin its
-    /// argument lists, recording each seat into `seats` when one is given.
-    fn walk(
-        &self,
-        source: &Source,
-        seats: Option<&RefCell<FxHashMap<TextRange, Seat>>>,
-    ) -> Vec<Edit> {
+    /// argument lists, recording what it reaches into `seating` when one
+    /// is given.
+    fn walk(&self, source: &Source, seating: Option<&RefCell<Seating>>) -> Vec<Edit> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
@@ -102,7 +102,7 @@ impl ReflowCalls {
             region: source.module_range(),
             reorders: self.reorders,
             reservations: &reservations,
-            seats,
+            seating,
             source,
             tail: 0,
             targets: &targets,
@@ -111,15 +111,21 @@ impl ReflowCalls {
         exploder.edits
     }
 
-    /// The seat of every call and attribute access inside an argument
-    /// this rule's walk over `source` relocates, keyed by its range, less
-    /// one inside an argument list a skip directive holds for this rule,
-    /// which never moves, or inside a literal `reflow-collections` expands
-    /// or a replacement field, where the walk does not reach.
-    pub(crate) fn seats(&self, source: &Source) -> FxHashMap<TextRange, Seat> {
-        let seats = RefCell::default();
-        self.walk(source, Some(&seats));
-        seats.into_inner()
+    /// True where a rewrite `prefer-fstring` forecasts over `source`
+    /// covers `range`, whether or not its f-string fits where it lands.
+    pub(crate) fn forecasts(&self, source: &Source, range: TextRange) -> bool {
+        item_covering(&source.fstring_rewrites(self.fstrings), range).is_some()
+    }
+
+    /// The [`Seating`] this rule's walk over `source` records, with no
+    /// seat for a call inside an argument list a skip directive holds for
+    /// this rule, which never moves, or inside a literal
+    /// `reflow-collections` expands, an interpolation `prefer-fstring`
+    /// converts, or a replacement field, where the walk does not reach.
+    pub(crate) fn seating(&self, source: &Source) -> Seating {
+        let seating = RefCell::default();
+        self.walk(source, Some(&seating));
+        seating.into_inner()
     }
 }
 
@@ -187,7 +193,7 @@ impl<'a> Reshaper<'a> {
             region: range,
             reorders: self.reorders,
             reservations: self.reservations,
-            seats: None,
+            seating: None,
             source: self.source,
             tail,
             targets: self.targets,
@@ -217,6 +223,32 @@ pub(crate) struct Seat {
     pub(crate) tail: usize,
 }
 
+/// What a walk over a source records: the seat of each call and
+/// attribute access inside an argument it relocates, keyed by its
+/// range, and the range of each expression it leaves unwalked inside an
+/// interpolation `prefer-fstring` converts where it lands.
+#[derive(Default)]
+pub(crate) struct Seating {
+    converted: Vec<TextRange>,
+    seats: FxHashMap<TextRange, Seat>,
+}
+
+impl Seating {
+    /// True where `range` sits inside an interpolation the walk leaves
+    /// for `prefer-fstring` to convert.
+    pub(crate) fn converts(&self, range: TextRange) -> bool {
+        self.converted
+            .iter()
+            .any(|converted| converted.contains_range(range))
+    }
+
+    /// The seat of the call or attribute access spanning `range`, `None`
+    /// where the walk records none.
+    pub(crate) fn seat(&self, range: TextRange) -> Option<Seat> {
+        self.seats.get(&range).copied()
+    }
+}
+
 /// Walks a module, or one relocated expression, emitting the explode
 /// edits its calls need. `region` is the span the walk answers for and
 /// `origin_column` the column its opening line lands at, `line_shift`
@@ -224,11 +256,12 @@ pub(crate) struct Seat {
 /// assembling the region writes after its last row, and `indent` is the
 /// indent an exploded closing `)` drops to, unset where each call
 /// answers to its own source line. `padding` is every edit
-/// `strip-stranded-padding` emits over the source, `held` the start of
+/// `strip-stranded-padding` emits over the source merged with the
+/// forecast `prefer-fstring` rewrites, `held` the start of
 /// each parameter list `reflow-signatures` lays out one per line,
 /// `expands_literals` whether `reflow-collections` expands an
-/// overflowing literal, and `seats`, where set, collects the seat of
-/// each call and attribute access inside a relocated region.
+/// overflowing literal, and `seating`, where set, collects what the
+/// walk records.
 struct Exploder<'a> {
     edits: Vec<Edit>,
     expands_literals: bool,
@@ -241,27 +274,36 @@ struct Exploder<'a> {
     region: TextRange,
     reorders: Reorders,
     reservations: &'a reserve::Columns,
-    seats: Option<&'a RefCell<FxHashMap<TextRange, Seat>>>,
+    seating: Option<&'a RefCell<Seating>>,
     source: &'a Source,
     tail: usize,
     targets: &'a CallTargets<'a>,
 }
 
 impl<'a> AstVisitor<'a> for Exploder<'a> {
-    /// Leaves a literal `reflow-collections` expands unwalked, the calls
-    /// inside it reshaping where its entries land, and records the seat of
-    /// each call and attribute access it reaches inside a relocated region
-    /// into `seats`, where set.
+    /// Leaves unwalked a literal `reflow-collections` expands, whose calls
+    /// reshape where its entries land, and an expression inside an
+    /// interpolation `prefer-fstring` converts, whose calls land in
+    /// replacement fields. Records into `seating`, where set, each such
+    /// expression and the seat of each call and attribute access it
+    /// reaches inside a relocated region.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if is_layoutable(expr) && self.expands_later(expr) {
             return;
         }
-        if let Some(seats) = self.seats
+        if self.converts(expr) {
+            if let Some(seating) = self.seating {
+                seating.borrow_mut().converted.push(expr.range());
+            }
+            return;
+        }
+        if let Some(seating) = self.seating
             && self.indent.is_some()
             && matches!(expr, Expr::Call(_) | Expr::Attribute(_))
         {
-            seats
+            seating
                 .borrow_mut()
+                .seats
                 .entry(expr.range())
                 .or_insert_with(|| self.seat(expr));
         }
@@ -312,6 +354,7 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::{applied_text, at, parse};
@@ -343,6 +386,29 @@ mod tests {
         );
     }
 
+    #[rstest]
+    #[case::one_column_past_the_budget(73, true)]
+    #[case::at_the_budget(74, false)]
+    fn a_call_inside_a_template_explodes_only_where_its_fstring_overflows(
+        #[case] width: usize,
+        #[case] explodes: bool,
+    ) {
+        // The f-string `prefer-fstring` forecasts for the template runs
+        // its row to 74 columns, so `describe(` explodes where it is
+        // written only under a narrower budget.
+        let source = parse(
+            "message = \"%s: %s\" % (describe(first_argument, second_argument), trailing_value)\n",
+        );
+        let mut config = Config {
+            code_line_length: NonZeroUsize::new(width),
+            target_version: Some(PythonVersion::PY314),
+            ..Config::default()
+        };
+        config.rules.reflow_collections.enabled = false;
+        let text = applied(&config, &source);
+        assert_eq!(text.contains("describe(\n"), explodes, "{text}");
+    }
+
     #[test]
     fn call_two_levels_inside_a_collection_value_measures_where_it_lands() {
         let src =
@@ -372,6 +438,29 @@ mod tests {
         assert!(
             text.contains("    note=[\n    \"x\","),
             "string-bearing value should not re-indent:\n{text}",
+        );
+    }
+
+    #[rstest]
+    #[case::fstring_fits_its_landing_row(39, true)]
+    #[case::fstring_overflows_its_landing_row(38, false)]
+    fn seating_marks_a_chain_inside_a_template_left_for_prefer_fstring(
+        #[case] width: usize,
+        #[case] converts: bool,
+    ) {
+        // `advise(` explodes at either width, and the f-string lands on
+        // its own row at 39 columns.
+        let src = "result = advise(alpha_value, beta_value, \"%s:%s\" % (gamma.get(key).strip(), delta))\n";
+        let config = Config {
+            code_line_length: NonZeroUsize::new(width),
+            target_version: Some(PythonVersion::PY314),
+            ..Config::default()
+        };
+        assert_eq!(
+            ReflowCalls::from_config(&config)
+                .seating(&parse(src))
+                .converts(at(src, "gamma.get(key).strip()")),
+            converts,
         );
     }
 
@@ -438,8 +527,8 @@ mod tests {
         };
         assert_eq!(
             ReflowCalls::from_config(&config)
-                .seats(&parse(src))
-                .get(&at(src, expression))
+                .seating(&parse(src))
+                .seat(at(src, expression))
                 .map(|seat| (seat.column, seat.indent, seat.line_shift, seat.tail)),
             expected,
         );

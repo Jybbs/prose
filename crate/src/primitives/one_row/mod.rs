@@ -23,7 +23,7 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
-        slots::item_holding,
+        slots::{item_covering, item_holding},
     },
     source::Source,
 };
@@ -305,6 +305,12 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
+    }
+
+    /// The forecast rewrite whose replaced text covers `range`, `None`
+    /// where no rewrite covers it.
+    pub(crate) fn rewrite_covering(&self, range: TextRange) -> Option<&'a Edit> {
+        item_covering(self.rewrites, range)
     }
 
     /// True where a forecast rewrite replaces the text at `offset`.

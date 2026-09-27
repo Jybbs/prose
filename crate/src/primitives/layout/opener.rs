@@ -15,14 +15,18 @@ use crate::{
 /// [`Source::explodable_arguments`] lists where
 /// [`one_row::Settings::closes`] holds, or the opener of a literal
 /// [`Source::expandable_literals`] lists, measured through `one_row`'s
-/// forecast rewrites. `None` for any other expression, for a bracket a
-/// forecast rewrite replaces, and for a bracket on a later row than
-/// `start`.
+/// forecast rewrites. `None` for any other expression, for a bracket on
+/// a later row than `start`, and for a bracket a forecast rewrite
+/// replaces where that rewrite sits inside `layout`, the construct the
+/// rule lays out. A rewrite reaching outside `layout` leaves the bracket
+/// read as written, since laying that construct out across rows leaves
+/// the rewrite spanning them.
 pub(crate) fn opener_width(
     source: &Source,
     one_row: &one_row::Settings,
     expr: &Expr,
     start: TextSize,
+    layout: TextRange,
 ) -> Option<usize> {
     let opener = match expr {
         Expr::Call(call) => {
@@ -33,7 +37,10 @@ pub(crate) fn opener_width(
         _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
     };
     let through = TextRange::new(start, opener + TextSize::of('('));
-    (!one_row.rewritten(opener) && source.same_line(start, through.end()))
+    let replaced = one_row
+        .rewrite_covering(TextRange::at(opener, TextSize::of('(')))
+        .is_some_and(|rewrite| layout.contains_range(rewrite.range()));
+    (!replaced && source.same_line(start, through.end()))
         .then(|| one_row.form_width(source, source.slice(through), through))
 }
 
@@ -66,7 +73,13 @@ mod tests {
         let value = first_value(&source);
         let one_row = Config::default().one_row_settings();
         assert_eq!(
-            opener_width(&source, &one_row, value, value.start()),
+            opener_width(
+                &source,
+                &one_row,
+                value,
+                value.start(),
+                source.module_range()
+            ),
             expected
         );
     }
@@ -84,7 +97,13 @@ mod tests {
         config.rules.reflow_calls.enabled = false;
         let one_row = config.one_row_settings();
         assert_eq!(
-            opener_width(&source, &one_row, value, value.start()),
+            opener_width(
+                &source,
+                &one_row,
+                value,
+                value.start(),
+                source.module_range()
+            ),
             expected
         );
     }
@@ -109,7 +128,43 @@ mod tests {
         };
         let one_row = config.one_row_settings().forecasting(&rewrites);
         assert_eq!(
-            opener_width(&source, &one_row, value, value.start()),
+            opener_width(
+                &source,
+                &one_row,
+                value,
+                value.start(),
+                source.module_range()
+            ),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case::rewrite_inside_the_layout(false, None)]
+    #[case::rewrite_reaching_past_the_layout(true, Some(1))]
+    fn opener_width_reads_a_bracket_as_written_where_its_rewrite_reaches_past_the_layout(
+        #[case] narrowed: bool,
+        #[case] expected: Option<usize>,
+    ) {
+        let config = Config {
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse("x = \"%s %s\" % ([a, b], c)\n");
+        let rewrites = config.fstrings().forecast(&source);
+        let operands = first_value(&source)
+            .as_bin_op_expr()
+            .and_then(|template| template.right.as_tuple_expr())
+            .expect("a `%` template over a tuple");
+        let list = &operands.elts[0];
+        let layout = if narrowed {
+            operands.range()
+        } else {
+            source.module_range()
+        };
+        let one_row = config.one_row_settings().forecasting(&rewrites);
+        assert_eq!(
+            opener_width(&source, &one_row, list, list.start(), layout),
             expected
         );
     }

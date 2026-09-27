@@ -1,5 +1,5 @@
 import { StorageSerializers, useStorage, watchDebounced } from '@vueuse/core'
-import { ref, type Ref }                                  from 'vue'
+import { getCurrentScope, ref, type Ref }                 from 'vue'
 
 import type { LintFinding }           from '../fixtures/lint-findings'
 import type * as configSchema         from '../sandbox/config-schema.data'
@@ -185,7 +185,12 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
     await format()
   }
 
+  // VueUse's debounce keeps its timer running after the watcher it belongs
+  // to stops, so a run still queued when the sandbox unmounts returns once
+  // its scope has stopped.
+  const scope = getCurrentScope()
   watchDebounced([source, config.configToml], () => {
+    if (scope && !scope.active) return
     saved.value = { configToml: config.configToml.value, source: source.value }
     format()
   }, { debounce: debounceMs })

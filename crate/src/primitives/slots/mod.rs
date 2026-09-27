@@ -1,5 +1,6 @@
 //! Slot arithmetic over a member list, the runs adjacent members form,
-//! the inverse of a reordering, and the member an offset falls in.
+//! the inverse of a reordering, and the member an offset or a range
+//! falls in.
 
 use std::ops::Range;
 
@@ -8,6 +9,12 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 /// True where one of the start-ascending `items` spans exactly `range`.
 pub(crate) fn holds_exactly<T: Ranged>(items: &[T], range: TextRange) -> bool {
     item_holding(items, range.start()).is_some_and(|held| held.range() == range)
+}
+
+/// The start-ascending `items` entry whose range covers `range`, `None`
+/// where no single item does.
+pub(crate) fn item_covering<T: Ranged>(items: &[T], range: TextRange) -> Option<&T> {
+    item_holding(items, range.start()).filter(|held| held.range().contains_range(range))
 }
 
 /// The item of `items` whose start is at or before `offset`, `None`
@@ -100,6 +107,24 @@ mod tests {
         assert_eq!(
             holds_exactly(&source.ast().body, range(start, end)),
             expected
+        );
+    }
+
+    #[rstest]
+    #[case::the_first_item_whole(7, 12, Some(7))]
+    #[case::inside_an_item(8, 11, Some(7))]
+    #[case::straddling_two_items(10, 16, None)]
+    #[case::a_range_between_items(12, 14, None)]
+    #[case::ahead_of_the_first_item(0, 3, None)]
+    fn item_covering_reads_the_item_holding_the_whole_range(
+        #[case] start: u32,
+        #[case] end: u32,
+        #[case] covering: Option<u32>,
+    ) {
+        let source = parse(LEAD_COMMENT);
+        assert_eq!(
+            item_covering(&source.ast().body, range(start, end)).map(Ranged::start),
+            covering.map(TextSize::new)
         );
     }
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside an Unstripped `%` Tuple Keeps Its Row"
+
+description = '''
+With `strip-stranded-padding` off, the padding inside `( type(exc), exc )` stays in the source and the row carrying it runs past the 79-column budget. **`reflow-calls` measures the `%` template at the width of the f-string `prefer-fstring` rewrites it as rather than at its padded text, and leaves `type(exc)` unwalked**, so the call keeps its row and the template converts in one pass.
+'''
