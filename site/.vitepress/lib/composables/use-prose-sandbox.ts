@@ -186,8 +186,8 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   }
 
   // VueUse's debounce keeps its timer running after the watcher it belongs
-  // to stops, so a run still queued when the sandbox unmounts returns once
-  // its scope has stopped.
+  // to stops, so a run queued before the sandbox unmounts fires afterward
+  // and returns without formatting where its scope has stopped.
   const scope = getCurrentScope()
   watchDebounced([source, config.configToml], () => {
     if (scope && !scope.active) return

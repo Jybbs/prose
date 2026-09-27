@@ -12,8 +12,9 @@
 //! broken chain's receiver or argument breaks in the same text where it
 //! trips from the column the break lands it at. Neither trigger reaches
 //! a replacement field, a `%` or `str.format()` interpolation
-//! `prefer-fstring` converts where it lands, a comment span, or a
-//! segment holding its break.
+//! `prefer-fstring` converts where it lands outside a literal
+//! `reflow-collections` expands, a comment span, or a segment holding
+//! its break.
 //! `spine` divides a chain and `render` builds the replacement.
 
 use std::cell::OnceCell;

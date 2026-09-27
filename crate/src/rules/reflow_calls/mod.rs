@@ -284,9 +284,9 @@ impl<'a> AstVisitor<'a> for Exploder<'a> {
     /// Leaves unwalked a literal `reflow-collections` expands, whose calls
     /// reshape where its entries land, and an expression inside an
     /// interpolation `prefer-fstring` converts, whose calls land in
-    /// replacement fields. Records into `seating`, where set, each such
-    /// expression and the seat of each call and attribute access it
-    /// reaches inside a relocated region.
+    /// replacement fields. Records into `seating`, where set, each
+    /// expression it leaves for `prefer-fstring` and the seat of each call
+    /// and attribute access it reaches inside a relocated region.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if is_layoutable(expr) && self.expands_later(expr) {
             return;
@@ -407,6 +407,27 @@ mod tests {
         config.rules.reflow_collections.enabled = false;
         let text = applied(&config, &source);
         assert_eq!(text.contains("describe(\n"), explodes, "{text}");
+    }
+
+    #[rstest]
+    #[case::one_column_past_the_budget(65, true)]
+    #[case::at_the_budget(66, false)]
+    fn a_template_measures_its_fstring_with_the_text_trailing_its_row(
+        #[case] width: usize,
+        #[case] explodes: bool,
+    ) {
+        // The f-string `prefer-fstring` forecasts for the `str.format()`
+        // call runs its row to 51 columns alone and to 66 with
+        // ` + suffix_value` trailing it.
+        let source =
+            parse("x = \"{}!\".format(describe(first_argument, second_argument)) + suffix_value\n");
+        let config = Config {
+            code_line_length: NonZeroUsize::new(width),
+            target_version: Some(PythonVersion::PY314),
+            ..Config::default()
+        };
+        let text = applied(&config, &source);
+        assert_eq!(text.contains(".format(\n"), explodes, "{text}");
     }
 
     #[test]
