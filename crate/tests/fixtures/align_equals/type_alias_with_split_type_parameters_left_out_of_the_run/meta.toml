@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias With Split Type Parameters Is Left Out of the Run"
+
+description = '''
+`type Pair[` opens its type parameter list on its first line and closes it two lines down, so the head the rule measures runs across three lines. **`type Pair` is left out of the run and keeps its single spaces**, while `type Id = int` and `LIMIT = 3` align beneath it.
+'''

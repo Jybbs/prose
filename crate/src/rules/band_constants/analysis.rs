@@ -36,7 +36,8 @@ const POSITION_CODE: &str = "E402";
 /// A module-scope single-name assignment considered for hoisting,
 /// carrying its body index, target name, subcategory, the load-context
 /// names in its value and its non-deferred annotation, and whether the
-/// value runs code at binding. Value references pin the constant when
+/// value runs code at binding. The value's names include those of each
+/// `type` alias it names. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
@@ -164,8 +165,33 @@ pub(super) fn module_band_plan<'src>(
     }
     let site_at: FxHashMap<&'src str, usize> =
         sites.iter().enumerate().map(|(s, c)| (c.name, s)).collect();
+    // A statement reading a `type` alias as the module runs can evaluate
+    // the alias's value through its `__value__`, so it reads each name
+    // that value names as well as the alias.
+    let alias_values: FxHashMap<&'src str, Vec<&'src str>> = sites
+        .iter()
+        .filter_map(|site| {
+            let alias = body[site.idx].as_type_alias_stmt()?;
+            Some((site.name, eval_refs(&alias.value)))
+        })
+        .collect();
+    let reads_through = |name: &'src str| {
+        std::iter::once(name).chain(alias_values.get(name).into_iter().flatten().copied())
+    };
+    for site in &mut sites {
+        site.value_refs = site
+            .value_refs
+            .iter()
+            .flat_map(|&name| reads_through(name))
+            .collect();
+    }
     let refs = eval_time_refs_of(body, defer_annotations);
-    let refs_of = |stmt: &Stmt| refs.get(&stmt.start()).into_iter().flatten().copied();
+    let refs_of = |stmt: &Stmt| {
+        refs.get(&stmt.start())
+            .into_iter()
+            .flatten()
+            .flat_map(|&name| reads_through(name))
+    };
     let mut eager_reader_at: FxHashMap<&'src str, usize> = FxHashMap::default();
     for (idx, stmt) in body.iter().enumerate() {
         if matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_)) {
@@ -356,16 +382,15 @@ fn backward_carry(
     })
 }
 
-/// The target name and value of a module constant candidate: an `Assign`
-/// or initialized `AnnAssign` through `single_name_assignment`, or a
-/// PEP 695 `type X` alias statement, whose value is always inert. `None`
-/// for any other shape.
+/// Returns the target name of a module constant candidate beside the
+/// value it evaluates at binding. An `Assign` or `AnnAssign` reads
+/// through `single_name_assignment`, whereas a PEP 695 `type X`
+/// statement pairs its name with `None`, because the alias's value
+/// evaluates only when its `__value__` is read or its `evaluate_value`
+/// called. `None` for any other shape.
 fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
-        Stmt::TypeAlias(alias) => Some((
-            alias.name.as_name_expr()?.id.as_str(),
-            Some(alias.value.as_ref()),
-        )),
+        Stmt::TypeAlias(alias) => Some((alias.name.as_name_expr()?.id.as_str(), None)),
         _ => single_name_assignment(stmt).map(|(target, value)| (target.id.as_str(), value)),
     }
 }
@@ -434,6 +459,8 @@ fn subcategory_of(
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use rstest::rstest;
 
     use super::*;
@@ -468,8 +495,7 @@ mod tests {
     fn const_binding_accepts_a_type_alias_and_rejects_a_non_binding() {
         let source = parse("type Seconds = float\nx, y = 1, 2\n");
         let body = &source.ast().body;
-        let (name, _) = const_binding(&body[0]).expect("a type alias binds");
-        assert_eq!(name, "Seconds");
+        assert_matches!(const_binding(&body[0]), Some(("Seconds", None)));
         assert!(const_binding(&body[1]).is_none());
     }
 

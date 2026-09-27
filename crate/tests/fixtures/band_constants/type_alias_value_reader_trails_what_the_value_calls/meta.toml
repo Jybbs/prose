@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Constant Reading a Type Alias's Value Trails What That Value Calls"
+
+description = '''
+`VALUE = Scored.__value__` reads the alias `type Scored = Annotated[int, mid()]`, and the calls `Scored.evaluate_value(...)` and `adapt(Scored)` read it too. **The alias moves into the leading band above `def mid`, whereas `VALUE` stays below the definitions and the two calls keep their slots**, because reading the alias's `__value__` runs `mid`, so a constant reading the alias takes on what its value reads, and a call never moves.
+'''

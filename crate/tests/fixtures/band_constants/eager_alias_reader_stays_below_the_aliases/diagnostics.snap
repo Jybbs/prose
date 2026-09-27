@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/eager_alias_reader_stays_below_the_aliases/input.py
+---
+band-constants@35..70

@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/type_aliases_calling_in_their_values_band_by_name/input.py
+---
+type Identifier = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_.]+$")]
+type Latitude = Annotated[float, Field(ge=-90, le=90)]
+type Meters = Annotated[int, Field(ge=0)]
+type Names = Annotated[list[Identifier], AfterValidator(ordered)]
+
+
+def ordered(names: list[str]) -> list[str]:
+    return sorted(names)

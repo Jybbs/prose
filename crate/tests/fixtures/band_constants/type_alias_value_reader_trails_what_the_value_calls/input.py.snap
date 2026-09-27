@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/type_alias_value_reader_trails_what_the_value_calls/input.py
+---
+import annotationlib
+from typing import Annotated
+
+type Scored = Annotated[int, mid()]
+
+
+def mid():
+    return 1
+
+
+def adapt(alias):
+    return alias.__value__
+
+
+VALUE = Scored.__value__
+EVALUATED = Scored.evaluate_value(annotationlib.Format.VALUE)
+ADAPTED = adapt(Scored)
