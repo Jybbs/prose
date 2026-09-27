@@ -1,5 +1,11 @@
-import { StorageSerializers, useStorage, watchDebounced } from '@vueuse/core'
-import { getCurrentScope, ref, type Ref }                 from 'vue'
+import {
+  debounceFilter,
+  StorageSerializers,
+  tryOnScopeDispose,
+  useStorage,
+  watchWithFilter
+} from '@vueuse/core'
+import { ref, type Ref } from 'vue'
 
 import type { LintFinding }           from '../fixtures/lint-findings'
 import type * as configSchema         from '../sandbox/config-schema.data'
@@ -186,15 +192,14 @@ export function useProseSandbox(options: ProseSandboxOptions): ProseSandbox {
   }
 
   // VueUse's debounce keeps its timer running after the watcher it belongs
-  // to stops, so a run queued before the sandbox unmounts fires afterward
-  // and returns without saving the session or formatting where its scope
-  // has stopped.
-  const scope = getCurrentScope()
-  watchDebounced([source, config.configToml], () => {
-    if (scope && !scope.active) return
+  // to stops, so stopping the sandbox's scope cancels the typing debounce
+  // and drops a queued run before it saves the session or formats.
+  const typing = debounceFilter(debounceMs)
+  tryOnScopeDispose(typing.cancel)
+  watchWithFilter([source, config.configToml], () => {
     saved.value = { configToml: config.configToml.value, source: source.value }
     format()
-  }, { debounce: debounceMs })
+  }, { eventFilter: typing })
 
   return {
     configError     : config.configError,

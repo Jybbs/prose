@@ -27,14 +27,15 @@ pub(super) fn canonical_blanks(
 
 /// Class-scope pair dispatch. The class header pairs with its first
 /// body member, with 0 blank lines before a docstring and 1 otherwise.
-/// A field-to-method pair, a method-to-method pair, and any pair whose
-/// predecessor is a docstring take 1.
+/// A field or `type` alias followed by a method, a method-to-method
+/// pair, and any pair whose predecessor is a docstring take 1.
 fn class_scope_blanks(prev: &Stmt, curr: &Stmt) -> Option<u32> {
     match (prev, curr) {
         (Stmt::ClassDef(_), _) => Some(u32::from(!is_docstring_stmt(curr))),
-        (Stmt::FunctionDef(_) | Stmt::AnnAssign(_) | Stmt::Assign(_), Stmt::FunctionDef(_)) => {
-            Some(1)
-        }
+        (
+            Stmt::AnnAssign(_) | Stmt::Assign(_) | Stmt::FunctionDef(_) | Stmt::TypeAlias(_),
+            Stmt::FunctionDef(_),
+        ) => Some(1),
         _ if is_docstring_stmt(prev) => Some(1),
         _ => None,
     }
@@ -91,7 +92,8 @@ mod tests {
     fn canonical_blanks_class_field_to_method_returns_one(
         #[values(
             "class C:\n    x: int = 1\n    def m(self): pass\n",
-            "class C:\n    x = 1\n    def m(self): pass\n"
+            "class C:\n    x = 1\n    def m(self): pass\n",
+            "class C:\n    type X = int\n    def m(self): pass\n"
         )]
         src: &str,
     ) {

@@ -14,7 +14,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use super::Exploder;
 use crate::primitives::{
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
-    edit::apply_inline_edits,
+    edit::{apply_inline_edits, insert_edit, narrowed_replacement},
     inline::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
@@ -367,6 +367,14 @@ impl<'a> Exploder<'a> {
             // on the length trigger alone, so the count trigger leaves
             // such calls inline.
             _ => length_trips.then(|| self.explode_source_order(call, indent)),
+        }
+    }
+
+    /// Replaces the text over `range` with `text`, narrowed to the span
+    /// that differs, keeping the edits sorted by start.
+    pub(super) fn replace(&mut self, range: TextRange, text: String) {
+        if let Some(edit) = narrowed_replacement(self.source, range, text) {
+            insert_edit(&mut self.edits, edit);
         }
     }
 

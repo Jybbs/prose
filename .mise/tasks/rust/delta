@@ -26,16 +26,19 @@ else
   baseline_label "$base_tree" > "$stage/.git/baseline"
 fi
 
-printf 'baseline %s\nhead     %s\ncorpus   %d files\nstage    %s\n\n' \
+target=$(corpus_target)
+
+printf 'baseline %s\nhead     %s\ncorpus   %d files\ntarget   %s\nstage    %s\n\n' \
   "$(< "$stage/.git/baseline")" \
   "$(git describe --always --dirty)" \
   "$(staged ls-files | wc -l)" \
+  "$target" \
   "$stage"
 
 if [[ -n "${base_bin:-}" ]]; then
-  format_widths base "$base_bin"
+  format_widths base "$base_bin" "$target"
 fi
-format_widths head "$head_bin"
+format_widths head "$head_bin" "$target"
 
 printf '\n'
 corpus_run delta "$stage" $(delta_widths)

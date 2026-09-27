@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lone Type Alias Collapses Its Padding to One Space"
+
+description = '''
+`type Id    =    int` is the only statement in the file, with four spaces on each side of its `=`. **Both gaps collapse to a single space**, because there is no other row for a column to serve, and the statement reads `type Id = int`.
+'''

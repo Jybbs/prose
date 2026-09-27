@@ -1,7 +1,7 @@
 //! Pure name helpers over import, assignment, and reference AST nodes:
-//! target extraction, type-reference name reading, the `SCREAMING_CASE`
-//! casing predicate, and the `ClassVar`, `TypeAlias`, and `TYPE_CHECKING`
-//! guards, independent of the binding table.
+//! target and value extraction, type-reference name reading, the
+//! `SCREAMING_CASE` casing predicate, and the `ClassVar`, `TypeAlias`,
+//! and `TYPE_CHECKING` guards, independent of the binding table.
 
 use ruff_python_ast::{
     Alias, Expr, ExprName, Stmt, StmtAnnAssign, StmtAssign, StmtIf, helpers::map_subscript,
@@ -14,10 +14,33 @@ pub(crate) fn ann_assign_with_named_field(stmt: &Stmt) -> Option<(&StmtAnnAssign
     Some((ann, annotated_name_target(ann)?))
 }
 
+/// Returns the value an assignment, an initialized annotation, an
+/// augmented assignment, or a `type` statement binds, `None` for an
+/// annotation without a value and for any other statement.
+pub(crate) fn assigned_value(stmt: &Stmt) -> Option<&Expr> {
+    match stmt {
+        Stmt::AnnAssign(a) => a.value.as_deref(),
+        Stmt::Assign(a) => Some(&a.value),
+        Stmt::AugAssign(a) => Some(&a.value),
+        Stmt::TypeAlias(a) => Some(&a.value),
+        _ => None,
+    }
+}
+
 /// The module-scope name a bare `import a.b` alias binds: its `asname`,
 /// or the top-level segment of the dotted path.
 pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
     top_level_module(from_import_bound_name(alias))
+}
+
+/// The dotted path an `import m` alias reaches through the name it
+/// binds: the whole module path where an `asname` binds it, and the
+/// bound top segment otherwise.
+pub(crate) fn bare_import_path(alias: &Alias) -> &str {
+    alias
+        .asname
+        .as_ref()
+        .map_or(bare_import_bound_name(alias), |_| alias.name.as_str())
 }
 
 /// The name a `from m import x` alias binds: its `asname`, or the
@@ -157,6 +180,22 @@ mod tests {
             .map(|stmt| ann_assign_with_named_field(stmt).map(|(_, name)| name))
             .collect();
         assert_eq!(names, vec![Some("x"), None, None]);
+    }
+
+    #[rstest]
+    #[case::annotated("x: int = 1\n", Some("1"))]
+    #[case::augmented("x += 2\n", Some("2"))]
+    #[case::bare_annotation("x: int\n", None)]
+    #[case::expression("run()\n", None)]
+    #[case::plain("x = 3\n", Some("3"))]
+    #[case::type_alias("type X[T] = list[T]\n", Some("list[T]"))]
+    fn assigned_value_reads_each_binding_statement(
+        #[case] src: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let source = parse(src);
+        let value = assigned_value(&source.ast().body[0]).map(|value| source.slice(value));
+        assert_eq!(value, expected);
     }
 
     #[rstest]

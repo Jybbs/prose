@@ -19,7 +19,7 @@ use ruff_text_size::{Ranged, TextLen, TextRange};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
 use crate::{
-    primitives::{range::overlaps, reserve::Weave, slots::item_holding, splice::enclosing_window},
+    primitives::{range::overlaps, reserve::Weave, slots::item_covering, splice::enclosing_window},
     rules::RuleId,
     source::Source,
 };
@@ -81,11 +81,10 @@ impl Source {
                 slid: deltas.slide_window(held),
             })
             .collect();
-        let covers = |written: TextRange| {
-            item_holding(&covered, written.start())
-                .is_some_and(|window| window.slid.contains_range(written))
-        };
-        if !deltas.written().all(covers) {
+        if !deltas
+            .written()
+            .all(|written| item_covering(&covered, written).is_some())
+        {
             return None;
         }
         let options = ParseOptions::from(self.source_type);

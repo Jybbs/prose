@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/type_alias_reading_a_constant_sorts_ahead_of_it/input.py
+---
+type Bounded = Annotated[int, Field(le=CEILING)]
+CEILING = 90

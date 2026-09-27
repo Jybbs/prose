@@ -6,7 +6,7 @@
 //! to the range that differs, `insert_edit` keeps an accumulator sorted
 //! by start, the `forward_*` functions move an offset, a range, or cell
 //! boundaries through a `SourceMap`, `shifted_past` reads one for a
-//! boundary no edit replaced, and `whole_line_deletions` clears dropped
+//! boundary no edit replaced, and `slot_deletions` clears dropped
 //! statements, keeping one blank run where two would meet.
 
 use std::borrow::Cow;
@@ -21,7 +21,7 @@ mod deletions;
 mod offsets;
 
 pub(crate) use apply::{apply_edits_mapped, apply_inline_edits, splice_bodies};
-pub(crate) use deletions::whole_line_deletions;
+pub(crate) use deletions::slot_deletions;
 pub(crate) use offsets::{
     forward_offsets, forward_range, forward_start, narrowed_replacement, shifted_past,
 };

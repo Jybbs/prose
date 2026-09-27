@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
-import { promiseTimeout }       from '@vueuse/core'
 import { nextTick, ref }        from 'vue'
 
 import ProseSandboxToml                   from '../../theme/components/sandbox/ProseSandboxToml.vue'
@@ -14,6 +13,12 @@ vi.mock('../../lib/markdown/highlighter', () => import('../highlighter-stub'))
 const tomlSandbox = (configToml = '', configNotices: readonly string[] = []) =>
   fakeSandbox({ configNotices: ref(configNotices), configToml: ref(configToml) })
 
+// Advances fake time one typing step at a time until `done` holds, so a test
+// reads the run's end state however long each step takes in real time.
+const advanceUntil = async (done: () => boolean) => {
+  for (let step = 0; step < 400 && !done(); step++) await vi.advanceTimersByTimeAsync(12)
+}
+
 const mountToml = async (sandbox: ProseSandbox) => {
   const wrapper = mount(ProseSandboxToml, { props: { sandbox } })
   await flushPromises()
@@ -21,6 +26,8 @@ const mountToml = async (sandbox: ProseSandbox) => {
 }
 
 describe('ProseSandboxToml', () => {
+  afterEach(() => { vi.useRealTimers() })
+
   domTest('marks the row and counts the key a notice names', async () => {
     const notice  = 'warning: unknown key `no-such-key` in [tool.prose]'
     const sandbox = tomlSandbox('code-line-length = 88\nno-such-key = 1', [notice])
@@ -46,9 +53,13 @@ describe('ProseSandboxToml', () => {
     reducedMotion(false)
     const sandbox = tomlSandbox()
     const wrapper = await mountToml(sandbox)
+    vi.useFakeTimers()
 
-    sandbox.configToml.value = 'code-line-length = 100'
-    await expect.poll(() => wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 100')
+    const target = 'code-line-length = 100'
+    sandbox.configToml.value = target
+    await advanceUntil(() => wrapper.get('.sandbox-toml-display').html().includes(target))
+
+    expect(wrapper.get('.sandbox-toml-display').html()).toContain(target)
     expect(isHidden(wrapper.get('.code-typewriter'))).toBe(true)
   })
 
@@ -56,21 +67,26 @@ describe('ProseSandboxToml', () => {
     reducedMotion(false)
     const sandbox = tomlSandbox()
     const wrapper = await mountToml(sandbox)
+    vi.useFakeTimers()
 
     sandbox.configToml.value = 'rules.align-equals = false\nrules.space-statements = false'
-    await expect.poll(() => isHidden(wrapper.get('.code-typewriter'))).toBe(false)
-    sandbox.configToml.value = 'code-line-length = 40'
-    await vi.waitFor(() => {
-      expect(isHidden(wrapper.get('.sandbox-toml-display'))).toBe(false)
-      expect(wrapper.get('.sandbox-toml-display').html()).toContain('code-line-length = 40')
-    })
-    expect(wrapper.get('.sandbox-toml-display').html()).not.toContain('align-equals')
+    await advanceUntil(() => !isHidden(wrapper.get('.code-typewriter')))
+    expect(isHidden(wrapper.get('.code-typewriter'))).toBe(false)
+    const target = 'code-line-length = 40'
+    sandbox.configToml.value = target
+    await advanceUntil(() => wrapper.get('.sandbox-toml-display').html().includes(target))
+
+    const display = wrapper.get('.sandbox-toml-display')
+    expect(isHidden(display)).toBe(false)
+    expect(display.html()).toContain(target)
+    expect(display.html()).not.toContain('align-equals')
   })
 
   domTest('abandons the run when the reader clicks in mid-type', async ({ reducedMotion }) => {
     reducedMotion(false)
     const sandbox = tomlSandbox()
     const wrapper = await mountToml(sandbox)
+    vi.useFakeTimers()
 
     sandbox.configToml.value = 'code-line-length = 100'
     await nextTick()
@@ -78,14 +94,15 @@ describe('ProseSandboxToml', () => {
 
     // The reader's own edit lands while editing, so its watch is spent before
     // the blur rather than firing a fresh run that would mask the stale one.
-    sandbox.configToml.value = 'code-line-length = 60'
+    const target = 'code-line-length = 60'
+    sandbox.configToml.value = target
     await nextTick()
     await wrapper.get('textarea').trigger('blur')
-    await promiseTimeout(600)
-    await flushPromises()
+    await advanceUntil(() => wrapper.get('.sandbox-toml-display').html().includes(target))
+    await vi.runAllTimersAsync()
 
     const display = wrapper.get('.sandbox-toml-display')
-    expect(display.html()).toContain('code-line-length = 60')
+    expect(display.html()).toContain(target)
     expect(display.html()).not.toContain('code-line-length = 100')
   })
 

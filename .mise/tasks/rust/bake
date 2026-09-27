@@ -7,6 +7,7 @@ source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 corpus=$(corpus_root "${1:-}")
 budget="${2:-600}"
 stage="${PROSE_DELTA_STAGE:?names the directory the baked stage lands in}"
+target=$(corpus_target)
 
 if [[ -n "${PROSE_DELTA_BASELINE:-}" ]]; then
   base_tree=$(baseline_root "$PROSE_DELTA_BASELINE")
@@ -21,7 +22,7 @@ mkdir -p "$stage"
 stage_corpus "$corpus"
 echo "$baseline" > "$stage/.git/baseline"
 
-format_widths base "$binary"
+format_widths base "$binary" "$target"
 staged gc -q --prune=now
 
 if [[ -n "${PROSE_SETTLE_MUTATIONS:-}" ]]; then

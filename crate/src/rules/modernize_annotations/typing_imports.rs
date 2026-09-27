@@ -9,7 +9,9 @@ use rustc_hash::FxHashMap;
 
 use crate::{
     primitives::{
-        binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
+        binding::{
+            bare_import_bound_name, bare_import_path, from_import_bound_name, top_level_module,
+        },
         imports::Dropping,
     },
     rules::{modernize_annotations::ModernizeAnnotations, reflow_imports::Folds},
@@ -37,13 +39,12 @@ impl<'a> TypingImports<'a> {
                     let mut bound = node
                         .names
                         .iter()
-                        .filter_map(|alias| {
-                            let name = alias.name.as_str();
-                            let bound = bare_import_bound_name(alias);
-                            is_typing_root(top_level_module(name)).then(|| {
-                                let path = if alias.asname.is_some() { name } else { bound };
-                                (bound, QualifiedName::user_defined(path))
-                            })
+                        .filter(|alias| is_typing_root(top_level_module(alias.name.as_str())))
+                        .map(|alias| {
+                            (
+                                bare_import_bound_name(alias),
+                                QualifiedName::user_defined(bare_import_path(alias)),
+                            )
                         })
                         .peekable();
                     if bound.peek().is_none() {
@@ -143,8 +144,7 @@ impl TypingImport<'_> {
         if !self.bare {
             return unread(from_import_bound_name(alias));
         }
-        (alias.asname.is_some() || !alias.name.contains('.'))
-            && unread(bare_import_bound_name(alias))
+        bare_import_path(alias) == alias.name.as_str() && unread(bare_import_bound_name(alias))
     }
 }
 

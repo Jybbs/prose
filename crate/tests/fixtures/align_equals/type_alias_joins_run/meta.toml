@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias Joins the Run"
+
+description = '''
+`type Seconds = float` sits between the plain `LIMIT = 3` and the annotated `timeout: Seconds = 1.5`. **All three lines share one `=` column**, the `type` row aligning like any other assignment.
+'''

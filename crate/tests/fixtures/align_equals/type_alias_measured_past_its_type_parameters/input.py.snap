@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/type_alias_measured_past_its_type_parameters/input.py
+---
+type Pair[T = int] = tuple[T, T]
+type Id            = int
+type Mapping[K, V] = dict[K, V]
