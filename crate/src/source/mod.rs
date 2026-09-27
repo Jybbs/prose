@@ -4,10 +4,7 @@ use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
-use ruff_python_ast::{
-    ModModule, PySourceType,
-    token::{TokenKind, Tokens},
-};
+use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
@@ -348,12 +345,7 @@ pub enum SourceError {
 fn detect_line_ending(text: &str, tokens: &Tokens) -> LineEnding {
     tokens
         .iter()
-        .filter(|token| {
-            matches!(
-                token.kind(),
-                TokenKind::Newline | TokenKind::NonLogicalNewline
-            )
-        })
+        .filter(|token| token.kind().is_any_newline())
         .find_map(|token| find_newline(&text[token.range()]))
         .or_else(|| find_newline(text))
         .map_or(LineEnding::Lf, |(_, ending)| ending)

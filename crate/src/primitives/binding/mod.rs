@@ -33,8 +33,8 @@ mod names;
 use builder::Builder;
 pub(crate) use module_scan::{ModuleAssignment, module_assignments, module_bound_names};
 pub(crate) use names::{
-    ann_assign_with_named_field, bare_import_bound_name, from_import_bound_name, is_classvar,
-    is_explicit_type_alias, is_screaming_case, sequence_elts, single_name_assignment,
+    ann_assign_with_named_field, bare_import_bound_name, bare_import_path, from_import_bound_name,
+    is_classvar, is_explicit_type_alias, is_screaming_case, sequence_elts, single_name_assignment,
     single_name_target, tail_identifier, top_level_module, type_head_identifier,
 };
 
@@ -175,6 +175,15 @@ impl BindingAnalysis {
     pub(crate) fn module_attribute_count(&self, name: &str) -> usize {
         self.module_binding(name)
             .map_or(0, |binding| binding.attributes.len())
+    }
+
+    /// Returns each distinct attribute read off the module-scope binding
+    /// for `name` (`os.environ` reads `environ`), none where `name` is
+    /// unbound at module scope.
+    pub(crate) fn module_attributes(&self, name: &str) -> impl Iterator<Item = &str> {
+        self.module_binding(name)
+            .into_iter()
+            .flat_map(|binding| binding.attributes.iter().map(Name::as_str))
     }
 
     /// Returns the recorded write kinds of the module-scope binding for

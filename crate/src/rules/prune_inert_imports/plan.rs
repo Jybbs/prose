@@ -98,7 +98,7 @@ impl<'a> Plan<'a> {
                     None
                 } else {
                     (is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
-                        && !loads_a_read_submodule(node, alias, &submodules, source.ast()))
+                        && !loads_a_read_submodule(node, alias, &submodules, source))
                     .then_some(Candidacy::Unreferenced)
                 };
                 let held = if package_init {

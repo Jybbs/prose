@@ -20,6 +20,16 @@ pub(crate) fn bare_import_bound_name(alias: &Alias) -> &str {
     top_level_module(from_import_bound_name(alias))
 }
 
+/// The dotted path an `import m` alias reaches through the name it
+/// binds: the whole module path where an `asname` binds it, and the
+/// bound top segment otherwise.
+pub(crate) fn bare_import_path(alias: &Alias) -> &str {
+    alias
+        .asname
+        .as_ref()
+        .map_or(bare_import_bound_name(alias), |_| alias.name.as_str())
+}
+
 /// The name a `from m import x` alias binds: its `asname`, or the
 /// imported name itself.
 pub(crate) fn from_import_bound_name(alias: &Alias) -> &str {
