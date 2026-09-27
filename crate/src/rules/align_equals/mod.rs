@@ -1,15 +1,15 @@
 //! Vertically aligns `=` across runs of same-indent, line-adjacent
-//! assignments, annotated parameter defaults, and an exploded call's
-//! keyword arguments, aligning a run only when its rows share a column
-//! baseline. Chained assignments, initializer-less annotations, and
-//! single-line signatures or calls are skipped. Every aligned row
-//! reads as `name = value`, the name side padding to the shared column
-//! and collapsing to one space where no column is reached, and the
-//! value side collapsing to one space after the operator unless the
-//! value falls on a later line. A keyword condensed onto a line with
-//! another argument keeps its tight `name=value`, `+=` places `+` one
-//! column before the shared `=`, and parameter widths reflect the
-//! post-`align_colons` source.
+//! assignments and `type` statements, annotated parameter defaults, and
+//! an exploded call's keyword arguments, aligning a run only when its
+//! rows share a column baseline. Chained assignments, initializer-less
+//! annotations, and single-line signatures or calls are skipped. Every
+//! aligned row reads as `name = value`, the name side padding to the
+//! shared column and collapsing to one space where no column is
+//! reached, and the value side collapsing to one space after the
+//! operator unless the value falls on a later line. A keyword condensed
+//! onto a line with another argument keeps its tight `name=value`, `+=`
+//! places `+` one column before the shared `=`, and parameter widths
+//! reflect the post-`align_colons` source.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::visitor::Visitor as AstVisitor;

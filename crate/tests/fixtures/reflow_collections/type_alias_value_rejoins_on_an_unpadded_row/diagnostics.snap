@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/type_alias_value_rejoins_on_an_unpadded_row/input.py
+---
+align-equals@33..34
+reflow-collections@46..68

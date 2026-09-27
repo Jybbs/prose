@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias Reading a Definition Holds the Run"
+
+description = '''
+`type Pair = tuple[Zeta, Zeta]` sits between `class Zeta` and `class Apple` and names `Zeta` in its value. **The run keeps its source order**, because reading the alias's `__value__` evaluates `tuple[Zeta, Zeta]`, so `class Zeta` holds above the alias as it would above any statement reading it.
+'''

@@ -23,7 +23,7 @@ use crate::{
     source::Source,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct FrameDocstrings;
 
 impl FrameDocstrings {
@@ -37,10 +37,11 @@ impl FrameDocstrings {
     pub(crate) fn from_config(_: &Config) -> Self {
         Self
     }
-}
 
-impl Rule for FrameDocstrings {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+    /// Walks `source` for the edit groups reframing each docstring to
+    /// `"""` with its opener and closer on their own lines, the walk
+    /// [`Source::framed_docstrings`] holds.
+    pub(crate) fn framed(&self, source: &Source) -> Vec<Vec<Edit>> {
         rewrite_docstrings(source, |source, lit, edits| {
             let Some(body) = docstring_body(source, lit) else {
                 return;
@@ -60,6 +61,12 @@ impl Rule for FrameDocstrings {
             let new_body = format!("{leading}{}{trailing}", body.text);
             edits.extend(narrowed_replacement(source, body.range, new_body));
         })
+    }
+}
+
+impl Rule for FrameDocstrings {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        source.framed_docstrings(*self).into_owned()
     }
 
     fn id(&self) -> RuleId {

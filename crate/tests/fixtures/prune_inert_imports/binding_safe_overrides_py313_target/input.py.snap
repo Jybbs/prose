@@ -3,8 +3,6 @@ source: tests/integration.rs
 expression: output
 input_file: tests/fixtures/unused_future_annotations/binding_safe_overrides_py313_target/input.py
 ---
-
-
 class Node:
     pass
 

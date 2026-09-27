@@ -19,10 +19,9 @@ impl<'ast> AstVisitor<'ast> for FractureJoiner<'_> {
             return;
         };
         let range = call.arguments.range();
-        if call.arguments.is_empty()
+        if !self.source.is_explodable(&call.arguments)
             || self.settings.explodes(self.source, call)
             || !is_fractured(self.source, range)
-            || self.source.intersects_comment(call.arguments.inner_range())
         {
             return;
         }

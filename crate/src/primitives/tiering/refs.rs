@@ -164,6 +164,26 @@ mod tests {
     }
 
     #[test]
+    fn eval_time_refs_reads_a_type_statement() {
+        let source = parse(indoc! {"
+            type Alias[T: BoundRef] = list[ValueRef]
+
+            if FlagRef:
+                type Nested = NestedRef
+        "});
+        let collected: FxHashSet<&str> = source
+            .ast()
+            .body
+            .iter()
+            .flat_map(|stmt| eval_time_refs(stmt, false))
+            .collect();
+        assert_eq!(
+            collected,
+            FxHashSet::from_iter(["BoundRef", "FlagRef", "NestedRef", "ValueRef", "list"]),
+        );
+    }
+
+    #[test]
     fn eval_time_refs_skips_annotations_when_deferred() {
         let source = parse(indoc! {"
             class Probe(BaseRef):

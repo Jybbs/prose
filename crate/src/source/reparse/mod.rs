@@ -61,13 +61,16 @@ impl Source {
     ///
     /// A splice declines a window whose new text does not parse, a
     /// nested window landing as anything but the one statement filling
-    /// it, an edit writing text no window reads, and a notebook. A lone
+    /// it, an edit writing text no window reads, an edit changing whether
+    /// the text ends on a line break, which moves the zero-width newline
+    /// the lexer closes an unterminated last row with, and a notebook. A lone
     /// window that does not reparse widens outward one statement at a
     /// time. A module-body window lands as any count of statements,
     /// none included, and a window whose end moved to another depth
     /// hands the levels it moved to the `Dedent` run past it.
     pub(crate) fn splice_of(&self, text: &str, map: &SourceMap) -> Option<Splice> {
-        if self.is_notebook() {
+        let ends_on_a_break = |text: &str| text.ends_with(['\n', '\r']);
+        if self.is_notebook() || ends_on_a_break(self.text()) != ends_on_a_break(text) {
             return None;
         }
         let deltas = Deltas::new(map);
@@ -326,6 +329,22 @@ mod tests {
         let (text, map) = woven(source.text(), vec![replacement("11", 4, 5)]);
 
         assert!(source.splice_of(&text, &map).is_none());
+    }
+
+    #[rstest]
+    #[case::the_last_row_of_an_unterminated_text(
+        "x = 1\ny = 2",
+        Edit::range_deletion(range(6, 11))
+    )]
+    #[case::the_break_closing_a_terminated_text(
+        "x = 1\ny = 2\n",
+        Edit::range_deletion(range(11, 12))
+    )]
+    fn spliced_declines_an_edit_moving_the_closing_line_break(
+        #[case] text: &str,
+        #[case] edit: Edit,
+    ) {
+        assert!(splice(text, vec![edit]).is_none());
     }
 
     #[rstest]

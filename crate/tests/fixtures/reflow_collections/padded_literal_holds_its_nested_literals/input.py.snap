@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/padded_literal_holds_its_nested_literals/input.py
+---
+SORT_KEY_CALLS = (((1,-1),              ), "call count")
+
+SORT_KEYS = {
+    "calls":
+        (((1,-1),              ), "call count"),
+    "cumulative": (
+        ((3,-1),              ),
+        "cumulative time"
+    )
+}

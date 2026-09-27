@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/padded_literal_holds_its_nested_literals/input.py
+---
+reflow-collections@71..179

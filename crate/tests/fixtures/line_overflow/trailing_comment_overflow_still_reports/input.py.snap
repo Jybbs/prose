@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/line_overflow/trailing_comment_overflow_still_reports/input.py
+---
+LOOKUP = {"version": VERSION}  # a trailing comment long enough to carry the row past the budget

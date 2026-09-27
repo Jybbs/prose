@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Inside a Type Alias Holds the Run"
+
+description = '''
+`type Scored = Annotated[int, mid()]` calls `mid`, which calls `zeta`, and `print(Scored.__value__)` reads the alias as the module imports. **`zeta` and `mid` keep their slots above the alias while `delta` and `beta` swap around the `print`**, because reading the alias's `__value__` runs `mid`, so a `type` statement holds what its value calls just as a call does.
+'''

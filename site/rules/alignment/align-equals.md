@@ -12,7 +12,7 @@ layout  : doc
 
 The rule aligns three kinds of run:
 
-1. Consecutive single-target assignments at the same indentation, with or without a type annotation. An augmented assignment (*`+=`, `|=`*) joins the run with its operator one column before the shared `=`, whereas a walrus (*`:=`*) never joins.
+1. Consecutive single-target assignments at the same indentation, with or without a type annotation. An augmented assignment (*`+=`, `|=`*) joins the run with its operator one column before the shared `=`, whereas a walrus (*`:=`*) never joins. A PEP 695 `type` statement joins as well, its name side measured from `type` through any type parameter list, so `type Pair[T]` and `type Id` share one column.
 2. Consecutive annotated function-parameter defaults, so a signature with several `param: type = default` entries aligns its `=` the way a stretch of module-level bindings does.
 3. The keyword arguments that each sit alone on their line in an exploded call, so a call written one keyword per line aligns its `name = value` column the way a signature aligns its defaults.
 

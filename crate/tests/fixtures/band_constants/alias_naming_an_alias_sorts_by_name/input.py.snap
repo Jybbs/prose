@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/alias_naming_an_alias_sorts_by_name/input.py
+---
+type Alpha = list[Zulu]
+type Zulu = int
+LIMIT = 3

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/type_alias_value_reader_trails_what_the_value_calls/input.py
+---
+band-constants@51..161

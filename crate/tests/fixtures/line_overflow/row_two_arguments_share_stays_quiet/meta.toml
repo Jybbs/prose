@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Row Two Arguments Share Is Not Reported"
+
+description = '''
+`result`'s call is written across rows, and the row holding its three arguments runs to 41 columns, over the 40-column budget. **That row is not reported, whereas `single`'s 44-column row is**, because `reflow-calls` gives each argument sharing a row its own row, whereas a row already holding one argument stays as written.
+'''

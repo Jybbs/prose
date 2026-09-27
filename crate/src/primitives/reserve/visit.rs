@@ -3,7 +3,7 @@
 use rustc_hash::FxHashMap;
 
 use super::*;
-use crate::primitives::range::overlaps;
+use crate::primitives::{binding::assigned_value, range::overlaps};
 
 /// One collected alignment run, `candidate` true where the rule aligns
 /// it to a column or leaves it alone and false where it buffers each
@@ -45,19 +45,12 @@ impl<'a> ReserveVisitor<'a> {
         self.values.insert(start, (value, parent));
     }
 
-    /// Notes the value of each assignment in `body` against its
-    /// statement.
+    /// Notes the value `assigned_value` reads off each statement of
+    /// `body` against that statement.
     fn note_values(&mut self, body: &'a [Stmt]) {
         for stmt in body {
-            match stmt {
-                Stmt::Assign(a) => self.note(&a.value, stmt.into()),
-                Stmt::AugAssign(a) => self.note(&a.value, stmt.into()),
-                Stmt::AnnAssign(a) => {
-                    if let Some(value) = a.value.as_deref() {
-                        self.note(value, stmt.into());
-                    }
-                }
-                _ => {}
+            if let Some(value) = assigned_value(stmt) {
+                self.note(value, stmt.into());
             }
         }
     }

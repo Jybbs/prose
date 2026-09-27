@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Statement Reading a Type Alias Holds What Its Value Calls"
+
+description = '''
+`type Scored = Annotated[int, mid()]` opens the module above `zeta` and `mid`, and `print(Scored.__value__)` reads the alias further down. **`zeta` and `mid` keep their slots above the `print` while `delta` and `beta` swap around it**, because reading the alias's `__value__` runs `mid`, which calls `zeta`, so the `print` reaches both through the alias as a call reaches through a definition.
+'''

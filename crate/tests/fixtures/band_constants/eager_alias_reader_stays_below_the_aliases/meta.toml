@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Constant Reading a Type Alias Stays Below It"
+
+description = '''
+`Coordinates: TypeAlias = tuple[Latitude, Latitude]` and `ALL = (Meters, Latitude)` both read the `type` aliases above them while the module runs. **The two `type` statements sort by name, and both readers stay below them in a tier of their own**, because a `type` statement binds its name as soon as it runs and a statement reading that name sits a tier deeper. `Coordinates` stays there even though it clusters with the aliases and sorts ahead of `Latitude` by name.
+'''

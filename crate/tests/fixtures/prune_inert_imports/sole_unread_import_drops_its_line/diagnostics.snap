@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/prune_inert_imports/sole_unread_import_drops_its_line/input.py
 ---
-prune-inert-imports@0..12
+prune-inert-imports@0..13

@@ -98,7 +98,7 @@ impl<'a> Plan<'a> {
                     None
                 } else {
                     (is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())
-                        && !loads_a_read_submodule(node, alias, &submodules, source.ast()))
+                        && !loads_a_read_submodule(node, alias, &submodules, source))
                     .then_some(Candidacy::Unreferenced)
                 };
                 let held = if package_init {
@@ -158,7 +158,8 @@ impl<'a> Plan<'a> {
     /// losing every alias landing on the import its comment heads once
     /// the later rules have laid the block out.
     pub(super) fn edits(&self, source: &Source) -> Vec<Vec<Edit>> {
-        self.folds.prune(source, &self.drops)
+        self.folds
+            .prune(source, &self.drops, PruneInertImports::SLUG)
     }
 }
 
