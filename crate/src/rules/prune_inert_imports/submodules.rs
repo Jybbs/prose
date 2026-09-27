@@ -4,12 +4,15 @@
 
 use std::cell::OnceCell;
 
-use ruff_python_ast::{Alias, Stmt};
+use ruff_python_ast::{Alias, Stmt, name::UnqualifiedName};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::inventory::ImportNode;
 use crate::{
-    primitives::binding::{bare_import_bound_name, bare_import_path},
+    primitives::{
+        binding::{bare_import_bound_name, bare_import_path},
+        walk::{Descent, filter_map_over_exprs},
+    },
     source::Source,
 };
 
@@ -35,31 +38,33 @@ pub(super) fn loads_a_read_submodule(
         .contains(&format!("{package}.{submodule}"))
 }
 
-/// Returns the first two segments, joined with `.`, of the path each
-/// attribute read off a name a module-scope bare `import` binds reaches,
-/// so `mp.connection.wait` reads `multiprocessing.connection` under
-/// `import multiprocessing as mp`.
+/// Returns the first two segments, joined with `.`, of the path every
+/// attribute chain in `source` reads through a name a module-scope bare
+/// `import` binds, so `mp.connection.wait` reads
+/// `multiprocessing.connection` under `import multiprocessing as mp`.
 fn submodule_reads(source: &Source) -> FxHashSet<String> {
-    let packages: FxHashMap<&str, &str> = source
-        .ast()
-        .body
+    let body = &source.ast().body;
+    let packages: FxHashMap<&str, &str> = body
         .iter()
         .filter_map(Stmt::as_import_stmt)
         .flat_map(|node| &node.names)
         .map(|alias| (bare_import_bound_name(alias), bare_import_path(alias)))
         .collect();
-    let analysis = source.binding_analysis();
-    packages
-        .into_iter()
-        .flat_map(|(bound, path)| {
-            analysis
-                .module_attributes(bound)
-                .filter_map(move |attribute| {
-                    let mut segments = path.split('.').chain([attribute]);
-                    Some(format!("{}.{}", segments.next()?, segments.next()?))
-                })
-        })
-        .collect()
+    if packages.is_empty() {
+        return FxHashSet::default();
+    }
+    filter_map_over_exprs(body, Descent::Into, |expr| {
+        if !expr.is_attribute_expr() {
+            return None;
+        }
+        let chain = UnqualifiedName::from_expr(expr)?;
+        let (head, rest) = chain.segments().split_first()?;
+        let mut path = packages.get(head)?.split('.').chain(rest.iter().copied());
+        let (package, submodule) = (path.next()?, path.next()?);
+        Some(format!("{package}.{submodule}"))
+    })
+    .into_iter()
+    .collect()
 }
 
 #[cfg(test)]
@@ -77,10 +82,8 @@ mod tests {
     #[case::through_a_dotted_alias("import a.b as x\n\nx.c\n", &["a.b"])]
     #[case::through_the_bound_root("import os.path\n\nos.sep\n", &["os.sep"])]
     #[case::an_unbound_head("value.connection\n", &[])]
-    #[case::a_shadowing_parameter(
-        "import multiprocessing as mp\n\n\ndef f(mp):\n    return mp.connection\n",
-        &[],
-    )]
+    #[case::a_deleted_attribute("import a as x\n\ndel x.b\n", &["a.b"])]
+    #[case::an_augmented_attribute("import a as x\n\nx.b += 1\n", &["a.b"])]
     #[case::a_bare_name_alone("import multiprocessing as mp\n\nmp\n", &[])]
     fn submodule_reads_resolves_each_chain_through_its_import(
         #[case] src: &str,

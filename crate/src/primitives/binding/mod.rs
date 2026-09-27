@@ -177,15 +177,6 @@ impl BindingAnalysis {
             .map_or(0, |binding| binding.attributes.len())
     }
 
-    /// Returns each distinct attribute read off the module-scope binding
-    /// for `name` (`os.environ` reads `environ`), none where `name` is
-    /// unbound at module scope.
-    pub(crate) fn module_attributes(&self, name: &str) -> impl Iterator<Item = &str> {
-        self.module_binding(name)
-            .into_iter()
-            .flat_map(|binding| binding.attributes.iter().map(Name::as_str))
-    }
-
     /// Returns the recorded write kinds of the module-scope binding for
     /// `name`, empty when `name` is unbound at module scope.
     pub(crate) fn module_binding_kinds(&self, name: &str) -> &[BindingKind] {
