@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/alias_reader_holds_what_the_alias_value_calls/input.py
+---
+alphabetize-siblings@130..182

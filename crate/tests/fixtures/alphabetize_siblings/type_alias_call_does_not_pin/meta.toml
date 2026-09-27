@@ -1,7 +1,0 @@
-[docs]
-previewable = false
-title       = "A Call Inside a Type Alias Does Not Pin the Order"
-
-description = '''
-`type Scored = Annotated[int, mid()]` calls `mid`, which calls `zeta`, and the alias sits between those two functions and `delta` and `beta`. **All four functions sort by name around the alias**, because Python evaluates a `type` statement's value only when something reads the alias's `__value__` or calls its `evaluate_value`, so the call runs no definition while the module imports.
-'''

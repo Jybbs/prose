@@ -36,7 +36,8 @@ const POSITION_CODE: &str = "E402";
 /// A module-scope single-name assignment considered for hoisting,
 /// carrying its body index, target name, subcategory, the load-context
 /// names in its value and its non-deferred annotation, and whether the
-/// value runs code at binding. Value references pin the constant when
+/// value runs code at binding. The value's names include those of each
+/// `type` alias it names. Value references pin the constant when
 /// unresolved, whereas annotation references only constrain band order.
 struct ConstSite<'src> {
     annot_refs: Vec<&'src str>,
@@ -164,8 +165,33 @@ pub(super) fn module_band_plan<'src>(
     }
     let site_at: FxHashMap<&'src str, usize> =
         sites.iter().enumerate().map(|(s, c)| (c.name, s)).collect();
+    // A statement reading a `type` alias as the module runs can evaluate
+    // the alias's value through its `__value__`, so it reads each name
+    // that value names as well as the alias.
+    let alias_values: FxHashMap<&'src str, Vec<&'src str>> = sites
+        .iter()
+        .filter_map(|site| {
+            let alias = body[site.idx].as_type_alias_stmt()?;
+            Some((site.name, eval_refs(&alias.value)))
+        })
+        .collect();
+    let reads_through = |name: &'src str| {
+        std::iter::once(name).chain(alias_values.get(name).into_iter().flatten().copied())
+    };
+    for site in &mut sites {
+        site.value_refs = site
+            .value_refs
+            .iter()
+            .flat_map(|&name| reads_through(name))
+            .collect();
+    }
     let refs = eval_time_refs_of(body, defer_annotations);
-    let refs_of = |stmt: &Stmt| refs.get(&stmt.start()).into_iter().flatten().copied();
+    let refs_of = |stmt: &Stmt| {
+        refs.get(&stmt.start())
+            .into_iter()
+            .flatten()
+            .flat_map(|&name| reads_through(name))
+    };
     let mut eager_reader_at: FxHashMap<&'src str, usize> = FxHashMap::default();
     for (idx, stmt) in body.iter().enumerate() {
         if matches!(stmt, Stmt::ClassDef(_) | Stmt::FunctionDef(_)) {

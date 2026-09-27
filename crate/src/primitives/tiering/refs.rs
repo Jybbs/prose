@@ -8,8 +8,7 @@ use ruff_python_ast::{
 use crate::primitives::walk::walk_stmt;
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
-/// function and lambda bodies and skipping deferred annotations and
-/// every `type` statement.
+/// function and lambda bodies and skipping deferred annotations.
 struct EvalRefVisitor<'src> {
     defer_annotations: bool,
     names: Vec<&'src str>,
@@ -50,10 +49,6 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                     self.visit_annotation(returns);
                 }
             }
-            // A `type` statement evaluates its value and its type parameters'
-            // bounds, constraints, and defaults only when their attributes are
-            // read or their `evaluate_*` functions called.
-            Stmt::TypeAlias(_) => {}
             _ => walk_stmt(self, stmt),
         }
     }
@@ -96,8 +91,8 @@ pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
 /// surface: its decorators, base classes and class keywords, parameter
 /// defaults, non-deferred annotations, and the top level of a class
 /// body, descending into nested definitions but pruning every function
-/// and lambda body and every `type` statement. Annotation positions are
-/// skipped when `defer_annotations` holds.
+/// and lambda body. Annotation positions are skipped when
+/// `defer_annotations` holds.
 pub(super) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
     let mut visitor = EvalRefVisitor {
         defer_annotations,
@@ -169,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn eval_time_refs_skips_a_type_statement() {
+    fn eval_time_refs_reads_a_type_statement() {
         let source = parse(indoc! {"
             type Alias[T: BoundRef] = list[ValueRef]
 
@@ -182,7 +177,10 @@ mod tests {
             .iter()
             .flat_map(|stmt| eval_time_refs(stmt, false))
             .collect();
-        assert_eq!(collected, FxHashSet::from_iter(["FlagRef"]));
+        assert_eq!(
+            collected,
+            FxHashSet::from_iter(["BoundRef", "FlagRef", "NestedRef", "ValueRef", "list"]),
+        );
     }
 
     #[test]

@@ -234,6 +234,56 @@ mod tests {
     }
 
     #[test]
+    fn def_run_holds_a_definition_a_type_statement_calls() {
+        let src = indoc! {"
+            def zeta():
+                return 1
+
+            def mid():
+                return zeta()
+
+            type Scored = Annotated[int, mid()]
+
+            def delta():
+                pass
+
+            def beta():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![0, 1, 2, 4, 3],
+            "a read of Scored.__value__ runs mid, so zeta and mid hold while delta and beta sort"
+        );
+    }
+
+    #[test]
+    fn def_run_holds_a_definition_an_alias_reader_reaches() {
+        let src = indoc! {"
+            type Scored = Annotated[int, mid()]
+
+            def zeta():
+                return 1
+
+            def mid():
+                return zeta()
+
+            print(Scored.__value__)
+
+            def delta():
+                pass
+
+            def beta():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![0, 1, 2, 3, 5, 4],
+            "the print reads Scored, whose value runs mid, so zeta and mid hold above it"
+        );
+    }
+
+    #[test]
     fn def_run_holds_a_definition_its_decorator_reaches() {
         let src = indoc! {"
             def zzz_helper():
@@ -352,30 +402,6 @@ mod tests {
             class_order(src, |_| false),
             vec![2, 0, 1],
             "without the hold the tier graph seats Mid ahead of Zeta"
-        );
-    }
-
-    #[test]
-    fn def_run_sorts_past_a_call_inside_a_type_statement() {
-        let src = indoc! {"
-            def zeta():
-                return 1
-
-            def mid():
-                return zeta()
-
-            type Scored = Annotated[int, mid()]
-
-            def delta():
-                pass
-
-            def beta():
-                pass
-        "};
-        assert_eq!(
-            func_order(src),
-            vec![4, 3, 2, 1, 0],
-            "a type statement calls mid only when Scored.__value__ is read, so nothing holds"
         );
     }
 

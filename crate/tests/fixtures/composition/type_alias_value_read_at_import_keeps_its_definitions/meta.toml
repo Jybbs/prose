@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias Read at Import Keeps the Definitions Its Value Calls"
+
+description = '''
+[[band-constants]] moves `type Scored = Annotated[int, mid()]` to the top of the module, away from the `zeta` and `mid` its value calls, and `print(Scored.__value__)` reads the alias as the module imports. **[[alphabetize-siblings]] keeps `zeta` and `mid` above the `print` while `delta` and `beta` swap around it**, because a statement reading an alias reaches whatever the alias's value calls, so the formatted module still imports.
+'''
