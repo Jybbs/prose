@@ -45,7 +45,7 @@ mod measure;
 mod visit;
 
 use measure::Measure;
-use visit::{ReserveVisitor, widenings_over};
+use visit::ReserveVisitor;
 
 /// The table a splice carries into the source it produced: the runs
 /// the edit could not reach, moved to where the woven text holds them,
@@ -579,19 +579,14 @@ impl Reservations {
         })
     }
 
-    /// The widening the reserved rule seats on each line, empty where
-    /// that rule is off.
+    /// Returns the widening the reserved rule seats on each line, read
+    /// from the entries `source`'s column table holds for every run, and
+    /// empty where that rule is off.
     pub(crate) fn widenings(&self, source: &Source) -> aligner::Widenings {
-        let Some(settings) = self.settings else {
-            return aligner::Widenings::default();
-        };
-        self.measured(source, |measure| {
-            widenings_over(
-                source,
-                settings,
-                &self.collected(source, measure, None, &[]),
-            )
-        })
+        let columns = source.columns(self);
+        aligner::Widenings::from_entries(
+            columns.widenings.iter().map(|&(_, entry)| entry).collect(),
+        )
     }
 }
 

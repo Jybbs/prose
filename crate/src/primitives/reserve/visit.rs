@@ -207,22 +207,6 @@ pub(super) struct Run {
     pub(super) seated: bool,
 }
 
-/// The widening the collected runs seat on each line under `settings`.
-pub(super) fn widenings_over(
-    source: &Source,
-    settings: aligner::Settings,
-    visitor: &ReserveVisitor,
-) -> aligner::Widenings {
-    aligner::Widenings::of(
-        source,
-        settings,
-        visitor
-            .runs
-            .iter()
-            .flat_map(|run| run.members.iter().copied()),
-    )
-}
-
 /// Builds one run per group of `groups`, each formed inside `scope`.
 fn runs(
     groups: Vec<Vec<aligner::Member>>,
