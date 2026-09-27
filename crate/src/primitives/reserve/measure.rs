@@ -16,6 +16,7 @@ use crate::{
         layout::{is_fractured, opener_width},
         one_row,
         orderer::Seatings,
+        walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
 };
@@ -73,6 +74,24 @@ impl Measure<'_> {
         )
     }
 
+    /// Measures the width from the start of `range`, the span of `expr`,
+    /// through the bracket a layout rule breaks the value open at, per
+    /// [`opener_width`]. A value on one row reads the first such bracket in
+    /// source order anywhere inside it, and a value spanning rows reads its
+    /// own bracket alone.
+    fn opener(&self, expr: &Expr, range: TextRange) -> Option<usize> {
+        let opens = |inner: &Expr| opener_width(self.source, &self.one_row, inner, range.start());
+        if self.source.contains_line_break(range) {
+            return opens(expr);
+        }
+        let mut width = None;
+        any_over_expr_within(expr, Interpolations::Skip, |inner| {
+            width = opens(inner);
+            width.is_some()
+        });
+        width
+    }
+
     /// Measures the width the code past `end` takes on its row once the
     /// padding settles, a trailing comment closing the measure.
     fn tail(&self, end: TextSize) -> usize {
@@ -80,9 +99,9 @@ impl Measure<'_> {
     }
 
     /// Measures the widths a statement row whose value `expr` opens at
-    /// `column` reaches on one row and broken open, returning `None` where no
-    /// layout rule breaks `expr` open or, for a value spanning rows, joins it
-    /// back onto one row.
+    /// `column` reaches on one row and broken open at the bracket
+    /// [`Self::opener`] finds, returning `None` where no layout rule breaks
+    /// `expr` open or, for a value spanning rows, joins it back onto one row.
     pub(super) fn breakable(
         &self,
         expr: &Expr,
@@ -90,7 +109,7 @@ impl Measure<'_> {
         column: usize,
     ) -> Option<aligner::Breakable> {
         let range = self.source.paren_aware_range(expr.into(), parent);
-        let opener = opener_width(self.source, &self.one_row, expr, range.start())?;
+        let opener = self.opener(expr, range)?;
         Some(aligner::Breakable {
             code: column + self.one_row_width(expr, parent, range)? + self.tail(range.end()),
             opener: column + opener,
@@ -225,6 +244,8 @@ mod tests {
     #[case::one_row_call("x = frob(a, b)\n", Some((14, 9)))]
     #[case::fractured_call("x = frob(a,\n         b)\n", Some((14, 9)))]
     #[case::fractured_list("x = [a,\n     b]\n", Some((10, 5)))]
+    #[case::inner_call("x = frob(a, b).match\n", Some((20, 9)))]
+    #[case::interpolated_call("x = f\"{frob(a, b)}\"\n", None)]
     #[case::column_shaped_call("x = frob(\n    a,\n    b\n)\n", None)]
     #[case::trailing_comment("x = frob(a, b)  # note\n", Some((14, 9)))]
     #[case::name("x = value\n", None)]

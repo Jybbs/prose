@@ -883,6 +883,16 @@ mod tests {
     }
 
     #[test]
+    fn columns_end_a_run_at_a_row_breaking_inside_its_value() {
+        // `declaration_match` crosses a cap of 40 at its own column, so its
+        // `compile` call breaks open inside the `.match` access and ends the
+        // run, leaving `close` to stand at its own column.
+        let text = "declaration_match = compile(r\"[a-z][-_.a-z0-9]*\").match\n\
+                    close = compile(r\"--\\s*>\\s*\")\n";
+        assert_eq!(landed(text, 40, &[64]), vec![8]);
+    }
+
+    #[test]
     fn columns_count_a_keyword_the_rule_widens_on_the_same_line() {
         // Aligning `x` to `longer` lands its line on 15 columns, inside
         // a cap of 16 until the stacked `k=1` keyword the rule buffers

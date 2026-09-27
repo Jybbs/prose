@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/equals_value_stays_inline_below_a_row_breaking_inside_its_value/input.py
+---
+reflow-calls@28..48
