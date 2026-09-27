@@ -476,10 +476,9 @@ impl Probes {
         }
     }
 
-    /// Sweeps `files` at this budget, opening from [`Probes::opening`] so
-    /// a reported rule declaring `PRESERVES_TREE` as `false` that no
-    /// rewrite shows changing a tree stays on record even where it
-    /// rewrites no file.
+    /// Sweeps `files` at this budget, starting from the findings
+    /// [`Probes::opening`] records, so [`Findings::kept`] lists a reported
+    /// rule declaring `PRESERVES_TREE` as `false` that rewrites no file.
     fn sweep(&self, files: &[PathBuf]) -> Findings {
         let mut findings = self.opening();
         findings.absorb(swept(files, |path| probe(self, path)));

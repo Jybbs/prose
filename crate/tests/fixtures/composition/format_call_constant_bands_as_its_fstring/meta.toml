@@ -3,5 +3,5 @@ previewable = true
 title       = "A `str.format` Constant Bands Once It Becomes an f-string"
 
 description = '''
-`LS32` is built through `str.format`, a call `band-constants` leaves where the source put it, whereas the f-string `prefer-fstring` writes in its place joins the band below the literal `VARIATIONS`, and `SUBS`, which reads `LS32`, follows it there. **`band-constants` runs behind `prefer-fstring`, so the conversion and the banding settle in one pass**, whereas the other order leaves `band-constants` a second move to make.
+`LS32` is built through `str.format`, a call `band-constants` pins where the source wrote it. The f-string `prefer-fstring` writes in its place reads `HEX` and `IPV4`, so it climbs into the derived sub-band below `VARIATIONS`, and `SUBS`, which reads `LS32`, follows it there. **`band-constants` runs behind `prefer-fstring`, so the conversion and the banding settle in one pass**, whereas the other order leaves `band-constants` a second move to make.
 '''

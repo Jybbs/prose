@@ -7,9 +7,9 @@ from typing import Callable
 
 
 def measure(renderable: object) -> object:
-    get_console_width: Callable[["Console", "ConsoleOptions"], "Measurement"] | None = getattr(
+    measurer: Callable[["Console", "ConsoleOptions"], "Measurement"] | None = getattr(
         renderable,
         "__rich_measure__",
         None
     )
-    return get_console_width
+    return measurer
