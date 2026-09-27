@@ -356,6 +356,30 @@ mod tests {
     }
 
     #[test]
+    fn def_run_sorts_past_a_call_inside_a_type_statement() {
+        let src = indoc! {"
+            def zeta():
+                return 1
+
+            def mid():
+                return zeta()
+
+            type Scored = Annotated[int, mid()]
+
+            def delta():
+                pass
+
+            def beta():
+                pass
+        "};
+        assert_eq!(
+            func_order(src),
+            vec![4, 3, 2, 1, 0],
+            "a type statement calls mid only at first use, so nothing holds"
+        );
+    }
+
+    #[test]
     fn def_run_sorts_past_a_call_reaching_nothing_in_the_run() {
         let src = indoc! {"
             def zeta():

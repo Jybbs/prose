@@ -3,5 +3,5 @@ previewable = false
 title       = "A Self-Referential Type Alias Moves With Its Run"
 
 description = '''
-`type Node = Node | None` names itself in its own value, and it sits with `LIMIT = 5` below `build`. **The alias and the constant both move into the leading band above `build`**, because the self-reference resolves to the alias being defined and adds no dependency on anything else in the module, so it neither keeps `Node` in place nor blocks the move of the run around it.
+`type Node = Node | None` names itself in its own value, and it sits with `LIMIT = 5` below `build`. **The alias and the constant both move into the leading band above `build`**, because a `type` statement evaluates its value only at first use, so the self-reference neither keeps `Node` in place nor blocks the move of the run around it.
 '''

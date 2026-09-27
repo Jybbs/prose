@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Type Aliases Band by Name Whatever Their Values Call"
+
+description = '''
+Four `type` statements sit a blank line apart, each calling `Field`, `AfterValidator`, or `StringConstraints` inside its value, and `Names` names both `Identifier` and the `ordered` function defined below it. **The four aliases close up into one band sorted by name, `Identifier` first**, because a `type` statement evaluates its value only at first use, so neither a call nor a name inside it holds an alias in place.
+'''

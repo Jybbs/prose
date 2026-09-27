@@ -13,7 +13,7 @@ use ruff_python_stdlib::typing::{is_pep_593_generic_member, is_standard_library_
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::primitives::{
-    binding::{from_import_bound_name, is_explicit_type_alias, tail_identifier},
+    binding::{assigned_value, from_import_bound_name, is_explicit_type_alias, tail_identifier},
     walk::{Descent, filter_map_over_exprs, filter_map_over_stmts, for_each_annotation},
 };
 
@@ -102,25 +102,14 @@ fn absorb_quoted(mut pending: Vec<String>, names: &mut FxHashSet<String>) {
     }
 }
 
-/// The value an explicit type alias binds, which Python reads as a type
-/// expression whether it is written bare or as a string. `None` for
-/// every other statement and for a `TypeAlias` annotation with no value.
-fn alias_value(stmt: &Stmt) -> Option<&Expr> {
-    if !is_explicit_type_alias(stmt) {
-        return None;
-    }
-    match stmt {
-        Stmt::AnnAssign(node) => node.value.as_deref(),
-        Stmt::TypeAlias(node) => Some(node.value.as_ref()),
-        _ => None,
-    }
-}
-
 /// Every type `stmt` declares in its own right, being the value of an
 /// explicit type alias beside the bound and the default of each type
 /// parameter it introduces.
 fn declared_types(stmt: &Stmt) -> Vec<&Expr> {
-    let mut found: Vec<&Expr> = alias_value(stmt).into_iter().collect();
+    let mut found: Vec<&Expr> = assigned_value(stmt)
+        .filter(|_| is_explicit_type_alias(stmt))
+        .into_iter()
+        .collect();
     let declared = match stmt {
         Stmt::ClassDef(node) => node.type_params.as_deref(),
         Stmt::FunctionDef(node) => node.type_params.as_deref(),

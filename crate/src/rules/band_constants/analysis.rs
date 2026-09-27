@@ -356,16 +356,14 @@ fn backward_carry(
     })
 }
 
-/// The target name and value of a module constant candidate: an `Assign`
-/// or initialized `AnnAssign` through `single_name_assignment`, or a
-/// PEP 695 `type X` alias statement, whose value is always inert. `None`
-/// for any other shape.
+/// Returns the target name of a module constant candidate beside the
+/// value it evaluates at binding. An `Assign` or `AnnAssign` reads
+/// through `single_name_assignment`, whereas a PEP 695 `type X`
+/// statement pairs its name with `None`, because its value evaluates
+/// only at first use. `None` for any other shape.
 fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
-        Stmt::TypeAlias(alias) => Some((
-            alias.name.as_name_expr()?.id.as_str(),
-            Some(alias.value.as_ref()),
-        )),
+        Stmt::TypeAlias(alias) => Some((alias.name.as_name_expr()?.id.as_str(), None)),
         _ => single_name_assignment(stmt).map(|(target, value)| (target.id.as_str(), value)),
     }
 }
@@ -434,6 +432,8 @@ fn subcategory_of(
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use rstest::rstest;
 
     use super::*;
@@ -468,8 +468,7 @@ mod tests {
     fn const_binding_accepts_a_type_alias_and_rejects_a_non_binding() {
         let source = parse("type Seconds = float\nx, y = 1, 2\n");
         let body = &source.ast().body;
-        let (name, _) = const_binding(&body[0]).expect("a type alias binds");
-        assert_eq!(name, "Seconds");
+        assert_matches!(const_binding(&body[0]), Some(("Seconds", None)));
         assert!(const_binding(&body[1]).is_none());
     }
 

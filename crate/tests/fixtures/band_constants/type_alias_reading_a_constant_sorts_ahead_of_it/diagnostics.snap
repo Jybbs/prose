@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/type_alias_reading_a_constant_sorts_ahead_of_it/input.py
+---
+band-constants@0..61

@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/eager_alias_reader_stays_below_the_aliases/input.py
+---
+from typing import TypeAlias
+
+type Latitude = float
+type Meters = int
+
+Coordinates: TypeAlias = tuple[Latitude, Latitude]
+ALL = (Meters, Latitude)

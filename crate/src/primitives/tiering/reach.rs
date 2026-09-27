@@ -2,20 +2,19 @@
 //! off the binding table and widened along the call edges between
 //! definitions.
 
-use std::{collections::VecDeque, slice};
+use std::collections::VecDeque;
 
 use itertools::Itertools;
 
 use ruff_python_ast::{
     Expr, Stmt,
-    helpers::any_over_body,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::{definition_name, refs::root_name};
-use crate::primitives::{binding::BindingAnalysis, group_map};
+use crate::primitives::{binding::BindingAnalysis, group_map, walk::walk_stmt};
 
 /// Per module-level definition, the module-scope names a call into it
 /// can reach.
@@ -79,7 +78,8 @@ pub(super) fn invoked(expr: &Expr) -> Option<&Expr> {
 }
 
 /// Every name `stmt` runs, an attribute or subscript chain contributing
-/// the name it roots in, each name once.
+/// the name it roots in, each name once. A `type` statement runs
+/// nothing, since its value evaluates only at first use.
 pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     struct Calls<'src>(Vec<&'src str>);
     impl<'src> AstVisitor<'src> for Calls<'src> {
@@ -89,17 +89,16 @@ pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
             }
             walk_expr(self, expr);
         }
+
+        fn visit_stmt(&mut self, stmt: &'src Stmt) {
+            if !stmt.is_type_alias_stmt() {
+                walk_stmt(self, stmt);
+            }
+        }
     }
     let mut calls = Calls(Vec::new());
     calls.visit_stmt(stmt);
     calls.0.into_iter().unique().collect()
-}
-
-/// True where `stmt` runs anything a name roots.
-pub(super) fn calls_a_name(stmt: &Stmt) -> bool {
-    any_over_body(slice::from_ref(stmt), |expr| {
-        invoked(expr).and_then(root_name).is_some()
-    })
 }
 
 #[cfg(test)]
@@ -153,5 +152,17 @@ mod tests {
         let source = parse("Coroutine.register(coroutine)\nhandlers[0](event)\nrun()\n");
         let called: Vec<&str> = source.ast().body.iter().flat_map(called_names).collect();
         assert_eq!(called, vec!["Coroutine", "handlers", "run"]);
+    }
+
+    #[test]
+    fn called_names_skips_a_type_statement() {
+        let source = parse(indoc! {"
+            type Scored = Annotated[int, score()]
+
+            if ready():
+                type Nested = make()
+        "});
+        let called: Vec<&str> = source.ast().body.iter().flat_map(called_names).collect();
+        assert_eq!(called, vec!["ready"]);
     }
 }

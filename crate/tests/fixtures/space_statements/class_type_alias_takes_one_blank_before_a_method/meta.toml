@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias in a Class Body Takes One Blank Line Before a Method"
+
+description = '''
+`type Item = int` opens both class bodies, directly above `get` in `Box` and three blank lines above it in `Tray`. **Both gaps settle to one blank line**, the gap a field takes before a method, because a `type` statement in a class body counts as a field.
+'''

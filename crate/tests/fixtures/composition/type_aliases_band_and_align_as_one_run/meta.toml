@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Type Aliases Band by Name and Share One `=` Column"
+
+description = '''
+Four `type` statements sit a blank line apart in no particular order, each calling inside its value, and `Names` names the `ordered` function defined below them. **[[band-constants]] closes them into one band sorted by name, and [[align-equals]] sets the band's `=` column one space past `type Identifier`**, because every `type` statement reads as inert and aligns like any other assignment.
+'''

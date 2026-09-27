@@ -16,8 +16,8 @@ mod strands;
 mod tiers;
 
 pub(crate) use fences::fenced_slots;
+use reach::called_names;
 pub(crate) use reach::{CallReach, call_reachable};
-use reach::{called_names, calls_a_name};
 use refs::eval_time_refs;
 pub(crate) use refs::{eval_refs, observed_refs, walk_lambda_defaults};
 pub(crate) use runs::{DefRun, def_run_tier_keys};
@@ -96,7 +96,7 @@ pub(crate) fn consults_call_graph(
         Stmt::FunctionDef(_) | Stmt::ClassDef(_) => refs
             .get(&stmt.start())
             .is_some_and(|names| names.iter().any(|name| defined.contains(name))),
-        _ => calls_a_name(stmt),
+        _ => !called_names(stmt).is_empty(),
     })
 }
 

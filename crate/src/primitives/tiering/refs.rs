@@ -8,7 +8,8 @@ use ruff_python_ast::{
 use crate::primitives::walk::walk_stmt;
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
-/// function and lambda bodies and skipping deferred annotations.
+/// function and lambda bodies and skipping deferred annotations and
+/// every `type` statement.
 struct EvalRefVisitor<'src> {
     defer_annotations: bool,
     names: Vec<&'src str>,
@@ -49,6 +50,9 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                     self.visit_annotation(returns);
                 }
             }
+            // A `type` statement evaluates its value and type parameters
+            // only at first use.
+            Stmt::TypeAlias(_) => {}
             _ => walk_stmt(self, stmt),
         }
     }
@@ -91,8 +95,8 @@ pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
 /// surface: its decorators, base classes and class keywords, parameter
 /// defaults, non-deferred annotations, and the top level of a class
 /// body, descending into nested definitions but pruning every function
-/// and lambda body. Annotation positions are skipped when
-/// `defer_annotations` holds.
+/// and lambda body and every `type` statement. Annotation positions are
+/// skipped when `defer_annotations` holds.
 pub(super) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
     let mut visitor = EvalRefVisitor {
         defer_annotations,
@@ -161,6 +165,23 @@ mod tests {
             .into_iter()
             .collect();
         assert_eq!(collected, FxHashSet::from_iter(["SeedRef"]));
+    }
+
+    #[test]
+    fn eval_time_refs_skips_a_type_statement() {
+        let source = parse(indoc! {"
+            type Alias[T: BoundRef] = list[ValueRef]
+
+            if FlagRef:
+                type Nested = NestedRef
+        "});
+        let collected: FxHashSet<&str> = source
+            .ast()
+            .body
+            .iter()
+            .flat_map(|stmt| eval_time_refs(stmt, false))
+            .collect();
+        assert_eq!(collected, FxHashSet::from_iter(["FlagRef"]));
     }
 
     #[test]
