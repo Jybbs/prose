@@ -44,7 +44,7 @@ pub(super) fn delimiter_padding_gaps(
 /// at either boundary belongs to the text beside `range` and is left
 /// out, and so is an edit inside one already counted, whose text that
 /// one replaces. `edits` arrives ascending by start, as
-/// [`Stranding::edits`] and [`beside`](super::beside) build it.
+/// [`Stranding::edits`] and [`beside`] build it.
 pub(crate) fn slack(source: &Source, edits: &[Edit], range: TextRange) -> isize {
     let first = edits.partition_point(|edit| edit.start() < range.start());
     let mut counted = range.start();

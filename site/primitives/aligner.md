@@ -61,7 +61,7 @@ A consuming rule rarely builds the walker from a raw AST traversal by hand, beca
 8. `space_padding_edit(source, range, n)` returns `Some(Edit)` replacing `range` with `n` spaces, or `None` when the current contents already match.
 9. `is_alignment_candidate(members)` returns `true` when the group has at least two members, each on a distinct line and opening at a shared column baseline, so the padding is written to a column every row can reach.
 10. `written_columns(baseline, rows, settings)` returns the aligned-token column of each row in a run a layout rule writes itself, taking each row as its width beside an `Extent` that holds its one-line width and, where its value can be broken open, its expanded width.
-11. `written_groups(baseline, rows, settings)` counts the groups that same run splits into beside how many hold a single row, which lets a layout rule compare the run with its values broken open against the run with every value on one row.
+11. `written_groups(baseline, rows, settings)` counts the groups that same run splits into beside the rows standing unpadded among them, meaning every row of a group whose rows share one width, which lets a layout rule compare the run with its values broken open against the run with every value on one row.
 12. `breaking_columns(source, members, settings, widenings, joined, statements)` returns the column each member of a run of assignments lands at once the run cuts after each row whose value a layout rule breaks open. Each `Statement` carries the shift an earlier column gives its row and the widths the row reaches on one line and broken open, and the run cuts where that leaves the fewest groups, then the fewest rows unpadded, then the fewest broken rows.
 
 ## How the Math Resolves

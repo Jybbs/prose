@@ -27,7 +27,7 @@ Every width the rule reads counts the separator closing an entry's row at the po
 3. A literal following one the rule expands on the same line is measured where that expansion leaves it, on the closer's row at the statement's indent rather than under the continuation column the source wrote.
 4. A dict value whose key the rule lays across rows is measured from the key's last row.
 5. A value inside an expanded dict is measured at the column [[align-colons]] shifts it to once the expanded rows align, so a collection value whose row would cross the budget at that column expands in the same pass and a call value explodes under the same condition as item 2. The value breaks open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded, than keeping every value on one row would, and not where [[alphabetize-siblings]] sorts the dict and breaking the value open would leave more than one entry spanning rows.
-6. An assignment's value is measured at the column [[align-equals]] pads its row to, so a collection value whose row would cross the budget at that column expands in the same pass, under the same comparison as item 5 and only where the padding stays within `max-shift`.
+6. An assignment's value is measured at the column [[align-equals]] pads its row to, so a collection value whose row would cross the budget at that column expands in the same pass, under the same comparison as item 5 and only where the padding stays within the `max-shift` of [[align-equals]].
 
 <template #facets>
 

@@ -36,7 +36,8 @@ impl Terms {
     }
 
     /// These terms over one source, `targets` the map
-    /// [`module_call_params`] builds for it, `rewrites` the f-string
+    /// [`module_call_params`](crate::primitives::call_keywords::module_call_params) builds for
+    /// it, `rewrites` the f-string
     /// rewrites `prefer-fstring` forecasts over it, and `padding` the
     /// edits `strip-stranded-padding` emits over it merged with those
     /// rewrites.

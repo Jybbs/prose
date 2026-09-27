@@ -25,7 +25,7 @@ use self::{
     enums::Enumerations,
     leaves::collect_leaf_edits,
     reorders::{joined_key, joined_text},
-    rewrite::{RewriteCtx, body_layout, class_rows, import_gap},
+    rewrite::{RewriteCtx, body_layout, class_seatings, import_gap},
 };
 
 use crate::{
@@ -107,8 +107,8 @@ impl AlphabetizeSiblings {
         }
     }
 
-    /// Collects the rows of every class body the rule seats other than as
-    /// written, keyed by the start of the body's first statement, each slot
+    /// Collects the rows of every class body, and of every compound arm
+    /// inside one, that the rule seats other than as written, keyed by the start of the body's first statement, each slot
     /// in the order the sort seats it beside whether it opens on the line
     /// directly below the slot before it.
     pub(crate) fn seatings(&self, source: &Source) -> Seatings {
@@ -117,11 +117,11 @@ impl AlphabetizeSiblings {
         let ctx = self.ctx(source, &enumerations, &[]);
         let mut classes = Classes(Vec::new());
         classes.visit_body(body);
-        classes
-            .0
-            .into_iter()
-            .filter_map(|class| class_rows(ctx, class))
-            .collect()
+        let mut seatings = Seatings::default();
+        for class in classes.0 {
+            class_seatings(ctx, class, &mut seatings);
+        }
+        seatings
     }
 }
 
@@ -253,23 +253,35 @@ mod tests {
     }
 
     #[rstest]
-    #[case::kept("class K:  # prose: keep\n    b = 1\n    a = 2\n", None)]
+    #[case::arm(
+        "class K:\n    if X:\n        b = 1\n        a = 2\n",
+        "b = 1",
+        Some(vec![(1, false), (0, true)]),
+    )]
+    #[case::kept("class K:  # prose: keep\n    b = 1\n    a = 2\n", "b = 1", None)]
+    #[case::nested(
+        "class Outer:\n    class K:\n        b = 1\n        a = 2\n",
+        "b = 1",
+        Some(vec![(1, false), (0, true)]),
+    )]
     #[case::pinned(
         "class K:\n    c = 1  # prose: skip[alphabetize-siblings]\n    b = 2\n    a = 3\n",
+        "c = 1",
         Some(vec![(0, false), (2, true), (1, true)]),
     )]
-    #[case::reseated("class K:\n    b = 1\n    a = 2\n", Some(vec![(1, false), (0, true)]))]
-    #[case::sorted("class K:\n    a = 1\n    b = 2\n", None)]
+    #[case::reseated("class K:\n    b = 1\n    a = 2\n", "b = 1", Some(vec![(1, false), (0, true)]))]
+    #[case::sorted("class K:\n    a = 1\n    b = 2\n", "a = 1", None)]
     fn seatings_record_a_class_body_the_sort_seats_other_than_as_written(
         #[case] src: &str,
+        #[case] first: &str,
         #[case] expected: Option<Vec<(usize, bool)>>,
     ) {
         let source = parse(src);
-        let class = source.ast().body[0]
-            .as_class_def_stmt()
-            .expect("the source opens on a class");
         let seatings = AlphabetizeSiblings::from_config(&Config::default()).seatings(&source);
 
-        assert_eq!(seatings.get(&class.body[0].start()).cloned(), expected);
+        assert_eq!(
+            seatings.get(&at(source.text(), first).start()).cloned(),
+            expected
+        );
     }
 }

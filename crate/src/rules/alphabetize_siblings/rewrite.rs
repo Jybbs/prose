@@ -25,8 +25,8 @@ use crate::{
         edit::{apply_inline_edits, narrowed_replacement, splice_bodies},
         imports::{import_blank_lines, import_sort_key, sectioned_import_runs},
         orderer::{
-            Assembly, adjacent_slots, any_sibling_shares_line, member_blocks, permute_runs,
-            rendered_member_blocks, seated_rows,
+            Assembly, Seatings, adjacent_slots, any_sibling_shares_line, member_blocks,
+            permute_runs, rendered_member_blocks, seated_rows,
         },
         range::blocks_span,
         scope::{BodyScope, scoped_body, splice_compound_arms, sub_bodies, sub_bodies_keep_order},
@@ -106,37 +106,13 @@ pub(super) fn body_layout<'a>(
     }
 }
 
-/// Returns the rows of the body the class `stmt` opens, keyed by the
-/// start of its first statement, wherever the sort seats them other than
-/// as written, each slot in the order the sort seats it beside whether it
-/// opens on the line directly below the slot before it, per
-/// [`seated_rows`].
-pub(super) fn class_rows<'a>(
-    ctx: RewriteCtx<'a>,
-    stmt: &'a Stmt,
-) -> Option<(TextSize, Vec<(usize, bool)>)> {
-    let (body, scope) = scoped_body(stmt)?;
-    let first = body.first()?;
-    let ctx = scoped_ctx(ctx, stmt);
-    let source = ctx.source;
-    let blocks = member_blocks(source, body, stmt.range());
-    let pinned_starts: Vec<TextSize> = body
-        .iter()
-        .zip(&blocks)
-        .filter(|&(_, &block)| pins(source, block))
-        .map(|(member, _)| member.start())
-        .collect();
-    let mut order: Vec<usize> = (0..body.len()).collect();
-    let import_run_slots = seat_body(ctx, body, &blocks, &mut order, scope, &pinned_starts);
-    let rows = seated_rows(
-        source,
-        body,
-        &blocks,
-        &order,
-        |i| import_gap(source, &import_run_slots, i),
-        |slot| source.slice(blocks[slot]),
-    )?;
-    Some((first.start(), rows))
+/// Records in `seatings` the rows of the body the class `stmt` opens,
+/// and of each compound arm inside it, wherever the sort seats them other
+/// than as written, per [`body_seatings`].
+pub(super) fn class_seatings<'a>(ctx: RewriteCtx<'a>, stmt: &'a Stmt, seatings: &mut Seatings) {
+    if let Some((body, scope)) = scoped_body(stmt) {
+        body_seatings(scoped_ctx(ctx, stmt), body, stmt.range(), scope, seatings);
+    }
 }
 
 /// The one-newline divider an import-run collapse inserts after new-order
@@ -151,6 +127,50 @@ pub(super) fn import_gap(
         .binary_search(&i)
         .is_ok()
         .then_some(source.newline_str())
+}
+
+/// Records in `seatings` the rows of `body` wherever the sort seats them
+/// other than as written, keyed by the start of its first statement, each
+/// slot in the order the sort seats it beside whether it opens on the line
+/// directly below the slot before it, per [`seated_rows`]. Each compound
+/// arm beneath it follows under the same `scope`, as the rewrite sorts it.
+fn body_seatings<'a>(
+    ctx: RewriteCtx<'a>,
+    body: &'a [Stmt],
+    outer: TextRange,
+    scope: BodyScope,
+    seatings: &mut Seatings,
+) {
+    let Some(first) = body.first() else {
+        return;
+    };
+    let source = ctx.source;
+    let blocks = member_blocks(source, body, outer);
+    let pinned_starts: Vec<TextSize> = body
+        .iter()
+        .zip(&blocks)
+        .filter(|&(_, &block)| pins(source, block))
+        .map(|(member, _)| member.start())
+        .collect();
+    let mut order: Vec<usize> = (0..body.len()).collect();
+    let import_run_slots = seat_body(ctx, body, &blocks, &mut order, scope, &pinned_starts);
+    if let Some(rows) = seated_rows(
+        source,
+        body,
+        &blocks,
+        &order,
+        |i| import_gap(source, &import_run_slots, i),
+        |slot| source.slice(blocks[slot]),
+    ) {
+        seatings.insert(first.start(), rows);
+    }
+    for (arm, outer) in body
+        .iter()
+        .filter(|stmt| scoped_body(stmt).is_none())
+        .flat_map(sub_bodies)
+    {
+        body_seatings(ctx, arm, outer, scope, seatings);
+    }
 }
 
 /// Returns the edits the rewrite makes inside `block`, the block of a

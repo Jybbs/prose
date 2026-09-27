@@ -52,7 +52,8 @@ pub(crate) struct Settings<'a> {
 
 impl Settings<'_> {
     /// These settings resolving each call against `targets`, the map
-    /// [`module_call_params`] builds for one source.
+    /// [`module_call_params`](crate::primitives::call_keywords::module_call_params) builds for one
+    /// source.
     pub(crate) fn against<'t>(self, targets: &'t CallTargets<'t>) -> Settings<'t> {
         Settings {
             cap: self.cap,

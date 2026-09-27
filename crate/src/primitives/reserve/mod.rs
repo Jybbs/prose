@@ -863,6 +863,25 @@ mod tests {
         assert_eq!(landed(text, 80, &[28]), vec![15]);
     }
 
+    #[rstest]
+    #[case::breaks_open(true, 48)]
+    #[case::read_as_written(false, 42)]
+    fn columns_break_open_the_last_row_of_a_colon_run(
+        #[case] colons: bool,
+        #[case] expected: usize,
+    ) {
+        // `input_trans` ends its colon run, so breaking its call open into
+        // `keymap`'s `=` column splits no colon run and the call breaks
+        // open. With `align-colons` off, the row fits where it stands.
+        let mut config = capped(60);
+        config.rules.align_colons.enabled = colons;
+        let text = "@dataclass\nclass Reader:\n    keymap: tuple[tuple[str, str], ...] = ()\n    \
+                    input_trans: input.KeymapTranslator = field(init=False)\n";
+        let value = u32::try_from(text.find("field(init").expect("the row carries a call"))
+            .expect("the text fits u32");
+        assert_eq!(landed_under(&config, text, &[value]), vec![expected]);
+    }
+
     #[test]
     fn columns_count_a_keyword_the_rule_widens_on_the_same_line() {
         // Aligning `x` to `longer` lands its line on 15 columns, inside

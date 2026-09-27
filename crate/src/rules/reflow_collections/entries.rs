@@ -4,7 +4,7 @@
 //! `align-colons` seats it at once the expanded rows align, so a value
 //! whose one-row form overflows there expands in the same pass wherever
 //! that leaves its run in fewer columns, or in as many with fewer rows
-//! standing alone.
+//! unpadded.
 
 use std::borrow::Cow;
 
@@ -214,7 +214,7 @@ impl<'a> Layouter<'a> {
     /// Re-serializes each of `entries` whose one-row value overflows at
     /// the column `align-colons` seats it at under `settings`, where a
     /// layout rule can expand that value and doing so leaves the run in
-    /// fewer groups, or in as many with fewer groups of one, reading rows
+    /// fewer groups, or in as many with fewer rows unpadded, reading rows
     /// in the order `order` leaves them. A key spanning rows or, without
     /// a sort, a blank line closes a run, and a `**` unpacking passes
     /// through one. Under a sort, nothing is re-serialized where
