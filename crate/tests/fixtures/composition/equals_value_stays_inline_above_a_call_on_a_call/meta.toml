@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Stays on One Row Above a Call on a Call That Breaks at Its First Bracket"
+
+description = '''
+`cls`'s row reaches 65 columns at its own column, past the 44-column budget, so [[reflow-calls]] explodes the first call on it, `_simple_enum`, rather than the `(tmp_cls)` call that follows, and the row's short opening line joins `tmp_cls`'s column. **`tmp_cls` therefore keeps its call on one row**, because breaking it open to join the column `body["__module__"]` sets would leave as many columns and as many rows unpadded while breaking one more row.
+'''

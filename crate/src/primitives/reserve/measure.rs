@@ -77,23 +77,21 @@ impl Measure<'_> {
     /// Measures the width from the start of `range`, the span of `expr`,
     /// through the bracket a layout rule breaks the value open at, per
     /// [`opener_width`], beside whether that bracket sits inside the value
-    /// rather than opening it. A value on one row falls back to the first
-    /// such bracket in source order inside it, and a value spanning rows
+    /// rather than opening it. A value on one row reads the first such
+    /// bracket in source order anywhere in it, and a value spanning rows
     /// reads its own bracket alone.
     fn opener(&self, expr: &Expr, range: TextRange) -> Option<(usize, bool)> {
         let opens = |inner: &Expr| opener_width(self.source, &self.one_row, inner, range.start());
-        if let Some(width) = opens(expr) {
-            return Some((width, false));
-        }
         if self.source.contains_line_break(range) {
-            return None;
+            return opens(expr).map(|width| (width, false));
         }
-        let mut width = None;
+        let mut first: Option<usize> = None;
         any_over_expr_within(expr, Interpolations::Skip, |inner| {
-            width = opens(inner);
-            width.is_some()
+            first = first.into_iter().chain(opens(inner)).min();
+            false
         });
-        width.map(|width| (width, true))
+        let width = first?;
+        Some((width, opens(expr) != Some(width)))
     }
 
     /// Measures the width the code past `end` takes on its row once the
@@ -250,6 +248,7 @@ mod tests {
     #[case::one_row_call("x = frob(a, b)\n", Some((14, 9, false)))]
     #[case::fractured_call("x = frob(a,\n         b)\n", Some((14, 9, false)))]
     #[case::fractured_list("x = [a,\n     b]\n", Some((10, 5, false)))]
+    #[case::call_on_a_call("x = frob(a)(b)\n", Some((14, 9, true)))]
     #[case::inner_call("x = frob(a, b).match\n", Some((20, 9, true)))]
     #[case::interpolated_call("x = f\"{frob(a, b)}\"\n", None)]
     #[case::column_shaped_call("x = frob(\n    a,\n    b\n)\n", None)]

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Rejoined Comprehension Keeps Its Row Rather Than Breaking Open for a Column"
+
+description = '''
+The comprehension on `a`'s row is wrapped by hand, and [[reflow-collections]] rejoins it onto one row that reaches 77 columns, inside the 80-column budget. Padded to the column `positionals` sets, the row would reach 87 columns, but the one bracket a layout rule breaks on it, `[PARSER, REMAINDER]`, sits inside the comprehension rather than opening the value. **No layout rule breaks the row open to join that column**, so it stays at its own column and settles in one pass.
+'''
