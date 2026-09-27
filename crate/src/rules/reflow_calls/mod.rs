@@ -85,18 +85,19 @@ impl<'a> LazySeating<'a> {
     /// for `prefer-fstring` to convert, the walk running only where a
     /// forecast rewrite covers `range`.
     pub(crate) fn converts(&self, range: TextRange) -> bool {
-        self.reflow_calls.forecasts(self.source, range) && self.seating().converts(range)
+        self.forecasts(range) && self.seating().converts(range)
     }
 
-    /// True where `range` sits inside an interpolation a walk over what
-    /// `reach` spans leaves for `prefer-fstring`, the walk running only
-    /// where a forecast rewrite covers `range`.
-    pub(crate) fn converts_landed(&self, range: TextRange, reach: Reach) -> bool {
+    /// True where a rewrite `prefer-fstring` forecasts covers `range`,
+    /// whether or not its f-string fits where it lands.
+    pub(crate) fn forecasts(&self, range: TextRange) -> bool {
         self.reflow_calls.forecasts(self.source, range)
-            && self
-                .reflow_calls
-                .recorded(self.source, reach)
-                .converts(range)
+    }
+
+    /// The [`Seating`] a walk over what `reach` spans records, walked on
+    /// each read.
+    pub(crate) fn landed(&self, reach: Reach) -> Seating {
+        self.reflow_calls.recorded(self.source, reach)
     }
 
     /// The seat the walk records for the call or attribute access
@@ -384,10 +385,11 @@ impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
     /// and otherwise lays out each collapsible construct where it lands
     /// when `layout` is set, leaving unwalked one it leaves as written
     /// that [`Settings::holds_its_row`](one_row::Settings::holds_its_row)
-    /// holds, and otherwise leaves unwalked a literal
-    /// `reflow-collections` expands later. Records into `seating`, where
-    /// set, each expression it leaves for `prefer-fstring` and the seat of
-    /// each call and attribute access it reaches inside a relocated region.
+    /// holds, and otherwise leaves a literal `reflow-collections` expands
+    /// later to that rule, seating its elements alone. Records into
+    /// `seating`, where set, each expression it leaves for
+    /// `prefer-fstring` and the seat of each call and attribute access it
+    /// reaches inside a relocated region.
     fn visit_expr(&mut self, expr: &'a Expr) {
         if self.converts(expr) {
             if let Some(seating) = self.seating {
@@ -405,7 +407,10 @@ impl<'a> SourceOrderVisitor<'a> for Exploder<'a> {
                     return;
                 }
             }
-            None if self.expands_later(expr) => return,
+            None if self.expands_later(expr) => {
+                self.seat_elements(expr);
+                return;
+            }
             _ => {}
         }
         if let Some(seating) = self.seating
@@ -660,10 +665,10 @@ mod tests {
         None
     )]
     #[case::call_the_walk_leaves_in_place("x = f(a.b().c())\n", "a.b().c()", None)]
-    #[case::expanding_literal_left_unwalked(
+    #[case::element_of_a_literal_expanded_later(
         "result = advise(alpha_value, [beta_value, gamma.get(key).strip(), delta_value])\n",
         "gamma.get(key).strip()",
-        None
+        Some((8, 8, 0, 0))
     )]
     fn seats_place_each_call_where_its_relocated_argument_lands(
         #[case] src: &str,

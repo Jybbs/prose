@@ -18,6 +18,8 @@
 //! break.
 //! `spine` divides a chain and `render` builds the replacement.
 
+use std::cell::OnceCell;
+
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange};
@@ -174,42 +176,6 @@ impl<'a> Breaker<'a> {
         Some(text)
     }
 
-    /// True where `expr`, inside `chain`'s segment at `segment` written
-    /// from `seat`, sits in an interpolation `prefer-fstring` converts,
-    /// read from the `reflow_calls` walk over that segment once it lands
-    /// at `seat`. A link's walk covers its argument list, and the
-    /// receiver's covers the receiver with the first link's settled width
-    /// trailing it where the links hang, since the head row holds both.
-    fn converts(
-        &self,
-        chain: &Chain<'a>,
-        segment: usize,
-        expr: &Expr,
-        seat: Seat,
-        joins: &fracture::Joins,
-    ) -> bool {
-        let reach = match segment.checked_sub(1) {
-            None => {
-                let tail = if self.hang(chain).is_some() {
-                    display_width(&joins.settled(self.source, chain.links[0]))
-                } else {
-                    0
-                };
-                Reach::Expr {
-                    expr: chain.receiver,
-                    region: chain.receiver_range,
-                    seat: Seat { tail, ..seat },
-                }
-            }
-            Some(link) => Reach::Arguments {
-                call: chain.calls[link],
-                region: chain.links[link],
-                seat,
-            },
-        };
-        self.seating.converts_landed(expr.range(), reach)
-    }
-
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
@@ -230,12 +196,12 @@ impl<'a> Breaker<'a> {
         chain: &Chain<'a>,
         segment: usize,
     ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
-        let source = self.source;
+        let (source, rewrites) = (self.source, self.rewrites);
         let mut nested = ParentedCollector::new(
             Interpolations::Skip,
             TraversalSignal::Skip,
             |expr: &'a Expr, parent| {
-                outermost_chain(source, expr, parent).map(|chain| (expr, parent, chain))
+                outermost_chain(source, rewrites, expr, parent).map(|chain| (expr, parent, chain))
             },
         );
         match segment.checked_sub(1) {
@@ -273,16 +239,50 @@ impl<'a> Breaker<'a> {
         }
     }
 
+    /// The span the `reflow_calls` walk over `chain`'s segment at
+    /// `segment` covers once the segment lands at `seat`: a link's argument
+    /// list, or the receiver with the first link's settled width trailing
+    /// it where the links hang, since the head row holds both.
+    fn reach(
+        &self,
+        chain: &Chain<'a>,
+        segment: usize,
+        seat: Seat,
+        joins: &fracture::Joins,
+    ) -> Reach<'a> {
+        match segment.checked_sub(1) {
+            None => {
+                let tail = if self.hang(chain).is_some() {
+                    display_width(&joins.settled(self.source, chain.links[0]))
+                } else {
+                    0
+                };
+                Reach::Expr {
+                    expr: chain.receiver,
+                    region: chain.receiver_range,
+                    seat: Seat { tail, ..seat },
+                }
+            }
+            Some(link) => Reach::Arguments {
+                call: chain.calls[link],
+                region: chain.links[link],
+                seat,
+            },
+        }
+    }
+
     /// `chain`'s segment at `segment`, settled and measured from the
     /// seat's column on a row written at its indent, the receiver at
     /// index zero and each link after it, every chain inside it broken
     /// where it trips from the column it lands at. Where the settled row
     /// overflows the budget, `reflow_calls` explodes the argument list,
-    /// so a nested chain that fits one indent step past the row stays
-    /// joined and one that trips even there breaks from the column the
-    /// joined row reaches. Every column it measures sits the seat's
-    /// `line_shift` past the one its row is written at, where the later
-    /// move carries it.
+    /// so a nested chain trips from where the walk over the landed segment
+    /// seats it, and where that walk seats it nowhere, one that fits one
+    /// indent step past the row stays joined and one that trips even there
+    /// breaks from the column the joined row reaches. A chain inside an
+    /// interpolation that walk leaves for `prefer-fstring` stays joined.
+    /// Every column it measures sits the seat's `line_shift` past the one
+    /// its row is written at, where the later move carries it.
     fn segment(
         &self,
         chain: &Chain<'a>,
@@ -296,24 +296,38 @@ impl<'a> Breaker<'a> {
         let explodes = self.rejoin.closes()
             && seat.column + display_width(&joins.settled(self.source, range))
                 > self.code_line_length;
+        let walked = OnceCell::new();
+        let landed =
+            || walked.get_or_init(|| self.seating.landed(self.reach(chain, segment, seat, joins)));
         let mut out = String::new();
         let mut cursor = range.start();
         for (expr, parent, nested) in self.nested(chain, segment) {
             let nested_range = self.source.paren_aware_range(expr.into(), parent);
             out.push_str(&joins.settled(self.source, TextRange::new(cursor, nested_range.start())));
+            let landed_seat = explodes.then(|| landed().seat(expr.range())).flatten();
             let seated = explodes
+                && landed_seat.is_none()
                 && !self.trips(
                     &nested,
                     item_indent(seat.indent).saturating_add_signed(seat.line_shift),
                     joins,
                 );
-            let nested_seat = Seat {
-                column: end_column(&out, seat.column),
-                ..seat
-            };
+            let converts =
+                || self.seating.forecasts(expr.range()) && landed().converts(expr.range());
+            let nested_seat = landed_seat.map_or_else(
+                || Seat {
+                    column: end_column(&out, seat.column),
+                    ..seat
+                },
+                |landed| Seat {
+                    column: landed.column,
+                    tail: landed.tail,
+                    ..seat
+                },
+            );
             match self
                 .broken(expr, &nested, nested_range, nested_seat)
-                .filter(|_| !seated && !self.converts(chain, segment, expr, seat, joins))
+                .filter(|_| !seated && !converts())
             {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),
@@ -341,7 +355,7 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
     ) -> TraversalSignal {
-        let Some(chain) = outermost_chain(self.source, expr, parent) else {
+        let Some(chain) = outermost_chain(self.source, self.rewrites, expr, parent) else {
             return TraversalSignal::Traverse;
         };
         if self.seating.converts(expr.range()) {
@@ -359,15 +373,20 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
     }
 }
 
-/// The chain `expr` opens, `None` where it opens none or where
-/// `parent`, an attribute's value or a call's callee, already places
-/// it on the spine of a longer chain.
-fn outermost_chain<'a>(source: &Source, expr: &'a Expr, parent: AnyNodeRef) -> Option<Chain<'a>> {
+/// The chain `expr` opens, read through the forecast `rewrites`, `None`
+/// where it opens none or where `parent`, an attribute's value or a
+/// call's callee, already places it on the spine of a longer chain.
+fn outermost_chain<'a>(
+    source: &Source,
+    rewrites: &[Edit],
+    expr: &'a Expr,
+    parent: AnyNodeRef,
+) -> Option<Chain<'a>> {
     if matches!(
         parent,
         AnyNodeRef::ExprAttribute(_) | AnyNodeRef::ExprCall(_)
     ) {
         return None;
     }
-    Chain::of(source, expr)
+    Chain::of(source, expr, rewrites)
 }

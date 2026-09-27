@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_in_an_expanded_operand_tuple_breaks_where_it_lands/input.py
+---
+reflow-calls@13..58
+reflow-collections@24..57
+stack-method-chains@7..79

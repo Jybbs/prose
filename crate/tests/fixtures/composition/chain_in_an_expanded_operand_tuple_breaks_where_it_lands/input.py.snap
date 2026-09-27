@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/chain_in_an_expanded_operand_tuple_breaks_where_it_lands/input.py
+---
+rows = (
+    fetch(
+        "%s=%s" % (
+            (
+                field.name.strip()
+                     .lower()
+            ),
+            value
+        )
+    )
+    .order_by(name)
+    .all()
+)

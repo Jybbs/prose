@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain in an Expanded Operand Tuple Breaks Where It Lands"
+
+description = '''
+At a 36-column budget, stacking `fetch(...).order_by(name).all()` explodes `fetch(` at indent 8, and `reflow-collections` expands the operand tuple of `"%s=%s" % (field.name.strip().lower(), value)` at indent 12, where the 26-column `field.name.strip().lower()` runs two columns past the budget. **`stack-method-chains` measures a chain inside the tuple from the row the tuple's expansion lands it on**, so the chain breaks under the width trigger in the same pass rather than on the next.
+'''

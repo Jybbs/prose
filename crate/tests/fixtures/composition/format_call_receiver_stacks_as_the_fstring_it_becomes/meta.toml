@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `str.format()` Receiver Stacks as the f-String It Becomes"
+
+description = '''
+`"{}:{}".format(alpha, beta).order_by(name).first().all()` carries four links as written, but `prefer-fstring` rewrites `"{}:{}".format(alpha, beta)` as the 17-column `f"{alpha}:{beta}"` in the same pass. **`stack-method-chains` reads the chain as it stands once that rewrite lands, the f-string as its receiver and `.format` no longer a link**, so the receiver runs wider than `max-shift` allows and the three remaining links take the full split, which a second pass leaves unchanged.
+'''

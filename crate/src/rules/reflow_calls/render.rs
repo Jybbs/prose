@@ -13,6 +13,7 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{Exploder, Seat};
 use crate::primitives::{
+    binding::sequence_elts,
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
     edit::{apply_inline_edits, insert_edit, narrowed_replacement},
     inline::{
@@ -380,6 +381,30 @@ impl<'a> Exploder<'a> {
             region,
             tail: seat.tail,
             ..self
+        }
+    }
+
+    /// Walks each element of `literal`, a list or tuple
+    /// `reflow-collections` expands later, from where that expansion
+    /// writes it, one indent step past the row `literal` opens on with no
+    /// trailing text, recording into `seating` the seat of each call and
+    /// attribute access inside. The walk emits no edit and runs only
+    /// where `seating` is set.
+    pub(super) fn seat_elements(&self, literal: &'a Expr) {
+        let (Some(_), Some(elements)) = (self.seating, sequence_elts(literal)) else {
+            return;
+        };
+        let indent = item_indent(self.indent_for(literal.start()));
+        for element in elements {
+            let mut walk = Exploder {
+                edits: Vec::new(),
+                indent: Some(indent),
+                origin_column: indent.saturating_add_signed(self.line_shift),
+                region: element.range(),
+                tail: 0,
+                ..*self
+            };
+            walk.visit_expr(element);
         }
     }
 
