@@ -3,5 +3,5 @@ previewable = false
 title       = "A Type Alias Naming a Class Moves Above It"
 
 description = '''
-`type Pair = tuple[Point, Point]` sits below `def build` and the `class Point` it names. **The alias moves into the leading band above `build`**, because a `type` statement evaluates its value only when its `__value__` is read, so `Point` needs no binding above the alias when the statement runs.
+`type Pair = tuple[Point, Point]` sits below `def build` and the `class Point` it names. **The alias moves into the leading band above `build`**, because Python evaluates a `type` statement's value only when something reads the alias's `__value__` or calls its `evaluate_value`, so `Point` needs no binding above the alias when the statement runs.
 '''

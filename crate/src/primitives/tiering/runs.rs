@@ -375,7 +375,7 @@ mod tests {
         assert_eq!(
             func_order(src),
             vec![4, 3, 2, 1, 0],
-            "a type statement calls mid only when its __value__ is read, so nothing holds"
+            "a type statement calls mid only when Scored.__value__ is read, so nothing holds"
         );
     }
 

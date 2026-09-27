@@ -50,8 +50,9 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                     self.visit_annotation(returns);
                 }
             }
-            // A `type` statement evaluates its value and its type
-            // parameters' bounds, constraints, and defaults only when read.
+            // A `type` statement evaluates its value and its type parameters'
+            // bounds, constraints, and defaults only when their attributes are
+            // read or their `evaluate_*` functions called.
             Stmt::TypeAlias(_) => {}
             _ => walk_stmt(self, stmt),
         }

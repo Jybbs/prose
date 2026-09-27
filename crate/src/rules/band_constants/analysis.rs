@@ -359,8 +359,9 @@ fn backward_carry(
 /// Returns the target name of a module constant candidate beside the
 /// value it evaluates at binding. An `Assign` or `AnnAssign` reads
 /// through `single_name_assignment`, whereas a PEP 695 `type X`
-/// statement pairs its name with `None`, because its value evaluates
-/// only when its `__value__` is read. `None` for any other shape.
+/// statement pairs its name with `None`, because the alias's value
+/// evaluates only when its `__value__` is read or its `evaluate_value`
+/// called. `None` for any other shape.
 fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
         Stmt::TypeAlias(alias) => Some((alias.name.as_name_expr()?.id.as_str(), None)),

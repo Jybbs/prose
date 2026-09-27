@@ -79,8 +79,8 @@ pub(super) fn invoked(expr: &Expr) -> Option<&Expr> {
 
 /// Every name `stmt` runs, an attribute or subscript chain contributing
 /// the name it roots in, each name once. A `type` statement runs
-/// nothing, since its value evaluates only when its `__value__` is
-/// read.
+/// nothing, since the alias's value evaluates only when its
+/// `__value__` is read or its `evaluate_value` called.
 pub(super) fn called_names(stmt: &Stmt) -> Vec<&str> {
     struct Calls<'src>(Vec<&'src str>);
     impl<'src> AstVisitor<'src> for Calls<'src> {

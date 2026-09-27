@@ -3,5 +3,5 @@ previewable = false
 title       = "A Type Alias Reading a Definition Does Not Pin the Run"
 
 description = '''
-`type Pair = tuple[Zeta, Zeta]` sits between `class Zeta` and `class Apple` and names `Zeta` in its value. **`Apple` sorts ahead of `Zeta`**, because a `type` statement evaluates its value only when its `__value__` is read, so moving `class Zeta` below the alias raises no `NameError` when the module imports.
+`type Pair = tuple[Zeta, Zeta]` sits between `class Zeta` and `class Apple` and names `Zeta` in its value. **`Apple` sorts ahead of `Zeta`**, because Python evaluates a `type` statement's value only when something reads the alias's `__value__` or calls its `evaluate_value`, so moving `class Zeta` below the alias raises no `NameError` when the module imports.
 '''

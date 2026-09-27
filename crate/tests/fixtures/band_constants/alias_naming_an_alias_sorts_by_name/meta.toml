@@ -3,5 +3,5 @@ previewable = false
 title       = "A Type Alias Naming Another Sorts by Name"
 
 description = '''
-`type Alpha = list[Zulu]` names the `type Zulu = int` above it, and `LIMIT = 3` follows. **`Alpha` sorts ahead of `Zulu`, and both stay ahead of `LIMIT`**, because a `type` statement reads `Zulu` only when its `__value__` is read, so the reference places `Alpha` in no deeper tier than the alias it names.
+`type Alpha = list[Zulu]` names the `type Zulu = int` above it, and `LIMIT = 3` follows. **`Alpha` sorts ahead of `Zulu`, and both stay ahead of `LIMIT`**, because Python reads `Zulu` only when something reads `Alpha.__value__` or calls `Alpha.evaluate_value`, so the reference places `Alpha` in no deeper tier than the alias it names.
 '''
