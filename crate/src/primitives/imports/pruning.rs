@@ -191,7 +191,8 @@ pub(crate) fn prune_import_statements(
             )
         })
         .collect();
-    let deletions = whole_line_deletions(source, cleared.keys().map(|&slot| body[slot].range()));
+    let deletions =
+        whole_line_deletions(source, cleared.keys().map(|&slot| body[slot].range()), rule);
     for (&index, deletion) in cleared.values().zip(deletions) {
         groups[index].1.push(deletion);
     }
@@ -259,7 +260,7 @@ mod tests {
     fn pruned_text(source: &Source, drop: &Dropping, folded: bool) -> String {
         let edits = match drop.pruning(source, folded) {
             Pruning::Members(edits) => edits,
-            Pruning::Whole => whole_line_deletions(source, [drop.range]),
+            Pruning::Whole => whole_line_deletions(source, [drop.range], PruneInertImports::SLUG),
         };
         applied_text(source, edits)
     }
@@ -352,6 +353,16 @@ mod tests {
         "# c\nfrom p import a\n\nfrom p import b\nfrom p import d\n",
         &[(0, &[0][..])],
         "# c\nfrom p import b\n\nfrom p import d\n"
+    )]
+    #[case::skipped_landing_holds_the_lead(
+        "# c\nfrom p import a\nfrom p import b  # prose: skip\n\nfrom q import c\ny = b\n",
+        &[(0, &[0][..]), (2, &[0][..])],
+        "# c\nfrom p import a\nfrom p import b  # prose: skip\n\ny = b\n"
+    )]
+    #[case::skipped_lead_holds_its_line(
+        "# c\nfrom p import a  # prose: skip\nfrom p import b\n\nfrom q import c\ny = b\n",
+        &[(0, &[0][..]), (2, &[0][..])],
+        "# c\nfrom p import a  # prose: skip\nfrom p import b\n\ny = b\n"
     )]
     #[case::skipped_drop_stays_out_of_the_block(
         "x = 1\n\n\nfrom p import a\n\nfrom q import b  # prose: skip\n\ny = 2\n",

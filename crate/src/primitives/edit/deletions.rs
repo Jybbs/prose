@@ -10,6 +10,7 @@ use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     primitives::blanks::{blank_run_above, blank_run_below, whitespace_start_before},
+    rules::RuleId,
     source::Source,
 };
 
@@ -20,10 +21,12 @@ use crate::{
 /// one above on a tie, or the only one where it opens or closes its
 /// notebook cell or module or where a `\` join holds the run above, and
 /// a block whose last row has no line break also clears the break
-/// closing the row above its run.
+/// closing the row above its run, unless a suppression of `rule` covers
+/// that break.
 pub(crate) fn whole_line_deletions(
     source: &Source,
     ranges: impl IntoIterator<Item = TextRange>,
+    rule: RuleId,
 ) -> Vec<Edit> {
     let lines: Vec<TextRange> = ranges
         .into_iter()
@@ -46,12 +49,14 @@ pub(crate) fn whole_line_deletions(
                 (Some(above), _) => (Some(above), None),
                 runs => runs,
             };
-            let start = match above {
-                Some(run) if !source.slice(last).ends_with(['\n', '\r']) => source
-                    .text()
-                    .line_end(whitespace_start_before(source, run.start())),
-                run => run.unwrap_or(block[0]).start(),
-            };
+            let row_break = above
+                .filter(|_| !source.slice(last).ends_with(['\n', '\r']))
+                .map(|run| {
+                    let at = whitespace_start_before(source, run.start());
+                    TextRange::new(source.text().line_end(at), run.start())
+                })
+                .filter(|row_break| !source.suppression_map().suppresses(*row_break, rule));
+            let start = row_break.map_or(above.unwrap_or(block[0]).start(), TextRange::start);
             iter::once(start)
                 .chain(init.iter().map(Ranged::end))
                 .chain(iter::once(below.unwrap_or(last).end()))
@@ -66,14 +71,20 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, notebook, parse, range};
+    use crate::{
+        rules::prune_inert_imports::PruneInertImports,
+        testing::{applied_text, notebook, parse, range},
+    };
+
+    /// The rule whose suppressions the deletions read.
+    const RULE: RuleId = PruneInertImports::SLUG;
 
     /// The text `source` reads once the statements at `slots` of its
     /// module body clear through [`whole_line_deletions`].
     fn cleared(source: &Source, slots: &[usize]) -> String {
         let body = &source.ast().body;
         let ranges = slots.iter().map(|&slot| body[slot].range());
-        applied_text(source, whole_line_deletions(source, ranges))
+        applied_text(source, whole_line_deletions(source, ranges, RULE))
     }
 
     #[rstest]
@@ -97,6 +108,7 @@ mod tests {
     #[case::crlf("import a\r\n\r\nx = 1\r\n", &[0], "x = 1\r\n")]
     #[case::crlf_unterminated("x = 1\r\n\r\nimport a", &[1], "x = 1")]
     #[case::under_a_byte_order_mark("\u{feff}import a\n\nx = 1\n", &[0], "\u{feff}x = 1\n")]
+    #[case::unterminated_under_a_skipped_row("x = 1  # prose: skip\n\nimport a", &[1], "x = 1  # prose: skip\n")]
     fn whole_line_deletions_clear_the_narrower_blank_run_around_each_block(
         #[case] src: &str,
         #[case] slots: &[usize],
@@ -119,7 +131,7 @@ mod tests {
     #[test]
     fn whole_line_deletions_take_the_run_above_on_a_tie() {
         let source = parse("x = 1\n\nimport a\n\ny = 2\n");
-        let edits = whole_line_deletions(&source, [source.ast().body[1].range()]);
+        let edits = whole_line_deletions(&source, [source.ast().body[1].range()], RULE);
 
         assert_eq!(edits, [Edit::range_deletion(range(6, 16))]);
     }

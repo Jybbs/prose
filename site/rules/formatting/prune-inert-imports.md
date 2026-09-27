@@ -16,7 +16,7 @@ The reference count runs per bound name, so one member drops off a shared `from`
 
 <Fixture rule="prune_inert_imports" case="every_member_unread_drops_the_whole_line" />
 
-A removed statement takes the blank lines on one side along with its own line, whichever side holds fewer, so the statements around it keep the spacing the source wrote beside the import. An import opening the file takes the blank lines below it, and one closing the file takes those above it.
+A removed statement takes the blank lines on one side along with its own line, whichever side holds fewer, so the statements around it keep the spacing the source wrote beside the import. Statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. An import opening the file takes the blank lines below it, and one closing the file takes those above it.
 
 ## What Holds Its Line
 

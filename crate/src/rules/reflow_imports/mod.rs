@@ -150,10 +150,10 @@ impl<'a> Layout<'a> {
         }
     }
 
-    /// The rewrite laying the gathered roster of `group` out under the
-    /// shared head of its first statement, empty where that statement
-    /// already reads so, or `None` where the members already read that
-    /// way once their lines clear and the group emits nothing.
+    /// Returns the rewrite laying the gathered roster of `group` out under
+    /// the shared head of its first statement, empty where that statement
+    /// already reads so, or `None` where the members already read that way
+    /// once their lines clear and the group emits nothing.
     fn merge_head(&self, body: &'a [Stmt], group: &[usize]) -> Option<Vec<Edit>> {
         let [lead, .., last] = group else {
             unreachable!("invariant: a merge group holds two or more members");
@@ -277,7 +277,11 @@ impl<'a> Layout<'a> {
             .copied()
             .sorted_unstable()
             .collect();
-        let deletions = whole_line_deletions(source, folded.iter().map(|&slot| body[slot].range()));
+        let deletions = whole_line_deletions(
+            source,
+            folded.iter().map(|&slot| body[slot].range()),
+            ReflowImports::SLUG,
+        );
         let mut deletions: FxHashMap<usize, Edit> = folded.into_iter().zip(deletions).collect();
         for (group, mut edits) in merges {
             edits.extend(group[1..].iter().map(|slot| {
