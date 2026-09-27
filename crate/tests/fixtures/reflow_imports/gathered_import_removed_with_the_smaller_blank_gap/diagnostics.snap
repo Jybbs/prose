@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_imports/gathered_import_removed_with_the_smaller_blank_gap/input.py
+---
+reflow-imports@21..46

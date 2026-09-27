@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Unread Import Closing the Module Is Removed With the Blank Line Above It"
+
+description = '''
+`import json` closes the module one blank line below `value = 1`, and nothing reads `json`. **The import line and the blank line above it are both removed**, so the file ends on `value = 1` with no blank line trailing it.
+'''

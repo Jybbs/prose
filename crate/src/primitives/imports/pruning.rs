@@ -14,9 +14,10 @@ use super::*;
 use crate::{
     primitives::{
         comments::comment_leads,
-        edit::{apply_inline_edits, whole_line_deletion},
+        edit::{apply_inline_edits, whole_line_deletions},
         range::dropped_member_spans,
     },
+    rules::RuleId,
     source::Source,
 };
 
@@ -26,6 +27,54 @@ pub(crate) struct Dropping<'a> {
     pub(crate) names: &'a [Alias],
     pub(crate) range: TextRange,
     pub(crate) slot: usize,
+}
+
+impl Dropping<'_> {
+    /// True when every alias of the statement drops.
+    fn drops_every_alias(&self) -> bool {
+        self.dropped.len() == self.names.len()
+    }
+
+    /// Returns the pruning that drops the aliases at `dropped`, deleting
+    /// nothing when none drops, when the statement shares its lines with
+    /// other code, or when a comment sits inside it. A statement losing
+    /// every alias drops whole unless a leading comment block holds it and
+    /// `folded` is false, and one losing a subset drops each run of dropped
+    /// aliases with the separator binding it.
+    fn pruning(&self, source: &Source, folded: bool) -> Pruning {
+        if self.dropped.is_empty()
+            || !stands_alone(source, self.range)
+            || !source
+                .comment_ranges()
+                .comments_in_range(self.range)
+                .is_empty()
+        {
+            return Pruning::Members(Vec::new());
+        }
+        if self.drops_every_alias() {
+            return if comment_leads(source, self.range.start()) && !folded {
+                Pruning::Members(Vec::new())
+            } else {
+                Pruning::Whole
+            };
+        }
+        let members: Vec<TextRange> = self.names.iter().map(|alias| alias.range).collect();
+        Pruning::Members(
+            dropped_member_spans(&members, |index| self.dropped.contains(&index))
+                .into_iter()
+                .map(Edit::range_deletion)
+                .collect(),
+        )
+    }
+}
+
+/// What pruning makes of one import statement.
+enum Pruning {
+    /// The deletions dropping a subset of the aliases, empty where the
+    /// statement stays as written.
+    Members(Vec<Edit>),
+    /// The statement's lines clear whole.
+    Whole,
 }
 
 /// The body slot whose import a comment-led `slot`'s drop lands on.
@@ -73,64 +122,80 @@ pub(crate) fn fold_landing(
 /// One fix group per statement of `drops` losing an alias, the drops
 /// of `body`'s module-scope imports. A statement losing every alias
 /// under a leading comment gives its line to the import `landing`
-/// names, clearing that import's former lines with the blank run above
-/// them, and of two statements landing on one import the later takes it.
+/// names, and of two statements landing on one import the later takes
+/// it. The lines of every statement dropping whole and of every import
+/// a drop lands on clear together per [`whole_line_deletions`], leaving
+/// out a statement a suppression of `rule` pins, which neither lands nor
+/// clears.
 pub(crate) fn prune_import_statements(
     source: &Source,
     body: &[Stmt],
     drops: &[Dropping],
+    rule: RuleId,
     landing: impl Fn(usize, &dyn Fn(usize) -> bool) -> Option<usize>,
 ) -> Vec<Vec<Edit>> {
     let whole: FxHashSet<usize> = drops
         .iter()
-        .filter(|drop| drop.dropped.len() == drop.names.len())
+        .filter(|drop| drop.drops_every_alias())
         .map(|drop| drop.slot)
         .collect();
     let survives = |slot: usize| !whole.contains(&slot);
+    let pinned = |slot: usize| source.suppression_map().pins(body[slot].range(), rule);
     let landings: BTreeMap<usize, usize> = drops
         .iter()
-        .filter(|drop| whole.contains(&drop.slot) && comment_leads(source, drop.range.start()))
-        .filter_map(|drop| landing(drop.slot, &survives).map(|onto| (drop.slot, onto)))
+        .filter(|drop| drop.drops_every_alias() && comment_leads(source, drop.range.start()))
+        .filter_map(|drop| {
+            landing(drop.slot, &survives)
+                .filter(|&onto| !pinned(drop.slot) && !pinned(onto))
+                .map(|onto| (drop.slot, onto))
+        })
         .collect();
     let claims: FxHashMap<usize, usize> =
         landings.iter().map(|(&lead, &onto)| (onto, lead)).collect();
-    let edits_of = |drop: &Dropping| {
-        prune_import_aliases(
-            source,
-            drop.range,
-            drop.names,
-            landings.contains_key(&drop.slot),
-            |index| !drop.dropped.contains(&index),
-        )
-    };
+    let pruning_of = |drop: &Dropping| drop.pruning(source, landings.contains_key(&drop.slot));
     let line_span =
         |range: TextRange| TextRange::new(range.start(), source.text().line_end(range.end()));
     let mut consumed = FxHashSet::default();
-    let groups: Vec<(usize, Vec<Edit>)> = drops
+    let mut cleared = BTreeMap::new();
+    let mut groups: Vec<(usize, Vec<Edit>)> = drops
         .iter()
-        .map(|drop| {
-            let edits = edits_of(drop);
+        .enumerate()
+        .map(|(index, drop)| {
+            if let Pruning::Members(edits) = pruning_of(drop) {
+                return (drop.slot, edits);
+            }
             let Some(&onto) = landings
                 .get(&drop.slot)
-                .filter(|&&onto| claims[&onto] == drop.slot && !edits.is_empty())
+                .filter(|&&onto| claims[&onto] == drop.slot)
             else {
-                return (drop.slot, edits);
+                if !pinned(drop.slot) {
+                    cleared.insert(drop.slot, index);
+                }
+                return (drop.slot, Vec::new());
             };
             let span = line_span(body[onto].range());
             let text = drops.iter().find(|other| other.slot == onto).map_or_else(
                 || source.slice(span).to_owned(),
-                |sibling| apply_inline_edits(source, span, &edits_of(sibling)).into_owned(),
+                |sibling| {
+                    let Pruning::Members(edits) = pruning_of(sibling) else {
+                        unreachable!("invariant: the import a drop lands on survives the drops");
+                    };
+                    apply_inline_edits(source, span, &edits).into_owned()
+                },
             );
             consumed.insert(onto);
+            cleared.insert(onto, index);
             (
                 drop.slot,
-                vec![
-                    Edit::range_replacement(text, line_span(drop.range)),
-                    Edit::range_deletion(lines_under_blank_run(source, body[onto].range())),
-                ],
+                vec![Edit::range_replacement(text, line_span(drop.range))],
             )
         })
         .collect();
+    let deletions =
+        whole_line_deletions(source, cleared.keys().map(|&slot| body[slot].range()), rule);
+    for (&index, deletion) in cleared.values().zip(deletions) {
+        groups[index].1.push(deletion);
+    }
     groups
         .into_iter()
         .filter(|(slot, edits)| !consumed.contains(slot) && !edits.is_empty())
@@ -154,49 +219,50 @@ pub(crate) fn stands_alone(source: &Source, stmt: TextRange) -> bool {
     before.trim().is_empty() && (after.is_empty() || after.starts_with('#'))
 }
 
-/// The deletions dropping every alias of an import statement that
-/// `keep` rejects, empty when every alias survives, when the statement
-/// shares its lines with other code, or when a comment sits inside it.
-/// A statement losing every alias drops whole unless a leading comment
-/// block holds it and `folded` is false, and one losing a subset drops
-/// each run of rejected aliases with the separator binding it.
-fn prune_import_aliases(
-    source: &Source,
-    stmt: TextRange,
-    names: &[Alias],
-    folded: bool,
-    keep: impl Fn(usize) -> bool,
-) -> Vec<Edit> {
-    let kept = (0..names.len()).filter(|&index| keep(index)).count();
-    let inside_comment = !source.comment_ranges().comments_in_range(stmt).is_empty();
-    if kept == names.len() || !stands_alone(source, stmt) || inside_comment {
-        return Vec::new();
-    }
-    if kept == 0 {
-        return if comment_leads(source, stmt.start()) && !folded {
-            Vec::new()
-        } else {
-            vec![whole_line_deletion(source, stmt)]
-        };
-    }
-    let members: Vec<TextRange> = names.iter().map(|alias| alias.range).collect();
-    dropped_member_spans(&members, |index| !keep(index))
-        .into_iter()
-        .map(Edit::range_deletion)
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
-    use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::{applied_text, parse};
+    use crate::{
+        rules::prune_inert_imports::PruneInertImports,
+        testing::{applied_text, parse},
+    };
+
+    /// The drop of the aliases at `dropped` from the first import of
+    /// `source`'s module body.
+    fn first_import_dropping<'a>(source: &'a Source, dropped: &[usize]) -> Dropping<'a> {
+        let (slot, names) = source
+            .ast()
+            .body
+            .iter()
+            .enumerate()
+            .find_map(|(slot, stmt)| match stmt {
+                Stmt::Import(node) => Some((slot, &node.names)),
+                Stmt::ImportFrom(node) => Some((slot, &node.names)),
+                _ => None,
+            })
+            .expect("the source carries an import");
+        Dropping {
+            dropped: dropped.to_vec(),
+            names,
+            range: source.ast().body[slot].range(),
+            slot,
+        }
+    }
 
     /// The import runs of `source`'s module body as written.
     fn merge_runs(source: &Source) -> Vec<Vec<usize>> {
         import_runs(&source.ast().body)
+    }
+
+    /// The text `source` reads once the pruning of `drop` applies.
+    fn pruned_text(source: &Source, drop: &Dropping, folded: bool) -> String {
+        let edits = match drop.pruning(source, folded) {
+            Pruning::Members(edits) => edits,
+            Pruning::Whole => whole_line_deletions(source, [drop.range], PruneInertImports::SLUG),
+        };
+        applied_text(source, edits)
     }
 
     #[rstest]
@@ -257,13 +323,92 @@ mod tests {
         assert_eq!(landing, Some(2));
     }
 
+    #[rstest]
+    #[case::moves_the_sibling_up(
+        "# c\nfrom p import a\n\nfrom p import b\n",
+        &[(0, &[0][..]), (1, &[][..])],
+        "# c\nfrom p import b\n"
+    )]
+    #[case::applies_the_siblings_own_drops(
+        "# c\nfrom p import a\nfrom p import b, d  # t\n",
+        &[(0, &[0][..]), (1, &[0][..])],
+        "# c\nfrom p import d  # t\n"
+    )]
+    #[case::later_lead_takes_the_landing(
+        "# c\nfrom p import a\n# d\nfrom p import b\nfrom p import d\n",
+        &[(0, &[0][..]), (1, &[0][..])],
+        "# c\n# d\nfrom p import d\n"
+    )]
+    #[case::no_landing_holds_the_lead(
+        "# c\nfrom p import a\nfrom p import b\n",
+        &[(0, &[0][..]), (1, &[0][..])],
+        "# c\nfrom p import a\n"
+    )]
+    #[case::uncommented_lead_drops_whole(
+        "from p import a\nfrom p import b\n",
+        &[(0, &[0][..])],
+        "from p import b\n"
+    )]
+    #[case::moved_import_keeps_the_wider_run(
+        "# c\nfrom p import a\n\nfrom p import b\nfrom p import d\n",
+        &[(0, &[0][..])],
+        "# c\nfrom p import b\n\nfrom p import d\n"
+    )]
+    #[case::skipped_landing_holds_the_lead(
+        "# c\nfrom p import a\nfrom p import b  # prose: skip\n\nfrom q import c\ny = b\n",
+        &[(0, &[0][..]), (2, &[0][..])],
+        "# c\nfrom p import a\nfrom p import b  # prose: skip\n\ny = b\n"
+    )]
+    #[case::skipped_lead_holds_its_line(
+        "# c\nfrom p import a  # prose: skip\nfrom p import b\n\nfrom q import c\ny = b\n",
+        &[(0, &[0][..]), (2, &[0][..])],
+        "# c\nfrom p import a  # prose: skip\nfrom p import b\n\ny = b\n"
+    )]
+    #[case::skipped_drop_stays_out_of_the_block(
+        "x = 1\n\n\nfrom p import a\n\nfrom q import b  # prose: skip\n\ny = 2\n",
+        &[(1, &[0][..]), (2, &[0][..])],
+        "x = 1\n\n\nfrom q import b  # prose: skip\n\ny = 2\n"
+    )]
+    #[case::moved_import_clears_one_block_with_a_whole_drop(
+        "# c\nfrom p import a\n\n\nfrom q import u\n\nfrom p import b\n\n\nx = 1\n",
+        &[(0, &[0][..]), (1, &[0][..])],
+        "# c\nfrom p import b\n\n\nx = 1\n"
+    )]
+    fn prune_import_statements_lands_a_commented_drop_on_the_next_import(
+        #[case] src: &str,
+        #[case] drops: &[(usize, &[usize])],
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let drops: Vec<Dropping> = drops
+            .iter()
+            .map(|&(slot, dropped)| Dropping {
+                dropped: dropped.to_vec(),
+                names: &body[slot]
+                    .as_import_from_stmt()
+                    .expect("a from-import")
+                    .names,
+                range: body[slot].range(),
+                slot,
+            })
+            .collect();
+        let runs = merge_runs(&source);
+        let groups = prune_import_statements(
+            &source,
+            body,
+            &drops,
+            PruneInertImports::SLUG,
+            |slot, survives| fold_landing(&source, body, &runs, &[], true, slot, survives),
+        );
+        let pruned = applied_text(&source, groups.concat());
+        assert_eq!(pruned, expected);
+    }
+
     #[test]
-    fn prune_import_aliases_drops_a_commented_statement_a_merge_folds() {
+    fn pruning_drops_a_commented_statement_a_merge_folds() {
         let source = parse("# local imports\nfrom pkg import a\nfrom pkg import b\n");
-        let stmt = &source.ast().body[0];
-        let names = &stmt.as_import_from_stmt().expect("a from-import").names;
-        let edits = prune_import_aliases(&source, stmt.range(), names, true, |_| false);
-        let pruned = applied_text(&source, edits);
+        let pruned = pruned_text(&source, &first_import_dropping(&source, &[0]), true);
         assert_eq!(pruned, "# local imports\nfrom pkg import b\n");
     }
 
@@ -306,79 +451,13 @@ mod tests {
         &[0],
         "# the typing pair\nfrom typing import b\n"
     )]
-    fn prune_import_aliases_drops_each_run_with_the_separator_binding_it(
+    fn pruning_drops_each_run_with_the_separator_binding_it(
         #[case] src: &str,
         #[case] dropped: &[usize],
         #[case] expected: &str,
     ) {
         let source = parse(src);
-        let (stmt, names) = source
-            .ast()
-            .body
-            .iter()
-            .find_map(|stmt| match stmt {
-                Stmt::Import(node) => Some((stmt, &node.names)),
-                Stmt::ImportFrom(node) => Some((stmt, &node.names)),
-                _ => None,
-            })
-            .expect("the source carries an import");
-        let edits = prune_import_aliases(&source, stmt.range(), names, false, |i| {
-            !dropped.contains(&i)
-        });
-        let pruned = applied_text(&source, edits);
-        assert_eq!(pruned, expected);
-    }
-
-    #[rstest]
-    #[case::moves_the_sibling_up(
-        "# c\nfrom p import a\n\nfrom p import b\n",
-        &[(0, &[0][..]), (1, &[][..])],
-        "# c\nfrom p import b\n"
-    )]
-    #[case::applies_the_siblings_own_drops(
-        "# c\nfrom p import a\nfrom p import b, d  # t\n",
-        &[(0, &[0][..]), (1, &[0][..])],
-        "# c\nfrom p import d  # t\n"
-    )]
-    #[case::later_lead_takes_the_landing(
-        "# c\nfrom p import a\n# d\nfrom p import b\nfrom p import d\n",
-        &[(0, &[0][..]), (1, &[0][..])],
-        "# c\n# d\nfrom p import d\n"
-    )]
-    #[case::no_landing_holds_the_lead(
-        "# c\nfrom p import a\nfrom p import b\n",
-        &[(0, &[0][..]), (1, &[0][..])],
-        "# c\nfrom p import a\n"
-    )]
-    #[case::uncommented_lead_drops_whole(
-        "from p import a\nfrom p import b\n",
-        &[(0, &[0][..])],
-        "from p import b\n"
-    )]
-    fn prune_import_statements_lands_a_commented_drop_on_the_next_import(
-        #[case] src: &str,
-        #[case] drops: &[(usize, &[usize])],
-        #[case] expected: &str,
-    ) {
-        let source = parse(src);
-        let body = &source.ast().body;
-        let drops: Vec<Dropping> = drops
-            .iter()
-            .map(|&(slot, dropped)| Dropping {
-                dropped: dropped.to_vec(),
-                names: &body[slot]
-                    .as_import_from_stmt()
-                    .expect("a from-import")
-                    .names,
-                range: body[slot].range(),
-                slot,
-            })
-            .collect();
-        let runs = merge_runs(&source);
-        let groups = prune_import_statements(&source, body, &drops, |slot, survives| {
-            fold_landing(&source, body, &runs, &[], true, slot, survives)
-        });
-        let pruned = applied_text(&source, groups.concat());
+        let pruned = pruned_text(&source, &first_import_dropping(&source, dropped), false);
         assert_eq!(pruned, expected);
     }
 }

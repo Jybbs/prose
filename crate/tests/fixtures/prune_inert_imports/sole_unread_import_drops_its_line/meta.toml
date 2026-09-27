@@ -3,5 +3,5 @@ previewable = true
 title       = "A Sole Unread Import Loses Its Whole Line"
 
 description = '''
-`import json` binds only `json`, and nothing in the module reads it. **The whole line is removed**, and the blank line below it stays as the file's first line.
+`import json` binds only `json`, and nothing in the module reads it. **The whole line is removed** along with the blank line below it, leaving `value = 1` as the file's first line.
 '''

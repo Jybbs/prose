@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/directive_removed_with_one_of_its_blank_lines/input.py
+---
+"""Check the installed packages."""
+
+import logging
+
+
+def check(name: str) -> None:
+    logging.info(name)
