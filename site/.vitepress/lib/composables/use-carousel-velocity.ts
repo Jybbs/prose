@@ -1,5 +1,5 @@
-import { clamp, useElementBounding, useRafFn } from '@vueuse/core'
-import { ref, watchEffect, type Ref }          from 'vue'
+import { clamp, useElementBounding, useElementVisibility, useRafFn } from '@vueuse/core'
+import { ref, watch, watchEffect, type Ref }                         from 'vue'
 
 import { MS_PER_SEC } from '../shared/constants'
 import { posMod }     from '../shared/pos-mod'
@@ -28,10 +28,15 @@ export function useCarouselVelocity(
   const offset = ref(0)
   let velocity = options.baseSpeedPxPerSec
 
-  useRafFn(({ delta }) => {
+  const { pause, resume } = useRafFn(({ delta }) => {
     if (halfWidth.value > 0 && !options.reducedMotion.value && !fits.value) {
       offset.value = posMod(offset.value + velocity * delta / MS_PER_SEC, halfWidth.value)
     }
+  }, { immediate: false })
+
+  watch(useElementVisibility(viewportRef), visible => {
+    if (visible) resume()
+    else pause()
   }, { immediate: true })
 
   // A track that fits rests at its origin, and a track that overflows keeps

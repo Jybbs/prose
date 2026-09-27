@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Kept Class's Fields Align in the Order Written"
+
+description = '''
+`StationSchema` is a `pandera.DataFrameModel` whose columns follow the order its fields are declared in, and its header carries `# prose: keep`. **`alphabetize-siblings` leaves `station`, `name`, and `latitude` in that order, while `align-colons` and `align-equals` still pad the `:` and the `=` into one column each.** `expand-docstrings` rewrites the docstring to the three-line form and `space-statements` writes one blank line below it, so every rule but `alphabetize-siblings` still runs over the kept body.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_on_a_moved_row_lands_at_its_new_indent/input.py
+---
+reflow-calls@36..101
+stack-method-chains@64..93

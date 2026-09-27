@@ -3,18 +3,19 @@
 //! keyword-only parameters, call kwargs, dict keys, set elements,
 //! import names and alias lists within each section, `global` /
 //! `nonlocal` / `del` name lists, and the strings inside `__all__` /
-//! `__slots__`. Sorting runs through the `primitives::orderer`
-//! permute and assemble primitives, a recursive rewriter folding inner
-//! sorts into the outer scope's replacement text so each outermost
-//! scope emits one edit, or one per notebook cell. Positional-or-
-//! keyword parameters never reorder and only the keyword-only block
-//! past `*` sorts, a class whose header generates a field-ordered
-//! constructor holds its field run, and a decorated definition holds
-//! its slot at module scope while sorting inside a class body.
+//! `__slots__`. A recursive rewriter over the `primitives::orderer`
+//! permute and assemble primitives folds inner sorts into the outer
+//! scope's replacement, so each outermost scope emits one edit, or one
+//! per notebook cell. Positional-or-keyword parameters, the field run
+//! of a class whose header generates its constructor, the statements of
+//! a class under a `# prose: keep` header, and a decorated definition at
+//! module scope each keep their order, and a statement a suppression
+//! covers keeps its slot while the rewrites inside it land as edits of
+//! their own.
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Stmt, StmtAssign, StmtClassDef,
+    Stmt, StmtAssign,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -97,6 +98,7 @@ impl AlphabetizeSiblings {
             first_party: &self.first_party,
             group_imports: self.group_imports,
             group_methods: self.group_methods,
+            keeps_order: false,
             keyword_fields_from: TextSize::default(),
             leaf_edits,
             orders_members: false,
@@ -118,8 +120,7 @@ impl AlphabetizeSiblings {
         classes
             .0
             .into_iter()
-            .filter(|class| !class.body.is_empty())
-            .filter_map(|class| Some((class.body[0].start(), class_rows(ctx, class)?)))
+            .filter_map(|class| class_rows(ctx, class))
             .collect()
     }
 }
@@ -140,14 +141,27 @@ impl Rule for AlphabetizeSiblings {
             leaf_edits.extend(collect_docstring_entry_edits(source));
             leaf_edits.sort_unstable();
         }
+        let suppression = source.suppression_map();
+        if suppression.has_format_suppression() {
+            leaf_edits.retain(|edit| !suppression.suppresses(edit, Self::SLUG));
+        }
         let enumerations = Enumerations::of(body);
         let ctx = self.ctx(source, &enumerations, &leaf_edits);
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        layout
+        let groups = layout
             .assembly
             .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
                 import_gap(source, &layout.import_run_slots, i)
-            })
+            });
+        if layout.held.is_empty() {
+            return groups;
+        }
+        let mut edits: Vec<Edit> = groups.into_iter().flatten().chain(layout.held).collect();
+        edits.sort_unstable();
+        edits
+            .chunk_by(|a, b| source.same_cell(a.start(), b.start()))
+            .map(<[Edit]>::to_vec)
+            .collect()
     }
 
     fn id(&self) -> RuleId {
@@ -157,12 +171,12 @@ impl Rule for AlphabetizeSiblings {
 
 /// Every class definition a walk over a module reaches, nested ones
 /// included.
-struct Classes<'a>(Vec<&'a StmtClassDef>);
+struct Classes<'a>(Vec<&'a Stmt>);
 
 impl<'a> StatementVisitor<'a> for Classes<'a> {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
-        if let Stmt::ClassDef(class) = stmt {
-            self.0.push(class);
+        if stmt.is_class_def_stmt() {
+            self.0.push(stmt);
         }
         walk_stmt(self, stmt);
     }
@@ -239,6 +253,11 @@ mod tests {
     }
 
     #[rstest]
+    #[case::kept("class K:  # prose: keep\n    b = 1\n    a = 2\n", None)]
+    #[case::pinned(
+        "class K:\n    c = 1  # prose: skip[alphabetize-siblings]\n    b = 2\n    a = 3\n",
+        Some(vec![(0, false), (2, true), (1, true)]),
+    )]
     #[case::reseated("class K:\n    b = 1\n    a = 2\n", Some(vec![(1, false), (0, true)]))]
     #[case::sorted("class K:\n    a = 1\n    b = 2\n", None)]
     fn seatings_record_a_class_body_the_sort_seats_other_than_as_written(

@@ -56,6 +56,10 @@ The three values a finalizer reads together, one member block per slot, the text
 
 `assembly.cell_edits(source, forced, gap)` is the fix-group finalizer those same two rules emit from, splitting the assembly into one group per notebook cell the blocks span and one group for an ordinary module, each carrying the narrowed edits of its own slots. It reads `forced` the way `or_borrow` does, and a group whose pieces all reproduce the source is dropped rather than emitted.
 
+### `seated_rows(source, body, blocks, order, gap, text)`
+
+Reads back the rows an assembly writes, pairing each slot of `order` with whether it opens on the line directly below the slot before it once the blocks assemble, and returns `None` where those rows match `body` as written. A slot opens below its neighbor where the gap between them holds one line ending and its own text from `text` opens on no comment, the gap being the divider `gap` returns for the slot before it or, where that returns `None`, the source gap. [[band-constants]] and [[alphabetize-siblings]] each collect these rows into a `Seatings` map keyed by the start of each body's first statement, which [[reflow-calls]] and [[reflow-collections]] read to measure an [[align-equals]] run in the order those rules write it.
+
 ### Block-Geometry Helpers
 
 `block_range(source, items, i, outer)` answers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the comment-only lines directly above the item and the rest of its last line. `outer` bounds the lower edge of the leading-comment scan to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, and inside a notebook that edge is raised to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary. The forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, which sizes the outer `Edit` that replaces the reordered region. That helper is generic over `Ranged` and lives beside the parenthesis-aware ranges in `crate/src/primitives/range/`, since [[group-imports]], [[alphabetize-siblings]], [[unsorted-positionals]], and [[shed-backslash-continuations]] all cover a run of items the same way.
@@ -63,6 +67,8 @@ The three values a finalizer reads together, one member block per slot, the text
 ## How Comment Attachment Works
 
 `block_range` extends each item's source extent upward to include every comment-only line directly above it *(with no intervening blank line)* and downward to the end of its last line. A comment directly above a function definition moves with that function, because the comment is part of the function's *"block"*. A blank line acts as a divider, leaving comments above the blank line attached to whatever sits above them rather than to the next item.
+
+A statement body takes its blocks through `member_blocks` instead, which binds a comment run to the statement below it across a blank line unless the run anchors in place or sits at a shallower indent. Each block also reaches down over the own-line comments indented deeper than its statement, so a note closing a function body moves with that function. A comment neither statement binds stays in the gap between their blocks, where it divides the body into sections that no reorder crosses.
 
 A member's trailing inline comment moves with it too. For a comma-separated group reordered through `reorder_separated`, the separating comma is re-emitted per slot so the comment stays on its member's line rather than staying behind in the slot the member vacated. A comment reached only over a closing `}`, `)`, or `]` belongs to the whole group rather than the last member, so it stays in source position.
 

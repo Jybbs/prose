@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/off_region_divides_its_siblings/input.py
+---
+alphabetize-siblings@4..162

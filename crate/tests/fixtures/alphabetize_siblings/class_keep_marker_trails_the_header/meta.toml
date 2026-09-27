@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "`# prose: keep` Holds a Class Only When It Trails the Header"
+
+description = '''
+`Decorated` carries the marker on its decorator, and `Wrapped` carries it on the `):` line closing a header that spans three lines. **`Decorated` sorts, whereas `zeta` stays above `alpha` in `Wrapped`**, because the marker counts on the `class` line or on the line holding the header's closing `:`, and a decorator line is neither.
+'''

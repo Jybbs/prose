@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skipped Statement Holds Its Slot While Its Siblings Sort"
+
+description = '''
+`import re` and `def legacy` each close their line with `# prose: skip`, and both stay where they are. **The methods sort past `legacy`, `beta` moving above it and `zeta` below, whereas the imports sort on either side of `import re`**, `sys` staying above it and `abc` moving above `os` below it. The imports sort even though `Station` holds a skipped line, since the edits inside the class leave that line untouched.
+'''

@@ -57,18 +57,22 @@ impl<'a, 'src> ClassAssigns<'a, 'src> {
     /// Permutes both families within this run's slots of `order`, the
     /// fields first and the constants after, leaving `order` untouched
     /// where the sorted order would strand a reader. A field starting
-    /// below `keyword_fields_from` holds its slot while the constants
-    /// around it still sort.
+    /// below `keyword_fields_from` and a member `holds` selects each hold
+    /// their slot while the members around them still sort.
     pub(super) fn permute(
         &self,
         order: &mut [usize],
         body: &'src [Stmt],
+        holds: impl Fn(&'src Stmt) -> bool + Copy,
         keyword_fields_from: TextSize,
     ) {
         self.strands
             .permute_or_repair(order, self.range.len(), |order, pinned| {
                 let fields_moved = permute_in_place(order, body, self.range.clone(), |stmt| {
-                    if stmt.start() < keyword_fields_from || pinned.contains(&stmt.start()) {
+                    if stmt.start() < keyword_fields_from
+                        || holds(stmt)
+                        || pinned.contains(&stmt.start())
+                    {
                         return None;
                     }
                     let (default, _) = classify_field(stmt)?;
@@ -77,7 +81,9 @@ impl<'a, 'src> ClassAssigns<'a, 'src> {
                 });
                 let constants_moved = permute_in_place(order, body, self.range.clone(), |stmt| {
                     class_assign_member(stmt)
-                        .filter(|&(_, is_const)| is_const && !pinned.contains(&stmt.start()))
+                        .filter(|&(_, is_const)| {
+                            is_const && !holds(stmt) && !pinned.contains(&stmt.start())
+                        })
                         .map(|_| self.keys[&stmt.start()])
                 });
                 fields_moved || constants_moved
@@ -115,7 +121,7 @@ mod tests {
         let mut order: Vec<usize> = (0..body.len()).collect();
         let evaluated = evaluated(&source, body);
         if let Some(run) = ClassAssigns::of(body, 0..body.len(), evaluated.evaluation()) {
-            run.permute(&mut order, body, keyword_field_start(class));
+            run.permute(&mut order, body, |_| false, keyword_field_start(class));
         }
         order
     }

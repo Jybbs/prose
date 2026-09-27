@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/shallower_comment_divides_the_methods/input.py
+---
+alphabetize-siblings@101..168

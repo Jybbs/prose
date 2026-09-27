@@ -1,5 +1,6 @@
-//! The body scope a statement sits in (module, class, or function) and
-//! the sub-bodies a compound statement opens.
+//! The body scope a statement sits in (module, class, or function), the
+//! sub-bodies a compound statement opens, and whether those sub-bodies
+//! keep the order written under a `# prose: keep` class header.
 
 use std::borrow::Cow;
 
@@ -8,7 +9,10 @@ use ruff_python_ast::{ExceptHandler, Stmt};
 use ruff_text_size::{Ranged, TextRange};
 use smallvec::{SmallVec, smallvec};
 
-use crate::{primitives::edit::splice_bodies, source::Source};
+use crate::{
+    primitives::{comments::class_keeps_order, edit::splice_bodies},
+    source::Source,
+};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(crate) enum BodyScope {
@@ -54,6 +58,18 @@ pub(crate) fn sub_bodies(stmt: &Stmt) -> SubBodies<'_> {
         return smallvec![(body, stmt.range())];
     }
     compound_sub_bodies(stmt)
+}
+
+/// True when the sub-bodies `stmt` opens keep the order written, given
+/// `inherited` for the body holding `stmt`. A class reads its own header
+/// per [`class_keeps_order`], a function returns `false`, and the arms
+/// of every other statement take `inherited`.
+pub(crate) fn sub_bodies_keep_order(source: &Source, stmt: &Stmt, inherited: bool) -> bool {
+    match stmt {
+        Stmt::ClassDef(class) => class_keeps_order(source, class),
+        Stmt::FunctionDef(_) => false,
+        _ => inherited,
+    }
 }
 
 /// Returns one `(body, outer)` pair per non-empty sub-body of a compound
