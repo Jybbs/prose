@@ -108,9 +108,10 @@ impl AlphabetizeSiblings {
     }
 
     /// Collects the rows of every class body, and of every compound arm
-    /// inside one, that the rule seats other than as written, keyed by the start of the body's first statement, each slot
-    /// in the order the sort seats it beside whether it opens on the line
-    /// directly below the slot before it.
+    /// inside one, that the rule seats other than as written, keyed by
+    /// the start of the body's first statement, each slot in the order
+    /// the sort seats it beside whether it opens on the line directly
+    /// below the slot before it.
     pub(crate) fn seatings(&self, source: &Source) -> Seatings {
         let body = &source.ast().body;
         let enumerations = Enumerations::of(body);
