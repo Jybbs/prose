@@ -360,7 +360,7 @@ fn backward_carry(
 /// value it evaluates at binding. An `Assign` or `AnnAssign` reads
 /// through `single_name_assignment`, whereas a PEP 695 `type X`
 /// statement pairs its name with `None`, because its value evaluates
-/// only at first use. `None` for any other shape.
+/// only when its `__value__` is read. `None` for any other shape.
 fn const_binding(stmt: &Stmt) -> Option<(&str, Option<&Expr>)> {
     match stmt {
         Stmt::TypeAlias(alias) => Some((alias.name.as_name_expr()?.id.as_str(), None)),
