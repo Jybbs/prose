@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/list_operand_of_a_template_keeps_its_row/input.py
+---
+prefer-fstring@10..77

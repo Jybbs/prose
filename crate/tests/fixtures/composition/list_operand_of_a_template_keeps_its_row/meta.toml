@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A List Operand of a `%` Template Keeps Its Row"
+
+description = '''
+At a 71-column budget, the f-string `prefer-fstring` writes for `"%s %s" % ([alpha_value, beta_value, gamma_value], describe(first))` reaches the budget exactly. **`reflow-collections` leaves a literal on its row where the `reflow-calls` walk leaves the template around it for `prefer-fstring`**, so the conversion is the one edit reported and the list stays joined inside the f-string.
+'''

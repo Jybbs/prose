@@ -27,7 +27,8 @@ use ruff_python_ast::PythonVersion;
 
 use common::{
     Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified,
-    report_verified, repro_command, swept, target_name, targets_or, unread, verifying, widths_or,
+    report_verified, repro_command, swept, target_name, target_names, targets_or, unread,
+    verifying, widths_or,
 };
 
 mod common;
@@ -459,7 +460,7 @@ fn every_width_settles_and_applies_what_it_reports() {
             .count(),
         widths.len(),
         axes.len(),
-        targets.iter().copied().map(target_name).format(", "),
+        target_names(&targets),
     );
     let findings = swept(&files, |path| sweep(&plan, path));
     panic::set_hook(previous);
@@ -482,7 +483,7 @@ fn every_width_settles_and_applies_what_it_reports() {
         files.len(),
         widths.len(),
         axes.len(),
-        targets.iter().copied().map(target_name).format(", "),
+        target_names(&targets),
     );
 }
 

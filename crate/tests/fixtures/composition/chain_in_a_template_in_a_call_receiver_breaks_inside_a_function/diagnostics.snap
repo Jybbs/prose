@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/chain_in_a_template_in_a_call_receiver_breaks_inside_a_function/input.py
+---
+reflow-calls@19..68
+stack-method-chains@13..89

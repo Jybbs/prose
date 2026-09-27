@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside an Unstripped `str.format()` Call Keeps Its Row"
+
+description = '''
+With `strip-stranded-padding` off, the padding inside `.format( type(exc), exc )` stays in the source and the row carrying it runs past the 73-column budget. **`reflow-calls` measures the `str.format()` call at the width of the f-string `prefer-fstring` rewrites it as, whose row reaches the budget exactly, and leaves `type(exc)` unwalked**, so `type(exc)` keeps its row and the call converts in one pass.
+'''

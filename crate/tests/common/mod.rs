@@ -15,7 +15,7 @@ pub(crate) use diff::{EXCERPT, excerpt, unified_diff};
 pub(crate) use sweep::{
     Absorbing, Slot, TARGETS, WIDTHS, WIDTHS_VAR, corpus, env_list, env_list_of, note_verified,
     pointed_corpus, python_files, report_verified, repro_command, setting, swept, target_name,
-    target_of, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
+    target_names, target_of, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
 };
 pub(crate) use tally::{Hit, SHOWN, Tally, more, remainder, with_rest};
 

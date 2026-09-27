@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/list_operand_of_a_template_keeps_its_row/input.py
+---
+message = f"{[alpha_value, beta_value, gamma_value]} {describe(first)}"

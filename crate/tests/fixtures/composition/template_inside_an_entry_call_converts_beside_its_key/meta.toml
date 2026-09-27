@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `%` Template Inside an Entry's Call Converts Beside Its Key"
+
+description = '''
+At a 38-column budget, `"faultString"`'s value `wrap("%s" % (f(x),))` holds a template `prefer-fstring` rewrites as `f"{f(x)}"` inside the call, so the rewrite covers the argument rather than the whole value. **`reflow-collections` hangs a value beneath its key only where a rewrite covers that value whole, so the entry stays beside `"faultString":` and `wrap(` explodes around the f-string**, which a second pass leaves unchanged.
+'''

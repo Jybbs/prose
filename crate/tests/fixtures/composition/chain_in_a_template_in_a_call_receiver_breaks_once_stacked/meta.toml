@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain in a Template in a Call Receiver Breaks Once Stacked"
+
+description = '''
+At a 50-column budget, stacking `fetch(...).order_by(name).all()` inside a parenthesis pair sets the receiver `fetch(` on a row at indent 4, so the argument list `reflow-calls` explodes lands at indent 8, where the f-string `prefer-fstring` writes for `"%s:%s" % (gamma.get(key).strip().lower(), delta)` ends one column past the budget. **`stack-method-chains` reads whether a template inside the receiver converts from the `reflow-calls` walk over the receiver where the stack lands it**, so the template stays as written and its three-link inner chain breaks under the count trigger in the same pass.
+'''

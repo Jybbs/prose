@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/template_inside_an_entry_call_converts_beside_its_key/input.py
+---
+def collect(results, exc):
+    results.append(
+        {
+            "faultString": wrap(
+                f"{f(x)}"
+            )
+        }
+    )

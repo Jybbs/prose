@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Inside a Raw `%` Template Keeps Its Row"
+
+description = '''
+`prefer-fstring` rewrites `r"%s:%s" % ( type(exc), exc )` as `rf"{type(exc)}:{exc}"`, an edit that starts past the `r` both strings share and so inside the string token. **`reflow-calls` measures that edit across the whole token it starts in, and the row the f-string lands on reaches the 74-column budget exactly**, so `type(exc)` stays on its row and the template converts in one pass.
+'''

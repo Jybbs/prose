@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/dict_template_operand_expands_in_one_pass/input.py
+---
+message = "%(name)s: %(value)s" % {
+    "name"  : describe(
+        first_arg
+    ),
+    "value" : total
+}

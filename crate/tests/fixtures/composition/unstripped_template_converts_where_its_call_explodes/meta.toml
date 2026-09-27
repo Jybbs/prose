@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unstripped `%` Template Converts on the Row Its Call Explodes To"
+
+description = '''
+At a 68-column budget, the f-string `prefer-fstring` writes for `"%s:%s" % ( type(exc), exc )` still runs the row `results.append(` opens past the budget, so the call explodes and its dict lands on a row of its own. **`reflow-calls` measures the template again from the column the dict lands at, where the f-string fits, and leaves `type(exc)` unwalked**, so the template converts on that row in the same pass.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Parenthesized Template Receiver Keeps Its Links"
+
+description = '''
+`prefer-fstring` rewrites the parenthesized receiver `("%s:%s" % (gamma.get(key).strip().lower(), delta))` as one f-string, parentheses included, while `.upper()`, `.strip()`, and `.lower()` stay links. **`stack-method-chains` ends a chain's receiver only where a rewrite covers the dot opening a link**, so the three links trip the count trigger and take the full split beneath the 43-column f-string in the same pass.
+'''

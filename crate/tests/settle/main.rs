@@ -40,7 +40,7 @@ use rustc_hash::{FxBuildHasher, FxHashMap};
 use common::{
     Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified,
     pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
-    targets_or, unread, verifying, widths_or,
+    target_names, targets_or, unread, verifying, widths_or,
 };
 use trees::check_trees;
 
@@ -829,7 +829,7 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
         findings.total(),
         files.len(),
         lengths.iter().format(", "),
-        targets.iter().copied().map(target_name).format(", "),
+        target_names(&targets),
     );
 }
 

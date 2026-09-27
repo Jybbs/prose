@@ -1,0 +1,4 @@
+target-version = "3.14"
+
+[harness]
+rules = ["stack-method-chains", "prefer-fstring"]

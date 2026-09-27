@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/dict_template_operand_expands_in_one_pass/input.py
+---
+reflow-collections@35..78

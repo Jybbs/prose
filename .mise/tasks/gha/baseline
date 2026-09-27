@@ -1,6 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description = "Serve a pull request its baked delta baseline, or bake one in place when the restored stage is stale"
 
+bake_scripts=(.mise/lib .mise/tasks/rust/bake)
 parent="${PARENT:?}"
 restored="${RESTORED:-}"
 stage="${STAGE:?}"
@@ -9,12 +10,12 @@ tree="$RUNNER_TEMP/parent"
 git fetch --depth=1 -q origin "$parent"
 
 if [[ -n "$restored" ]] \
-  && git diff --quiet "$parent" HEAD -- .mise/lib .mise/tasks/rust/bake; then
+  && git diff --quiet "$parent" HEAD -- "${bake_scripts[@]}"; then
   baked="${restored##*-}"
   if [[ "$baked" == "$parent" ]] \
     || { git fetch --depth=1 -q origin "$baked" \
       && git diff --quiet "$baked" "$parent" -- \
-        .mise/config.toml .mise/lib .mise/tasks/rust/bake \
+        .mise/config.toml "${bake_scripts[@]}" \
         Cargo.lock Cargo.toml crate/Cargo.toml crate/src; }; then
     printf 'the stage baked at %s serves %s\n' "$baked" "$parent"
     exit 0

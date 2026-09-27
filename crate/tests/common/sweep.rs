@@ -189,6 +189,12 @@ pub(crate) fn target_name(target: Option<PythonVersion>) -> String {
     target.map_or_else(|| UNSET.to_owned(), |version| version.to_string())
 }
 
+/// The [`target_name`] of each of `targets`, comma-separated, which a
+/// sweep's summary and its failure report both print.
+pub(crate) fn target_names(targets: &[Option<PythonVersion>]) -> String {
+    targets.iter().copied().map(target_name).join(", ")
+}
+
 /// The `target-version` a [`TARGETS_VAR`] entry names, [`UNSET`] reading
 /// as none.
 pub(crate) fn target_of(token: &str) -> Option<PythonVersion> {

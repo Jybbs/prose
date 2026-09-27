@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/format_call_receiver_stacks_as_the_fstring_it_becomes/input.py
+---
+rows = (
+    f"{alpha}:{beta}"
+    .order_by(name)
+    .first()
+    .all()
+)

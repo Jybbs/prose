@@ -34,7 +34,9 @@ Where no trigger fires and the source still spans lines, the rule reads where th
 
 An exploded keyword's value that was already broken across lines re-indents to the keyword's column, unless it runs through a multi-line string. A value whose first row leaves a bracket open puts the rows beneath it one indent step inside that bracket and drops the closing bracket back to the column the value starts at, so the contents read as sitting inside the bracket rather than beside it.
 
-No trigger reaches a call inside an f-string or t-string replacement field, because a line break inside one is PEP 701 syntax that fails to parse before Python 3.12, so an over-wide interpolation is left for [[line-overflow]] to report.
+No trigger reaches a call inside an f-string or t-string replacement field, because a line break inside one is PEP 701 syntax that fails to parse before Python 3.12, so an over-wide interpolation is left for [[line-overflow]] to report. A call inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts on the row it lands on stays whole in the same way, since the conversion places it in a replacement field.
+
+<Fixture rule="composition" case="unstripped_template_call_keeps_its_row" />
 
 The rule changes layout alone, leaving argument order to [[alphabetize-siblings]], the spacing around `=` to [[align-equals]], and the trailing comma to [[strip-trailing-commas]].
 
