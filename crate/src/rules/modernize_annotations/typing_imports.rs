@@ -12,7 +12,7 @@ use crate::{
         binding::{bare_import_bound_name, from_import_bound_name, top_level_module},
         imports::Dropping,
     },
-    rules::reflow_imports::Folds,
+    rules::{modernize_annotations::ModernizeAnnotations, reflow_imports::Folds},
     source::Source,
 };
 
@@ -123,7 +123,7 @@ impl<'a> TypingImports<'a> {
             })
             .filter(|drop| !drop.dropped.is_empty())
             .collect();
-        folds.prune(source, &drops)
+        folds.prune(source, &drops, ModernizeAnnotations::SLUG)
     }
 }
 

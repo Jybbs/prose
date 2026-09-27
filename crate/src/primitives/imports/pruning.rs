@@ -17,6 +17,7 @@ use crate::{
         edit::{apply_inline_edits, whole_line_deletions},
         range::dropped_member_spans,
     },
+    rules::RuleId,
     source::Source,
 };
 
@@ -123,11 +124,14 @@ pub(crate) fn fold_landing(
 /// under a leading comment gives its line to the import `landing`
 /// names, and of two statements landing on one import the later takes
 /// it. The lines of every statement dropping whole and of every import
-/// a drop lands on clear together per [`whole_line_deletions`].
+/// a drop lands on clear together per [`whole_line_deletions`], leaving
+/// out a statement a suppression of `rule` pins, which neither lands nor
+/// clears.
 pub(crate) fn prune_import_statements(
     source: &Source,
     body: &[Stmt],
     drops: &[Dropping],
+    rule: RuleId,
     landing: impl Fn(usize, &dyn Fn(usize) -> bool) -> Option<usize>,
 ) -> Vec<Vec<Edit>> {
     let whole: FxHashSet<usize> = drops
@@ -136,10 +140,15 @@ pub(crate) fn prune_import_statements(
         .map(|drop| drop.slot)
         .collect();
     let survives = |slot: usize| !whole.contains(&slot);
+    let pinned = |slot: usize| source.suppression_map().pins(body[slot].range(), rule);
     let landings: BTreeMap<usize, usize> = drops
         .iter()
         .filter(|drop| drop.drops_every_alias() && comment_leads(source, drop.range.start()))
-        .filter_map(|drop| landing(drop.slot, &survives).map(|onto| (drop.slot, onto)))
+        .filter_map(|drop| {
+            landing(drop.slot, &survives)
+                .filter(|&onto| !pinned(drop.slot) && !pinned(onto))
+                .map(|onto| (drop.slot, onto))
+        })
         .collect();
     let claims: FxHashMap<usize, usize> =
         landings.iter().map(|(&lead, &onto)| (onto, lead)).collect();
@@ -159,7 +168,9 @@ pub(crate) fn prune_import_statements(
                 .get(&drop.slot)
                 .filter(|&&onto| claims[&onto] == drop.slot)
             else {
-                cleared.insert(drop.slot, index);
+                if !pinned(drop.slot) {
+                    cleared.insert(drop.slot, index);
+                }
                 return (drop.slot, Vec::new());
             };
             let span = line_span(body[onto].range());
@@ -212,7 +223,10 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{applied_text, parse};
+    use crate::{
+        rules::prune_inert_imports::PruneInertImports,
+        testing::{applied_text, parse},
+    };
 
     /// The drop of the aliases at `dropped` from the first import of
     /// `source`'s module body.
@@ -339,6 +353,11 @@ mod tests {
         &[(0, &[0][..])],
         "# c\nfrom p import b\n\nfrom p import d\n"
     )]
+    #[case::skipped_drop_stays_out_of_the_block(
+        "x = 1\n\n\nfrom p import a\n\nfrom q import b  # prose: skip\n\ny = 2\n",
+        &[(1, &[0][..]), (2, &[0][..])],
+        "x = 1\n\n\nfrom q import b  # prose: skip\n\ny = 2\n"
+    )]
     #[case::moved_import_clears_one_block_with_a_whole_drop(
         "# c\nfrom p import a\n\n\nfrom q import u\n\nfrom p import b\n\n\nx = 1\n",
         &[(0, &[0][..]), (1, &[0][..])],
@@ -364,9 +383,13 @@ mod tests {
             })
             .collect();
         let runs = merge_runs(&source);
-        let groups = prune_import_statements(&source, body, &drops, |slot, survives| {
-            fold_landing(&source, body, &runs, &[], true, slot, survives)
-        });
+        let groups = prune_import_statements(
+            &source,
+            body,
+            &drops,
+            PruneInertImports::SLUG,
+            |slot, survives| fold_landing(&source, body, &runs, &[], true, slot, survives),
+        );
         let pruned = applied_text(&source, groups.concat());
         assert_eq!(pruned, expected);
     }

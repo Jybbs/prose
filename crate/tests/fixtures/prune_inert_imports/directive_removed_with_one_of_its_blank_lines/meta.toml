@@ -3,5 +3,5 @@ previewable = true
 title       = "A Directive Is Removed With One of the Blank Lines Around It"
 
 description = '''
-The module docstring sits one blank line above `from __future__ import annotations`, and `import logging` sits one blank line below it. `target-version = "3.14"` defers every annotation, so the directive defers nothing. **The directive is removed together with one of the two blank lines around it**, so one blank line separates the docstring from `import logging`, the spacing the source wrote on each side of the directive.
+The module docstring sits one blank line above `from __future__ import annotations`, and `import logging` sits one blank line below it. `target-version = "3.14"` defers annotation evaluation until something reads the annotations, per PEP 749, and `str` and `None` both resolve whenever that happens. **The directive is removed together with one of the two blank lines around it**, so one blank line separates the docstring from `import logging`, the spacing the source wrote on each side of the directive.
 '''

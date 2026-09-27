@@ -18,8 +18,9 @@ use crate::{
 /// by blank rows clear as one block, each later member taking the blank
 /// run above it. The block takes the narrower of the runs around it, the
 /// one above on a tie, or the only one where it opens or closes its
-/// notebook cell or module, and a block whose last row has no line break
-/// also clears the break closing the row above its run.
+/// notebook cell or module or where a `\` join holds the run above, and
+/// a block whose last row has no line break also clears the break
+/// closing the row above its run.
 pub(crate) fn whole_line_deletions(
     source: &Source,
     ranges: impl IntoIterator<Item = TextRange>,

@@ -7,7 +7,7 @@
 //! by start, the `forward_*` functions move an offset, a range, or cell
 //! boundaries through a `SourceMap`, `shifted_past` reads one for a
 //! boundary no edit replaced, and `whole_line_deletions` clears dropped
-//! statements with the blank runs around them.
+//! statements, keeping one blank run where two would meet.
 
 use std::borrow::Cow;
 
