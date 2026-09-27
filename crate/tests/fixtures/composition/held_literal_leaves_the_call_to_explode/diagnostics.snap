@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/held_literal_leaves_the_call_to_explode/input.py
+---
+reflow-calls@15..44

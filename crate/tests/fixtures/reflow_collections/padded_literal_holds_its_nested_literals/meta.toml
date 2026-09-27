@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Padded Literal Left on Its Row Holds the Literals Inside It"
+
+description = '''
+`SORT_KEY_CALLS` and the `"calls"` value in `SORT_KEYS` are each a tuple written on one row with padding before an inner `)`, so each overflows the `46`-column budget as written while its rebuild at the canonical spacing fits. **Each tuple stays on its row whole, the `(1,-1)` inside it included**, because the fit test reads the narrower of the two spellings and leaves the tuple as written, and a nested literal expanding would spread that tuple across rows for the next run to expand. `SORT_KEYS` itself still expands one entry per row, where `"calls"` hangs its value below the `:` because that row overflows, and `"cumulative"` expands its value because even its rebuild overflows.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Empty Call in the Tail Leaves the Earlier Call to Explode"
+
+description = '''
+The 92-column assignment to `real_output_file` calls `getattr(formatter_instance, "encoding", None)` first, and its tail calls `BytesIO()` and `StringIO()`, neither carrying an argument. **`getattr` explodes one argument per row**, because an empty argument list has nothing to lay out and never breaks, so the whole tail counts against the call's row.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Docstring Row `wrap-docstrings` Leaves as Written Is Reported"
+
+description = '''
+Both paragraphs of `fetch`'s docstring run past the 76-column docstring budget, and so does the URL row between them. **Only the URL row is reported**, because `wrap-docstrings` rewraps both paragraphs to the budget and leaves the URL row as written, since the URL holds no space to break at.
+'''

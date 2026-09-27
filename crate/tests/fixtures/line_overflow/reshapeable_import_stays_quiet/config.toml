@@ -1,4 +1,4 @@
 import-line-length = 20
 
-[rules]
-reflow-imports = false
+[harness]
+rules = ["reflow-imports"]

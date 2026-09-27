@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/count_exploded_call_expands_its_nested_list/input.py
+---
+reflow-collections@5..99
