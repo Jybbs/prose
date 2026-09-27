@@ -7,7 +7,7 @@ input_file: crate/tests/fixtures/line_overflow/second_literal_carries_the_break/
   {
     "code": "line-overflow",
     "end_location": {
-      "column": 76,
+      "column": 74,
       "row": 1
     },
     "fix": {
@@ -23,6 +23,6 @@ input_file: crate/tests/fixtures/line_overflow/second_literal_carries_the_break/
       "column": 1,
       "row": 1
     },
-    "message": "Line is 75 columns, over the 40-column budget, with a legal reshape at the string literal"
+    "message": "Line is 73 columns, over the 40-column budget, with a legal reshape at the string literal"
   }
 ]

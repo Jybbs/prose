@@ -1,6 +1,0 @@
----
-source: crate/tests/integration.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/reflow_calls/tail_opener_bounds_the_rejoin_measure/input.py
----
-reflow-calls@21..36

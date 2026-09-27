@@ -4,4 +4,3 @@ expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/call_tail_measures_a_format_call_as_its_fstring/input.py
 ---
 prefer-fstring@56..78
-reflow-calls@76..77

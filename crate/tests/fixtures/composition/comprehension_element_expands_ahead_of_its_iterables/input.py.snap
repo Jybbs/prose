@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/comprehension_element_expands_ahead_of_its_iterables/input.py
+---
+table = [[
+    row, column
+] for row in (first_row, second_row) for column in (first_column, second_column)]

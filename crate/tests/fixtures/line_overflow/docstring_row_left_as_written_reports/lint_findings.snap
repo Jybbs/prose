@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/docstring_row_left_as_written_reports/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 97,
+      "row": 6
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 6
+    },
+    "message": "Line is 96 columns, over the 76-column budget, with no legal reshape"
+  }
+]
