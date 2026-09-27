@@ -18,10 +18,8 @@
 //! break.
 //! `spine` divides a chain and `render` builds the replacement.
 
-use std::cell::OnceCell;
-
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr};
+use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
@@ -34,13 +32,13 @@ use crate::{
         layout::item_indent,
         reserve,
         walk::{
-            Descent, ParentedCollector, ParentedProbe, walk_parented_arguments, walk_parented_expr,
-            walk_parented_exprs,
+            Interpolations, ParentedCollector, ParentedProbe, walk_parented_arguments,
+            walk_parented_expr, walk_parented_exprs,
         },
     },
     rules::{
         Rule, RuleId,
-        reflow_calls::{ReflowCalls, Seat, Seating},
+        reflow_calls::{LazySeating, ReflowCalls, Seat},
     },
     source::Source,
 };
@@ -50,7 +48,7 @@ mod spine;
 
 use spine::Chain;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
     max_links: Option<usize>,
@@ -78,10 +76,11 @@ impl StackMethodChains {
             reservations: config.equals_reservations(),
         }
     }
-}
 
-impl Rule for StackMethodChains {
-    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+    /// Walks `source` for the break each over-long or over-count chain
+    /// needs, one group per chain, the walk [`Source::chain_breaks`]
+    /// holds.
+    pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let mut breaker = Breaker {
@@ -89,14 +88,19 @@ impl Rule for StackMethodChains {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
-            reflow_calls: &self.reflow_calls,
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
-            seating: OnceCell::new(),
+            seating: LazySeating::new(&self.reflow_calls, source),
             source,
         };
         walk_parented_exprs(source.ast(), &mut breaker);
         singleton_groups(breaker.edits)
+    }
+}
+
+impl Rule for StackMethodChains {
+    fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
+        source.chain_breaks(*self).into_owned()
     }
 
     fn id(&self) -> RuleId {
@@ -113,10 +117,9 @@ struct Breaker<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
-    reflow_calls: &'a ReflowCalls,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
-    seating: OnceCell<Seating>,
+    seating: LazySeating<'a>,
     source: &'a Source,
 }
 
@@ -164,13 +167,6 @@ impl<'a> Breaker<'a> {
         Some(text)
     }
 
-    /// True where `expr` sits inside an interpolation the `reflow_calls`
-    /// walk leaves for `prefer-fstring` to convert.
-    fn converts(&self, expr: &Expr) -> bool {
-        self.reflow_calls.forecasts(self.source, expr.range())
-            && self.seating().converts(expr.range())
-    }
-
     /// The columns each link's dot hangs past the head's indent, `None`
     /// where the receiver runs wider than `max_shift` allows and the
     /// chain takes the full split.
@@ -192,10 +188,13 @@ impl<'a> Breaker<'a> {
         segment: usize,
     ) -> Vec<(&'a Expr, AnyNodeRef<'a>, Chain<'a>)> {
         let source = self.source;
-        let mut nested =
-            ParentedCollector::new(Descent::Over, Descent::Over, |expr: &'a Expr, parent| {
+        let mut nested = ParentedCollector::new(
+            Interpolations::Skip,
+            TraversalSignal::Skip,
+            |expr: &'a Expr, parent| {
                 outermost_chain(source, expr, parent).map(|chain| (expr, parent, chain))
-            });
+            },
+        );
         match segment.checked_sub(1) {
             None => walk_parented_expr(
                 chain.receiver,
@@ -219,7 +218,7 @@ impl<'a> Breaker<'a> {
             && ancestors
                 .iter()
                 .any(|node| matches!(node, AnyNodeRef::Arguments(_)))
-            && let Some(seat) = self.seating().seat(expr.range())
+            && let Some(seat) = self.seating.seat(expr.range())
         {
             return seat;
         }
@@ -229,13 +228,6 @@ impl<'a> Breaker<'a> {
             line_shift: 0,
             tail: 0,
         }
-    }
-
-    /// What the `reflow_calls` walk over this source records, the walk
-    /// running the first time a chain reads it.
-    fn seating(&self) -> &Seating {
-        self.seating
-            .get_or_init(|| self.reflow_calls.seating(self.source))
     }
 
     /// `chain`'s segment at `segment`, settled and measured from the
@@ -278,7 +270,7 @@ impl<'a> Breaker<'a> {
             };
             match self
                 .broken(expr, &nested, nested_range, nested_seat)
-                .filter(|_| !seated && !self.converts(expr))
+                .filter(|_| !seated && !self.seating.converts(expr.range()))
             {
                 Some(text) => out.push_str(&text),
                 None => out.push_str(&joins.settled(self.source, nested_range)),
@@ -298,29 +290,29 @@ impl<'a> Breaker<'a> {
 }
 
 impl<'a> ParentedProbe<'a> for Breaker<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     fn probe(
         &mut self,
         expr: &'a Expr,
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         let Some(chain) = outermost_chain(self.source, expr, parent) else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
-        if self.converts(expr) {
-            return Descent::Over;
+        if self.seating.converts(expr.range()) {
+            return TraversalSignal::Skip;
         }
         let range = self.source.paren_aware_range(expr.into(), parent);
         let Some(edit) = self
             .broken(expr, &chain, range, self.placed(expr, range, ancestors))
             .and_then(|text| narrowed_replacement(self.source, range, text))
         else {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         };
         insert_edit(&mut self.edits, edit);
-        Descent::Over
+        TraversalSignal::Skip
     }
 }
 

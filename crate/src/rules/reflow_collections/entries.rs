@@ -26,7 +26,7 @@ use crate::{
         travel::Landing,
     },
     rules::{
-        align_colons::AlignColons, alphabetize_siblings::sets_dividers,
+        align_colons::AlignColons, alphabetize_siblings::sets_dividers, reflow_calls::Reshaper,
         stack_adjacent_strings::concatenated_run,
     },
 };
@@ -34,21 +34,85 @@ use crate::{
 /// One dict entry as the expand path writes it: its key text and the
 /// width that key settles to, `None` and zero for a `**` unpacking,
 /// the entry's text and its display width at the canonical `": "`,
-/// and the offset its value starts at.
+/// and the offset its value starts at. `nested` holds where the value,
+/// written on one row, spans rows only because a literal inside it
+/// takes the collection layout where it lands, or because the value is
+/// a `%` or `str.format()` template holding a call that explodes where a
+/// hung row would let `prefer-fstring` convert it.
 struct Entry<'a> {
     key: Option<Cow<'a, str>>,
     key_width: usize,
+    nested: bool,
     text: Cow<'a, str>,
     value_start: TextSize,
     width: usize,
 }
 
+/// The text a dict entry keeps between its key and its value, the
+/// `align-colons`-padded gap the source wrote or the canonical `": "`.
+#[derive(Clone, Copy)]
+enum ColonGap<'a> {
+    Canonical,
+    Padded(&'a str),
+}
+
+impl<'a> ColonGap<'a> {
+    /// The gap an entry keeps where `written` is the source text between
+    /// its key and its value. A `rewritten_key` drops the source slice's
+    /// alignment padding, so the padded gap holds only while the key
+    /// passes through unchanged.
+    fn of(written: &'a str, rewritten_key: bool) -> Self {
+        if is_align_colons_gap(written) && !rewritten_key {
+            Self::Padded(written)
+        } else {
+            Self::Canonical
+        }
+    }
+
+    /// The columns a value lands past, the canonical `": "` it is measured
+    /// at for a value written on one row and the padded gap the text
+    /// keeps for one whose rows move `across_rows`.
+    fn landing_width(self, across_rows: bool) -> usize {
+        match self {
+            Self::Padded(gap) if across_rows => display_width(gap),
+            _ => CANONICAL_SEPARATOR,
+        }
+    }
+
+    /// The gap's text.
+    fn text(self) -> &'a str {
+        match self {
+            Self::Canonical => ": ",
+            Self::Padded(gap) => gap,
+        }
+    }
+}
+
 impl<'a> Layouter<'a> {
+    /// True where `text`, the form `value` over `range` takes beside its
+    /// key, spans rows, a forecast `prefer-fstring` rewrite covers `range`
+    /// whole, and the value written at the hung column one step past
+    /// `indent` stays on one row, where the rewrite converts.
+    fn converts_when_hung(
+        &self,
+        value: &Expr,
+        parent: AnyNodeRef,
+        range: TextRange,
+        text: &str,
+        indent: usize,
+        tail: usize,
+    ) -> bool {
+        let hang_column = indent + INDENT_STEP;
+        spans_rows(text)
+            && self.one_row.rewrite_covering(range).is_some()
+            && !spans_rows(&self.serialize_expr(value, parent, hang_column, hang_column, tail))
+    }
+
     /// Builds the [`Entry`] for a dict item written as `key: value` or
     /// `**value`, its width counted at the canonical `": "` separator.
     /// The value is measured and lands at `seat` where one is given, and
     /// otherwise is measured past the key's last row and the canonical
-    /// separator while landing past the separator the text keeps. A
+    /// separator, landing where [`ColonGap::landing_width`] places it. A
     /// borrowed key and value over an `align-colons`-padded gap return
     /// the source slice whole.
     fn entry(
@@ -66,49 +130,60 @@ impl<'a> Layouter<'a> {
             return Entry {
                 key: None,
                 key_width: 0,
+                nested: false,
                 text: Cow::Owned(format!("**{value_text}")),
                 value_start: value_range.start(),
                 width,
             };
         };
         let key_text = self.repaired_key(key, parent, indent);
-        let gap = self.key_value_gap(key.end(), value_range.start());
-        // A rewritten key drops the source slice's alignment padding, so
-        // the padded separator and the borrowed round-trip both hold only
-        // while the key passes through unchanged.
-        let padded = is_align_colons_gap(gap) && matches!(key_text, Cow::Borrowed(_));
-        let separator = if padded { gap } else { ": " };
+        let gap = ColonGap::of(
+            self.key_value_gap(key.end(), value_range.start()),
+            matches!(key_text, Cow::Owned(_)),
+        );
         let key_end = end_column(&key_text, indent);
+        let across_rows = self.source.contains_line_break(value_range);
         let landing = Landing {
-            column: seat.unwrap_or(key_end + display_width(separator)),
+            column: seat.unwrap_or(key_end + gap.landing_width(across_rows)),
             indent,
             item: key.start(),
         };
-        let value_text = self
-            .replacement_for(
-                &item.value,
-                parent,
-                seat.unwrap_or(key_end + CANONICAL_SEPARATOR),
-                indent,
-                tail,
-            )
-            .map_or_else(
-                || self.placed_slice(&item.value, parent, landing, tail),
-                Cow::Owned,
-            );
+        let (value_text, nested) = match self.replacement_for(
+            &item.value,
+            parent,
+            seat.unwrap_or(key_end + CANONICAL_SEPARATOR),
+            indent,
+            tail,
+        ) {
+            Some(text) => (Cow::Owned(text), false),
+            None => {
+                let text = self.placed_slice(&item.value, parent, landing, tail);
+                let nested = !across_rows
+                    && (self.splits_nested(&item.value, value_range, &text, landing, tail)
+                        || self.converts_when_hung(
+                            &item.value,
+                            parent,
+                            value_range,
+                            &text,
+                            indent,
+                            tail,
+                        ));
+                (text, nested)
+            }
+        };
         let key_width = self.text_width(&key_text, key.range());
         let width = key_width + CANONICAL_SEPARATOR + self.text_width(&value_text, value_range);
-        let text = if padded && matches!(value_text, Cow::Borrowed(_)) {
-            Cow::Borrowed(
+        let text = match (gap, &value_text) {
+            (ColonGap::Padded(_), Cow::Borrowed(_)) => Cow::Borrowed(
                 self.source
                     .slice(TextRange::new(key.start(), value_range.end())),
-            )
-        } else {
-            Cow::Owned(format!("{key_text}{separator}{value_text}"))
+            ),
+            _ => Cow::Owned(format!("{key_text}{}{value_text}", gap.text())),
         };
         Entry {
             key: Some(key_text),
             key_width,
+            nested,
             text,
             value_start: value_range.start(),
             width,
@@ -305,9 +380,31 @@ impl<'a> Layouter<'a> {
         }
     }
 
+    /// True where `text`, the form `value` over `range` takes placed at
+    /// `landing` with `tail` columns after it, spans rows only because a
+    /// literal inside it takes the collection layout.
+    fn splits_nested(
+        &self,
+        value: &Expr,
+        range: TextRange,
+        text: &str,
+        landing: Landing,
+        tail: usize,
+    ) -> bool {
+        spans_rows(text)
+            && Reshaper {
+                layout: None,
+                ..self.reshaper()
+            }
+            .reshaped(value, range, landing, tail)
+            .is_none_or(|text| !spans_rows(&text))
+    }
+
     /// Collects `dict`'s entries at `indent`, charging each the separator
     /// `tail` names for its slot and hanging it at `:` where that row
-    /// overflows at the canonical `": "`. Where `align-colons` is on, each
+    /// overflows at the canonical `": "`. An entry whose value is
+    /// [`Entry::nested`] hangs as well, wherever the hung value fits on
+    /// one row. Where `align-colons` is on, each
     /// value is then measured at the column that rule seats it at once the
     /// expanded rows align in the order `order` leaves them.
     pub(super) fn gather_entries(
@@ -324,11 +421,17 @@ impl<'a> Layouter<'a> {
             .map(|(i, item)| {
                 let tail = tail(i, dict.len(), item.range());
                 let mut entry = self.entry(item, node, indent, tail, None);
+                let overflows = entry.nested
+                    || (!spans_rows(&entry.text)
+                        && indent + entry.width + tail > self.code_line_length);
                 if self.wrap_dict_entries
-                    && !spans_rows(&entry.text)
-                    && indent + entry.width + tail > self.code_line_length
+                    && overflows
                     && let Some(key_text) = &entry.key
                     && let Some(hung) = self.hang_dict_value(key_text, item, node, indent, tail)
+                    && (!entry.nested
+                        || hung
+                            .split_once(self.newline)
+                            .is_some_and(|(_, value)| !spans_rows(value)))
                 {
                     entry.text = Cow::Owned(hung);
                 }
@@ -345,5 +448,33 @@ impl<'a> Layouter<'a> {
                 let range = TextRange::new(self.entry_start(item, node), item.end());
                 (entry.text, entry.width, false, range)
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::canonical(": ", false, ": ", 2)]
+    #[case::padded("   : ", false, "   : ", 5)]
+    #[case::padded_beside_a_rewritten_key("   : ", true, ": ", 2)]
+    fn colon_gap_lands_a_value_past_its_padding_only_where_its_rows_move(
+        #[case] gap: &str,
+        #[case] rewritten_key: bool,
+        #[case] text: &str,
+        #[case] across_rows: usize,
+    ) {
+        let colon = ColonGap::of(gap, rewritten_key);
+        assert_eq!(
+            (
+                colon.text(),
+                colon.landing_width(false),
+                colon.landing_width(true),
+            ),
+            (text, CANONICAL_SEPARATOR, across_rows),
+        );
     }
 }

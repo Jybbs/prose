@@ -16,7 +16,7 @@ use crate::{
         fracture::outermost,
         inline::rows_within,
         padding::Stranding,
-        walk::{Descent, filter_map_over_parented_exprs},
+        walk::{Interpolations, filter_map_over_parented_exprs},
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -101,7 +101,7 @@ impl PreferFstring {
             return Vec::new();
         }
         let mut rewrites =
-            filter_map_over_parented_exprs(source.ast(), Descent::Over, |expr, parent| {
+            filter_map_over_parented_exprs(source.ast(), Interpolations::Skip, |expr, parent| {
                 self.rewrite(source, expr, parent)
             });
         rewrites.sort_unstable_by_key(|(_, edit)| edit.start());

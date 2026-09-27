@@ -2,21 +2,22 @@
 //! `Config::code_line_length` budget. A multi-line subscript,
 //! comprehension, or dict key whose inline form fits rejoins onto one
 //! line, an overflowing single-line literal expands one entry per
-//! line, a dict over `max_dict_entries` expands whatever its width,
-//! and an over-wide dict entry breaks at `:` and hangs its value. A
-//! comment, a replacement field, or a folded multi-line string holds a
-//! construct at its source shape, a held member travels with the row
-//! it lands on, and `keep_multiline_literals` re-expands an authored
-//! flush column rather than joining it. Every measure reads the width
-//! the padding rule and `prefer-fstring` settle a value at and the
-//! separator `alphabetize-siblings` leaves closing its row, placing the
-//! value at the column `align-equals` shifts it to or, inside an
-//! expanded dict, the column `align-colons` seats it at.
+//! line, as does one holding a dict over `max_dict_entries` or a call
+//! the `max_args` trigger explodes, whatever the literal's width, and an
+//! over-wide dict entry breaks at `:` and hangs its value. A comment, a
+//! replacement field, or a folded multi-line string holds a construct
+//! at its source shape, a held member travels with the row it lands on,
+//! and `keep_multiline_literals` re-expands an authored flush column
+//! rather than joining it. Every measure reads the width the padding
+//! rule and `prefer-fstring` settle a value at and the separator
+//! `alphabetize-siblings` leaves closing its row, placing the value at
+//! the column `align-equals` shifts it to or, inside an expanded dict,
+//! the column `align-colons` seats it at.
 
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, Expr};
+use ruff_python_ast::{AnyNodeRef, Expr, visitor::source_order::TraversalSignal};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
@@ -26,14 +27,19 @@ use crate::{
         call_keywords::{CallTargets, module_call_params},
         edit::{narrowed_replacement, placed_head, singleton_groups},
         inline::{end_column, indent_width, last_line, spans_rows},
-        layout::{is_collapsible, is_layoutable, requires_expand},
+        layout::is_collapsible,
         one_row,
         padding::{self, Stranding},
         reserve,
         travel::Landing,
-        walk::{Descent, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
+        walk::{Interpolations, ParentedProbe, walk_parented_exprs},
     },
-    rules::{Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring},
+    rules::{
+        Rule, RuleId,
+        alphabetize_siblings::Reorders,
+        prefer_fstring::PreferFstring,
+        reflow_calls::{CollectionLayout, LazySeating, ReflowCalls},
+    },
     source::Source,
 };
 
@@ -49,10 +55,10 @@ const CANONICAL_SEPARATOR: usize = 2;
 pub(crate) struct ReflowCollections {
     code_line_length: usize,
     colons: Option<aligner::Settings>,
-    explode: bool,
     fstrings: PreferFstring,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
+    reflow_calls: ReflowCalls,
     reorders: Reorders,
     reservations: reserve::Reservations,
     stranding: Stranding,
@@ -75,10 +81,10 @@ impl ReflowCollections {
                 .align_colons
                 .enabled
                 .then(|| config.colon_settings()),
-            explode: rules.explode,
             fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
+            reflow_calls: config.call_seating(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
             stranding: config.stranded_padding(),
@@ -89,18 +95,6 @@ impl ReflowCollections {
 
 impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let body = &source.ast().body;
-        // The count cap reads the `explode` facet, so a cleared `explode`
-        // leaves no tripping dicts and the cap goes inert. Precomputed
-        // once for the per-node containment scan.
-        let count_cap = self.one_row.dict_entry_cap();
-        let tripping_dicts = count_cap.map_or_else(Vec::new, |cap| {
-            filter_map_over_exprs(body, Descent::Over, |expr| {
-                expr.as_dict_expr()
-                    .filter(|dict| dict.len() > cap)
-                    .map(Ranged::range)
-            })
-        });
         let targets = module_call_params(source);
         let reservations = source.columns(self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
@@ -110,16 +104,15 @@ impl Rule for ReflowCollections {
             code_line_length: self.code_line_length,
             colons: self.colons,
             edits: Vec::new(),
-            explode: self.explode,
             max_atomics: self.max_atomics,
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets).forecasting(&rewrites),
             padding: &padding,
             reorders: self.reorders,
             reservations: &reservations,
+            seating: LazySeating::new(&self.reflow_calls, source),
             source,
             targets: &targets,
-            tripping_dicts,
             wrap_dict_entries: self.wrap_dict_entries,
         };
         walk_parented_exprs(source.ast(), &mut layouter);
@@ -135,16 +128,15 @@ struct Layouter<'a> {
     pub(super) code_line_length: usize,
     pub(super) colons: Option<aligner::Settings>,
     pub(super) edits: Vec<Edit>,
-    pub(super) explode: bool,
     pub(super) max_atomics: usize,
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) padding: &'a [Edit],
     pub(super) reorders: Reorders,
     pub(super) reservations: &'a reserve::Columns,
+    pub(super) seating: LazySeating<'a>,
     pub(super) source: &'a Source,
     pub(super) targets: &'a CallTargets<'a>,
-    pub(super) tripping_dicts: Vec<TextRange>,
     pub(super) wrap_dict_entries: bool,
 }
 
@@ -154,11 +146,13 @@ impl<'a> Layouter<'a> {
     /// closing bracket lands on expand. A multi-line subscript or
     /// comprehension that fits rejoins, while a multi-item `Dict`,
     /// `List`, `Set`, or parenthesized `Tuple` that overflows expands,
-    /// as does a `Dict` over `max_dict_entries` and a literal already
-    /// laid out as a flush column. A subscript and a comprehension only
-    /// ever rejoin. The `explode` facet gates every expansion, and a set
+    /// as does one a later rule reopens and a literal already laid out
+    /// as a flush column. A subscript and a comprehension only ever
+    /// rejoin. The `explode` facet gates every expansion, and a set
     /// `keep_multiline_literals` suppresses the literal rejoin, a
-    /// cleared `explode` returning `None`.
+    /// cleared `explode` returning `None`. A literal inside an
+    /// interpolation the `reflow-calls` walk leaves for `prefer-fstring`
+    /// stays on its row.
     fn replacement_for(
         &self,
         expr: &Expr,
@@ -167,27 +161,17 @@ impl<'a> Layouter<'a> {
         indent: usize,
         tail: usize,
     ) -> Option<String> {
-        let range = expr.range();
         if let Some(inline) = self
             .one_row
             .rejoined(self.source, expr, expr.into(), column, tail)
         {
             return Some(inline.into_owned());
         }
-        if !is_layoutable(expr) || self.source.intersects_comment(range) {
-            return None;
-        }
-        let expandable = requires_expand(expr);
-        let over_count = self.has_over_count_dict(expr);
-        if self.source.contains_line_break(range) {
-            return (self.explode && expandable).then(|| self.expand(expr, parent, indent));
-        }
-        (self.explode
-            && expandable
-            && (over_count
-                || column + self.narrowest_width(expr, parent, range) + tail
-                    > self.code_line_length))
-            .then(|| self.expand(expr, parent, indent))
+        (!self.seating.converts(expr.range())
+            && self
+                .one_row
+                .expands(self.source, expr, parent, column, tail, self.padding))
+        .then(|| self.expand(expr, parent, indent))
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand with
@@ -217,19 +201,28 @@ impl<'a> Layouter<'a> {
     }
 }
 
+impl CollectionLayout for Layouter<'_> {
+    /// Lays out `expr` with itself as the parent node, so no dunder-list
+    /// sort applies to its entries.
+    fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String> {
+        self.replacement_for(expr, expr.into(), column, indent, tail)
+    }
+}
+
 impl<'a> ParentedProbe<'a> for Layouter<'a> {
-    const INTERPOLATIONS: Descent = Descent::Over;
+    const INTERPOLATIONS: Interpolations = Interpolations::Skip;
 
     /// Descends past any expression the rule does not lay out or leaves
-    /// as written.
+    /// as written, except a literal [`one_row::Settings::holds_its_row`]
+    /// holds.
     fn probe(
         &mut self,
         expr: &'a Expr,
         parent: AnyNodeRef<'a>,
         ancestors: &[AnyNodeRef<'a>],
-    ) -> Descent {
+    ) -> TraversalSignal {
         if !is_collapsible(expr) {
-            return Descent::Into;
+            return TraversalSignal::Traverse;
         }
         let range = expr.range();
         let start = range.start();
@@ -266,11 +259,15 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         let grandparent = ancestors[ancestors.len().saturating_sub(2)];
         let tail = self.row_tail(expr, parent, grandparent);
         let Some(text) = self.replacement_for(expr, parent, column, indent, tail) else {
-            return Descent::Into;
+            return if self.one_row.holds_its_row(self.source, expr) {
+                TraversalSignal::Skip
+            } else {
+                TraversalSignal::Traverse
+            };
         };
         self.edits
             .extend(narrowed_replacement(self.source, range, text));
-        Descent::Over
+        TraversalSignal::Skip
     }
 }
 

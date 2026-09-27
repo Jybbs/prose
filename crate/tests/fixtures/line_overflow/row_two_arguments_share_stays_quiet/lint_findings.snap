@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/line_overflow/row_two_arguments_share_stays_quiet/input.py
+---
+[
+  {
+    "code": "line-overflow",
+    "end_location": {
+      "column": 45,
+      "row": 7
+    },
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 7
+    },
+    "message": "Line is 44 columns, over the 40-column budget, with no legal reshape"
+  }
+]
