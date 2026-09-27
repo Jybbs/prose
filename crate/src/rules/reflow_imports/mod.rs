@@ -25,7 +25,7 @@ use crate::{
     primitives::{
         aligner,
         comments::noqa_marker,
-        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletion},
+        edit::{apply_inline_edits, narrowed_replacement, singleton_groups, whole_line_deletions},
         imports::IMPORT_KEYWORD_WIDTH,
         inline::display_width,
         layout::pack,
@@ -150,11 +150,11 @@ impl<'a> Layout<'a> {
         }
     }
 
-    /// Folds every member of `group` into its first statement, laying
-    /// the gathered roster out under the shared head and clearing each
-    /// folded member's line. A group whose members already read that way
-    /// emits nothing.
-    fn merge_group(&mut self, body: &'a [Stmt], group: &[usize]) {
+    /// Returns the rewrite laying the gathered roster of `group` out under
+    /// the shared head of its first statement, empty where that statement
+    /// already reads so, or `None` where the members already read that way
+    /// once their lines clear and the group emits nothing.
+    fn merge_head(&self, body: &'a [Stmt], group: &[usize]) -> Option<Vec<Edit>> {
         let [lead, .., last] = group else {
             unreachable!("invariant: a merge group holds two or more members");
         };
@@ -167,17 +167,17 @@ impl<'a> Layout<'a> {
             .and_then(|rows| self.packed_edit(node, &names, &rows))
             .into_iter()
             .collect();
-        edits.extend(
-            group[1..]
-                .iter()
-                .map(|&slot| whole_line_deletion(self.source, body[slot].range())),
-        );
+        let head = edits.len();
+        edits.extend(group[1..].iter().map(|&slot| {
+            Edit::range_deletion(self.source.full_lines_within_cell(body[slot].range()))
+        }));
         let span = self
             .source
             .full_lines_within_cell(TextRange::new(body[*lead].start(), body[*last].end()));
-        if apply_inline_edits(self.source, span, &edits) != self.source.slice(span) {
-            self.groups.push(edits);
-        }
+        (apply_inline_edits(self.source, span, &edits) != self.source.slice(span)).then(|| {
+            edits.truncate(head);
+            edits
+        })
     }
 
     /// Emits the packed rewrite of `node` when its roster overruns the
@@ -231,7 +231,9 @@ impl<'a> Layout<'a> {
     /// splits every comma-joined bare import, one fix group apiece. At
     /// module scope a repeated module gathers across the constants
     /// `band-constants` hoists from between its statements, whereas under
-    /// `keeps_order` it gathers only across consecutive statements.
+    /// `keeps_order` it gathers only across consecutive statements. The
+    /// folded members of every group that emits clear together per
+    /// [`whole_line_deletions`].
     fn process_body(
         &mut self,
         body: &'a [Stmt],
@@ -265,8 +267,29 @@ impl<'a> Layout<'a> {
                 self.forecast(settings, body, outer, &runs, &groups)
             });
         let gathered: FxHashSet<usize> = groups.iter().flatten().copied().collect();
-        for group in &groups {
-            self.merge_group(body, group);
+        let merges: Vec<(&[usize], Vec<Edit>)> = groups
+            .iter()
+            .filter_map(|group| Some((group.as_slice(), self.merge_head(body, group)?)))
+            .collect();
+        let folded: Vec<usize> = merges
+            .iter()
+            .flat_map(|(group, _)| &group[1..])
+            .copied()
+            .sorted_unstable()
+            .collect();
+        let deletions = whole_line_deletions(
+            source,
+            folded.iter().map(|&slot| body[slot].range()),
+            ReflowImports::SLUG,
+        );
+        let mut deletions: FxHashMap<usize, Edit> = folded.into_iter().zip(deletions).collect();
+        for (group, mut edits) in merges {
+            edits.extend(group[1..].iter().map(|slot| {
+                deletions
+                    .remove(slot)
+                    .expect("invariant: every folded member holds a deletion")
+            }));
+            self.groups.push(edits);
         }
         for (slot, stmt) in body.iter().enumerate() {
             match stmt {
@@ -395,7 +418,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{applied_text, parse};
 
     /// The rule with every facet on and a ten-column import budget,
     /// forecasting no aligned column.
@@ -412,6 +435,33 @@ mod tests {
             split_multi_module: true,
             stranding: Config::default().stranded_padding(),
         }
+    }
+
+    #[rstest]
+    #[case::repeated_member_under_a_wide_budget(
+        88,
+        "from p import a, b\n\n\nfrom p import b\n\nvalue = a, b\n",
+        "from p import a, b\n\n\nvalue = a, b\n"
+    )]
+    #[case::below_a_group_that_emits_nothing(
+        10,
+        "from e import x\nfrom d import A\nfrom d import B\n\n\nfrom e import y\n\nvalue = 1\n",
+        "from e import x\nfrom e import y\nfrom d import A\nfrom d import B\n\n\nvalue = 1\n"
+    )]
+    fn a_folded_member_clears_with_the_narrower_run_beside_it(
+        #[case] import_line_length: usize,
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let rule = ReflowImports {
+            import_line_length,
+            ..tight_rule()
+        };
+        assert_eq!(
+            applied_text(&source, rule.apply(&source).concat()),
+            expected
+        );
     }
 
     #[rstest]

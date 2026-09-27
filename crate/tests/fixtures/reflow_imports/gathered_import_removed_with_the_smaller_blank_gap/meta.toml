@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Gathered Import Is Removed With the Smaller of Its Two Blank Gaps"
+
+description = '''
+Two blank lines separate `from pkg import alpha` from `from pkg import beta`, and one blank line separates `beta` from `value`. **`merge-members` gathers `beta` onto the `alpha` line and removes the `beta` line with the single blank line below it**, so the two blank lines above it stay, the wider of the two gaps the source wrote around it.
+'''

@@ -1,14 +1,15 @@
 //! Module-scope blank-line policy, the gap text it renders to, and the
-//! walk back over a blank run. [`module_blank_lines`] returns the
+//! blank runs around a span of rows. [`module_blank_lines`] returns the
 //! canonical blank count for a module-scope `(prev, curr)` pair,
 //! [`blank_gap`] turns a line ending and a count into the separator an
-//! assembled body seats between two blocks, and
-//! [`whitespace_start_before`] reaches back over the run preceding an
-//! offset, stopping at the start of a notebook cell.
+//! assembled body seats between two blocks, [`blank_run_above`] and
+//! [`blank_run_below`] return the blank rows on either side of a span,
+//! and [`whitespace_start_before`] reaches back over the run preceding
+//! an offset, stopping at the start of a notebook cell.
 
 use ruff_python_ast::{CmpOp, Expr, Stmt};
-use ruff_source_file::LineEnding;
-use ruff_text_size::TextSize;
+use ruff_source_file::{LineEnding, LineRanges};
+use ruff_text_size::{TextRange, TextSize};
 
 use crate::{primitives::imports::import_blank_lines, source::Source};
 
@@ -24,6 +25,31 @@ pub(crate) fn blank_gap(ending: LineEnding, blanks: u32) -> &'static str {
                 run.len() / ending.len() - 1,
             )
         })
+}
+
+/// Returns the blank rows between `lines`, a span of whole rows, and the
+/// nearest row above it carrying code or a comment, or `None` where only
+/// whitespace precedes `lines` within its notebook cell or module or
+/// where that row ends in a `\` join continuing onto the run.
+pub(crate) fn blank_run_above(source: &Source, lines: TextRange) -> Option<TextRange> {
+    let content_end = whitespace_start_before(source, lines.start());
+    if source.text().is_at_start_of_line(content_end) {
+        return None;
+    }
+    let run = TextRange::new(source.text().full_line_end(content_end), lines.start());
+    (!source.continues_a_logical_line(run.start())).then_some(run)
+}
+
+/// Returns the blank rows between `lines`, a span of whole rows, and the
+/// nearest row below it carrying code or a comment, or `None` where only
+/// whitespace follows `lines` within its notebook cell or module.
+pub(crate) fn blank_run_below(source: &Source, lines: TextRange) -> Option<TextRange> {
+    let rest = TextRange::new(lines.end(), source.cell_content(lines.start()).end());
+    let after = source.slice(rest).trim_ascii_start();
+    (!after.is_empty()).then(|| {
+        let next = rest.end() - TextSize::of(after);
+        TextRange::new(lines.end(), source.text().line_start(next))
+    })
 }
 
 /// The canonical blank-line count for the module-scope pair `(prev,
@@ -60,7 +86,7 @@ pub(crate) fn module_blank_lines(
 /// containing `offset`.
 pub(crate) fn whitespace_start_before(source: &Source, offset: TextSize) -> TextSize {
     let text = source.text();
-    let trimmed = text[..offset.to_usize()].trim_end_matches(|c: char| c.is_ascii_whitespace());
+    let trimmed = text[..offset.to_usize()].trim_ascii_end();
     TextSize::of(trimmed).max(source.cell_start(offset).unwrap_or_default())
 }
 
@@ -100,7 +126,7 @@ mod tests {
     use ruff_text_size::Ranged;
 
     use super::*;
-    use crate::testing::{notebook, parse};
+    use crate::testing::{notebook, parse, range};
 
     const MAIN_GUARD: &str = "if __name__ == \"__main__\":\n    main()\n";
 
@@ -110,6 +136,12 @@ mod tests {
         let source = parse(src);
         let body = &source.ast().body;
         module_blank_lines(&body[0], &body[1], &list, true)
+    }
+
+    /// The whole rows the statement at `slot` of `source`'s module body
+    /// sits on.
+    fn rows_of(source: &Source, slot: usize) -> TextRange {
+        source.full_lines_within_cell(source.ast().body[slot].range())
     }
 
     #[rstest]
@@ -136,6 +168,51 @@ mod tests {
         #[case] gap: &str,
     ) {
         assert_eq!(blank_gap(ending, blanks), gap);
+    }
+
+    #[test]
+    fn blank_run_above_holds_at_a_notebook_cell_wall() {
+        let source = notebook(&["x = 1", "\nimport a"]);
+        assert_eq!(blank_run_above(&source, rows_of(&source, 1)), None);
+    }
+
+    #[rstest]
+    #[case::opening_the_module("import a\nx = 1\n", 0, None)]
+    #[case::under_leading_blanks("\n\nimport a\n", 0, None)]
+    #[case::under_a_byte_order_mark("\u{feff}import a\n", 0, None)]
+    #[case::under_code("x = 1\nimport a\n", 1, Some(range(6, 6)))]
+    #[case::under_blank_rows("x = 1\n\n  \nimport a\n", 1, Some(range(6, 10)))]
+    #[case::under_a_comment("# c\n\nimport a\n", 0, Some(range(4, 5)))]
+    #[case::held_by_a_join("x = 1 \\\n\nimport a\n", 1, None)]
+    fn blank_run_above_reaches_the_nearest_row_carrying_code_or_a_comment(
+        #[case] src: &str,
+        #[case] slot: usize,
+        #[case] expected: Option<TextRange>,
+    ) {
+        let source = parse(src);
+        assert_eq!(blank_run_above(&source, rows_of(&source, slot)), expected);
+    }
+
+    #[test]
+    fn blank_run_below_holds_at_a_notebook_cell_wall() {
+        let source = notebook(&["import a\n", "x = 1"]);
+        assert_eq!(blank_run_below(&source, rows_of(&source, 0)), None);
+    }
+
+    #[rstest]
+    #[case::closing_the_module("x = 1\nimport a\n", 1, None)]
+    #[case::over_trailing_blanks("import a\n\n  \n", 0, None)]
+    #[case::over_unterminated_whitespace("import a\n\n  ", 0, None)]
+    #[case::over_code("import a\nx = 1\n", 0, Some(range(9, 9)))]
+    #[case::over_blank_rows("import a\n\n  \nx = 1\n", 0, Some(range(9, 13)))]
+    #[case::over_a_comment("import a\n\n# c\n", 0, Some(range(9, 10)))]
+    fn blank_run_below_reaches_the_nearest_row_carrying_code_or_a_comment(
+        #[case] src: &str,
+        #[case] slot: usize,
+        #[case] expected: Option<TextRange>,
+    ) {
+        let source = parse(src);
+        assert_eq!(blank_run_below(&source, rows_of(&source, slot)), expected);
     }
 
     #[test]

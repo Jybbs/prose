@@ -33,6 +33,15 @@ impl Source {
         Ok(source)
     }
 
+    /// Returns the notebook cell holding `offset` short of the synthetic
+    /// newline closing it, or the whole buffer for an ordinary module.
+    pub(crate) fn cell_content(&self, offset: TextSize) -> TextRange {
+        self.cell_offsets
+            .content_ranges()
+            .find(|content| content.contains_inclusive(offset))
+            .unwrap_or_else(|| self.module_range())
+    }
+
     /// Returns the absolute notebook position of the code cell at
     /// `index`, counting Markdown cells, or `index` one-indexed for an
     /// ordinary module.
@@ -85,10 +94,7 @@ impl Source {
     /// empties a cell without merging it into the next.
     pub(crate) fn full_lines_within_cell(&self, range: TextRange) -> TextRange {
         let lines = self.text().full_lines_range(range);
-        let Some(cell) = self.cell_offsets.containing_range(range.start()) else {
-            return lines;
-        };
-        let content_end = cell.end() - TextSize::of('\n');
+        let content_end = self.cell_content(range.start()).end();
         TextRange::new(lines.start(), lines.end().min(content_end))
     }
 
@@ -152,7 +158,7 @@ mod tests {
     use ruff_text_size::TextLen;
 
     use super::*;
-    use crate::testing::{notebook, parse};
+    use crate::testing::{notebook, parse, range};
 
     /// Replaces `before`'s interior boundaries with `drifts` in order and
     /// its closing offset with `after`'s length, the shape a rule's edits
@@ -166,6 +172,24 @@ mod tests {
             .last_mut()
             .expect("a notebook carries a closing offset") = after.text().text_len();
         offsets
+    }
+
+    #[test]
+    fn cell_content_spans_the_whole_buffer_of_a_module() {
+        let source = parse("x = 1\ny = 2\n");
+        assert_eq!(source.cell_content(TextSize::new(8)), source.module_range());
+    }
+
+    #[rstest]
+    #[case::inside_the_first_cell(3, range(0, 9))]
+    #[case::on_the_separator_closing_it(9, range(0, 9))]
+    #[case::inside_the_second_cell(12, range(10, 20))]
+    fn cell_content_stops_short_of_the_separator_closing_a_cell(
+        #[case] offset: u32,
+        #[case] expected: TextRange,
+    ) {
+        let source = notebook(&["import os", "value = 1\n"]);
+        assert_eq!(source.cell_content(TextSize::new(offset)), expected);
     }
 
     #[test]

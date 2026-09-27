@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Directive Is Removed With One of the Blank Lines Around It"
+
+description = '''
+The module docstring sits one blank line above `from __future__ import annotations`, and `import logging` sits one blank line below it. PEP 749 defers annotation evaluation on 3.14 until something reads the annotations, and `str` and `None` both resolve whenever that happens. **The directive is removed together with one of the two blank lines around it**, so one blank line separates the docstring from `import logging`, the spacing the source wrote on each side of the directive.
+'''

@@ -223,6 +223,20 @@ const UNPARSEABLE_CELL: &str = r#"{
   "nbformat_minor": 5
 }"#;
 
+/// A two-cell notebook whose first cell closes on an unread `import json`
+/// one blank row below `x = 1`, a name the module binds of its own.
+const UNREAD_CLOSING_CELL: &str = r#"{
+  "cells": [
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["x = 1\n", "\n", "import json"]},
+    {"cell_type": "code", "execution_count": null, "metadata": {}, "outputs": [], "source": ["print(x)"]}
+  ],
+  "metadata": {
+    "language_info": {"name": "python"}
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}"#;
+
 fn assert_cache_hit_matches_miss(name: &str, source: &str) {
     let (_dir, path) = fixture(name, source);
     assert_warm_run_matches_cold(&[&path]);
@@ -1561,6 +1575,18 @@ fn notebook_discovered_in_a_directory_walk() {
 #[test]
 fn notebook_empty_is_a_clean_no_op() {
     run_fixture("nb.ipynb", EMPTY, &["format", "--no-cache"]).success();
+}
+
+#[test]
+fn notebook_format_ends_a_cell_on_the_row_above_its_dropped_import() {
+    let (assert, after) =
+        rewrite_fixture("nb.ipynb", UNREAD_CLOSING_CELL, &["format", "--no-cache"]);
+    assert.success();
+
+    assert_eq!(
+        json(&after)["cells"][0]["source"],
+        serde_json::json!(["x = 1"])
+    );
 }
 
 #[test]

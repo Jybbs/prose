@@ -134,7 +134,7 @@ impl<'a> ParentedProbe<'a> for Walker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{applied_text, parse};
 
     fn rule(version: PythonVersion) -> ModernizeAnnotations {
         ModernizeAnnotations::from_config(&Config {
@@ -160,6 +160,23 @@ mod tests {
     fn a_relative_typing_import_is_not_the_stdlib_module() {
         let source = parse("from .typing import Optional\n\nx: Optional[int] = None\n");
         assert!(rule(PythonVersion::PY310).apply(&source).is_empty());
+    }
+
+    #[test]
+    fn a_skipped_typing_import_holds_its_line_and_the_run_below() {
+        let source = parse(concat!(
+            "from typing import List  # prose: skip[modernize-annotations]\n\n",
+            "from typing import Dict\n\n\n",
+            "def f(a: List[int], b: Dict[str, int]) -> None:\n    pass\n",
+        ));
+        let groups = rule(PythonVersion::PY312).apply(&source);
+        assert_eq!(
+            applied_text(&source, groups.concat()),
+            concat!(
+                "from typing import List  # prose: skip[modernize-annotations]\n\n\n",
+                "def f(a: list[int], b: dict[str, int]) -> None:\n    pass\n",
+            ),
+        );
     }
 
     #[test]
