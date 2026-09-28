@@ -136,13 +136,16 @@ fn definition_name(stmt: &Stmt) -> Option<&str> {
 /// keyed by start offset: its own evaluation-time references, widened
 /// by the reach of every definition those references name where the
 /// statement is a definition and by the reach of every definition it
-/// calls otherwise.
+/// calls otherwise. A statement naming a `type` alias of `body` also
+/// reads every name that alias's value reads, since reading the alias's
+/// `__value__` evaluates that value.
 fn evaluated_names_of<'src>(
     body: &'src [Stmt],
     reachable: &CallReach<'src>,
     refs: &FxHashMap<TextSize, Vec<&'src str>>,
 ) -> FxHashMap<TextSize, Vec<&'src str>> {
-    body.iter()
+    let evaluated: Vec<Vec<&'src str>> = body
+        .iter()
         .map(|stmt| {
             let own = lookup(refs, stmt);
             let called;
@@ -154,8 +157,7 @@ fn evaluated_names_of<'src>(
                 called = called_names(stmt);
                 &called
             };
-            let names = own
-                .iter()
+            own.iter()
                 .copied()
                 .chain(
                     runs.iter()
@@ -164,8 +166,28 @@ fn evaluated_names_of<'src>(
                         .copied(),
                 )
                 .unique()
-                .collect();
-            (stmt.start(), names)
+                .collect()
+        })
+        .collect();
+    let aliases: FxHashMap<&str, &[&str]> = body
+        .iter()
+        .zip(&evaluated)
+        .filter_map(|(stmt, names)| {
+            let alias = stmt.as_type_alias_stmt()?;
+            Some((alias.name.as_name_expr()?.id.as_str(), names.as_slice()))
+        })
+        .collect();
+    body.iter()
+        .zip(&evaluated)
+        .map(|(stmt, names)| {
+            let through = names
+                .iter()
+                .filter_map(|name| aliases.get(name).copied())
+                .flatten();
+            (
+                stmt.start(),
+                names.iter().chain(through).copied().unique().collect(),
+            )
         })
         .collect()
 }

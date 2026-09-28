@@ -25,7 +25,7 @@ use self::{
     enums::Enumerations,
     leaves::collect_leaf_edits,
     reorders::{joined_key, joined_text},
-    rewrite::{RewriteCtx, body_layout, class_seatings, import_gap},
+    rewrite::{RewriteCtx, body_layout, class_seatings},
 };
 
 use crate::{
@@ -149,11 +149,7 @@ impl Rule for AlphabetizeSiblings {
         let enumerations = Enumerations::of(body);
         let ctx = self.ctx(source, &enumerations, &leaf_edits);
         let layout = body_layout(ctx, body, source.module_range(), BodyScope::Module);
-        let groups = layout
-            .assembly
-            .cell_edits(source, !layout.import_run_slots.is_empty(), |i| {
-                import_gap(source, &layout.import_run_slots, i)
-            });
+        let groups = layout.cell_edits(source);
         if layout.held.is_empty() {
             return groups;
         }

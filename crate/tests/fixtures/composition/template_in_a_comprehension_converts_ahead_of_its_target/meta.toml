@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `%` Template in a Comprehension Converts Ahead of Its Target"
+
+description = '''
+At a 50-column budget, the f-string `prefer-fstring` writes for `"%s -> %s" % (alias, name)` fits its row once the comprehension's `(alias, name)` target breaks open. **The `reflow-calls` walk reads the operand tuple that rewrite replaces as holding its row, so it measures the template through the target's `(` and leaves it for `prefer-fstring`**, and `reflow-collections` expands the target rather than the operand, which lets the template convert in the same pass.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Type Alias Is Measured Past Its Type Parameters"
+
+description = '''
+Three `type` statements sit on adjacent lines, two of them generic and one giving its parameter a default. **The `=` column sits one space past `type Pair[T = int]` and `type Mapping[K, V]`**, because a `type` row is measured from its keyword through its type parameter list, leaving the default's `=` inside the brackets.
+'''

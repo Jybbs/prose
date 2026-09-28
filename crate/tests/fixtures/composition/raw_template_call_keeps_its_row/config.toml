@@ -1,0 +1,5 @@
+code-line-length = 74
+target-version   = "3.14"
+
+[harness]
+rules = ["reflow-calls", "prefer-fstring"]

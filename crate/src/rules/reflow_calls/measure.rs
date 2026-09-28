@@ -1,9 +1,10 @@
 //! The columns and layouts the walk measures: where a call's `(` lands
 //! once the walk's earlier edits place the text ahead of it, the indent
 //! an exploded closing bracket drops to, whether a literal holding a
-//! call is one `reflow-collections` expands once its row lands, the seat
-//! of each call and attribute access inside a relocated region, and the
-//! layout a construct takes where it lands there.
+//! call is one `reflow-collections` expands once its row lands, whether
+//! an interpolation holding a call is one `prefer-fstring` converts
+//! there, the seat of each call and attribute access inside a relocated
+//! region, and the layout a construct takes where it lands there.
 
 use std::borrow::Cow;
 
@@ -15,6 +16,7 @@ use super::{CollectionLayout, Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
     inline::{end_column, indent_width, last_line, settled_width, spans_rows},
+    slots::holds_exactly,
     tokens::{is_closer, is_opener},
     travel::{Travel, shifted_block},
 };
@@ -82,17 +84,39 @@ impl<'a> Exploder<'a> {
         anchor
     }
 
+    /// True where `prefer-fstring` converts the interpolation holding
+    /// `expr`, meaning a forecast rewrite covers `expr` and the tokens it
+    /// touches fit, once rewritten, from the column this walk places them
+    /// at with the columns trailing them on their row. A rewrite reaching
+    /// outside this walk's region reads as one that does not convert,
+    /// since the walk that placed the region measured it already and
+    /// descended into it.
+    pub(super) fn converts(&self, expr: &Expr) -> bool {
+        let tokens = self.source.tokens();
+        self.one_row
+            .rewrite_covering(expr.range())
+            .map(|rewrite| {
+                TextRange::new(
+                    tokens.token_range(rewrite.start()).start(),
+                    tokens.token_range(rewrite.end()).end(),
+                )
+            })
+            .filter(|replaced| self.region.contains_range(*replaced))
+            .is_some_and(|replaced| {
+                let column = self.placed_column(replaced.start(), true);
+                let width = self.settled_slice_width(replaced);
+                self.one_row
+                    .fits(column + width + self.row_tail(replaced.end()))
+            })
+    }
+
     /// True where `reflow-collections` expands `literal` once its row
     /// lands, per [`Settings::expands`](crate::primitives::one_row::Settings::expands),
     /// leaving every call inside to the reshape that rule runs where the
     /// entries land.
     pub(super) fn expands_later(&self, literal: &Expr) -> bool {
         if !self.one_row.expands_literals()
-            || self
-                .source
-                .expandable_literals()
-                .binary_search_by_key(&literal.start(), Ranged::start)
-                .is_err()
+            || !holds_exactly(self.source.expandable_literals(), literal.range())
         {
             return false;
         }

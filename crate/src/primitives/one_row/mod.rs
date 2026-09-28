@@ -23,7 +23,7 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
-        slots::{holds_exactly, item_holding},
+        slots::{holds_exactly, item_covering, item_holding},
         walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
@@ -53,11 +53,10 @@ pub(crate) struct Settings<'a> {
 
 impl<'a> Settings<'a> {
     /// True where [`Self::expands`] expands `literal` once it is written
-    /// across rows, meaning `reflow-collections` expands literals,
-    /// [`Source::is_expandable`] accepts `literal`, and no forecast
-    /// rewrite replaces it.
+    /// across rows, meaning `reflow-collections` expands literals and
+    /// [`Source::is_expandable`] accepts `literal`.
     fn expands_across_rows(&self, source: &Source, literal: &Expr) -> bool {
-        self.expands_literals && source.is_expandable(literal) && !self.rewritten(literal.start())
+        self.expands_literals && source.is_expandable(literal)
     }
 
     /// True for a literal the author laid out as a flush column while
@@ -210,9 +209,9 @@ impl<'a> Settings<'a> {
 
     /// True where `reflow-collections` expands `literal` at `column` with
     /// `tail` columns after it. A literal [`Source::is_expandable`] accepts
-    /// and no forecast rewrite replaces expands where a later rule reopens
-    /// it, where it is written across rows, or where its narrowest width
-    /// under `padding` overflows. A caller tries [`Self::rejoined`] first.
+    /// expands where a later rule reopens it, where it is written across
+    /// rows, or where its narrowest width under `padding` overflows. A
+    /// caller tries [`Self::rejoined`] first.
     pub(crate) fn expands(
         &self,
         source: &'a Source,
@@ -237,13 +236,10 @@ impl<'a> Settings<'a> {
         self.expands_literals
     }
 
-    /// True where `reflow-calls` runs, [`Source::explodable_arguments`]
-    /// lists `arguments`, and no forecast rewrite replaces them, since the
-    /// f-string that rewrite writes holds the call in a replacement field.
+    /// True where `reflow-calls` runs and [`Source::explodable_arguments`]
+    /// lists `arguments`.
     pub(crate) fn explodes_arguments(&self, source: &Source, arguments: &Arguments) -> bool {
-        self.closes()
-            && holds_exactly(source.explodable_arguments(), arguments.range())
-            && !self.rewritten(arguments.start())
+        self.closes() && holds_exactly(source.explodable_arguments(), arguments.range())
     }
 
     /// True where a row reaching `width` columns sits inside the budget.
@@ -367,6 +363,12 @@ impl<'a> Settings<'a> {
         tail: usize,
     ) -> Option<Cow<'a, str>> {
         self.measured(source, expr, parent, column, tail, Column::Joins)
+    }
+
+    /// The forecast rewrite whose replaced text covers `range`, `None`
+    /// where no rewrite covers it.
+    pub(crate) fn rewrite_covering(&self, range: TextRange) -> Option<&'a Edit> {
+        item_covering(self.rewrites, range)
     }
 
     /// True where a forecast rewrite replaces the text at `offset`.

@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/type_alias_naming_a_class_leads_above_it/input.py
+---
+type Pair = tuple[Point, Point]
+
+
+def build():
+    return Point()
+
+
+class Point:
+    pass

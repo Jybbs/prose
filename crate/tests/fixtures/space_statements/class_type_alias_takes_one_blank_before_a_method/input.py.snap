@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/space_statements/class_type_alias_takes_one_blank_before_a_method/input.py
+---
+class Box:
+
+    type Item = int
+
+    def get(self) -> Item: ...
+
+
+class Tray:
+
+    type Item = int
+
+    def get(self) -> Item: ...

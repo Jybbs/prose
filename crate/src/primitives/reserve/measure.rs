@@ -12,6 +12,7 @@ use super::visit::Run;
 use crate::{
     primitives::{
         aligner,
+        binding::assigned_value,
         inline::{display_width, settled_row_tail, settled_slice_width},
         layout::{is_fractured, opener_width},
         one_row,
@@ -81,7 +82,8 @@ impl Measure<'_> {
     /// bracket in source order anywhere in it, and a value spanning rows
     /// reads its own bracket alone.
     fn opener(&self, expr: &Expr, range: TextRange) -> Option<(usize, bool)> {
-        let opens = |inner: &Expr| opener_width(self.source, &self.one_row, inner, range.start());
+        let opens =
+            |inner: &Expr| opener_width(self.source, &self.one_row, inner, range.start(), range);
         if self.source.contains_line_break(range) {
             return opens(expr).map(|width| (width, false));
         }
@@ -206,17 +208,6 @@ impl Measure<'_> {
     pub(super) fn seating(&self, body: &[Stmt]) -> Option<&[(usize, bool)]> {
         let first = body.first()?;
         self.seatings.get(&first.start()).map(Vec::as_slice)
-    }
-}
-
-/// Returns the value an assignment, augmented assignment, or initialized
-/// annotated assignment binds, or `None` for any other statement.
-pub(super) fn assigned_value(stmt: &Stmt) -> Option<&Expr> {
-    match stmt {
-        Stmt::Assign(a) => Some(&a.value),
-        Stmt::AugAssign(a) => Some(&a.value),
-        Stmt::AnnAssign(a) => a.value.as_deref(),
-        _ => None,
     }
 }
 

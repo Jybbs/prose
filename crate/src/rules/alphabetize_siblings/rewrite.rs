@@ -7,7 +7,6 @@
 
 use std::borrow::Cow;
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{Stmt, helpers::is_compound_statement};
 use ruff_source_file::LineRanges;
@@ -44,9 +43,27 @@ use crate::{
 /// import neighbor collapses onto one line. [`rewrite_body`] folds it
 /// into the combined `Cow` and the notebook path splits it per cell.
 pub(super) struct BodyLayout<'a> {
-    pub(super) assembly: Assembly<'a>,
+    assembly: Assembly<'a>,
     pub(super) held: Vec<Edit>,
-    pub(super) import_run_slots: Vec<usize>,
+    import_run_slots: ImportRunSlots,
+}
+
+impl<'a> BodyLayout<'a> {
+    /// Returns the reordered body's text beside the span it covers,
+    /// borrowing the source where nothing moves.
+    fn or_borrow(&self, source: &'a Source) -> (Cow<'a, str>, TextRange) {
+        let slots = &self.import_run_slots;
+        self.assembly
+            .or_borrow(source, slots.forced(), |i| slots.import_gap(source, i))
+    }
+
+    /// Returns the edits each notebook cell of the reordered body takes,
+    /// closing the gap between each pair of same-group imports.
+    pub(super) fn cell_edits(&self, source: &'a Source) -> Vec<Vec<Edit>> {
+        let slots = &self.import_run_slots;
+        self.assembly
+            .cell_edits(source, slots.forced(), |i| slots.import_gap(source, i))
+    }
 }
 
 /// Context threaded through the body-rewrite recursion, every field
@@ -67,6 +84,28 @@ pub(super) struct RewriteCtx<'a> {
     pub(super) orders_members: bool,
     pub(super) sort_definitions: bool,
     pub(super) source: &'a Source,
+}
+
+/// The new-order slots of one body whose import neighbor collapses onto
+/// one line, as [`seat_body`] seats them.
+struct ImportRunSlots(Vec<usize>);
+
+impl ImportRunSlots {
+    /// True when a same-group import pair collapses, which forces a
+    /// rewrite even where the order stands.
+    fn forced(&self) -> bool {
+        !self.0.is_empty()
+    }
+
+    /// Returns the one-newline divider an import-run collapse inserts
+    /// after new-order slot `i`, written in the ending `source` carries.
+    /// `None` where the neighbors do not collapse onto one line.
+    fn import_gap(&self, source: &Source, i: usize) -> Option<&'static str> {
+        self.0
+            .binary_search(&i)
+            .is_ok()
+            .then_some(source.newline_str())
+    }
 }
 
 /// Computes the reorder of `body`: renders each member, then permutes the
@@ -115,20 +154,6 @@ pub(super) fn class_seatings<'a>(ctx: RewriteCtx<'a>, stmt: &'a Stmt, seatings: 
     }
 }
 
-/// The one-newline divider an import-run collapse inserts after new-order
-/// slot `i`, written in the ending `source` carries. `None` where the
-/// neighbors do not collapse onto one line.
-pub(super) fn import_gap(
-    source: &Source,
-    import_run_slots: &[usize],
-    i: usize,
-) -> Option<&'static str> {
-    import_run_slots
-        .binary_search(&i)
-        .is_ok()
-        .then_some(source.newline_str())
-}
-
 /// Records in `seatings` the rows of `body` wherever the sort seats them
 /// other than as written, keyed by the start of its first statement, each
 /// slot in the order the sort seats it beside whether it opens on the line
@@ -159,7 +184,7 @@ fn body_seatings<'a>(
         body,
         &blocks,
         &order,
-        |i| import_gap(source, &import_run_slots, i),
+        |i| import_run_slots.import_gap(source, i),
         |slot| source.slice(blocks[slot]),
     ) {
         seatings.insert(first.start(), rows);
@@ -191,24 +216,12 @@ fn held_edits(
     let mut edits = Vec::new();
     let mut cursor = block.start();
     let mut stretches = Vec::new();
-    for (body, outer) in sub_bodies(stmt)
-        .into_iter()
-        .filter(|(body, _)| !body.is_empty())
-    {
+    for (body, outer) in sub_bodies(stmt) {
         let layout = body_layout(body_ctx, body, outer, scope);
         let span = blocks_span(&layout.assembly.blocks);
         stretches.push(TextRange::new(cursor, span.start()));
         cursor = span.end();
-        let forced = !layout.import_run_slots.is_empty();
-        edits.extend(
-            layout
-                .assembly
-                .cell_edits(source, forced, |i| {
-                    import_gap(source, &layout.import_run_slots, i)
-                })
-                .into_iter()
-                .flatten(),
-        );
+        edits.extend(layout.cell_edits(source).into_iter().flatten());
         edits.extend(layout.held);
     }
     stretches.push(TextRange::new(cursor, block.end()));
@@ -247,11 +260,7 @@ fn rewrite_body<'a>(
         layout.held.is_empty(),
         "a body under an unpinned statement holds no pinned member",
     );
-    layout
-        .assembly
-        .or_borrow(ctx.source, !layout.import_run_slots.is_empty(), |i| {
-            import_gap(ctx.source, &layout.import_run_slots, i)
-        })
+    layout.or_borrow(ctx.source)
 }
 
 /// Recurses into each sub-body of a compound statement, splicing
@@ -325,7 +334,7 @@ fn seat_body<'a>(
     order: &mut Vec<usize>,
     scope: BodyScope,
     pinned_starts: &[TextSize],
-) -> Vec<usize> {
+) -> ImportRunSlots {
     let RewriteCtx {
         defer_annotations,
         first_party,
@@ -339,11 +348,11 @@ fn seat_body<'a>(
         ..
     } = ctx;
     let pinned = |stmt: &Stmt| pinned_starts.binary_search(&stmt.start()).is_ok();
-    let pinned_slots: Vec<usize> = body.iter().positions(pinned).collect();
     let in_class = scope == BodyScope::Class;
     let mut import_run_slots: Vec<usize> = Vec::new();
     if !any_sibling_shares_line(source, body) {
         let sections = Sections::of(source, blocks);
+        let import_sections = Sections::pinning(source, blocks, AlphabetizeSiblings::SLUG);
         if !keeps_order && scope != BodyScope::Function {
             let holds = |stmt: &Stmt| (!in_class && is_decorated(stmt)) || pinned(stmt);
             let refs = eval_time_refs_of(body, defer_annotations);
@@ -393,9 +402,7 @@ fn seat_body<'a>(
             permute_runs(
                 order,
                 body,
-                sectioned_import_runs(&sections, body)
-                    .iter()
-                    .flat_map(|run| fenced_runs(run, &pinned_slots)),
+                sectioned_import_runs(&import_sections, body),
                 |s| import_sort_key(s, first_party, group_imports),
             );
         }
@@ -405,9 +412,7 @@ fn seat_body<'a>(
         // their source gap.
         import_run_slots = adjacent_slots(order, |slot, a, b| {
             import_blank_lines(&body[a], &body[b], first_party, group_imports) == Some(0)
-                && !sections.is_boundary(slot + 1)
-                && !pinned(&body[a])
-                && !pinned(&body[b])
+                && !import_sections.is_boundary(slot + 1)
                 && source
                     .comment_ranges()
                     .comments_in_range(TextRange::new(blocks[slot].end(), blocks[slot + 1].start()))
@@ -415,5 +420,5 @@ fn seat_body<'a>(
                 && blocks[b].start() == source.text().line_start(body[b].start())
         });
     }
-    import_run_slots
+    ImportRunSlots(import_run_slots)
 }

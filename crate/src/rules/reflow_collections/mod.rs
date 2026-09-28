@@ -35,8 +35,10 @@ use crate::{
         walk::{Interpolations, ParentedProbe, walk_parented_exprs},
     },
     rules::{
-        Rule, RuleId, alphabetize_siblings::Reorders, prefer_fstring::PreferFstring,
-        reflow_calls::CollectionLayout,
+        Rule, RuleId,
+        alphabetize_siblings::Reorders,
+        prefer_fstring::PreferFstring,
+        reflow_calls::{CollectionLayout, ReflowCalls},
     },
     source::Source,
 };
@@ -56,6 +58,7 @@ pub(crate) struct ReflowCollections {
     fstrings: PreferFstring,
     max_atomics: usize,
     one_row: one_row::Settings<'static>,
+    reflow_calls: ReflowCalls,
     reorders: Reorders,
     reservations: reserve::Reservations,
     stranding: Stranding,
@@ -77,6 +80,7 @@ impl ReflowCollections {
             fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
+            reflow_calls: config.call_seating(),
             reorders: config.reorders(),
             reservations: config.equals_reservations(),
             stranding: config.stranded_padding(),
@@ -100,6 +104,7 @@ impl Rule for ReflowCollections {
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets).forecasting(&rewrites),
             padding: &padding,
+            reflow_calls: &self.reflow_calls,
             reorders: self.reorders,
             reservations: &reservations,
             source,
@@ -123,6 +128,7 @@ struct Layouter<'a> {
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) padding: &'a [Edit],
+    pub(super) reflow_calls: &'a ReflowCalls,
     pub(super) reorders: Reorders,
     pub(super) reservations: &'a reserve::Columns,
     pub(super) source: &'a Source,
@@ -140,7 +146,9 @@ impl<'a> Layouter<'a> {
     /// as a flush column. A subscript and a comprehension only ever
     /// rejoin. The `explode` facet gates every expansion, and a set
     /// `keep_multiline_literals` suppresses the literal rejoin, a
-    /// cleared `explode` returning `None`.
+    /// cleared `explode` returning `None`. A literal inside an
+    /// interpolation the `reflow-calls` walk leaves for `prefer-fstring`
+    /// stays on its row.
     fn replacement_for(
         &self,
         expr: &Expr,
@@ -155,9 +163,11 @@ impl<'a> Layouter<'a> {
         {
             return Some(inline.into_owned());
         }
-        self.one_row
+        (self
+            .one_row
             .expands(self.source, expr, parent, column, tail, self.padding)
-            .then(|| self.expand(expr, parent, indent))
+            && !self.reflow_calls.converts(self.source, expr.range()))
+        .then(|| self.expand(expr, parent, indent))
     }
 
     /// Serializes `expr` into a child slot of an enclosing expand with

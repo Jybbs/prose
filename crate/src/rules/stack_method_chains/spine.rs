@@ -2,13 +2,15 @@
 //! stopping at its last non-whitespace character so the text between two
 //! segments is the gap a break rewrites.
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{Expr, ExprAttribute, ExprCall, token::TokenKind};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
     primitives::{
         fracture,
-        inline::{display_width, spans_rows},
+        inline::{display_width, settled_slice_width, spans_rows},
+        slots::item_holding,
     },
     source::Source,
 };
@@ -29,8 +31,11 @@ impl<'a> Chain<'a> {
     /// fewer than two links. A `.name` access that is not itself called
     /// opens no link of its own, moving the opening of the link below it
     /// down onto its own dot, and a trailing one stays with the link
-    /// above it.
-    pub(super) fn of(source: &Source, expr: &'a Expr) -> Option<Self> {
+    /// above it. A call a forecast `prefer-fstring` rewrite among
+    /// `rewrites` turns into one f-string with the text ahead of its dot
+    /// ends the spine as the receiver, the form the chain takes once the
+    /// rewrite lands.
+    pub(super) fn of(source: &Source, expr: &'a Expr, rewrites: &[Edit]) -> Option<Self> {
         let mut calls = Vec::new();
         let mut dots = Vec::new();
         let mut cursor = expr;
@@ -44,8 +49,12 @@ impl<'a> Chain<'a> {
                 }
                 Expr::Call(call) => match call.func.as_ref() {
                     Expr::Attribute(attribute) => {
+                        let dot = dot_offset(source, attribute);
+                        if rewritten_across(rewrites, expr.start(), dot) {
+                            break;
+                        }
                         calls.push(call);
-                        dots.push(dot_offset(source, attribute));
+                        dots.push(dot);
                         attribute
                     }
                     _ => break,
@@ -77,10 +86,11 @@ impl<'a> Chain<'a> {
         std::iter::once(self.receiver_range).chain(self.links.iter().copied())
     }
 
-    /// The receiver's display width, the columns a hung link's dot sits
-    /// past the indent the broken chain opens at.
-    pub(super) fn receiver_width(&self, source: &Source) -> usize {
-        display_width(source.slice(self.receiver_range))
+    /// The receiver's display width once each forecast `prefer-fstring`
+    /// rewrite among `rewrites` inside it lands, the columns a hung
+    /// link's dot sits past the indent the broken chain opens at.
+    pub(super) fn receiver_width(&self, source: &Source, rewrites: &[Edit]) -> usize {
+        settled_slice_width(source, rewrites, self.receiver_range)
     }
 
     /// True when a segment still carries a line break once the
@@ -110,6 +120,15 @@ fn dot_offset(source: &Source, attribute: &ExprAttribute) -> TextSize {
         .expect("an attribute carries a `.` between its value and its name")
 }
 
+/// True where a rewrite among the start-ascending `rewrites` opening at
+/// or past `start` runs across `offset`, so the text on either side of
+/// `offset` lands as one f-string.
+fn rewritten_across(rewrites: &[Edit], start: TextSize, offset: TextSize) -> bool {
+    item_holding(rewrites, offset).is_some_and(|rewrite| {
+        rewrite.start() >= start && rewrite.start() < offset && offset < rewrite.end()
+    })
+}
+
 /// `range` shortened past the whitespace it ends with.
 fn trimmed(source: &Source, range: TextRange) -> TextRange {
     let text = source.slice(range);
@@ -128,7 +147,7 @@ mod tests {
 
     /// The chain `source`'s first assigned value divides into.
     fn chain_of(source: &Source) -> Option<Chain<'_>> {
-        Chain::of(source, first_value(source))
+        Chain::of(source, first_value(source), &[])
     }
 
     #[rstest]

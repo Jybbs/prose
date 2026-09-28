@@ -36,7 +36,9 @@ use crate::{
 /// the entry's text and its display width at the canonical `": "`,
 /// and the offset its value starts at. `nested` holds where the value,
 /// written on one row, spans rows only because a literal inside it
-/// takes the collection layout where it lands.
+/// takes the collection layout where it lands, or because the value is
+/// a `%` or `str.format()` template holding a call that explodes where a
+/// hung row would let `prefer-fstring` convert it.
 struct Entry<'a> {
     key: Option<Cow<'a, str>>,
     key_width: usize,
@@ -87,6 +89,25 @@ impl<'a> ColonGap<'a> {
 }
 
 impl<'a> Layouter<'a> {
+    /// True where `text`, the form `value` over `range` takes beside its
+    /// key, spans rows, a forecast `prefer-fstring` rewrite covers `range`
+    /// whole, and the value written at the hung column one step past
+    /// `indent` stays on one row, where the rewrite converts.
+    fn converts_when_hung(
+        &self,
+        value: &Expr,
+        parent: AnyNodeRef,
+        range: TextRange,
+        text: &str,
+        indent: usize,
+        tail: usize,
+    ) -> bool {
+        let hang_column = indent + INDENT_STEP;
+        spans_rows(text)
+            && self.one_row.rewrite_covering(range).is_some()
+            && !spans_rows(&self.serialize_expr(value, parent, hang_column, hang_column, tail))
+    }
+
     /// Builds the [`Entry`] for a dict item written as `key: value` or
     /// `**value`, its width counted at the canonical `": "` separator.
     /// The value is measured and lands at `seat` where one is given, and
@@ -138,7 +159,15 @@ impl<'a> Layouter<'a> {
             None => {
                 let text = self.placed_slice(&item.value, parent, landing, tail);
                 let nested = !across_rows
-                    && self.splits_nested(&item.value, value_range, &text, landing, tail);
+                    && (self.splits_nested(&item.value, value_range, &text, landing, tail)
+                        || self.converts_when_hung(
+                            &item.value,
+                            parent,
+                            value_range,
+                            &text,
+                            indent,
+                            tail,
+                        ));
                 (text, nested)
             }
         };
@@ -214,15 +243,17 @@ impl<'a> Layouter<'a> {
     }
 
     /// Returns the `align-colons` slot for `entry`'s row, which opens at
-    /// `indent` with `tail` columns closing it: a bridge for a `**`
-    /// unpacking or for a row a skip holds for `align-colons`, a break for
-    /// a key spanning rows, and otherwise the key's settled width beside
-    /// the row's [`Extent`], which measures the value's opening row where
-    /// a layout rule can expand a one-row value.
+    /// `indent` with `tail` columns closing it inside the dict spanning
+    /// `dict`: a bridge for a `**` unpacking or for a row a skip holds
+    /// for `align-colons`, a break for a key spanning rows, and otherwise
+    /// the key's settled width beside the row's [`Extent`], which
+    /// measures the value's opening row where a layout rule can expand a
+    /// one-row value.
     fn row(
         &self,
         entry: &Entry<'a>,
         item: &DictItem,
+        dict: TextRange,
         indent: usize,
         tail: usize,
     ) -> Slot<(usize, Extent)> {
@@ -248,6 +279,7 @@ impl<'a> Layouter<'a> {
                         &self.one_row,
                         &item.value,
                         entry.value_start,
+                        dict,
                     )
                     .map(|width| indent + entry.key_width + CANONICAL_SEPARATOR + width),
                     inline: indent + entry.width + tail,
@@ -279,7 +311,13 @@ impl<'a> Layouter<'a> {
         let mut runs: Vec<Vec<(usize, (usize, Extent))>> = vec![Vec::new()];
         for position in 0..entries.len() {
             let index = order.map_or(position, |order| order[position]);
-            let row = self.row(&entries[index], &dict.items[index], indent, tails[index]);
+            let row = self.row(
+                &entries[index],
+                &dict.items[index],
+                dict.range(),
+                indent,
+                tails[index],
+            );
             if matches!(row, Slot::Break)
                 || (!reassembled
                     && position > 0

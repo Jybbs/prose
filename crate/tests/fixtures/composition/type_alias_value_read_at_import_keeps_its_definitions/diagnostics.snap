@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/type_alias_value_read_at_import_keeps_its_definitions/input.py
+---
+alphabetize-siblings@131..183
+band-constants@30..124

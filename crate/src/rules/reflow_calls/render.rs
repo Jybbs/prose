@@ -11,10 +11,11 @@ use ruff_python_ast::{
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::Exploder;
+use super::{Exploder, Seat};
 use crate::primitives::{
+    binding::sequence_elts,
     call_keywords::{CallKeywords, keyword_args, resolve_call_params},
-    edit::apply_inline_edits,
+    edit::{apply_inline_edits, insert_edit, narrowed_replacement},
     inline::{
         display_width, end_column, opening_width, settled_slice_width, settled_width, spans_rows,
     },
@@ -61,11 +62,13 @@ impl<'a> Exploder<'a> {
 
     /// True where an expandable literal opening earlier on the row than
     /// `offset` explodes, which relays the row's overflow to that
-    /// literal and leaves the later ones in place.
+    /// literal and leaves the later ones in place. A literal inside a
+    /// forecast f-string rewrite holds its row and relays nothing.
     fn earlier_literal_explodes(&self, offset: TextSize) -> bool {
         let row = TextRange::new(self.source.text().line_start(offset), offset);
-        starting_within(self.source.expandable_literals(), row, Ranged::start)
-            .any(|literal| self.literal_explodes(*literal))
+        starting_within(self.source.expandable_literals(), row, Ranged::start).any(|literal| {
+            !self.one_row.rewritten(literal.start()) && self.literal_explodes(*literal)
+        })
     }
 
     /// Renders `count` arguments one per line at `indent` through
@@ -193,7 +196,7 @@ impl<'a> Exploder<'a> {
             return true;
         }
         let column = self.source.column_of(range.start());
-        let width = settled_slice_width(self.source, self.padding, range);
+        let width = self.settled_slice_width(range);
         let tail = self.settled_width(
             self.source.row_tail(range.end()),
             self.source.row_tail_width(range.end()),
@@ -323,7 +326,7 @@ impl<'a> Exploder<'a> {
             self.one_row
                 .form_width(self.source, form, arguments.range())
         } else {
-            settled_slice_width(self.source, self.padding, arguments.range())
+            self.settled_slice_width(arguments.range())
         }
     }
 
@@ -369,6 +372,69 @@ impl<'a> Exploder<'a> {
         }
     }
 
+    /// Relocates this walk to answer for `region` once it lands at
+    /// `seat`, an exploded closing bracket dropping to the seat's indent
+    /// and each literal `reflow-collections` expands later seating its
+    /// elements.
+    pub(super) fn landed(self, region: TextRange, seat: Seat) -> Self {
+        Self {
+            indent: Some(seat.indent),
+            line_shift: seat.line_shift,
+            origin_column: seat.column,
+            region,
+            seats_elements: true,
+            tail: seat.tail,
+            ..self
+        }
+    }
+
+    /// Walks each element of `literal`, a list or tuple
+    /// `reflow-collections` expands later, from where that expansion
+    /// writes it, one indent step past the row `literal` opens on with no
+    /// trailing text, recording into `seating` the seat of each call and
+    /// attribute access inside. The walk emits no edit and runs only in
+    /// a landed walk that records a seating.
+    pub(super) fn seat_elements(&self, literal: &'a Expr) {
+        let (Some(_), true, Some(elements)) =
+            (self.seating, self.seats_elements, sequence_elts(literal))
+        else {
+            return;
+        };
+        let indent = item_indent(self.indent_for(literal.start()));
+        for element in elements {
+            let mut walk = Exploder {
+                edits: Vec::new(),
+                indent: Some(indent),
+                origin_column: indent.saturating_add_signed(self.line_shift),
+                region: element.range(),
+                tail: 0,
+                ..*self
+            };
+            walk.visit_expr(element);
+        }
+    }
+
+    /// Explodes `call`'s argument list where a trigger fires from the
+    /// column its `(` reaches, and otherwise walks each argument.
+    pub(super) fn lay_out_arguments(&mut self, call: &'a ExprCall) {
+        let column = self.open_paren_column(call);
+        // The rendered list already carries every nested reshape, so the
+        // arguments go unwalked.
+        if let Some(text) = self.explode_args(call, column) {
+            self.replace(call.arguments.range(), text);
+            return;
+        }
+        self.visit_arguments(&call.arguments);
+    }
+
+    /// Replaces the text over `range` with `text`, narrowed to the span
+    /// that differs, keeping the edits sorted by start.
+    pub(super) fn replace(&mut self, range: TextRange, text: String) {
+        if let Some(edit) = narrowed_replacement(self.source, range, text) {
+            insert_edit(&mut self.edits, edit);
+        }
+    }
+
     /// The columns trailing this call on its row: the code to the end
     /// of the physical row, or to the region's end plus the columns the
     /// enclosing text writes there where the region closes first, a
@@ -394,8 +460,16 @@ impl<'a> Exploder<'a> {
         }
     }
 
+    /// `range`'s display width less the padding `strip-stranded-padding`
+    /// drops inside it, each forecast rewrite it covers whole measured at
+    /// its f-string width.
+    pub(super) fn settled_slice_width(&self, range: TextRange) -> usize {
+        settled_slice_width(self.source, self.padding, range)
+    }
+
     /// `width`, the display width `range` was measured at, less the
-    /// padding `strip-stranded-padding` drops inside `range`.
+    /// padding `strip-stranded-padding` drops inside `range`, each
+    /// forecast rewrite it covers whole measured at its f-string width.
     pub(super) fn settled_width(&self, range: TextRange, width: usize) -> usize {
         settled_width(self.source, self.padding, range, width)
     }

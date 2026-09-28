@@ -1,12 +1,13 @@
 //! Unit coverage for the shared corpus-sweep harness, the unified-diff
-//! excerpts a report shows beside a defect and the tally that keys those
-//! defects by wording.
+//! excerpts a report shows beside a defect, the tally that keys those
+//! defects by wording, and the `target-version` entries a sweep reads.
 
 use std::{ops::RangeBounds, path::Path};
 
 use rstest::rstest;
+use ruff_python_ast::PythonVersion;
 
-use common::{EXCERPT, Hit, SHOWN, Tally, excerpt, unread};
+use common::{EXCERPT, Hit, SHOWN, Tally, excerpt, target_name, target_of, unread};
 
 mod common;
 
@@ -208,6 +209,22 @@ fn tally_render_carries_the_example_repro_and_detail() {
         "{rendered}"
     );
     assert!(rendered.ends_with("\n    --- a\n    +++ b"), "{rendered}");
+}
+
+#[rstest]
+#[case::unset(None)]
+#[case::a_version_floor(Some(PythonVersion::PY39))]
+#[case::the_newest_version(Some(PythonVersion::latest()))]
+fn target_of_reads_back_the_entry_target_name_prints(#[case] target: Option<PythonVersion>) {
+    assert_eq!(target_of(&target_name(target)), target);
+}
+
+#[rstest]
+#[should_panic(expected = "is `unset` or a version")]
+fn target_of_rejects_an_entry_other_than_unset_or_major_minor(
+    #[values("", "3", "3.14.6", "py314", "Unset")] entry: &str,
+) {
+    let _ = target_of(entry);
 }
 
 #[rstest]

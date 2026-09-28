@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/links_hang_beneath_a_receiver_its_template_converts/input.py
+---
+prefer-fstring@13..36
+stack-method-chains@7..65

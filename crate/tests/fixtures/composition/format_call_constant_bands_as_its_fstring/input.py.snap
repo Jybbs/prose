@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/format_call_constant_bands_as_its_fstring/input.py
+---
+HEX = "[0-9A-Fa-f]{1,4}"
+IPV4 = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+VARIATIONS = ["(?:%(hex)s:){6}%(ls32)s", "::(?:%(hex)s:){5}%(ls32)s"]
+
+LS32 = f"(?:{HEX}:{HEX}|{IPV4})"
+SUBS = {"hex": HEX, "ls32": LS32}

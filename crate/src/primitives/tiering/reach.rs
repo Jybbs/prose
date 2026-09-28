@@ -149,6 +149,18 @@ mod tests {
     }
 
     #[test]
+    fn called_names_counts_a_call_inside_a_type_statement() {
+        let source = parse(indoc! {"
+            type Scored = Annotated[int, score()]
+
+            if ready():
+                type Nested = make()
+        "});
+        let called: Vec<&str> = source.ast().body.iter().flat_map(called_names).collect();
+        assert_eq!(called, vec!["Annotated", "score", "ready", "make"]);
+    }
+
+    #[test]
     fn called_names_roots_an_attribute_call_in_its_receiver() {
         let source = parse("Coroutine.register(coroutine)\nhandlers[0](event)\nrun()\n");
         let called: Vec<&str> = source.ast().body.iter().flat_map(called_names).collect();

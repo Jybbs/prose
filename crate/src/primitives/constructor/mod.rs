@@ -40,6 +40,17 @@ pub(crate) fn keyword_field_start(class: &StmtClassDef) -> TextSize {
         .map_or(class.end(), Ranged::end)
 }
 
+/// Returns each field a class's generated constructor binds by position,
+/// beside the statement declaring it, in the order written.
+pub(crate) fn positional_fields(class: &StmtClassDef) -> impl Iterator<Item = (&Stmt, (u8, &str))> {
+    let keyword_start = keyword_field_start(class);
+    class
+        .body
+        .iter()
+        .take_while(move |stmt| stmt.start() < keyword_start)
+        .filter_map(|stmt| classify_field(stmt).map(|key| (stmt, key)))
+}
+
 /// True when the class header names a constructor generator that binds
 /// the annotated field run by position, named by either a base class or
 /// a decorator. Each name resolves on its tail segment, so a dotted or

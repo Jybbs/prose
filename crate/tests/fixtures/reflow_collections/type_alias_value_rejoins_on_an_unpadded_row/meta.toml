@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Type Alias Value Rejoins on an Unpadded Row"
+
+description = '''
+`type Scored`'s `Annotated[...]` subscript spans three rows below `type LongerName = int`. Joined onto one row and padded to the `=` column `type LongerName` sets, it would reach 45 columns, past the `code-line-length` of 42. **The subscript rejoins at 41 columns and [[align-equals]] leaves both rows unpadded**, the same shape an `=` assignment takes, because `reflow-collections` forecasts the `=` column for a `type` row as it does for any assignment.
+'''

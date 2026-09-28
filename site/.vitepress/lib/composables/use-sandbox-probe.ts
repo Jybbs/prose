@@ -1,5 +1,5 @@
-import { promiseTimeout } from '@vueuse/core'
-import { ref }            from 'vue'
+import { promiseTimeout, tryOnScopeDispose } from '@vueuse/core'
+import { ref }                               from 'vue'
 
 import type * as configSchema          from '../sandbox/config-schema.data'
 import type { ProseFormat, ProseWasm } from '../sandbox/load-module'
@@ -25,6 +25,10 @@ export function useSandboxProbe(schema: configSchema.SandboxSchema) {
   const probed = new Map<string, SourceProbe>()
 
   let probedSource = '\0'
+
+  // A stopped scope abandons any adoption or probe still pending, the same
+  // way a new source does.
+  tryOnScopeDispose(() => { probedSource = '\0' })
 
   // A null result is the unprobed sentinel the panel renders as "still
   // probing", so the three refs always move together.
@@ -77,6 +81,7 @@ export function useSandboxProbe(schema: configSchema.SandboxSchema) {
   // otherwise share the publish frame and stretch it.
   async function adopt(current: ProseWasm, target: string): Promise<void> {
     await nextPaint()
+    if (probedSource !== target) return
     await nextPaint()
     if (probedSource !== target) return
     const cached = probed.get(target)

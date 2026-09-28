@@ -1,9 +1,10 @@
-//! Member constructors for the `=`-anchored alignment contexts:
-//! single-target assignments, augmented assignments, initialized
-//! annotated assignments, exploded-call keyword arguments, and
-//! annotated parameter defaults. `align_equals` consumes them to emit
-//! alignment edits, and the `reserve` primitive consumes them to predict
-//! the column `align_equals` shifts a value to for both layout rules.
+//! Builds the `=`-anchored alignment runs over single-target
+//! assignments, augmented assignments, initialized annotated
+//! assignments, PEP 695 `type` statements, exploded-call keyword
+//! arguments, and annotated parameter defaults. `align_equals` consumes
+//! the runs to emit alignment edits, and the `reserve` primitive
+//! consumes them to predict the column `align_equals` shifts each value
+//! to for both layout rules.
 
 use itertools::Itertools;
 use ruff_python_ast::{
@@ -15,66 +16,10 @@ use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use crate::{
-    primitives::{aligner, padding::Stranding},
+    primitives::{aligner, binding::assigned_value, padding::Stranding},
     rules::RuleId,
     source::Source,
 };
-
-/// Returns the alignment member for an annotated `x: int = 1`, plain
-/// `x = 1`, or augmented `x += 1` statement, measuring the left-hand
-/// side paren-aware. `None` for any other shape or when the span up to
-/// the operator breaks across lines.
-pub(crate) fn assignment(
-    source: &Source,
-    stmt: &Stmt,
-    stranding: Stranding,
-) -> Option<aligner::Member> {
-    match stmt {
-        Stmt::AnnAssign(a) => {
-            let value = a.value.as_deref()?;
-            let annotation = source.paren_aware_range(a.annotation.as_ref().into(), a.into());
-            equal_member(
-                source,
-                a.target.range().cover(annotation),
-                value.into(),
-                a.into(),
-                stranding,
-            )
-        }
-        Stmt::Assign(a) => {
-            let [target] = a.targets.as_slice() else {
-                return None;
-            };
-            equal_member(
-                source,
-                source.paren_aware_range(target.into(), a.into()),
-                a.value.as_ref().into(),
-                a.into(),
-                stranding,
-            )
-        }
-        Stmt::AugAssign(a) => {
-            let op = a.op.as_str();
-            let target_range = source.paren_aware_range(a.target.as_ref().into(), a.into());
-            let value_start = source
-                .paren_aware_range(a.value.as_ref().into(), a.into())
-                .start();
-            let member = aligner::range_anchored_member_single_line(
-                source,
-                target_range,
-                TextRange::new(target_range.end(), value_start),
-                |t| t.kind().as_augmented_assign_operator().is_some(),
-                op.len(),
-                stranding,
-            )?;
-            // `op` is the binary form (`+`), so the augmented operator
-            // runs one column longer for its trailing `=`.
-            let op_len = TextSize::of(op) + TextSize::of('=');
-            Some(member.with_value_gap(op_len, value_start))
-        }
-        _ => None,
-    }
-}
 
 /// Collects the line-adjacent assignment runs of `rows`, each statement
 /// paired with whether it opens on the line directly below the row before
@@ -131,33 +76,6 @@ pub(crate) fn keyword_groups(
     )
 }
 
-/// Returns the alignment member for an annotated function parameter
-/// carrying a default value, or `None` for any other shape. Width spans
-/// the parameter name through the annotation's paren-aware end, and the
-/// value-side gap is recovered against the parameter-with-default node so
-/// a parenthesized default keeps its `(`.
-pub(crate) fn parameter(
-    source: &Source,
-    param: AnyParameterRef<'_>,
-    stranding: Stranding,
-) -> Option<aligner::Member> {
-    let AnyParameterRef::NonVariadic(with_default) = param else {
-        return None;
-    };
-    let annotation = param.annotation()?;
-    let default = param.default()?;
-    let annotation_end = source
-        .paren_aware_range(annotation.into(), param.as_parameter().into())
-        .end();
-    equal_member(
-        source,
-        TextRange::new(param.name().start(), annotation_end),
-        default.into(),
-        with_default.into(),
-        stranding,
-    )
-}
-
 /// The runs of `params`' annotated defaults, where a multi-line default
 /// closes the run after it and every held row is dropped.
 pub(crate) fn parameter_groups(
@@ -172,6 +90,60 @@ pub(crate) fn parameter_groups(
     .into_iter()
     .map(|group| aligner::retain_unheld(source, rule, group))
     .collect()
+}
+
+/// Returns the alignment member for an annotated `x: int = 1`, plain
+/// `x = 1`, augmented `x += 1`, or PEP 695 `type X[T] = list[T]`
+/// statement, measuring the left-hand side paren-aware and a `type`
+/// statement's head from its keyword through its type parameter list.
+/// `None` for any other shape or when the span up to the operator breaks
+/// across lines.
+fn assignment(source: &Source, stmt: &Stmt, stranding: Stranding) -> Option<aligner::Member> {
+    let equals = |head: TextRange| {
+        equal_member(
+            source,
+            head,
+            assigned_value(stmt)?.into(),
+            stmt.into(),
+            stranding,
+        )
+    };
+    match stmt {
+        Stmt::AnnAssign(a) => {
+            let annotation = source.paren_aware_range(a.annotation.as_ref().into(), a.into());
+            equals(a.target.range().cover(annotation))
+        }
+        Stmt::Assign(a) => {
+            let [target] = a.targets.as_slice() else {
+                return None;
+            };
+            equals(source.paren_aware_range(target.into(), a.into()))
+        }
+        Stmt::AugAssign(a) => {
+            let op = a.op.as_str();
+            let target_range = source.paren_aware_range(a.target.as_ref().into(), a.into());
+            let value_start = source
+                .paren_aware_range(a.value.as_ref().into(), a.into())
+                .start();
+            let member = aligner::range_anchored_member_single_line(
+                source,
+                target_range,
+                TextRange::new(target_range.end(), value_start),
+                |t| t.kind().as_augmented_assign_operator().is_some(),
+                op.len(),
+                stranding,
+            )?;
+            // `op` is the binary form (`+`), so the augmented operator
+            // runs one column longer for its trailing `=`.
+            let op_len = TextSize::of(op) + TextSize::of('=');
+            Some(member.with_value_gap(op_len, value_start))
+        }
+        Stmt::TypeAlias(a) => {
+            let head_end = a.type_params.as_deref().map_or(a.name.end(), Ranged::end);
+            equals(TextRange::new(a.start(), head_end))
+        }
+        _ => None,
+    }
 }
 
 /// Builds an `=`-anchored member with `target` as the LHS span,
@@ -215,6 +187,33 @@ fn keyword(
         name.range(),
         (&keyword.value).into(),
         keyword.into(),
+        stranding,
+    )
+}
+
+/// Returns the alignment member for an annotated function parameter
+/// carrying a default value, or `None` for any other shape. Width spans
+/// the parameter name through the annotation's paren-aware end, and the
+/// value-side gap is recovered against the parameter-with-default node so
+/// a parenthesized default keeps its `(`.
+fn parameter(
+    source: &Source,
+    param: AnyParameterRef<'_>,
+    stranding: Stranding,
+) -> Option<aligner::Member> {
+    let AnyParameterRef::NonVariadic(with_default) = param else {
+        return None;
+    };
+    let annotation = param.annotation()?;
+    let default = param.default()?;
+    let annotation_end = source
+        .paren_aware_range(annotation.into(), param.as_parameter().into())
+        .end();
+    equal_member(
+        source,
+        TextRange::new(param.name().start(), annotation_end),
+        default.into(),
+        with_default.into(),
         stranding,
     )
 }

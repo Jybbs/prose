@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/template_in_a_comprehension_converts_ahead_of_its_target/input.py
+---
+def describe(duplicates):
+    if duplicates:
+        alias_details = ", ".join(
+            [f"{alias} -> {name}" for (
+                alias, name
+            ) in duplicates]
+        )

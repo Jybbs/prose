@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { flushPromises } from '@vue/test-utils'
+import { effectScope }     from 'vue'
 
 import { useProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import type { ProseSandbox, ProseSandboxOptions } from '../../lib/composables/use-prose-sandbox'
@@ -416,6 +417,26 @@ describe('useProseSandbox', () => {
     // intermediate edit, with the eligibility runs deferred past the paint.
     expect(format).toHaveBeenCalledOnce()
     expect(api.formatted.value).toBe('OUT')
+  })
+
+  it('drops a debounced format still queued when the sandbox unmounts', async () => {
+    vi.useFakeTimers()
+    const format = vi.fn<Formatter>(formatting())
+    const scope  = effectScope()
+    scope.run(() => {
+      useProseSandbox({
+        cases      : CASES,
+        debounceMs : 50,
+        load       : () => Promise.resolve(moduleWith(format)),
+        pick       : () => 0,
+        schema     : SCHEMA
+      }).source.value = 'edited'
+    })
+    await flushPromises()
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(50)
+    await flushPromises()
+    expect(format).not.toHaveBeenCalled()
   })
 
   it('formats a rule toggle without waiting out the typing debounce', async () => {

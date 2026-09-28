@@ -3,9 +3,9 @@
 use ruff_source_file::LineRanges;
 use rustc_hash::FxHashMap;
 
-use super::{measure::assigned_value, *};
+use super::*;
 use crate::{
-    primitives::{colon_targets, range::overlaps},
+    primitives::{binding::assigned_value, colon_targets, range::overlaps},
     rules::align_colons::AlignColons,
 };
 
@@ -48,8 +48,8 @@ impl<'a> ReserveVisitor<'a> {
         self.values.insert(start, (value, parent));
     }
 
-    /// Notes the value of each assignment in `body` against its
-    /// statement.
+    /// Notes the value `assigned_value` reads off each statement of
+    /// `body` against that statement.
     fn note_values(&mut self, body: &'a [Stmt]) {
         for stmt in body {
             if let Some(value) = assigned_value(stmt) {

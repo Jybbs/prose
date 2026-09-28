@@ -10,7 +10,7 @@ use ruff_python_parser::parse_module;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
-    primitives::{decorator::is_decorated, scope::sub_bodies, slots::item_holding},
+    primitives::{decorator::is_decorated, scope::sub_bodies, slots::item_covering},
     source::Source,
 };
 
@@ -60,26 +60,20 @@ pub(crate) fn splice_preserves_tree(source: &Source, range: TextRange, replaceme
         .map(ComparableStmt::from))
 }
 
-/// The statement of `body` whose own range covers `range`, `None`
-/// where no single statement does.
-fn covering_in_body(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    item_holding(body, range.start()).filter(|stmt| range.end() <= stmt.end())
-}
-
 /// The innermost statement whose own range holds `range` with room to
 /// spare, the statement a window whose own slice does not reparse
 /// widens to. `None` where the module body holds `range` directly.
 pub(crate) fn enclosing_window(source: &Source, range: TextRange) -> Option<TextRange> {
     let mut body: &[Stmt] = &source.ast().body;
     let mut enclosing = None;
-    while let Some(stmt) = covering_in_body(body, range) {
+    while let Some(stmt) = item_covering(body, range) {
         if stmt.range() == range {
             break;
         }
         enclosing = Some(stmt.range());
         let Some((nested, _)) = sub_bodies(stmt)
             .into_iter()
-            .find(|(nested, _)| covering_in_body(nested, range).is_some())
+            .find(|(nested, _)| item_covering(nested, range).is_some())
         else {
             break;
         };
@@ -93,11 +87,11 @@ pub(crate) fn enclosing_window(source: &Source, range: TextRange) -> Option<Text
 /// covering statement opens. `None` where no module-body statement
 /// covers it.
 fn covering_statement(body: &[Stmt], range: TextRange) -> Option<&Stmt> {
-    let mut covering = covering_in_body(body, range)?;
+    let mut covering = item_covering(body, range)?;
     let mut window = covering;
     while let Some(inner) = sub_bodies(covering)
         .into_iter()
-        .find_map(|(nested, _)| covering_in_body(nested, range))
+        .find_map(|(nested, _)| item_covering(nested, range))
     {
         covering = inner;
         if slices_cleanly(inner) {
@@ -154,7 +148,7 @@ mod tests {
         "def f():\n    if (x):\n        pass\n    else:\n        pass\n";
 
     /// A module whose grouping parenthesis pair sits inside its first
-    /// statement, the boundary `covering_in_body`'s partition point
+    /// statement, the boundary `item_covering`'s partition point
     /// resolves at index zero.
     const LEADING_PAREN: &str = "def f():\n    return (1)\nx = 1\n";
 

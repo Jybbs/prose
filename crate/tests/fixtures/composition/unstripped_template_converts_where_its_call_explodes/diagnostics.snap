@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/unstripped_template_converts_where_its_call_explodes/input.py
+---
+reflow-calls@46..107
+reflow-collections@47..106

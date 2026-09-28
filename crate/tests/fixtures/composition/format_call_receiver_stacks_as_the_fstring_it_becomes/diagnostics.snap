@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/format_call_receiver_stacks_as_the_fstring_it_becomes/input.py
+---
+prefer-fstring@7..34
+stack-method-chains@7..62

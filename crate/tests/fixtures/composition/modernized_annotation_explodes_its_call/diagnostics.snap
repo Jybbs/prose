@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/modernized_annotation_explodes_its_call/input.py
+---
+modernize-annotations@27..37
+modernize-annotations@97..175

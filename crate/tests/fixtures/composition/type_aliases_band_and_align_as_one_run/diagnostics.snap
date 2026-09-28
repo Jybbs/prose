@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/type_aliases_band_and_align_as_one_run/input.py
+---
+band-constants@5..244

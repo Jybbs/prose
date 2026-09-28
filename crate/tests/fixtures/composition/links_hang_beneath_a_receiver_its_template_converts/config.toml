@@ -1,0 +1,7 @@
+target-version = "3.14"
+
+[rules]
+stack-method-chains = { max-shift = false }
+
+[harness]
+rules = ["stack-method-chains", "prefer-fstring"]

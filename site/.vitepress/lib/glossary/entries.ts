@@ -1,4 +1,5 @@
 import type { GlossaryFamily } from '../shared/registries'
+import { directiveHref }       from '../suppression/scopes'
 
 export interface GlossaryEntry {
   aliases   ?: readonly string[]
@@ -14,7 +15,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : '`# fmt: off` and `# fmt: on` mark a block, each on a comment line of its own. '
                + 'Every rule leaves the lines between them as written, rewrites and lints alike.',
     families   : ['formatting', 'engine'],
-    href       : '/reference/suppression-directives#block-markers'
+    href       : directiveHref('block')
   },
 
   '# fmt: skip': {
@@ -39,7 +40,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`class` line or the closing `:` line of a class header, it holds the '
                + 'statements of the body.',
     families   : ['ordering', 'engine'],
-    href       : '/reference/suppression-directives#construct-order-preservation'
+    href       : directiveHref('construct')
   },
 
   '--ignore': {

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/space_statements/class_type_alias_takes_one_blank_before_a_method/input.py
+---
+space-statements@10..11
+space-statements@30..31
+space-statements@75..76
+space-statements@95..99

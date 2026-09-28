@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_type_statement_call_explodes_into_its_column/input.py
+---
+type LongAliasName = int
+type Handler       = make_handler(
+    request_value,
+    response_value
+)

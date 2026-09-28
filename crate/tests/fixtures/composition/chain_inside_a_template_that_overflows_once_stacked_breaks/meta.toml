@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Chain Inside a Template That Overflows Once Stacked Breaks"
+
+description = '''
+At a 50-column budget, stacking `query.filter(...).order_by(name).all()` sets `query.filter(` on a row at indent 4, so the argument list `reflow-calls` explodes lands at indent 8, where the f-string `prefer-fstring` writes for `"%s:%s" % (gamma.get(key).strip().lower(), delta)` ends one column past the budget. **`stack-method-chains` reads whether a template inside a link converts from the `reflow-calls` walk over that link's arguments where the stack lands them**, so the template stays as written and its three-link inner chain breaks under the count trigger in the same pass.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Parenthesized Template Receiver Hangs Links From Its f-String"
+
+description = '''
+`prefer-fstring` rewrites the receiver `("%s" % (alpha,))` as the 10-column `f"{alpha}"`, which fits `max-shift`. **`stack-method-chains` keeps `.upper()`, `.strip()`, and `.lower()` as links and measures the receiver as the f-string it becomes**, so `.upper()` shares the head row and the later links hang beneath its dot, which a second pass leaves unchanged.
+'''

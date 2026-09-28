@@ -178,19 +178,13 @@ impl Columns {
                 continue;
             };
             landed.insert(span);
-            match fresh
-                .shifts
-                .binary_search_by_key(&span.start(), Ranged::start)
-            {
-                Ok(at) if fresh.shifts[at].span == span => {
-                    if fresh.shifts[at].columns != shift.columns {
-                        escapes.push(format!(
-                            "{span:?} moved from {} to {} columns",
-                            shift.columns, fresh.shifts[at].columns
-                        ));
-                    }
-                }
-                _ => escapes.push(format!("{span:?} carried where the fresh table holds none")),
+            match item_holding(&fresh.shifts, span.start()).filter(|held| held.span == span) {
+                Some(held) if held.columns != shift.columns => escapes.push(format!(
+                    "{span:?} moved from {} to {} columns",
+                    shift.columns, held.columns
+                )),
+                Some(_) => {}
+                None => escapes.push(format!("{span:?} carried where the fresh table holds none")),
             }
         }
         for shift in &fresh.shifts {

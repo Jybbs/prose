@@ -4,10 +4,7 @@ use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::Edit;
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
-use ruff_python_ast::{
-    ModModule, PySourceType,
-    token::{TokenKind, Tokens},
-};
+use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
@@ -25,6 +22,7 @@ use crate::{
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
+        reflow_calls::{ReflowCalls, Seating},
         stack_method_chains::StackMethodChains,
         wrap_docstrings::{Rewrap, WrapDocstrings},
     },
@@ -47,15 +45,16 @@ pub(crate) mod trace;
 /// from that token stream, and the `BindingAnalysis`, alignment-column,
 /// and stranded-padding walks each built on first read or carried
 /// across a reparse from the source before it, beside the f-string
-/// forecast, the chain breaks, and the docstring framings, expansions,
-/// and rewraps each reparse drops. `source_type` is the parse mode and
-/// `line_ending` the sequence the text breaks its lines with, leaving
-/// `cell_offsets` and `cell_numbers` to carry a notebook's cell
-/// boundaries and positions, empty for a module.
+/// forecast, the call seating, the chain breaks, and the docstring
+/// framings, expansions, and rewraps each reparse drops. `source_type`
+/// is the parse mode and `line_ending` the sequence the text breaks its
+/// lines with, leaving `cell_offsets` and `cell_numbers` to carry a
+/// notebook's cell boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
     ast: ModModule,
     binding_analysis: OnceLock<Box<BindingAnalysis>>,
+    call_seating: OnceLock<Box<(ReflowCalls, Seating)>>,
     cell_numbers: Box<[OneIndexed]>,
     cell_offsets: CellOffsets,
     chain_breaks: OnceLock<Box<(StackMethodChains, Vec<Vec<Edit>>)>>,
@@ -136,6 +135,7 @@ impl Source {
         Self {
             ast,
             binding_analysis: OnceLock::new(),
+            call_seating: OnceLock::new(),
             cell_numbers: Box::default(),
             cell_offsets,
             chain_breaks: OnceLock::new(),
@@ -313,6 +313,7 @@ impl Clone for Source {
         Self {
             ast: self.ast.clone(),
             binding_analysis: OnceLock::new(),
+            call_seating: OnceLock::new(),
             cell_numbers: self.cell_numbers.clone(),
             cell_offsets: self.cell_offsets.clone(),
             chain_breaks: OnceLock::new(),
@@ -367,12 +368,7 @@ pub enum SourceError {
 fn detect_line_ending(text: &str, tokens: &Tokens) -> LineEnding {
     tokens
         .iter()
-        .filter(|token| {
-            matches!(
-                token.kind(),
-                TokenKind::Newline | TokenKind::NonLogicalNewline
-            )
-        })
+        .filter(|token| token.kind().is_any_newline())
         .find_map(|token| find_newline(&text[token.range()]))
         .or_else(|| find_newline(text))
         .map_or(LineEnding::Lf, |(_, ending)| ending)

@@ -28,6 +28,7 @@ use crate::{
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
+        reflow_calls::{ReflowCalls, Seating},
         stack_method_chains::StackMethodChains,
         wrap_docstrings::{Rewrap, WrapDocstrings},
     },
@@ -41,6 +42,7 @@ const EXPANDED: &str = "expanded";
 const FRAMED: &str = "framed";
 const FSTRINGS: &str = "fstrings";
 const REWRAPS: &str = "rewraps";
+const SEATING: &str = "seating";
 const STRANDED: &str = "stranded";
 
 impl Source {
@@ -87,6 +89,18 @@ impl Source {
         self.binding_analysis.get_or_init(|| {
             trace::built(BINDINGS);
             Box::new(BindingAnalysis::new(self.ast()))
+        })
+    }
+
+    /// Returns where the walk `reflow_calls` runs over this source seats
+    /// each call it relocates and which interpolations it leaves for
+    /// `prefer-fstring`, walking the tree on the first read. A reparse
+    /// drops the walk, so the source it builds walks again.
+    /// `reflow-collections` and `stack-method-chains` read the one walk
+    /// back, whereas a read carrying other settings walks for itself.
+    pub(crate) fn call_seating(&self, reflow_calls: &ReflowCalls) -> Cow<'_, Seating> {
+        keyed(&self.call_seating, SEATING, reflow_calls, |reflow_calls| {
+            reflow_calls.seating(self)
         })
     }
 
@@ -350,14 +364,17 @@ fn table_diff(fresh: &impl std::fmt::Debug, held: &impl std::fmt::Debug, label: 
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+
     use rstest::rstest;
     use ruff_notebook::CellOffsets;
+    use ruff_python_ast::PythonVersion;
     use ruff_text_size::TextSize;
 
     use super::*;
     use crate::{
         config::Config,
-        rules::{Rule, line_overflow::LineOverflow},
+        rules::{Rule, line_overflow::LineOverflow, reflow_collections::ReflowCollections},
         testing::{parse, range, woven},
     };
 
@@ -378,6 +395,7 @@ mod tests {
     fn with_every_table(source: Source) -> Source {
         let config = Config::default();
         source.binding_analysis();
+        source.call_seating(&config.call_seating());
         source.chain_breaks(&StackMethodChains::from_config(&config));
         source.columns(&config.equals_reservations());
         source.docstring_rewraps(WrapDocstrings::from_config(&config));
@@ -411,6 +429,33 @@ mod tests {
         assert!(source.framed_docstrings.get().is_some());
     }
 
+    #[rstest]
+    #[case::reflow_collections(|config: &Config, source: &Source| {
+        ReflowCollections::from_config(config).apply(source);
+    })]
+    #[case::stack_method_chains(|config: &Config, source: &Source| {
+        StackMethodChains::from_config(config).apply(source);
+    })]
+    fn call_seating_fills_from_each_rule_reading_it(#[case] read: fn(&Config, &Source)) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(60),
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse(
+            "label = \"%s: %s\" % (name, [first_value, second_value, third_value, fourth])\nvalue = frob(items.filter(first).map(second).sort(third).take(n))\n",
+        );
+
+        read(&config, &source);
+
+        assert!(
+            source
+                .call_seating
+                .get()
+                .is_some_and(|held| held.0 == config.call_seating())
+        );
+    }
+
     #[test]
     fn columns_holds_the_first_reservation_and_walks_for_any_other() {
         let source = parse("x = 1\nlonger = 2\n");
@@ -442,6 +487,7 @@ mod tests {
         let next = reparsed_with(source, vec![blank], preserves);
 
         assert_eq!(next.binding_analysis.get().is_some(), preserves);
+        assert!(next.call_seating.get().is_none());
         assert!(next.chain_breaks.get().is_none());
         assert!(next.columns.get().is_none());
         assert!(next.docstring_rewraps.get().is_none());

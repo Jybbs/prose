@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Links Hang Beneath a Receiver Its Template Converts"
+
+description = '''
+With `max-shift = false`, the three-link chain on `fetch("%s:%s" % (alpha, beta))` breaks under the count trigger and hangs each later link beneath the head's dot, while `prefer-fstring` rewrites the receiver's template as `f"{alpha}:{beta}"` in the same pass. **`stack-method-chains` measures the receiver at the width of the f-string it becomes**, so `.first()` and `.all()` hang beneath the dot the converted receiver leaves and a second pass has nothing to move.
+'''

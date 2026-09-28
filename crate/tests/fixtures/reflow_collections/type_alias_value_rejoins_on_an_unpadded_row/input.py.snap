@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/type_alias_value_rejoins_on_an_unpadded_row/input.py
+---
+type LongerName = int
+type Scored = Annotated[int, Field(ge=0)]

@@ -18,7 +18,7 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         comments::class_keeps_order,
-        constructor::{classify_field, keyword_field_start},
+        constructor::positional_fields,
         params::{params_unsorted, pins_positional_params},
         range::blocks_span,
         walk::filter_map_over_stmts,
@@ -62,12 +62,8 @@ impl Rule for UnsortedPositionals {
 /// order. `None` where the header generates no positional constructor
 /// and where the run already reads in order.
 fn unsorted_field_run(class: &StmtClassDef) -> Option<TextRange> {
-    let binds_by_name_from = keyword_field_start(class);
-    let (ranges, keys): (Vec<TextRange>, Vec<(u8, &str)>) = class
-        .body
-        .iter()
-        .take_while(|stmt| stmt.start() < binds_by_name_from)
-        .filter_map(|stmt| classify_field(stmt).map(|key| (stmt.range(), key)))
+    let (ranges, keys): (Vec<TextRange>, Vec<(u8, &str)>) = positional_fields(class)
+        .map(|(stmt, key)| (stmt.range(), key))
         .unzip();
     (!keys.is_sorted()).then(|| blocks_span(&ranges))
 }

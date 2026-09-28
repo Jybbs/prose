@@ -1,5 +1,5 @@
-code-line-length = 79
+code-line-length = 73
 target-version   = "3.10"
 
 [harness]
-rules = ["reflow-calls", "reflow-collections", "prefer-fstring", "strip-stranded-padding"]
+rules = ["reflow-calls", "prefer-fstring", "strip-stranded-padding"]
