@@ -21,10 +21,8 @@ mod contexts;
 
 pub(crate) use columns::EntryColumns;
 use columns::docstring_runs_within;
-use contexts::{
-    annotated_assignment_groups, dict_member_groups, match_case_members, parameter_groups,
-};
-pub(crate) use contexts::{dict_entry_slot, match_case};
+pub(crate) use contexts::{annotated_assignment_groups, dict_entry_slot, match_case};
+use contexts::{dict_member_groups, match_case_members, parameter_groups};
 
 /// Receiver for the colon-context walker. `handle` is the catch-all
 /// for annotated assignments, dict entries, and parameters, with
@@ -91,8 +89,9 @@ impl<'a, E: ColonEmitter> AstVisitor<'a> for ContextVisitor<'a, E> {
         for group in annotated_assignment_groups(
             self.source,
             self.emitter.rule(),
-            body,
+            self.source.adjacent_rows(body),
             self.emitter.stranding(),
+            |_| false,
         ) {
             self.emitter.handle(&group);
         }

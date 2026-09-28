@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/class_field_run_measured_in_sorted_order/input.py
+---
+alphabetize-siblings@19..120

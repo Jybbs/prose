@@ -12,9 +12,9 @@ use crate::{
 
 /// Returns the display width from `start` through the bracket a layout
 /// rule breaks `expr` open at, meaning the `(` of a call
-/// [`Source::explodable_arguments`] lists where
-/// [`one_row::Settings::closes`] holds, or the opener of a literal
-/// [`Source::expandable_literals`] lists, measured through `one_row`'s
+/// [`one_row::Settings::explodes_arguments`] accepts, or the opener of a
+/// literal [`Source::expandable_literals`] lists where
+/// [`one_row::Settings::expands_literals`] holds, measured through `one_row`'s
 /// forecast rewrites. `None` for any other expression, for a bracket on
 /// a later row than `start`, and for a bracket a forecast rewrite
 /// replaces where that rewrite sits inside `layout`, the construct the
@@ -32,7 +32,9 @@ pub(crate) fn opener_width(
         Expr::Call(call) => one_row
             .explodes_arguments(source, &call.arguments)
             .then_some(call.arguments.start())?,
-        _ => holds_exactly(source.expandable_literals(), expr.range()).then_some(expr.start())?,
+        _ => (one_row.expands_literals()
+            && holds_exactly(source.expandable_literals(), expr.range()))
+        .then_some(expr.start())?,
     };
     let through = TextRange::new(start, opener + TextSize::of('('));
     let replaced = one_row
@@ -93,6 +95,30 @@ mod tests {
         let value = first_value(&source);
         let mut config = Config::default();
         config.rules.reflow_calls.enabled = false;
+        let one_row = config.one_row_settings();
+        assert_eq!(
+            opener_width(
+                &source,
+                &one_row,
+                value,
+                value.start(),
+                source.module_range()
+            ),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case::call_arguments("x = frobnicate(a, b)\n", Some(11))]
+    #[case::list_literal("x = [a, b]\n", None)]
+    fn opener_width_leaves_literals_out_where_none_expand(
+        #[case] src: &str,
+        #[case] expected: Option<usize>,
+    ) {
+        let source = parse(src);
+        let value = first_value(&source);
+        let mut config = Config::default();
+        config.rules.reflow_collections.explode = false;
         let one_row = config.one_row_settings();
         assert_eq!(
             opener_width(

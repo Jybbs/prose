@@ -181,7 +181,7 @@ impl<'a> AlignWalker<'a> {
 
     /// Returns the display column each member's aligned token lands on
     /// under this walker's settings and widenings, per the free
-    /// [`operator_columns`](super::operator_columns).
+    /// [`operator_columns`].
     pub(crate) fn operator_columns(&self, members: &[Member]) -> Vec<usize> {
         operator_columns(self.source, members, self.settings, &self.widenings, &[])
     }

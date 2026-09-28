@@ -16,6 +16,7 @@ use crate::{
     source::Source,
 };
 
+mod breaks;
 mod emit;
 mod grouping;
 mod holds;
@@ -23,6 +24,7 @@ mod members;
 mod walker;
 mod widen;
 
+pub(crate) use breaks::{Breakable, Statement, breaking_columns};
 pub(crate) use emit::{
     Extent, comment_slack, forecast_columns, operator_columns, settled_tail, space_padding_edit,
     written_columns, written_groups,

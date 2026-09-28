@@ -40,7 +40,7 @@ mod forecast;
 mod runs;
 
 pub(crate) use runs::Folds;
-use runs::{MergeRuns, band_forecast, comments_beside, module_groups};
+use runs::{MergeRuns, comments_beside, module_groups};
 
 /// What joins two members sharing one line, written between them and
 /// counted against the budget each line packs to.
@@ -78,7 +78,7 @@ impl ReflowImports {
             // Forecast the aligned column only when `align-imports`
             // runs, under the settings that rule resolves within.
             align_settings: align.enabled.then(|| config.import_align_settings()),
-            bands: band_forecast(config),
+            bands: config.band_forecast(),
             divides: config.group_imports_enabled() && config.rules.space_statements.enabled,
             first_party: config.first_party(),
             group_imports: config.group_imports_enabled(),

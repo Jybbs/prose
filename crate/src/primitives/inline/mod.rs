@@ -10,7 +10,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{LineRanges, UniversalNewlines};
-use ruff_text_size::TextRange;
+use ruff_text_size::{TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -90,13 +90,6 @@ pub(crate) fn opening_width(text: &str) -> usize {
     )
 }
 
-/// True where the whitespace run covering `[begin, begin + len)` of
-/// `text` closes to a single space rather than to nothing, meaning it
-/// sits between two tokens rather than directly inside a bracket.
-pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> bool {
-    !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
-}
-
 /// True where every row of [`spliced_rows`] sits inside `budget`.
 pub(crate) fn rows_within(source: &Source, span: TextRange, edits: &[Edit], budget: usize) -> bool {
     spliced_rows(source, span, edits)
@@ -104,13 +97,24 @@ pub(crate) fn rows_within(source: &Source, span: TextRange, edits: &[Edit], budg
         .all(|row| display_width(row.as_str()) <= budget)
 }
 
-/// The whole physical rows `span` reaches, with `edits` applied.
-pub(crate) fn spliced_rows<'s>(
-    source: &'s Source,
-    span: TextRange,
-    edits: &[Edit],
-) -> Cow<'s, str> {
-    apply_inline_edits(source, source.text().lines_range(span), edits)
+/// True where the whitespace run covering `[begin, begin + len)` of
+/// `text` closes to a single space rather than to nothing, meaning it
+/// sits between two tokens rather than directly inside a bracket.
+pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> bool {
+    !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
+}
+
+/// Measures the display width of the code past `end` on its physical row
+/// once `padding` settles, a trailing comment closing the measure.
+pub(crate) fn settled_row_tail(source: &Source, padding: &[Edit], end: TextSize) -> usize {
+    let tail = source.row_tail(end);
+    settled_width(source, padding, tail, source.tail_width(tail))
+}
+
+/// The display width `range` settles to once the padding rule drops the
+/// delimiter padding and colon padding inside it.
+pub(crate) fn settled_slice_width(source: &Source, padding: &[Edit], range: TextRange) -> usize {
+    settled_width(source, padding, range, display_width(source.slice(range)))
 }
 
 /// `width`, the display width `range` was measured at, less the padding
@@ -124,12 +128,6 @@ pub(crate) fn settled_width(
     width.saturating_add_signed(-padding::slack(source, padding, range))
 }
 
-/// The display width `range` settles to once the padding rule drops the
-/// delimiter padding and colon padding inside it.
-pub(crate) fn settled_slice_width(source: &Source, padding: &[Edit], range: TextRange) -> usize {
-    settled_width(source, padding, range, display_width(source.slice(range)))
-}
-
 /// Yields the `(start, len)` byte span of each whitespace run in `text`
 /// that spans a line break.
 pub(crate) fn soft_wrap_runs(text: &str) -> impl Iterator<Item = (usize, usize)> + '_ {
@@ -139,6 +137,15 @@ pub(crate) fn soft_wrap_runs(text: &str) -> impl Iterator<Item = (usize, usize)>
 /// True where `text` spans more than one row under any line ending.
 pub(crate) fn spans_rows(text: &str) -> bool {
     text.contains(['\n', '\r'])
+}
+
+/// The whole physical rows `span` reaches, with `edits` applied.
+pub(crate) fn spliced_rows<'s>(
+    source: &'s Source,
+    span: TextRange,
+    edits: &[Edit],
+) -> Cow<'s, str> {
+    apply_inline_edits(source, source.text().lines_range(span), edits)
 }
 
 /// Yields the `(start, len)` byte span of each maximal whitespace run

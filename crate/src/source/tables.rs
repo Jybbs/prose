@@ -28,6 +28,7 @@ use crate::{
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
+        reflow_calls::{ReflowCalls, Seating},
         stack_method_chains::StackMethodChains,
         wrap_docstrings::{Rewrap, WrapDocstrings},
     },
@@ -41,6 +42,7 @@ const EXPANDED: &str = "expanded";
 const FRAMED: &str = "framed";
 const FSTRINGS: &str = "fstrings";
 const REWRAPS: &str = "rewraps";
+const SEATING: &str = "seating";
 const STRANDED: &str = "stranded";
 
 impl Source {
@@ -90,6 +92,18 @@ impl Source {
         })
     }
 
+    /// Returns where the walk `reflow_calls` runs over this source seats
+    /// each call it relocates and which interpolations it leaves for
+    /// `prefer-fstring`, walking the tree on the first read. A reparse
+    /// drops the walk, so the source it builds walks again.
+    /// `reflow-collections` and `stack-method-chains` read the one walk
+    /// back, whereas a read carrying other settings walks for itself.
+    pub(crate) fn call_seating(&self, reflow_calls: &ReflowCalls) -> Cow<'_, Seating> {
+        keyed(&self.call_seating, SEATING, reflow_calls, |reflow_calls| {
+            reflow_calls.seating(self)
+        })
+    }
+
     /// What a splice over this source carries of the column table
     /// `previous` holds into the source it produces, per
     /// [`Reservations::carry`], `None` where the slot is empty or the
@@ -112,7 +126,7 @@ impl Source {
     /// it builds walks again. The rule and `line-overflow` read the one
     /// walk back, whereas a read carrying other settings walks for
     /// itself.
-    pub(crate) fn chain_breaks(&self, chains: StackMethodChains) -> Cow<'_, [Vec<Edit>]> {
+    pub(crate) fn chain_breaks(&self, chains: &StackMethodChains) -> Cow<'_, [Vec<Edit>]> {
         keyed(&self.chain_breaks, CHAINS, chains, |chains| {
             chains.breaks(self)
         })
@@ -124,7 +138,7 @@ impl Source {
     /// read. Every rule of a run measures against the same reservation
     /// and reads the walk back, whereas a read carrying a different one
     /// walks for itself.
-    pub(crate) fn columns(&self, reservations: Reservations) -> Cow<'_, Columns> {
+    pub(crate) fn columns(&self, reservations: &Reservations) -> Cow<'_, Columns> {
         keyed(&self.columns, COLUMNS, reservations, |reservations| {
             self.columns_carry
                 .get()
@@ -142,7 +156,7 @@ impl Source {
     /// `line-overflow` read the one walk back, whereas a read carrying
     /// other settings walks for itself.
     pub(crate) fn docstring_rewraps(&self, wrap: WrapDocstrings) -> Cow<'_, [Rewrap]> {
-        keyed(&self.docstring_rewraps, REWRAPS, wrap, |wrap| {
+        keyed(&self.docstring_rewraps, REWRAPS, &wrap, |wrap| {
             wrap.rewraps(self)
         })
     }
@@ -152,7 +166,7 @@ impl Source {
     /// it builds walks again. The rule and `line-overflow` read the one
     /// walk back.
     pub(crate) fn expanded_docstrings(&self, expand: ExpandDocstrings) -> Cow<'_, [Vec<Edit>]> {
-        keyed(&self.expanded_docstrings, EXPANDED, expand, |expand| {
+        keyed(&self.expanded_docstrings, EXPANDED, &expand, |expand| {
             expand.expanded(self)
         })
     }
@@ -162,7 +176,7 @@ impl Source {
     /// it builds walks again. The rule and `line-overflow` read the one
     /// walk back.
     pub(crate) fn framed_docstrings(&self, frame: FrameDocstrings) -> Cow<'_, [Vec<Edit>]> {
-        keyed(&self.framed_docstrings, FRAMED, frame, |frame| {
+        keyed(&self.framed_docstrings, FRAMED, &frame, |frame| {
             frame.framed(self)
         })
     }
@@ -173,7 +187,7 @@ impl Source {
     /// against the same forecast and reads the walk back, whereas a
     /// read carrying a different one walks for itself.
     pub(crate) fn fstring_rewrites(&self, fstrings: PreferFstring) -> Cow<'_, [Edit]> {
-        keyed(&self.fstring_rewrites, FSTRINGS, fstrings, |fstrings| {
+        keyed(&self.fstring_rewrites, FSTRINGS, &fstrings, |fstrings| {
             fstrings.forecast(self)
         })
     }
@@ -253,7 +267,7 @@ impl Source {
     /// reads the walk back, whereas a read carrying a different one
     /// walks for itself.
     pub(crate) fn stranded_padding(&self, stranding: Stranding) -> Cow<'_, [Edit]> {
-        keyed(&self.stranded_padding, STRANDED, stranding, |stranding| {
+        keyed(&self.stranded_padding, STRANDED, &stranding, |stranding| {
             stranding.edits(self)
         })
     }
@@ -308,21 +322,21 @@ fn inherited<T>(
 /// The value `build` derives for `key`, read back from `slot` where it
 /// already holds that key's value and built afresh otherwise, the
 /// first read filling the slot and each build reported under `table`.
-fn keyed<'a, K: Copy + PartialEq, B: ?Sized + ToOwned>(
+fn keyed<'a, K: Clone + PartialEq, B: ?Sized + ToOwned>(
     slot: &'a OnceLock<Box<(K, B::Owned)>>,
     table: &'static str,
-    key: K,
+    key: &K,
     build: impl Fn(&K) -> B::Owned,
 ) -> Cow<'a, B> {
     let build = |key: &K| {
         trace::built(table);
         build(key)
     };
-    let held = slot.get_or_init(|| Box::new((key, build(&key))));
-    if held.0 == key {
+    let held = slot.get_or_init(|| Box::new((key.clone(), build(key))));
+    if held.0 == *key {
         Cow::Borrowed(held.1.borrow())
     } else {
-        Cow::Owned(build(&key))
+        Cow::Owned(build(key))
     }
 }
 
@@ -350,14 +364,17 @@ fn table_diff(fresh: &impl std::fmt::Debug, held: &impl std::fmt::Debug, label: 
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+
     use rstest::rstest;
     use ruff_notebook::CellOffsets;
+    use ruff_python_ast::PythonVersion;
     use ruff_text_size::TextSize;
 
     use super::*;
     use crate::{
         config::Config,
-        rules::{Rule, line_overflow::LineOverflow},
+        rules::{Rule, line_overflow::LineOverflow, reflow_collections::ReflowCollections},
         testing::{parse, range, woven},
     };
 
@@ -378,8 +395,9 @@ mod tests {
     fn with_every_table(source: Source) -> Source {
         let config = Config::default();
         source.binding_analysis();
-        source.chain_breaks(StackMethodChains::from_config(&config));
-        source.columns(config.equals_reservations());
+        source.call_seating(&config.call_seating());
+        source.chain_breaks(&StackMethodChains::from_config(&config));
+        source.columns(&config.equals_reservations());
         source.docstring_rewraps(WrapDocstrings::from_config(&config));
         source.expanded_docstrings(ExpandDocstrings);
         source.framed_docstrings(FrameDocstrings);
@@ -411,6 +429,33 @@ mod tests {
         assert!(source.framed_docstrings.get().is_some());
     }
 
+    #[rstest]
+    #[case::reflow_collections(|config: &Config, source: &Source| {
+        ReflowCollections::from_config(config).apply(source);
+    })]
+    #[case::stack_method_chains(|config: &Config, source: &Source| {
+        StackMethodChains::from_config(config).apply(source);
+    })]
+    fn call_seating_fills_from_each_rule_reading_it(#[case] read: fn(&Config, &Source)) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(60),
+            target_version: Some(PythonVersion::PY310),
+            ..Config::default()
+        };
+        let source = parse(
+            "label = \"%s: %s\" % (name, [first_value, second_value, third_value, fourth])\nvalue = frob(items.filter(first).map(second).sort(third).take(n))\n",
+        );
+
+        read(&config, &source);
+
+        assert!(
+            source
+                .call_seating
+                .get()
+                .is_some_and(|held| held.0 == config.call_seating())
+        );
+    }
+
     #[test]
     fn columns_holds_the_first_reservation_and_walks_for_any_other() {
         let source = parse("x = 1\nlonger = 2\n");
@@ -421,10 +466,13 @@ mod tests {
         let value = TextSize::new(4);
         let written = source.column_of(value);
 
-        let held = source.columns(aligned).column_in(&source, value);
+        let held = source.columns(&aligned).column_in(&source, value);
         assert!(held > written);
-        assert_eq!(source.columns(aligned).column_in(&source, value), held);
-        assert_eq!(source.columns(unaligned).column_in(&source, value), written);
+        assert_eq!(source.columns(&aligned).column_in(&source, value), held);
+        assert_eq!(
+            source.columns(&unaligned).column_in(&source, value),
+            written
+        );
     }
 
     #[rstest]
@@ -439,6 +487,7 @@ mod tests {
         let next = reparsed_with(source, vec![blank], preserves);
 
         assert_eq!(next.binding_analysis.get().is_some(), preserves);
+        assert!(next.call_seating.get().is_none());
         assert!(next.chain_breaks.get().is_none());
         assert!(next.columns.get().is_none());
         assert!(next.docstring_rewraps.get().is_none());

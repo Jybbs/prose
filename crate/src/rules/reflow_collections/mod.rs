@@ -38,7 +38,7 @@ use crate::{
         Rule, RuleId,
         alphabetize_siblings::Reorders,
         prefer_fstring::PreferFstring,
-        reflow_calls::{CollectionLayout, LazySeating, ReflowCalls},
+        reflow_calls::{CollectionLayout, ReflowCalls},
     },
     source::Source,
 };
@@ -76,11 +76,7 @@ impl ReflowCollections {
         let rules = &config.rules.reflow_collections;
         Self {
             code_line_length: config.code_width(),
-            colons: config
-                .rules
-                .align_colons
-                .enabled
-                .then(|| config.colon_settings()),
+            colons: config.colon_forecast(),
             fstrings: config.fstrings(),
             max_atomics: rules.max_atomics.cap().unwrap_or(usize::MAX),
             one_row: config.one_row_settings(),
@@ -96,7 +92,7 @@ impl ReflowCollections {
 impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);
@@ -108,9 +104,9 @@ impl Rule for ReflowCollections {
             newline: source.newline_str(),
             one_row: self.one_row.against(&targets).forecasting(&rewrites),
             padding: &padding,
+            reflow_calls: &self.reflow_calls,
             reorders: self.reorders,
             reservations: &reservations,
-            seating: LazySeating::new(&self.reflow_calls, source),
             source,
             targets: &targets,
             wrap_dict_entries: self.wrap_dict_entries,
@@ -132,9 +128,9 @@ struct Layouter<'a> {
     pub(super) newline: &'static str,
     pub(super) one_row: one_row::Settings<'a>,
     pub(super) padding: &'a [Edit],
+    pub(super) reflow_calls: &'a ReflowCalls,
     pub(super) reorders: Reorders,
     pub(super) reservations: &'a reserve::Columns,
-    pub(super) seating: LazySeating<'a>,
     pub(super) source: &'a Source,
     pub(super) targets: &'a CallTargets<'a>,
     pub(super) wrap_dict_entries: bool,
@@ -170,7 +166,7 @@ impl<'a> Layouter<'a> {
         (self
             .one_row
             .expands(self.source, expr, parent, column, tail, self.padding)
-            && !self.seating.converts(expr.range()))
+            && !self.reflow_calls.converts(self.source, expr.range()))
         .then(|| self.expand(expr, parent, indent))
     }
 

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_rejoined_comprehension_keeps_its_row/input.py
+---
+positionals = get_positional_actions()
+a = [action for action in positionals if action.nargs in [PARSER, REMAINDER]]

@@ -1,0 +1,5 @@
+code-line-length = 80
+
+[harness]
+rules = ["reflow-collections", "align-equals"]
+skip_ruff_coexistence = true

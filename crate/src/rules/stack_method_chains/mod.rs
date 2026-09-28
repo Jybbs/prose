@@ -41,7 +41,7 @@ use crate::{
     rules::{
         Rule, RuleId,
         prefer_fstring::PreferFstring,
-        reflow_calls::{LazySeating, Reach, ReflowCalls, Seat},
+        reflow_calls::{Reach, ReflowCalls, Seat},
     },
     source::Source,
 };
@@ -51,7 +51,7 @@ mod spine;
 
 use spine::Chain;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct StackMethodChains {
     code_line_length: usize,
     fstrings: PreferFstring,
@@ -87,17 +87,17 @@ impl StackMethodChains {
     /// holds.
     pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let mut breaker = Breaker {
             cap: self.max_links,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             max_shift: self.max_shift,
+            reflow_calls: &self.reflow_calls,
             rejoin: self.rejoin.against(&targets),
             reservations: &reservations,
             rewrites: &rewrites,
-            seating: LazySeating::new(&self.reflow_calls, source),
             source,
         };
         walk_parented_exprs(source.ast(), &mut breaker);
@@ -107,7 +107,7 @@ impl StackMethodChains {
 
 impl Rule for StackMethodChains {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        source.chain_breaks(*self).into_owned()
+        source.chain_breaks(self).into_owned()
     }
 
     fn id(&self) -> RuleId {
@@ -117,18 +117,18 @@ impl Rule for StackMethodChains {
 
 /// Emits the break edit each over-long or over-count chain needs as the
 /// parent-tracking walk reaches it. `rewrites` holds the f-string
-/// rewrites `prefer-fstring` forecasts over the source, and `seating`
-/// what the `reflow_calls` walk records, built in full the first time a
-/// chain reads it.
+/// rewrites `prefer-fstring` forecasts over the source, and
+/// `reflow_calls` the rule whose walk over the source seats each call,
+/// read from the source's table the first time a chain asks.
 struct Breaker<'a> {
     cap: Option<usize>,
     code_line_length: usize,
     edits: Vec<Edit>,
     max_shift: MaxShift,
+    reflow_calls: &'a ReflowCalls,
     rejoin: fracture::Settings<'a>,
     reservations: &'a reserve::Columns,
     rewrites: &'a [Edit],
-    seating: LazySeating<'a>,
     source: &'a Source,
 }
 
@@ -227,7 +227,7 @@ impl<'a> Breaker<'a> {
             && ancestors
                 .iter()
                 .any(|node| matches!(node, AnyNodeRef::Arguments(_)))
-            && let Some(seat) = self.seating.seat(expr.range())
+            && let Some(seat) = self.reflow_calls.seat(self.source, expr.range())
         {
             return seat;
         }
@@ -297,8 +297,12 @@ impl<'a> Breaker<'a> {
             && seat.column + display_width(&joins.settled(self.source, range))
                 > self.code_line_length;
         let walked = OnceCell::new();
-        let landed =
-            || walked.get_or_init(|| self.seating.landed(self.reach(chain, segment, seat, joins)));
+        let landed = || {
+            walked.get_or_init(|| {
+                self.reflow_calls
+                    .recorded(self.source, self.reach(chain, segment, seat, joins))
+            })
+        };
         let mut out = String::new();
         let mut cursor = range.start();
         for (expr, parent, nested) in self.nested(chain, segment) {
@@ -312,8 +316,10 @@ impl<'a> Breaker<'a> {
                     item_indent(seat.indent).saturating_add_signed(seat.line_shift),
                     joins,
                 );
-            let converts =
-                || self.seating.forecasts(expr.range()) && landed().converts(expr.range());
+            let converts = || {
+                self.reflow_calls.forecasts(self.source, expr.range())
+                    && landed().converts(expr.range())
+            };
             let nested_seat = landed_seat.map_or_else(
                 || Seat {
                     column: end_column(&out, seat.column),
@@ -358,7 +364,7 @@ impl<'a> ParentedProbe<'a> for Breaker<'a> {
         let Some(chain) = outermost_chain(self.source, self.rewrites, expr, parent) else {
             return TraversalSignal::Traverse;
         };
-        if self.seating.converts(expr.range()) {
+        if self.reflow_calls.converts(self.source, expr.range()) {
             return TraversalSignal::Skip;
         }
         let range = self.source.paren_aware_range(expr.into(), parent);

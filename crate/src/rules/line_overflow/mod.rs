@@ -132,7 +132,7 @@ impl Rule for LineOverflow {
         };
         spans.note_docstrings(self.wrap_docstrings);
         for edit in source
-            .chain_breaks(self.stack_method_chains)
+            .chain_breaks(&self.stack_method_chains)
             .iter()
             .flatten()
         {

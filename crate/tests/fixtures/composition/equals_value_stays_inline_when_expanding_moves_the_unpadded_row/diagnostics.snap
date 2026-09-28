@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/equals_value_stays_inline_when_expanding_moves_the_unpadded_row/input.py
+---
+align-equals@18..19

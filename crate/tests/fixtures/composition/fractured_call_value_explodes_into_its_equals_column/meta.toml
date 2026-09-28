@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Hand-Wrapped Call Explodes Into Its `=` Column Rather Than Rejoining"
+
+description = '''
+`fontlist`'s call is wrapped by hand across two rows. Rejoined onto one row it reaches 75 columns, inside the 80-column budget where the row stands, but 82 padded out to the column `font_name_title` sets. **[[reflow-calls]] explodes the call rather than rejoining it**, so its opening row joins that column, and the keywords it breaks out align on a column of their own.
+'''

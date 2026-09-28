@@ -15,7 +15,7 @@ use crate::{
     config::Config,
     primitives::{
         imports::defers_annotations,
-        orderer::{any_sibling_shares_line, member_blocks},
+        orderer::{Seatings, any_sibling_shares_line, member_blocks},
         sections::Sections,
     },
     rules::{Rule, RuleId},
@@ -28,7 +28,7 @@ mod plan;
 
 pub(crate) use self::plan::Carry;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct BandConstants {
     code_width: usize,
     first_party: Vec<String>,
@@ -82,6 +82,24 @@ impl BandConstants {
                 .forecast(body, blocks, &sections, self, &order),
         )
     }
+
+    /// Collects the rows of every module-scope body the rule seats other
+    /// than as written, keyed by the start of the body's first statement,
+    /// each slot in the order the band seats it beside whether it opens on
+    /// the line directly below the slot before it.
+    pub(crate) fn seatings(&self, source: &Source) -> Seatings {
+        let body = &source.ast().body;
+        let mut seatings = Seatings::default();
+        if !body.is_empty() {
+            Bander {
+                defer_annotations: defers_annotations(body),
+                rule: self,
+                source,
+            }
+            .seat(body, source.module_range(), &mut seatings);
+        }
+        seatings
+    }
 }
 
 impl Rule for BandConstants {
@@ -118,7 +136,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{at, parse};
 
     /// `rule`'s forecast over the whole module body of `source`.
     fn module_forecast(
@@ -227,5 +245,31 @@ mod tests {
         let rule = BandConstants::from_config(&Config::default());
         let bands = module_forecast(&rule, &source, false).expect("the body bands");
         assert_eq!(bands.order, order);
+    }
+
+    #[rstest]
+    #[case::arm(
+        "if True:\n    _openers = {}\n    CHECK_DELAY = 100\n",
+        "_openers",
+        Some(vec![(1, false), (0, true)]),
+    )]
+    #[case::banded("CHECK_DELAY = 100\n_openers = {}\n", "CHECK_DELAY", None)]
+    #[case::reseated(
+        "_openers = {}\nCHECK_DELAY = 100\n",
+        "_openers",
+        Some(vec![(1, false), (0, true)]),
+    )]
+    fn seatings_record_a_body_the_band_seats_other_than_as_written(
+        #[case] src: &str,
+        #[case] first: &str,
+        #[case] expected: Option<Vec<(usize, bool)>>,
+    ) {
+        let source = parse(src);
+        let seatings = BandConstants::from_config(&Config::default()).seatings(&source);
+
+        assert_eq!(
+            seatings.get(&at(source.text(), first).start()).cloned(),
+            expected
+        );
     }
 }

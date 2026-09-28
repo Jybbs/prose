@@ -60,7 +60,7 @@ impl Rule for StackAdjacentStrings {
             docstrings: docstring_slots(&source.ast().body),
             edits: Vec::new(),
             newline: source.newline_str(),
-            reservations: source.columns(self.reservations),
+            reservations: source.columns(&self.reservations),
             source,
         };
         walk_parented_exprs(source.ast(), &mut layout);

@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_run_measured_in_band_order/input.py
+---
+CHECK_DELAY = 100
+_openers    = {
+    ')': '(',
+    ']': '[',
+    '}': '{'
+}

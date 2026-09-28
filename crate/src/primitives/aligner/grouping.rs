@@ -1,9 +1,11 @@
-//! Statement grouping for the alignment rules. Walks a body into
-//! line-adjacent runs of qualified members, passing a skip-held row
-//! through so its neighbors align as one block.
+//! Statement grouping for the alignment rules. Walks a body's rows, as
+//! written or in a reorder rule's seating, into line-adjacent runs of
+//! qualified members, passing a skip-held row through so its neighbors
+//! align as one block and extending a run past a statement a layout
+//! rule joins onto one line.
 
 use ruff_python_ast::Stmt;
-use ruff_text_size::{Ranged, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextSize};
 
 use super::holds::is_held;
 use crate::{rules::RuleId, source::Source};
@@ -116,61 +118,34 @@ pub(crate) fn keyed_line_adjacent_groups<'a, K, M, F>(
     source: &'a Source,
     body: &'a [Stmt],
     rule: RuleId,
-    mut qualify: F,
+    qualify: F,
 ) -> Vec<Vec<M>>
 where
     K: Eq,
     F: FnMut(&'a Stmt) -> Option<(K, M)>,
 {
-    let mut groups: Vec<Vec<M>> = Vec::new();
-    let mut current: Vec<M> = Vec::new();
-    let mut active: Option<(K, TextRange)> = None;
-    for stmt in body {
-        let Some((key, member)) = qualify(stmt) else {
-            flush_run(&mut groups, &mut current);
-            active = None;
-            continue;
-        };
-        if is_held(source, rule, stmt.start()) {
-            if let Some((_, prev)) = active.as_mut() {
-                *prev = stmt.range();
-            }
-            continue;
-        }
-        let extends = active.as_ref().is_some_and(|(active_key, prev)| {
-            active_key == &key
-                && !source.contains_line_break(prev)
-                && source.consecutive_lines(prev.end(), stmt.start())
-        });
-        if !extends {
-            flush_run(&mut groups, &mut current);
-        }
-        current.push(member);
-        active = Some((key, stmt.range()));
-    }
-    flush_run(&mut groups, &mut current);
-    groups
+    row_adjacent_groups(source, source.adjacent_rows(body), rule, |_| false, qualify)
 }
 
-/// Walks `body`, qualifying each statement through `qualify` and
-/// grouping the qualified members into runs where every consecutive
-/// pair sits on adjacent source lines. A multi-line prior statement,
-/// a non-qualifying statement, an own-line comment between two rows,
-/// or a blank line breaks the current run, and a single-line statement
-/// held for `rule` is transparent per [`keyed_line_adjacent_groups`].
-/// A thin wrapper over [`keyed_line_adjacent_groups`] for rules whose
-/// qualifier produces only one form, so every member shares an
-/// implicit `()` key.
+/// Walks `rows`, qualifying each statement through `qualify` and
+/// grouping the qualified members into runs where every statement opens
+/// on the line directly below the one before it, as each row's flag
+/// reports. A multi-line prior statement `joins` does not name, a
+/// non-qualifying statement, an own-line comment between two rows, or a
+/// blank line breaks the current run, and a single-line statement held
+/// for `rule` is transparent per [`keyed_line_adjacent_groups`]. Every
+/// member shares an implicit `()` key.
 pub(crate) fn line_adjacent_groups<'a, M, F>(
     source: &'a Source,
-    body: &'a [Stmt],
+    rows: impl IntoIterator<Item = (&'a Stmt, bool)>,
     rule: RuleId,
+    joins: impl Fn(&'a Stmt) -> bool,
     mut qualify: F,
 ) -> Vec<Vec<M>>
 where
     F: FnMut(&'a Stmt) -> Option<M>,
 {
-    keyed_line_adjacent_groups(source, body, rule, move |stmt| {
+    row_adjacent_groups(source, rows, rule, joins, move |stmt| {
         qualify(stmt).map(|m| ((), m))
     })
 }
@@ -181,6 +156,50 @@ fn flush_run<M>(groups: &mut Vec<Vec<M>>, current: &mut Vec<M>) {
     if !current.is_empty() {
         groups.push(std::mem::take(current));
     }
+}
+
+/// Groups `rows` the way [`keyed_line_adjacent_groups`] groups a body,
+/// each statement paired with whether it opens on the line directly below
+/// the row before it, and reads each multi-line statement `joins` names as
+/// one row, so a run extends past a statement a layout rule joins.
+fn row_adjacent_groups<'a, K, M, F>(
+    source: &'a Source,
+    rows: impl IntoIterator<Item = (&'a Stmt, bool)>,
+    rule: RuleId,
+    joins: impl Fn(&'a Stmt) -> bool,
+    mut qualify: F,
+) -> Vec<Vec<M>>
+where
+    K: Eq,
+    F: FnMut(&'a Stmt) -> Option<(K, M)>,
+{
+    let closes = |stmt: &'a Stmt| source.contains_line_break(stmt.range()) && !joins(stmt);
+    let mut groups: Vec<Vec<M>> = Vec::new();
+    let mut current: Vec<M> = Vec::new();
+    let mut active: Option<(K, bool)> = None;
+    for (stmt, below) in rows {
+        let Some((key, member)) = qualify(stmt) else {
+            flush_run(&mut groups, &mut current);
+            active = None;
+            continue;
+        };
+        if is_held(source, rule, stmt.start()) {
+            if let Some((_, closed)) = active.as_mut() {
+                *closed = closes(stmt);
+            }
+            continue;
+        }
+        let extends = active
+            .as_ref()
+            .is_some_and(|(active_key, closed)| active_key == &key && !closed && below);
+        if !extends {
+            flush_run(&mut groups, &mut current);
+        }
+        current.push(member);
+        active = Some((key, closes(stmt)));
+    }
+    flush_run(&mut groups, &mut current);
+    groups
 }
 
 /// One flag per item, set where the item shares a source row with the
@@ -372,5 +391,24 @@ mod tests {
             groups.iter().map(Vec::len).collect::<Vec<_>>(),
             vec![1, 1, 1],
         );
+    }
+
+    #[rstest]
+    #[case::closing(false, vec![1, 1])]
+    #[case::joined(true, vec![2])]
+    fn line_adjacent_groups_extend_a_run_past_a_statement_joins_names(
+        #[case] joins: bool,
+        #[case] expected: Vec<usize>,
+    ) {
+        let source = parse("x = f(a,\n      b)\ny = 2\n");
+        let groups = line_adjacent_groups(
+            &source,
+            source.adjacent_rows(&source.ast().body),
+            RuleId::from("align-equals"),
+            |_| joins,
+            |s| s.as_assign_stmt().map(|_| ()),
+        );
+
+        assert_eq!(groups.iter().map(Vec::len).collect::<Vec<_>>(), expected);
     }
 }

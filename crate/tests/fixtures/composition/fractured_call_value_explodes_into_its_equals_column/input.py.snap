@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/fractured_call_value_explodes_into_its_equals_column/input.py
+---
+frame           = Frame(parent)
+font_name_title = Label(frame, justify=LEFT, text="Font Face :")
+fontlist        = Listbox(
+    frame,
+    height          = 15,
+    takefocus       = True,
+    exportselection = FALSE
+)

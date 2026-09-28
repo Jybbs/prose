@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/broken_equals_value_ends_its_run/input.py
+---
+align-equals@1..2
+reflow-calls@38..99

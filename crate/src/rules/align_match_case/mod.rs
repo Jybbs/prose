@@ -59,7 +59,7 @@ impl Rule for AlignMatchCase {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let mut visitor = Visitor {
             code_line_length: self.code_line_length,
-            reservations: self.reservations,
+            reservations: &self.reservations,
             settling: self.settling,
             stranding: self.stranding,
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),

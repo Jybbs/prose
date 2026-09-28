@@ -896,6 +896,26 @@ fn check_package_init_reports_its_unread_import() {
     .code(2);
 }
 
+#[rstest]
+fn check_reads_the_equals_widenings_from_the_columns_table(
+    #[values("align-colons", "align-match-case", "align-colons,align-match-case")] rules: &str,
+) {
+    let (dir, path) = fixture(
+        "widened.py",
+        "x: int = 1\nyy = 2\n\n\ndef f(a):\n    match a:\n        case 1:\n            return x\n        case 22:\n            return yy\n",
+    );
+
+    let assert = prose()
+        .env("PROSE_CARRY_TRACE", "1")
+        .args(["check", "--no-cache", "--select"])
+        .arg(format!("{rules},align-equals"))
+        .arg(&path)
+        .current_dir(dir.path())
+        .assert();
+
+    assert_eq!(stderr_utf8(&assert).matches("build\tcolumns\n").count(), 1);
+}
+
 #[test]
 fn check_relative_path_resolves_its_ancestor_config() {
     let project = suppressed_project();

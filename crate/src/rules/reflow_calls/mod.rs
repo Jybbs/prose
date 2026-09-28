@@ -18,7 +18,7 @@
 //! `stack_method_chains` measures a relocated chain from, and `render`
 //! builds the replacement.
 
-use std::cell::{OnceCell, RefCell};
+use std::cell::RefCell;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
@@ -57,56 +57,6 @@ pub(crate) trait CollectionLayout {
     fn laid_out(&self, expr: &Expr, column: usize, indent: usize, tail: usize) -> Option<String>;
 }
 
-/// The [`Seating`] a `reflow-calls` walk over one source records, read
-/// by a rule that measures where that walk leaves a call and walked the
-/// first time such a rule asks.
-pub(crate) struct LazySeating<'a> {
-    reflow_calls: &'a ReflowCalls,
-    seating: OnceCell<Seating>,
-    source: &'a Source,
-}
-
-impl<'a> LazySeating<'a> {
-    pub(crate) fn new(reflow_calls: &'a ReflowCalls, source: &'a Source) -> Self {
-        Self {
-            reflow_calls,
-            seating: OnceCell::new(),
-            source,
-        }
-    }
-
-    /// The walk's [`Seating`], walked on the first read.
-    fn seating(&self) -> &Seating {
-        self.seating
-            .get_or_init(|| self.reflow_calls.seating(self.source))
-    }
-
-    /// True where `range` sits inside an interpolation the walk leaves
-    /// for `prefer-fstring` to convert, the walk running only where a
-    /// forecast rewrite covers `range`.
-    pub(crate) fn converts(&self, range: TextRange) -> bool {
-        self.forecasts(range) && self.seating().converts(range)
-    }
-
-    /// True where a rewrite `prefer-fstring` forecasts covers `range`,
-    /// whether or not its f-string fits where it lands.
-    pub(crate) fn forecasts(&self, range: TextRange) -> bool {
-        self.reflow_calls.forecasts(self.source, range)
-    }
-
-    /// The [`Seating`] a walk over what `reach` spans records, walked on
-    /// each read.
-    pub(crate) fn landed(&self, reach: Reach) -> Seating {
-        self.reflow_calls.recorded(self.source, reach)
-    }
-
-    /// The seat the walk records for the call or attribute access
-    /// spanning `range`, `None` where it records none.
-    pub(crate) fn seat(&self, range: TextRange) -> Option<Seat> {
-        self.seating().seat(range)
-    }
-}
-
 /// What one walk spans: the whole module, or the text over `region`
 /// once it lands at `seat`, the walk visiting the argument list of
 /// `call`, whose callee sits outside `region`, or the expression `expr`.
@@ -125,7 +75,7 @@ pub(crate) enum Reach<'a> {
     },
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct ReflowCalls {
     fstrings: PreferFstring,
     one_row: one_row::Settings<'static>,
@@ -158,7 +108,7 @@ impl ReflowCalls {
     /// into `seating` when one is given.
     fn walk(&self, source: &Source, reach: Reach, seating: Option<&RefCell<Seating>>) -> Vec<Edit> {
         let targets = module_call_params(source);
-        let reservations = source.columns(self.reservations);
+        let reservations = source.columns(&self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);
@@ -202,10 +152,31 @@ impl ReflowCalls {
         }
     }
 
+    /// True where `range` sits inside an interpolation this rule's walk
+    /// over `source` leaves for `prefer-fstring` to convert, reading the
+    /// source's walk only where a forecast rewrite covers `range`.
+    pub(crate) fn converts(&self, source: &Source, range: TextRange) -> bool {
+        self.forecasts(source, range) && source.call_seating(self).converts(range)
+    }
+
     /// True where a rewrite `prefer-fstring` forecasts over `source`
     /// covers `range`, whether or not its f-string fits where it lands.
     pub(crate) fn forecasts(&self, source: &Source, range: TextRange) -> bool {
         item_covering(&source.fstring_rewrites(self.fstrings), range).is_some()
+    }
+
+    /// The [`Seating`] this rule's walk over what `reach` spans in
+    /// `source` records, walked on each read.
+    pub(crate) fn recorded(&self, source: &Source, reach: Reach) -> Seating {
+        let seating = RefCell::default();
+        self.walk(source, reach, Some(&seating));
+        seating.into_inner()
+    }
+
+    /// The seat this rule's walk over `source` records for the call or
+    /// attribute access spanning `range`, `None` where it records none.
+    pub(crate) fn seat(&self, source: &Source, range: TextRange) -> Option<Seat> {
+        source.call_seating(self).seat(range)
     }
 
     /// The [`Seating`] this rule's walk over `source` records, with no
@@ -215,14 +186,6 @@ impl ReflowCalls {
     /// converts, or a replacement field, where the walk does not reach.
     pub(crate) fn seating(&self, source: &Source) -> Seating {
         self.recorded(source, Reach::Module)
-    }
-
-    /// The [`Seating`] this rule's walk over what `reach` spans in
-    /// `source` records.
-    fn recorded(&self, source: &Source, reach: Reach) -> Seating {
-        let seating = RefCell::default();
-        self.walk(source, reach, Some(&seating));
-        seating.into_inner()
     }
 }
 
@@ -316,7 +279,7 @@ impl<'a> Reshaper<'a> {
 /// reaches after every move, `indent` the indent its row is written at
 /// before a later move carries that row `line_shift` columns, and
 /// `tail` the columns trailing it on that row.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Seat {
     pub(crate) column: usize,
     pub(crate) indent: usize,
@@ -328,7 +291,7 @@ pub(crate) struct Seat {
 /// attribute access inside an argument it relocates, keyed by its
 /// range, and the range of each expression it leaves unwalked inside an
 /// interpolation `prefer-fstring` converts where it lands.
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct Seating {
     converted: Vec<TextRange>,
     seats: FxHashMap<TextRange, Seat>,
@@ -643,11 +606,14 @@ mod tests {
             line_shift: 0,
             tail: 0,
         };
-        let landed = LazySeating::new(&reflow_calls, &source).landed(Reach::Arguments {
-            call,
-            region: call.range(),
-            seat,
-        });
+        let landed = reflow_calls.recorded(
+            &source,
+            Reach::Arguments {
+                call,
+                region: call.range(),
+                seat,
+            },
+        );
         assert_eq!(
             landed.seat(at(src, "gamma.get(key).strip()")).map(|seat| (
                 seat.column,

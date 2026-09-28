@@ -31,7 +31,7 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
         for rule in &pipeline.rules {
             source.binding_analysis();
             source.stranded_padding(stranding);
-            source.columns(reservations);
+            source.columns(&reservations);
             let Some(spliceable) = Spliceable::landing(&**rule, &source) else {
                 continue;
             };

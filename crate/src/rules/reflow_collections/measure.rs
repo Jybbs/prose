@@ -8,7 +8,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{Layouter, entry_tail};
-use crate::primitives::inline::settled_width;
+use crate::primitives::inline::{settled_row_tail, settled_width};
 
 impl<'a> Layouter<'a> {
     /// The source text between a keyed dict entry's `key` and the
@@ -39,12 +39,7 @@ impl<'a> Layouter<'a> {
         grandparent: AnyNodeRef,
     ) -> usize {
         let end = expr.end();
-        let current = settled_width(
-            self.source,
-            self.padding,
-            self.source.row_tail(end),
-            self.source.row_tail_width(end),
-        );
+        let current = settled_row_tail(self.source, self.padding, end);
         let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
             return current;
         };

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `type` Statement's Call Value Explodes Into Its `=` Column"
+
+description = '''
+`type Handler`'s row reaches 58 columns on one line, inside the 60-column budget where it stands, but 64 padded out to the column `type LongAliasName` sets. **[[reflow-calls]] explodes the `make_handler` call so its opening row joins that column**, because breaking it open leaves both rows in one column, whereas keeping it on one row would leave each row a column of its own.
+'''

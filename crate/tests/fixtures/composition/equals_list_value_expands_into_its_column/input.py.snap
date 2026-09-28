@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_list_value_expands_into_its_column/input.py
+---
+a            = 1
+bbbbbbbbbbbb = 2
+c            = [
+    alpha_00, alpha_01, alpha_02, alpha_03, alpha_04, alpha_05, alpha_long_06
+]

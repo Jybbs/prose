@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Broken Open Ends Its `=` Run"
+
+description = '''
+Padded to the column `bbbbbbbbbbbb` sets, the `c` row would reach 88 columns, past the 80-column budget, so [[reflow-calls]] explodes the `frobnicate` call and its opening row joins that column. **A value broken open ends its run**, so `d` starts a run of its own beneath the closing `)` and keeps its single space. The same statements written with the call already exploded settle to this same output.
+'''

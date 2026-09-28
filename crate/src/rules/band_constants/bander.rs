@@ -1,7 +1,8 @@
 //! The assembly `band-constants` drives over a module body: the
 //! per-body layout the band resolves, the recursion splicing a banded
 //! compound arm back into its parent member, and the comment moves the
-//! banding settles on the rendered text.
+//! banding settles on the rendered text, beside the rows each banded
+//! body is seated in, which a rule forecasting the band reads.
 
 use std::borrow::Cow;
 
@@ -18,8 +19,10 @@ use super::{
 use crate::{
     primitives::{
         comments::TRAILING_GAP,
-        orderer::{Assembly, any_sibling_shares_line, rendered_member_blocks},
-        scope::{scoped_body, splice_compound_arms},
+        orderer::{
+            Assembly, Seatings, any_sibling_shares_line, rendered_member_blocks, seated_rows,
+        },
+        scope::{scoped_body, splice_compound_arms, sub_bodies},
         sections::Sections,
     },
     source::Source,
@@ -127,6 +130,31 @@ impl<'a> Bander<'a> {
             .cell_edits(self.source, layout.forced(), |i| {
                 self.band_gap(&layout, body, i)
             })
+    }
+
+    /// Records in `seatings` the rows of `body` wherever the band seats
+    /// them other than as written, keyed by the start of its first
+    /// statement per [`seated_rows`], then the rows of each module-scope
+    /// compound arm beneath it.
+    pub(super) fn seat(&self, body: &'a [Stmt], outer: TextRange, seatings: &mut Seatings) {
+        let layout = self.band_layout(body, outer);
+        if let Some(rows) = seated_rows(
+            self.source,
+            body,
+            &layout.assembly.blocks,
+            &layout.assembly.order,
+            |i| self.band_gap(&layout, body, i),
+            |slot| &layout.assembly.rendered[slot],
+        ) {
+            seatings.insert(body[0].start(), rows);
+        }
+        for (arm, outer) in body
+            .iter()
+            .filter(|stmt| scoped_body(stmt).is_none())
+            .flat_map(sub_bodies)
+        {
+            self.seat(arm, outer, seatings);
+        }
     }
 }
 

@@ -151,6 +151,42 @@ where
     assembly.or_borrow(source, false, |_| None)
 }
 
+/// Pairs each slot `order` seats `body`'s member `blocks` at with whether
+/// it opens on the line directly below the slot before it once the blocks
+/// assemble, or returns `None` where the rows match `body` as written. A
+/// slot opens below its neighbor where the gap between them holds one line
+/// ending and its own text from `text` opens on no comment, the gap being
+/// what `gap` writes or, where that returns `None`, the source gap, per
+/// [`assemble_blocks`].
+pub(crate) fn seated_rows<'src, T: Ranged>(
+    source: &'src Source,
+    body: &[T],
+    blocks: &[TextRange],
+    order: &[usize],
+    mut gap: impl FnMut(usize) -> Option<&'src str>,
+    text: impl Fn(usize) -> &'src str,
+) -> Option<Vec<(usize, bool)>> {
+    let rows: Vec<(usize, bool)> = order
+        .iter()
+        .enumerate()
+        .map(|(index, &slot)| {
+            let below = index.checked_sub(1).is_some_and(|prev| {
+                let gap = gap(prev).unwrap_or_else(|| {
+                    source.slice(TextRange::new(blocks[prev].end(), blocks[index].start()))
+                });
+                matches!(gap.trim_matches([' ', '\t']), "\n" | "\r\n" | "\r")
+                    && !text(slot).trim_start().starts_with('#')
+            });
+            (slot, below)
+        })
+        .collect();
+    let written = rows.iter().copied().eq(source
+        .adjacent_rows(body)
+        .enumerate()
+        .map(|(slot, (_, below))| (slot, below)));
+    (!written).then_some(rows)
+}
+
 /// One narrowed edit per piece of [`walk_assembly`] that differs from
 /// the source, over the slots `run` covers. A piece the assembly
 /// reproduces verbatim narrows to no edit.
@@ -200,6 +236,7 @@ mod tests {
     use std::assert_matches;
 
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::{first_def, parse};
@@ -320,5 +357,34 @@ mod tests {
         );
         assert_matches!(cow, Cow::Owned(_));
         assert_eq!(&*cow, "DEF a(): pass\nDEF b(): pass");
+    }
+
+    #[rstest]
+    #[case::adjacent("a = 1\nb = 2\n", [1, 0], Some(vec![(1, false), (0, true)]))]
+    #[case::blank_line("a = 1\n\nb = 2\n", [1, 0], Some(vec![(1, false), (0, false)]))]
+    #[case::comment_travels_with_its_member(
+        "a = 1\n# note\nb = 2\n",
+        [1, 0],
+        Some(vec![(1, false), (0, true)])
+    )]
+    #[case::as_written_behind_a_comment("a = 1\n# note\nb = 2\n", [0, 1], None)]
+    fn seated_rows_flag_a_slot_opening_below_the_slot_before_it(
+        #[case] src: &str,
+        #[case] order: [usize; 2],
+        #[case] expected: Option<Vec<(usize, bool)>>,
+    ) {
+        let source = parse(src);
+        let body = &source.ast().body;
+        let blocks = member_blocks(&source, body, source.module_range());
+        let rows = seated_rows(
+            &source,
+            body,
+            &blocks,
+            &order,
+            |_| None,
+            |slot| source.slice(blocks[slot]),
+        );
+
+        assert_eq!(rows, expected);
     }
 }

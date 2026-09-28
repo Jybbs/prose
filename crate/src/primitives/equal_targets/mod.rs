@@ -21,15 +21,18 @@ use crate::{
     source::Source,
 };
 
-/// The line-adjacent assignment runs of `body`, where a multi-line
-/// statement closes its run and a held one is transparent.
-pub(crate) fn assignment_groups(
-    source: &Source,
+/// Collects the line-adjacent assignment runs of `rows`, each statement
+/// paired with whether it opens on the line directly below the row before
+/// it. A multi-line statement closes its run unless `joins` names it, and
+/// a held one is transparent.
+pub(crate) fn assignment_groups<'a>(
+    source: &'a Source,
     rule: RuleId,
-    body: &[Stmt],
+    rows: impl IntoIterator<Item = (&'a Stmt, bool)>,
     stranding: Stranding,
+    joins: impl Fn(&'a Stmt) -> bool,
 ) -> Vec<Vec<aligner::Member>> {
-    aligner::line_adjacent_groups(source, body, rule, |stmt| {
+    aligner::line_adjacent_groups(source, rows, rule, joins, |stmt| {
         assignment(source, stmt, stranding)
     })
 }

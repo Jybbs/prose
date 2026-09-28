@@ -338,7 +338,8 @@ impl<'a> Exploder<'a> {
     /// trigger alone, and where no trigger fires a fractured list
     /// rejoins onto one line through the same one-row form. Returns
     /// `None` where `reflow-calls` is off or
-    /// [`Source::explodable_arguments`] leaves the list out.
+    /// [`Source::explodable_arguments`](crate::source::Source::explodable_arguments)
+    /// leaves the list out.
     pub(super) fn explode_args(&self, call: &'a ExprCall, column: usize) -> Option<String> {
         let arguments = &call.arguments;
         if !self.one_row.explodes_arguments(self.source, arguments) {

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/equals_list_value_expands_into_its_column/input.py
+---
+align-equals@1..2
+reflow-collections@28..101

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/equals_value_stays_inline_below_a_row_breaking_inside_its_value/input.py
+---
+declaration_match = compile(
+    r"[a-z][-_.a-z0-9]*"
+).match
+close = compile(r"--\s*>\s*")

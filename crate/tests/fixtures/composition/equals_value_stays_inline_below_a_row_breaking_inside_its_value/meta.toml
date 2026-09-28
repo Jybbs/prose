@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Stays on One Row Below a Row That Breaks Inside Its Own Value"
+
+description = '''
+`declaration_match`'s row reaches 55 columns at its own column, past the 40-column budget, so [[reflow-calls]] explodes the `compile` call inside its `.match` access and the row spans three rows, which ends its `=` run. **`close` therefore stands in a run of its own and keeps its call on one row**, whereas padded to the column `declaration_match` would set, its row would reach 42 columns and break open for a column that never forms.
+'''

@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/class_field_run_measured_in_sorted_order/input.py
+---
+class Palette:
+    a = 2
+    c = frobnicate(first_argument_value, second_argument_value, third_arg)
+    stroke_width = 1

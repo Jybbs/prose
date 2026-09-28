@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Stays on One Row When Expanding It Only Moves Which Row Stands Unpadded"
+
+description = '''
+Padded to the column `xxxxxxxxxxxx` sets, the `c` row would reach 88 columns, past the 80-column budget, and [[reflow-calls]] could explode its call to join that column. **Breaking it open would only move which row stands unpadded**, because a value broken open ends its run and `dd` would then stand alone below it, just as `xxxxxxxxxxxx` stands alone while the call stays on one row. The call therefore stays on one row, and `c` and `dd` align as a pair beneath `xxxxxxxxxxxx`.
+'''
