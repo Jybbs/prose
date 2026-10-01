@@ -24,7 +24,7 @@ use crate::{
         comments::{has_keep_marker, leading_comment_block, noqa_names, trailing_width},
         effect::value_is_effectful,
         group_map,
-        tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels},
+        tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels, type_alias_values},
     },
     source::Source,
 };
@@ -165,16 +165,7 @@ pub(super) fn module_band_plan<'src>(
     }
     let site_at: FxHashMap<&'src str, usize> =
         sites.iter().enumerate().map(|(s, c)| (c.name, s)).collect();
-    // A statement reading a `type` alias as the module runs can evaluate
-    // the alias's value through its `__value__`, so it reads each name
-    // that value names as well as the alias.
-    let alias_values: FxHashMap<&'src str, Vec<&'src str>> = sites
-        .iter()
-        .filter_map(|site| {
-            let alias = body[site.idx].as_type_alias_stmt()?;
-            Some((site.name, eval_refs(&alias.value)))
-        })
-        .collect();
+    let alias_values = type_alias_values(body);
     let reads_through = |name: &'src str| {
         std::iter::once(name).chain(alias_values.get(name).into_iter().flatten().copied())
     };

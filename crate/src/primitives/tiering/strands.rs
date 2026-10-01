@@ -9,7 +9,7 @@ use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::{Evaluation, observed_refs};
+use super::{Evaluation, observed_refs, type_alias_values};
 use crate::primitives::{
     binding::{is_explicit_type_alias, module_bound_names, single_name_assignment},
     group_map,
@@ -82,13 +82,15 @@ impl<'a, 'src> Strands<'a, 'src> {
     }
 
     /// Holds each member above every later constant whose value takes an
-    /// attribute or a subscript of a name evaluating the member reads, the
-    /// order `band-constants` anchors such a constant in.
+    /// attribute or a subscript of a name the member reads at evaluation
+    /// time, directly or through the value of a `type` alias, the order
+    /// `band-constants` anchors such a constant in.
     pub(super) fn anchor_observers(
         mut self,
         body: &'src [Stmt],
         evaluation: Evaluation<'a, 'src>,
     ) -> Self {
+        let alias_values = type_alias_values(body);
         for &(constant, _) in &self.readers {
             let Some((_, Some(value))) = single_name_assignment(&body[constant])
                 .filter(|_| !is_explicit_type_alias(&body[constant]))
@@ -96,15 +98,16 @@ impl<'a, 'src> Strands<'a, 'src> {
                 continue;
             };
             let observed = observed_refs(value);
+            let observes = |name: &&str| {
+                iter::once(name)
+                    .chain(alias_values.get(name).into_iter().flatten())
+                    .any(|name| observed.contains(name))
+            };
             self.anchors.extend(
                 self.pinnable
                     .keys()
                     .filter(|&&member| {
-                        member < constant
-                            && evaluation
-                                .names(&body[member])
-                                .iter()
-                                .any(|name| observed.contains(name))
+                        member < constant && evaluation.refs_of(&body[member]).iter().any(observes)
                     })
                     .map(|&member| (member, constant)),
             );

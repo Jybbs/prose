@@ -19,7 +19,7 @@ pub(crate) use fences::fenced_slots;
 pub(crate) use reach::{CallReach, call_reachable};
 use reach::{called_names, calls_a_name};
 use refs::eval_time_refs;
-pub(crate) use refs::{eval_refs, observed_refs, walk_lambda_defaults};
+pub(crate) use refs::{eval_refs, observed_refs, type_alias_values, walk_lambda_defaults};
 pub(crate) use runs::{DefRun, def_run_tier_keys};
 pub(crate) use strands::Strands;
 pub(crate) use tiers::tier_levels;
