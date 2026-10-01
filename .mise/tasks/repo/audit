@@ -598,7 +598,7 @@ def parity() -> int:
         ),
         (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
-            pins["github:rustwasm/wasm-bindgen"],
+            pins["github:wasm-bindgen/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
         ),
         (
