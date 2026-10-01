@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Literal Backslash Never Ends a Docstring Row"
+
+description = '''
+The first row of the docstring reads `ctext = <printable ascii except \ ( )>`, where the `\` is a literal backslash in a docstring that is not raw. At a `docstring-line-length` of 40, a row ending on that backslash would continue onto the next one and change the docstring's value, so **`wrap-docstrings` breaks ahead of the backslash** and carries `\ ( )>` to the next row whole.
+'''

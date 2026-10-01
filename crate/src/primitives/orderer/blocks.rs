@@ -25,6 +25,17 @@ pub(crate) fn block_ranges<T: Ranged>(
         .collect()
 }
 
+/// The end of `items[i]`'s block, reaching over the comments that close
+/// its body per [`closing_comments_end`], so the last member of a nested
+/// body reaches past the enclosing statement's range.
+pub(crate) fn body_end<T: Ranged>(source: &Source, items: &[T], i: usize) -> TextSize {
+    let start = item_end(source, items, i);
+    let upper = items
+        .get(i + 1)
+        .map_or(source.text().text_len(), Ranged::start);
+    closing_comments_end(source, items[i].start(), start, upper).unwrap_or(start)
+}
+
 /// Member blocks for every slot of `items`, the `Vec<TextRange>` a
 /// section partition and a block reorder both read.
 pub(crate) fn member_blocks<T: Ranged>(
@@ -189,18 +200,10 @@ pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
     item_end + TextSize::try_from(consumed).expect("a line fits u32")
 }
 
-/// Returns the end of each member's block, reaching over the comments
-/// that close its body per [`closing_comments_end`], so the last member of
-/// a nested body reaches past the enclosing statement's range.
+/// Returns the end of each member's block per [`body_end`].
 fn trailing_body_ends<T: Ranged>(source: &Source, items: &[T]) -> Vec<TextSize> {
     (0..items.len())
-        .map(|i| {
-            let start = item_end(source, items, i);
-            let upper = items
-                .get(i + 1)
-                .map_or(source.text().text_len(), Ranged::start);
-            closing_comments_end(source, items[i].start(), start, upper).unwrap_or(start)
-        })
+        .map(|i| body_end(source, items, i))
         .collect()
 }
 

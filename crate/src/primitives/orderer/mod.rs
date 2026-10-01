@@ -28,7 +28,9 @@ pub(crate) use assemble::{Assembly, assemble_blocks, reorder_text, seated_rows};
 /// seated order beside whether it opens on the line directly below the
 /// slot before it.
 pub(crate) type Seatings = FxHashMap<TextSize, Vec<(usize, bool)>>;
-pub(crate) use blocks::{block_ranges, member_blocks, opens_its_line, rendered_member_blocks};
+pub(crate) use blocks::{
+    block_ranges, body_end, member_blocks, opens_its_line, rendered_member_blocks,
+};
 pub(crate) use permute::{permute_full, permute_in_place, permute_runs};
 pub(crate) use separated::{assemble_separated, reorder_separated};
 

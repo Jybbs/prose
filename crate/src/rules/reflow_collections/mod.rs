@@ -229,7 +229,8 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
         // allows. Where this walk's own earlier edits rewrote the line
         // ahead of the literal, the column and indent read from the row
         // the literal lands on instead, the column still moved by the
-        // shift `align_equals` applies there.
+        // shift `align_equals` applies there while those edits leave the
+        // literal on the row the source writes it on.
         let (column, indent) =
             match placed_head(self.source, &self.edits, start, TextSize::default()) {
                 Cow::Owned(head) => {
@@ -238,7 +239,12 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
                     } else {
                         self.source.line_indent_width(start)
                     };
-                    let column = self.reservations.column(start, || end_column(&head, 0));
+                    let column = self.reservations.column_under(
+                        self.source,
+                        &self.edits,
+                        start,
+                        end_column(&head, 0),
+                    );
                     (column, indent)
                 }
                 Cow::Borrowed(_) => {

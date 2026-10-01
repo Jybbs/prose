@@ -8,7 +8,8 @@
 //! passes through unchanged, reflowed prose collapses interior
 //! whitespace to one space, and a backslash continuing a line of
 //! non-raw prose resolves into the join rather than reaching the
-//! output as a word.
+//! output as a word. A literal backslash never ends a rewrapped row, so
+//! a line whose trailing whitespace holds one passes through as written.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextSize;
@@ -270,6 +271,16 @@ mod tests {
     fn singleton_docstring_is_left_alone() {
         let src = "def f():\n    \"\"\"summary\"\"\"\n";
         assert_eq!(run(src), src);
+    }
+
+    #[test]
+    fn trailing_space_holds_a_literal_backslash_on_its_row() {
+        let src = "def f():\n    \"\"\"\n    A path ending C:\\ \n    and a row long enough to wrap past the budget of seventy six columns twice over.\n    \"\"\"\n";
+        let out = run(src);
+        assert!(
+            out.contains("\n    A path ending C:\\ \n"),
+            "the space holding the backslash literal was trimmed: {out:?}",
+        );
     }
 
     #[test]

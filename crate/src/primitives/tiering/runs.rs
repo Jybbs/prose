@@ -41,6 +41,17 @@ impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
         })
     }
 
+    /// Holds each member above every later constant it anchors, per
+    /// [`Strands::anchor_observers`].
+    pub(crate) fn anchor_observers(
+        mut self,
+        body: &'src [Stmt],
+        evaluation: Evaluation<'a, 'src>,
+    ) -> Self {
+        self.strands = self.strands.anchor_observers(body, evaluation);
+        self
+    }
+
     /// Permutes this run's slots of `order` by `rank` over each member's
     /// tier and key, leaving `order` untouched when the run declines. A
     /// member `holds` selects keeps its source slot, and a member the

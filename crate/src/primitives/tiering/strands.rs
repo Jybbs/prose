@@ -1,6 +1,6 @@
 //! The soundness repair a permutation runs against its run's binders,
 //! pinning each member the arrangement seats across a binding it
-//! evaluates.
+//! evaluates, or below a constant it anchors.
 
 use std::{iter, ops::Range};
 
@@ -9,12 +9,18 @@ use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use super::Evaluation;
-use crate::primitives::{binding::module_bound_names, group_map, slots::slot_positions};
+use super::{Evaluation, observed_refs};
+use crate::primitives::{
+    binding::{is_explicit_type_alias, module_bound_names, single_name_assignment},
+    group_map,
+    slots::slot_positions,
+};
 
 /// The binders and the evaluated names of one run, read against any
-/// arrangement of it and fixed for the run.
+/// arrangement of it and fixed for the run, beside each pair of a member
+/// and a constant below it that the member anchors.
 pub(crate) struct Strands<'a, 'src> {
+    anchors: Vec<(usize, usize)>,
     bound_at: FxHashMap<&'src str, Vec<usize>>,
     pinnable: FxHashMap<usize, TextSize>,
     readers: Vec<(usize, &'a [&'src str])>,
@@ -36,6 +42,7 @@ impl<'a, 'src> Strands<'a, 'src> {
             None => Either::Right(module_bound_names(stmt).into_iter()),
         };
         Self {
+            anchors: Vec::new(),
             bound_at: group_map(
                 slots().flat_map(|(stmt, at)| bound_names(stmt).map(move |name| (name, at))),
             ),
@@ -49,9 +56,10 @@ impl<'a, 'src> Strands<'a, 'src> {
     }
 
     /// The start offsets of the members `order` seats across a binding
-    /// they evaluate, being the members a repair pins, each crossed pair
-    /// contributing whichever of its two sides is a member. An empty set
-    /// means the arrangement strands nothing.
+    /// they evaluate or below a constant they anchor, being the members a
+    /// repair pins, each crossed pair contributing whichever of its two
+    /// sides is a member. An empty set means the arrangement strands
+    /// nothing.
     fn stranded(&self, order: &[usize]) -> FxHashSet<TextSize> {
         let position = slot_positions(order);
         self.readers
@@ -65,11 +73,44 @@ impl<'a, 'src> Strands<'a, 'src> {
                         .map(move |&binder| (binder, *reader))
                 })
             })
-            .filter(|&(binder, reader)| !side_kept(binder, reader, &position))
-            .flat_map(|(binder, reader)| [self.pinnable.get(&binder), self.pinnable.get(&reader)])
+            .chain(self.anchors.iter().copied())
+            .filter(|&(above, below)| !side_kept(above, below, &position))
+            .flat_map(|(above, below)| [self.pinnable.get(&above), self.pinnable.get(&below)])
             .flatten()
             .copied()
             .collect()
+    }
+
+    /// Holds each member above every later constant whose value observes
+    /// a name the member reads at evaluation time through a subscript or
+    /// an attribute, since `band-constants` anchors such a constant below
+    /// that member.
+    pub(super) fn anchor_observers(
+        mut self,
+        body: &'src [Stmt],
+        evaluation: Evaluation<'a, 'src>,
+    ) -> Self {
+        for &(constant, _) in &self.readers {
+            let Some((_, Some(value))) = single_name_assignment(&body[constant])
+                .filter(|_| !is_explicit_type_alias(&body[constant]))
+            else {
+                continue;
+            };
+            let observed = observed_refs(value);
+            self.anchors.extend(
+                self.pinnable
+                    .keys()
+                    .filter(|&&member| {
+                        member < constant
+                            && evaluation
+                                .refs_of(&body[member])
+                                .iter()
+                                .any(|name| observed.contains(name))
+                    })
+                    .map(|&member| (member, constant)),
+            );
+        }
+        self
     }
 
     /// Runs `permute` against `order` and repairs the result until it

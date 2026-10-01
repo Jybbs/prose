@@ -39,9 +39,18 @@ impl Dropping<'_> {
     /// nothing when none drops, when the statement shares its lines with
     /// other code, or when a comment sits inside it. A statement losing
     /// every alias drops whole unless a leading comment block holds it and
-    /// `folded` is false, and one losing a subset drops each run of dropped
-    /// aliases with the separator binding it.
-    fn pruning(&self, source: &Source, folded: bool) -> Pruning {
+    /// `folded` is false. The comment then holds the aliases `opening`
+    /// names, those on the row it leads once a later rule splits the
+    /// statement, or every alias where `opening` is `None`. One losing a
+    /// subset drops each run of dropped aliases with the separator binding
+    /// it.
+    fn pruning(
+        &self,
+        source: &Source,
+        body: &[Stmt],
+        folded: bool,
+        opening: impl FnOnce() -> Option<Vec<usize>>,
+    ) -> Pruning {
         if self.dropped.is_empty()
             || !stands_alone(source, self.range)
             || !source
@@ -51,19 +60,25 @@ impl Dropping<'_> {
         {
             return Pruning::Members(Vec::new());
         }
-        if self.drops_every_alias() {
-            return if comment_leads(source, self.range.start()) && !folded {
-                Pruning::Members(Vec::new())
-            } else {
-                Pruning::Whole
+        let held = if self.drops_every_alias() {
+            if folded || !comment_leads(source, body, self.slot) {
+                return Pruning::Whole;
+            }
+            let Some(opening) = opening() else {
+                return Pruning::Members(Vec::new());
             };
-        }
+            opening
+        } else {
+            Vec::new()
+        };
         let members: Vec<TextRange> = self.names.iter().map(|alias| alias.range).collect();
         Pruning::Members(
-            dropped_member_spans(&members, |index| self.dropped.contains(&index))
-                .into_iter()
-                .map(Edit::range_deletion)
-                .collect(),
+            dropped_member_spans(&members, |index| {
+                self.dropped.contains(&index) && !held.contains(&index)
+            })
+            .into_iter()
+            .map(Edit::range_deletion)
+            .collect(),
         )
     }
 }
@@ -99,7 +114,7 @@ pub(crate) fn fold_landing(
         other > slot
             && survives(other)
             && stands_alone(source, body[other].range())
-            && !comment_leads(source, body[other].start())
+            && !comment_leads(source, body, other)
     };
     let module = body[slot].as_import_from_stmt().map(module_key);
     let same_module = |other: usize| {
@@ -123,16 +138,18 @@ pub(crate) fn fold_landing(
 /// of `body`'s module-scope imports. A statement losing every alias
 /// under a leading comment gives its line to the import `landing`
 /// names, and of two statements landing on one import the later takes
-/// it. The lines of every statement dropping whole and of every import
-/// a drop lands on clear together per [`slot_deletions`], leaving
-/// out a statement a suppression of `rule` pins, which neither lands nor
-/// clears.
+/// it. One with no landing keeps the aliases `opening` names for its
+/// slot per [`Dropping::pruning`]. The lines of every statement dropping
+/// whole and of every import a drop lands on clear together per
+/// [`slot_deletions`], leaving out a statement a suppression of `rule`
+/// pins, which neither lands nor clears.
 pub(crate) fn prune_import_statements(
     source: &Source,
     body: &[Stmt],
     drops: &[Dropping],
     rule: RuleId,
     landing: impl Fn(usize, &dyn Fn(usize) -> bool) -> Option<usize>,
+    opening: impl Fn(usize) -> Option<Vec<usize>>,
 ) -> Vec<Vec<Edit>> {
     let whole: FxHashSet<usize> = drops
         .iter()
@@ -143,7 +160,7 @@ pub(crate) fn prune_import_statements(
     let pinned = |slot: usize| source.suppression_map().pins(body[slot].range(), rule);
     let landings: BTreeMap<usize, usize> = drops
         .iter()
-        .filter(|drop| drop.drops_every_alias() && comment_leads(source, drop.range.start()))
+        .filter(|drop| drop.drops_every_alias() && comment_leads(source, body, drop.slot))
         .filter_map(|drop| {
             landing(drop.slot, &survives)
                 .filter(|&onto| !pinned(drop.slot) && !pinned(onto))
@@ -152,7 +169,11 @@ pub(crate) fn prune_import_statements(
         .collect();
     let claims: FxHashMap<usize, usize> =
         landings.iter().map(|(&lead, &onto)| (onto, lead)).collect();
-    let pruning_of = |drop: &Dropping| drop.pruning(source, landings.contains_key(&drop.slot));
+    let pruning_of = |drop: &Dropping| {
+        drop.pruning(source, body, landings.contains_key(&drop.slot), || {
+            opening(drop.slot)
+        })
+    };
     let line_span =
         |range: TextRange| TextRange::new(range.start(), source.text().line_end(range.end()));
     let mut consumed = FxHashSet::default();
@@ -256,7 +277,7 @@ mod tests {
 
     /// The text `source` reads once the pruning of `drop` applies.
     fn pruned_text(source: &Source, drop: &Dropping, folded: bool) -> String {
-        let edits = match drop.pruning(source, folded) {
+        let edits = match drop.pruning(source, &source.ast().body, folded, || None) {
             Pruning::Members(edits) => edits,
             Pruning::Whole => slot_deletions(
                 source,
@@ -326,6 +347,30 @@ mod tests {
             slot != 1
         });
         assert_eq!(landing, Some(2));
+    }
+
+    #[test]
+    fn prune_import_statements_holds_the_opening_row_of_a_comment_led_drop() {
+        let source = parse("# c\nfrom p import a, b, d\n\nx = 1\n");
+        let body = &source.ast().body;
+        let drops = [Dropping {
+            dropped: vec![0, 1, 2],
+            names: &body[0].as_import_from_stmt().expect("a from-import").names,
+            range: body[0].range(),
+            slot: 0,
+        }];
+        let groups = prune_import_statements(
+            &source,
+            body,
+            &drops,
+            PruneInertImports::SLUG,
+            |_, _| None,
+            |_| Some(vec![0, 1]),
+        );
+        assert_eq!(
+            applied_text(&source, groups.concat()),
+            "# c\nfrom p import a, b\n\nx = 1\n"
+        );
     }
 
     #[rstest]
@@ -405,6 +450,7 @@ mod tests {
             &drops,
             PruneInertImports::SLUG,
             |slot, survives| fold_landing(&source, body, &runs, &[], true, slot, survives),
+            |_| None,
         );
         let pruned = applied_text(&source, groups.concat());
         assert_eq!(pruned, expected);

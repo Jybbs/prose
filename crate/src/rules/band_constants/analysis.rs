@@ -370,6 +370,7 @@ fn backward_carry(
     }
     Some(Carry {
         absorbs: idx,
+        backward: true,
         carrier: prev,
         comment: block,
         trails: !source.contains_line_break(block)

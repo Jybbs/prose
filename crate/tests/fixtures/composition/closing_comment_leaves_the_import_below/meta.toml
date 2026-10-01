@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Closing the Import Above Holds No Import Below It"
+
+description = '''
+The trailing comment on `import threading` continues onto the row below it, indented under the first, which closes that import's block. The import sort carries the comment with `import threading`, so it does not hold `from subprocess import check_output`, which nothing reads, and **`prune-inert-imports` removes `check_output` in the first pass** rather than a second pass removing it once the sort has moved the comment away.
+'''

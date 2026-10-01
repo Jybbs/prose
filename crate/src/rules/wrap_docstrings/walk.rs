@@ -9,7 +9,7 @@ use textwrap::WrapAlgorithm;
 use super::{
     Region, Walker,
     paragraph::collapsed,
-    wrapping::{without_continuation, wrap_options},
+    wrapping::{ends_on_continuation, without_continuation, wrap_options},
 };
 use crate::primitives::{
     docstring::{LineScan, ScannedLine, section_heading, sibling_entry_head, typed_entry_head},
@@ -99,7 +99,13 @@ impl<'a> Walker<'a> {
             return None;
         }
 
-        let text = without_continuation(trimmed, self.raw).trim_end();
+        let text = without_continuation(&line[indent.len()..], self.raw).trim_end();
+        if !self.raw && ends_on_continuation(text) {
+            // Whitespace trailing the backslash run holds it literal,
+            // and any rewrap trims that whitespace.
+            self.flush_verbatim(line);
+            return None;
+        }
         if self.region == Region::SectionEntry {
             if self.is_entry_continuation(indent_chars, text) {
                 self.paragraph.lines.push(text);
@@ -139,7 +145,7 @@ impl<'a> Walker<'a> {
                 // Section prose wraps one line at a time with no
                 // paragraph rejoin, under the first-fit algorithm, whose
                 // maximal lines re-wrap to themselves.
-                let opts = wrap_options(self.rule.section_width, indent, indent)
+                let opts = wrap_options(self.rule.section_width, indent, indent, self.raw)
                     .wrap_algorithm(WrapAlgorithm::FirstFit);
                 for piece in textwrap::wrap(&collapsed([text]), opts) {
                     self.emit_verbatim(&piece);

@@ -10,12 +10,12 @@ use std::borrow::Cow;
 
 use ruff_python_ast::{Expr, ExprCall, token::TokenKind};
 use ruff_source_file::LineRanges;
-use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{CollectionLayout, Exploder, Seat};
 use crate::primitives::{
     edit::{apply_inline_edits, placed_head},
-    inline::{end_column, indent_width, last_line, settled_width, spans_rows},
+    inline::{indent_width, last_line, settled_head_column, spans_rows},
     slots::holds_exactly,
     tokens::{is_closer, is_opener},
     travel::{Travel, shifted_block},
@@ -25,21 +25,17 @@ impl<'a> Exploder<'a> {
     /// The column `offset` reaches once this walk's earlier edits place
     /// the text ahead of it and the padding rule settles its row, a row
     /// past the region's opening one moved by `line_shift`. In a module
-    /// walk, a `reserved` offset starts from the column `align_equals`
-    /// shifts its row to.
+    /// walk, a `reserved` offset the walk's edits leave on the row the
+    /// source writes it on starts from the column `align_equals` shifts
+    /// that row to.
     fn placed_column(&self, offset: TextSize, reserved: bool) -> usize {
         let placed = placed_head(self.source, &self.edits, offset, self.region.start());
-        let row_start = self.source.text().line_start(offset).max(
-            offset
-                .checked_sub(last_line(&placed).text_len())
-                .unwrap_or_default(),
-        );
-        let row = TextRange::new(row_start, offset);
-        let mut column = settled_width(
+        let mut column = settled_head_column(
             self.source,
             self.padding,
-            row,
-            end_column(&placed, self.origin_column),
+            &placed,
+            offset,
+            self.origin_column,
         );
         if spans_rows(&placed) {
             column = column.saturating_add_signed(self.line_shift);
@@ -47,7 +43,8 @@ impl<'a> Exploder<'a> {
         if self.indent.is_some() || !reserved {
             return column;
         }
-        self.reservations.column(offset, || column)
+        self.reservations
+            .column_under(self.source, &self.edits, offset, column)
     }
 
     /// An offset on the row whose indent the row carrying `offset`

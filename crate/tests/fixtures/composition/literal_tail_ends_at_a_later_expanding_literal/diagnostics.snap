@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/literal_tail_ends_at_a_later_expanding_literal/input.py
+---
+reflow-calls@58..150
+reflow-collections@103..111
+reflow-collections@139..149

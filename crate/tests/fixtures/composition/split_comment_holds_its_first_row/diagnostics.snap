@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/split_comment_holds_its_first_row/input.py
+---
+prune-inert-imports@84..93
+reflow-imports@84..85

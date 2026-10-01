@@ -14,7 +14,9 @@ use ruff_source_file::{LineRanges, UniversalNewlines};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use crate::{
-    primitives::{aligner::is_held, blanks::whitespace_start_before, inline::display_width},
+    primitives::{
+        aligner::is_held, blanks::whitespace_start_before, inline::display_width, orderer::body_end,
+    },
     rules::RuleId,
     source::Source,
     suppression::is_directive_comment,
@@ -154,14 +156,19 @@ pub(crate) fn closing_comments_end(
     end
 }
 
-/// True when an own-line comment block leads the item at `item_start`,
-/// reached across the blank run between the two and stopped at a
-/// notebook cell wall.
-pub(super) fn comment_leads(source: &Source, item_start: TextSize) -> bool {
+/// True when an own-line comment block leads `items[i]`, reached across
+/// the blank run between the two and stopped at a notebook cell wall.
+/// A comment closing the body of the item above, which travels with
+/// that item through a reorder, leads nothing.
+pub(super) fn comment_leads(source: &Source, items: &[impl Ranged], i: usize) -> bool {
     let text = source.text();
+    let item_start = items[i].start();
     let line_start = text.line_start(item_start);
     let above = whitespace_start_before(source, line_start);
-    leading_comment_block(source, text.line_start(above), line_start).is_some()
+    let closed = i
+        .checked_sub(1)
+        .map_or(TextSize::default(), |prev| body_end(source, items, prev));
+    leading_comment_block(source, text.line_start(above).max(closed), line_start).is_some()
 }
 
 /// True where every comment inside `gap` sits inside the block of one
@@ -344,13 +351,23 @@ mod tests {
     #[case("x = 1\n\nimport os\n", false)]
     #[case("x = 1  # trail\n\nimport os\n", false)]
     #[case("# far above\nx = 1\n\nimport os\n", false)]
+    #[case::closing_the_item_above("x = 1  # trail\n       # runs on\nimport os\n", false)]
+    #[case::closing_across_a_blank_run("x = 1  # trail\n       # runs on\n\nimport os\n", false)]
+    #[case::leading_below_a_closing_run(
+        "x = 1  # trail\n       # runs on\n# describes it\nimport os\n",
+        true
+    )]
+    #[case::deeper_line_inside_a_leading_block(
+        "x = 1\n# describes it\n    # and more\nimport os\n",
+        true
+    )]
     fn comment_leads_reaches_a_block_across_the_blank_run(
         #[case] src: &str,
         #[case] expected: bool,
     ) {
         let s = parse(src);
-        let item = s.ast().body.last().expect("a statement");
-        assert_eq!(comment_leads(&s, item.start()), expected);
+        let body = &s.ast().body;
+        assert_eq!(comment_leads(&s, body, body.len() - 1), expected);
     }
 
     #[rstest]
@@ -358,8 +375,8 @@ mod tests {
     #[case::written_tight(&["# describes it", "import os"])]
     fn comment_leads_stops_at_a_notebook_cell_wall(#[case] cells: &[&str]) {
         let s = notebook(cells);
-        let item = s.ast().body.last().expect("a statement");
-        assert!(!comment_leads(&s, item.start()));
+        let body = &s.ast().body;
+        assert!(!comment_leads(&s, body, body.len() - 1));
     }
 
     #[rstest]

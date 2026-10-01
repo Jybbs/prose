@@ -12,9 +12,13 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use crate::{primitives::sorted_slot, source::Source};
+use crate::{
+    primitives::{inline::spans_rows, sorted_slot},
+    source::Source,
+};
 
 mod apply;
 mod deletions;
@@ -30,6 +34,14 @@ pub(crate) use offsets::{
 /// rewrite produced fresh content rather than a borrow of the source.
 pub(crate) fn any_owned(parts: &[Cow<str>]) -> bool {
     parts.iter().any(|part| matches!(part, Cow::Owned(_)))
+}
+
+/// True where `edits` break the source row holding `offset` somewhere
+/// ahead of it, which leaves `offset` on a later row than the source
+/// writes it on.
+pub(crate) fn breaks_row_ahead(source: &Source, edits: &[Edit], offset: TextSize) -> bool {
+    let row = TextRange::new(source.text().line_start(offset), offset);
+    spans_rows(&apply_inline_edits(source, row, edits))
 }
 
 /// Inserts `edit` at the slot keeping `edits` ascending by start, the
@@ -101,7 +113,28 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::parse;
+    use crate::testing::{at, parse};
+
+    #[rstest]
+    #[case::no_edit(None, false)]
+    #[case::a_break_ahead_on_the_row(Some(("f(", "f(\n")), true)]
+    #[case::a_break_on_the_row_above(Some(("1", "1\n")), false)]
+    #[case::a_rewrite_holding_no_break(Some(("f(a)", "f(alpha)")), false)]
+    fn breaks_row_ahead_reads_a_break_the_edits_write_ahead_of_the_offset(
+        #[case] rewrite: Option<(&str, &str)>,
+        #[case] expected: bool,
+    ) {
+        let src = "x = 1\ny = f(a) + g(b)\n";
+        let source = parse(src);
+        let edits: Vec<Edit> = rewrite
+            .map(|(old, new)| Edit::range_replacement(new.to_owned(), at(src, old)))
+            .into_iter()
+            .collect();
+        assert_eq!(
+            breaks_row_ahead(&source, &edits, at(src, "g(b)").start()),
+            expected,
+        );
+    }
 
     #[rstest]
     #[case(6, "dict(", " dict(")]

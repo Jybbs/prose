@@ -223,6 +223,7 @@ impl BandPlan<'_> {
             if let Some(comment) = self.attached.remove(&from) {
                 self.carries.push(Carry {
                     absorbs: from,
+                    backward: false,
                     carrier: to,
                     comment,
                     trails: false,
@@ -306,10 +307,12 @@ pub(super) enum BandRank {
 /// A comment moving from the member whose block extent holds it onto
 /// another member's rendered text, landing after that member's code when
 /// `trails` and on the line above it otherwise. The block a comment
-/// binds backward from and the band head a sort reseats are the two
-/// moves, so `absorbs` and `carrier` always name different members.
+/// binds `backward` from onto the member above it and the band head a
+/// sort reseats are the two moves, so `absorbs` and `carrier` always name
+/// different members.
 pub(crate) struct Carry {
     pub(crate) absorbs: usize,
+    pub(crate) backward: bool,
     pub(crate) carrier: usize,
     pub(crate) comment: TextRange,
     pub(crate) trails: bool,

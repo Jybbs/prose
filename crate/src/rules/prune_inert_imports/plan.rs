@@ -15,7 +15,7 @@ use super::{
     future::annotations_are_inert,
     inventory::ImportNode,
     is_package_init,
-    reexports::{REEXPORT_CODE, Reexports, defines_no_own_name, reexports_a_private_member},
+    reexports::{REEXPORT_CODE, Reexports, defines_no_own_name, reexports_a_private_name},
     submodules::loads_a_read_submodule,
 };
 use crate::{
@@ -83,7 +83,6 @@ impl<'a> Plan<'a> {
                 continue;
             }
             let directive = node.future_annotations();
-            let private_source = reexports_a_private_member(node);
             for (index, alias) in node.names().iter().enumerate() {
                 let bound = node.bound(alias);
                 let candidacy = if reexports.holds(alias, bound) {
@@ -94,7 +93,7 @@ impl<'a> Plan<'a> {
                     None
                 } else if node.is_future() {
                     (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
-                } else if private_source {
+                } else if reexports_a_private_name(node, alias) {
                     None
                 } else {
                     (is_unreferenced(analysis, bound, &repeats, &type_names, source.ast())

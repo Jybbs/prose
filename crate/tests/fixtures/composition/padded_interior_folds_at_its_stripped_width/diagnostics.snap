@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/padded_interior_folds_at_its_stripped_width/input.py
+---
+shed-backslash-continuations@77..182
+strip-stranded-padding@135..136
+strip-stranded-padding@180..181
+strip-stranded-padding@53..54
+strip-stranded-padding@58..59

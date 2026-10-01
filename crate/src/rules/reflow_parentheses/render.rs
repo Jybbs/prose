@@ -62,28 +62,26 @@ impl Shedder<'_> {
         self.source.line_indent_width(opens_at)
     }
 
-    /// Emits the replacement breaking `candidate`'s pair across rows,
-    /// reporting whether the break owns the pair's shape. The interior
-    /// holds one row of its own where its joined form fits a row one
-    /// indent step in, and takes one row per operand otherwise. Every row
-    /// renders through the pairs `candidate` encloses that this pass sheds.
-    pub(super) fn push_break_edits(
-        &mut self,
+    /// The text breaking `candidate`'s pair across rows, `None` where a
+    /// break does not own the pair's shape. The interior holds one row of
+    /// its own where its joined form fits a row one indent step in, and
+    /// takes one row per operand otherwise. Every row renders through the
+    /// pairs `candidate` encloses that this pass sheds.
+    pub(super) fn broken_form(
+        &self,
         candidate: &Candidate,
         candidates: &[Candidate],
-    ) -> bool {
+    ) -> Option<String> {
         let Candidate { inner, pair, .. } = *candidate;
         if candidate.links || self.held_inside_a_bracket(pair, candidates) {
-            return false;
+            return None;
         }
         let nested = nested_shed_edits(candidate, candidates);
         if self.holds_its_breaks_inside(inner, &nested) {
-            return false;
+            return None;
         }
         let sheds_pair = |range: TextRange| nested.iter().any(|edit| edit.start() == range.start());
-        let Some(chain) = operands(self.source, candidate.expr, &sheds_pair) else {
-            return false;
-        };
+        let chain = operands(self.source, candidate.expr, &sheds_pair)?;
         let indent = self.statement_indent(pair);
         let item = item_indent(indent);
         let joined = apply_inline_edits(self.source, inner, &nested);
@@ -93,14 +91,28 @@ impl Shedder<'_> {
             Some(row) => wrapped(self.source, &row, indent),
             None => broken(self.source, &chain, &nested, indent),
         };
-        if !splice_preserves_tree(self.source, pair, &text) {
+        splice_preserves_tree(self.source, pair, &text).then_some(text)
+    }
+
+    /// Emits the replacement [`Self::broken_form`] writes for
+    /// `candidate`'s pair, reporting whether the break owns the pair's
+    /// shape.
+    pub(super) fn push_break_edits(
+        &mut self,
+        candidate: &Candidate,
+        candidates: &[Candidate],
+    ) -> bool {
+        let Some(text) = self.broken_form(candidate, candidates) else {
             return false;
-        }
+        };
         // The replacement spans the whole pair and covers every nested
         // shed, which `outermost` then drops. A pair the source already
         // wrote in this shape earns no edit and still reports `true`.
-        if text != self.source.slice(pair) {
-            insert_edit(&mut self.edits, Edit::range_replacement(text, pair));
+        if text != self.source.slice(candidate.pair) {
+            insert_edit(
+                &mut self.edits,
+                Edit::range_replacement(text, candidate.pair),
+            );
         }
         true
     }

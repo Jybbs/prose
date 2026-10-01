@@ -32,21 +32,25 @@ use crate::{
 };
 
 /// The rows a banding moves comments between, read by slot: the rows
-/// whose heading leaves them, the rows an own-line comment lands
-/// above, and the rows a comment trails, each with the columns it
-/// adds.
+/// whose heading leaves them, the rows a reseated heading leads, the
+/// rows an own-line comment carried backward lands above, and the rows
+/// a comment trails, each with the columns it adds.
 struct Carried {
     headed: FxHashSet<usize>,
+    led: FxHashSet<usize>,
     trailed: FxHashMap<usize, usize>,
     unheaded: FxHashSet<usize>,
 }
 
 impl Carried {
     /// Reads `carries` with each carrier resolved through `seat_of`, the
-    /// row a comment lands on where the carrier folds into a merge.
+    /// row a comment lands on where the carrier folds into a merge. A
+    /// heading the sort reseats lands above the carrier's first row,
+    /// whereas a comment carried backward lands above its last.
     fn of(source: &Source, carries: &[Carry], seat_of: impl Fn(usize) -> usize) -> Self {
         let mut carried = Self {
             headed: FxHashSet::default(),
+            led: FxHashSet::default(),
             trailed: FxHashMap::default(),
             unheaded: FxHashSet::default(),
         };
@@ -56,8 +60,10 @@ impl Carried {
             if carry.trails {
                 *carried.trailed.entry(carrier).or_default() +=
                     trailing_width(source, carry.comment);
-            } else {
+            } else if carry.backward {
                 carried.headed.insert(carrier);
+            } else {
+                carried.led.insert(carrier);
             }
         }
         carried
@@ -213,7 +219,8 @@ impl<'a> Layout<'a> {
                             .map(|node| self.roster(node.names.iter()))
                     });
                     let headed = carried.headed.contains(&slot);
-                    let led = (headed && roster.is_none())
+                    let led = carried.led.contains(&slot)
+                        || (headed && roster.is_none())
                         || (!carried.unheaded.contains(&slot)
                             && blocks[slot].start() != source.text().line_start(stmt.start()));
                     let adjacent = position > 0
@@ -462,24 +469,35 @@ mod tests {
         let carries = [
             Carry {
                 absorbs: 3,
+                backward: true,
                 carrier: 2,
                 comment,
                 trails: false,
             },
             Carry {
                 absorbs: 4,
+                backward: true,
                 carrier: 1,
                 comment,
                 trails: true,
             },
+            Carry {
+                absorbs: 5,
+                backward: false,
+                carrier: 6,
+                comment,
+                trails: false,
+            },
         ];
         let carried = Carried::of(&source, &carries, |slot| if slot == 2 { 0 } else { slot });
 
-        // The own-line carry heads its carrier through the seat map, the
-        // trailing carry charges its carrier the gap and comment width,
-        // and both absorbing rows read as unheaded.
-        assert!(carried.headed.contains(&0));
-        assert!(carried.unheaded.contains(&3) && carried.unheaded.contains(&4));
+        // The backward own-line carry heads its carrier through the seat
+        // map, the reseated heading leads its carrier, the trailing carry
+        // charges its carrier the gap and comment width, and every
+        // absorbing row reads as unheaded.
+        assert!(carried.headed.contains(&0) && !carried.led.contains(&0));
+        assert!(carried.led.contains(&6) && !carried.headed.contains(&6));
+        assert!([3, 4, 5].iter().all(|slot| carried.unheaded.contains(slot)));
         assert_eq!(carried.trailed.get(&1), Some(&16));
     }
 }

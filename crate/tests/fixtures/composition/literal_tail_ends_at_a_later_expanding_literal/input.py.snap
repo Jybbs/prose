@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/literal_tail_ends_at_a_later_expanding_literal/input.py
+---
+class T:
+    def test_set(self):
+        self.assertEqual(
+            self.tv.set(item),
+            {'B': 123} if self.wantobjects else {
+                'B': '123'
+            }
+        )

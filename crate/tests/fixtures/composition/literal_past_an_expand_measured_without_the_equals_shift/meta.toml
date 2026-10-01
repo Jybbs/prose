@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Literal Past an Expand Is Measured Without the `=` Shift"
+
+description = '''
+`value` carries padding ahead of its `=` that `align-equals` takes off. At a `code-line-length` of 30, `reflow-collections` expands the first list, which carries the second onto the row its `]` closes. **`reflow-collections` measures the second list from where it lands on that row**, since the columns taken off the row the value opens never reach it, so it expands in the same pass.
+'''

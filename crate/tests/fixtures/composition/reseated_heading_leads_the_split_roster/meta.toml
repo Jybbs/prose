@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Heading Moved Onto a Split Roster Leads Its First Row"
+
+description = '''
+The copyright comment heads `from .initialise import …`, and `band-constants` sorts `from .ansi import …` to the head of the band, writing the comment above it. At an `import-line-length` of 40, `reflow-imports` splits the `.ansi` roster across two rows, and **both rows seat their `import` in the column the run beneath the comment shares**, since the forecast reads the comment above the roster's first row rather than above its last.
+'''

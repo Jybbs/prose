@@ -10,7 +10,7 @@ use ruff_python_ast::{Stmt, StmtImportFrom};
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::FxHashMap;
 
-use super::own_line_indent;
+use super::{ReflowImports, own_line_indent};
 use crate::{
     config::Config,
     primitives::{
@@ -28,22 +28,25 @@ use crate::{
     source::Source,
 };
 
-/// The same-module merges `reflow-imports` makes and the import bands
-/// `band-constants` heads, forecast by a rule seated ahead of both
-/// whose drop of a comment-led statement then lands on the import the
-/// comment reads over.
+/// The same-module merges and row splits `reflow-imports` makes and the
+/// import bands `band-constants` heads, forecast by a rule seated ahead
+/// of both whose drop of a comment-led statement then lands on the
+/// import the comment reads over, or keeps the row the comment leads.
 #[derive(Debug)]
 pub(crate) struct Folds {
     bands: Option<BandConstants>,
-    merges: bool,
+    reflow: Option<ReflowImports>,
 }
 
 impl Folds {
     pub(crate) fn from_config(config: &Config) -> Self {
-        let rules = &config.rules.reflow_imports;
         Self {
             bands: config.band_forecast(),
-            merges: rules.enabled && rules.merge_members,
+            reflow: config
+                .rules
+                .reflow_imports
+                .enabled
+                .then(|| ReflowImports::from_config(config)),
         }
     }
 
@@ -75,7 +78,7 @@ impl Folds {
             body,
             &runs.runs,
             &runs.heads,
-            self.merges,
+            self.reflow.as_ref().is_some_and(|rule| rule.merge_members),
             slot,
             survives,
         )
@@ -83,16 +86,22 @@ impl Folds {
 
     /// One fix group per statement of `drops` that `rule` prunes, a
     /// comment-led statement losing every alias landing on the import
-    /// this forecast names.
+    /// this forecast names, or keeping the aliases of the row
+    /// `reflow-imports` opens it on where nothing takes its line.
     pub(crate) fn prune(
         &self,
         source: &Source,
         drops: &[Dropping],
         rule: RuleId,
     ) -> Vec<Vec<Edit>> {
-        prune_import_statements(source, &source.ast().body, drops, rule, |slot, survives| {
-            self.landing(source, slot, survives)
-        })
+        prune_import_statements(
+            source,
+            &source.ast().body,
+            drops,
+            rule,
+            |slot, survives| self.landing(source, slot, survives),
+            |slot| self.reflow.as_ref()?.opening_row(source, slot),
+        )
     }
 }
 

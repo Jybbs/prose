@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/closing_comment_leaves_the_import_below/input.py
+---
+alphabetize-siblings@72..122
+group-imports@72..122
+prune-inert-imports@72..108

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_below_a_blank_line_measured_from_the_equals_column/input.py
+---
+import unittest
+from collections import namedtuple
+
+__docformat__ = "reStructuredText en"
+TestResults   = namedtuple(
+    "TestResults",
+    "failed attempted"
+)
+
+unittest.x

@@ -10,15 +10,20 @@
 //! operands, `measure` answers whether each direction fits, and
 //! `render` builds the broken text.
 
+use std::cell::RefCell;
+
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
     primitives::{
         edit::{insert_edit, singleton_groups},
         fracture::outermost,
+        padding,
         reseat::push_reseat_edits,
+        reserve,
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -36,6 +41,8 @@ use plan::{Candidate, candidates, outermost_calls};
 pub(crate) struct ReflowParentheses {
     code_line_length: usize,
     reflows_calls: bool,
+    reservations: reserve::Reservations,
+    stranding: padding::Stranding,
 }
 
 impl ReflowParentheses {
@@ -50,6 +57,8 @@ impl ReflowParentheses {
         Self {
             code_line_length: config.code_width(),
             reflows_calls: config.rules.reflow_calls.enabled,
+            reservations: config.equals_reservations(),
+            stranding: config.stranded_padding(),
         }
     }
 }
@@ -57,16 +66,24 @@ impl ReflowParentheses {
 impl Rule for ReflowParentheses {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let candidates = candidates(source);
+        if candidates.is_empty() {
+            return Vec::new();
+        }
         let calls = if self.reflows_calls {
             outermost_calls(source)
         } else {
             Vec::new()
         };
+        let padding = source.stranded_padding(self.stranding);
+        let reservations = source.columns(&self.reservations);
         let mut shedder = Shedder {
+            breaks: RefCell::default(),
             calls,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             folds: Vec::new(),
+            padding: &padding,
+            reservations: &reservations,
             source,
         };
         shedder.shed(&candidates);
@@ -81,12 +98,19 @@ impl Rule for ReflowParentheses {
 /// Turns a candidate list into edits, walking it in source order so each
 /// budget test reads the columns the preceding edits produce. `calls`
 /// holds the outermost call ranges `reflow-calls` explodes where their
-/// row overflows, empty where that rule is off.
+/// row overflows, empty where that rule is off. `padding` is every edit
+/// `strip-stranded-padding` emits over the source and `reservations` the
+/// columns `align-equals` shifts each aligned value to, the two tables
+/// every measure settles a row through. `breaks` holds, for the candidate
+/// under test, whether each later pair on its row breaks.
 struct Shedder<'a> {
+    breaks: RefCell<FxHashMap<TextRange, bool>>,
     calls: Vec<TextRange>,
     code_line_length: usize,
     edits: Vec<Edit>,
     folds: Vec<TextRange>,
+    padding: &'a [Edit],
+    reservations: &'a reserve::Columns,
     source: &'a Source,
 }
 
@@ -101,6 +125,7 @@ impl Shedder<'_> {
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let Candidate { inner, pair, .. } = *candidate;
+            self.breaks.get_mut().clear();
             self.folds.retain(|fold| fold.contains_range(pair));
             let collapsing = !self.folds.is_empty();
             if !collapsing

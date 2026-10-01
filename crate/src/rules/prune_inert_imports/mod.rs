@@ -6,11 +6,13 @@
 //! reports an unreferenced binding rather than dropping it, as does a
 //! module that writes no `__all__` and binds no name of its own, and
 //! `plan` holds a line behind any marker `reexports` reads, a star
-//! import, a name a later import rebinds, a leading own-line comment, or
-//! a dotted import loading a submodule `submodules` reads through its
-//! package. `from __future__ import annotations` drops behind the
-//! annotation analysis in `future`, leaving every other `__future__`
-//! feature in place.
+//! import, a name a later import rebinds, a leading own-line comment the
+//! sort leaves above it, holding only the row it leads once
+//! `reflow-imports` splits the line, or a dotted import loading a
+//! submodule `submodules` reads through its package.
+//! `from __future__ import annotations` drops behind the annotation
+//! analysis in `future`, leaving every other `__future__` feature in
+//! place.
 
 use std::{ffi::OsStr, path::Path};
 

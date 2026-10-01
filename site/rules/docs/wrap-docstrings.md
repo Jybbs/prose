@@ -18,6 +18,10 @@ Rewrapped prose collapses every interior whitespace run to one space, so the wor
 
 A backslash ending a line of a non-raw docstring continues it into the next, so the rule resolves that continuation into the join it performs anyway rather than carrying the backslash mid-line as the invalid escape `\ `. A join with no whitespace on either side splices first, so a URL broken across two source lines stays one token. A continuation inside a passthrough block moves with it as written, and a raw docstring has none at all, its backslash being a literal character.
 
+A backslash written as a literal character, one followed by a space rather than by the end of its line, never ends a rewrapped row, since a break after it would turn it into a continuation and change the docstring's value, so the backslash moves to the next row together with the word after it. A line whose trailing whitespace is what keeps its last backslash literal passes through as written, because a rewrap trims that whitespace.
+
+<Fixture rule="wrap_docstrings" case="odd_backslash_run_holds_its_row_open" />
+
 An entry's head line and every line below it that opens no entry of its own read as one paragraph, rewrapped from the description column the settled head leaves, so padding that moves the `:` reflows the whole description rather than stranding the continuation lines. A line whose own form marks it as structure is exempt, so a doctest, a list item, or a bracketed literal under an entry keeps its layout.
 
 The sibling rules [[frame-docstrings]] and [[expand-docstrings]] settle the quoting and the framing before this rule measures anything, and the wrap runs after [[align-colons]] so an entry's budget reflects the column its key was padded to. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.

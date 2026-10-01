@@ -13,6 +13,7 @@ use std::borrow::Cow;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange, TextSize};
+use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
@@ -23,7 +24,7 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
-        slots::{holds_exactly, item_covering, item_holding},
+        slots::{holds_exactly, item_covering, item_holding, starting_within},
         walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
@@ -106,6 +107,52 @@ impl<'a> Settings<'a> {
                 self.text_width(source, padding, &text, range)
             });
         settled.min(condensed)
+    }
+
+    /// Measures [`Self::row_tail`] past `end`, keeping in `memo` the tail
+    /// it reads past each later literal, keyed by that literal's end.
+    fn tail_through(
+        &self,
+        source: &Source,
+        padding: &[Edit],
+        end: TextSize,
+        memo: &mut FxHashMap<TextSize, usize>,
+    ) -> usize {
+        let mut tail = source.row_tail(end);
+        if self.expands_literals {
+            let landing = source.line_indent_width(end) + 1;
+            let mut covered = end;
+            for &literal in starting_within(source.expandable_literals(), tail, Ranged::start) {
+                if literal.start() < covered || self.rewritten(literal.start()) {
+                    continue;
+                }
+                covered = literal.end();
+                let expands = source.contains_line_break(literal) || {
+                    let own = if let Some(&own) = memo.get(&literal.end()) {
+                        own
+                    } else {
+                        let own = self.tail_through(source, padding, literal.end(), memo);
+                        memo.insert(literal.end(), own);
+                        own
+                    };
+                    !self.fits(
+                        landing
+                            + settled_slice_width(
+                                source,
+                                padding,
+                                TextRange::new(end, literal.start()),
+                            )
+                            + settled_slice_width(source, padding, literal)
+                            + own,
+                    )
+                };
+                if expands {
+                    tail = TextRange::new(end, literal.start() + TextSize::from(1));
+                    break;
+                }
+            }
+        }
+        settled_width(source, padding, tail, source.tail_width(tail))
     }
 
     /// The writer serializing under these settings over `source`.
@@ -376,6 +423,17 @@ impl<'a> Settings<'a> {
         item_holding(self.rewrites, offset).is_some_and(|rewrite| rewrite.range().contains(offset))
     }
 
+    /// The columns trailing `end` on its row once `padding` settles
+    /// them, closing just past the opening bracket of the first later
+    /// literal on the row that expands anyway. Such a literal is written
+    /// across rows or overflows from where it lands once the construct
+    /// closing at `end` breaks and drops its closer to the row's indent,
+    /// measured with its own tail read the same way. A literal inside a
+    /// forecast rewrite holds its row.
+    pub(crate) fn row_tail(&self, source: &Source, padding: &[Edit], end: TextSize) -> usize {
+        self.tail_through(source, padding, end, &mut FxHashMap::default())
+    }
+
     /// The display width of the source slice over `range` once each
     /// forecast rewrite inside it lands.
     pub(crate) fn slice_width(&self, source: &Source, range: TextRange) -> usize {
@@ -437,7 +495,7 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{first_expr, parse};
+    use crate::testing::{first_expr, first_value, parse};
 
     /// `src`'s first expression's one-row form under `config`.
     fn form_under(config: &Config, src: &str) -> Option<String> {
@@ -615,6 +673,63 @@ mod tests {
         assert_eq!(
             Settings::from(&Config::default()).reopens(&source, first_expr(&source)),
             expected,
+        );
+    }
+
+    #[rstest]
+    #[case::literals_never_expand(false, false)]
+    #[case::literal_inside_a_forecast_rewrite(true, true)]
+    fn row_tail_charges_a_literal_that_holds_its_row_whole(
+        #[case] explode: bool,
+        #[case] rewritten: bool,
+    ) {
+        let src = "x = [a, b] + [bbbbbbbbbb, cccccccccc]\n";
+        let mut config = Config {
+            code_line_length: NonZeroUsize::new(20),
+            ..Config::default()
+        };
+        config.rules.reflow_collections.explode = explode;
+        let source = parse(src);
+        let operands = first_value(&source)
+            .as_bin_op_expr()
+            .expect("the value adds two literals");
+        let rewrites: Vec<Edit> = rewritten
+            .then(|| Edit::range_replacement("f\"\"".to_owned(), operands.right.range()))
+            .into_iter()
+            .collect();
+        let settings = Settings::from(&config).forecasting(&rewrites);
+        assert_eq!(
+            settings.row_tail(&source, &[], operands.left.end()),
+            " + [bbbbbbbbbb, cccccccccc]".len(),
+        );
+    }
+
+    #[rstest]
+    #[case::later_literal_fits("x = [a, b] + [c, d]\n", 40, " + [c, d]")]
+    #[case::later_literal_fits_once_the_earlier_breaks(
+        "x = [aaaaaaaaaaaaaaa, b] + [bbbbbbbb, cc]\n",
+        20,
+        " + [bbbbbbbb, cc]"
+    )]
+    #[case::later_literal_expands_anyway("x = [a, b] + [bbbbbbbbbb, cccccccccc]\n", 20, " + [")]
+    #[case::later_literal_written_across_rows("x = [a, b] + [\n    c,\n    d,\n]\n", 88, " + [")]
+    fn row_tail_closes_at_a_later_literal_that_expands_anyway(
+        #[case] src: &str,
+        #[case] width: usize,
+        #[case] tail: &str,
+    ) {
+        let config = Config {
+            code_line_length: NonZeroUsize::new(width),
+            ..Config::default()
+        };
+        let source = parse(src);
+        let first = &first_value(&source)
+            .as_bin_op_expr()
+            .expect("the value adds two literals")
+            .left;
+        assert_eq!(
+            Settings::from(&config).row_tail(&source, &[], first.end()),
+            tail.len(),
         );
     }
 }

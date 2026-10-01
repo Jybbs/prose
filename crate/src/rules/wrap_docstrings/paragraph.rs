@@ -46,7 +46,12 @@ impl Walker<'_> {
                 let measured = " ".repeat(opening.chars().count().saturating_sub(head_slack));
                 let mut pieces = textwrap::wrap(
                     &text,
-                    wrap_options(self.rule.description_width, &measured, &subsequent_indent),
+                    wrap_options(
+                        self.rule.description_width,
+                        &measured,
+                        &subsequent_indent,
+                        self.raw,
+                    ),
                 )
                 .into_iter();
                 if let Some(first) = pieces.next() {
@@ -63,7 +68,7 @@ impl Walker<'_> {
     }
 
     fn emit_wrapped(&mut self, initial: &str, subsequent: &str, text: &str, width: usize) {
-        for piece in textwrap::wrap(text, wrap_options(width, initial, subsequent)) {
+        for piece in textwrap::wrap(text, wrap_options(width, initial, subsequent, self.raw)) {
             self.emit_verbatim(&piece);
         }
     }

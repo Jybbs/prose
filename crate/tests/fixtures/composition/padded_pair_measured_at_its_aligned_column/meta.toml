@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Padded Pair Is Measured From the Column the Alignment Settles"
+
+description = '''
+`columnSpec` carries padding ahead of its `=` from a run whose other values `reflow-calls` explodes at a `code-line-length` of 40, which leaves `align-equals` nothing to pad it against. **`reflow-parentheses` measures `('*' | columnNameList)` from the column `columnSpec`'s value settles at**, where the bare form fits, and sheds the pair rather than breaking it open for a second pass to fold.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call on a Later Row Is Measured Without the `=` Shift"
+
+description = '''
+`selectToken` and `simpleSQL` both carry padding ahead of their `=` that `align-equals` takes off. At a `code-line-length` of 40, `reflow-calls` explodes `selectToken("command")` and `columnSpec("columns")`, which carries `tableNameList("tables")` onto a later row. **`reflow-calls` measures `tableNameList` from where it lands on that row**, since the columns `align-equals` takes off the row the value opens never reach it, so it explodes in the same pass rather than the next.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Literal's Row Ends at a Later Literal That Expands Anyway"
+
+description = '''
+`{'B': 123} if self.wantobjects else {'B': '123'}` lands on a row of its own once `reflow-calls` explodes the `assertEqual` call. At a `code-line-length` of 50 the second dict expands wherever the first lands, so **`reflow-collections` measures the first dict only through the `{` that opens the second**, a row of 49 columns, and the first dict keeps its row rather than expanding for a second pass to rejoin.
+'''

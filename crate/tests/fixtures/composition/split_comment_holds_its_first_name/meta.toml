@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Above a Split Bare Import Holds Its First Name"
+
+description = '''
+`import readline, rlcompleter` sits under `# Loaded for their side effects`, and nothing reads either module. `reflow-imports` splits the statement into one import per module, with the comment above the first, so **`prune-inert-imports` keeps `readline` and removes `rlcompleter`** in the same pass.
+'''
