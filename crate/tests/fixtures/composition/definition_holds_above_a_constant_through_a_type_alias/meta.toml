@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Definition Holds Above a Constant Through a `type` Alias"
+
+description = '''
+`class Zeta(T)` reads `Base` through `type T = Base`, and `x = Base.y` takes an attribute of `Base`. `band-constants` keeps `x` below `Zeta` because a class above it reads that name through the alias, so **`alphabetize-siblings` holds `Zeta` above `x`** while `Beta` and `Zed` still sort, rather than seating `Zeta` below the constant for a second pass to move the constant down.
+'''

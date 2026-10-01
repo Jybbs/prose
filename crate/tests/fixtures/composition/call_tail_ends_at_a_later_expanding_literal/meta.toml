@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call's Tail Ends at a Later Literal That Expands Anyway"
+
+description = '''
+`[p, q]` opens the row ahead of `func(arg)`, and at a `code-line-length` of 50 the closing list overflows wherever `[p, q]` lands, so **`reflow-calls` measures `[p, q]` only through the `[` that opens the closing list**, a row of 26 columns, and reads it as holding its row. The closing list then ends the call's tail at its `[`, so `func(arg)` keeps its row and `reflow-collections` expands the list instead.
+'''

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Call Below a Blank Line Is Measured From the `=` Column"
 
 description = '''
-`TestResults` sits below a blank line, and `band-constants` gathers it beside `__docformat__`, whose longer name sets the `=` column `align-equals` pads it to. At a `code-line-length` of 60, **`reflow-calls` measures `namedtuple(…)` from that column and explodes it in the first pass**, because the blank line ahead of the statement leaves the call on the row its value opens.
+`TestResults` sits below a blank line, and `band-constants` gathers it beside `__docformat__`, whose longer name sets the `=` column `align-equals` pads it to. At a `code-line-length` of 60, **`reflow-calls` measures `namedtuple(…)` from that column and explodes it in the first pass**, because the blank line above the statement lies outside the row its value opens, leaving no break ahead of the call on that row.
 '''

@@ -81,10 +81,9 @@ impl<'a, 'src> Strands<'a, 'src> {
             .collect()
     }
 
-    /// Holds each member above every later constant whose value observes
-    /// a name the member reads at evaluation time through a subscript or
-    /// an attribute, since `band-constants` anchors such a constant below
-    /// that member.
+    /// Holds each member above every later constant whose value takes an
+    /// attribute or a subscript of a name evaluating the member reads, the
+    /// order `band-constants` anchors such a constant in.
     pub(super) fn anchor_observers(
         mut self,
         body: &'src [Stmt],
@@ -103,7 +102,7 @@ impl<'a, 'src> Strands<'a, 'src> {
                     .filter(|&&member| {
                         member < constant
                             && evaluation
-                                .refs_of(&body[member])
+                                .names(&body[member])
                                 .iter()
                                 .any(|name| observed.contains(name))
                     })
