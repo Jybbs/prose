@@ -40,7 +40,7 @@ fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
         ),
         rules => format!("Unstable output from {}", render_slugs(rules)),
     };
-    let version = Cli::command().render_version();
+    let version = Cli::command().render_long_version();
     let fields = [
         ("title", title.as_str()),
         ("version", version.trim_end()),
