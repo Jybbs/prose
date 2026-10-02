@@ -1,0 +1,16 @@
+name        : Prune caches
+description : Provision uv from `.mise/mise.lock` without the mise archive, then delete every cache entry but the newest under each key prefix, for a job granted write access to `actions`.
+
+runs:
+  using: composite
+
+  steps:
+    - name : Provision uv
+      uses : ./.github/actions/provision-uv
+      with : { cache: 'false' }
+
+    - name              : Delete the cache entries this run replaces
+      continue-on-error : true
+      env               : { GH_TOKEN: "${{ github.token }}" }
+      run               : mise run gha:prune
+      shell             : bash

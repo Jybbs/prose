@@ -1,4 +1,4 @@
-min_version = "2026.9.12"
+min_version = "2026.9.18"
 
 [env]
 _.python.venv = { path = "crate/.venv", create = true }
@@ -30,6 +30,7 @@ crate     = [
 ]
 manifests = [
   ".mise/config.toml",
+  ".nvmrc",
   "Cargo.toml",
   "corpus/Cargo.toml",
   "crate/Cargo.toml",
@@ -39,6 +40,7 @@ manifests = [
 ]
 site      = [
   ".mise/config.toml",
+  ".nvmrc",
   "site/**/*",
   "!site/.vitepress/.temp/**/*",
   "!site/.vitepress/dist/**/*",
@@ -57,6 +59,9 @@ wasm      = [
   "crate/src/**",
   "wasm/**"
 ]
+
+[tool_config]
+locked = true
 
 [tools]
 "aqua:WebAssembly/binaryen"        = "133"

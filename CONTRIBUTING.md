@@ -12,10 +12,10 @@ This page walks a change through each step in the order a contributor takes it, 
 
 | **Convention** | **Rule** |
 |---|---|
-| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it |
+| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it, and `locked = true` under its `[tool_config]` stops `mise install` on any tool in its `[tools]` table that has no lockfile entry. The policy leaves out node, since `.nvmrc` pins it rather than the `[tools]` table |
 | Tasks | A command runs through its mise task rather than the `cargo`, `bun`, or `maturin` call the task wraps, because the task carries the flags CI runs with. `mise tasks` lists them all, and most developer tasks also run under a one-word alias (*`mise ci` for `repo:ci`, `mise review` for `rust:review`*) |
 | Virtualenv | The first mise command in a clone creates `crate/.venv`, and `mise wheel` builds the extension into it through `maturin develop` |
-| Lockfiles | An edit to `crate/Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, or `.mise/config.toml` takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
+| Lockfiles | An edit to `crate/Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, `.mise/config.toml`, or `.nvmrc` takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
 | Local sweep | `mise ci` runs what the `🪻 CI` and `🪻 Deploy` workflows run, short of uploading coverage |
 
 ---
@@ -304,7 +304,7 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Each version pin matches every file that repeats it. The label registry matches `.github/release.yml`, the issue templates, the label table above, and each rule family's color and description on the docs site. No issue template carries a release number, so a version bump edits nothing under `.github/ISSUE_TEMPLATE/`. The checks the `main` ruleset requires match the jobs the pull-request workflows end on. This table matches the workflow files on every count the list below it names. Every tracked file sits inside the path filter of some pull-request workflow, and every file the audit reads sits inside that of a workflow running the audit. No action manifest carries a YAML anchor, the `module.yml` push trigger covers every wasm source path, and `mise tasks validate` passes |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
