@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, cache-trigger coverage, the required checks, the checks table, task validity, and pull-request path coverage"
+#MISE description="Audit version-pin parity, the label registry, release numbers in the issue templates, action-manifest hygiene, cache-trigger coverage, the required checks, the checks table, task validity, and pull-request path coverage"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml==6.0.3"]
@@ -17,6 +17,8 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                every color is six lowercase hex digits no other label uses,
                and each rule family's label takes the color and the
                description the docs site gives that family.
+    forms      No issue template carries a release number, so a version bump
+               edits no file under `.github/ISSUE_TEMPLATE/`.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
     triggers   The `module.yml` push trigger covers every wasm source path
@@ -347,6 +349,24 @@ def flagged(findings: list[tuple[set | list, str]]) -> int:
     return failed
 
 
+def forms() -> int:
+    """
+    Report every release number an issue template carries, which a version
+    bump leaves stale, locating each to its file and line.
+    """
+    failed = 0
+    for path, _ in templates():
+        for line, text in enumerate(read(path).splitlines(), 1):
+            for release in findall(r"(?<!\d)\d+\.\d+\.\d+(?!\d)", text):
+                annotate(
+                    f"the template carries the release number {release!r}, which the next version bump leaves stale",
+                    file = path,
+                    line = line
+                )
+                failed = 1
+    return failed
+
+
 def gates() -> int:
     """
     Report every check the `main` ruleset requires that no pull-request
@@ -619,8 +639,7 @@ def parity() -> int:
         *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
-        *patch_pins(package),
-        *placeholder_pins(toml("crate/Cargo.toml")["package"]["version"])
+        *patch_pins(package)
     ]
 
     failed = 0
@@ -647,23 +666,6 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
             pinned
         ))
     return pairs
-
-
-def placeholder_pins(version: str) -> list[tuple[str, str, str]]:
-    """
-    Return one parity pair per issue form asking for the release a run came
-    from, matching the version its placeholder shows against `version`.
-    """
-    return [
-        (
-            f"{path} version placeholder ↔ crate/Cargo.toml version",
-            field["attributes"].get("placeholder"),
-            version
-        )
-        for path, form in templates()
-        for field in form.get("body", [])
-        if field.get("id") == "version"
-    ]
 
 
 def planned(flow: dict, matrix: str) -> list[dict]:
@@ -890,6 +892,7 @@ if __name__ == "__main__":
     raise SystemExit(
         parity()
         | labels()
+        | forms()
         | manifests()
         | triggers()
         | gates()

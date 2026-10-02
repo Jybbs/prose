@@ -5,28 +5,31 @@
 //! would carry the URL past its budget is left out and the reporter
 //! pastes it.
 
+use std::slice;
+
+use clap::CommandFactory;
 use fluent_uri::pct_enc::{
     EString,
     encoder::{Data, Query},
 };
-use std::slice;
 
 use super::UnstableRewrite;
-use crate::rules::render_slugs;
-
-const TEMPLATE: &str = "unstable-output.yml";
+use crate::{cli::args::Cli, rules::render_slugs};
 
 /// The budget every report URL stays under. A field too long for it
 /// drops, which on a real module is the source and both passes, and
 /// the form asks the reporter for the file instead.
 const BUDGET: usize = 1200;
 
+const TEMPLATE: &str = "unstable-output.yml";
+
 pub(crate) fn report_url(rewrite: &UnstableRewrite, original: &str) -> String {
     build(rewrite, original, BUDGET)
 }
 
-/// The fields run smallest-first, so an oversized one drops while every
-/// field after it still lands.
+/// Builds the report URL with the short fields ahead of the bulky ones. A
+/// field too long for the budget drops, and each later one that fits still
+/// lands.
 fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
     let slugs = rewrite.slugs();
     let title = match rewrite.rules.as_slice() {
@@ -37,9 +40,10 @@ fn build(rewrite: &UnstableRewrite, original: &str, budget: usize) -> String {
         ),
         rules => format!("Unstable output from {}", render_slugs(rules)),
     };
+    let version = Cli::command().render_version();
     let fields = [
         ("title", title.as_str()),
-        ("version", env!("CARGO_PKG_VERSION")),
+        ("version", version.trim_end()),
         ("rules", slugs.as_str()),
         ("config", rewrite.config_toml.as_str()),
         ("source", original),
@@ -75,6 +79,8 @@ mod tests {
     use super::*;
     use crate::rules::RuleId;
 
+    const FORM: &str = include_str!("../../../.github/ISSUE_TEMPLATE/unstable-output.yml");
+
     fn rewrite(first: &str, second: &str, config_toml: &str) -> UnstableRewrite {
         UnstableRewrite {
             config_toml: config_toml.to_owned(),
@@ -104,8 +110,6 @@ mod tests {
 
     #[test]
     fn report_url_fills_every_field_the_form_declares() {
-        const FORM: &str = include_str!("../../../.github/ISSUE_TEMPLATE/unstable-output.yml");
-
         let declared: Vec<&str> = FORM
             .lines()
             .filter_map(|line| line.trim().strip_prefix("id")?.split_once(':'))
@@ -125,6 +129,25 @@ mod tests {
     }
 
     #[test]
+    fn report_url_fills_the_version_in_the_shape_its_placeholder_shows() {
+        let placeholder = FORM
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .map(|(key, value)| (key.trim(), value.trim()))
+            .skip_while(|&field| field != ("id", "version"))
+            .find_map(|(key, value)| (key == "placeholder").then_some(value))
+            .expect("the version field carries a placeholder");
+        let shown = placeholder.replace("X.Y.Z", env!("CARGO_PKG_VERSION"));
+
+        let url = report_url(&rewrite("a = 1\n", "b = 2\n", ""), "a = 1\n");
+
+        assert!(
+            url.contains(&format!("&version={}&", encoded(&shown))),
+            "{url}"
+        );
+    }
+
+    #[test]
     fn report_url_names_the_template_and_every_field() {
         let url = report_url(
             &rewrite("a = 1\n", "b = 2\n", "code-line-length = 88\n"),
@@ -136,23 +159,10 @@ mod tests {
             env!("CARGO_PKG_REPOSITORY"),
         )));
         assert!(url.contains("&title=Unstable%20output%20from%20%60align-equals%60"));
-        assert!(url.contains(&format!("&version={}", env!("CARGO_PKG_VERSION"))));
+        assert!(url.contains(&format!("&version=prose%20{}", env!("CARGO_PKG_VERSION"))));
         assert!(url.contains("&rules=align-equals"));
         assert!(url.contains("&config=code-line-length%20%3D%2088%0A"));
         assert!(url.contains("&first-pass=a%20%3D%201%0A"));
-    }
-
-    #[test]
-    fn report_url_titles_a_pair_with_both_slugs() {
-        let mut pair = rewrite("a = 1\n", "b = 2\n", "");
-        pair.rules.push(RuleId::from("align-colons"));
-
-        let url = report_url(&pair, "a = 1\n");
-
-        assert!(url.contains(
-            "&title=Unstable%20output%20from%20%60align-equals%60%2C%20%60align-colons%60"
-        ));
-        assert!(url.contains("&rules=align-equals%2Calign-colons"));
     }
 
     #[test]
@@ -167,5 +177,18 @@ mod tests {
         assert!(url.contains("&config=code-line-length%20%3D%20100%0A"));
         assert!(!url.contains("&source="), "{url}");
         assert!(!url.contains("&first-pass="), "{url}");
+    }
+
+    #[test]
+    fn report_url_titles_a_pair_with_both_slugs() {
+        let mut pair = rewrite("a = 1\n", "b = 2\n", "");
+        pair.rules.push(RuleId::from("align-colons"));
+
+        let url = report_url(&pair, "a = 1\n");
+
+        assert!(url.contains(
+            "&title=Unstable%20output%20from%20%60align-equals%60%2C%20%60align-colons%60"
+        ));
+        assert!(url.contains("&rules=align-equals%2Calign-colons"));
     }
 }
