@@ -796,15 +796,21 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
     return reports
 
 
-def restores(step: dict) -> bool:
+def restores(step: dict, uncached: bool = False) -> bool:
     """
     Return whether the `step` restores a cache, directly or through a step of
-    the local composite it calls, unless it passes `cache` as `false`.
+    the local composite it calls. A caching step restores nothing when it
+    passes `cache` as `false`, or when it forwards `inputs.cache` and
+    `uncached` reports that the composite's caller passed `false`.
     """
-    if step.get("with", {}).get("cache") == "false":
-        return False
+    cache = step.get("with", {}).get("cache", "")
     if (uses := step.get("uses", "")).startswith("./"):
-        return any(map(restores, yaml(f"{uses}/action.yml")["runs"].get("steps", [])))
+        return any(
+            restores(each, cache == "false")
+            for each in yaml(f"{uses}/action.yml")["runs"].get("steps", [])
+        )
+    if cache == "false" or (uncached and "inputs.cache" in cache):
+        return False
     return uses.partition("@")[0] in CACHING
 
 
