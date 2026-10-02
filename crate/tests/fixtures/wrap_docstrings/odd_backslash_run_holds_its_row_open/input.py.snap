@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/wrap_docstrings/odd_backslash_run_holds_its_row_open/input.py
+---
+def get_qp_ctext(value):
+    """
+    ctext = <printable ascii except
+    \ ( )>
+
+    This is not the RFC ctext, since
+    we are handling nested comments in
+    comment and unquoting quoted-pairs
+    here.
+    """

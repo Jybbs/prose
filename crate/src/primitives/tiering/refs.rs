@@ -4,6 +4,7 @@ use ruff_python_ast::{
     Expr, ExprLambda, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
 };
+use rustc_hash::FxHashMap;
 
 use crate::primitives::walk::walk_stmt;
 
@@ -118,6 +119,22 @@ pub(super) fn root_name(expr: &Expr) -> Option<&str> {
         Expr::Subscript(subscript) => root_name(&subscript.value),
         _ => None,
     }
+}
+
+/// Collects the names each `type` alias of `body` evaluates its value
+/// over, keyed by the alias name. Reading an alias as the module runs
+/// can evaluate that value through the alias's `__value__`, so a reader
+/// of the alias reads each of these names as well.
+pub(crate) fn type_alias_values(body: &[Stmt]) -> FxHashMap<&str, Vec<&str>> {
+    body.iter()
+        .filter_map(|stmt| {
+            let alias = stmt.as_type_alias_stmt()?;
+            Some((
+                alias.name.as_name_expr()?.id.as_str(),
+                eval_refs(&alias.value),
+            ))
+        })
+        .collect()
 }
 
 /// Walks a lambda's parameter defaults, pruning its body, the eval-time

@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/literal_past_an_expand_measured_without_the_equals_shift/input.py
+---
+a     = 1
+value = [
+    alpha_one_long_name,
+    beta_two_long_name,
+    gamma
+] + [
+    gamma_three_xx, delta_four
+]

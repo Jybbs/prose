@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Unread Private Member Keeps Its Import"
+
+description = '''
+`from subprocess import _args_from_interpreter_flags, check_output` binds two names the module below never reads. `check_output` is removed, whereas **`_args_from_interpreter_flags` keeps its import**, since a name that is private in the module it comes from is one another module may read through this one, the way `multiprocessing` calls `util._args_from_interpreter_flags()`.
+'''

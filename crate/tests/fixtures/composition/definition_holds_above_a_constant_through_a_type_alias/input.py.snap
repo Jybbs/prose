@@ -1,0 +1,25 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/definition_holds_above_a_constant_through_a_type_alias/input.py
+---
+type T = Base
+
+
+class Base:
+    y = 1
+
+
+class Zeta(T):
+    pass
+
+
+x = Base.y
+
+
+class Beta:
+    pass
+
+
+class Zed:
+    pass

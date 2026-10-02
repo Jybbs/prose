@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/padded_pair_measured_at_its_aligned_column/input.py
+---
+if __name__ == "__main__":
+    columnName = delimitedList(
+        ident,
+        ".",
+        combine = True
+    ).setParseAction(upcaseTokens)
+    columnNameList = Group(
+        delimitedList(columnName)
+    ).setName("columns")
+    columnSpec = '*' | columnNameList

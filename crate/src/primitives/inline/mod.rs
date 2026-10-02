@@ -104,6 +104,29 @@ pub(crate) fn run_closes_to_a_space(text: &str, begin: usize, len: usize) -> boo
     !text[..begin].ends_with(OPENERS) && !text[begin + len..].starts_with(CLOSERS)
 }
 
+/// The column `offset` reaches on the last row of `placed`, the text
+/// ahead of it with a walk's edits applied and its first row opening at
+/// `origin`, once `padding` settles that row.
+pub(crate) fn settled_head_column(
+    source: &Source,
+    padding: &[Edit],
+    placed: &str,
+    offset: TextSize,
+    origin: usize,
+) -> usize {
+    let row_start = source.text().line_start(offset).max(
+        offset
+            .checked_sub(TextSize::of(last_line(placed)))
+            .unwrap_or_default(),
+    );
+    settled_width(
+        source,
+        padding,
+        TextRange::new(row_start, offset),
+        end_column(placed, origin),
+    )
+}
+
 /// Measures the display width of the code past `end` on its physical row
 /// once `padding` settles, a trailing comment closing the measure.
 pub(crate) fn settled_row_tail(source: &Source, padding: &[Edit], end: TextSize) -> usize {

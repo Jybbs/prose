@@ -190,17 +190,17 @@ impl<'a> Exploder<'a> {
 
     /// True where the expand fires on the literal at `range`: one
     /// already written across rows, or one whose settled width overflows
-    /// from the column it sits at with its own raw row tail.
+    /// from the column it sits at with its own row tail, read per
+    /// [`Settings::row_tail`](crate::primitives::one_row::Settings::row_tail).
     fn literal_explodes(&self, range: TextRange) -> bool {
         if self.source.contains_line_break(range) {
             return true;
         }
         let column = self.source.column_of(range.start());
         let width = self.settled_slice_width(range);
-        let tail = self.settled_width(
-            self.source.row_tail(range.end()),
-            self.source.row_tail_width(range.end()),
-        );
+        let tail = self
+            .one_row
+            .row_tail(self.source, self.padding, range.end());
         !self.one_row.fits(column + width + tail)
     }
 

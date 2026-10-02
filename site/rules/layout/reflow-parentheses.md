@@ -24,6 +24,8 @@ Where the joined form crosses the budget, the pair breaks rather than staying as
 
 The break reshapes only a pair that already exists and never adds one, so an over-budget expression carrying no parentheses is left for [[line-overflow]] to report. It reaches an operator chain alone and leaves any other interior at the layout its author wrote. A pair wrapping one operand of a wider chain is left as written too, since opening rows inside a row that overflows either way gains the reader nothing. A pair sitting inside a bracket the rule leaves standing is left as written for the same reason, so the construct that bracket belongs to lays out the rows around it.
 
+Both directions measure a row as the later rules leave it, at the column [[strip-stranded-padding]] and [[align-equals]] settle it to and once [[reflow-calls]] has exploded the calls ahead of the pair, and a pair's row ends at the opening paren of a later pair on it that breaks.
+
 Both directions are written in one pass, so a pair nested inside another redundant pair is removed in the same run and each pair tests its own join against the text the earlier removals produce. A break writes its operands through those same removals, leaving the rows it opens carrying the text the rule leaves rather than the text it was handed.
 
 <template #configuration>

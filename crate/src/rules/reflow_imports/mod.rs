@@ -89,17 +89,43 @@ impl ReflowImports {
             stranding: config.stranded_padding(),
         }
     }
+
+    /// The aliases of the module-scope import at `slot` that this rule
+    /// writes on the row the statement opens once it splits the
+    /// statement, `None` where the statement keeps one row or folds into
+    /// a merge.
+    fn opening_row(&self, source: &Source, slot: usize) -> Option<Vec<usize>> {
+        match &source.ast().body[slot] {
+            Stmt::Import(bare) if self.splits(source, bare) => Some(vec![0]),
+            Stmt::ImportFrom(node) => {
+                let mut layout = Layout::new(self, source);
+                let groups = layout.plan(&source.ast().body, source.module_range(), true, false)?;
+                if groups.iter().flatten().contains(&slot) {
+                    return None;
+                }
+                let (names, rows) = layout.split_rows(node)?;
+                let opening = &names[rows[0].0.clone()];
+                Some(
+                    node.names
+                        .iter()
+                        .positions(|alias| opening.contains(&source.slice(alias.range())))
+                        .collect(),
+                )
+            }
+            _ => None,
+        }
+    }
+
+    /// True where this rule splits `node` one module per row, a
+    /// comma-joined bare import holding its own line.
+    fn splits(&self, source: &Source, node: &StmtImport) -> bool {
+        self.split_multi_module && node.names.len() > 1 && own_line_indent(source, node).is_some()
+    }
 }
 
 impl Rule for ReflowImports {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        let mut layout = Layout {
-            groups: Vec::new(),
-            newline: source.newline_str(),
-            packings: FxHashMap::default(),
-            rule: self,
-            source,
-        };
+        let mut layout = Layout::new(self, source);
         layout.layout_scope(&source.ast().body, source.module_range(), true, false);
         layout.groups
     }
@@ -120,6 +146,16 @@ struct Layout<'a> {
 }
 
 impl<'a> Layout<'a> {
+    fn new(rule: &'a ReflowImports, source: &'a Source) -> Self {
+        Self {
+            groups: Vec::new(),
+            newline: source.newline_str(),
+            packings: FxHashMap::default(),
+            rule,
+            source,
+        }
+    }
+
     /// The edit rewriting `node` to `rows` joined one per line at the
     /// statement's indent, `None` where the statement does not open its
     /// own line or already reads that way.
@@ -183,11 +219,7 @@ impl<'a> Layout<'a> {
     /// Emits the packed rewrite of `node` when its roster overruns the
     /// row it opens.
     fn pack_lone(&mut self, node: &'a StmtImportFrom) {
-        let [_, _, ..] = node.names.as_slice() else {
-            return;
-        };
-        let names = self.roster(node.names.iter());
-        let Some(rows) = self.rows(node, &names).filter(|rows| rows.len() > 1) else {
+        let Some((names, rows)) = self.split_rows(node) else {
             return;
         };
         self.groups
@@ -227,20 +259,19 @@ impl<'a> Layout<'a> {
         self.joined_rows_edit(node, &rows)
     }
 
-    /// Folds each repeated module in `body` into one statement and
-    /// splits every comma-joined bare import, one fix group apiece. At
-    /// module scope a repeated module gathers across the constants
-    /// `band-constants` hoists from between its statements, whereas under
-    /// `keeps_order` it gathers only across consecutive statements. The
-    /// folded members of every group that emits clear together per
-    /// [`slot_deletions`].
-    fn process_body(
+    /// Returns the merge groups of `body` and records the packing of
+    /// every from-import it could split, `None` where `body` holds no
+    /// import run. At module scope a repeated module gathers across the
+    /// constants `band-constants` hoists from between its statements,
+    /// whereas under `keeps_order` it gathers only across consecutive
+    /// statements.
+    fn plan(
         &mut self,
         body: &'a [Stmt],
         outer: TextRange,
         module_scope: bool,
         keeps_order: bool,
-    ) {
+    ) -> Option<Vec<Vec<usize>>> {
         let rule = self.rule;
         let source = self.source;
         let runs = MergeRuns::of(
@@ -254,10 +285,10 @@ impl<'a> Layout<'a> {
             },
         );
         if runs.runs.is_empty() {
-            return;
+            return None;
         }
         let groups = if rule.merge_members {
-            module_groups(self.source, body, outer, &runs, keeps_order)
+            module_groups(source, body, outer, &runs, keeps_order)
         } else {
             Vec::new()
         };
@@ -266,6 +297,26 @@ impl<'a> Layout<'a> {
             .map_or_else(FxHashMap::default, |settings| {
                 self.forecast(settings, body, outer, &runs, &groups)
             });
+        Some(groups)
+    }
+
+    /// Folds each repeated module in `body` into one statement and
+    /// splits every comma-joined bare import, one fix group apiece,
+    /// reading the groups and packings [`Self::plan`] records. The folded
+    /// members of every group that emits clear together per
+    /// [`slot_deletions`].
+    fn process_body(
+        &mut self,
+        body: &'a [Stmt],
+        outer: TextRange,
+        module_scope: bool,
+        keeps_order: bool,
+    ) {
+        let rule = self.rule;
+        let source = self.source;
+        let Some(groups) = self.plan(body, outer, module_scope, keeps_order) else {
+            return;
+        };
         let gathered: FxHashSet<usize> = groups.iter().flatten().copied().collect();
         let merges: Vec<(&[usize], Vec<Edit>)> = groups
             .iter()
@@ -288,7 +339,7 @@ impl<'a> Layout<'a> {
         }
         for (slot, stmt) in body.iter().enumerate() {
             match stmt {
-                Stmt::Import(bare) if rule.split_multi_module => self.split_bare_import(bare),
+                Stmt::Import(bare) if rule.splits(source, bare) => self.split_bare_import(bare),
                 Stmt::ImportFrom(lone) if !gathered.contains(&slot) => self.pack_lone(lone),
                 _ => {}
             }
@@ -314,11 +365,7 @@ impl<'a> Layout<'a> {
     /// runs and otherwise the roster packed from the keyword's own
     /// column with the gap the source wrote repeated on every row.
     /// `None` where the keyword opens a line of its own.
-    fn rows(
-        &self,
-        node: &StmtImportFrom,
-        names: &[&str],
-    ) -> Option<Vec<(Range<usize>, Cow<'a, str>)>> {
+    fn rows(&self, node: &StmtImportFrom, names: &[&str]) -> Option<Rows<'a>> {
         if let Some(packing) = self.packings.get(&node.start()) {
             return Some(
                 packing
@@ -346,12 +393,9 @@ impl<'a> Layout<'a> {
         )
     }
 
-    /// Emits the one-statement-per-module rewrite of a comma-joined
-    /// bare import.
+    /// Emits the one-statement-per-module rewrite of a bare import
+    /// [`ReflowImports::splits`] accepts.
     fn split_bare_import(&mut self, node: &StmtImport) {
-        let [_, _, ..] = node.names.as_slice() else {
-            return;
-        };
         let rows: Vec<String> = node
             .names
             .iter()
@@ -360,7 +404,23 @@ impl<'a> Layout<'a> {
         self.groups
             .extend(singleton_groups(self.joined_rows_edit(node, &rows)));
     }
+
+    /// The roster `node` packs beside the rows it splits across, `None`
+    /// where it keeps one row or does not hold its own line.
+    fn split_rows(&self, node: &'a StmtImportFrom) -> Option<(Vec<&'a str>, Rows<'a>)> {
+        let [_, _, ..] = node.names.as_slice() else {
+            return None;
+        };
+        own_line_indent(self.source, node)?;
+        let names = self.roster(node.names.iter());
+        let rows = self.rows(node, &names).filter(|rows| rows.len() > 1)?;
+        Some((names, rows))
+    }
 }
+
+/// The rows a from-import packs into, each the members it carries
+/// beside the text its row writes ahead of `import`.
+type Rows<'a> = Vec<(Range<usize>, Cow<'a, str>)>;
 
 /// Every alias the `from`-imports at `slots` of `body` carry, in slot
 /// order.
@@ -509,5 +569,44 @@ mod tests {
             import_keyword_gap(&source, node, Config::default().stranded_padding()),
             expected
         );
+    }
+
+    #[rstest]
+    #[case::bare_import_sharing_its_line("x = 1; import sys, os\n", 88, None)]
+    #[case::bare_import_splits_one_module_per_row("# c\nimport sys, os\n", 88, Some(vec![0]))]
+    #[case::packed_roster_opens_on_its_sorted_head(
+        "# c\nfrom pkg import beta, alpha\n",
+        10,
+        Some(vec![1])
+    )]
+    #[case::roster_within_budget_keeps_one_row("# c\nfrom pkg import beta, alpha\n", 88, None)]
+    #[case::merged_member_folds_into_its_lead(
+        "from pkg import a, b\nfrom pkg import c\n",
+        10,
+        None
+    )]
+    #[case::lone_name_keeps_its_row("from pkg import alpha\n", 10, None)]
+    #[case::multi_line_roster_stays_as_written(
+        "from pkg import (\n    alpha,\n    beta,\n)\n",
+        10,
+        None
+    )]
+    fn opening_row_names_the_aliases_its_first_row_carries(
+        #[case] src: &str,
+        #[case] import_line_length: usize,
+        #[case] expected: Option<Vec<usize>>,
+    ) {
+        let rule = ReflowImports {
+            import_line_length,
+            ..tight_rule()
+        };
+        let source = parse(src);
+        let slot = source
+            .ast()
+            .body
+            .iter()
+            .position(|stmt| stmt.is_import_stmt() || stmt.is_import_from_stmt())
+            .expect("the source carries an import");
+        assert_eq!(rule.opening_row(&source, slot), expected);
     }
 }

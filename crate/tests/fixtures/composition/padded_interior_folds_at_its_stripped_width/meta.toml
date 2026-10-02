@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Padded Interior Folds at the Width the Padding Rule Leaves"
+
+description = '''
+`return "%s …" % \` continues onto `( self.msg, self.loc, self.lineno, self.column )`, and `shed-backslash-continuations` wraps the value in a pair. At a `code-line-length` of 100 the joined row reaches 102 columns as written and exactly 100 once `strip-stranded-padding` drops the space inside each of the tuple's brackets, so **`reflow-parentheses` measures the interior at that width, joins it onto one row, and removes the pair** in the same pass.
+'''

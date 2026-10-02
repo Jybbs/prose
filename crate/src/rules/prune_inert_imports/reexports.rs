@@ -1,8 +1,8 @@
 //! The explicit re-export surface of a module, read from its
 //! module-scope `__all__` writes, from an import binding `__all__`
 //! itself, from the PEP 484 `x as x` alias form, from an import whose
-//! source module reads as private, and from a file-level pragma holding
-//! every unused import in the module.
+//! member or source module reads as private, and from a file-level
+//! pragma holding every unused import in the module.
 
 use ruff_python_ast::{Alias, Expr, Stmt, StmtAssign, helpers::is_dunder};
 use ruff_text_size::TextRange;
@@ -168,12 +168,16 @@ fn only_imported(analysis: &BindingAnalysis, name: &str) -> bool {
     !kinds.is_empty() && kinds.iter().all(|kind| matches!(kind, BindingKind::Import))
 }
 
-/// True where `node` takes a name out of a module whose last segment
-/// leads with `_`, a dunder module such as `__future__` excepted.
-pub(super) fn reexports_a_private_member(node: &ImportNode<'_>) -> bool {
-    node.module()
-        .map(|source| source.rsplit_once('.').map_or(source, |(_, last)| last))
-        .is_some_and(|module| module.starts_with('_') && !is_dunder(module))
+/// True where `alias` takes a name another module may read through
+/// this one, meaning a `from`-import of a member whose own name is
+/// private or of any member out of a module whose last segment is.
+pub(super) fn reexports_a_private_name(node: &ImportNode<'_>, alias: &Alias) -> bool {
+    matches!(node, ImportNode::From(_))
+        && (is_private(alias.name.as_str())
+            || node
+                .module()
+                .and_then(|module| module.rsplit('.').next())
+                .is_some_and(is_private))
 }
 
 /// What `stmt` writes to `__all__`, `None` for a statement leaving it
@@ -251,6 +255,12 @@ fn imports_dunder_all(stmt: &Stmt) -> bool {
             .iter()
             .any(|alias| node.bound(alias) == DUNDER_ALL)
     })
+}
+
+/// True where `name` leads with `_` and is no dunder such as
+/// `__future__`.
+fn is_private(name: &str) -> bool {
+    name.starts_with('_') && !is_dunder(name)
 }
 
 /// True for a call on an attribute of `__all__`, covering the
@@ -406,17 +416,22 @@ mod tests {
     #[case::private_submodule("from pkg._impl import thing\n", true)]
     #[case::relative_private("from ._impl import thing\n", true)]
     #[case::parent_relative_private("from .._impl import thing\n", true)]
+    #[case::private_member("from subprocess import _args_from_interpreter_flags\n", true)]
+    #[case::private_member_aliased("from subprocess import _args as args\n", true)]
+    #[case::private_member_of_dots_only("from . import _shared\n", true)]
+    #[case::public_member_aliased_private("from quopri import decodestring as _qdecode\n", false)]
+    #[case::dunder_member("from pkg import __version__\n", false)]
     #[case::public_module("from pkg.impl import thing\n", false)]
     #[case::public_leaf_of_private("from _pkg.sub import thing\n", false)]
     #[case::dunder_module("from __future__ import annotations\n", false)]
     #[case::dots_only("from . import thing\n", false)]
     #[case::bare_import("import _socket\n", false)]
-    fn reexports_a_private_member_reads_the_module_the_names_come_from(
+    fn reexports_a_private_name_reads_the_member_and_the_module_it_comes_from(
         #[case] src: &str,
         #[case] expected: bool,
     ) {
         let source = parse(src);
         let node = ImportNode::of(&source.ast().body[0]).expect("an import statement");
-        assert_eq!(reexports_a_private_member(&node), expected);
+        assert_eq!(reexports_a_private_name(&node, &node.names()[0]), expected);
     }
 }

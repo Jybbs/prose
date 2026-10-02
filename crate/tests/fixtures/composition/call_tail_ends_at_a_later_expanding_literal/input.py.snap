@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/call_tail_ends_at_a_later_expanding_literal/input.py
+---
+y = [p, q] + func(arg) + [
+    rrrrrrrrrrrr, ssssssssssss, tttttttttt
+]

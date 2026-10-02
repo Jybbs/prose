@@ -8,7 +8,7 @@ use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{Layouter, entry_tail};
-use crate::primitives::inline::{settled_row_tail, settled_width};
+use crate::primitives::inline::settled_width;
 
 impl<'a> Layouter<'a> {
     /// The source text between a keyed dict entry's `key` and the
@@ -25,8 +25,10 @@ impl<'a> Layouter<'a> {
     }
 
     /// The display width of the text trailing `expr` on its physical
-    /// row once the padding rule drops the padding inside it. Where a
-    /// sort is pending over `parent`, itself under `grandparent`, the
+    /// row once the padding rule drops the padding inside it, closing at
+    /// the first later literal that expands anyway per
+    /// [`one_row::Settings::row_tail`](crate::primitives::one_row::Settings::row_tail).
+    /// Where a sort is pending over `parent`, itself under `grandparent`, the
     /// separator that sort leaves closing the entry replaces a tail
     /// holding at most a bare comma unless the sort leaves `parent` as
     /// laid out, and otherwise sets the floor of the measure. A
@@ -39,7 +41,7 @@ impl<'a> Layouter<'a> {
         grandparent: AnyNodeRef,
     ) -> usize {
         let end = expr.end();
-        let current = settled_row_tail(self.source, self.padding, end);
+        let current = self.one_row.row_tail(self.source, self.padding, end);
         let Some(last) = self.reorders.sorted_last(self.source, parent, grandparent) else {
             return current;
         };

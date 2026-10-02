@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/reseated_heading_leads_the_split_roster/input.py
+---
+band-constants@81..215
+reflow-imports@146..164
+reflow-imports@92..120

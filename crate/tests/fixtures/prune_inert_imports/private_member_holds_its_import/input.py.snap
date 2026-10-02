@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/private_member_holds_its_import/input.py
+---
+from subprocess import _args_from_interpreter_flags
+
+value = 1

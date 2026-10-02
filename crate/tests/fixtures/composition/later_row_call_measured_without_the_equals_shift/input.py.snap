@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/later_row_call_measured_without_the_equals_shift/input.py
+---
+if __name__ == "__main__":
+    selectToken = CaselessLiteral(
+        "select"
+    )
+    simpleSQL = selectToken(
+        "command"
+    ) + columnSpec(
+        "columns"
+    ) + fromToken + tableNameList(
+        "tables"
+    )

@@ -9,26 +9,10 @@ use textwrap::{Options, WordSeparator, WordSplitter, core::Word};
 
 use crate::primitives::docstring::opens_structure;
 
-/// Splits `line` on ASCII spaces, dropping every break opportunity
-/// whose remainder would open a verbatim structure, a list marker, a
-/// section heading, or an entry head, folding that break into the word
-/// before it.
-fn prose_words(line: &str) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
-    let mut starts = Vec::new();
-    let mut cursor = 0;
-    for word in WordSeparator::AsciiSpace.find_words(line) {
-        if starts.is_empty() || !opens_structure(&line[cursor..]) {
-            starts.push(cursor);
-        }
-        cursor += word.word.len() + word.whitespace.len();
-    }
-    starts.push(line.len());
-    Box::new(
-        starts
-            .into_iter()
-            .tuple_windows()
-            .map(|(start, end)| Word::from(&line[start..end])),
-    )
+/// True where `text` closes on an odd run of backslashes, which in a
+/// non-raw body escapes the newline a row ending there carries.
+pub(super) fn ends_on_continuation(text: &str) -> bool {
+    !(text.len() - text.trim_end_matches('\\').len()).is_multiple_of(2)
 }
 
 /// Splits `content` on `newline`, merging a continued line with the one
@@ -70,8 +54,7 @@ pub(super) fn spliced_continuations<'a>(
 /// a continuation and an even run closes on an escaped backslash, and a
 /// raw docstring holds no continuations at all.
 pub(super) fn without_continuation(line: &str, raw: bool) -> &str {
-    let backslashes = line.len() - line.trim_end_matches('\\').len();
-    if raw || backslashes.is_multiple_of(2) {
+    if raw || !ends_on_continuation(line) {
         return line;
     }
     &line[..line.len() - 1]
@@ -79,21 +62,70 @@ pub(super) fn without_continuation(line: &str, raw: bool) -> &str {
 
 /// The wrap options every emission shares. The custom separator and
 /// `NoHyphenation` keep a slash- or hyphen-bearing token atomic,
-/// leaving an over-budget URL or path to overflow unsplit.
-pub(super) fn wrap_options<'o>(width: usize, initial: &'o str, subsequent: &'o str) -> Options<'o> {
+/// leaving an over-budget URL or path to overflow unsplit, and the
+/// separator reads `raw` for whether a backslash run ending a row
+/// continues it.
+pub(super) fn wrap_options<'o>(
+    width: usize,
+    initial: &'o str,
+    subsequent: &'o str,
+    raw: bool,
+) -> Options<'o> {
+    let separator: fn(&str) -> Box<dyn Iterator<Item = Word<'_>> + '_> = if raw {
+        |line| words(line, true)
+    } else {
+        |line| words(line, false)
+    };
     Options::new(width)
         .break_words(false)
         .initial_indent(initial)
         .subsequent_indent(subsequent)
-        .word_separator(WordSeparator::Custom(prose_words))
+        .word_separator(WordSeparator::Custom(separator))
         .word_splitter(WordSplitter::NoHyphenation)
+}
+
+/// Splits `line` on ASCII spaces, dropping every break opportunity
+/// whose remainder would open a verbatim structure, a list marker, a
+/// section heading, or an entry head, folding that break into the word
+/// before it. Outside a `raw` body a break after a word closing on an
+/// odd run of backslashes folds the same way.
+fn words(line: &str, raw: bool) -> Box<dyn Iterator<Item = Word<'_>> + '_> {
+    let mut starts = Vec::new();
+    let mut cursor = 0;
+    let mut continues = false;
+    for word in WordSeparator::AsciiSpace.find_words(line) {
+        if starts.is_empty() || !(continues || opens_structure(&line[cursor..])) {
+            starts.push(cursor);
+        }
+        continues = !raw && ends_on_continuation(word.word);
+        cursor += word.word.len() + word.whitespace.len();
+    }
+    starts.push(line.len());
+    Box::new(
+        starts
+            .into_iter()
+            .tuple_windows()
+            .map(|(start, end)| Word::from(&line[start..end])),
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
 
-    use super::{spliced_continuations, without_continuation};
+    use super::{ends_on_continuation, spliced_continuations, without_continuation, words};
+
+    #[rstest]
+    #[case::plain_prose("plain prose", false)]
+    #[case::one_backslash("continues \\", true)]
+    #[case::two_backslashes("escaped \\\\", false)]
+    #[case::three_backslashes("escaped then continues \\\\\\", true)]
+    fn ends_on_continuation_reads_an_odd_run_of_backslashes(
+        #[case] text: &str,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(ends_on_continuation(text), expected);
+    }
 
     #[rstest]
     #[case("see https://host/\\\npath.html", false, &["see https://host/path.html"])]
@@ -123,5 +155,16 @@ mod tests {
         #[case] expected: &str,
     ) {
         assert_eq!(without_continuation(line, raw), expected);
+    }
+
+    #[rstest]
+    #[case::non_raw_joins_the_word_after_a_backslash(false, &["except", "\\ (", ")>"])]
+    #[case::raw_keeps_every_break(true, &["except", "\\", "(", ")>"])]
+    fn words_join_a_word_after_an_odd_backslash_run_outside_a_raw_body(
+        #[case] raw: bool,
+        #[case] expected: &[&str],
+    ) {
+        let found: Vec<&str> = words("except \\ ( )>", raw).map(|word| word.word).collect();
+        assert_eq!(found, expected);
     }
 }

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comment Above a Split Import Holds Its First Row"
+
+description = '''
+`from future.backports.email.encoders import bencode, qencode` sits under `# Intrapackage imports`, and nothing reads either name. At an `import-line-length` of 40, `reflow-imports` splits the statement into one row per name, with the comment above the first row alone. **`prune-inert-imports` keeps `bencode`, the name on that row, and removes `qencode`** in the same pass, rather than holding both for a second pass to remove the row the comment no longer leads.
+'''

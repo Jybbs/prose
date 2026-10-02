@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Wrapped Pair Is Measured Where Its Row Lands Once Calls Explode"
+
+description = '''
+`paths[os.path.join(base, filename)] = (paths[base] + filename + '/')` wraps its value across two rows inside a pair. At a `code-line-length` of 50, `reflow-calls` explodes `os.path.join(…)`, which leaves the pair on the row the call's `)]` opens. **`reflow-parentheses` checks the joined value for overflow from that row**, the column its fold check already reads, and folds the value onto it in the same pass.
+'''

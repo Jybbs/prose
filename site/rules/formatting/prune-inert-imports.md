@@ -43,12 +43,14 @@ An import carrying a re-export marker holds its line under both facets, so a rep
 1. A name listed in `__all__`.
 2. The PEP 484 redundant-alias form `from x import y as y`.
 3. A `noqa` comment trailing the import, either bare or naming `F401`, which keeps every name that statement binds. The marker has to open a comment rather than appear inside its text, so a stacked `# type: ignore  # noqa: F401` counts whereas a sentence mentioning the word does not, and a statement spanning several rows carries it on the row it opens or the row it closes.
-4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation. A dunder module such as `__future__` is excluded, because its names carry compiler meaning rather than a public API.
+4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation, or a name that is itself private in the module it comes from (*`from subprocess import _args_from_interpreter_flags`*), which another module may read through this one the way `multiprocessing` calls `util._args_from_interpreter_flags()`. A public name bound under a private alias (*`from quopri import decodestring as _qdecode`*) is a local binding rather than a re-export and drops like any other. A dunder module such as `__future__` is excluded, because its names carry compiler meaning rather than a public API, and a dunder name such as `__version__` does not read as private.
 5. A file-level pragma opening its own line at column zero and naming the unused-import behavior, being `# ruff: noqa: F401`, `# flake8: noqa: F401`, or `# pyright: reportUnusedImport=false`, which holds every unreferenced import in the module at once. Each is what the tool naming it already reads as *"the unused imports here are deliberate"*, so *Prose* reads it the same way rather than defining a spelling of its own, matching each head exactly as its own tool matches it. The spacing around a `:` or an `=` is free everywhere, `flake8` reads its own name in any casing whereas `ruff` and `pyright` read only the lower-case spelling, the `noqa` word is read in any casing, and a pyright rule counts anywhere in its comma-separated list. Pyright sets a rule to report nothing on either `false` or `none` and reads both in any casing, whereas a severity such as `error` or `warning` leaves the rule reporting, so a pragma carrying one of those holds no import. An indented pragma sits inside a block rather than over the file, so it holds nothing. A head naming no code (*a bare `# ruff: noqa`*) is not read either, because it silences every rule its tool carries and so says nothing about re-exports in particular.
 
 Two of those markers are written in a comment rather than in code, which is where the wider ecosystem records a re-export no static read can see. [[band-constants]] reads a `noqa` naming `E402` as pinning an import to the row its author gave it. Those readings are the whole set, so neither a `noqa` nor a file-level pragma exempts anything from any other rewrite or lint in *Prose*.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
+
+<Fixture rule="prune_inert_imports" case="private_member_holds_its_import" />
 
 An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
 
@@ -73,9 +75,11 @@ A repeat of a name nothing reads takes the first binding with it, because both f
 
 <Fixture rule="prune_inert_imports" case="repeat_of_an_unread_name_drops_both_lines" />
 
-An own-line comment directly above an import keeps the whole statement, because removing the line would leave the comment above whatever statement follows. Where [[reflow-imports]] will merge the statement into a same-module sibling, the drop happens instead on the merged line the comment then leads. Where [[band-constants]] will move the comment onto the import its sort puts first, reading the order [[group-imports]] leaves, the drop lands the comment on that import in the same pass.
+An own-line comment directly above an import keeps the whole statement, because removing the line would leave the comment above whatever statement follows. An own-line comment indented deeper than the import above closes that import's block rather than leading the next statement, so the import sort carries it with that import and it holds nothing below. Where [[reflow-imports]] will split the statement across rows, the comment leads only the first, so it keeps the names on that row and the rest drop. Where [[reflow-imports]] will merge the statement into a same-module sibling, the drop happens instead on the merged line the comment then leads. Where [[band-constants]] will move the comment onto the import its sort puts first, reading the order [[group-imports]] leaves, the drop lands the comment on that import in the same pass.
 
 <Fixture rule="prune_inert_imports" case="leading_comment_holds_its_import" />
+
+<Fixture rule="composition" case="split_comment_holds_its_first_row" />
 
 ## The `__future__` Directive
 

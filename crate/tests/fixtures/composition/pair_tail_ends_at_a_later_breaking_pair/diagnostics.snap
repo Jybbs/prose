@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/pair_tail_ends_at_a_later_breaking_pair/input.py
+---
+reflow-parentheses@102..103
+reflow-parentheses@107..127
+reflow-parentheses@89..90

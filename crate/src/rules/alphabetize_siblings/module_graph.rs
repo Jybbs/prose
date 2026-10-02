@@ -23,7 +23,9 @@ pub(super) enum Band {
 pub(super) type ModuleDefs<'a, 'src> = DefRun<'a, 'src, (Band, u8, &'src str)>;
 
 /// Prepares a section's module-level definitions as one tiered run,
-/// `None` where a name repeats or the reference graph cycles.
+/// `None` where a name repeats or the reference graph cycles. Each
+/// definition holds above the constants `band-constants` anchors below
+/// it.
 pub(super) fn module_def_run<'a, 'src>(
     body: &'src [Stmt],
     range: Range<usize>,
@@ -33,6 +35,7 @@ pub(super) fn module_def_run<'a, 'src>(
     DefRun::of(body, range, evaluation, |stmt| {
         banded_member(stmt, group_methods)
     })
+    .map(|run| run.anchor_observers(body, evaluation))
 }
 
 /// Permutes a prepared module-definition run, rewriting `order` in place
@@ -144,6 +147,56 @@ mod tests {
     }
 
     #[test]
+    fn module_defs_holds_a_subclass_above_a_constant_it_anchors() {
+        let src = indoc! {"
+            class Base:
+                pass
+
+            class Zeta(Base):
+                pass
+
+            x = Base.y
+
+            class Zed:
+                pass
+
+            class Beta:
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 1, 2, 4, 3],
+            "Zeta reads Base, which x observes below it, so Zeta holds above x while the others sort"
+        );
+    }
+
+    #[test]
+    fn module_defs_holds_a_subclass_above_a_constant_through_a_type_alias() {
+        let src = indoc! {"
+            class Base:
+                pass
+
+            type T = Base
+
+            class Zeta(T):
+                pass
+
+            x = Base.y
+
+            class Zed:
+                pass
+
+            class Beta:
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 1, 2, 3, 5, 4],
+            "Zeta reads Base through T, which x observes below it, so Zeta holds above x while the others sort"
+        );
+    }
+
+    #[test]
     fn module_defs_seats_a_derived_class_in_the_class_band() {
         let src = indoc! {"
             def render():
@@ -188,6 +241,55 @@ mod tests {
             permute_module_run(&run, &mut order, body, |_| false);
             assert_eq!(order, vec![0, 1, 2], "pass {pass} strands zzz_dispatch");
         }
+    }
+
+    #[test]
+    fn module_defs_sorts_a_definition_past_a_constant_its_callee_observes() {
+        let src = indoc! {"
+            import os
+
+            def make_default():
+                return os.sep
+
+            def zeta(a=make_default()):
+                return a
+
+            x = os.sep
+
+            def beta():
+                return 1
+
+            x = 2
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 4, 1, 3, 2, 5],
+            "zeta reads os only through the call to make_default, which band-constants does not anchor x on"
+        );
+    }
+
+    #[test]
+    fn module_defs_sorts_a_subclass_past_an_explicit_type_alias() {
+        let src = indoc! {"
+            class Base:
+                pass
+
+            class Zeta(Base):
+                pass
+
+            x: TypeAlias = Base.y
+
+            class Zed:
+                pass
+
+            class Beta:
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 4, 2, 3, 1],
+            "an explicit type alias observes nothing band-constants anchors"
+        );
     }
 
     #[test]

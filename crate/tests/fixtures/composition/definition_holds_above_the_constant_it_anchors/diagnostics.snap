@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/definition_holds_above_the_constant_it_anchors/input.py
+---
+alphabetize-siblings@180..215
+band-constants@127..225

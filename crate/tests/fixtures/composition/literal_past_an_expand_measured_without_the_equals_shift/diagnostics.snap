@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/literal_past_an_expand_measured_without_the_equals_shift/input.py
+---
+align-equals@1..34
+reflow-collections@37..83
+reflow-collections@88..114

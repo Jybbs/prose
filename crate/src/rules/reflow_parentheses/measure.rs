@@ -1,6 +1,7 @@
 //! Where a reflow lands: whether a fold fits the budget, whether the
 //! row a pair sits on overflows it, the column a pair reaches once the
-//! pass's earlier edits apply, and the spans an in-place shed removes.
+//! pass's earlier edits apply and the padding and alignment rules settle
+//! its row, and the spans an in-place shed removes.
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::PythonWhitespace;
@@ -13,33 +14,61 @@ use super::{
 };
 use crate::primitives::{
     edit::{apply_inline_edits, insert_edit},
-    inline::{display_width, end_column, run_closes_to_a_space, soft_wrap_runs},
+    inline::{
+        display_width, run_closes_to_a_space, settled_head_column, settled_width, soft_wrap_runs,
+    },
+    slots::starting_within,
     splice::splice_preserves_tree,
 };
 
 impl Shedder<'_> {
-    /// The column `offset` reaches once the edits emitted so far apply,
-    /// measured from the enclosing logical line.
+    /// True where `candidate`'s joined row crosses the budget and a break
+    /// owns its shape, read for a pair later on the row of the candidate
+    /// under test.
+    fn breaks(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
+        if let Some(&breaks) = self.breaks.borrow().get(&candidate.pair) {
+            return breaks;
+        }
+        let breaks = self.overflows(candidate, candidates)
+            && self.broken_form(candidate, candidates).is_some();
+        self.breaks.borrow_mut().insert(candidate.pair, breaks);
+        breaks
+    }
+
+    /// The column `offset` reaches once the edits emitted so far apply
+    /// and the padding and alignment rules settle its row, measured from
+    /// the enclosing logical line.
     fn column_at(&self, offset: TextSize) -> usize {
         self.column_through(self.source.logical_line_start(offset))
     }
 
     /// The column the text through `range` reaches once the edits
-    /// emitted so far apply, `range` opening at the row or the logical
-    /// line the measure reads from.
+    /// emitted so far apply and `strip-stranded-padding` settles the row
+    /// it closes on, `range` opening at the row or the logical line the
+    /// measure reads from. Text those edits leave on the row the source
+    /// writes it on starts from the column `align-equals` shifts that row
+    /// to.
     fn column_through(&self, range: TextRange) -> usize {
-        end_column(&apply_inline_edits(self.source, range, &self.edits), 0)
+        let placed = apply_inline_edits(self.source, range, &self.edits);
+        let column = settled_head_column(self.source, self.padding, &placed, range.end(), 0);
+        self.reservations
+            .column_under(self.source, &self.edits, range.end(), column)
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
-    /// spaces its own flush sides keep and narrowed by the columns each
+    /// spaces its own flush sides keep and narrowed by the padding
+    /// `strip-stranded-padding` drops inside it and the columns each
     /// nested candidate sheds alongside it. `None` for an interior no
     /// fold joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
         Some(
-            display_width(bare) + candidate.flush.spaces()
-                - shed_columns(candidate.inner, candidates),
+            settled_width(
+                self.source,
+                self.padding,
+                candidate.inner,
+                display_width(bare) + candidate.flush.spaces(),
+            ) - shed_columns(candidate.inner, candidates),
         )
     }
 
@@ -71,13 +100,24 @@ impl Shedder<'_> {
         column.saturating_sub(shift)
     }
 
-    /// The columns `pair`'s own row carries past its closing paren,
-    /// narrowed by the parentheses this pass sheds along that stretch.
+    /// The columns `pair`'s own row carries past its closing paren once
+    /// `strip-stranded-padding` settles it, narrowed by the parentheses
+    /// this pass sheds along that stretch. The measure closes at the
+    /// opening paren of the first later pair on the row that breaks.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
-        let tail = self.source.row_tail(pair.end());
-        self.source
-            .tail_width(tail)
-            .saturating_sub(shed_columns(tail, candidates))
+        let mut tail = self.source.row_tail(pair.end());
+        if let Some(later) = starting_within(candidates, tail, |other| other.pair.start())
+            .find(|later| self.breaks(later, candidates))
+        {
+            tail = TextRange::new(tail.start(), later.pair.start() + TextSize::of('('));
+        }
+        settled_width(
+            self.source,
+            self.padding,
+            tail,
+            self.source.tail_width(tail),
+        )
+        .saturating_sub(shed_columns(tail, candidates))
     }
 
     /// True when joining `candidate` leaves its line inside the budget
@@ -90,14 +130,14 @@ impl Shedder<'_> {
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
     }
 
-    /// True where joining `candidate` crosses the budget on the row the
-    /// source puts it on, the measure a break answers. An interior no fold
-    /// joins overflows outright.
+    /// True where joining `candidate` crosses the budget on its row from
+    /// the column [`Self::fits`] reads, the measure a break answers. An
+    /// interior no fold joins overflows outright.
     pub(super) fn overflows(&self, candidate: &Candidate, candidates: &[Candidate]) -> bool {
         let Some(width) = self.joined_width(candidate, candidates) else {
             return true;
         };
-        let row = self.column_at(candidate.pair.start())
+        let row = self.shifted_column(candidate.pair.start())
             + width
             + self.tail_width(candidate.pair, candidates);
         row > self.code_line_length

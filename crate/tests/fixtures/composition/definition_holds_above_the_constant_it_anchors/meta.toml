@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Subclass Holds Above a Constant Reading Its Base"
+
+description = '''
+`class PEP420PackageFinder(PackageFinder)` sits above `find_packages = PackageFinder.find`, and both read `PackageFinder`. `band-constants` keeps `find_packages` in place because a class above it reads that name, so **`alphabetize-siblings` holds `PEP420PackageFinder` above it** while `Alpha` and `setup` still sort, rather than seating the subclass below the constant for a second pass to move the constant down.
+'''

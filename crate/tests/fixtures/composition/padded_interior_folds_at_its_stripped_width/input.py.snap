@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/padded_interior_folds_at_its_stripped_width/input.py
+---
+class ParseBaseException(Exception):
+    def __str__(self):
+        return "%s (at char %d), (line:%d, col:%d)" % (self.msg, self.loc, self.lineno, self.column)

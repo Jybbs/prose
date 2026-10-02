@@ -10,7 +10,7 @@
 
 use std::ops::Range;
 
-use ruff_diagnostics::SourceMap;
+use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_expr},
@@ -25,7 +25,7 @@ use crate::{
     primitives::{
         aligner,
         call_keywords::module_call_params,
-        edit::{forward_range, forward_start},
+        edit::{breaks_row_ahead, forward_range, forward_start},
         equal_targets, one_row,
         orderer::Seatings,
         padding::{self, Stranding},
@@ -128,16 +128,28 @@ impl Columns {
             .map_or(0, |shift| shift.columns)
     }
 
-    /// The column `offset` lands at, `fallback` moved by the shift the
-    /// alignment applies to the row `offset` sits on.
-    pub(crate) fn column(&self, offset: TextSize, fallback: impl FnOnce() -> usize) -> usize {
-        fallback().saturating_add_signed(self.shift(offset))
-    }
-
     /// The column `offset` lands at, falling back to the column its own
     /// source line puts it at.
     pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
-        self.column(offset, || source.column_of(offset))
+        source
+            .column_of(offset)
+            .saturating_add_signed(self.shift(offset))
+    }
+
+    /// The column `offset` lands at once `edits` place it at `placed`,
+    /// moved by the shift the alignment applies to its row while `edits`
+    /// leave `offset` on the row the source writes it on.
+    pub(crate) fn column_under(
+        &self,
+        source: &Source,
+        edits: &[Edit],
+        offset: TextSize,
+        placed: usize,
+    ) -> usize {
+        if breaks_row_ahead(source, edits, offset) {
+            return placed;
+        }
+        placed.saturating_add_signed(self.shift(offset))
     }
 
     /// The shifts of this table a splice over `map` cannot carry into

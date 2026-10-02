@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/split_comment_holds_its_first_row/input.py
+---
+import os
+# Intrapackage imports
+from future.backports.email.encoders import bencode
+from future.backports.urllib.parse import quote
+
+joined = os.sep + quote

@@ -1,0 +1,25 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/definition_holds_above_the_constant_it_anchors/input.py
+---
+class PackageFinder:
+    find = None
+
+
+class PEP420PackageFinder(PackageFinder):
+    pass
+
+
+find_packages = PackageFinder.find
+
+
+class Alpha:
+    pass
+
+
+def setup():
+    pass
+
+
+find_namespace_packages = PEP420PackageFinder.find

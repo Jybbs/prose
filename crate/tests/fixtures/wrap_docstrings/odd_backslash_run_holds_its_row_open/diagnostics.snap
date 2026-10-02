@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/wrap_docstrings/odd_backslash_run_holds_its_row_open/input.py
+---
+wrap-docstrings@68..187
