@@ -71,7 +71,6 @@ jobs:
   bake:
     name            : 🥧 Bake
     if              : ${{ github.event_name != 'pull_request' }}
-    permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -124,11 +123,19 @@ jobs:
           key  : *mutations-key
           path : *mutations-dir
 
-      - name              : Delete the cache entries this run replaces
-        continue-on-error : true
-        env               : { GH_TOKEN: "${{ github.token }}" }
-        if                : ${{ github.ref == 'refs/heads/main' }}
-        run               : mise run gha:prune
+  prune:
+    name            : 🍂 Prune
+    if              : ${{ github.ref == 'refs/heads/main' }}
+    needs           : bake
+    permissions     : { actions: write, contents: read }
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Prune superseded caches
+        uses : ./.github/actions/prune-caches
 
   settle:
     name            : ⚓ Settle

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, cache-trigger coverage, the required checks, the checks table, task validity, and pull-request path coverage"
+#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, privileged-job caches, cache-trigger and lockfile-source coverage, the required checks, the checks table, task validity, and pull-request path coverage"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml==6.0.3"]
@@ -19,8 +19,12 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                description the docs site gives that family.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
+    privileges No job holding a write permission or an OIDC token has a step
+               restoring a cache, directly or through a local composite,
+               unless that step passes `cache` as `false`.
     triggers   The `module.yml` push trigger covers every wasm source path
-               the module cache key hashes.
+               the module cache key hashes, and the `lock:sync` sources
+               cover every project config file declaring a tool.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
@@ -52,6 +56,9 @@ from typing      import NoReturn
 from yaml        import AnchorToken, BaseLoader, load_all, scan
 
 
+CACHING: set[str] = {
+    "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
+}
 READ: set[str] = set()
 
 
@@ -697,16 +704,33 @@ def planned(flow: dict, matrix: str) -> list[dict]:
     )["include"]
 
 
+def privileges() -> int:
+    """
+    Report every job holding a write permission or an OIDC token whose steps
+    restore a cache, since a tool restored from a cache runs unchecked beside
+    that job's token. A step calling a local composite restores a cache when
+    one of the composite's own steps does.
+    """
+    return flagged([
+        (
+            {
+                f"{path.name} {name}"
+                for path, flow in workflows()
+                for name, job in flow["jobs"].items()
+                if writes(job.get("permissions", flow.get("permissions", {})))
+                if any(map(restores, job.get("steps", [])))
+            },
+            "jobs holding a write permission or an OIDC token restore a cache"
+        )
+    ])
+
+
 def pull_request_workflows() -> list[tuple[Path, dict]]:
     """
     Return every workflow a `pull_request` event triggers beside its parsed
     mapping.
     """
-    return [
-        (path, flow)
-        for path in sorted(Path(".github/workflows").glob("*.y*ml"))
-        if "pull_request" in (flow := yaml(path))["on"]
-    ]
+    return [(path, flow) for path, flow in workflows() if "pull_request" in flow["on"]]
 
 
 def quoted(cell: str) -> list[str]:
@@ -770,6 +794,18 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
             ]
             reports.append((name, together or {name}, runs, matrix is not None))
     return reports
+
+
+def restores(step: dict) -> bool:
+    """
+    Return whether the `step` restores a cache, directly or through a step of
+    the local composite it calls, unless it passes `cache` as `false`.
+    """
+    if step.get("with", {}).get("cache") == "false":
+        return False
+    if (uses := step.get("uses", "")).startswith("./"):
+        return any(map(restores, yaml(f"{uses}/action.yml")["runs"].get("steps", [])))
+    return uses.partition("@")[0] in CACHING
 
 
 def rooted(entry: str, base: str) -> str:
@@ -857,12 +893,25 @@ def toml(path: str | Path) -> dict:
 def triggers() -> int:
     """
     Report every wasm source path the `module.yml` push trigger omits, which
-    leaves the cached module stale after a change to that path.
+    leaves the cached module stale after a change to that path, and every
+    project config file declaring a tool that `lock:sync` omits from its
+    sources, which leaves `mise relock` skipping a pin change in that file.
     """
+    root     = Path.cwd().resolve()
+    declared = {
+        path.relative_to(root).as_posix()
+        for entry in mise_json("config", "ls")
+        if entry["tools"]
+        if (path := Path(entry["path"]).resolve()).is_relative_to(root)
+    }
     return flagged([
         (
             set(hashed_paths("restore-wasm")) - set(workflow_paths("module")),
             "module.yml push paths omit the wasm sources"
+        ),
+        (
+            declared - set(task_paths("lock:sync", "sources")),
+            "lock:sync sources omit a config file declaring a tool"
         )
     ])
 
@@ -875,6 +924,26 @@ def workflow_paths(name: str) -> list[str]:
     if (paths := flow["on"].get("push", {}).get("paths")) is None:
         fail(f"no push paths filter in {name}.yml")
     return paths
+
+
+def workflows() -> list[tuple[Path, dict]]:
+    """
+    Return every workflow beside its parsed mapping.
+    """
+    return [
+        (path, yaml(path))
+        for path in sorted(Path(".github/workflows").glob("*.y*ml"))
+    ]
+
+
+def writes(granted: dict | str) -> bool:
+    """
+    Return whether the `granted` permissions, a mapping from scope to level or
+    one level for every scope, grant write access to any scope, `id-token`
+    included.
+    """
+    levels = granted.values() if isinstance(granted, dict) else [granted]
+    return any("write" in level for level in levels)
 
 
 def yaml(path: str | Path) -> dict:
@@ -891,6 +960,7 @@ if __name__ == "__main__":
         parity()
         | labels()
         | manifests()
+        | privileges()
         | triggers()
         | gates()
         | checks()

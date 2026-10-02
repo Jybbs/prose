@@ -14,10 +14,10 @@ cargo update --dry-run --locked --workspace
 snapshot=$(mktemp)
 trap 'rm -f "$snapshot"' EXIT
 cp .mise/mise.lock "$snapshot"
-mise lock --quiet
+mise lock
 diff -u "$snapshot" .mise/mise.lock >&2 || {
   mv "$snapshot" .mise/mise.lock
   exit 1
 }
-MISE_LOCKED_SCOPES=project mise install --dry-run --force --locked
+mise install --dry-run --force
 uv lock --check --project crate

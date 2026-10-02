@@ -33,6 +33,7 @@ jobs:
 
       - name : Provision uv
         uses : ./.github/actions/provision-uv
+        with : { cache: 'false' }
 
       - name : 🌱 Cut draft
         env  : { GH_TOKEN: "${{ github.token }}" }
