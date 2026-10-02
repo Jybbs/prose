@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
-#MISE description="Audit version-pin parity, the label registry, action-manifest hygiene, privileged-job caches, cache-trigger and lockfile-source coverage, the required checks, the checks table, task validity, and pull-request path coverage"
+#MISE description="Audit the CI invariants no other gate covers"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml==6.0.3"]
@@ -17,6 +17,8 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                every color is six lowercase hex digits no other label uses,
                and each rule family's label takes the color and the
                description the docs site gives that family.
+    forms      No issue template carries a release number, so a version bump
+               edits no file under `.github/ISSUE_TEMPLATE/`.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
     privileges No job holding a write permission or an OIDC token has a step
@@ -46,7 +48,7 @@ Findings surface as `::error::` annotations naming the divergence or file.
 
 from collections import Counter, defaultdict
 from functools   import cache
-from itertools   import product
+from itertools   import chain, product
 from json        import loads as json_loads
 from os          import environ
 from pathlib     import Path
@@ -355,6 +357,23 @@ def flagged(findings: list[tuple[set | list, str]]) -> int:
     return failed
 
 
+def forms() -> int:
+    """
+    Report every release number an issue template carries, which a version
+    bump leaves stale, locating each to its file and line.
+    """
+    return located([
+        (
+            f"the template carries the release number {release!r}, which the next version bump leaves stale",
+            path,
+            line
+        )
+        for path, _ in templates()
+        for line, text in enumerate(read(path).splitlines(), 1)
+        for release in findall(r"(?<!\d)\d+\.\d+\.\d+(?!\d)", text)
+    ])
+
+
 def gates() -> int:
     """
     Report every check the `main` ruleset requires that no pull-request
@@ -474,6 +493,16 @@ def labels() -> int:
     ])
 
 
+def located(findings: list[tuple[str, Path, int]]) -> int:
+    """
+    Emit an error annotation for every finding, a message beside the file and
+    line it names, and return 1 when there is any.
+    """
+    for message, path, line in findings:
+        annotate(message, file = path, line = line)
+    return int(bool(findings))
+
+
 def major_minor(value: str) -> str:
     """
     Return `<major>.<minor>` from any string carrying a SemVer head.
@@ -493,17 +522,16 @@ def manifests() -> int:
     Report every YAML anchor in a composite action manifest, which the
     runner's manifest parser rejects before any step runs.
     """
-    failed = 0
-    for path in sorted(Path(".github/actions").glob("*/action.y*ml")):
-        for token in scan(read(path)):
-            if isinstance(token, AnchorToken):
-                annotate(
-                    f"YAML anchors are rejected in an action manifest, so remove {token.value!r}",
-                    file = path,
-                    line = token.start_mark.line + 1
-                )
-                failed = 1
-    return failed
+    return located([
+        (
+            f"YAML anchors are rejected in an action manifest, so remove {token.value!r}",
+            path,
+            token.start_mark.line + 1
+        )
+        for path in sorted(Path(".github/actions").glob("*/action.y*ml"))
+        for token in scan(read(path))
+        if isinstance(token, AnchorToken)
+    ])
 
 
 def matched(message: str, path: str, pattern: str) -> str:
@@ -627,8 +655,7 @@ def parity() -> int:
         *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
-        *patch_pins(package),
-        *placeholder_pins(toml("crate/Cargo.toml")["package"]["version"])
+        *patch_pins(package)
     ]
 
     failed = 0
@@ -657,20 +684,14 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     return pairs
 
 
-def placeholder_pins(version: str) -> list[tuple[str, str, str]]:
+def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
     """
-    Return one parity pair per issue form asking for the release a run came
-    from, matching the version its placeholder shows against `version`.
+    Return every file in `folder` matching one of `patterns` beside its parsed
+    YAML, sorted by path.
     """
     return [
-        (
-            f"{path} version placeholder ↔ crate/Cargo.toml version",
-            field["attributes"].get("placeholder"),
-            version
-        )
-        for path, form in templates()
-        for field in form.get("body", [])
-        if field.get("id") == "version"
+        (path, yaml(path))
+        for path in sorted(chain.from_iterable(map(Path(folder).glob, patterns)))
     ]
 
 
@@ -709,20 +730,20 @@ def privileges() -> int:
     """
     Report every job holding a write permission or an OIDC token whose steps
     restore a cache, since a tool restored from a cache runs unchecked beside
-    that job's token. A step calling a local composite restores a cache when
-    one of the composite's own steps does.
+    that job's token, locating each to the line its key opens on. A step
+    calling a local composite restores a cache when one of the composite's
+    own steps does.
     """
-    return flagged([
+    return located([
         (
-            {
-                f"{path.name} {name}"
-                for path, flow in workflows()
-                for name, job in flow["jobs"].items()
-                if writes(job.get("permissions", flow.get("permissions", {})))
-                if any(map(restores, job.get("steps", [])))
-            },
-            "jobs holding a write permission or an OIDC token restore a cache"
+            f"the {name} job restores a cache while holding a write permission or an OIDC token",
+            path,
+            read(path).splitlines().index(f"  {name}:") + 1
         )
+        for path, flow in workflows()
+        for name, job in flow["jobs"].items()
+        if writes(job.get("permissions", flow.get("permissions", {})))
+        if any(map(restores, job.get("steps", [])))
     ])
 
 
@@ -885,11 +906,7 @@ def templates() -> list[tuple[Path, dict]]:
     Return every issue template beside its parsed form, which for a Markdown
     template is its frontmatter.
     """
-    folder = Path(".github/ISSUE_TEMPLATE")
-    return [
-        (path, yaml(path))
-        for path in sorted([*folder.glob("*.y*ml"), *folder.glob("*.md")])
-    ]
+    return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
 
 
 def toml(path: str | Path) -> dict:
@@ -939,10 +956,7 @@ def workflows() -> list[tuple[Path, dict]]:
     """
     Return every workflow beside its parsed mapping.
     """
-    return [
-        (path, yaml(path))
-        for path in sorted(Path(".github/workflows").glob("*.y*ml"))
-    ]
+    return parsed(".github/workflows", "*.y*ml")
 
 
 def writes(granted: dict | str) -> bool:
@@ -968,6 +982,7 @@ if __name__ == "__main__":
     raise SystemExit(
         parity()
         | labels()
+        | forms()
         | manifests()
         | privileges()
         | triggers()

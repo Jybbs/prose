@@ -26,7 +26,7 @@ body:
     attributes:
       description : The release this run came from, as `prose --version` prints it.
       label       : Version
-      placeholder : 0.10.1
+      placeholder : prose X.Y.Z
     validations:
       required: true
 
