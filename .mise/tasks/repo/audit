@@ -21,7 +21,8 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                the runner rejects before any step runs.
     privileges No job holding a write permission or an OIDC token has a step
                restoring a cache, directly or through a local composite,
-               unless that step passes `cache` as `false`.
+               unless the `jdx/mise-action` step passes `cache` as `false`
+               or forwards a `false` its composite's caller passed.
     triggers   The `module.yml` push trigger covers every wasm source path
                the module cache key hashes, and the `lock:sync` sources
                cover every project config file declaring a tool.
@@ -799,9 +800,10 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
 def restores(step: dict, uncached: bool = False) -> bool:
     """
     Return whether the `step` restores a cache, directly or through a step of
-    the local composite it calls. A caching step restores nothing when it
-    passes `cache` as `false`, or when it forwards `inputs.cache` and
-    `uncached` reports that the composite's caller passed `false`.
+    the local composite it calls. A `jdx/mise-action` step restores nothing
+    when it passes `cache` as `false`, or when it passes `inputs.cache` on
+    as is or compared against `'false'` and `uncached` reports that the
+    composite's caller passed `false`.
     """
     cache = step.get("with", {}).get("cache", "")
     if (uses := step.get("uses", "")).startswith("./"):
@@ -809,9 +811,10 @@ def restores(step: dict, uncached: bool = False) -> bool:
             restores(each, cache == "false")
             for each in yaml(f"{uses}/action.yml")["runs"].get("steps", [])
         )
-    if cache == "false" or (uncached and "inputs.cache" in cache):
-        return False
-    return uses.partition("@")[0] in CACHING
+    if (action := uses.partition("@")[0]) == "jdx/mise-action":
+        forwarded = fullmatch(r"\$\{\{ inputs\.cache( != 'false')? \}\}", cache)
+        return cache != "false" and not (uncached and forwarded)
+    return action in CACHING
 
 
 def rooted(entry: str, base: str) -> str:
