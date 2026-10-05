@@ -4,4 +4,4 @@
 #MISE description = "Sweep the docs site for dead code and unused dependencies with `knip`"
 #MISE dir         = "site"
 
-bunx knip
+knip

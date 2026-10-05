@@ -5,4 +5,4 @@
 #MISE dir         = "site"
 #MISE sources     = ["@group:crate", "@group:site"]
 
-bunx vitepress build
+vitepress build
