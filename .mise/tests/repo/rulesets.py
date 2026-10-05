@@ -3,10 +3,11 @@ Pins the calls `repo:rulesets` sends to GitHub, the settings file it reads
 them from, and what it rejects before sending any.
 """
 
-from json    import dumps, loads
-from pathlib import Path
-from pytest  import MonkeyPatch, fixture, mark, param, raises
-from tomllib import loads as from_toml
+from dataclasses import FrozenInstanceError
+from json        import dumps, loads
+from pathlib     import Path
+from pytest      import MonkeyPatch, fixture, mark, param, raises
+from tomllib     import loads as from_toml
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -204,9 +205,8 @@ def parsed(rulesets, text: str = SETTINGS):
 )
 def test_record_rejects_a_malformed_file(rulesets, old: str, new: str, message: str):
     """
-    Pins that an unknown or missing table or key, a table that is not a table,
-    a value of the wrong type, and the wrong spelling of a key each stop the
-    read, naming where.
+    Pins that an unknown or missing table or key, a value of the wrong type,
+    and the wrong spelling of a key each stop the read, naming where.
     """
     assert old in SETTINGS
     with raises(SystemExit, match=message):
@@ -239,6 +239,51 @@ def test_requests_send_every_setting_in_order(rulesets):
     assert parsed(rulesets).requests(from_toml(PROJECT)["project"]) == [
         (endpoint, method, body) for method, endpoint, body in SENT
     ]
+
+
+def test_tracked_files_send_the_about_box(rulesets):
+    """
+    Pins that the tracked `crate/pyproject.toml` and `.github/settings.toml`
+    send the description, the homepage's bare domain, and the topics the
+    repository carries.
+    """
+    project  = from_toml((ROOT / "crate/pyproject.toml").read_text(encoding="utf-8"))
+    settings = parsed(rulesets, (ROOT / ".github/settings.toml").read_text("utf-8"))
+    (_, _, patch), (_, _, topics) = settings.requests(project["project"])[:2]
+    assert patch["description"] == "A Python typesetter for the reader."
+    assert patch["homepage"] == "prose.fyi"
+    assert topics["names"] == [
+        "alignment", "code-quality", "developer-tools", "formatter", "linter",
+        "python", "rust", "static-analysis", "typesetting"
+    ]
+
+
+@mark.parametrize(
+    "select",
+    [
+        param(lambda settings: settings, id="settings"),
+        param(lambda settings: settings.actions, id="actions"),
+        param(lambda settings: settings.advisories, id="advisories"),
+        param(lambda settings: settings.dependabot, id="dependabot"),
+        param(lambda settings: settings.repository, id="repository"),
+        param(
+            lambda settings: settings.repository.security_and_analysis,
+            id = "security and analysis"
+        ),
+        param(
+            lambda settings: settings.repository.security_and_analysis.secret_scanning,
+            id = "status"
+        ),
+        param(lambda settings: settings.workflow, id="workflow")
+    ]
+)
+def test_record_is_frozen(rulesets, select):
+    """
+    Pins that every record the settings file reads into rejects assignment.
+    """
+    record = select(parsed(rulesets))
+    with raises(FrozenInstanceError):
+        setattr(record, next(iter(vars(record))), None)
 
 
 @mark.parametrize("on", [True, False])
