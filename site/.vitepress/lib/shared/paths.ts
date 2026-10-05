@@ -63,6 +63,10 @@ export function siteDir(metaUrl: string): string {
   return path.join(repoRoot(metaUrl), 'site')
 }
 
+export function viteCacheDir(metaUrl: string): string {
+  return cacheDirFrom(repoRoot(metaUrl), 'vite')
+}
+
 export function vitepressCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'vitepress')
 }
