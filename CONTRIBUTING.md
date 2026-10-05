@@ -296,7 +296,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 
-`🗞️ Brief` is the one check the `main` ruleset requires, so a pull request can merge once every workflow it triggered reports that check green. The rulesets are recorded under `.github/rulesets/`, and `mise run repo:rulesets` applies them along with the repository settings no ruleset covers (*squash as the only merge method, the head branch deleted on merge, every action pinned to a commit, a read-only workflow token*). `mise run repo:audit` fails when the checks `.github/rulesets/main.json` requires differ from the names of the jobs the pull-request workflows end on, so renaming the `🗞️ Brief` job cannot leave every pull request waiting on a check that never reports.
+`🗞️ Brief` is the one check the `main` ruleset requires, so a pull request can merge once every workflow it triggered reports that check green. The rulesets are recorded under `.github/rulesets/` and every other repository setting in `.github/settings.toml`, which `mise run repo:rulesets` applies together (*squash as the only merge method, the head branch deleted on merge, the security features, every action pinned to a commit, a read-only workflow token*). The About box has one source in `crate/pyproject.toml`, whose description, `homepage` URL, and `keywords` the task sends as the description, the homepage, and the topics. `mise run repo:audit` fails when the checks `.github/rulesets/main.json` requires differ from the names of the jobs the pull-request workflows end on, so renaming the `🗞️ Brief` job cannot leave every pull request waiting on a check that never reports.
 
 The table lists each row beside the task that runs the same check locally:
 
@@ -304,7 +304,7 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters, and the pytest suite under `.mise/tests` passes |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
