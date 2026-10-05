@@ -40,10 +40,11 @@ jobs:
       - &checkout
         name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with : { persist-credentials: false }
 
       - &provision-uv
         name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
 
       - name : Emit build matrix
         id   : matrix
@@ -81,14 +82,14 @@ jobs:
       - *checkout
 
       - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
+        uses : $/.github/actions/provision-cargo
         with:
           save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
       - name : Restore the wasm module
         if   : ${{ matrix.module == 'true' }}
-        uses : ./.github/actions/restore-wasm
+        uses : $/.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
         env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
@@ -110,7 +111,7 @@ jobs:
       - *provision-uv
 
       - name : Warm the wheel build for ${{ matrix.target }}
-        uses : ./.github/actions/build-wheel
+        uses : $/.github/actions/build-wheel
         with:
           args      : ${{ matrix.args }}
           command   : build
@@ -131,7 +132,7 @@ jobs:
       - *checkout
 
       - name : Prune superseded caches
-        uses : ./.github/actions/prune-caches
+        uses : $/.github/actions/prune-caches
 
       - name : Summarize and gate
         env  : { NEEDS: "${{ toJSON(needs) }}" }

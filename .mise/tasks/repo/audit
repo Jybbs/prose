@@ -827,10 +827,10 @@ def restores(step: dict, uncached: bool = False) -> bool:
     composite's caller passed `false`.
     """
     cache = step.get("with", {}).get("cache", "")
-    if (uses := step.get("uses", "")).startswith("./"):
+    if (uses := step.get("uses", "")).startswith(("./", "$/")):
         return any(
             restores(each, cache == "false")
-            for each in yaml(f"{uses}/action.yml")["runs"].get("steps", [])
+            for each in yaml(f"{uses[2:]}/action.yml")["runs"].get("steps", [])
         )
     if (action := uses.partition("@")[0]) == "jdx/mise-action":
         forwarded = fullmatch(r"\$\{\{ inputs\.cache( != 'false')? \}\}", cache)

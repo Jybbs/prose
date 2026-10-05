@@ -305,6 +305,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
 | `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters |
+| `🧿 Zizmor` | `🪻 CI` | `mise run repo:lint` | `zizmor` reports no finding across the workflows and composite actions |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |

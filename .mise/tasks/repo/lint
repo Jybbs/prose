@@ -1,0 +1,4 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Audit the workflows and composite actions with `zizmor`"
+
+zizmor ${GITHUB_ACTIONS:+--format github} --offline .github

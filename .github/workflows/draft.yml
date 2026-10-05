@@ -28,11 +28,12 @@ jobs:
       - name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          fetch-depth : 2
-          ref         : main
+          fetch-depth         : 2
+          persist-credentials : false
+          ref                 : main
 
       - name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
         with : { cache: 'false' }
 
       - name : 🌱 Cut draft
