@@ -68,6 +68,7 @@ impl Runner {
             .arg("-q")
             .arg("-j0")
             .arg(tree)
+            .env_remove("PYTHONPYCACHEPREFIX")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status();
