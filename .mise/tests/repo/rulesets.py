@@ -3,7 +3,7 @@ Pins the calls `repo:rulesets` sends to GitHub, the settings file it reads
 them from, and what it rejects before sending any.
 """
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, fields, is_dataclass
 from json        import dumps, loads
 from pathlib     import Path
 from pytest      import MonkeyPatch, fixture, mark, param, raises
@@ -248,7 +248,8 @@ def test_tracked_files_send_the_about_box(rulesets):
     repository carries.
     """
     project  = from_toml((ROOT / "crate/pyproject.toml").read_text(encoding="utf-8"))
-    settings = parsed(rulesets, (ROOT / ".github/settings.toml").read_text("utf-8"))
+    tracked  = (ROOT / ".github/settings.toml").read_text(encoding="utf-8")
+    settings = parsed(rulesets, tracked)
     (_, _, patch), (_, _, topics) = settings.requests(project["project"])[:2]
     assert patch["description"] == "A Python typesetter for the reader."
     assert patch["homepage"] == "prose.fyi"
@@ -258,32 +259,23 @@ def test_tracked_files_send_the_about_box(rulesets):
     ]
 
 
-@mark.parametrize(
-    "select",
-    [
-        param(lambda settings: settings, id="settings"),
-        param(lambda settings: settings.actions, id="actions"),
-        param(lambda settings: settings.advisories, id="advisories"),
-        param(lambda settings: settings.dependabot, id="dependabot"),
-        param(lambda settings: settings.repository, id="repository"),
-        param(
-            lambda settings: settings.repository.security_and_analysis,
-            id = "security and analysis"
-        ),
-        param(
-            lambda settings: settings.repository.security_and_analysis.secret_scanning,
-            id = "status"
-        ),
-        param(lambda settings: settings.workflow, id="workflow")
-    ]
-)
-def test_record_is_frozen(rulesets, select):
+def records(value):
+    """
+    Yields a record and every record nested beneath it.
+    """
+    yield value
+    for field in fields(value):
+        if is_dataclass(child := getattr(value, field.name)):
+            yield from records(child)
+
+
+def test_record_is_frozen(rulesets):
     """
     Pins that every record the settings file reads into rejects assignment.
     """
-    record = select(parsed(rulesets))
-    with raises(FrozenInstanceError):
-        setattr(record, next(iter(vars(record))), None)
+    for record in records(parsed(rulesets)):
+        with raises(FrozenInstanceError):
+            setattr(record, next(iter(vars(record))), None)
 
 
 @mark.parametrize("on", [True, False])
