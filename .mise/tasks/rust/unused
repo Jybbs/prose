@@ -2,4 +2,4 @@
 #MISE alias       = "unused"
 #MISE description = "Detect unused dependencies in `Cargo.toml`"
 
-cargo machete
+cargo shear --deny-warnings --locked
