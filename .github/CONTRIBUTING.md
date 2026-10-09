@@ -8,14 +8,14 @@ This page walks a change through each step in the order a contributor takes it, 
 
 ## 🗜️ Setting Up
 
-`README.md` carries the provisioning steps, and once a clone is provisioned, these conventions hold:
+`.github/README.md` carries the provisioning steps, and once a clone is provisioned, these conventions hold:
 
 | **Convention** | **Rule** |
 |---|---|
-| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it, and `locked = true` under its `[tool_config]` stops `mise install` on any tool in its `[tools]` table that has no lockfile entry. The policy leaves out node, since `.nvmrc` pins it rather than the `[tools]` table. The `lock:check` task behind the `🪵 Lockfile` row still covers node, because the `mise lock` it runs reads `.nvmrc` as well, so a node version the committed lockfile lacks fails the row as a difference from that lockfile |
+| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it, and `locked = true` under its `[tool_config]` stops `mise install` on any tool in its `[tools]` table that has no lockfile entry |
 | Tasks | A command runs through its mise task rather than the `cargo`, `bun`, or `maturin` call the task wraps, because the task carries the flags CI runs with. `mise tasks` lists them all, and most developer tasks also run under a one-word alias (*`mise ci` for `repo:ci`, `mise review` for `rust:review`*) |
 | Virtualenv | The first mise command in a clone creates `crate/.venv`, and `mise wheel` builds the extension into it through `maturin develop` |
-| Lockfiles | An edit to `crate/Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, `.mise/config.toml`, or `.nvmrc` takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
+| Lockfiles | An edit to any manifest in the `manifests` input group of `.mise/config.toml`, meaning a `Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, or the config itself, takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
 | Local sweep | `mise ci` runs what the `🪻 CI` and `🪻 Deploy` workflows run, short of uploading coverage |
 
 ---
@@ -292,7 +292,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | **Workflow** | **Fires on a Pull Request Touching** |
 |---|---|
 | `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
-| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue and pull request templates, `.nvmrc`, `CONTRIBUTING.md`, `LICENSE`, `README.md`, or `crate/Cargo.toml` |
+| `🪻 Deploy` | The docs site, the tasks and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, every Markdown file directly under `.github/`, `LICENSE`, or `crate/Cargo.toml` |
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 

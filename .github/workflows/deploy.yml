@@ -10,18 +10,15 @@ env:
 on:
   pull_request:
     paths:
+      - .github/*.md
       - .github/ISSUE_TEMPLATE/**
-      - .github/PULL_REQUEST_TEMPLATE.md
       - .github/actions/**
       - .github/workflows/deploy.yml
       - .mise/config.toml
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/**
-      - .nvmrc
-      - CONTRIBUTING.md
       - LICENSE
-      - README.md
       - crate/Cargo.toml
       - site/**
 
@@ -35,7 +32,6 @@ on:
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/**
-      - .nvmrc
       - crate/Cargo.toml
       - site/**
 

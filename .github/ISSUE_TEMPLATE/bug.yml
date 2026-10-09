@@ -75,4 +75,4 @@ body:
 
         A maintainer reproduces from the fields above and turns the source into a fixture case pinning the output the rule should produce, or into an inline test where the defect sits outside a rule. A report carrying a small reproduction becomes that case almost as written, so it usually turns into a fix quickly. The case then stays in the suite and keeps the defect from coming back.
 
-        A reporter who wants to write the case directly can follow `CONTRIBUTING.md` at the repository root, which walks through the `input.py` and `meta.toml` pair a maintainer drops into the fixture tree, the shortest path from a report to a regression test.
+        A reporter who wants to write the case directly can follow the contributor guide at `.github/CONTRIBUTING.md`, which walks through the `input.py` and `meta.toml` pair a maintainer drops into the fixture tree, the shortest path from a report to a regression test.
