@@ -333,8 +333,6 @@ def filters() -> int:
         if "repo:audit" in invoked(read(path)):
             audited.append(paths)
 
-    listed  = run(["git", "ls-files", "-z"], capture_output=True, check=True, text=True)
-    tracked = listed.stdout.split("\0")[:-1]
     return flagged([
         (
             {
@@ -344,8 +342,8 @@ def filters() -> int:
             message
         )
         for files, selecting, message in (
-            (tracked, every,   "no pull-request workflow fires on tracked files"),
-            (READ,    audited, "no workflow running the audit fires on files it reads"),
+            (tracked(), every,   "no pull-request workflow fires on tracked files"),
+            (READ,      audited, "no workflow running the audit fires on files it reads"),
         )
     ])
 
@@ -886,18 +884,18 @@ def scripts() -> int:
     scripts, a docs-site script differing byte for byte from the first, and
     a task or library under `.mise/` that runs `bunx`, `bun x`, or `npx`.
     """
-    found    = sorted(Path(".mise/bin").iterdir())
+    found    = list(map(Path, tracked(".mise/bin")))
     docs     = [path for path in found if path.name != "prose"]
     audit    = Path(__file__).resolve()
     first    = docs[0].read_bytes() if docs else b""
     tools    = {"prose", *(path.name for path in found)}
     fetchers = [
         (
-            f"{each!r} fetches a tool from the registry, so run it from `.mise/bin`",
+            f"{each!r} fetches a tool from the registry, so run the bare tool",
             path,
             number
         )
-        for path in chain(Path(".mise/tasks").rglob("*"), Path(".mise/lib").rglob("*"))
+        for path in map(Path, tracked(".mise/tasks", ".mise/lib"))
         if path.is_file() and path.resolve() != audit
         for number, line in enumerate(read(path).splitlines(), 1)
         for each in findall(r"\b(?:bunx|bun x|npx)\b", line)
@@ -1004,6 +1002,19 @@ def toml(path: str | Path) -> dict:
     Return the parsed TOML mapping at `path`.
     """
     return loads(read(path))
+
+
+def tracked(*paths: str) -> list[str]:
+    """
+    Return every file git tracks under `paths`, or every tracked file when no
+    path is given.
+    """
+    return run(
+        ["git", "ls-files", "-z", *paths],
+        capture_output = True,
+        check          = True,
+        text           = True
+    ).stdout.split("\0")[:-1]
 
 
 def triggers() -> int:
