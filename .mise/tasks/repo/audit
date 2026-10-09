@@ -1,5 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
+#MISE depends=["repo:test"]
 #MISE description="Audit the CI invariants no other gate covers"
 # /// script
 # requires-python = ">=3.11"
