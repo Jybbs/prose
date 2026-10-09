@@ -1,5 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
+#MISE depends=["repo:test"]
 #MISE description="Audit the CI invariants no other gate covers"
 # /// script
 # requires-python = ">=3.11"
@@ -22,9 +23,9 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
     privileges No job holding a write permission or an OIDC token has a step
-               restoring a cache, directly or through a local composite,
-               unless the `jdx/mise-action` step passes `cache` as `false`
-               or forwards a `false` its composite's caller passed.
+               restoring a cache, directly or through a composite in this
+               repository, unless the `jdx/mise-action` step passes `cache` as
+               `false` or forwards a `false` its composite's caller passed.
     triggers   The `module.yml` push trigger covers every wasm source path
                the module cache key hashes, and the `lock:sync` sources
                cover every project config file declaring a tool.
@@ -84,7 +85,7 @@ def action_pins() -> list[tuple[str, str, str]]:
     homes = defaultdict(list)
     for path in sorted(Path(".github").rglob("*.y*ml")):
         text = read(path)
-        for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
+        for match in finditer(r"uses\s*:\s*([\w.-]+/[\w./-]+)@(\S+)", text):
             homes[match[1]].append((str(path), match[2]))
 
     return [
@@ -731,8 +732,8 @@ def privileges() -> int:
     Report every job holding a write permission or an OIDC token whose steps
     restore a cache, since a tool restored from a cache runs unchecked beside
     that job's token, locating each to the line its key opens on. A step
-    calling a local composite restores a cache when one of the composite's
-    own steps does.
+    calling a composite in this repository restores a cache when one of the
+    composite's own steps does.
     """
     return located([
         (
@@ -820,17 +821,17 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
 
 def restores(step: dict, uncached: bool = False) -> bool:
     """
-    Return whether the `step` restores a cache, directly or through a step of
-    the local composite it calls. A `jdx/mise-action` step restores nothing
-    when it passes `cache` as `false`, or when it passes `inputs.cache` on
-    as is or compared against `'false'` and `uncached` reports that the
-    composite's caller passed `false`.
+    Return whether the `step` restores a cache, directly or through a step of a
+    composite it calls from this repository by a `./` or `$/` path. A
+    `jdx/mise-action` step restores nothing when it passes `cache` as `false`,
+    or when it passes `inputs.cache` on as is or compared against `'false'` and
+    `uncached` reports that the composite's caller passed `false`.
     """
     cache = step.get("with", {}).get("cache", "")
-    if (uses := step.get("uses", "")).startswith("./"):
+    if (uses := step.get("uses", "")).startswith(("./", "$/")):
         return any(
             restores(each, cache == "false")
-            for each in yaml(f"{uses}/action.yml")["runs"].get("steps", [])
+            for each in yaml(f"{uses[2:]}/action.yml")["runs"].get("steps", [])
         )
     if (action := uses.partition("@")[0]) == "jdx/mise-action":
         forwarded = fullmatch(r"\$\{\{ inputs\.cache( != 'false')? \}\}", cache)

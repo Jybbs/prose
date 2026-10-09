@@ -18,7 +18,17 @@ classifiers     = [
 ]
 description     = "A Python typesetter for the reader."
 dynamic         = ["version"]
-keywords        = ["formatter", "legibility", "linter", "python", "style"]
+keywords        = [
+    "alignment",
+    "code-quality",
+    "developer-tools",
+    "formatter",
+    "linter",
+    "python",
+    "rust",
+    "static-analysis",
+    "typesetting"
+]
 license         = "MIT"
 name            = "prose-formatter"
 readme          = "../.github/README.md"
@@ -26,8 +36,12 @@ requires-python = ">=3.10"
 
 [project.urls]
 changelog = "https://github.com/Jybbs/prose/releases"
+homepage  = "https://prose.fyi"
 issues    = "https://github.com/Jybbs/prose/issues"
 source    = "https://github.com/Jybbs/prose"
+
+[dependency-groups]
+test = ["pytest", "pytest-subprocess"]
 
 [tool.maturin]
 bindings = "bin"
