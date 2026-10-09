@@ -4,7 +4,8 @@ them from, and what it rejects before sending any.
 """
 
 from collections.abc   import Callable, Iterator
-from dataclasses       import FrozenInstanceError, fields, is_dataclass
+from dataclasses       import FrozenInstanceError
+from functools         import reduce
 from json              import dumps, loads
 from pathlib           import Path
 from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
@@ -152,6 +153,16 @@ def parsed(rulesets: ModuleType, text: str = SETTINGS) -> Any:
     return rulesets.record(rulesets.Settings, from_toml(text))
 
 
+def tables(table: dict, keys: tuple[str, ...] = ()) -> Iterator[tuple[str, ...]]:
+    """
+    Yields the keys leading to `table` and to every table nested beneath it.
+    """
+    yield keys
+    for key, value in table.items():
+        if isinstance(value, dict):
+            yield from tables(value, (*keys, key))
+
+
 @mark.parametrize(
     ("old", "new", "message"),
     [
@@ -228,16 +239,6 @@ def test_record_rejects_a_malformed_file(
     assert old in SETTINGS
     with raises(SystemExit, match=message):
         parsed(rulesets, SETTINGS.replace(old, new))
-
-
-def records(value: object) -> Iterator[object]:
-    """
-    Yields a record and every record nested beneath it.
-    """
-    yield value
-    for field in fields(value):
-        if is_dataclass(child := getattr(value, field.name)):
-            yield from records(child)
 
 
 def test_main_applies_the_rulesets_then_every_setting(
@@ -320,16 +321,31 @@ def test_record_accepts_the_tracked_file(rulesets: ModuleType):
     """
     Asserts that `.github/settings.toml` itself reads into the record.
     """
-    parsed(rulesets, (ROOT / ".github/settings.toml").read_text(encoding="utf-8"))
+    parsed(rulesets, tracked(".github/settings.toml"))
 
 
-def test_record_is_frozen(rulesets: ModuleType):
+def test_record_rejects_a_value_that_is_not_a_table(rulesets: ModuleType):
     """
-    Pins that every record the settings file reads into rejects assignment.
+    Pins that a key holding a scalar where a table belongs stops the read,
+    naming the table.
     """
-    for record in records(parsed(rulesets)):
-        with raises(FrozenInstanceError):
-            setattr(record, next(iter(vars(record))), None)
+    with raises(SystemExit, match=r"\[workflow\] is not a table"):
+        rulesets.record(rulesets.Settings, {**from_toml(SETTINGS), "workflow": 1})
+
+
+@mark.parametrize(
+    "keys",
+    list(tables(from_toml(SETTINGS))),
+    ids = lambda keys: ".".join(keys) or "settings"
+)
+def test_record_is_frozen(keys: tuple[str, ...], rulesets: ModuleType):
+    """
+    Pins that the record each table of the settings file reads into rejects
+    assignment.
+    """
+    record = reduce(getattr, keys, parsed(rulesets))
+    with raises(FrozenInstanceError):
+        setattr(record, next(iter(vars(record))), None)
 
 
 @mark.parametrize("on", [True, False])
@@ -349,15 +365,6 @@ def test_requests_toggle_an_endpoint_by_method(rulesets: ModuleType, on: bool):
     )
 
 
-def test_record_rejects_a_value_that_is_not_a_table(rulesets: ModuleType):
-    """
-    Pins that a key holding a scalar where a table belongs stops the read,
-    naming the table.
-    """
-    with raises(SystemExit, match=r"\[workflow\] is not a table"):
-        rulesets.record(rulesets.Settings, {**from_toml(SETTINGS), "workflow": 1})
-
-
 def test_requests_send_every_setting_in_order(rulesets: ModuleType):
     """
     Pins the endpoint, method, and body of every call, the repository
@@ -373,16 +380,19 @@ def test_requests_send_every_setting_in_order(rulesets: ModuleType):
 def test_tracked_files_send_the_about_box(rulesets: ModuleType):
     """
     Pins that the tracked `crate/pyproject.toml` and `.github/settings.toml`
-    send the description, the homepage's bare domain, and the topics the
-    repository carries.
+    send the project's description, the bare domain its homepage opens with,
+    and its keywords as the topics.
     """
-    project  = from_toml((ROOT / "crate/pyproject.toml").read_text(encoding="utf-8"))
-    tracked  = (ROOT / ".github/settings.toml").read_text(encoding="utf-8")
-    settings = parsed(rulesets, tracked)
-    (_, _, patch), (_, _, topics) = settings.requests(project["project"])[:2]
-    assert patch["description"] == "A Python typesetter for the reader."
-    assert patch["homepage"] == "prose.fyi"
-    assert topics["names"] == [
-        "alignment", "code-quality", "developer-tools", "formatter", "linter",
-        "python", "rust", "static-analysis", "typesetting"
-    ]
+    project  = from_toml(tracked("crate/pyproject.toml"))["project"]
+    settings = parsed(rulesets, tracked(".github/settings.toml"))
+    (_, _, patch), (_, _, topics) = settings.requests(project)[:2]
+    assert patch["description"] == project["description"]
+    assert project["urls"]["homepage"].startswith(f"https://{patch['homepage']}")
+    assert topics["names"] == project["keywords"]
+
+
+def tracked(path: str) -> str:
+    """
+    Returns the text of the tracked file at `path` under the worktree root.
+    """
+    return (ROOT / path).read_text(encoding="utf-8")
