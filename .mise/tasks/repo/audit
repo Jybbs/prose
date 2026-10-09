@@ -40,8 +40,9 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
     scripts    Every tool in `.mise/bin` resolves on the path from `site/` to
                its script, none of those scripts is a symlink, each docs-site
                script passes its arguments to `site/node_modules/.bin/<tool>`
-               as given and matches the first byte for byte, and no task or
-               library under `.mise/` runs `bunx`, `bun x`, or `npx`.
+               as given within ten seconds and matches the first byte for
+               byte, and no task or library under `.mise/` runs `bunx`,
+               `bun x`, or `npx`.
     filters    Every tracked file sits inside the `pull_request` path filter
                of some workflow, so a pull request touching only that file
                still reports the check the `main` ruleset requires, and
@@ -55,10 +56,11 @@ from collections import Counter, defaultdict
 from functools   import cache
 from itertools   import chain, product
 from json        import loads as json_loads
-from os          import environ
+from os          import environ, killpg
 from pathlib     import Path
 from re          import MULTILINE, escape, findall, finditer, fullmatch, search, sub
-from subprocess  import DEVNULL, TimeoutExpired, run
+from signal      import SIGKILL
+from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, run
 from tempfile    import TemporaryDirectory
 from tomllib     import loads
 from typing      import NoReturn
@@ -566,7 +568,8 @@ def misdirected(script: Path) -> bool:
     target an argument other than as given, one holding a space included,
     runs a target other than the scratch tree's `site/node_modules/.bin/<tool>`
     once both paths are resolved, or runs past ten seconds, the script reaching
-    its root as `.mise/bin/../..`.
+    its root as `.mise/bin/../..`. A copy that runs past ten seconds is killed
+    along with every process it started.
     """
     arguments = ["two words", "one", ""]
     with TemporaryDirectory() as scratch:
@@ -579,16 +582,19 @@ def misdirected(script: Path) -> bool:
             path.parent.mkdir(parents=True)
             path.write_bytes(body)
             path.chmod(0o755)
-        try:
-            printed = run(
-                [copy, *arguments],
-                capture_output = True,
-                stdin          = DEVNULL,
-                text           = True,
-                timeout        = 10
-            ).stdout
-        except TimeoutExpired:
-            return True
+        with Popen(
+            [copy, *arguments],
+            process_group = 0,
+            stderr        = DEVNULL,
+            stdin         = DEVNULL,
+            stdout        = PIPE,
+            text          = True
+        ) as process:
+            try:
+                printed = process.communicate(timeout=10)[0]
+            except TimeoutExpired:
+                killpg(process.pid, SIGKILL)
+                return True
         ran, *received = printed.splitlines() or [""]
         return received != arguments or Path(ran).resolve() != target.resolve()
 
@@ -927,8 +933,8 @@ def scripts() -> int:
             "tools that `mise x` run from site/ resolves to anything but their script"
         ),
         (
-            {path.name for path in docs if misdirected(path)},
-            "docs-site scripts that misdirect their target or its arguments"
+            {path.as_posix() for path in docs if misdirected(path)},
+            "docs-site scripts that misdirect their target or arguments or run past ten seconds"
         )
     ])
 
