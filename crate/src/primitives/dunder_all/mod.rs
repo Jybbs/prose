@@ -1,5 +1,5 @@
 //! The names a module lists in its module-scope `__all__`, read from
-//! every write to it and from an import binding it.
+//! every statement that writes or binds it.
 
 use ruff_python_ast::{Expr, Stmt, helpers::any_over_expr};
 use rustc_hash::FxHashSet;
@@ -18,31 +18,32 @@ pub(crate) enum DunderAll<'a> {
     Listed(FxHashSet<&'a str>),
     /// The module writes `__all__` nowhere.
     Undeclared,
-    /// A write no static read settles, a write below module scope, or
-    /// an import binding the name.
+    /// A write no static read settles, a write inside a compound
+    /// statement, or a statement other than an assignment binding the
+    /// name.
     Unreadable,
 }
 
 impl<'a> DunderAll<'a> {
-    /// Reads every `__all__` write in `body` and every import binding the
-    /// name into one surface, which is `Unreadable` once a write cannot be
-    /// listed statically, sits below module scope, or comes through an
-    /// import, and `Undeclared` where the module writes none.
+    /// Reads every statement in `body` that writes or binds `__all__` into
+    /// one surface, which is `Unreadable` once a write cannot be listed
+    /// statically, sits inside a compound statement, or binds the name
+    /// other than by assignment, and `Undeclared` where none does.
     pub(crate) fn of(body: &'a [Stmt]) -> Self {
         let mut listed: Option<FxHashSet<&str>> = None;
         for stmt in body {
             match Write::of(stmt) {
                 Some(Write::Names(items)) => listed.get_or_insert_default().extend(items),
                 Some(Write::Unreadable) => return Self::Unreadable,
-                None if nested_write(stmt) => return Self::Unreadable,
+                None if binds_dunder_all(stmt) || nested_write(stmt) => return Self::Unreadable,
                 None => {}
             }
         }
         listed.map_or(Self::Undeclared, Self::Listed)
     }
 
-    /// True when the module writes `__all__` anywhere or binds the
-    /// name from another module, whatever the write lists.
+    /// True when the module writes or binds `__all__` anywhere,
+    /// whatever the write lists.
     pub(crate) fn declares_a_surface(&self) -> bool {
         !matches!(self, Self::Undeclared)
     }
@@ -67,8 +68,9 @@ enum Write<'a> {
 impl<'a> Write<'a> {
     /// Reads what `stmt` writes to `__all__`, `None` for a statement
     /// leaving it alone. A chained assignment reads as a single one does,
-    /// whereas a subscript or unpacking holding `__all__`, a mutating
-    /// call, and an import binding the name read as `Unreadable`.
+    /// whereas an unpacking target binding `__all__`, a write through a
+    /// subscript of it, a method call on it, and an import binding the
+    /// name read as `Unreadable`.
     fn of(stmt: &'a Stmt) -> Option<Self> {
         let value = match stmt {
             Stmt::AnnAssign(node) if names_dunder_all(&node.target) => node.value.as_deref()?,
@@ -77,7 +79,7 @@ impl<'a> Write<'a> {
                 if node
                     .targets
                     .iter()
-                    .any(|target| any_over_expr(target, names_dunder_all)) =>
+                    .any(|target| any_over_expr(target, writes_dunder_all)) =>
             {
                 return Some(Self::Unreadable);
             }
@@ -94,8 +96,14 @@ impl<'a> Write<'a> {
     }
 }
 
-/// True for a call on an attribute of `__all__`, covering the
-/// `__all__.append(…)` and `__all__.extend(…)` forms.
+/// True when `stmt` binds `__all__` by anything but the assignments
+/// `Write::of` reads, an annotation alone binding nothing at run time.
+fn binds_dunder_all(stmt: &Stmt) -> bool {
+    !stmt.is_ann_assign_stmt() && module_bound_names(stmt).contains(&DUNDER_ALL)
+}
+
+/// True for a call on an attribute of `__all__`, such as
+/// `__all__.append(…)`, `__all__.extend(…)`, or `__all__.remove(…)`.
 fn mutates_dunder_all(value: &Expr) -> bool {
     value.as_call_expr().is_some_and(|call| {
         call.func
@@ -129,6 +137,18 @@ fn string_items(value: &Expr) -> Option<Vec<&str>> {
         .collect()
 }
 
+/// True when `expr` stores into `__all__`, binding the name inside an
+/// unpacking target or writing through a subscript of it.
+fn writes_dunder_all(expr: &Expr) -> bool {
+    match expr {
+        Expr::Name(name) => name.ctx.is_store() && name.id == DUNDER_ALL,
+        Expr::Subscript(subscript) => {
+            subscript.ctx.is_store() && names_dunder_all(&subscript.value)
+        }
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -155,6 +175,11 @@ mod tests {
     #[case::subscript_assignment("__all__ = [\"a\"]\n__all__[0] = \"other\"\n")]
     #[case::unpacked("__all__, version = [\"other\"], 1\n")]
     #[case::starred("*__all__, version = [\"other\"], 1\n")]
+    #[case::for_target("for __all__ in [[\"other\"]]:\n    pass\n")]
+    #[case::with_target("with open(path) as __all__:\n    pass\n")]
+    #[case::walrus("(__all__ := [\"other\"])\n")]
+    #[case::deleted("__all__ = [\"a\"]\ndel __all__\n")]
+    #[case::definition("def __all__():\n    pass\n")]
     fn an_unreadable_surface_exports_every_name(#[case] src: &str) {
         let source = parse(src);
         let surface = DunderAll::of(&source.ast().body);
@@ -194,6 +219,7 @@ mod tests {
     #[case::chained("__all__ = names = [\"loads\"]\n", true)]
     #[case::other_import("from pkg import names\n__all__ = [\"loads\"]\n", true)]
     #[case::read_in_an_expression("__all__ = [\"loads\"]\nprint(__all__)\n", true)]
+    #[case::read_in_a_target("__all__ = [\"loads\"]\nlookup[__all__[0]] = 1\n", true)]
     #[case::empty_list("__all__ = []\n", false)]
     #[case::other_item("__all__ = [\"dumps\"]\n", false)]
     #[case::bare_annotation("__all__: list[str]\n", false)]

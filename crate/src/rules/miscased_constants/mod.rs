@@ -3,7 +3,8 @@
 //! carving out a single-character name, a leading underscore, a
 //! `TypeAlias` annotation, an alias value, a lambda, the
 //! `if TYPE_CHECKING:` block, a name the module's own `__all__` lists,
-//! and the per-project `allow_pattern`. The rename is display-only, and
+//! every name where that `__all__` cannot be listed statically, and the
+//! per-project `allow_pattern`. The rename is display-only, and
 //! notebooks are skipped whole.
 
 use heck::ToShoutySnakeCase;

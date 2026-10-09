@@ -18,7 +18,7 @@ A name draws the report when it is longer than one character, has no leading und
 4. A single-character name reads as a matrix or a scalar by mathematical convention.
 5. A lambda binds a callable.
 6. A binding inside an `if TYPE_CHECKING:` block is declared for the type checker alone.
-7. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, as with a write holding anything other than string literals, a target unpacking into `__all__`, a write below module scope, or an import binding `__all__`.
+7. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, as with a write holding anything other than string literals, a target unpacking into `__all__`, or a write inside a compound statement such as an `if`, a `try`, or a `def`. A method call on `__all__` such as `append`, a write through a subscript of it, and a statement other than an assignment binding the name, an import among them, each quiet every name the same way.
 
 A notebook is skipped whole, because a cell's top-level assignments are working variables.
 
