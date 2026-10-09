@@ -8,82 +8,81 @@ Cut a draft release when `crate/Cargo.toml`'s version moves.
 
 Reads `[package].version` at HEAD and HEAD~1, treating a HEAD~1 that
 lacks the manifest or carries no parseable version as changed. When the
-version moved, or the run is a `workflow_dispatch`, probes `gh release
-view`: a missing release is cut with `gh release create --draft`, an
-existing draft is left untouched, and a published release is skipped.
+version moved, or the run is a `workflow_dispatch`, reads every page of
+the repository's releases through `gh api`, then cuts a version no release
+carries with `gh release create --draft`, leaves an existing draft
+untouched, and skips a published release. A `gh` call that exits nonzero
+stops the task with an `::error::` annotation carrying what it printed on
+stderr, so no draft is cut after a failed read and a rerun retries it.
 Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or
 empty when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is
 set, stdout otherwise, with annotations on stderr.
 """
 
+from itertools  import chain
 from json       import loads as from_json
 from os         import environ
 from pathlib    import Path
-from subprocess import run
+from subprocess import CalledProcessError, DEVNULL, PIPE, check_output
 from sys        import stderr
 from tomllib    import TOMLDecodeError, loads as from_toml
+
+MANIFEST = "crate/Cargo.toml"
 
 
 def cut_draft(repo: str, version: str) -> str:
     """
     Create a draft release for the version and return its URL.
     """
-    return run(
-        [
-            "gh", "release", "create", version, "--repo",
-            repo, "--target", "main", "--generate-notes", "--draft"
-        ],
-        capture_output = True,
-        check          = True,
-        text           = True
-    ).stdout.strip()
+    return gh(
+        "release", "create", version, "--repo", repo,
+        "--target", "main", "--generate-notes", "--draft"
+    ).strip()
 
 
-def emit(*lines: str):
+def emit(**outputs: str):
     """
-    Append `lines` to `$GITHUB_OUTPUT`, or print them when it is unset.
+    Appends one `key=value` line per output to `$GITHUB_OUTPUT`, or prints
+    the lines when it is unset.
     """
+    lines = [f"{key}={value}" for key, value in outputs.items()]
     if path := environ.get("GITHUB_OUTPUT"):
         with open(path, "a", encoding="utf-8") as f:
-            f.writelines(f"{line}\n" for line in lines)
+            print(*lines, file=f, sep="\n")
     else:
-        print("\n".join(lines))
+        print(*lines, sep="\n")
 
 
 def existing_release(repo: str, version: str) -> dict | None:
     """
-    Return the `isDraft`/`url` record for the version's release, or `None`
-    when no release exists for it.
+    Returns the first release in the repository's listing whose tag is the
+    version, or `None` when no release in the listing carries it.
     """
-    probe = run(
-        ["gh", "release", "view", version, "--repo", repo, "--json", "isDraft,url"],
-        capture_output = True,
-        text           = True
+    listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
+    releases = chain.from_iterable(from_json(listing))
+    return next(
+        (release for release in releases if release["tag_name"] == version),
+        None
     )
-    return from_json(probe.stdout) if probe.returncode == 0 else None
 
 
-def previous_version() -> str | None:
+def gh(*args: str) -> str:
     """
-    Return `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
-    when HEAD~1 lacks the manifest or carries no parseable version.
+    Runs `gh` with `args` and returns what it prints, stopping the task with
+    an `::error::` annotation carrying its stderr when it exits nonzero.
     """
-    show = run(
-        ["git", "show", "HEAD~1:crate/Cargo.toml"],
-        capture_output = True,
-        text           = True
-    )
-    if show.returncode != 0:
-        return None
     try:
-        return from_toml(show.stdout)["package"]["version"]
-    except (KeyError, TOMLDecodeError):
-        return None
+        return check_output(["gh", *args], stderr=PIPE, text=True)
+    except CalledProcessError as error:
+        raise SystemExit(f"::error::{error.stderr.strip()}")
 
 
-if __name__ == "__main__":
-
-    head    = from_toml(Path("crate/Cargo.toml").read_text())["package"]["version"]
+def main():
+    """
+    Compares the version at HEAD with HEAD~1, cuts or reports the version's
+    release when it moved or the run was dispatched, and emits the outputs.
+    """
+    head    = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
     changed = previous_version() != head
     forced  = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
     state   = ""
@@ -96,13 +95,41 @@ if __name__ == "__main__":
         if release is None:
             state = "cut"
             url   = cut_draft(repo, head)
-        elif release["isDraft"]:
+        elif release["draft"]:
             state = "drafted"
-            url   = release["url"]
+            url   = release["html_url"]
             print(f"::notice::Draft for {head} already exists, leaving it untouched.", file = stderr)
         else:
             state = "published"
-            url   = release["url"]
+            url   = release["html_url"]
             print(f"::warning::{head} is already published, skipping the draft cut.", file = stderr)
 
-    emit(f"version={head}", f"state={state}", f"url={url}")
+    emit(state=state, url=url, version=head)
+
+
+def package_version(manifest: str) -> str:
+    """
+    Returns `[package].version` from the text of a `crate/Cargo.toml`.
+    """
+    return from_toml(manifest)["package"]["version"]
+
+
+def previous_version() -> str | None:
+    """
+    Return `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
+    when HEAD~1 lacks the manifest or carries no parseable version.
+    """
+    try:
+        manifest = check_output(
+            ["git", "show", f"HEAD~1:{MANIFEST}"],
+            stderr = DEVNULL,
+            text   = True
+        )
+        return package_version(manifest)
+    except (CalledProcessError, KeyError, TOMLDecodeError):
+        return None
+
+
+if __name__ == "__main__":
+
+    main()
