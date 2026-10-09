@@ -1,5 +1,5 @@
 name        : Provision Cargo
-description : Install the `.mise/config.toml` tools, the Rust toolchain among them, and restore the Swatinem Cargo cache for the given `shared-key`.
+description : Install the `.mise/config.toml` tools, or the subset `tools` names, and restore the Swatinem Cargo cache for the given `shared-key`.
 
 inputs:
   shared-key:
