@@ -6,6 +6,7 @@ run         = [
   { tasks = [
     "lock:check",
     "repo:audit",
+    "repo:lint",
     "rust:check",
     "rust:cruft",
     "rust:lint",

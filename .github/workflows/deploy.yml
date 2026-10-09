@@ -74,9 +74,10 @@ jobs:
       - &checkout
         name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with : { persist-credentials: false }
 
       - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
+        uses : $/.github/actions/provision-cargo
         with:
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
@@ -94,12 +95,12 @@ jobs:
       - *checkout
 
       - name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
+        uses : $/.github/actions/provision-cargo
         with : { save: *no-save, shared-key: *debug-key }
 
       - name : Restore the wasm module
         id   : wasm-module
-        uses : ./.github/actions/restore-wasm
+        uses : $/.github/actions/restore-wasm
 
       - name : Restore the wasm build cache
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
@@ -175,7 +176,7 @@ jobs:
       - *checkout
 
       - name : Prune superseded caches
-        uses : ./.github/actions/prune-caches
+        uses : $/.github/actions/prune-caches
 
   gate:
     name            : 🗞️ Brief
@@ -188,7 +189,7 @@ jobs:
       - *checkout
 
       - name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
         with : { save: "${{ github.event_name != 'pull_request' }}" }
 
       - name : Summarize and gate
