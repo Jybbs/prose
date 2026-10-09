@@ -57,9 +57,9 @@ impl Runner {
         runner
     }
 
-    /// Compiles every module of `tree` to bytecode ahead of the runs, so a
-    /// run reads a cached `.pyc` rather than compiling the module and its
-    /// whole import chain from source. A module that fails to compile is
+    /// Compiles every module of `tree` into the `__pycache__` beside it with
+    /// `PYTHONPYCACHEPREFIX` removed, since each run clears its environment
+    /// and reads its bytecode from there. A module that fails to compile is
     /// left for its own run to compile.
     pub(crate) fn precompile(&self, tree: &Path) {
         let _ = Command::new(&self.python)
