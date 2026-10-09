@@ -58,7 +58,7 @@ def existing_release(repo: str, version: str) -> dict | None:
     Returns the first release in the repository's listing whose tag is the
     version, or `None` when no release in the listing carries it.
     """
-    listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases?per_page=100")
+    listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
     releases = chain.from_iterable(from_json(listing))
     return next(
         (release for release in releases if release["tag_name"] == version),

@@ -16,9 +16,7 @@ CREATE = [
     "gh", "release", "create", "1.2.3", "--repo",
     "owner/repo", "--target", "main", "--generate-notes", "--draft"
 ]
-LISTING = [
-    "gh", "api", "--paginate", "--slurp", "repos/owner/repo/releases?per_page=100"
-]
+LISTING  = ["gh", "api", "--paginate", "--slurp", "repos/owner/repo/releases"]
 MANIFEST = '[package]\nversion = "{}"\n'
 PREVIOUS = ["git", "show", "HEAD~1:crate/Cargo.toml"]
 
@@ -28,7 +26,7 @@ def cut(task: Callable[[str], ModuleType]) -> ModuleType:
     """
     Returns the loaded `gha:cut` script with the `stderr` it binds on
     loading replaced by a buffer the case reads, since pytest closes the
-    stream a fixture sees once setup ends.
+    stream `capsys` installs for setup once setup ends.
     """
     module        = task("gha/cut")
     module.stderr = StringIO()
@@ -39,8 +37,8 @@ def cut(task: Callable[[str], ModuleType]) -> ModuleType:
 def tree(monkeypatch: MonkeyPatch, tmp_path: Path) -> Path:
     """
     Returns a working tree whose `crate/Cargo.toml` carries version `1.2.3`
-    and makes it the current directory. The environment poses a push to
-    `owner/repo` with no output file, so the outputs print to stdout.
+    and makes it the current directory. The environment names `owner/repo`,
+    no event, and no output file, so the outputs print to stdout.
     """
     (manifest := tmp_path / "crate/Cargo.toml").parent.mkdir()
     manifest.write_text(MANIFEST.format("1.2.3"), encoding="utf-8")
@@ -82,6 +80,16 @@ def release(tag: str, draft: bool = False) -> dict:
             "https://example.test/1.2.3",
             "::warning::1.2.3 is already published, skipping the draft cut.\n",
             id = "published"
+        ),
+        param(
+            [
+                [release("1.2.3", draft=True)],
+                [{**release("1.2.3"), "html_url": "https://example.test/older"}]
+            ],
+            "drafted",
+            "https://example.test/1.2.3",
+            "::notice::Draft for 1.2.3 already exists, leaving it untouched.\n",
+            id = "first match"
         )
     ]
 )
@@ -157,9 +165,10 @@ def test_main_stops_on_the_gh_call_that_fails(
     fp.register(LISTING, **listing)
     fp.register(CREATE, returncode=1, stderr="gh: Bad credentials (HTTP 401)\n")
 
-    with raises(SystemExit, match=r"^::error::gh: Bad credentials \(HTTP 401\)$"):
+    with raises(SystemExit) as stopped:
         cut.main()
 
+    assert stopped.value.code == "::error::gh: Bad credentials (HTTP 401)"
     assert list(fp.calls) == calls
     assert capsys.readouterr().out == ""
 

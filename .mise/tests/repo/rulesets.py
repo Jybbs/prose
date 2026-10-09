@@ -340,8 +340,8 @@ def test_record_rejects_a_value_that_is_not_a_table(rulesets: ModuleType):
 )
 def test_record_is_frozen(keys: tuple[str, ...], rulesets: ModuleType):
     """
-    Pins that the record each table of the settings file reads into rejects
-    assignment.
+    Pins that the record each table of the sample settings reads into
+    rejects assignment.
     """
     record = reduce(getattr, keys, parsed(rulesets))
     with raises(FrozenInstanceError):
@@ -380,14 +380,14 @@ def test_requests_send_every_setting_in_order(rulesets: ModuleType):
 def test_tracked_files_send_the_about_box(rulesets: ModuleType):
     """
     Pins that the tracked `crate/pyproject.toml` and `.github/settings.toml`
-    send the project's description, the bare domain its homepage opens with,
-    and its keywords as the topics.
+    send the project's description, the bare domain of its homepage, and its
+    keywords as the topics.
     """
     project  = from_toml(tracked("crate/pyproject.toml"))["project"]
     settings = parsed(rulesets, tracked(".github/settings.toml"))
     (_, _, patch), (_, _, topics) = settings.requests(project)[:2]
     assert patch["description"] == project["description"]
-    assert project["urls"]["homepage"].startswith(f"https://{patch['homepage']}")
+    assert f"https://{patch['homepage']}" == project["urls"]["homepage"]
     assert topics["names"] == project["keywords"]
 
 
