@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Every Name Passes Under an Unreadable `__all__`"
+
+description = '''
+`__all__` holds a starred name besides a string, so no static read of the file lists what the module exports. **Neither `project` nor `retries` is reported**, because either could be one of the names `names` supplies, and renaming an exported name breaks every importer.
+'''

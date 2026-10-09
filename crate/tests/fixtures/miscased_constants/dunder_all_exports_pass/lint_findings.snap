@@ -1,0 +1,28 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/dunder_all_exports_pass/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 8,
+      "row": 7
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "verbose",
+          "content": "VERBOSE"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 7
+    },
+    "message": "Module constant `verbose` is not SCREAMING_CASE"
+  }
+]

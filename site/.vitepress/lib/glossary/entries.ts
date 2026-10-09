@@ -331,8 +331,8 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`__init__`). `reassigned-constants` exempts dunder names, since the runtime '
                + 'writes them, `alphabetize-siblings` sorts dunder methods ahead of '
                + 'properties, private methods, and public methods in a class body, and '
-               + '`prune-inert-imports` reads `__all__` as the public surface a module '
-               + 'declares.',
+               + '`prune-inert-imports` and `miscased-constants` read `__all__` as the public '
+               + 'surface a module declares.',
     families   : ['ordering', 'lint', 'formatting']
   },
 

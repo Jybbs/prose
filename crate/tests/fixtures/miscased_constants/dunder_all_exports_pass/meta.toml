@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Names the Module Exports Stay Public"
+
+description = '''
+`project`, `retries`, and `timeout` are listed in the module's `__all__` through an assignment and an augmented assignment, so each one is the spelling importers use. **None of the three is reported**, because a `SCREAMING_CASE` rename would break every importer and leave a dead string in `__all__`. `verbose` sits outside the list and is still reported with the suggested `VERBOSE` rename.
+'''

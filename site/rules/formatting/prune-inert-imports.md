@@ -52,7 +52,7 @@ Two of those markers are written in a comment rather than in code, which is wher
 
 <Fixture rule="prune_inert_imports" case="private_member_holds_its_import" />
 
-An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
+An `__all__` built from anything other than a list or tuple of string literals, written through an unpacking target, written below module scope, or changed after its assignment keeps every import in that module, where a change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`. A `from … import *` keeps its own line under `drop-unreferenced`, because the file does not say which names it binds.
 
 Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in one of these positions:
 
