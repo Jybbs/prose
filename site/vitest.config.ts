@@ -2,8 +2,11 @@ import vue                              from '@vitejs/plugin-vue'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+import * as paths from './.vitepress/lib/shared/paths'
+
 export default defineConfig({
-  test: {
+  cacheDir : paths.viteCacheDir(import.meta.url),
+  test     : {
     environment         : 'node',
     globals             : true,
     pool                : 'threads',
@@ -45,7 +48,7 @@ export default defineConfig({
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
-      reportsDirectory : 'coverage',
+      reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
       include          : ['.vitepress/lib/**'],
 
       exclude: [
