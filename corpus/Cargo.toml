@@ -6,9 +6,6 @@ publish                = false
 repository.workspace   = true
 rust-version.workspace = true
 
-[package.metadata.cargo-machete]
-ignored = ["libcst"]
-
 [dependencies]
 clap               = { workspace = true }
 fs-err             = { workspace = true }

@@ -12,7 +12,7 @@ This page walks a change through each step in the order a contributor takes it, 
 
 | **Convention** | **Rule** |
 |---|---|
-| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it, and `locked = true` under its `[tool_config]` stops `mise install` on any tool in its `[tools]` table that has no lockfile entry. The policy leaves out node, since `.nvmrc` pins it rather than the `[tools]` table |
+| Tools | Every tool comes from `.mise/config.toml` at the version it pins, with `.mise/mise.lock` recording each download's checksum for every runner platform. The config's `min_version` names the oldest mise that reads it, and `locked = true` under its `[tool_config]` stops `mise install` on any tool in its `[tools]` table that has no lockfile entry. The policy leaves out node, since `.nvmrc` pins it rather than the `[tools]` table. The `lock:check` task behind the `🪵 Lockfile` row still covers node, because the `mise lock` it runs reads `.nvmrc` as well, so a node version the committed lockfile lacks fails the row as a difference from that lockfile |
 | Tasks | A command runs through its mise task rather than the `cargo`, `bun`, or `maturin` call the task wraps, because the task carries the flags CI runs with. `mise tasks` lists them all, and most developer tasks also run under a one-word alias (*`mise ci` for `repo:ci`, `mise review` for `rust:review`*) |
 | Virtualenv | The first mise command in a clone creates `crate/.venv`, and `mise wheel` builds the extension into it through `maturin develop` |
 | Lockfiles | An edit to `crate/Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, `.mise/config.toml`, or `.nvmrc` takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
@@ -305,7 +305,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
 | `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters, and the pytest suite under `.mise/tests` passes |
-| `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | No `Cargo.toml` declares a dependency its crate never uses |
+| `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | `cargo-shear` reports no unused or misplaced dependency and no empty or unlinked source file |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
 | `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which `🥃 Proof` runs |
