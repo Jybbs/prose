@@ -1,8 +1,8 @@
-//! The explicit re-export surface of a module, read from its
-//! module-scope `__all__` writes, from an import binding `__all__`
-//! itself, from the PEP 484 `x as x` alias form, from an import whose
-//! member or source module reads as private, and from a file-level
-//! pragma holding every unused import in the module.
+//! The explicit re-export surface of a module, read from every
+//! statement that writes or binds its module-scope `__all__`, from the
+//! PEP 484 `x as x` alias form, from an import whose member or source
+//! module reads as private, and from a file-level pragma holding every
+//! unused import in the module.
 
 use ruff_python_ast::{Alias, Stmt, helpers::is_dunder};
 use ruff_text_size::TextRange;
@@ -51,8 +51,8 @@ impl<'a> Reexports<'a> {
         }
     }
 
-    /// True when the module writes `__all__` anywhere or binds the
-    /// name from another module, whatever the write lists.
+    /// True when the module writes or binds `__all__` anywhere,
+    /// whatever the write lists.
     pub(super) fn declares_a_surface(&self) -> bool {
         self.surface.declares_a_surface()
     }

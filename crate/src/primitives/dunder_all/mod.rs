@@ -67,10 +67,9 @@ enum Write<'a> {
 
 impl<'a> Write<'a> {
     /// Reads what `stmt` writes to `__all__`, `None` for a statement
-    /// leaving it alone. A chained assignment reads as a single one does,
-    /// whereas an unpacking target binding `__all__`, a write through a
-    /// subscript of it, a method call on it, and an import binding the
-    /// name read as `Unreadable`.
+    /// leaving it alone. An assignment of string literals lists its names,
+    /// whereas an unpacking or subscript write, a method call, a `global`
+    /// declaration, and an import of `__all__` read as `Unreadable`.
     fn of(stmt: &'a Stmt) -> Option<Self> {
         let value = match stmt {
             Stmt::AnnAssign(node) if names_dunder_all(&node.target) => node.value.as_deref()?,
@@ -84,7 +83,13 @@ impl<'a> Write<'a> {
                 return Some(Self::Unreadable);
             }
             Stmt::AugAssign(node) if names_dunder_all(&node.target) => node.value.as_ref(),
+            Stmt::AugAssign(node) if writes_dunder_all(&node.target) => {
+                return Some(Self::Unreadable);
+            }
             Stmt::Expr(node) if mutates_dunder_all(&node.value) => return Some(Self::Unreadable),
+            Stmt::Global(node) if node.names.iter().any(|name| name.as_str() == DUNDER_ALL) => {
+                return Some(Self::Unreadable);
+            }
             Stmt::Import(_) | Stmt::ImportFrom(_) => {
                 return module_bound_names(stmt)
                     .contains(&DUNDER_ALL)
@@ -97,9 +102,13 @@ impl<'a> Write<'a> {
 }
 
 /// True when `stmt` binds `__all__` by anything but the assignments
-/// `Write::of` reads, an annotation alone binding nothing at run time.
+/// `Write::of` reads, skipping a bare annotation, which binds nothing at
+/// run time.
 fn binds_dunder_all(stmt: &Stmt) -> bool {
-    !stmt.is_ann_assign_stmt() && module_bound_names(stmt).contains(&DUNDER_ALL)
+    !stmt
+        .as_ann_assign_stmt()
+        .is_some_and(|node| node.value.is_none())
+        && module_bound_names(stmt).contains(&DUNDER_ALL)
 }
 
 /// True for a call on an attribute of `__all__`, such as
@@ -180,6 +189,12 @@ mod tests {
     #[case::walrus("(__all__ := [\"other\"])\n")]
     #[case::deleted("__all__ = [\"a\"]\ndel __all__\n")]
     #[case::definition("def __all__():\n    pass\n")]
+    #[case::function_for_target(
+        "def setup():\n    global __all__\n    for __all__ in [[\"other\"]]:\n        pass\n"
+    )]
+    #[case::function_import("def setup():\n    from pkg import __all__\n")]
+    #[case::annotated_walrus("names: list[str] = (__all__ := [\"other\"])\n")]
+    #[case::augmented_subscript("__all__ = [\"a\"]\n__all__[0] += \"b\"\n")]
     fn an_unreadable_surface_exports_every_name(#[case] src: &str) {
         let source = parse(src);
         let surface = DunderAll::of(&source.ast().body);
