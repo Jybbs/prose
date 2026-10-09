@@ -1,10 +1,10 @@
 """
-Defines the `task` fixture, which loads a task script under `.mise/tasks/` as
-a module so a case calls its functions in process, where pytest-subprocess's
-`fp` fakes every command the script runs.
+Defines the `task` fixture, which loads a task script under
+`.mise/tasks/` as a module so a case calls its functions in process, where
+pytest-subprocess's `fp` fakes every command the script runs.
 """
 
-from collections.abc    import Callable
+from collections.abc     import Callable
 from importlib.machinery import SourceFileLoader
 from importlib.util      import module_from_spec, spec_from_loader
 from pathlib             import Path
@@ -18,7 +18,8 @@ TASKS = Path(__file__).resolve().parents[1] / "tasks"
 def task() -> Callable[[str], ModuleType]:
     """
     Returns a function loading the task script at `<group>/<name>` under
-    `.mise/tasks/`, which names no `.py` suffix for the import system to find.
+    `.mise/tasks/`, which names no `.py` suffix for the import system to
+    find.
     """
     def load(name: str) -> ModuleType:
         """
