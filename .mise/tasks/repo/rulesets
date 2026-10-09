@@ -147,7 +147,7 @@ class Settings:
                 {
                     **asdict(self.repository),
                     "description" : project["description"],
-                    "homepage"    : urlsplit(project["urls"]["homepage"]).netloc
+                    "homepage"    : urlsplit(project["urls"]["homepage"]).hostname
                 }
             ),
             (f"{REPOSITORY}/topics", "PUT", {"names": project["keywords"]}),

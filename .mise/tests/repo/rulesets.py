@@ -17,7 +17,7 @@ description = "Describes the repository."
 keywords    = ["alpha", "beta"]
 
 [project.urls]
-homepage = "https://example.test"
+homepage = "https://example.test:8443/docs"
 issues   = "https://example.test/issues"
 """
 
@@ -339,5 +339,23 @@ def test_main_sends_nothing_when_the_settings_are_malformed(fp, rulesets, tree: 
         SETTINGS + "[extra]\n", encoding="utf-8"
     )
     with raises(SystemExit, match="declares unknown keys"):
+        rulesets.main()
+    assert not fp.calls
+
+
+def test_main_sends_nothing_when_the_project_omits_the_homepage(
+    fp,
+    rulesets,
+    tree: Path
+):
+    """
+    Asserts that a project table with no `homepage` URL stops the run before
+    any `gh` call, the rulesets included.
+    """
+    (tree / "crate/pyproject.toml").write_text(
+        PROJECT.replace('homepage = "https://example.test:8443/docs"\n', ""),
+        encoding = "utf-8"
+    )
+    with raises(KeyError, match="homepage"):
         rulesets.main()
     assert not fp.calls
