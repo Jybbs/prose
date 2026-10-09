@@ -1,0 +1,4 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Run the task scripts' pytest suite under .mise/tests"
+
+uv run --locked --only-group test --project crate pytest .mise/tests "$@"
