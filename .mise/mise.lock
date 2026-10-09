@@ -302,65 +302,49 @@ version = "0.8.0"
 backend = "cargo:twiggy"
 specifiers = ["0.8.0"]
 
-[[tools."github:bnjbvr/cargo-machete"]]
-version = "0.9.2"
-backend = "github:bnjbvr/cargo-machete"
-specifiers = ["0.9.2"]
+[[tools."github:Boshen/cargo-shear"]]
+version = "1.14.0"
+backend = "github:Boshen/cargo-shear"
+specifiers = ["1.14.0"]
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-arm64"]
-checksum = "sha256:6f96c3e6026a5bdd241b6ae600c6fb86c9197c6e189a894f91371baa01fd10f5"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397130991"
+[tools."github:Boshen/cargo-shear".options]
+matching_regex = '^cargo-shear-(aarch64|x86_64)-(apple-darwin|pc-windows-msvc|unknown-linux-musl)\.tar\.gz$'
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-arm64-musl"]
-checksum = "sha256:6f96c3e6026a5bdd241b6ae600c6fb86c9197c6e189a894f91371baa01fd10f5"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397130991"
+[tools."github:Boshen/cargo-shear"."platforms.linux-arm64"]
+checksum = "sha256:d83f7c5b02c4c237d0454697c12df041df0bd83ffecc1aba46c6e06315fd47e1"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851819"
+provenance = "github-attestations"
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64"]
-checksum = "sha256:48200087f54c55aabcd4db4af1e25742b49846c02a1b1bfa134711945b35b2e9"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131172"
+[tools."github:Boshen/cargo-shear"."platforms.linux-x64"]
+checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+provenance = "github-attestations"
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64-baseline"]
-checksum = "sha256:48200087f54c55aabcd4db4af1e25742b49846c02a1b1bfa134711945b35b2e9"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131172"
+[tools."github:Boshen/cargo-shear"."platforms.macos-arm64"]
+checksum = "sha256:e50b9375b1e93d2293c803819c118337f1e8fce519e4188a93bb0f5e08041ca3"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851820"
+provenance = "github-attestations"
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64-musl"]
-checksum = "sha256:48200087f54c55aabcd4db4af1e25742b49846c02a1b1bfa134711945b35b2e9"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131172"
+[tools."github:Boshen/cargo-shear"."platforms.macos-x64"]
+checksum = "sha256:ea0df899fecd1ae8116d588c97ebdeef8c1ed487ac7df2701ab39d05063a7930"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851834"
+provenance = "github-attestations"
 
-[tools."github:bnjbvr/cargo-machete"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:48200087f54c55aabcd4db4af1e25742b49846c02a1b1bfa134711945b35b2e9"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131172"
+[tools."github:Boshen/cargo-shear"."platforms.windows-arm64"]
+checksum = "sha256:53a537d97d2f46efcb0798e3e1b4759e55bd1df96e90caadc1bf7ee16d6f11d8"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851814"
+provenance = "github-attestations"
 
-[tools."github:bnjbvr/cargo-machete"."platforms.macos-arm64"]
-checksum = "sha256:63e28fee386d82d33f2d12406c857f98e2d4697f3f7df7f71f34dff07fca0fde"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131114"
-
-[tools."github:bnjbvr/cargo-machete"."platforms.macos-x64"]
-checksum = "sha256:3e8cb936c9b820f84d047a2b5be8b229b2be67bf2467014885376a6faffdcac3"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131140"
-
-[tools."github:bnjbvr/cargo-machete"."platforms.macos-x64-baseline"]
-checksum = "sha256:3e8cb936c9b820f84d047a2b5be8b229b2be67bf2467014885376a6faffdcac3"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131140"
-
-[tools."github:bnjbvr/cargo-machete"."platforms.windows-x64"]
-checksum = "sha256:996120ac70afe405c58fce508a476f25bb71032c6fb8013aa0123bba36429c76"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131414"
-
-[tools."github:bnjbvr/cargo-machete"."platforms.windows-x64-baseline"]
-checksum = "sha256:996120ac70afe405c58fce508a476f25bb71032c6fb8013aa0123bba36429c76"
-url = "https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.2/cargo-machete-v0.9.2-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/bnjbvr/cargo-machete/releases/assets/397131414"
+[tools."github:Boshen/cargo-shear"."platforms.windows-x64"]
+checksum = "sha256:2d3a25cb97cd13bcf57d8f0517e2049e179dec9a9f94b6486a787ca51c8f97e5"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851839"
+provenance = "github-attestations"
 
 [[tools."github:codecov/codecov-cli"]]
 version = "11.3.1"
@@ -682,4 +666,45 @@ provenance = "github-attestations"
 checksum = "sha256:a252121d5b59398fcb137c6ea448176459a44010f33f67e0072305a637119ca7"
 url = "https://github.com/astral-sh/uv/releases/download/0.12.17/uv-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/573253071"
+provenance = "github-attestations"
+
+[[tools.zizmor]]
+version = "1.30.1"
+backend = "aqua:zizmorcore/zizmor"
+specifiers = ["1.30.1"]
+
+[tools.zizmor."platforms.linux-arm64"]
+checksum = "sha256:7ff1dce33bdd18fd2a4affe63bdd47efcccca97b2cec1c1863ec26e9e2647540"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067643"
+provenance = "github-attestations"
+
+[tools.zizmor."platforms.linux-x64"]
+checksum = "sha256:e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067642"
+provenance = "github-attestations"
+
+[tools.zizmor."platforms.macos-arm64"]
+checksum = "sha256:e28d22b087f9ebb8d99da6e740d348c930f559961c7c3f12badda54f882195a2"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067640"
+provenance = "github-attestations"
+
+[tools.zizmor."platforms.macos-x64"]
+checksum = "sha256:10e6b18b11ea07e515a16f0f0518c7b07527bc9977c1fd5698181ce7f3554202"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067641"
+provenance = "github-attestations"
+
+[tools.zizmor."platforms.windows-arm64"]
+checksum = "sha256:b183b1e996eddfab9659f1e9b46e059f1ef1cf984a1f14e5da09f7876a4b3a1c"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067645"
+provenance = "github-attestations"
+
+[tools.zizmor."platforms.windows-x64"]
+checksum = "sha256:b183b1e996eddfab9659f1e9b46e059f1ef1cf984a1f14e5da09f7876a4b3a1c"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/552067645"
 provenance = "github-attestations"
