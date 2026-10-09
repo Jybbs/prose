@@ -9,6 +9,14 @@ WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 auto_install                        = false
 experimental                        = true
 idiomatic_version_file_enable_tools = ["node"]
+lockfile_platforms                  = [
+  "linux-arm64",
+  "linux-x64",
+  "macos-arm64",
+  "macos-x64",
+  "windows-arm64",
+  "windows-x64"
+]
 
 [task_config.input_groups]
 crate     = [
