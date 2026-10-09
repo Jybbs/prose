@@ -105,9 +105,8 @@ impl<'a> Write<'a> {
 /// `Write::of` reads, skipping a bare annotation, which binds nothing at
 /// run time.
 fn binds_dunder_all(stmt: &Stmt) -> bool {
-    !stmt
-        .as_ann_assign_stmt()
-        .is_some_and(|node| node.value.is_none())
+    stmt.as_ann_assign_stmt()
+        .is_none_or(|node| node.value.is_some())
         && module_bound_names(stmt).contains(&DUNDER_ALL)
 }
 
