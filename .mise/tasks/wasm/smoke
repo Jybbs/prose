@@ -8,5 +8,5 @@ pkg=.vitepress/tests/wasm/pkg
 rm -rf "$pkg"
 cp -R public/wasm "$pkg"
 
-bunx playwright install --only-shell chromium
-bunx vitest run --project wasm "$@"
+playwright install --only-shell chromium
+vitest run --project wasm "$@"

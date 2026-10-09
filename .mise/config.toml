@@ -1,6 +1,7 @@
 min_version = "2026.9.18"
 
 [env]
+_.path = { path = ".mise/bin", tools = true }
 _.python.venv = { path = "crate/.venv", create = true }
 NODE_COMPILE_CACHE = "{{config_root}}/.cache/node"
 WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
@@ -39,6 +40,7 @@ manifests = [
   "wasm/Cargo.toml"
 ]
 site      = [
+  ".mise/bin/**",
   ".mise/config.toml",
   ".nvmrc",
   "site/**/*",

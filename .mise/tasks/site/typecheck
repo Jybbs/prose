@@ -5,4 +5,4 @@
 #MISE dir         = "site"
 #MISE sources     = ["@group:site"]
 
-bunx vue-tsc --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo
+vue-tsc --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo
