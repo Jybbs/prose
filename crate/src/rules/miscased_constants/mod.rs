@@ -2,8 +2,10 @@
 //! whose name nothing reassigns, and whose name is not `SCREAMING_CASE`,
 //! carving out a single-character name, a leading underscore, a
 //! `TypeAlias` annotation, an alias value, a lambda, the
-//! `if TYPE_CHECKING:` block, and the per-project `allow_pattern`. The
-//! rename is display-only, and notebooks are skipped whole.
+//! `if TYPE_CHECKING:` block, a name the module's own `__all__` lists,
+//! every name where that `__all__` cannot be listed statically, and the
+//! per-project `allow_pattern`. The rename is display-only, and
+//! notebooks are skipped whole.
 
 use heck::ToShoutySnakeCase;
 use ruff_diagnostics::Edit;
@@ -16,6 +18,7 @@ use crate::{
     primitives::{
         alias::{AliasContext, is_type_alias},
         binding::{ModuleAssignment, is_explicit_type_alias, is_screaming_case},
+        dunder_all::DunderAll,
         effect::value_is_effectful,
     },
     rules::{Rule, RuleId},
@@ -43,11 +46,17 @@ impl MiscasedConstants {
     /// True when `site` binds a module constant miscased against
     /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
     /// value must be present, inert, and neither a lambda nor a type.
-    fn is_miscased(&self, site: &ModuleAssignment<'_>, ctx: &AliasContext<'_>) -> bool {
+    fn is_miscased(
+        &self,
+        site: &ModuleAssignment<'_>,
+        ctx: &AliasContext<'_>,
+        surface: &DunderAll<'_>,
+    ) -> bool {
         let name = site.target.id.as_str();
         name.chars().count() > 1
             && !name.starts_with('_')
             && !is_screaming_case(name)
+            && !surface.exports(name)
             && !ctx.analysis().module_reassigned(name)
             && !is_explicit_type_alias(site.stmt)
             && !self.allow_pattern.matches(name)
@@ -78,9 +87,10 @@ impl Rule for MiscasedConstants {
             return Vec::new();
         }
         let ctx = AliasContext::new(&source.ast().body, source.binding_analysis());
+        let surface = DunderAll::of(&source.ast().body);
         ctx.sites()
             .iter()
-            .filter(|site| self.is_miscased(site, &ctx))
+            .filter(|site| self.is_miscased(site, &ctx, &surface))
             .map(|site| self.rename(site.target))
             .collect()
     }
@@ -113,6 +123,27 @@ mod tests {
         assert_eq!(fix.edits()[0].content(), Some("MAX_RETRIES"));
         assert!(only.message.contains("`max_retries`"));
         assert_eq!(&source.text()[only.range], "max_retries");
+    }
+
+    #[rstest]
+    #[case::other_name("__all__ = [\"other\"]\nproject = 1\n")]
+    #[case::empty("__all__ = []\nproject = 1\n")]
+    #[case::bare_annotation("__all__: list[str]\nproject = 1\n")]
+    #[case::no_dunder_all("project = 1\n")]
+    fn names_the_module_does_not_export_are_reported(#[case] src: &str) {
+        assert_eq!(rule().lint(&parse(src)).len(), 1, "{src}");
+    }
+
+    #[rstest]
+    #[case::listed("__all__ = [\"project\"]\nproject = 1\n")]
+    #[case::tuple("__all__ = (\"project\",)\nproject = 1\n")]
+    #[case::augmented("__all__ = []\n__all__ += [\"project\"]\nproject = 1\n")]
+    #[case::assigned_below("project = 1\n__all__ = [\"project\"]\n")]
+    #[case::unreadable("__all__ = build()\nproject = 1\n")]
+    #[case::nested_write("if flag:\n    __all__ = [\"other\"]\nproject = 1\n")]
+    #[case::imported_binding("from pkg import __all__\nproject = 1\n")]
+    fn names_the_module_exports_are_spared(#[case] src: &str) {
+        assert!(rule().lint(&parse(src)).is_empty(), "{src}");
     }
 
     #[test]

@@ -13,6 +13,7 @@ pub(crate) mod comparison;
 pub(crate) mod constructor;
 pub(crate) mod decorator;
 pub(crate) mod docstring;
+pub(crate) mod dunder_all;
 pub(crate) mod edit;
 pub(crate) mod effect;
 pub(crate) mod equal_targets;
