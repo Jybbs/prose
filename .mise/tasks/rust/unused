@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "unused"
-#MISE description = "Detect unused dependencies in `Cargo.toml`"
+#MISE description = "Detect unused or misplaced dependencies in `Cargo.toml` and empty or unlinked source files"
 
 cargo shear --deny-warnings --locked
