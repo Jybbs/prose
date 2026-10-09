@@ -111,7 +111,7 @@ def badge(svg: str) -> str:
     """
     return matched(
         f"no README.md badge line carries {svg!r}",
-        "README.md",
+        ".github/README.md",
         rf"{svg}.*?(\d+\.\d+)\+"
     )
 
@@ -855,7 +855,7 @@ def table(header: str) -> list[list[str]]:
     """
     body = matched(
         f"CONTRIBUTING.md has no table headed {header}",
-        "CONTRIBUTING.md",
+        ".github/CONTRIBUTING.md",
         rf"\| \*\*{header}\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
     )
     return [

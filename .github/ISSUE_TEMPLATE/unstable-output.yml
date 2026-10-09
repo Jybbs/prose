@@ -86,4 +86,4 @@ body:
 
         A maintainer reproduces from the fields above, turns the snippet into a fixture case pinning the output the rule should settle on, and fixes the rule the subset names. That fixture is what stops the shape coming back, so a report carrying a small reproduction usually turns into a fix quickly.
 
-        Going further is welcome. `CONTRIBUTING.md` at the repository root walks from this form to the `input.py` and `meta.toml` pair a maintainer drops straight into the fixture tree, which is the shortest path from a report to a regression test.
+        Going further is welcome. The contributor guide at `.github/CONTRIBUTING.md` walks from this form to the `input.py` and `meta.toml` pair a maintainer drops straight into the fixture tree, which is the shortest path from a report to a regression test.
