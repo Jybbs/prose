@@ -35,14 +35,15 @@ jobs:
     steps:
       - name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with : { persist-credentials: false }
 
       - name : Restore the wasm module
         id   : wasm-module
-        uses : ./.github/actions/restore-wasm
+        uses : $/.github/actions/restore-wasm
 
       - name : Provision Cargo
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
-        uses : ./.github/actions/provision-cargo
+        uses : $/.github/actions/provision-cargo
         with : { shared-key: prose-wasm }
 
       - name : Build the wasm module

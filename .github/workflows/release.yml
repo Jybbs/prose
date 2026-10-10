@@ -42,10 +42,11 @@ jobs:
       - &checkout
         name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with : { persist-credentials: false }
 
       - &provision-uv
         name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
         with : { save: &no-save 'false' }
 
       - name : Emit build matrix
@@ -72,7 +73,7 @@ jobs:
         run  : mise run gha:readme
 
       - name : Build wheel
-        uses : ./.github/actions/build-wheel
+        uses : $/.github/actions/build-wheel
         with:
           args      : ${{ matrix.args }}
           command   : build
@@ -95,7 +96,7 @@ jobs:
       - *rewrite-readme
 
       - name : Build sdist
-        uses : ./.github/actions/build-wheel
+        uses : $/.github/actions/build-wheel
         with : { command: sdist }
 
   validate:
@@ -108,7 +109,7 @@ jobs:
       - *checkout
 
       - name : Download the smoke-test wheel
-        uses : ./.github/actions/download-wheels
+        uses : $/.github/actions/download-wheels
         with : { pattern: "${{ needs.plan.outputs.smoke }}" }
 
       - *provision-uv
@@ -132,10 +133,10 @@ jobs:
       - *checkout
 
       - name : Download all artifacts
-        uses : ./.github/actions/download-wheels
+        uses : $/.github/actions/download-wheels
 
       - name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
         with : { cache: 'false' }
 
       - name : Attest SLSA provenance to GitHub
@@ -174,7 +175,7 @@ jobs:
 
       - name : Download all artifacts
         if   : needs.build.result != 'cancelled' && needs.sdist.result != 'cancelled'
-        uses : ./.github/actions/download-wheels
+        uses : $/.github/actions/download-wheels
 
       - *provision-uv
 

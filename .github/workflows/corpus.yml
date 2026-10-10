@@ -58,10 +58,11 @@ jobs:
       - &checkout
         name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with : { persist-credentials: false }
 
       - &provision-uv
         name : Provision uv
-        uses : ./.github/actions/provision-uv
+        uses : $/.github/actions/provision-uv
         with : { save: &no-save 'false' }
 
       - name : Scope the subset probe
@@ -79,7 +80,7 @@ jobs:
 
       - &provision-cargo
         name : Provision Cargo
-        uses : ./.github/actions/provision-cargo
+        uses : $/.github/actions/provision-cargo
         with:
           save       : *no-save
           shared-key : prose-probe
@@ -135,7 +136,7 @@ jobs:
       - *checkout
 
       - name : Prune superseded caches
-        uses : ./.github/actions/prune-caches
+        uses : $/.github/actions/prune-caches
 
   settle:
     name            : ⚓ Settle
@@ -151,7 +152,8 @@ jobs:
       - *interpreter
 
       - name : Sweep the corpus at every width and axis
-        run  : mise run rust:settle "${{ steps.python.outputs.corpus }}"
+        env  : { CORPUS: "${{ steps.python.outputs.corpus }}" }
+        run  : mise run rust:settle "$CORPUS"
 
   mutations:
     name            : 🎨 Mutations
@@ -173,8 +175,10 @@ jobs:
           path : *mutations-dir
 
       - name : Format every mutation of the corpus
-        env  : { PROSE_SETTLE_MUTATIONS: *mutations-dir }
-        run  : mise run rust:mutations "${{ steps.python.outputs.corpus }}" 600
+        env:
+          CORPUS                 : ${{ steps.python.outputs.corpus }}
+          PROSE_SETTLE_MUTATIONS : *mutations-dir
+        run  : mise run rust:mutations "$CORPUS" 600
 
   delta:
     name            : 🦋 Delta

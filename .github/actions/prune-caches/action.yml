@@ -6,7 +6,7 @@ runs:
 
   steps:
     - name : Provision uv
-      uses : ./.github/actions/provision-uv
+      uses : $/.github/actions/provision-uv
       with : { cache: 'false' }
 
     - name              : Delete the cache entries this run replaces
