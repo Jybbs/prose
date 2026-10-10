@@ -33,6 +33,7 @@ describe('directory helpers', () => {
     expect(paths.primitivesDir(meta)).toBe(path.join(root, 'site', 'primitives'))
     expect(paths.cacheDirFrom(root, 'og')).toBe(path.join(root, '.cache', 'og'))
     expect(paths.fetchCacheDir(meta)).toBe(path.join(root, '.cache', 'fetch'))
+    expect(paths.viteCacheDir(meta)).toBe(path.join(root, '.cache', 'vite'))
     expect(paths.vitepressCacheDir(meta)).toBe(path.join(root, '.cache', 'vitepress'))
   })
 })

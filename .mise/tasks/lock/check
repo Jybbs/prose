@@ -9,15 +9,21 @@
 #MISE   "site/bun.lock"
 #MISE ]
 
+restore() {
+  cmp -s "$snapshot" .mise/mise.lock || mv -f "$snapshot" .mise/mise.lock
+  rm -f "$snapshot"
+}
+
 (cd site && bun install --dry-run --frozen-lockfile)
 cargo update --dry-run --locked --workspace
 snapshot=$(mktemp)
-trap 'rm -f "$snapshot"' EXIT
-cp .mise/mise.lock "$snapshot"
-mise lock
-diff -u "$snapshot" .mise/mise.lock >&2 || {
-  mv "$snapshot" .mise/mise.lock
+cp -p .mise/mise.lock "$snapshot"
+trap restore EXIT
+log=$(mise lock 2>&1) || { printf '%s\n' "$log" >&2; exit 1; }
+printf '%s\n' "$log" >&2
+if grep -qi 'warn.*failed to resolve' <<< "$log"; then
   exit 1
-}
-mise install --dry-run --force
+fi
+diff -u "$snapshot" .mise/mise.lock >&2
+MISE_LOCKED_SCOPES=project mise install --dry-run --force --locked
 uv lock --check --project crate

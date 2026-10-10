@@ -4,4 +4,4 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/codecov.bash"
 
-upload_report site site/coverage/lcov.info
+upload_report site .cache/coverage/site/lcov.info

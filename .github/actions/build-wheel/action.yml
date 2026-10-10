@@ -36,7 +36,7 @@ runs:
   steps:
     - name : Provision Cargo
       if   : ${{ inputs.command != 'sdist' }}
-      uses : ./.github/actions/provision-cargo
+      uses : $/.github/actions/provision-cargo
       with:
         save       : ${{ inputs.save }}
         shared-key : prose-dist-${{ inputs.name }}
