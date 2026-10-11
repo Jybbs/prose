@@ -87,10 +87,11 @@ describe('describePage', () => {
 
   it.each([
     [{ caption: 'c', summary: 's' },                   'c'],
+    [{ summary: 's', caption: 'c' },                   'c'],
     [{ description: 'd', caption: 'c', summary: 's' }, 'd'],
     [{ description: ['d'], caption: 'c' },             'c'],
     [{ summary: '`s`' },                               's']
-  ])('reads the first field %o declares', (frontmatter, expected) => {
+  ])('takes the first string in DESCRIPTION_FIELDS order from %o', (frontmatter, expected) => {
     const data = page({ frontmatter })
     head.describePage(data)
     expect(data.description).toBe(expected)

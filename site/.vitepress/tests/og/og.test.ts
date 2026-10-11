@@ -91,14 +91,29 @@ describe('readRenderGraph', () => {
       "import { createElement } from 'satori/jsx'",
       "import type { Leaf } from './lib/types'",
       "import { getSVGViewBox } from '@iconify/utils'",
+      "import * as ns from './lib/ns'",
       'export const entry: Leaf[] = [String(fs), String(createElement), String(getSVGViewBox)]',
-      "export const later = () => import('./lib/late')"
+      "export const later = () => import('./lib/late')",
+      "export const hasher = () => import('ohash')",
+      'export const space = ns'
     ].join('\n'))
     write('lib/late.ts', 'export const late = 1\n')
+    write('lib/ns.ts', 'export const ns = 1\n')
     write('lib/types.ts', 'export type Leaf = string\n')
     const graph = await cardKey.readRenderGraph(tmpDir)
-    expect(Object.keys(graph.modules).toSorted()).toStrictEqual(['entry.ts', 'lib/late.ts'])
-    expect(graph.packages).toStrictEqual(readPackageVersions(site, ['@iconify/utils', 'satori']))
+    expect(Object.keys(graph.modules).toSorted())
+      .toStrictEqual(['entry.ts', 'lib/late.ts', 'lib/ns.ts'])
+    expect(graph.packages)
+      .toStrictEqual(readPackageVersions(site, ['@iconify/utils', 'ohash', 'satori']))
+  })
+
+  supportTest('keeps a module whose constant the bundler inlines', async ({ tmpDir }) => {
+    fs.mkdirSync(path.join(tmpDir, 'lib'))
+    fs.writeFileSync(path.join(tmpDir, 'entry.ts'),
+      "import { SIZE } from './lib/size'\nexport const area = SIZE * SIZE\n")
+    fs.writeFileSync(path.join(tmpDir, 'lib/size.ts'), 'export const SIZE = 180\n')
+    const graph = await cardKey.readRenderGraph(tmpDir)
+    expect(Object.keys(graph.modules).toSorted()).toStrictEqual(['entry.ts', 'lib/size.ts'])
   })
 
   supportTest('moves the key when a module reached through another changes', async ({ tmpDir }) => {

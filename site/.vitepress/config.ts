@@ -122,7 +122,7 @@ export default defineConfig({
     ]
   },
   title         : constants.SITE_NAME,
-  titleTemplate : ':title · Prose',
+  titleTemplate : `:title · ${constants.SITE_NAME}`,
   async buildEnd(siteConfig) {
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
     const { buildOgCards } = await import('./lib/og/render/build')

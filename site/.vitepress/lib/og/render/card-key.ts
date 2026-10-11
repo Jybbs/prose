@@ -2,8 +2,8 @@ import fs            from 'node:fs'
 import { isBuiltin } from 'node:module'
 import path          from 'node:path'
 
-import { hash }                 from 'ohash'
-import { build, type Rolldown } from 'vite'
+import { hash }  from 'ohash'
+import { build } from 'vite'
 
 import { siteDir }             from '../../shared/paths'
 import { readPackageVersions } from '../../shared/version'
@@ -28,17 +28,20 @@ export function cardKeyer(
 }
 
 // Bundles every module in `dir` through Vite, leaving each bare specifier
-// external, so the bundle lists every local module the entries reach and every
-// package they import, directly or through another module.
+// external, and reads the bundler's module graph once the build ends, so every
+// module the entries load joins the graph, directly or through another module,
+// whether or not the output keeps its code.
 export async function readRenderGraph(dir: string = import.meta.dirname): Promise<RenderGraph> {
   const root    = fs.realpathSync(dir)
   const entries = fs.readdirSync(root, { withFileTypes: true })
     .filter(entry => entry.isFile() && !entry.name.startsWith('.'))
     .map(entry => path.join(root, entry.name))
+  const loaded: string[] = []
 
-  const { output } = await build({
+  await build({
     configFile : false,
     logLevel   : 'silent',
+    plugins    : [{ buildEnd() { loaded.push(...this.getModuleIds()) }, name: 'render-graph' }],
     root       : root,
     build      : {
       ssr             : true,
@@ -48,22 +51,16 @@ export async function readRenderGraph(dir: string = import.meta.dirname): Promis
         input    : entries
       }
     }
-  }) as Rolldown.RolldownOutput
+  })
 
-  const chunks  = output.filter(item => item.type === 'chunk')
-  const emitted = new Set(chunks.map(chunk => chunk.fileName))
-
-  const packages = new Set(chunks.flatMap(chunk => [...chunk.imports, ...chunk.dynamicImports])
-    .filter(id => !emitted.has(id) && !isBuiltin(id))
-    .map(packageName))
+  const { files = [], specifiers = [] } =
+    Object.groupBy(loaded, id => path.isAbsolute(id) ? 'files' : 'specifiers')
+  const packages = new Set(specifiers.filter(id => !isBuiltin(id)).map(packageName))
 
   return {
-    // Skips each virtual module, whose id Rolldown prefixes with a NUL byte, so
-    // only a file on disk joins the graph.
-    modules: Object.fromEntries(chunks.flatMap(chunk => chunk.moduleIds)
-      .filter(id => !id.startsWith('\0'))
-      .map(file => [path.relative(root, file), fs.readFileSync(file, 'utf8')])),
-    packages: readPackageVersions(siteDir(import.meta.url), [...packages])
+    packages : readPackageVersions(siteDir(import.meta.url), [...packages]),
+    modules  : Object.fromEntries(files.map(file =>
+      [path.relative(root, file), fs.readFileSync(file, 'utf8')]))
   }
 }
 

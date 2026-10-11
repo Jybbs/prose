@@ -9,9 +9,9 @@ import type { HeadConfig, PageData } from 'vitepress'
 
 export const DESCRIPTION_FIELDS = ['description', 'caption', 'summary'] as const
 
-// Sets the description to the first field the frontmatter declares, flattened
-// to plain text, and titles the landing page with the site name and tagline in
-// place of the ` · Prose` template.
+// Sets the description to the first `DESCRIPTION_FIELDS` entry the frontmatter
+// holds as a string, flattened to plain text, and titles the landing page with
+// the site name and tagline in place of the ` · Prose` template.
 export function describePage(pageData: PageData): void {
   const source = DESCRIPTION_FIELDS.map(field => pageData.frontmatter[field])
     .find(value => typeof value === 'string')
