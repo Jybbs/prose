@@ -277,9 +277,9 @@ def main(located: str, name: str, record: str, trees: list):
 
 def missing(exc: BaseException) -> str | None:
     """
-    Returns the name an exception turns on, which is the name a `NameError`
-    or an `AttributeError` could not find or the name a failed `from …
-    import …` asked for, `None` where it names none.
+    Returns the name a failed `from … import …` asked for or the name a
+    `NameError` or an `AttributeError` could not find, `None` where the
+    exception names none.
 
     Args:
         exc: The exception to read.

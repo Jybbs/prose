@@ -66,4 +66,4 @@ def test_lint_fails_when_git_tracks_no_python_outside_the_fixture_trees(
 
     assert finished.returncode == 1
     assert finished.stdout == ""
-    assert "git tracks no Python file outside the fixture trees" in finished.stderr
+    assert finished.stderr == "git tracks no Python file outside the fixture trees\n"

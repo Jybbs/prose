@@ -51,9 +51,9 @@ class Summary:
 
     def __init__(self):
         """
-        Builds the summary from the run's environment, loading the templates
-        under `.github/scripts/templates/` and the links every template
-        reads.
+        Builds the summary from the run's environment, pointing a template
+        loader at `.github/scripts/templates/` and declaring the ref, the
+        tag flag, and the links the templates read as globals.
         """
         self.here = Path(".github/scripts")
 

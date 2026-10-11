@@ -2,7 +2,8 @@
 Defines the `task` fixture, which loads a task script under
 `.mise/tasks/` as a module so a case calls its functions in process, where
 pytest-subprocess's `fp` fakes every command the script runs, and the
-`workdir` fixture, which poses the files a script reads.
+`workdir` fixture, which writes the files a script reads into a scratch
+tree.
 """
 
 from collections.abc import Callable
