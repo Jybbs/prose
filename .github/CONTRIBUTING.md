@@ -2,7 +2,7 @@
 
 ***Prose*** formats Python to be legible at a glance, and every rule it ships answers to a snapshot fixture holding the exact source it reads and the exact source it produces. That pairing is what makes a contribution here cheap to review, because a change to behavior arrives as a readable before-and-after in Python rather than as a claim about Rust.
 
-This page walks a change through each step in the order a contributor takes it, from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the corpus sweeps that test it, to the commit, the pull request, and the checks that run on it. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, and the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key.
+This page walks a change through each step in the order a contributor takes it, from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against, the corpus sweeps that test it, and the style its source keeps, to the commit, the pull request, and the checks that run on it. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, and the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key.
 
 ---
 
@@ -219,6 +219,21 @@ The `🪻 Corpus` workflow runs the sweeps against the pinned interpreter's stan
 
 ---
 
+## 🪻 Code Style
+
+The Rust and the Python in the repository each answer to a formatter run through a mise task, and a row of the `🪻 CI` workflow fails a pull request whose source that formatter would still change:
+
+| **Source** | **Rewrites With** | **Checks With** | **Row** |
+|---|---|---|---|
+| Rust | `mise format`, running `rustfmt` | `mise check` | `🪶 Format` |
+| Python outside the fixture trees | `mise run py:format`, running the checkout's own *Prose* | `mise lint` | `🪻 Prose` |
+
+That Python is the task scripts under `.mise/tasks/`, the pytest suite under `.mise/tests/`, and the probe `rust:imports` runs inside the interpreter under test, whereas each `input.py` under `crate/tests/fixtures/` and `site/.vitepress/tests/rules/fixtures/` holds whatever shape its rule acts on and stays out of the set. Both Python tasks read the set from `git ls-files`, so a new file joins it once git tracks it. Both also pass `--no-cache`, because the cache key covers the crate's version rather than the code the checkout builds. `mise lint` reports each rewrite and lint finding without applying any, as GitHub Actions annotations when the `🪻 Prose` row runs it. A `# prose: skip` keeps a statement as written where the order the formatter would sort carries meaning, and a `# prose: ignore[<rule>]` silences one lint on its line, as the [**suppression guide**](https://prose.fyi/usage/suppression) sets out.
+
+A task script written in Python carries a `.py` suffix, which mise drops from the task's name, so `.mise/tasks/repo/audit.py` runs as `repo:audit`. `mise run repo:audit` fails on a tracked file without the suffix that runs through `uv run --script` or carries a [**PEP 723**](https://peps.python.org/pep-0723/) `script` block, since `mise lint` reads only `.py` files. A docstring in that Python opens on a verb in the third person (*"Returns the config"* rather than *"Return the config"*).
+
+---
+
 ## ☕ Committing
 
 Every commit on a branch follows the [**Conventional Commits**](https://www.conventionalcommits.org/) shape below. A squash merge folds a branch's commits into one on `main`, whereas the closed pull request keeps each of them as the record of how the change was built.
@@ -304,13 +319,14 @@ The table lists each row beside the task that runs the same check locally:
 |---|---|---|---|
 | `🪶 Format` | `🪻 CI` | `mise run rust:check` | Rust source matches `rustfmt` |
 | `🪵 Lockfile` | `🪻 CI`, `🪻 Deploy` | `mise run lock:check` | Every lockfile matches its manifest |
-| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit` lists holds, from cross-config pin parity to the pull-request path filters, and the pytest suite under `.mise/tests` passes |
-| `🧿 Zizmor` | `🪻 CI` | `mise run repo:lint` | `zizmor` reports no finding across the workflows and composite actions |
+| `🪷 Audit` | `🪻 CI`, `🪻 Deploy` | `mise run repo:audit` | Every invariant the docstring at the head of `.mise/tasks/repo/audit.py` lists holds, from cross-config pin parity to the pull-request path filters, and the pytest suite under `.mise/tests` passes |
+| `🧷 Workflows` | `🪻 CI` | `mise run repo:lint` | `zizmor` reports no finding across the workflows and composite actions |
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | `cargo-shear` reports no unused or misplaced dependency and no empty or unlinked source file |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
 | `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which `🥃 Proof` runs |
 | `🥃 Proof` | `🪻 CI` | `mise run rust:proof` | The fixture tree settles in one pass at every line length, with every reported fix applied |
+| `🪻 Prose` | `🪻 CI` | `mise run py:lint` | The checkout's own build of *Prose* reports no rewrite and no lint finding in the repository's Python outside the fixture trees |
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
 | `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |

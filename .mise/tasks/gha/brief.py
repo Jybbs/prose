@@ -1,41 +1,38 @@
 #!/usr/bin/env -S uv run --script
-#MISE description="Render a workflow step summary and exit with its gate verdict"
+# MISE description="Render a workflow step summary and exit with its gate verdict"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["jinja2==3.1.6", "markupsafe==3.0.3", "pyyaml==6.0.3"]
 # ///
 """
-Render a Prose step summary and gate the workflow's exit code.
+Renders a Prose step summary and gates the workflow's exit code.
 
 Every gate but `draft` passes `NEEDS`, which is the workflow's `needs`
 context as JSON. A job's result is `NEEDS[job]["result"]` and its outputs
 sit under `NEEDS[job]["outputs"]`.
 
 Subcommands:
-    ci       Render the CI gate summary. Reads the `check` result plus
-             the GitHub-runner defaults. Exits 0 when that matrix
-             succeeded.
-    corpus   Render the Corpus gate summary. Reads the result of every
-             job the corpus workflow's gate depends on, plus the
-             GitHub-runner defaults. Exits 0 when every job that ran
-             succeeded, the delta reporting without gating.
-    deploy   Render the Deploy gate summary. Reads the `checks`, `press`,
-             and `deploy` results, the `deploy` job's `url` output, and
-             the GitHub-runner defaults. Exits 0 when all three
-             succeeded.
-    draft    Render the Draft summary. Reads `DRAFT_STATE`,
-             `DRAFT_URL`, and `VERSION`, plus the GitHub-runner
-             defaults.
-    release  Render the Release gate summary. Reads the `build`, `sdist`,
-             `validate`, and `publish` results plus the GitHub-runner
-             defaults. Exits 0 when every required job succeeded, where
-             `publish` is required on a tag run alone.
-    warm     Render the Warm gate summary. Reads the `checks` and
-             `wheels` results plus the GitHub-runner defaults. Exits 0
-             when both succeeded.
+    ci      : Renders the CI gate summary. Reads the `check` result plus the
+              GitHub-runner defaults. Exits 0 when that matrix succeeded.
+    corpus  : Renders the Corpus gate summary. Reads the result of every job
+              the corpus workflow's gate depends on, plus the GitHub-runner
+              defaults. Exits 0 when every job that ran succeeded, the delta
+              reporting without gating.
+    deploy  : Renders the Deploy gate summary. Reads the `checks`, `press`,
+              and `deploy` results, the `deploy` job's `url` output, and the
+              GitHub-runner defaults. Exits 0 when all three succeeded.
+    draft   : Renders the Draft summary. Reads `DRAFT_STATE`, `DRAFT_URL`,
+              and `VERSION`, plus the GitHub-runner defaults.
+    release : Renders the Release gate summary. Reads the `build`, `sdist`,
+              `validate`, and `publish` results plus the GitHub-runner
+              defaults. Exits 0 when every required job succeeded, where
+              `publish` is required on a tag run alone.
+    warm    : Renders the Warm gate summary. Reads the `checks` and `wheels`
+              results plus the GitHub-runner defaults. Exits 0 when both
+              succeeded.
 
-Each subcommand renders into `$GITHUB_STEP_SUMMARY` when it is set,
-stdout otherwise.
+Each subcommand renders into `$GITHUB_STEP_SUMMARY` when it is set, stdout
+otherwise.
 """
 
 from jinja2  import Environment, FileSystemLoader
@@ -49,10 +46,15 @@ from yaml    import safe_load
 
 class Summary:
     """
-    Render a Prose workflow step summary.
+    Renders a Prose workflow step summary.
     """
 
     def __init__(self):
+        """
+        Builds the summary from the run's environment, loading the templates
+        under `.github/scripts/templates/` and the links every template
+        reads.
+        """
         self.here = Path(".github/scripts")
 
         ref  = environ["REF"]
@@ -79,7 +81,7 @@ class Summary:
 
     def _emit(self, name: str, **context):
         """
-        Render the `name` template into `$GITHUB_STEP_SUMMARY`, or to
+        Renders the `name` template into `$GITHUB_STEP_SUMMARY`, or to
         stdout when it is unset.
         """
         text = self.env.get_template(f"{name}-summary.md.j2").render(**context)
@@ -92,85 +94,92 @@ class Summary:
 
     def _failed(self, *jobs: str) -> bool:
         """
-        Report whether any of the `jobs` ended in anything other than success.
+        Reports whether any of the `jobs` ended in anything other than
+        success.
         """
         return any(self._result(job) != "success" for job in jobs)
 
     def _gate(self, name: str, *jobs: str, **context):
         """
-        Render the `name` template and exit with the verdict of the
+        Renders the `name` template and exits with the verdict of the
         `jobs`.
         """
         verdict = self._failed(*jobs)
-        mark    = "❌" if verdict else "✅"
 
-        self._emit(name, check_mark = mark, **context)
+        self._emit(name, check_mark = "❌" if verdict else "✅", **context)
         raise SystemExit(verdict)
 
     def _output(self, job: str, name: str) -> str:
         """
-        Return the `job`'s `name` output, empty when the job declared none.
+        Returns the `job`'s `name` output, empty when the job declared none.
         """
         return self.needs[job].get("outputs", {}).get(name, "")
 
     def _result(self, job: str) -> str:
         """
-        Return the result the `job` finished with.
+        Returns the result the `job` finished with.
         """
         return self.needs[job]["result"]
 
-    def _row(self, jobs: dict, job: str) -> dict:
+    def _row(self, job: str, jobs: dict) -> dict:
         """
-        Return the mark and the name one corpus row shows.
+        Returns the mark and the name one corpus row shows.
 
         Args:
-            jobs : The workflow's job table.
             job  : The job id whose row to build.
+            jobs : The workflow's job table.
         """
-        name = jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
-
-        return {"mark": {"skipped": "➖", "success": "✅"}.get(self._result(job), "❌"), "name": name}
+        return {
+            "mark" : {"skipped": "➖", "success": "✅"}.get(self._result(job), "❌"),
+            "name" : jobs[job]["name"].split("${{")[0].strip() or job.capitalize()
+        }
 
     def ci(self):
         """
-        Render the CI gate summary and exit with the matrix verdict.
+        Renders the CI gate summary and exits with the matrix verdict.
         """
         self._gate("ci", "check")
 
     def corpus(self):
         """
-        Render the Corpus gate summary and exit with the verdict of every
+        Renders the Corpus gate summary and exits with the verdict of every
         job the workflow's gate depends on, read off the workflow itself,
         the delta reporting without gating.
         """
-        jobs   = safe_load(Path(".github/workflows/corpus.yml").read_text(encoding="utf-8"))["jobs"]
-        needed = jobs["gate"]["needs"]
+        workflow = Path(".github/workflows/corpus.yml").read_text(encoding="utf-8")
+        jobs     = safe_load(workflow)["jobs"]
+        needed   = jobs["gate"]["needs"]
 
         self._gate(
             "corpus",
-            *[job for job in needed if job != "delta" and self._result(job) != "skipped"],
-            sweeps = [self._row(jobs, job) for job in needed]
+            *[
+                job for job in needed
+                if job != "delta" and self._result(job) != "skipped"
+            ],
+            sweeps = [self._row(job, jobs) for job in needed]
         )
 
     def deploy(self):
         """
-        Render the Deploy gate summary and exit with the deploy verdict.
+        Renders the Deploy gate summary and exits with the deploy verdict.
         """
         stages = {
             "checks" : "Checks",
             "press"  : "Press",
             "deploy" : "Publish"
-        }
+        }  # prose: skip
 
         self._gate(
-            "deploy", *stages,
+            "deploy",
+            *stages,
             stage = next((s for job, s in stages.items() if self._failed(job)), ""),
             url   = self._output("deploy", "url")
         )
 
     def draft(self):
         """
-        Render the Draft summary across the cut, existing, and no-op states.
+        Renders the Draft summary across the cut, existing, and no-op
+        states.
         """
         self._emit(
             "draft",
@@ -181,16 +190,16 @@ class Summary:
 
     def release(self):
         """
-        Render the Release gate summary and exit with the pipeline verdict.
+        Renders the Release gate summary and exits with the pipeline
+        verdict.
         """
         artifacts = [
             {
                 "label"  : p["label"],
-                "mark"   : "✅" if path else "❌",
+                "mark"   : "✅" if any(Path("dist").glob(p["pattern"])) else "❌",
                 "target" : f"`{p['target']}`" if p.get("target") else "—"
             }
             for p in loads((self.here / "platforms.toml").read_text())["platforms"]
-            for path in [next(Path("dist").glob(p["pattern"]), None)]
         ]
 
         prepub_failed = self._failed("build", "sdist", "validate")
@@ -207,7 +216,7 @@ class Summary:
 
     def warm(self):
         """
-        Render the Warm gate summary and exit with the cache-warm verdict.
+        Renders the Warm gate summary and exits with the cache-warm verdict.
         """
         self._gate("warm", "checks", "wheels")
 

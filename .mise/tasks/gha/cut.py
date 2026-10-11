@@ -1,22 +1,22 @@
 #!/usr/bin/env -S uv run --script
-#MISE description="Cut a draft release when the crate version moves, emitting version, state, and URL"
+# MISE description="Cut a draft release when the crate version moves"
 # /// script
 # requires-python = ">=3.11"
 # ///
 """
-Cut a draft release when `crate/Cargo.toml`'s version moves.
+Cuts a draft release when `crate/Cargo.toml`'s version moves.
 
 Reads `[package].version` at HEAD and HEAD~1, treating a HEAD~1 that
 lacks the manifest or carries no parseable version as changed. When the
-version moved, or the run is a `workflow_dispatch`, reads every page of
-the repository's releases through `gh api`, then cuts a version no release
-carries with `gh release create --draft`, leaves an existing draft
+version moved, or the run is a `workflow_dispatch`, reads every page
+of the repository's releases through `gh api`, then cuts a version no
+release carries with `gh release create --draft`, leaves an existing draft
 untouched, and skips a published release. A `gh` call that exits nonzero
 stops the task with an `::error::` annotation carrying what it printed on
-stderr, so no draft is cut after a failed read and a rerun retries it.
-Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or
-empty when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is
-set, stdout otherwise, with annotations on stderr.
+stderr, so no draft is cut after a failed read and a rerun retries it. Emits
+`version=`, `state=` (one of `cut`, `drafted`, `published`, or empty when
+nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is set, stdout
+otherwise, with annotations on stderr.
 """
 
 from itertools  import chain
@@ -32,11 +32,18 @@ MANIFEST = "crate/Cargo.toml"
 
 def cut_draft(repo: str, version: str) -> str:
     """
-    Create a draft release for the version and return its URL.
+    Creates a draft release for the version and returns its URL.
     """
     return gh(
-        "release", "create", version, "--repo", repo,
-        "--target", "main", "--generate-notes", "--draft"
+        "release",
+        "create",
+        version,
+        "--repo",
+        repo,
+        "--target",
+        "main",
+        "--generate-notes",
+        "--draft"
     ).strip()
 
 
@@ -82,13 +89,12 @@ def main():
     Compares the version at HEAD with HEAD~1, cuts or reports the version's
     release when it moved or the run was dispatched, and emits the outputs.
     """
-    head    = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
-    changed = previous_version() != head
-    forced  = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    state   = ""
-    url     = ""
+    head   = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
+    forced = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    state  = ""
+    url    = ""
 
-    if changed or forced:
+    if previous_version() != head or forced:
         repo    = environ["GITHUB_REPOSITORY"]
         release = existing_release(repo, head)
 
@@ -98,11 +104,17 @@ def main():
         elif release["draft"]:
             state = "drafted"
             url   = release["html_url"]
-            print(f"::notice::Draft for {head} already exists, leaving it untouched.", file = stderr)
+            print(
+                f"::notice::Draft for {head} already exists, leaving it untouched.",
+                file = stderr
+            )
         else:
             state = "published"
             url   = release["html_url"]
-            print(f"::warning::{head} is already published, skipping the draft cut.", file = stderr)
+            print(
+                f"::warning::{head} is already published, skipping the draft cut.",
+                file = stderr
+            )
 
     emit(state=state, url=url, version=head)
 
@@ -116,7 +128,7 @@ def package_version(manifest: str) -> str:
 
 def previous_version() -> str | None:
     """
-    Return `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
+    Returns `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
     when HEAD~1 lacks the manifest or carries no parseable version.
     """
     try:

@@ -34,19 +34,16 @@ def cut(task: Callable[[str], ModuleType]) -> ModuleType:
 
 
 @fixture
-def tree(monkeypatch: MonkeyPatch, tmp_path: Path) -> Path:
+def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
     Returns a working tree whose `crate/Cargo.toml` carries version `1.2.3`
     and makes it the current directory. The environment names `owner/repo`,
     no event, and no output file, so the outputs print to stdout.
     """
-    (manifest := tmp_path / "crate/Cargo.toml").parent.mkdir()
-    manifest.write_text(MANIFEST.format("1.2.3"), encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-    return tmp_path
+    return workdir({"crate/Cargo.toml": MANIFEST.format("1.2.3")})
 
 
 def release(tag: str, draft: bool = False) -> dict:

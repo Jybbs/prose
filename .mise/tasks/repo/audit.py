@@ -1,13 +1,14 @@
 #!/usr/bin/env -S uv run --script
-#MISE alias="audit"
-#MISE depends=["repo:test"]
-#MISE description="Audit the CI invariants no other gate covers"
+# MISE alias="audit"
+# MISE depends=["repo:test"]
+# MISE description="Audit the CI invariants no other gate covers"
 # /// script
 # requires-python = ">=3.11"
 # dependencies = ["pyyaml==6.0.3"]
 # ///
 """
-Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
+Audits the CI invariants no other gate covers, exiting nonzero if any of
+them fails.
 
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
@@ -44,6 +45,9 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                as given within ten seconds and matches the first byte for
                byte, and no task or library under `.mise/` runs `bunx`,
                `bun x`, or `npx`.
+    suffixes   Every tracked file whose shebang runs `uv run --script` or
+               which carries a PEP 723 `script` block ends in `.py`, so
+               `py:lint` reads it.
     filters    Every tracked file sits inside the `pull_request` path filter
                of some workflow, so a pull request touching only that file
                still reports the check the `main` ruleset requires, and
@@ -61,39 +65,39 @@ from os          import environ, killpg
 from pathlib     import Path
 from re          import MULTILINE, escape, findall, finditer, fullmatch, search, sub
 from signal      import SIGKILL
-from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, run
+from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, check_output, run
 from tempfile    import TemporaryDirectory
 from tomllib     import loads
 from typing      import NoReturn
 from yaml        import AnchorToken, BaseLoader, load_all, scan
 
-
 CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
 READ: set[str] = set()
+SCRIPT_BLOCK   = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
+UV_SHEBANG     = r"^#!.*\buv run --script\b"
 
 
 def action_pin(action: str, key: str) -> str:
     """
-    Return the `key` input pinned in the `action` composite action.
+    Returns the `key` input pinned in the `action` composite action.
     """
     return matched(
-        f"no {key} pin in {action}/action.yml",
-        manifest(action),
-        rf"{key}\s*:\s*v?(\S+)"
+        message = f"no {key} pin in {action}/action.yml",
+        path    = manifest(action),
+        pattern = rf"{key}\s*:\s*v?(\S+)"
     )
 
 
 def action_pins() -> list[tuple[str, str, str]]:
     """
-    Return one parity pair per repeat of a third-party action pin, comparing
-    every later home's commit against the first home's.
+    Returns one parity pair per repeat of a third-party action pin,
+    comparing every later home's commit against the first home's.
     """
     homes = defaultdict(list)
     for path in sorted(Path(".github").rglob("*.y*ml")):
-        text = read(path)
-        for match in finditer(r"uses\s*:\s*([\w.-]+/[\w./-]+)@(\S+)", text):
+        for match in finditer(r"uses\s*:\s*([\w.-]+/[\w./-]+)@(\S+)", read(path)):
             homes[match[1]].append((str(path), match[2]))
 
     return [
@@ -103,9 +107,9 @@ def action_pins() -> list[tuple[str, str, str]]:
     ]
 
 
-def annotate(message: str, **location) -> None:
+def annotate(message: str, **location):
     """
-    Emit a GitHub Actions error annotation, locating it to a file and line
+    Emits a GitHub Actions error annotation, locating it to a file and line
     when `location` is given.
     """
     props = ",".join(f"{key}={value}" for key, value in location.items())
@@ -114,34 +118,34 @@ def annotate(message: str, **location) -> None:
 
 def badge(svg: str) -> str:
     """
-    Return the `<major>.<minor>` token from the README badge line whose link
-    target carries `svg`.
+    Returns the `<major>.<minor>` token from the README badge line whose
+    link target carries `svg`.
     """
     return matched(
-        f"no README.md badge line carries {svg!r}",
-        ".github/README.md",
-        rf"{svg}.*?(\d+\.\d+)\+"
+        message = f"no README.md badge line carries {svg!r}",
+        path    = ".github/README.md",
+        pattern = rf"{svg}.*?(\d+\.\d+)\+"
     )
 
 
 def build_requirement(name: str) -> str:
     """
-    Return the exact version `crate/pyproject.toml` pins for the `name`
+    Returns the exact version `crate/pyproject.toml` pins for the `name`
     build requirement.
     """
     for requirement in toml("crate/pyproject.toml")["build-system"]["requires"]:
         if requirement.startswith(name):
             return extract(
-                f"{name} build requirement is not an exact pin",
-                r"==\s*(\S+)",
-                requirement
+                message = f"{name} build requirement is not an exact pin",
+                pattern = r"==\s*(\S+)",
+                text    = requirement
             )
     fail(f"no build-system requirement named {name!r}")
 
 
 def cargo_lock_version(name: str) -> str:
     """
-    Return the version `Cargo.lock` resolves for the `name` package.
+    Returns the version `Cargo.lock` resolves for the `name` package.
     """
     for package in toml("Cargo.lock")["package"]:
         if package["name"] == name:
@@ -151,16 +155,16 @@ def cargo_lock_version(name: str) -> str:
 
 def cargo_manifests(paths: list[str]) -> list[str]:
     """
-    Return every member manifest among `paths`, sorted.
+    Returns every member manifest among `paths`, sorted.
     """
     return sorted(path for path in paths if path.endswith("/Cargo.toml"))
 
 
 def checks() -> int:
     """
-    Report every drift between the checks table in `CONTRIBUTING.md` and the
-    pull-request workflows. A task a check runs matches its row where the row
-    names that task, one of its aliases, or a task it depends on.
+    Reports every drift between the checks table in `CONTRIBUTING.md` and
+    the pull-request workflows. A task a check runs matches its row where
+    the row names that task, one of its aliases, or a task it depends on.
     """
     listed  = tasks_listed()
     aliases = {
@@ -202,33 +206,38 @@ def checks() -> int:
                     if claimed.isdisjoint(reaches.get(task, {task}))
                 }
 
-    return flagged([
-        (blank,    "CONTRIBUTING.md check rows naming no check or no workflow"),
-        (
-            unknown,
-            "CONTRIBUTING.md check rows naming a workflow no pull request runs"
-        ),
-        (
-            absent,
-            "CONTRIBUTING.md check rows naming a check its workflow does not run"
-        ),
-        (unlisted, "CONTRIBUTING.md check rows naming a task mise tasks does not list"),
-        (strays,   "checks running a task their CONTRIBUTING.md row does not name"),
-        (
-            {
-                f"{name} in {flow}"
-                for flow, reports in carried.items()
-                for name, _, _, matrix in reports
-                if matrix and (flow, name) not in named
-            },
-            "matrix checks no CONTRIBUTING.md row names"
-        )
-    ])
+    return flagged(
+        findings = [
+            (blank,    "CONTRIBUTING.md check rows naming no check or no workflow"),
+            (
+                unknown,
+                "CONTRIBUTING.md check rows naming a workflow no pull request runs"
+            ),
+            (
+                absent,
+                "CONTRIBUTING.md check rows naming a check its workflow does not run"
+            ),
+            (
+                unlisted,
+                "CONTRIBUTING.md check rows naming a task mise tasks does not list"
+            ),
+            (strays,   "checks running a task their CONTRIBUTING.md row does not name"),
+            (
+                {
+                    f"{name} in {flow}"
+                    for flow, reports in carried.items()
+                    for name, _, _, matrix in reports
+                    if matrix and (flow, name) not in named
+                },
+                "matrix checks no CONTRIBUTING.md row names"
+            )
+        ]
+    )
 
 
 def extract(message: str, pattern: str, text: str) -> str:
     """
-    Return the first capture of `pattern` in `text`.
+    Returns the first capture of `pattern` in `text`.
     """
     if match := search(pattern, text):
         return match[1]
@@ -237,7 +246,7 @@ def extract(message: str, pattern: str, text: str) -> str:
 
 def fail(message: str) -> NoReturn:
     """
-    Emit an error annotation for `message` and exit nonzero.
+    Emits an error annotation for `message` and exits nonzero.
     """
     annotate(message)
     raise SystemExit(1)
@@ -245,33 +254,34 @@ def fail(message: str) -> NoReturn:
 
 def families() -> dict[str, tuple[str, str | None]]:
     """
-    Return the color and the description the docs site gives each rule
-    family, keyed by the GitHub label that family carries, its badge from
-    `FAMILY_META` followed by its name. The color is the palette hue
-    `FAMILIES` maps the family to, and the description is the one its
+    Returns the color and the description the docs site gives each rule
+    family, keyed by the GitHub label that family carries, its badge
+    from `FAMILY_META` followed by its name. The color is the palette
+    hue `FAMILIES` maps the family to, and the description is the one its
     rule-index page declares, without its leading `The ` or its closing
     period. The `docs` family's label covers documentation at large rather
-    than the docstring rules alone, so it takes no description from its page.
-    A family without a badge, a hue, or a rule-index page fails the audit.
+    than the docstring rules alone, so it takes no description from its
+    page. A family without a badge, a hue, or a rule-index page fails the
+    audit.
     """
     registries = "site/.vitepress/lib/shared/registries.ts"
     meta       = extract(
-        f"no FAMILY_META registry in {registries}",
-        r"(?ms)^export const FAMILY_META\b.*?\{(.*?)^\}",
-        read(registries)
+        message = f"no FAMILY_META registry in {registries}",
+        pattern = r"(?ms)^export const FAMILY_META\b.*?\{(.*?)^\}",
+        text    = read(registries)
     )
-    palette    = read("site/.vitepress/lib/shared/palette.ts")
-    hues       = dict(
+    palette = read("site/.vitepress/lib/shared/palette.ts")
+    hues    = dict(
         findall(r"^\s*'?([\w-]+)'?\s*:\s*'#([0-9a-f]{6})'", palette, MULTILINE)
     )
-    tints      = dict(findall(r"^\s*(\w+)\s*:\s*PALETTE\.(\w+)", palette, MULTILINE))
+    tints = dict(findall(r"^\s*(\w+)\s*:\s*PALETTE\.(\w+)", palette, MULTILINE))
 
     sited = {}
     for family, entry in findall(r"^\s*['\"]?([\w-]+)['\"]?\s*:(.*)$", meta, MULTILINE):
         emoji = extract(
-            f"no badge on the {family} entry of FAMILY_META",
-            r"badge\s*:\s*['\"]([^'\"]+)['\"]",
-            entry
+            message = f"no badge on the {family} entry of FAMILY_META",
+            pattern = r"badge\s*:\s*['\"]([^'\"]+)['\"]",
+            text    = entry
         )
         if tints.get(family) not in hues:
             fail(f"FAMILIES in palette.ts gives the {family} family no palette hue")
@@ -287,11 +297,11 @@ def families() -> dict[str, tuple[str, str | None]]:
     return sited
 
 
-def filled(template: str, entry: dict) -> str:
+def filled(entry: dict, template: str) -> str:
     """
-    Return `template` with each `${{ matrix.<key> }}` expression replaced by the
-    value `entry` gives that key, or by nothing where `entry` gives none, and
-    with its surrounding whitespace stripped.
+    Returns `template` with each `${{ matrix.<key> }}` expression replaced
+    by the value `entry` gives that key, or by nothing where `entry` gives
+    none, and with its surrounding whitespace stripped.
     """
     return sub(
         r"\$\{\{\s*matrix\.([\w-]+)\s*\}\}",
@@ -302,18 +312,18 @@ def filled(template: str, entry: dict) -> str:
 
 def filtered(path: str, patterns: list[str]) -> bool:
     """
-    Return whether a GitHub `paths` filter made of `patterns` selects `path`,
-    the last pattern to match it deciding, where `**` matches across `/` and
-    `*` and `?` do not.
+    Returns whether a GitHub `paths` filter made of `patterns` selects
+    `path`, the last pattern to match it deciding, where `**` matches across
+    `/` and `*` and `?` do not.
     """
     selected = False
     for pattern in patterns:
         glob = (
             escape(pattern.removeprefix("!"))
-                .replace(r"\*\*", "\0")
-                .replace(r"\*", "[^/]*")
-                .replace(r"\?", "[^/]")
-                .replace("\0", ".*")
+            .replace(r"\*\*", "\0")
+            .replace(r"\*", "[^/]*")
+            .replace(r"\?", "[^/]")
+            .replace("\0", ".*")
         )
         if fullmatch(glob, path):
             selected = not pattern.startswith("!")
@@ -322,11 +332,11 @@ def filtered(path: str, patterns: list[str]) -> bool:
 
 def filters() -> int:
     """
-    Report every tracked file no workflow's `pull_request` path filter
-    selects, since a pull request touching only such files never reports the
-    check the `main` ruleset requires, and every file the earlier checks
-    recorded in `READ` that no workflow running the audit selects. A workflow
-    with no path filter fires on every file.
+    Reports every tracked file no workflow's `pull_request` path filter
+    selects, since a pull request touching only such files never reports
+    the check the `main` ruleset requires, and every file the earlier
+    checks recorded in `READ` that no workflow running the audit selects. A
+    workflow with no path filter fires on every file.
     """
     every, audited = [], []
     for path, flow in pull_request_workflows():
@@ -336,25 +346,27 @@ def filters() -> int:
         if "repo:audit" in invoked(read(path)):
             audited.append(paths)
 
-    return flagged([
-        (
-            {
-                path for path in files
-                if not any(filtered(path, paths) for paths in selecting)
-            },
-            message
-        )
-        for files, selecting, message in (
-            (tracked(), every,   "no pull-request workflow fires on tracked files"),
-            (READ,      audited, "no workflow running the audit fires on files it reads"),
-        )
-    ])
+    return flagged(
+        findings = [
+            (
+                {
+                    path for path in files
+                    if not any(filtered(path, paths) for paths in selecting)
+                },
+                message
+            )
+            for files, selecting, message in (
+                (tracked(), every,   "no pull-request workflow fires on tracked files"),
+                (READ,      audited, "no workflow running the audit fires on files it reads")
+            )
+        ]
+    )
 
 
 def flagged(findings: list[tuple[set | list, str]]) -> int:
     """
-    Emit an error annotation for every nonempty collection in `findings`,
-    listing it sorted after its message, and return 1 when any is nonempty.
+    Emits an error annotation for every nonempty collection in `findings`,
+    listing it sorted after its message, and returns 1 when any is nonempty.
     """
     failed = 0
     for found, message in findings:
@@ -366,33 +378,33 @@ def flagged(findings: list[tuple[set | list, str]]) -> int:
 
 def forms() -> int:
     """
-    Report every release number an issue template carries, which a version
+    Reports every release number an issue template carries, which a version
     bump leaves stale, locating each to its file and line.
     """
-    return located([
-        (
-            f"the template carries the release number {release!r}, which the next version bump leaves stale",
-            path,
-            line
-        )
-        for path, _ in templates()
-        for line, text in enumerate(read(path).splitlines(), 1)
-        for release in findall(r"(?<!\d)\d+\.\d+\.\d+(?!\d)", text)
-    ])
+    return located(
+        findings = [
+            (
+                f"the release number {release!r} goes stale at the next version bump",
+                path, line
+            )
+            for path, _ in templates()
+            for line, text in enumerate(read(path).splitlines(), 1)
+            for release in findall(r"(?<!\d)\d+\.\d+\.\d+(?!\d)", text)
+        ]
+    )
 
 
 def gates() -> int:
     """
-    Report every check the `main` ruleset requires that no pull-request
+    Reports every check the `main` ruleset requires that no pull-request
     workflow ends on, and every pull-request workflow ending on a job whose
     name the ruleset does not require, since a required check no workflow
     reports leaves every pull request waiting on it. A job with no `name`
     reports under its key.
     """
-    ruleset = json_loads(read(".github/rulesets/main.json"))
     required = {
         check["context"]
-        for rule in ruleset["rules"]
+        for rule in json_loads(read(".github/rulesets/main.json"))["rules"]
         if rule["type"] == "required_status_checks"
         for check in rule["parameters"]["required_status_checks"]
     }
@@ -404,49 +416,52 @@ def gates() -> int:
         ended.add(name := gate.get("name", job))
         if name not in required:
             annotate(
-                f"the workflow ends on {name!r}, which main.json does not require",
-                file = path
+                file    = path,
+                message = f"the workflow ends on {name!r}, which main.json omits"
             )
             failed = 1
 
-    return failed | flagged([
-        (
-            required - ended,
-            "main.json requires checks no pull-request workflow ends on"
-        )
-    ])
+    return failed | flagged(
+        findings = [
+            (
+                required - ended,
+                "main.json requires checks no pull-request workflow ends on"
+            )
+        ]
+    )
 
 
 def hashed_paths(action: str) -> list[str]:
     """
-    Return the file paths listed in the `action` manifest's `hashFiles` call.
+    Returns the file paths listed in the `action` manifest's `hashFiles`
+    call.
     """
     return findall(
         r"'([^']+)'",
         matched(
-            f"no hashFiles call in {action}/action.yml",
-            manifest(action),
-            r"hashFiles\(([^)]*)\)"
+            message = f"no hashFiles call in {action}/action.yml",
+            path    = manifest(action),
+            pattern = r"hashFiles\(([^)]*)\)"
         )
     )
 
 
 def invoked(text: str) -> list[str]:
     """
-    Return every task a `mise run` in `text` names.
+    Returns every task a `mise run` in `text` names.
     """
     return findall(r"\bmise run ([\w:-]+)", text)
 
 
 def labels() -> int:
     """
-    Report every drift between the label registry at `.github/labels.toml` and
-    the files naming its labels, covering a label `release.yml` or an issue
-    template names that the registry lacks, a registry label in no
+    Reports every drift between the label registry at `.github/labels.toml`
+    and the files naming its labels, covering a label `release.yml` or an
+    issue template names that the registry lacks, a registry label in no
     release-notes category or in more than one, a row of the label table in
     `CONTRIBUTING.md` that names or describes a label differently once its
-    backticks are dropped, and a color that is not six lowercase hex digits or
-    that two labels share.
+    backticks are dropped, and a color that is not six lowercase hex digits
+    or that two labels share.
     """
     registry = toml(".github/labels.toml")["labels"]
     colors   = [label["color"] for label in registry.values()]
@@ -464,46 +479,55 @@ def labels() -> int:
             applied = applied.split(",")
         if unknown := sorted({label.strip() for label in applied} - registry.keys()):
             annotate(
-                f"the template applies labels the registry lacks: {unknown}",
-                file = path
+                file    = path,
+                message = f"the template applies labels the registry lacks: {unknown}"
             )
             failed = 1
 
-    return failed | flagged([
-        (set(named) - registry.keys(), "release.yml names labels the registry lacks"),
-        (registry.keys() - set(named), "registry labels in no release.yml category"),
-        (repeated(named), "labels in more than one release.yml category"),
-        (
-            {tuple(cell.replace("`", "") for cell in row) for row in table("Label")}
-            ^ {(name, label["description"]) for name, label in registry.items()},
-            "CONTRIBUTING.md label rows that differ from the registry"
-        ),
-        (
-            [color for color in colors if not fullmatch("[0-9a-f]{6}", color)],
-            "label colors that are not six lowercase hex digits"
-        ),
-        (repeated(colors), "label colors more than one label shares"),
-        (
-            [
-                name for name, (color, _) in sited.items()
-                if registry.get(name, {}).get("color") != color
-            ],
-            "family labels whose color differs from the docs site's palette"
-        ),
-        (
-            [
-                name for name, (_, described) in sited.items()
-                if described and registry.get(name, {}).get("description") != described
-            ],
-            "family labels whose description differs from the family's rule-index page"
-        )
-    ])
+    return failed | flagged(
+        findings = [
+            (
+                set(named) - registry.keys(),
+                "release.yml names labels the registry lacks"
+            ),
+            (
+                registry.keys() - set(named),
+                "registry labels in no release.yml category"
+            ),
+            (repeated(named), "labels in more than one release.yml category"),
+            (
+                {tuple(cell.replace("`", "") for cell in row) for row in table("Label")}
+                ^ {(name, label["description"]) for name, label in registry.items()},
+                "CONTRIBUTING.md label rows that differ from the registry"
+            ),
+            (
+                [color for color in colors if not fullmatch("[0-9a-f]{6}", color)],
+                "label colors that are not six lowercase hex digits"
+            ),
+            (repeated(colors), "label colors more than one label shares"),
+            (
+                [
+                    name for name, (color, _) in sited.items()
+                    if registry.get(name, {}).get("color") != color
+                ],
+                "family labels whose color differs from the docs site's palette"
+            ),
+            (
+                [
+                    name for name, (_, described) in sited.items()
+                    if described
+                    if registry.get(name, {}).get("description") != described
+                ],
+                "family labels whose description differs from their rule-index page"
+            )
+        ]
+    )
 
 
 def located(findings: list[tuple[str, Path, int]]) -> int:
     """
-    Emit an error annotation for every finding, a message beside the file and
-    line it names, and return 1 when there is any.
+    Emits an error annotation for every finding, a message beside the file
+    and line it names, and returns 1 when there is any.
     """
     for message, path, line in findings:
         annotate(message, file = path, line = line)
@@ -512,65 +536,69 @@ def located(findings: list[tuple[str, Path, int]]) -> int:
 
 def major_minor(value: str) -> str:
     """
-    Return `<major>.<minor>` from any string carrying a SemVer head.
+    Returns `<major>.<minor>` from any string carrying a SemVer head.
     """
     return extract(f"cannot parse major.minor from {value!r}", r"(\d+\.\d+)", value)
 
 
 def manifest(action: str) -> str:
     """
-    Return the path of the `action` composite action's manifest.
+    Returns the path of the `action` composite action's manifest.
     """
     return f".github/actions/{action}/action.yml"
 
 
 def manifests() -> int:
     """
-    Report every YAML anchor in a composite action manifest, which the
+    Reports every YAML anchor in a composite action manifest, which the
     runner's manifest parser rejects before any step runs.
     """
-    return located([
-        (
-            f"YAML anchors are rejected in an action manifest, so remove {token.value!r}",
-            path,
-            token.start_mark.line + 1
-        )
-        for path in sorted(Path(".github/actions").glob("*/action.y*ml"))
-        for token in scan(read(path))
-        if isinstance(token, AnchorToken)
-    ])
+    return located(
+        findings = [
+            (
+                f"the runner rejects the YAML anchor {token.value!r} in a manifest",
+                path,
+                token.start_mark.line + 1
+            )
+            for path in sorted(Path(".github/actions").glob("*/action.y*ml"))
+            for token in scan(read(path))
+            if isinstance(token, AnchorToken)
+        ]
+    )
 
 
 def matched(message: str, path: str, pattern: str) -> str:
     """
-    Return the first capture of `pattern` in the file at `path`.
+    Returns the first capture of `pattern` in the file at `path`.
     """
     return extract(message, pattern, read(path))
 
 
 def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     """
-    Return one parity pair per list that restates the workspace members,
-    comparing the manifests that list names against the ones the members own.
+    Returns one parity pair per list that restates the workspace members,
+    comparing the manifests that list names against the ones the members
+    own.
     """
     owned = sorted(f"{name}/Cargo.toml" for name in cargo["workspace"]["members"])
     return [
         (f"Cargo.toml members ↔ {home}", owned, cargo_manifests(paths))
         for home, paths in [
             (".github/workflows/warm.yml path filter", workflow_paths("warm")),
-            (".mise/tasks/lock/sync sources", task_paths("lock:sync", "sources"))
+            ("lock:sync sources", task_paths("lock:sync", "sources"))
         ]
     ]
 
 
 def misdirected(script: Path) -> bool:
     """
-    Return whether a copy of `script` in a scratch tree hands its stand-in
-    target an argument other than as given, one holding a space included,
-    runs a target other than the scratch tree's `site/node_modules/.bin/<tool>`
-    once both paths are resolved, or runs past ten seconds, the script reaching
-    its root as `.mise/bin/../..`. A copy that runs past ten seconds is killed
-    along with every process it started.
+    Returns whether a copy of `script` in a scratch tree hands its
+    stand-in target an argument other than as given, one holding
+    a space included, runs a target other than the scratch tree's
+    `site/node_modules/.bin/<tool>` once both paths are resolved, or runs
+    past ten seconds, the script reaching its root as `.mise/bin/../..`.
+    A copy that runs past ten seconds is killed along with every process
+    it started.
     """
     arguments = ["two words", "one", ""]
     with TemporaryDirectory() as scratch:
@@ -578,7 +606,7 @@ def misdirected(script: Path) -> bool:
         target = Path(scratch, "site/node_modules/.bin", script.name)
         for path, body in [
             (copy,   script.read_bytes()),
-            (target, b"#!/bin/sh\nprintf '%s\\n' \"$0\" \"$@\"\n")
+            (target, b'#!/bin/sh\nprintf \'%s\\n\' "$0" "$@"\n')
         ]:
             path.parent.mkdir(parents=True)
             path.write_bytes(body)
@@ -602,8 +630,8 @@ def misdirected(script: Path) -> bool:
 
 def mise_json(*args: str) -> dict | list:
     """
-    Return the report mise prints for the `args` subcommand run with `--json`,
-    failing when the subcommand prints none.
+    Returns the report mise prints for the `args` subcommand run with
+    `--json`, failing when the subcommand prints none.
     """
     report = run(["mise", *args, "--json"], capture_output=True, text=True)
     if not report.stdout:
@@ -613,8 +641,8 @@ def mise_json(*args: str) -> dict | list:
 
 def mise_pins(config: dict) -> dict[str, str]:
     """
-    Map each tool `.mise/config.toml` declares to the version it pins, read off
-    the `version` key where the entry is a table.
+    Maps each tool `.mise/config.toml` declares to the version it pins, read
+    off the `version` key where the entry is a table.
     """
     return {
         tool: spec["version"] if isinstance(spec, dict) else spec
@@ -624,9 +652,9 @@ def mise_pins(config: dict) -> dict[str, str]:
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
-    Return one parity pair per `overrides` entry the manifest also pins as a
-    `devDependencies` entry, leaving an override of an undeclared transitive
-    alone.
+    Returns one parity pair per `overrides` entry the manifest also pins
+    as a `devDependencies` entry, leaving an override of an undeclared
+    transitive alone.
     """
     return [
         (
@@ -641,13 +669,12 @@ def override_pins(package: dict) -> list[tuple[str, str, str]]:
 
 def parity() -> int:
     """
-    Report every cross-config pin or shared declaration that has drifted
+    Reports every cross-config pin or shared declaration that has drifted
     from its pair.
     """
     cargo   = toml("Cargo.toml")
     package = json_loads(read("site/package.json"))
     pins    = mise_pins(toml(".mise/config.toml"))
-    project = toml("crate/pyproject.toml")
     rust    = cargo["workspace"]["package"]["rust-version"]
 
     pairs = [
@@ -664,7 +691,7 @@ def parity() -> int:
         (
             "README.md Python badge ↔ crate/pyproject.toml requires-python",
             badge("python.svg"),
-            major_minor(project["project"]["requires-python"])
+            major_minor(toml("crate/pyproject.toml")["project"]["requires-python"])
         ),
         (
             ".mise/config.toml maturin pin ↔ build-wheel action maturin-version",
@@ -682,17 +709,17 @@ def parity() -> int:
             cargo_lock_version("wasm-bindgen")
         ),
         (
-            ".mise/tasks/lock/check sources ↔ .mise/tasks/lock/sync sources and outputs",
+            "lock:check sources ↔ lock:sync sources and outputs",
             task_paths("lock:check", "sources"),
             task_paths("lock:sync", "sources", "outputs")
         ),
         (
-            ".mise/tasks/site/test sources ↔ .mise/tasks/site/press sources",
+            "site:test sources ↔ site:press sources",
             task_paths("site:test", "sources"),
             task_paths("site:press", "sources")
         ),
         (
-            ".mise/tasks/wasm/pack sources ↔ restore-wasm hashFiles paths",
+            "wasm:pack sources ↔ restore-wasm hashFiles paths",
             task_paths("wasm:pack", "sources"),
             sorted(hashed_paths("restore-wasm"))
         ),
@@ -710,28 +737,10 @@ def parity() -> int:
     return failed
 
 
-def patch_pins(package: dict) -> list[tuple[str, str, str]]:
-    """
-    Return one parity pair per `patchedDependencies` key, matching the version
-    the key targets against the version the manifest pins for that package.
-    """
-    pairs = []
-    for key in package.get("patchedDependencies", {}):
-        name, _, version = key.rpartition("@")
-        if (pinned := package["devDependencies"].get(name)) is None:
-            fail(f"no site/package.json devDependency named {name!r}")
-        pairs.append((
-            f"site/package.json {name} patch key ↔ its devDependency pin",
-            version,
-            pinned
-        ))
-    return pairs
-
-
 def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
     """
-    Return every file in `folder` matching one of `patterns` beside its parsed
-    YAML, sorted by path.
+    Returns every file in `folder` matching one of `patterns` beside its
+    parsed YAML, sorted by path.
     """
     return [
         (path, yaml(path))
@@ -739,16 +748,36 @@ def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
     ]
 
 
+def patch_pins(package: dict) -> list[tuple[str, str, str]]:
+    """
+    Returns one parity pair per `patchedDependencies` key, matching the
+    version the key targets against the version the manifest pins for that
+    package.
+    """
+    pairs = []
+    for key in package.get("patchedDependencies", {}):
+        name, _, version = key.rpartition("@")
+        if (pinned := package["devDependencies"].get(name)) is None:
+            fail(f"no site/package.json devDependency named {name!r}")
+        pairs.append(
+            (
+                f"site/package.json {name} patch key ↔ its devDependency pin",
+                version, pinned
+            )
+        )
+    return pairs
+
+
 def planned(flow: dict, matrix: str) -> list[dict]:
     """
-    Return the entries of the matrix the `matrix` expression reads off another
-    job of `flow`, by running the step that sets that job's output. The step
-    runs with every `GITHUB_` variable unset, so it prints the plan a run
-    outside GitHub emits.
+    Returns the entries of the matrix the `matrix` expression reads off
+    another job of `flow`, by running the step that sets that job's output.
+    The step runs with every `GITHUB_` variable unset, so it prints the plan
+    a run outside GitHub emits.
     """
-    job, key   = referenced("needs", matrix)
+    job, key   = referenced(matrix, "needs")
     planner    = flow["jobs"][job]
-    step, line = referenced("steps", planner["outputs"][key])
+    step, line = referenced(planner["outputs"][key], "steps")
     command    = {each.get("id"): each.get("run") for each in planner["steps"]}[step]
     printed    = run(
         command,
@@ -758,42 +787,44 @@ def planned(flow: dict, matrix: str) -> list[dict]:
             for name, value in environ.items()
             if not name.startswith("GITHUB_")
         },
-        shell          = True,
-        text           = True
+        shell = True,
+        text  = True
     )
     return json_loads(
         extract(
-            f"{command} printed no {line} line: {printed.stderr.strip()}",
-            rf"(?m)^{line}=(.*)$",
-            printed.stdout
+            message = f"{command} printed no {line} line: {printed.stderr.strip()}",
+            pattern = rf"(?m)^{line}=(.*)$",
+            text    = printed.stdout
         )
     )["include"]
 
 
 def privileges() -> int:
     """
-    Report every job holding a write permission or an OIDC token whose steps
-    restore a cache, since a tool restored from a cache runs unchecked beside
-    that job's token, locating each to the line its key opens on. A step
-    calling a composite in this repository restores a cache when one of the
-    composite's own steps does.
+    Reports every job holding a write permission or an OIDC token whose
+    steps restore a cache, since a tool restored from a cache runs unchecked
+    beside that job's token, locating each to the line its key opens on. A
+    step calling a composite in this repository restores a cache when one of
+    the composite's own steps does.
     """
-    return located([
-        (
-            f"the {name} job restores a cache while holding a write permission or an OIDC token",
-            path,
-            read(path).splitlines().index(f"  {name}:") + 1
-        )
-        for path, flow in workflows()
-        for name, job in flow["jobs"].items()
-        if writes(job.get("permissions", flow.get("permissions", {})))
-        if any(map(restores, job.get("steps", [])))
-    ])
+    return located(
+        findings = [
+            (
+                f"the {name} job restores a cache while holding a write permission",
+                path,
+                read(path).splitlines().index(f"  {name}:") + 1
+            )
+            for path, flow in workflows()
+            for name, job in flow["jobs"].items()
+            if writes(job.get("permissions", flow.get("permissions", {})))
+            if any(map(restores, job.get("steps", [])))
+        ]
+    )
 
 
 def pull_request_workflows() -> list[tuple[Path, dict]]:
     """
-    Return every workflow a `pull_request` event triggers beside its parsed
+    Returns every workflow a `pull_request` event triggers beside its parsed
     mapping.
     """
     return [(path, flow) for path, flow in workflows() if "pull_request" in flow["on"]]
@@ -801,45 +832,45 @@ def pull_request_workflows() -> list[tuple[Path, dict]]:
 
 def quoted(cell: str) -> list[str]:
     """
-    Return every backticked span in a table `cell`.
+    Returns every backticked span in a table `cell`.
     """
     return findall(r"`([^`]+)`", cell)
 
 
 def read(path: str | Path) -> str:
     """
-    Return the text of the file at `path`, recording the path in `READ` for
+    Returns the text of the file at `path`, recording the path in `READ` for
     `filters` to check.
     """
     READ.add(Path(path).as_posix())
     return Path(path).read_text(encoding="utf-8")
 
 
-def referenced(scope: str, expression: str) -> list[str]:
+def referenced(expression: str, scope: str) -> list[str]:
     """
-    Return the job or step under `scope` whose output an `expression` such as
-    `needs.plan.outputs.matrix` reads, followed by the output's name.
+    Returns the job or step under `scope` whose output an `expression` such
+    as `needs.plan.outputs.matrix` reads, followed by the output's name.
     """
     return extract(
-        f"no {scope} output in {expression!r}",
-        rf"\b{scope}\.([\w-]+\.outputs\.[\w-]+)",
-        expression
+        message = f"no {scope} output in {expression!r}",
+        pattern = rf"\b{scope}\.([\w-]+\.outputs\.[\w-]+)",
+        text    = expression
     ).split(".outputs.")
 
 
 def repeated(values: list[str]) -> set[str]:
     """
-    Return every value `values` holds more than once.
+    Returns every value `values` holds more than once.
     """
     return {value for value, count in Counter(values).items() if count > 1}
 
 
 def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
     """
-    Return each check the jobs of `flow` report as its name, the names a row
-    may cover it by, the tasks its steps run, and whether a matrix fans it out.
-    A row covers a planned matrix's checks together, by naming one of them or
-    the job name's text outside its matrix expressions.
+    Returns each check the jobs of `flow` report as its name, the names a
+    row may cover it by, the tasks its steps run, and whether a matrix fans
+    it out. A row covers a planned matrix's checks together, by naming one
+    of them or the job name's text outside its matrix expressions.
     """
     reports = []
     for key, job in flow["jobs"].items():
@@ -847,16 +878,16 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
         matrix   = job.get("strategy", {}).get("matrix")
         if isinstance(matrix, str):
             entries  = planned(flow, matrix)
-            together = {filled(template, entry) for entry in [{}, *entries]} - {""}
+            together = {filled(entry, template) for entry in [{}, *entries]} - {""}
         else:
             entries  = matrix["include"] if matrix else [{}]
             together = set()
         for entry in entries:
-            name = filled(template, entry)
+            name = filled(entry, template)
             runs = [
                 task
                 for step in job.get("steps", [])
-                for task in invoked(filled(step.get("run", ""), entry))
+                for task in invoked(filled(entry, step.get("run", "")))
             ]
             reports.append((name, together or {name}, runs, matrix is not None))
     return reports
@@ -864,11 +895,12 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
 
 def restores(step: dict, uncached: bool = False) -> bool:
     """
-    Return whether the `step` restores a cache, directly or through a step of a
-    composite it calls from this repository by a `./` or `$/` path. A
-    `jdx/mise-action` step restores nothing when it passes `cache` as `false`,
-    or when it passes `inputs.cache` on as is or compared against `'false'` and
-    `uncached` reports that the composite's caller passed `false`.
+    Returns whether the `step` restores a cache, directly or through a step
+    of a composite it calls from this repository by a `./` or `$/` path.
+    A `jdx/mise-action` step restores nothing when it passes `cache` as
+    `false`, or when it passes `inputs.cache` on as is or compared against
+    `'false'` and `uncached` reports that the composite's caller passed
+    `false`.
     """
     cache = step.get("with", {}).get("cache", "")
     if (uses := step.get("uses", "")).startswith(("./", "$/")):
@@ -882,10 +914,11 @@ def restores(step: dict, uncached: bool = False) -> bool:
     return action in CACHING
 
 
-def rooted(entry: str, base: str) -> str:
+def rooted(base: str, entry: str) -> str:
     """
-    Return a `sources` or `outputs` entry, which mise resolves against the `base`
-    directory, as a path relative to the project root, keeping any leading `!`.
+    Returns a `sources` or `outputs` entry, which mise resolves against the
+    `base` directory, as a path relative to the project root, keeping any
+    leading `!`.
     """
     bare = entry.removeprefix("!")
     return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())
@@ -893,14 +926,14 @@ def rooted(entry: str, base: str) -> str:
 
 def scripts() -> int:
     """
-    Report every drift in the scripts under `.mise/bin`, covering a tool that
-    `mise x` run from `site/` resolves to anything but its script, a docs-site
-    script that hands its target an argument other than as given, runs a
-    target other than `site/node_modules/.bin/<tool>`, or runs past ten
-    seconds, a symlink among the scripts, a docs-site script differing byte
-    for byte from the first, and a task or library under `.mise/` that runs
-    `bunx`, `bun x`, or `npx`. Each script lands in `READ` for `filters` to
-    check.
+    Reports every drift in the scripts under `.mise/bin`, covering a tool
+    that `mise x` run from `site/` resolves to anything but its script, a
+    docs-site script that hands its target an argument other than as given,
+    runs a target other than `site/node_modules/.bin/<tool>`, or runs past
+    ten seconds, a symlink among the scripts, a docs-site script differing
+    byte for byte from the first, and a task or library under `.mise/`
+    that runs `bunx`, `bun x`, or `npx`. Each script lands in `READ` for
+    `filters` to check.
     """
     found    = list(map(Path, tracked(".mise/bin")))
     docs     = [path for path in found if path.name != "prose"]
@@ -910,8 +943,7 @@ def scripts() -> int:
     fetchers = [
         (
             f"{each!r} can fetch a tool from the registry, so run the bare tool",
-            path,
-            number
+            path, number
         )
         for path in map(Path, tracked(".mise/tasks", ".mise/lib"))
         if path.is_file() and path.resolve() != audit
@@ -920,30 +952,35 @@ def scripts() -> int:
     ]
     READ.update(path.as_posix() for path in found)
 
-    return located(fetchers) | flagged([
-        (
-            {path.as_posix() for path in found if path.is_symlink()},
-            ".mise/bin scripts that are symlinks"
-        ),
-        (
-            {path.as_posix() for path in docs if path.read_bytes() != first},
-            "docs-site scripts that differ from the first"
-        ),
-        (
-            {tool for tool in tools if shadowed(tool)},
-            "tools that `mise x` run from site/ resolves to anything but their script"
-        ),
-        (
-            {path.as_posix() for path in docs if misdirected(path)},
-            "docs-site scripts that misdirect their target or arguments or run past ten seconds"
-        )
-    ])
+    return located(fetchers) | flagged(
+        findings = [
+            (
+                {path.as_posix() for path in found if path.is_symlink()},
+                ".mise/bin scripts that are symlinks"
+            ),
+            (
+                {path.as_posix() for path in docs if path.read_bytes() != first},
+                "docs-site scripts that differ from the first"
+            ),
+            (
+                {tool for tool in tools if shadowed(tool)},
+                "tools `mise x` resolves from site/ to anything but their script"
+            ),
+            (
+                {path.as_posix() for path in docs if misdirected(path)},
+                (
+                    "docs-site scripts that misdirect their target or arguments or run "
+                    "past ten seconds"
+                )
+            )
+        ]
+    )
 
 
 def shadowed(tool: str) -> bool:
     """
-    Return whether `mise x` run from `site/` resolves `tool` to anything but its
-    script under `.mise/bin`.
+    Returns whether `mise x` run from `site/` resolves `tool` to anything
+    but its script under `.mise/bin`.
     """
     printed = run(
         ["mise", "x", "--", "sh", "-c", f"command -v {tool}"],
@@ -954,15 +991,42 @@ def shadowed(tool: str) -> bool:
     return Path(printed).resolve() != Path(".mise/bin", tool).resolve()
 
 
+def suffixes() -> int:
+    """
+    Reports every tracked file without a `.py` suffix that carries a PEP 723
+    `script` block or a shebang running `uv run --script`, since `py:lint`
+    reads only the `.py` files git tracks. Each file the check reads lands
+    in `READ` for `filters` to check.
+    """
+    texts = {
+        path: Path(path).read_text(encoding="utf-8", errors="replace")
+        for path in tracked()
+        if not path.endswith(".py") and Path(path).is_file()
+    }
+    READ.update(texts)
+
+    return flagged(
+        findings = [
+            (
+                {
+                    path for path, text in texts.items()
+                    if search(UV_SHEBANG, text) or search(SCRIPT_BLOCK, text)
+                },
+                "tracked Python scripts without a .py suffix, which py:lint never reads"
+            )
+        ]
+    )
+
+
 def table(header: str) -> list[list[str]]:
     """
-    Return the cells of each body row of the `CONTRIBUTING.md` table whose
+    Returns the cells of each body row of the `CONTRIBUTING.md` table whose
     first column is headed `header`.
     """
     body = matched(
-        f"CONTRIBUTING.md has no table headed {header}",
-        ".github/CONTRIBUTING.md",
-        rf"\| \*\*{header}\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
+        message = f"CONTRIBUTING.md has no table headed {header}",
+        path    = ".github/CONTRIBUTING.md",
+        pattern = rf"(?m)^\| \*\*{header}\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
     )
     return [
         [cell.strip() for cell in line.strip("|").split("|")]
@@ -972,20 +1036,21 @@ def table(header: str) -> list[list[str]]:
 
 def task_paths(task: str, *keys: str) -> list[str]:
     """
-    Return every path the `task` declares under `keys`, sorted and deduplicated,
-    with every `@group:` reference expanded by mise.
+    Returns every path the `task` declares under `keys`, sorted and
+    deduplicated, with every `@group:` reference expanded by mise.
     """
     spec = tasks_listed()[task]
     for key in keys:
         if not isinstance(spec.get(key), list):
             fail(f"no {key} declaration in the {task} task")
-    return sorted({rooted(entry, spec["dir"]) for key in keys for entry in spec[key]})
+    return sorted({rooted(spec["dir"], entry) for key in keys for entry in spec[key]})
 
 
 def tasks() -> int:
     """
-    Report every error `mise tasks validate` finds across the task tree, such as
-    an alias two tasks share or a dependency naming a task that does not exist.
+    Reports every error `mise tasks validate` finds across the task tree,
+    such as an alias two tasks share or a dependency naming a task that does
+    not exist.
     """
     failed = 0
     for issue in mise_json("tasks", "validate")["issues"]:
@@ -1003,45 +1068,41 @@ def tasks() -> int:
 @cache
 def tasks_listed() -> dict[str, dict]:
     """
-    Return every task `mise tasks ls --json` lists, keyed by name.
+    Returns every task `mise tasks ls --json` lists, keyed by name.
     """
     return {task["name"]: task for task in mise_json("tasks", "ls")}
 
 
 def templates() -> list[tuple[Path, dict]]:
     """
-    Return every issue template beside its parsed form, which for a Markdown
-    template is its frontmatter.
+    Returns every issue template beside its parsed form, which for a
+    Markdown template is its frontmatter.
     """
     return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
 
 
 def toml(path: str | Path) -> dict:
     """
-    Return the parsed TOML mapping at `path`.
+    Returns the parsed TOML mapping at `path`.
     """
     return loads(read(path))
 
 
 def tracked(*paths: str) -> list[str]:
     """
-    Return every file git tracks under `paths`, or every tracked file when no
-    path is given.
+    Returns every file git tracks under `paths`, or every tracked file when
+    no path is given.
     """
-    return run(
-        ["git", "ls-files", "-z", *paths],
-        capture_output = True,
-        check          = True,
-        text           = True
-    ).stdout.split("\0")[:-1]
+    return check_output(["git", "ls-files", "-z", *paths], text=True).split("\0")[:-1]
 
 
 def triggers() -> int:
     """
-    Report every wasm source path the `module.yml` push trigger omits, which
-    leaves the cached module stale after a change to that path, and every
-    project config file declaring a tool that `lock:sync` omits from its
-    sources, which leaves `mise relock` skipping a pin change in that file.
+    Reports every wasm source path the `module.yml` push trigger omits,
+    which leaves the cached module stale after a change to that path, and
+    every project config file declaring a tool that `lock:sync` omits from
+    its sources, which leaves `mise relock` skipping a pin change in that
+    file.
     """
     root     = Path.cwd().resolve()
     declared = {
@@ -1050,21 +1111,23 @@ def triggers() -> int:
         if entry["tools"]
         if (path := Path(entry["path"]).resolve()).is_relative_to(root)
     }
-    return flagged([
-        (
-            set(hashed_paths("restore-wasm")) - set(workflow_paths("module")),
-            "module.yml push paths omit the wasm sources"
-        ),
-        (
-            declared - set(task_paths("lock:sync", "sources")),
-            "lock:sync sources omit a config file declaring a tool"
-        )
-    ])
+    return flagged(
+        findings = [
+            (
+                set(hashed_paths("restore-wasm")) - set(workflow_paths("module")),
+                "module.yml push paths omit the wasm sources"
+            ),
+            (
+                declared - set(task_paths("lock:sync", "sources")),
+                "lock:sync sources omit a config file declaring a tool"
+            )
+        ]
+    )
 
 
 def workflow_paths(name: str) -> list[str]:
     """
-    Return the paths the `name` workflow's push trigger filters on.
+    Returns the paths the `name` workflow's push trigger filters on.
     """
     flow = yaml(f".github/workflows/{name}.yml")
     if (paths := flow["on"].get("push", {}).get("paths")) is None:
@@ -1074,16 +1137,16 @@ def workflow_paths(name: str) -> list[str]:
 
 def workflows() -> list[tuple[Path, dict]]:
     """
-    Return every workflow beside its parsed mapping.
+    Returns every workflow beside its parsed mapping.
     """
     return parsed(".github/workflows", "*.y*ml")
 
 
 def writes(granted: dict | str) -> bool:
     """
-    Return whether the `granted` permissions, a mapping from scope to level or
-    one level for every scope, grant write access to any scope, `id-token`
-    included.
+    Returns whether the `granted` permissions, a mapping from scope to
+    level or one level for every scope, grant write access to any scope,
+    `id-token` included.
     """
     levels = granted.values() if isinstance(granted, dict) else [granted]
     return any("write" in level for level in levels)
@@ -1091,8 +1154,8 @@ def writes(granted: dict | str) -> bool:
 
 def yaml(path: str | Path) -> dict:
     """
-    Return the first YAML document in the file at `path`, every scalar in it
-    read as a string, which for a Markdown file is its frontmatter.
+    Returns the first YAML document in the file at `path`, every scalar in
+    it read as a string, which for a Markdown file is its frontmatter.
     """
     return next(load_all(read(path), Loader=BaseLoader))
 
@@ -1110,5 +1173,6 @@ if __name__ == "__main__":
         | checks()
         | tasks()
         | scripts()
+        | suffixes()
         | filters()
     )
