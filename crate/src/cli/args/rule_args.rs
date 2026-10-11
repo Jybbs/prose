@@ -14,7 +14,11 @@ pub(crate) struct CheckArgs {
 
     /// Files or directories to check, or `-` to read source from
     /// stdin. Omit when using `--stdin`.
-    #[arg(conflicts_with = "stdin", value_name = "PATH")]
+    #[arg(
+        conflicts_with = "stdin",
+        required_unless_present = "stdin",
+        value_name = "PATH"
+    )]
     pub(crate) paths: Vec<PathBuf>,
 
     /// Confirm each file's would-be rewrite re-parses, surfacing an
@@ -34,7 +38,11 @@ pub(crate) struct FormatArgs {
 
     /// Files or directories to format, or `-` to read source from
     /// stdin. Omit when using `--stdin`.
-    #[arg(conflicts_with = "stdin", value_name = "PATH")]
+    #[arg(
+        conflicts_with = "stdin",
+        required_unless_present = "stdin",
+        value_name = "PATH"
+    )]
     pub(crate) paths: Vec<PathBuf>,
 }
 

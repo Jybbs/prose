@@ -47,7 +47,14 @@ Each yielded entry passes through `PySourceType::try_from_path` *(from `ruff_pyt
 - `.pyw` Windows windowed-Python source
 - `.ipynb` Jupyter notebook
 
-Any other extension is skipped, and a file with no extension is skipped too, because `PySourceType` reports no match for it. A file named `script` therefore stays out of the walk even when it contains Python source, since the walker never reads file contents. A symlink whose name carries one of the accepted extensions is not followed, because following it would reach a file outside the tree the caller named, and the CLI prints a note on stderr naming each symlink it passed over.
+Any other extension is skipped, and a file with no extension is skipped too, because `PySourceType` reports no match for it. A file named `script` beneath a named directory therefore stays out of the walk even when it contains Python source, since the walker never reads file contents. Naming that file on the command line fails the run instead, exiting `4` as a named path that does not exist does, while the other named paths still run.
+
+```console
+$ prose check script
+error: cannot check `script`, which is not a `.py`, `.pyi`, `.pyw`, or `.ipynb` file
+```
+
+A symlink the walk meets beneath a named directory is not followed when its name carries one of the accepted extensions, because following it would reach a file outside the tree the caller named, and the CLI prints a note on stderr naming each symlink it passed over. A symlink named on the command line is followed, so its own name decides whether its target is formatted or the run fails, and one that resolves to a directory is walked as that directory.
 
 Extension matching compares the extension string exactly, so `Foo.PY` is skipped on every filesystem, a case-insensitive macOS volume included. Yield order is the underlying `ignore::Walk` order, which is deterministic for one tree on one filesystem but not specified across filesystems, so a downstream that needs the same diagnostic order on every platform should sort the yielded paths before feeding them to the pipeline.
 
