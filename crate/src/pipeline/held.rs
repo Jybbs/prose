@@ -5,9 +5,11 @@ use std::cell::OnceCell;
 
 use ruff_diagnostics::Edit;
 use ruff_source_file::OneIndexed;
+use ruff_text_size::{Ranged, TextRange};
 
 use super::batch::Spliceable;
 use crate::{
+    primitives::edit::forward_range,
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -49,20 +51,34 @@ impl<'a> Held<'a> {
         &self.silenced
     }
 
-    /// True where removing the skip directive at `index` of the
-    /// source's skips changes the edits a rule it names makes anywhere
-    /// in the source. A held row an aligner drops changes the column its
-    /// neighbors pad to, so an edit outside the directive's span counts.
+    /// True where deleting the skip directive at `index` of the source's
+    /// skips changes the edits a rule it names makes anywhere in the
+    /// source, each edit read at the offset the deletion moves it to. A
+    /// held row an aligner drops changes the column its neighbors pad
+    /// to, so an edit outside the directive's span counts, and a source
+    /// whose deletion does not parse counts as held.
     pub(crate) fn skip_holds(&self, index: usize) -> bool {
         let (_, skip) = &self.source.suppression_map().skips()[index];
-        let without = self.source.without_skip(index);
+        let Some((without, map)) = self.source.deleting(&skip.skip_removal(self.source.text()))
+        else {
+            return true;
+        };
         self.rules
             .iter()
             .zip(&self.altering)
             .filter(|(rule, _)| skip.named.entry.matches(rule.id()))
             .any(|(rule, altering)| {
-                *altering.get_or_init(|| Spliceable::altering(&**rule, self.source))
-                    != Spliceable::altering(&**rule, &without)
+                let moved: Option<Vec<(TextRange, Option<&str>)>> = altering
+                    .get_or_init(|| Spliceable::altering(&**rule, self.source))
+                    .iter()
+                    .map(|edit| Some((forward_range(edit.range(), &map)?, edit.content())))
+                    .collect();
+                let after = Spliceable::altering(&**rule, &without);
+                moved.is_none_or(|moved| {
+                    !moved
+                        .into_iter()
+                        .eq(after.iter().map(|edit| (edit.range(), edit.content())))
+                })
             })
     }
 

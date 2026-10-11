@@ -60,6 +60,16 @@ fn a_finding_closes_on_its_ignore_only_under_a_skip_with_no_ignore(
     assert_matches!(lints.as_slice(), [lint] if lint.message == expected);
 }
 
+#[rstest]
+#[case::comment_beside_a_neighbors_note("connect(host)  # fmt: skip\nvalue = 1  # note\n", false)]
+#[case::note_kept_beside_the_skip("value = 1  # note  # fmt: skip\nlong_name = 2  # other\n", true)]
+fn a_skip_is_judged_with_its_comment_gone(#[case] src: &str, #[case] holds: bool) {
+    let source = parse(src);
+    let rules: Vec<Box<dyn Rule>> = vec![Box::new(AlignComments::from_config(&Config::default()))];
+
+    assert_eq!(held(&source, &rules).skip_holds(0), holds);
+}
+
 #[test]
 fn selects_reads_the_rules_the_run_carries() {
     let source = parse("x = 1\n");

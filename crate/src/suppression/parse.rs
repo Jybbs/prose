@@ -5,6 +5,7 @@
 use itertools::{Either, Itertools};
 use memchr::memchr;
 use ruff_python_trivia::{PythonWhitespace, SuppressionKind};
+use ruff_text_size::{TextLen, TextRange, TextSize};
 
 use super::directive::{Named, RuleEntry};
 use crate::rules::RuleId;
@@ -15,6 +16,28 @@ pub(super) struct Directives {
     pub(super) ignore: Option<Named>,
     pub(super) region: Option<SuppressionKind>,
     pub(super) skip: Option<Named>,
+}
+
+/// Each `#` chunk of `comment`, its range within the comment with its
+/// trailing whitespace left out, beside whether it is a skip directive.
+/// A `#` opening nothing but whitespace joins the chunk after it, so
+/// `## prose: skip` reads as one chunk.
+pub(super) fn chunks(comment: &str) -> Vec<(TextRange, bool)> {
+    let mut chunks = Vec::new();
+    let mut opened = None;
+    let mut at = TextSize::default();
+    let mut bodies = comment.split('#').skip(1).peekable();
+    while let Some(body) = bodies.next() {
+        let start = *opened.get_or_insert(at);
+        at += '#'.text_len() + body.text_len();
+        if body.trim_whitespace().is_empty() && bodies.peek().is_some() {
+            continue;
+        }
+        let chunk = comment[TextRange::new(start, at)].trim_whitespace_end();
+        chunks.push((TextRange::at(start, chunk.text_len()), is_skip(chunk)));
+        opened = None;
+    }
+    chunks
 }
 
 /// Parses `comment` once for the three directive slots. Each `#` chunk
@@ -68,6 +91,17 @@ pub(crate) fn is_directive_comment(comment: &str) -> bool {
 /// holding a dict, a dunder list, or a class body in the order written.
 pub(crate) fn is_keep_marker(comment: &str) -> bool {
     prose_bodies(comment).any(|body| body == "keep")
+}
+
+/// True when the `#` chunk `chunk` is a `# prose: skip`, a
+/// `# prose: skip[<id>]`, or a `# fmt: skip`.
+fn is_skip(chunk: &str) -> bool {
+    after_prose_prefix(chunk.trim_start_matches('#'))
+        .is_some_and(|body| parse_entry(body, "skip").is_some())
+        || matches!(
+            SuppressionKind::from_comment(chunk),
+            Some(SuppressionKind::Skip)
+        )
 }
 
 /// Strips the leading `prose:` marker from `after_hash` and returns

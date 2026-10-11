@@ -222,14 +222,6 @@ impl SuppressionMap {
                 span.ordering(range).is_eq() && skip.named.entry.matches(rule)
             })
     }
-
-    /// This map with the skip directive at `index` of [`Self::skips`]
-    /// removed, every other directive and region left as it stands.
-    pub(crate) fn without_skip(&self, index: usize) -> Self {
-        let mut map = self.clone();
-        map.skips.remove(index);
-        map.indexed()
-    }
 }
 
 /// The offset an unmatched `# prose: off` opened at `start` closes at,

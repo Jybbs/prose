@@ -42,9 +42,7 @@ For code inside the *Prose* crate, the map exposes a constructor and a set of pr
 10. `skipped<R: Ranged>(ranged: R) -> bool` returns true when the span of a skip directive overlaps the range, whatever rules it names, which is the check the lint filter reads before closing a finding's message on the `# prose: ignore[<rule>]` that silences it.
 11. `skips() -> &[(TextRange, Directive)]` lists every skip directive beside the span it suppresses, in source order.
 12. `suppresses<R: Ranged>(ranged: R, rule: RuleId) -> bool` returns true when the given range overlaps a `# prose: off` region, a bare `# prose: skip` span, or a `# prose: skip[<rule>]` span naming the rule, which is the check the rewrite filter reads.
-13. `without_skip(index: usize) -> Self` returns the map with the skip at that position of `skips()` removed. [[source]]'s own `without_skip` builds a copy of the source around it, so the [[inert-directives]] audit runs a rule with that one directive gone.
-
-Each directive the map records is a `Directive`, holding the comment that carries it and the rules its chunks name, beside every bracketed id among them that names no registered rule, as written.
+Each directive the map records is a `Directive`, holding the comment that carries it and the rules its chunks name, beside every bracketed id among them that names no registered rule, as written. Its `skip_removal(source_text: &str) -> Vec<TextRange>` returns the ranges whose deletion removes the directive's skip chunks, taking the whole comment and the whitespace before it where the comment holds nothing else, so the [[inert-directives]] audit runs a rule over a copy of the source with that one directive gone.
 
 The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. Every entry point above opens at `1.0`.
 

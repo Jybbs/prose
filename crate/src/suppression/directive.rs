@@ -3,9 +3,12 @@
 //! the directive the suppression map keeps beside the comment carrying
 //! it.
 
-use ruff_text_size::{Ranged, TextRange};
+use ruff_python_trivia::PythonWhitespace;
+use ruff_source_file::LineRanges;
+use ruff_text_size::{Ranged, TextLen, TextRange};
 use rustc_hash::FxHashSet;
 
+use super::parse::chunks;
 use crate::rules::RuleId;
 
 /// One comment's `skip` or `ignore` directive, the rules its chunks
@@ -14,6 +17,40 @@ use crate::rules::RuleId;
 pub(crate) struct Directive {
     pub(super) comment: TextRange,
     pub(crate) named: Named,
+}
+
+impl Directive {
+    /// The ranges of `source_text` whose deletion removes this
+    /// directive's skip chunks, sorted and disjoint. A comment holding
+    /// nothing but skip chunks goes whole with the whitespace before it,
+    /// or with its line where it stands on a line of its own, whereas a
+    /// run of skip chunks beside another chunk goes with the whitespace
+    /// separating the two.
+    pub(crate) fn skip_removal(&self, source_text: &str) -> Vec<TextRange> {
+        let chunks = chunks(&source_text[self.comment]);
+        if chunks.iter().all(|&(_, skip)| skip) {
+            let line = source_text.full_line_range(self.comment.start());
+            let lead = &source_text[TextRange::new(line.start(), self.comment.start())];
+            if lead.trim_whitespace().is_empty() {
+                return vec![line];
+            }
+            let code_end = line.start() + lead.trim_whitespace_end().text_len();
+            return vec![TextRange::new(code_end, self.comment.end())];
+        }
+        let runs: Vec<&[(TextRange, bool)]> = chunks.chunk_by(|a, b| a.1 == b.1).collect();
+        let end_of = |run: &[(TextRange, bool)]| run[run.len() - 1].0.end();
+        runs.iter()
+            .enumerate()
+            .filter(|(_, run)| run[0].1)
+            .map(|(index, run)| {
+                let removed = match index.checked_sub(1) {
+                    Some(before) => TextRange::new(end_of(runs[before]), end_of(run)),
+                    None => TextRange::new(run[0].0.start(), runs[1][0].0.start()),
+                };
+                removed + self.comment.start()
+            })
+            .collect()
+    }
 }
 
 impl Ranged for Directive {

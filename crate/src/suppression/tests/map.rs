@@ -327,6 +327,30 @@ fn skip_on_a_wrapped_statement_reaches_its_opening_line() {
     );
 }
 
+#[rstest]
+#[case::trailing_skip_alone("x = 1  # fmt: skip\ny = 2\n", "x = 1\ny = 2\n")]
+#[case::own_line_skip("x = 1\n# prose: skip\ny = 2\n", "x = 1\ny = 2\n")]
+#[case::doubled_hash("x = 1  ## prose: skip\n", "x = 1\n")]
+#[case::skip_before_a_note("x = 1  # fmt: skip  # noqa: E501\n", "x = 1  # noqa: E501\n")]
+#[case::skip_after_a_note(
+    "x = 1  # noqa: E501  # prose: skip[align-equals]\n",
+    "x = 1  # noqa: E501\n"
+)]
+#[case::skip_between_notes("x = 1  # a  # fmt: skip  # prose: skip  # b\n", "x = 1  # a  # b\n")]
+fn skip_removal_deletes_the_skip_chunks_and_the_space_around_them(
+    #[case] src: &str,
+    #[case] expected: &str,
+) {
+    let source = parse(src);
+    let [(_, skip)] = source.suppression_map().skips() else {
+        panic!("one skip directive");
+    };
+    let (without, _) = source
+        .deleting(&skip.skip_removal(source.text()))
+        .expect("the shortened source parses");
+    assert_eq!(without.text(), expected);
+}
+
 #[test]
 fn skip_span_opens_at_the_statement_below_a_comment_gap() {
     let source = parse("a = 1\n\n# note\nz = (\n    x\n)  # fmt: skip\n");
@@ -427,13 +451,4 @@ fn whitespace_tolerant_canonical_and_compact_forms_parse_identically(#[case] rul
         compact_map.is_lint_suppressed_at(line(0), rule),
     );
     assert!(canonical_map.is_lint_suppressed_at(line(0), rule));
-}
-
-#[test]
-fn without_skip_drops_that_directive_alone() {
-    let source = parse("x = 1  # prose: skip\ny = 2  # prose: skip[align-equals]\n");
-    let map = source.suppression_map().without_skip(0);
-    assert!(!map.suppresses(at(source.text(), "x = 1"), AlignEquals::SLUG));
-    assert!(map.suppresses(at(source.text(), "y = 2"), AlignEquals::SLUG));
-    assert_eq!(map.skips().len(), 1);
 }
