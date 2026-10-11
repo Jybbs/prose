@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inert_directives/widest_row_skip_holds_its_neighbors/input.py
+---
+host = "localhost"
+timeout_seconds = 30  # fmt: skip
+
+connect(host, timeout_seconds)  # fmt: skip

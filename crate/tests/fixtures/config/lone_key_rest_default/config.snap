@@ -236,6 +236,9 @@ Config {
             enabled: true,
             suggest_string_splits: true,
         },
+        inert_directives: ToggleOnly {
+            enabled: true,
+        },
     },
     target_version: Some(
         PythonVersion {

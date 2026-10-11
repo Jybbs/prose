@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/unknown_id_beside_a_known_one/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 81,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 1
+    },
+    "message": "`signature-annotation` in this `ignore` names no rule"
+  }
+]

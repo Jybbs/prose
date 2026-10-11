@@ -673,6 +673,19 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
             "enabled": true
           }
         },
+        "inert-directives": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/ToggleOnly"
+            }
+          ],
+          "default": {
+            "enabled": true
+          }
+        },
         "inlinable-bindings": {
           "anyOf": [
             {
@@ -1240,6 +1253,9 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
           "enabled": true
         },
         "group-imports": {
+          "enabled": true
+        },
+        "inert-directives": {
           "enabled": true
         },
         "inlinable-bindings": {

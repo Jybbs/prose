@@ -23,6 +23,6 @@ input_file: crate/tests/fixtures/suppression/skip_pins_a_wrapped_collection/inpu
       "column": 1,
       "row": 1
     },
-    "message": "Module constant `items` is not SCREAMING_CASE"
+    "message": "Module constant `items` is not SCREAMING_CASE. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[miscased-constants]` on its line"
   }
 ]

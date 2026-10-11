@@ -304,6 +304,15 @@ impl Source {
     pub fn tokens(&self) -> &Tokens {
         &self.tokens
     }
+
+    /// A copy of this source whose suppression index drops the skip
+    /// directive at `index` of its skips, leaving every rule that reads
+    /// the copy to act as though that one directive were gone.
+    pub(crate) fn without_skip(&self, index: usize) -> Self {
+        let mut copy = self.clone();
+        copy.suppression = Box::new(self.suppression.without_skip(index));
+        copy
+    }
 }
 
 /// Clones the text, tree, tokens, and comment indexes, leaving each

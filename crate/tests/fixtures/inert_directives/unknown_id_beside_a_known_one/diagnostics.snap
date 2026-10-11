@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/unknown_id_beside_a_known_one/input.py
+---
+inert-directives@20..80

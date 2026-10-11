@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/reports_on_an_ignore_stand_outside_its_reach/input.py
+---
+inert-directives@114..142
+inert-directives@154..169
+inert-directives@69..102

@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/widest_row_skip_holds_its_neighbors/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 44,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 33,
+      "row": 4
+    },
+    "message": "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"
+  }
+]

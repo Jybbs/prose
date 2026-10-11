@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/suppression/fmt_skip_widens_a_listed_skip/input.py
+---
+host            = "localhost"
+port = 8080  # prose: skip[strip-trailing-commas]  # fmt: skip
+timeout_seconds = 30

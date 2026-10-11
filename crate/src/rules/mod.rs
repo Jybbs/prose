@@ -21,6 +21,7 @@ pub(crate) mod bare_imports;
 pub(crate) mod expand_docstrings;
 pub(crate) mod frame_docstrings;
 pub(crate) mod group_imports;
+pub(crate) mod inert_directives;
 pub(crate) mod inlinable_bindings;
 pub(crate) mod line_overflow;
 pub(crate) mod miscased_constants;

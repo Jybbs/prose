@@ -20,7 +20,7 @@ use crate::{
         ReflowSignaturesConfig, StackMethodChainsConfig, ToggleOnly, rule_schema,
     },
     diagnostics::Diagnostic,
-    pipeline::Pipeline,
+    pipeline::{Held, Pipeline},
     rules::{
         align_colons::AlignColons, align_comments::AlignComments,
         align_comparisons::AlignComparisons, align_equals::AlignEquals,
@@ -28,8 +28,9 @@ use crate::{
         alphabetize_siblings::AlphabetizeSiblings, band_constants::BandConstants,
         bare_imports::BareImports, expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings, group_imports::GroupImports,
-        inlinable_bindings::InlinableBindings, line_overflow::LineOverflow,
-        miscased_constants::MiscasedConstants, modernize_annotations::ModernizeAnnotations,
+        inert_directives::InertDirectives, inlinable_bindings::InlinableBindings,
+        line_overflow::LineOverflow, miscased_constants::MiscasedConstants,
+        modernize_annotations::ModernizeAnnotations,
         normalize_comment_spacing::NormalizeCommentSpacing,
         normalize_comparisons::NormalizeComparisons, normalize_literals::NormalizeLiterals,
         prefer_fstring::PreferFstring, prune_inert_imports::PruneInertImports,
@@ -66,6 +67,16 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     /// all groups must not overlap after sorting. The pipeline's
     /// applicator skips an overlapping group.
     fn apply(&self, _source: &Source) -> Vec<Vec<Edit>> {
+        Vec::new()
+    }
+
+    /// Reports what the run's suppression directives held out of it,
+    /// read off `held` once every rule's lint diagnostics have passed
+    /// the suppression filter. The pipeline adds the returned
+    /// diagnostics as they stand, so the method applies whatever
+    /// suppression its own findings take. The default returns no
+    /// diagnostics.
+    fn audit(&self, _held: &Held<'_>) -> Vec<Diagnostic> {
         Vec::new()
     }
 
@@ -344,6 +355,7 @@ register_rules! {
     "signature-annotations":        signature_annotations:        ToggleOnly                 => SignatureAnnotations       => [] => [],
     "restated-types":               restated_types:               ToggleOnly                 => RestatedTypes              => ["frame-docstrings", "expand-docstrings", "wrap-docstrings"] => [],
     "line-overflow":                line_overflow:                LineOverflowConfig         => LineOverflow               => ["strip-stranded-padding", "normalize-comment-spacing", "align-comments"] => [],
+    "inert-directives":             inert_directives:             ToggleOnly                 => InertDirectives            => [] => [],
 }
 
 /// The slugs the rule named `slug` must run behind, empty for a rule

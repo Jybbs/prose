@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `# fmt: skip` Widens a Listed Skip on Its Comment"
+
+description = '''
+`port`'s comment carries `# prose: skip[strip-trailing-commas]` and then `# fmt: skip`. **The `# fmt: skip` widens the listed skip to every rule**, exactly as a bare `# prose: skip` would, so `align-equals` leaves `port`'s row as written and pads `host` to `timeout_seconds`'s column around it.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Report on an Ignore Stands Outside Its Reach"
+
+description = '''
+No other rule runs, so each `# fmt: skip` holds nothing out. On `limit`, the `ignore[inert-directives]` beside the skip silences the report on it and so holds something out, leaving that line quiet. On `width`, the same ignore stands alone and holds nothing, and **its own report stays**, since a report on an `ignore` sits outside that directive's reach. On `count`, the bare `ignore` silences the report on its skip and is reported naming `inert-directives`, whereas the bare `ignore` on `depth` silences nothing and is reported as holding nothing out.
+'''

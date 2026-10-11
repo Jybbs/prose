@@ -26,6 +26,7 @@ bare-imports                 = { allow = ["scipy", "torch"], enabled = false, ex
 expand-docstrings            = false
 frame-docstrings             = false
 group-imports                = false
+inert-directives             = false
 inlinable-bindings           = { allow-pattern = "tmp_*", enabled = false }
 line-overflow                = { enabled = false, suggest-string-splits = false }
 miscased-constants           = { allow-pattern = "_*", enabled = false }

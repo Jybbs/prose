@@ -55,9 +55,9 @@ foo = 1  # prose: skip[align-equals]
 bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 ```
 
-A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list is ignored, and two bracketed directives on one line combine their lists.
+A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list holds nothing out and [[inert-directives]] reports it, and two bracketed directives on one line combine their lists.
 
-A skip reaches the rewrite rules only, so a lint finding on the statement still prints, and silencing it takes a `# prose: ignore` beside the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
+A skip reaches the rewrite rules only, so a lint finding on the statement still prints, its message closing on the `# prose: ignore[<rule>]` that silences it. That directive sits on the line the finding starts on, which for a wrapped statement is its first line rather than the line carrying the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
 A skipped statement and every statement inside an exempt region hold their slots when a rule reorders the body around them. [[alphabetize-siblings]] sorts the classes and functions around a skipped statement past it and the imports above and below it as two separate runs. A region's `# prose: off` and `# prose: on` lines stay where they stand and divide the body, so the siblings on each side of a region sort as runs of their own. [[group-imports]] groups the imports on either side of a skipped statement or a region apart, and the rewrites inside a class or function holding an exempt line still reach every other line of it.
 
@@ -71,7 +71,7 @@ TIMEOUT = 30             # prose: ignore[reassigned-constants, inlinable-binding
 helper = build_helper()  # prose: ignore
 ```
 
-A bare `# prose: ignore` silences every lint rule on the line. A bracketed list names the rules.
+A bare `# prose: ignore` silences every lint rule on the line. A bracketed list names the rules. [[inert-directives]] reports an `ignore` that silences nothing, and a bare one that does silence findings beside the slugs it silences, so it can be narrowed to them.
 
 ## Construct Order Preservation
 
@@ -117,7 +117,7 @@ Every expression and every nested scope inside the body still sorts, and so does
 
 ## Composition
 
-One line can carry a block marker, `# fmt: skip` or `# prose: skip` directives, `# prose: ignore[...]` directives, and `# prose: keep` together. *Prose* parses each on its own, so they combine in any order. A bare `# prose: ignore` *(no bracket list)* widens any `# prose: ignore[<rule>]` on the same line so every lint on the line is silenced, and a bare `# prose: skip` widens a bracketed `# prose: skip[<rule>]` the same way for rewrites. Two bracketed directives of the same family on one line combine their slugs:
+One line can carry a block marker, `# fmt: skip` or `# prose: skip` directives, `# prose: ignore[...]` directives, and `# prose: keep` together. *Prose* parses each on its own, so they combine in any order. A bare `# prose: ignore` *(no bracket list)* widens any `# prose: ignore[<rule>]` on the same line so every lint on the line is silenced, and a bare `# prose: skip` or a `# fmt: skip` widens a bracketed `# prose: skip[<rule>]` the same way for rewrites. Two bracketed directives of the same family on one line combine their slugs:
 
 ```python
 # fmt: off
@@ -146,6 +146,6 @@ A `# prose: off` at the end of a statement *(such as `x = 1  # prose: off`)* is 
 
 ## Composition With `--select` / `--ignore`
 
-Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report.
+Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report, and [[inert-directives]] spares the directive rather than reporting it, since a run that selects the rule needs it.
 
 The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, and the [**Suppression**](/usage/suppression) chapter covers when to reach for each directive.

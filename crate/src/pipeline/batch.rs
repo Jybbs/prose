@@ -143,6 +143,17 @@ impl Spliceable {
         Some(Self { edits, groups })
     }
 
+    /// The edits among `rule`'s surviving fix groups over `source` that
+    /// change the text they cover, sorted, and empty where no group
+    /// survives.
+    pub(super) fn altering(rule: &dyn Rule, source: &Source) -> Vec<Edit> {
+        Self::of(rule, source)
+            .into_iter()
+            .flat_map(|spliceable| spliceable.edits)
+            .filter(|edit| alters(edit, source))
+            .collect()
+    }
+
     /// True where no two of the edits overlap, the overlap the weave
     /// declines.
     pub(super) fn lands(&self) -> bool {
@@ -151,9 +162,7 @@ impl Spliceable {
 
     /// True where any edit changes the text it covers in `source`.
     pub(super) fn rewrites(&self, source: &Source) -> bool {
-        self.edits
-            .iter()
-            .any(|edit| edit.content().unwrap_or_default() != source.slice(edit))
+        self.edits.iter().any(|edit| alters(edit, source))
     }
 
     /// The text the edits weave into `source`.
@@ -162,12 +171,9 @@ impl Spliceable {
     }
 }
 
-/// The source `entry`'s buffer parses to, the entry a rejected splice
-/// replays its members against one at a time. That buffer parsed when
-/// the batch opened on it, so this parse holds.
-fn rebuilt((file, source_type): (SourceFile, PySourceType)) -> Source {
-    Source::build_module(file.source_text().to_owned(), file.name(), source_type)
-        .expect("invariant: the buffer a batch opened on parses")
+/// True where `edit` changes the text it covers in `source`.
+fn alters(edit: &Edit, source: &Source) -> bool {
+    edit.content().unwrap_or_default() != source.slice(edit)
 }
 
 /// True where an edit in `sorted` starts before the one ahead of it
@@ -178,6 +184,14 @@ fn overlapping<'e>(sorted: impl IntoIterator<Item = &'e Edit>) -> bool {
         .into_iter()
         .tuple_windows()
         .any(|(held, next)| next.start() < held.end())
+}
+
+/// The source `entry`'s buffer parses to, the entry a rejected splice
+/// replays its members against one at a time. That buffer parsed when
+/// the batch opened on it, so this parse holds.
+fn rebuilt((file, source_type): (SourceFile, PySourceType)) -> Source {
+    Source::build_module(file.source_text().to_owned(), file.name(), source_type)
+        .expect("invariant: the buffer a batch opened on parses")
 }
 
 /// Splices the sorted, non-overlapping `edits` into `source`, returning
