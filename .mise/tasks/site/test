@@ -4,4 +4,4 @@
 #MISE dir         = "site"
 #MISE sources     = ["@group:crate", "@group:site"]
 
-bunx vitest run --project docs "$@"
+vitest run --project docs "$@"

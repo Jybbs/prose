@@ -14,6 +14,7 @@ on:
       - .github/ISSUE_TEMPLATE/**
       - .github/actions/**
       - .github/workflows/deploy.yml
+      - .mise/bin/**
       - .mise/config.toml
       - .mise/mise.lock
       - .mise/lib/**
@@ -28,6 +29,7 @@ on:
     paths:
       - .github/actions/**
       - .github/workflows/deploy.yml
+      - .mise/bin/**
       - .mise/config.toml
       - .mise/mise.lock
       - .mise/lib/**

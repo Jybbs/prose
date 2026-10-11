@@ -1,8 +1,10 @@
 min_version = "2026.9.18"
 
 [env]
+_.path = { path = ".mise/bin", tools = true }
 _.python.venv = { path = "crate/.venv", create = true }
 NODE_COMPILE_CACHE = "{{config_root}}/.cache/node"
+PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 
 [settings]
@@ -37,12 +39,12 @@ manifests = [
   "wasm/Cargo.toml"
 ]
 site      = [
+  ".mise/bin/**",
   ".mise/config.toml",
   "site/**/*",
   "!site/.vitepress/.temp/**/*",
   "!site/.vitepress/dist/**/*",
   "!site/.vitepress/tests/wasm/pkg/**/*",
-  "!site/coverage/**/*",
   "!site/node_modules/**/*"
 ]
 wasm      = [

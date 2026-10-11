@@ -2,4 +2,4 @@
 #MISE description = "Smoke-install the built wheel offline and run its binary"
 
 uv tool install --find-links=dist --no-index prose-formatter
-prose --version
+"$(uv tool dir --bin --color never)/prose" --version
