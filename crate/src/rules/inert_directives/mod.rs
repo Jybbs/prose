@@ -90,7 +90,7 @@ impl InertDirectives {
         if judged(&skip.named, held) && !held.skip_holds(index) {
             reports.push(self.report(
                 skip,
-                "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged",
+                "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it",
             ));
         }
         reports
@@ -189,7 +189,7 @@ mod tests {
     )]
     #[case::empty_skip(
         "x = 1  # prose: skip[]\n",
-        "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"
+        "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
     )]
     #[case::repeated_unknown_id(
         "x = 1  # prose: ignore[typo, typo]\n",
@@ -232,7 +232,23 @@ mod tests {
 
         assert_eq!(
             messages(&source, &[AlignEquals::SLUG]),
-            ["This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"],
+            [
+                "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
+            ],
+        );
+    }
+
+    #[test]
+    fn reports_follow_source_order_across_skips_and_ignores() {
+        let source = parse("x = 1  # prose: ignore[no-such-rule]\ny = 2  # prose: skip[]\n");
+
+        assert_eq!(
+            messages(&source, &[]),
+            [
+                "`no-such-rule` in this `ignore` names no rule",
+                "This `skip` holds no rewrite out, so every rule it names rewrites the same code \
+                 without it",
+            ],
         );
     }
 }

@@ -38,8 +38,9 @@ pub(crate) use parse::{is_directive_comment, is_keep_marker};
 /// to the `ignore` directives. `closes` holds the line start of each
 /// `# prose: on` that closes a region, and `listed` the position in
 /// `skips` of each skip naming its rules. Span queries run in O(log n)
-/// against `spans` and `skip_spans`, O(n) against the listed skips and
-/// `closes`, and O(log n) per line against `ignores`.
+/// against `spans` and `skip_spans`, O(n) against the listed skips,
+/// every skip for `skipped`, and `closes`, and O(log n) per line
+/// against `ignores`.
 #[derive(Clone, Debug)]
 pub(crate) struct SuppressionMap {
     closes: Vec<TextSize>,

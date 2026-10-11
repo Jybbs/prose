@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inert_directives/listed_ids_for_deselected_rule
       "column": 19,
       "row": 8
     },
-    "message": "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"
+    "message": "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
   }
 ]

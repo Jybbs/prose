@@ -15,7 +15,7 @@ input_file: crate/tests/fixtures/inert_directives/each_inert_kind_reported/input
       "column": 32,
       "row": 1
     },
-    "message": "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"
+    "message": "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
   },
   {
     "code": "inert-directives",

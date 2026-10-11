@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/inert_directives/widest_row_skip_holds_its_neig
       "column": 33,
       "row": 4
     },
-    "message": "This `skip` holds no rewrite out, so removing it leaves the rewrite unchanged"
+    "message": "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
   }
 ]

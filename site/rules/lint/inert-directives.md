@@ -10,7 +10,7 @@ layout  : doc
 
 `inert-directives` reports a `skip` or `ignore` directive that holds nothing out of the run checking it, so a reader of the source can tell which directives still do their job. A directive goes on holding nothing once the code it covered changes or a rule it names is renamed, and one written in the family that does not reach its rule, such as a `skip` meant to silence a lint, never held anything. Each report names the directive and the reason it holds nothing, covering:
 
-- A `skip` whose removal leaves every rule it names making the same edits, reading `# fmt: skip` as a bare `skip`. A skip on one row of an alignment run counts as holding something even where its own row would stay as written, because an aligning rule pads the other rows around a held row and pads them to a different column once it is gone
+- A `skip` whose removal leaves every rule it names making the same edits, reading `# fmt: skip` as a bare `skip`. A skip on one row of an alignment run still holds something where its own row would stay as written, as long as removing it moves the column an aligning rule pads the other rows to
 - An `ignore` whose line carries no finding of a rule it names
 - A bracketed id naming no registered rule, such as a misspelled or retired slug, once per id
 
