@@ -9,8 +9,9 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { canonicalUrl }                               from './lib/config/canonical-url'
-import { pageHead }                                   from './lib/config/head'
+import { describePage, pageHead }                     from './lib/config/head'
 import { injectFixtures }                             from './lib/config/inject-fixtures'
+import { TOUCH_ICON_PATH }                            from './lib/config/og-url'
 import { ROBOTS_TXT }                                 from './lib/config/robots'
 import { buildSidebar }                               from './lib/config/sidebar'
 import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin'
@@ -22,6 +23,7 @@ import { glossaryPlugin }                             from './lib/glossary/plugi
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
+import { ICON_SIZE }                                  from './lib/og/render/parts'
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
@@ -75,9 +77,14 @@ export default defineConfig({
   description   : constants.SITE_TAGLINE,
   head: [
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
+    ['link', {
+      href  : `/${TOUCH_ICON_PATH}`,
+      rel   : 'apple-touch-icon',
+      sizes : `${ICON_SIZE}x${ICON_SIZE}`
+    }],
     ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
-    ['meta', { content: 'Prose',                   property: 'og:site_name'  }],
+    ['meta', { content: constants.SITE_NAME,       property: 'og:site_name'  }],
     ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
   lastUpdated   : true,
@@ -109,12 +116,12 @@ export default defineConfig({
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
     sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, paths.siteDir(import.meta.url)),
-    siteTitle : 'Prose',
+    siteTitle : constants.SITE_NAME,
     socialLinks: [
       { icon: 'github', link: constants.REPO_URL }
     ]
   },
-  title         : 'Prose',
+  title         : constants.SITE_NAME,
   titleTemplate : ':title · Prose',
   async buildEnd(siteConfig) {
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
@@ -134,10 +141,7 @@ export default defineConfig({
       'link',
       { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
-    const fallback = pageData.frontmatter.caption ?? pageData.frontmatter.summary
-    if (!pageData.description && typeof fallback === 'string') {
-      pageData.description = fallback
-    }
+    describePage(pageData)
     injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
     injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
     await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
