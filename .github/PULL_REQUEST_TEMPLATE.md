@@ -6,7 +6,7 @@ Copy the issue's labels, assignee, and milestone into the sidebar, since GitHub 
 
 Add a `### ☕ Implementation Notes` section, set off by its own `---` divider, above Related Issues only for a point a reviewer needs that no Key Changes bullet can carry. Most pull requests ship without one.
 
-`CONTRIBUTING.md` carries the full conventions for the title, the sidebar fields, and each section below. -->
+The contributor guide at `.github/CONTRIBUTING.md` carries the full conventions for the title, the sidebar fields, and each section below. -->
 
 ### 🪻 Quick Summary
 

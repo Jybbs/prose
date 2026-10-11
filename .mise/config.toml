@@ -8,10 +8,9 @@ PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 WASM_ARTIFACT = "target/wasm32-unknown-unknown/wasm-release/prose_wasm.wasm"
 
 [settings]
-auto_install                        = false
-experimental                        = true
-idiomatic_version_file_enable_tools = ["node"]
-lockfile_platforms                  = [
+auto_install       = false
+experimental       = true
+lockfile_platforms = [
   "linux-arm64",
   "linux-x64",
   "macos-arm64",
@@ -32,7 +31,6 @@ crate     = [
 ]
 manifests = [
   ".mise/config.toml",
-  ".nvmrc",
   "Cargo.toml",
   "corpus/Cargo.toml",
   "crate/Cargo.toml",
@@ -43,7 +41,6 @@ manifests = [
 site      = [
   ".mise/bin/**",
   ".mise/config.toml",
-  ".nvmrc",
   "site/**/*",
   "!site/.vitepress/.temp/**/*",
   "!site/.vitepress/dist/**/*",
@@ -81,6 +78,7 @@ bun                                = "1.4.2"
 "github:sharkdp/hyperfine"         = { version = "1.20.0", lazy = true, lazy_bins = ["hyperfine"] }
 "github:wasm-bindgen/wasm-bindgen" = { version = "0.2.128", os = ["linux", "macos", "windows/x64"] }
 maturin                            = "1.15.0"
+node                               = "26.10.0"
 python                             = "3.14.6"
 rust                               = { version = "1.98.1", components = "clippy, rustfmt", profile = "minimal", targets = "wasm32-unknown-unknown" }
 uv                                 = "0.12.17"
