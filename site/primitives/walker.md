@@ -54,9 +54,9 @@ $ prose check script
 error: cannot check `script`, which is not a `.py`, `.pyi`, `.pyw`, or `.ipynb` file
 ```
 
-A symlink the walk meets beneath a named directory is not followed when its name carries one of the accepted extensions, because following it would reach a file outside the tree the caller named, and the CLI prints a note on stderr naming each symlink it passed over. A symlink named on the command line is followed, so its own name decides whether its target is formatted or the run fails, and one that resolves to a directory is walked as that directory.
+A symlink the walk meets beneath a named directory is never followed, because following it could reach a file outside the tree the caller named, and the CLI prints a note on stderr naming each one it passed over whose name carries one of the accepted extensions. A symlink named on the command line is followed, so its own name decides whether its target is formatted or the run fails, and one that resolves to a directory is walked as that directory.
 
-Extension matching compares the extension string exactly, so `Foo.PY` is skipped on every filesystem, a case-insensitive macOS volume included. Yield order is the underlying `ignore::Walk` order, which is deterministic for one tree on one filesystem but not specified across filesystems, so a downstream that needs the same diagnostic order on every platform should sort the yielded paths before feeding them to the pipeline.
+Extension matching compares the extension string exactly, so on every filesystem, a case-insensitive macOS volume included, `Foo.PY` is skipped beneath a named directory and fails the run when named. Yield order is the underlying `ignore::Walk` order, which is deterministic for one tree on one filesystem but not specified across filesystems, so a downstream that needs the same diagnostic order on every platform should sort the yielded paths before feeding them to the pipeline.
 
 ## Parallel Execution
 
