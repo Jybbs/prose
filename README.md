@@ -69,10 +69,13 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 
 ```bash
 git clone https://github.com/Jybbs/prose.git
+mise trust prose
+mise -C prose install
 cd prose
-mise install
 mise doctor project
 ```
+
+Once mise's shell hook has put `.mise/bin` on the path, a bare `prose` inside the checkout runs the checkout's own build rather than an installed release.
 
 `mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks a change from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the commit, to the pull request and the checks that run on it.
 
