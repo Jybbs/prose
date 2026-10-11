@@ -71,6 +71,7 @@ from yaml        import AnchorToken, BaseLoader, load_all, scan
 CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
+ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\r": "%0D", "\n": "%0A"})
 READ: set[str] = set()
 
 
@@ -103,13 +104,17 @@ def action_pins() -> list[tuple[str, str, str]]:
     ]
 
 
-def annotate(message: str, **location) -> None:
+def annotate(message: str, level: str = "error", **location) -> None:
     """
-    Emit a GitHub Actions error annotation, locating it to a file and line
-    when `location` is given.
+    Prints the workflow command raising a `level` annotation for `message`,
+    located to a file and line when `location` is given. Each `%`, carriage
+    return, and newline in the message is escaped the way `@actions/core`
+    escapes a command's message, which the runner reverses when it reads the
+    annotation.
     """
-    props = ",".join(f"{key}={value}" for key, value in location.items())
-    print(f"::error {props}::{message}" if props else f"::error::{message}")
+    props   = ",".join(f"{key}={value}" for key, value in location.items())
+    escaped = message.translate(ESCAPES)
+    print(f"::{level} {props}::{escaped}" if props else f"::{level}::{escaped}")
 
 
 def badge(svg: str) -> str:
@@ -984,19 +989,18 @@ def task_paths(task: str, *keys: str) -> list[str]:
 
 def tasks() -> int:
     """
-    Report every error `mise tasks validate` finds across the task tree, such as
-    an alias two tasks share or a dependency naming a task that does not exist.
+    Reports every issue `mise tasks validate` finds across the task tree, such
+    as an alias two tasks share or a dependency naming a task that does not
+    exist, as an annotation at the issue's own severity. Returns 1 when any
+    issue is an error.
     """
     failed = 0
     for issue in mise_json("tasks", "validate")["issues"]:
         message = f"{issue['task']}: {issue['message']}"
         if details := issue.get("details"):
             message = f"{message} ({details})"
-        if issue["severity"] == "error":
-            annotate(message)
-            failed = 1
-        else:
-            print(f"::warning::{message}")
+        annotate(message, level = issue["severity"])
+        failed |= issue["severity"] == "error"
     return failed
 
 

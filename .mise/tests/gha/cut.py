@@ -174,6 +174,41 @@ def test_main_stops_on_the_gh_call_that_fails(
 
 
 @mark.parametrize(
+    ("printed", "annotation"),
+    [
+        param(
+            "HTTP 422: Validation Failed (https://api.github.com/repos/owner/repo/releases)\n"
+            "Release.tag_name already exists\n",
+            "::error::HTTP 422: Validation Failed (https://api.github.com/repos/owner/repo/releases)"
+            "%0ARelease.tag_name already exists",
+            id = "newline"
+        ),
+        param("first\r\nsecond\n", "::error::first%0D%0Asecond", id = "carriage return"),
+        param("100% of %0A\n", "::error::100%25 of %250A", id = "percent")
+    ]
+)
+def test_gh_raises_every_line_of_its_stderr_in_one_annotation(
+    annotation : str,
+    cut        : ModuleType,
+    fp         : FakeProcess,
+    printed    : str
+):
+    """
+    Pins that a failed `gh` call stops the task with one `::error::` line
+    carrying all of its stderr. Each `%`, carriage return, and newline is
+    escaped the way `@actions/core` escapes a command's message, so the
+    runner restores every line in the annotation, a `%0A` that `gh` printed
+    included.
+    """
+    fp.register(CREATE, returncode=1, stderr=printed)
+
+    with raises(SystemExit) as stopped:
+        cut.gh(*CREATE[1:])
+
+    assert stopped.value.code == annotation
+
+
+@mark.parametrize(
     ("event", "calls", "state", "url"),
     [
         param("push", [PREVIOUS], "", "", id = "push"),

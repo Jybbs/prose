@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth         : 2
           persist-credentials : false
-          ref                 : main
+          ref                 : ${{ github.event_name == 'push' && github.sha || 'main' }}
 
       - name : Provision uv
         uses : $/.github/actions/provision-uv
