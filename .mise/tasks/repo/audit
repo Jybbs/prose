@@ -50,7 +50,9 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                every file the audit reads sits inside that of a workflow
                running the audit.
 
-Findings surface as `::error::` annotations naming the divergence or file.
+Findings surface as `::error::` annotations naming the divergence or file,
+whereas a warning `mise tasks validate` reports surfaces as a `::warning::`
+annotation.
 """
 
 from collections import Counter, defaultdict
@@ -72,6 +74,7 @@ CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
 ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\r": "%0D", "\n": "%0A"})
+PROPERTY_ESCAPES: dict[int, str] = ESCAPES | str.maketrans({":": "%3A", ",": "%2C"})
 READ: set[str] = set()
 
 
@@ -107,12 +110,14 @@ def action_pins() -> list[tuple[str, str, str]]:
 def annotate(message: str, level: str = "error", **location) -> None:
     """
     Prints the workflow command raising a `level` annotation for `message`,
-    located to a file and line when `location` is given. Each `%`, carriage
-    return, and newline in the message is escaped the way `@actions/core`
-    escapes a command's message, which the runner reverses when it reads the
+    located to a file and line when `location` is given. The message and each
+    location value are escaped the way `@actions/core` escapes a command's
+    message and its properties, which the runner reverses when it reads the
     annotation.
     """
-    props   = ",".join(f"{key}={value}" for key, value in location.items())
+    props   = ",".join(
+        f"{key}={str(value).translate(PROPERTY_ESCAPES)}" for key, value in location.items()
+    )
     escaped = message.translate(ESCAPES)
     print(f"::{level} {props}::{escaped}" if props else f"::{level}::{escaped}")
 

@@ -82,6 +82,7 @@ fn escape_property(text: &str) -> String {
 mod tests {
     use std::assert_matches;
 
+    use rstest::rstest;
     use ruff_source_file::SourceFileBuilder;
 
     use super::*;
@@ -134,24 +135,6 @@ mod tests {
     }
 
     #[test]
-    fn escapes_the_name_of_a_file_a_second_run_would_change() {
-        let source = parse("x = 1\n");
-        let summary = EmitterSummary {
-            unstable: vec![UnstableEntry {
-                file: "a,b.py".to_owned(),
-                rules: vec![RuleId::from("align-equals")],
-            }],
-            ..EmitterSummary::default()
-        };
-        let runs = [Run::new(source.source_file(), &[], None)];
-        let emitted = emitted_runs(&Github, &runs, &summary);
-        assert_eq!(
-            String::from_utf8(emitted).expect("utf-8"),
-            "::warning file=a%2Cb.py::prose produced output a second run would change (`align-equals`)\n",
-        );
-    }
-
-    #[test]
     fn propagates_the_error_a_failing_writer_raises() {
         let source = parse("x = 1\n");
         let diag = format_diagnostic(range(0, 1));
@@ -168,12 +151,14 @@ mod tests {
         assert_matches!(result, Err(e) if e.kind() == io::ErrorKind::BrokenPipe);
     }
 
-    #[test]
-    fn warns_for_each_file_a_second_run_would_change() {
+    #[rstest]
+    #[case::plain_name("a.py", "a.py")]
+    #[case::comma_in_name("a,b.py", "a%2Cb.py")]
+    fn warns_for_each_file_a_second_run_would_change(#[case] file: &str, #[case] shown: &str) {
         let source = parse("x = 1\n");
         let summary = EmitterSummary {
             unstable: vec![UnstableEntry {
-                file: "a.py".to_owned(),
+                file: file.to_owned(),
                 rules: vec![RuleId::from("align-colons"), RuleId::from("align-equals")],
             }],
             ..EmitterSummary::default()
@@ -182,7 +167,9 @@ mod tests {
         let emitted = emitted_runs(&Github, &runs, &summary);
         assert_eq!(
             String::from_utf8(emitted).expect("utf-8"),
-            "::warning file=a.py::prose produced output a second run would change (`align-colons`, `align-equals`)\n",
+            format!(
+                "::warning file={shown}::prose produced output a second run would change (`align-colons`, `align-equals`)\n"
+            ),
         );
     }
 }
