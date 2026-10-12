@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/miscased_constants/dunder_all_exports_pass/input.py
+---
+miscased-constants@99..106
