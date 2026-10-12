@@ -87,7 +87,7 @@ impl Rule for MiscasedConstants {
             return Vec::new();
         }
         let ctx = AliasContext::new(&source.ast().body, source.binding_analysis());
-        let surface = DunderAll::of(&source.ast().body);
+        let surface = DunderAll::of(source);
         ctx.sites()
             .iter()
             .filter(|site| self.is_miscased(site, &ctx, &surface))

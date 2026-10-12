@@ -3,16 +3,16 @@
 
 use std::slice;
 
-use ruff_python_ast::{
-    Expr, Stmt,
-    helpers::{any_over_body, any_over_expr},
-};
+use ruff_python_ast::{Expr, Stmt, helpers::any_over_expr};
 use rustc_hash::FxHashSet;
 
-use crate::primitives::{
-    binding::{module_bound_names, sequence_elts},
-    scope::sub_bodies,
-    walk::any_over_stmts,
+use crate::{
+    primitives::{
+        binding::{module_bound_names, sequence_elts},
+        scope::sub_bodies,
+        walk::any_over_stmts,
+    },
+    source::Source,
 };
 
 const DUNDER_ALL: &str = "__all__";
@@ -23,21 +23,22 @@ pub(crate) enum DunderAll<'a> {
     Listed(FxHashSet<&'a str>),
     /// The module writes `__all__` nowhere.
     Undeclared,
-    /// A write no static read settles, a method call on `__all__` anywhere
-    /// in the module, a write inside a compound statement, or a statement
-    /// other than an assignment binding the name.
+    /// A write no static read settles, an attribute read off the
+    /// module-scope `__all__` anywhere in the module, a write inside a
+    /// compound statement, or a statement other than an assignment binding
+    /// the name.
     Unreadable,
 }
 
 impl<'a> DunderAll<'a> {
-    /// Reads every statement in `body` that writes or binds `__all__` into
-    /// one surface.
-    pub(crate) fn of(body: &'a [Stmt]) -> Self {
-        if any_over_body(body, mutates_dunder_all) {
+    /// Reads every statement in `source` that writes or binds `__all__`
+    /// into one surface.
+    pub(crate) fn of(source: &'a Source) -> Self {
+        if source.binding_analysis().module_attribute_count(DUNDER_ALL) > 0 {
             return Self::Unreadable;
         }
         let mut listed: Option<FxHashSet<&str>> = None;
-        for stmt in body {
+        for stmt in &source.ast().body {
             match Write::of(stmt) {
                 Some(Write::Names(items)) => listed.get_or_insert_default().extend(items),
                 Some(Write::Unreadable) => return Self::Unreadable,
@@ -102,12 +103,6 @@ fn binds_dunder_all(stmt: &Stmt) -> bool {
     stmt.as_ann_assign_stmt()
         .is_none_or(|node| node.value.is_some())
         && module_bound_names(stmt).contains(&DUNDER_ALL)
-}
-
-fn mutates_dunder_all(expr: &Expr) -> bool {
-    expr.as_call_expr()
-        .and_then(|call| call.func.as_attribute_expr())
-        .is_some_and(|attribute| names_dunder_all(&attribute.value))
 }
 
 fn names_dunder_all(expr: &Expr) -> bool {
@@ -181,9 +176,11 @@ mod tests {
     #[case::lambda_append("__all__ = []\nregister = lambda name: __all__.append(name)\n")]
     #[case::conditional_append("__all__ = []\nif flag:\n    __all__.append(\"other\")\n")]
     #[case::function_append("__all__ = []\ndef register():\n    __all__.append(\"other\")\n")]
+    #[case::aliased_append("__all__ = []\nregister = __all__.append\nregister(\"other\")\n")]
+    #[case::function_append_above("def register():\n    __all__.append(\"other\")\n__all__ = []\n")]
     fn an_unreadable_surface_exports_every_name(#[case] src: &str) {
         let source = parse(src);
-        let surface = DunderAll::of(&source.ast().body);
+        let surface = DunderAll::of(&source);
 
         assert!(surface.declares_a_surface());
         assert!(surface.exports("anything"));
@@ -204,10 +201,7 @@ mod tests {
     ) {
         let source = parse(src);
 
-        assert_eq!(
-            DunderAll::of(&source.ast().body).declares_a_surface(),
-            expected
-        );
+        assert_eq!(DunderAll::of(&source).declares_a_surface(), expected);
     }
 
     #[rstest]
@@ -228,7 +222,7 @@ mod tests {
     #[case::no_dunder_all("value = 1\n", false)]
     fn exports_reads_the_listed_names(#[case] src: &str, #[case] expected: bool) {
         let source = parse(src);
-        let surface = DunderAll::of(&source.ast().body);
+        let surface = DunderAll::of(&source);
 
         assert_eq!(surface.exports("loads"), expected);
         assert!(!surface.exports("absent"));

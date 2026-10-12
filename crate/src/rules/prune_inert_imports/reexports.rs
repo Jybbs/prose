@@ -47,7 +47,7 @@ impl<'a> Reexports<'a> {
     pub(super) fn of(source: &'a Source) -> Self {
         Self {
             suppressed: suppresses_unused_imports(source),
-            surface: DunderAll::of(&source.ast().body),
+            surface: DunderAll::of(source),
         }
     }
 
