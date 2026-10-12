@@ -1,7 +1,12 @@
 //! The names a module lists in its module-scope `__all__`, read from
 //! every statement that writes or binds it.
 
-use ruff_python_ast::{Expr, Stmt, helpers::any_over_expr};
+use std::slice;
+
+use ruff_python_ast::{
+    Expr, Stmt,
+    helpers::{any_over_body, any_over_expr},
+};
 use rustc_hash::FxHashSet;
 
 use crate::primitives::{
@@ -18,18 +23,19 @@ pub(crate) enum DunderAll<'a> {
     Listed(FxHashSet<&'a str>),
     /// The module writes `__all__` nowhere.
     Undeclared,
-    /// A write no static read settles, a write inside a compound
-    /// statement, or a statement other than an assignment binding the
-    /// name.
+    /// A write no static read settles, a method call on `__all__` anywhere
+    /// in the module, a write inside a compound statement, or a statement
+    /// other than an assignment binding the name.
     Unreadable,
 }
 
 impl<'a> DunderAll<'a> {
     /// Reads every statement in `body` that writes or binds `__all__` into
-    /// one surface, which is `Unreadable` once a write cannot be listed
-    /// statically, sits inside a compound statement, or binds the name
-    /// other than by assignment, and `Undeclared` where none does.
+    /// one surface.
     pub(crate) fn of(body: &'a [Stmt]) -> Self {
+        if any_over_body(body, mutates_dunder_all) {
+            return Self::Unreadable;
+        }
         let mut listed: Option<FxHashSet<&str>> = None;
         for stmt in body {
             match Write::of(stmt) {
@@ -42,14 +48,10 @@ impl<'a> DunderAll<'a> {
         listed.map_or(Self::Undeclared, Self::Listed)
     }
 
-    /// True when the module writes or binds `__all__` anywhere,
-    /// whatever the write lists.
     pub(crate) fn declares_a_surface(&self) -> bool {
         !matches!(self, Self::Undeclared)
     }
 
-    /// True when `name` is listed, or when the surface is unreadable and
-    /// so holds every name.
     pub(crate) fn exports(&self, name: &str) -> bool {
         match self {
             Self::Listed(names) => names.contains(name),
@@ -67,27 +69,13 @@ enum Write<'a> {
 
 impl<'a> Write<'a> {
     /// Reads what `stmt` writes to `__all__`, `None` for a statement
-    /// leaving it alone. An assignment of string literals lists its names,
-    /// whereas an unpacking or subscript write, a method call, a `global`
-    /// declaration, and an import of `__all__` read as `Unreadable`.
+    /// leaving it alone.
     fn of(stmt: &'a Stmt) -> Option<Self> {
-        let value = match stmt {
-            Stmt::AnnAssign(node) if names_dunder_all(&node.target) => node.value.as_deref()?,
-            Stmt::Assign(node) if node.targets.iter().any(names_dunder_all) => node.value.as_ref(),
-            Stmt::Assign(node)
-                if node
-                    .targets
-                    .iter()
-                    .any(|target| any_over_expr(target, writes_dunder_all)) =>
-            {
-                return Some(Self::Unreadable);
-            }
-            Stmt::AugAssign(node) if names_dunder_all(&node.target) => node.value.as_ref(),
-            Stmt::AugAssign(node) if writes_dunder_all(&node.target) => {
-                return Some(Self::Unreadable);
-            }
-            Stmt::Expr(node) if mutates_dunder_all(&node.value) => return Some(Self::Unreadable),
-            Stmt::Global(node) if node.names.iter().any(|name| name.as_str() == DUNDER_ALL) => {
+        let (targets, value) = match stmt {
+            Stmt::AnnAssign(node) => (slice::from_ref(&*node.target), node.value.as_deref()?),
+            Stmt::Assign(node) => (node.targets.as_slice(), &*node.value),
+            Stmt::AugAssign(node) => (slice::from_ref(&*node.target), &*node.value),
+            Stmt::Global(node) if node.names.iter().any(|name| name == DUNDER_ALL) => {
                 return Some(Self::Unreadable);
             }
             Stmt::Import(_) | Stmt::ImportFrom(_) => {
@@ -97,47 +85,42 @@ impl<'a> Write<'a> {
             }
             _ => return None,
         };
-        Some(string_items(value).map_or(Self::Unreadable, Self::Names))
+        if targets.iter().any(names_dunder_all) {
+            Some(string_items(value).map_or(Self::Unreadable, Self::Names))
+        } else {
+            targets
+                .iter()
+                .any(|target| any_over_expr(target, writes_dunder_all))
+                .then_some(Self::Unreadable)
+        }
     }
 }
 
-/// True when `stmt` binds `__all__` by anything but the assignments
-/// `Write::of` reads, skipping a bare annotation, which binds nothing at
-/// run time.
+/// True when `stmt` binds `__all__`, skipping a bare annotation, which
+/// binds nothing at run time.
 fn binds_dunder_all(stmt: &Stmt) -> bool {
     stmt.as_ann_assign_stmt()
         .is_none_or(|node| node.value.is_some())
         && module_bound_names(stmt).contains(&DUNDER_ALL)
 }
 
-/// True for a call on an attribute of `__all__`, such as
-/// `__all__.append(…)`, `__all__.extend(…)`, or `__all__.remove(…)`.
-fn mutates_dunder_all(value: &Expr) -> bool {
-    value.as_call_expr().is_some_and(|call| {
-        call.func
-            .as_attribute_expr()
-            .is_some_and(|attribute| names_dunder_all(&attribute.value))
-    })
+fn mutates_dunder_all(expr: &Expr) -> bool {
+    expr.as_call_expr()
+        .and_then(|call| call.func.as_attribute_expr())
+        .is_some_and(|attribute| names_dunder_all(&attribute.value))
 }
 
-/// True when `expr` is the bare name `__all__`.
 fn names_dunder_all(expr: &Expr) -> bool {
     expr.as_name_expr()
         .is_some_and(|name| name.id == DUNDER_ALL)
 }
 
-/// True when a statement below `stmt`'s own level writes `__all__`,
-/// covering a conditional branch, a loop body, and a `def` or `class`
-/// scope alike.
 fn nested_write(stmt: &Stmt) -> bool {
     sub_bodies(stmt)
         .into_iter()
         .any(|(body, _)| any_over_stmts(body, |nested| Write::of(nested).is_some()))
 }
 
-/// Returns the string-literal items of a list or tuple display, `None`
-/// when `value` is another shape or carries an item that is not a string
-/// literal.
 fn string_items(value: &Expr) -> Option<Vec<&str>> {
     sequence_elts(value)?
         .iter()
@@ -145,8 +128,6 @@ fn string_items(value: &Expr) -> Option<Vec<&str>> {
         .collect()
 }
 
-/// True when `expr` stores into `__all__`, binding the name inside an
-/// unpacking target or writing through a subscript of it.
 fn writes_dunder_all(expr: &Expr) -> bool {
     match expr {
         Expr::Name(name) => name.ctx.is_store() && name.id == DUNDER_ALL,
@@ -194,6 +175,12 @@ mod tests {
     #[case::function_import("def setup():\n    from pkg import __all__\n")]
     #[case::annotated_walrus("names: list[str] = (__all__ := [\"other\"])\n")]
     #[case::augmented_subscript("__all__ = [\"a\"]\n__all__[0] += \"b\"\n")]
+    #[case::annotated_subscript("__all__ = [\"a\"]\n__all__[0]: str = \"other\"\n")]
+    #[case::comprehension_append("__all__ = []\n[__all__.append(name) for name in (\"other\",)]\n")]
+    #[case::assigned_append("__all__ = []\n_ = __all__.append(\"other\")\n")]
+    #[case::lambda_append("__all__ = []\nregister = lambda name: __all__.append(name)\n")]
+    #[case::conditional_append("__all__ = []\nif flag:\n    __all__.append(\"other\")\n")]
+    #[case::function_append("__all__ = []\ndef register():\n    __all__.append(\"other\")\n")]
     fn an_unreadable_surface_exports_every_name(#[case] src: &str) {
         let source = parse(src);
         let surface = DunderAll::of(&source.ast().body);
