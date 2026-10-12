@@ -1,5 +1,5 @@
-import { pageHead }                    from '../../lib/config/head'
-import { SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
+import { pageHead }                              from '../../lib/config/head'
+import { SITE_ALT, SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
 
 import type { HeadConfig, PageData } from 'vitepress'
 
@@ -57,6 +57,18 @@ describe('pageHead', () => {
     expect(content(head, 'og:description')).toBe(SITE_TAGLINE)
     expect(content(head, 'og:url')).toBeUndefined()
     expect(jsonLd(head)).toBeUndefined()
+  })
+
+  it('gives a page outside every section the landing card and its alt text', () => {
+    const data = page({
+      description  : 'd',
+      relativePath : 'prototypes/icons/index.md',
+      title        : 'Icon Family'
+    })
+    const head = pageHead(data, '0.1.0')
+    expect(content(head, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
+    expect(content(head, 'og:image:alt')).toBe(SITE_ALT)
+    expect(content(head, 'og:title')).toBe('Icon Family · Prose')
   })
 
   it('prefers the frontmatter name over the page title', () => {

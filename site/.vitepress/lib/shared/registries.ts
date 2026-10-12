@@ -55,6 +55,11 @@ export function categoryOf(family: RuleFamily): RuleCategory {
   return family === 'lint' ? 'lint' : 'auto-fix'
 }
 
+export function sectionOf(relativePath: string): SectionSlug | null {
+  const head = relativePath.split('/', 1)[0]
+  return SECTIONS.find(section => section.slug === head)?.slug ?? null
+}
+
 export const PRIMITIVE_LAYERS      = ['analysis', 'base', 'orchestration'] as const
 export const PRIMITIVE_STABILITIES = ['internal', 'public'] as const
 

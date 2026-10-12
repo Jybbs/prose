@@ -1,5 +1,6 @@
 import { CARD_HEIGHT, CARD_WIDTH } from '../og/render/parts'
 import { SITE_ALT, SITE_TAGLINE }  from '../shared/constants'
+import { sectionOf }               from '../shared/registries'
 import { canonicalUrl }            from './canonical-url'
 import { articleLd, landingLd }    from './json-ld'
 import { ogImageUrl }              from './og-url'
@@ -9,10 +10,10 @@ import type { HeadConfig, PageData } from 'vitepress'
 export function pageHead(pageData: PageData, version: string): HeadConfig[] {
   const isLanding   = pageData.relativePath === 'index.md'
   const notFound    = pageData.isNotFound === true
-  const landingCard = isLanding || notFound
+  const landingCard = notFound || sectionOf(pageData.relativePath) === null
   const description = notFound ? SITE_TAGLINE : pageData.description || SITE_TAGLINE
   const title       = pageData.frontmatter.name ?? pageData.title
-  const ogImage     = ogImageUrl(landingCard ? 'index.md' : pageData.relativePath)
+  const ogImage     = ogImageUrl(pageData.relativePath)
   const ogTitle     = isLanding   ? 'Prose'   : `${title} · Prose`
   const ogAlt       = landingCard ? SITE_ALT  : `${title} card`
   const ogType      = landingCard ? 'website' : 'article'

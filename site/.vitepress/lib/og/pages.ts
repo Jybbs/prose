@@ -11,7 +11,6 @@ import { FAMILIES, SECTIONS }                               from '../shared/pale
 import * as registries                                      from '../shared/registries'
 import { toTitleCase }                                      from '../shared/title-case'
 
-const SECTION_SLUGS = new Set<string>(registries.SECTIONS.map(section => section.slug))
 type OgKind = registries.SectionSlug
 
 export interface OgPage {
@@ -34,8 +33,7 @@ export function enumeratePages(srcDir: string, pages: readonly string[]): readon
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []
   for (const rel of pages) {
-    if (rel === 'index.md') continue
-    const kind = chapterKind(rel)
+    const kind = registries.sectionOf(rel)
     if (kind === null) continue
     out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, srcDir))
   }
@@ -102,11 +100,6 @@ function buildPage(
   }
 }
 
-function chapterKind(rel: string): OgKind | null {
-  const head = rel.split('/', 1)[0]
-  return SECTION_SLUGS.has(head) ? head as OgKind : null
-}
-
 function indexFamily(rel: string): registries.RuleFamily | undefined {
   const dir = rel.split('/').at(-2)
   return dir !== undefined && dir in registries.FAMILY_META ? dir as registries.RuleFamily : undefined
@@ -121,7 +114,7 @@ function indexTitle(rel: string, kind: OgKind): string {
 
 function pageSlug(rel: string): string {
   const stem = path.basename(rel, '.md')
-  return stem === 'index' ? path.basename(path.dirname(rel)) || 'index' : stem
+  return stem === 'index' ? path.basename(path.dirname(rel)) : stem
 }
 
 function pageTitle(srcDir: string, rel: string): string {
