@@ -52,7 +52,7 @@ Two of those markers are written in a comment rather than in code, which is wher
 
 <Fixture rule="prune_inert_imports" case="private_member_holds_its_import" />
 
-An `__all__` built from anything other than a list or tuple of string literals, written below module scope, or changed after its assignment keeps every import in that module, as does a `from … import *`. A change means an `append`, an `extend`, or a write through a subscript such as `__all__[:] = sorted(__all__)`.
+An `__all__` no static read of the file can list keeps every import in that module. That covers a value other than a list or tuple of string literals, an unpacking target, a statement other than an assignment binding the name, a write inside a compound statement such as an `if`, a `try`, or a `def`, a write through a subscript such as `__all__[:] = sorted(__all__)`, and any attribute read off it anywhere in the module, whether a call such as `__all__.append(name)` or a reference such as `register = __all__.extend`. A `from … import *` keeps its own line under `drop-unreferenced`, because the file does not say which names it binds.
 
 Two reads the reference count misses keep an import too. A `del` of the bound name needs that binding to exist, and a name read only inside a quoted type expression sits in a string literal rather than in the tree the table reads, so the rule parses each one for the names it reads. A quoted type sits in one of these positions:
 
@@ -65,7 +65,7 @@ A construct renamed on the way in still reads as the construct it names, so `fro
 
 <Fixture rule="prune_inert_imports" case="quoted_type_holds_its_import" />
 
-An import binding `__all__` itself sets the whole export surface, so it stays too, as does a name a second import rebinds from another source, which keeps the fallback in a `try: from _speedups import loads` shim in place.
+A name a second import rebinds from another source stays too, which keeps the fallback in a `try: from _speedups import loads` shim in place.
 
 A dotted import stays where the module reads its submodule through another name bound to the package, as `import multiprocessing.connection` does beside `import multiprocessing as mp` when a function reads `mp.connection`, because the dotted import is what loads the submodule even though nothing reads the `multiprocessing` name it binds.
 

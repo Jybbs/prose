@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/unreadable_dunder_all_passes/input.py
+---
+from exports import names
+
+__all__ = [*names, "extra"]
+
+project = "demo"
+retries = 3
