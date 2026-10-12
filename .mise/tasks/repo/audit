@@ -1,5 +1,6 @@
 #!/usr/bin/env -S uv run --script
 #MISE alias="audit"
+#MISE depends=["repo:test"]
 #MISE description="Audit the CI invariants no other gate covers"
 # /// script
 # requires-python = ">=3.11"
@@ -22,9 +23,9 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
     manifests  No composite action manifest carries a YAML anchor, which
                the runner rejects before any step runs.
     privileges No job holding a write permission or an OIDC token has a step
-               restoring a cache, directly or through a local composite,
-               unless the `jdx/mise-action` step passes `cache` as `false`
-               or forwards a `false` its composite's caller passed.
+               restoring a cache, directly or through a composite in this
+               repository, unless the `jdx/mise-action` step passes `cache` as
+               `false` or forwards a `false` its composite's caller passed.
     triggers   The `module.yml` push trigger covers every wasm source path
                the module cache key hashes, and the `lock:sync` sources
                cover every project config file declaring a tool.
@@ -37,6 +38,12 @@ Audit CI invariants no other gate covers, exiting nonzero if any of them fails.
                entry, and every matrix check has a row.
     tasks      Every task passes `mise tasks validate`, so no alias is shared
                and no dependency names a task that does not exist.
+    scripts    Every tool in `.mise/bin` resolves on the path from `site/` to
+               its script, none of those scripts is a symlink, each docs-site
+               script passes its arguments to `site/node_modules/.bin/<tool>`
+               as given within ten seconds and matches the first byte for
+               byte, and no task or library under `.mise/` runs `bunx`,
+               `bun x`, or `npx`.
     filters    Every tracked file sits inside the `pull_request` path filter
                of some workflow, so a pull request touching only that file
                still reports the check the `main` ruleset requires, and
@@ -50,10 +57,12 @@ from collections import Counter, defaultdict
 from functools   import cache
 from itertools   import chain, product
 from json        import loads as json_loads
-from os          import environ
+from os          import environ, killpg
 from pathlib     import Path
 from re          import MULTILINE, escape, findall, finditer, fullmatch, search, sub
-from subprocess  import run
+from signal      import SIGKILL
+from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, run
+from tempfile    import TemporaryDirectory
 from tomllib     import loads
 from typing      import NoReturn
 from yaml        import AnchorToken, BaseLoader, load_all, scan
@@ -84,7 +93,7 @@ def action_pins() -> list[tuple[str, str, str]]:
     homes = defaultdict(list)
     for path in sorted(Path(".github").rglob("*.y*ml")):
         text = read(path)
-        for match in finditer(r"uses\s*:\s*(?!\./)([\w.-]+/[\w./-]+)@(\S+)", text):
+        for match in finditer(r"uses\s*:\s*([\w.-]+/[\w./-]+)@(\S+)", text):
             homes[match[1]].append((str(path), match[2]))
 
     return [
@@ -110,7 +119,7 @@ def badge(svg: str) -> str:
     """
     return matched(
         f"no README.md badge line carries {svg!r}",
-        "README.md",
+        ".github/README.md",
         rf"{svg}.*?(\d+\.\d+)\+"
     )
 
@@ -327,8 +336,6 @@ def filters() -> int:
         if "repo:audit" in invoked(read(path)):
             audited.append(paths)
 
-    listed  = run(["git", "ls-files", "-z"], capture_output=True, check=True, text=True)
-    tracked = listed.stdout.split("\0")[:-1]
     return flagged([
         (
             {
@@ -338,8 +345,8 @@ def filters() -> int:
             message
         )
         for files, selecting, message in (
-            (tracked, every,   "no pull-request workflow fires on tracked files"),
-            (READ,    audited, "no workflow running the audit fires on files it reads"),
+            (tracked(), every,   "no pull-request workflow fires on tracked files"),
+            (READ,      audited, "no workflow running the audit fires on files it reads"),
         )
     ])
 
@@ -556,6 +563,43 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     ]
 
 
+def misdirected(script: Path) -> bool:
+    """
+    Return whether a copy of `script` in a scratch tree hands its stand-in
+    target an argument other than as given, one holding a space included,
+    runs a target other than the scratch tree's `site/node_modules/.bin/<tool>`
+    once both paths are resolved, or runs past ten seconds, the script reaching
+    its root as `.mise/bin/../..`. A copy that runs past ten seconds is killed
+    along with every process it started.
+    """
+    arguments = ["two words", "one", ""]
+    with TemporaryDirectory() as scratch:
+        copy   = Path(scratch, ".mise/bin", script.name)
+        target = Path(scratch, "site/node_modules/.bin", script.name)
+        for path, body in [
+            (copy,   script.read_bytes()),
+            (target, b"#!/bin/sh\nprintf '%s\\n' \"$0\" \"$@\"\n")
+        ]:
+            path.parent.mkdir(parents=True)
+            path.write_bytes(body)
+            path.chmod(0o755)
+        with Popen(
+            [copy, *arguments],
+            process_group = 0,
+            stderr        = DEVNULL,
+            stdin         = DEVNULL,
+            stdout        = PIPE,
+            text          = True
+        ) as process:
+            try:
+                printed = process.communicate(timeout=10)[0]
+            except TimeoutExpired:
+                killpg(process.pid, SIGKILL)
+                return True
+        ran, *received = printed.splitlines() or [""]
+        return received != arguments or Path(ran).resolve() != target.resolve()
+
+
 def mise_json(*args: str) -> dict | list:
     """
     Return the report mise prints for the `args` subcommand run with `--json`,
@@ -731,8 +775,8 @@ def privileges() -> int:
     Report every job holding a write permission or an OIDC token whose steps
     restore a cache, since a tool restored from a cache runs unchecked beside
     that job's token, locating each to the line its key opens on. A step
-    calling a local composite restores a cache when one of the composite's
-    own steps does.
+    calling a composite in this repository restores a cache when one of the
+    composite's own steps does.
     """
     return located([
         (
@@ -820,17 +864,17 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
 
 def restores(step: dict, uncached: bool = False) -> bool:
     """
-    Return whether the `step` restores a cache, directly or through a step of
-    the local composite it calls. A `jdx/mise-action` step restores nothing
-    when it passes `cache` as `false`, or when it passes `inputs.cache` on
-    as is or compared against `'false'` and `uncached` reports that the
-    composite's caller passed `false`.
+    Return whether the `step` restores a cache, directly or through a step of a
+    composite it calls from this repository by a `./` or `$/` path. A
+    `jdx/mise-action` step restores nothing when it passes `cache` as `false`,
+    or when it passes `inputs.cache` on as is or compared against `'false'` and
+    `uncached` reports that the composite's caller passed `false`.
     """
     cache = step.get("with", {}).get("cache", "")
-    if (uses := step.get("uses", "")).startswith("./"):
+    if (uses := step.get("uses", "")).startswith(("./", "$/")):
         return any(
             restores(each, cache == "false")
-            for each in yaml(f"{uses}/action.yml")["runs"].get("steps", [])
+            for each in yaml(f"{uses[2:]}/action.yml")["runs"].get("steps", [])
         )
     if (action := uses.partition("@")[0]) == "jdx/mise-action":
         forwarded = fullmatch(r"\$\{\{ inputs\.cache( != 'false')? \}\}", cache)
@@ -847,6 +891,69 @@ def rooted(entry: str, base: str) -> str:
     return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())
 
 
+def scripts() -> int:
+    """
+    Report every drift in the scripts under `.mise/bin`, covering a tool that
+    `mise x` run from `site/` resolves to anything but its script, a docs-site
+    script that hands its target an argument other than as given, runs a
+    target other than `site/node_modules/.bin/<tool>`, or runs past ten
+    seconds, a symlink among the scripts, a docs-site script differing byte
+    for byte from the first, and a task or library under `.mise/` that runs
+    `bunx`, `bun x`, or `npx`. Each script lands in `READ` for `filters` to
+    check.
+    """
+    found    = list(map(Path, tracked(".mise/bin")))
+    docs     = [path for path in found if path.name != "prose"]
+    audit    = Path(__file__).resolve()
+    first    = docs[0].read_bytes() if docs else b""
+    tools    = {"prose", *(path.name for path in found)}
+    fetchers = [
+        (
+            f"{each!r} can fetch a tool from the registry, so run the bare tool",
+            path,
+            number
+        )
+        for path in map(Path, tracked(".mise/tasks", ".mise/lib"))
+        if path.is_file() and path.resolve() != audit
+        for number, line in enumerate(read(path).splitlines(), 1)
+        for each in findall(r"\b(?:bunx|bun x|npx)\b", line)
+    ]
+    READ.update(path.as_posix() for path in found)
+
+    return located(fetchers) | flagged([
+        (
+            {path.as_posix() for path in found if path.is_symlink()},
+            ".mise/bin scripts that are symlinks"
+        ),
+        (
+            {path.as_posix() for path in docs if path.read_bytes() != first},
+            "docs-site scripts that differ from the first"
+        ),
+        (
+            {tool for tool in tools if shadowed(tool)},
+            "tools that `mise x` run from site/ resolves to anything but their script"
+        ),
+        (
+            {path.as_posix() for path in docs if misdirected(path)},
+            "docs-site scripts that misdirect their target or arguments or run past ten seconds"
+        )
+    ])
+
+
+def shadowed(tool: str) -> bool:
+    """
+    Return whether `mise x` run from `site/` resolves `tool` to anything but its
+    script under `.mise/bin`.
+    """
+    printed = run(
+        ["mise", "x", "--", "sh", "-c", f"command -v {tool}"],
+        capture_output = True,
+        cwd            = "site",
+        text           = True
+    ).stdout.strip()
+    return Path(printed).resolve() != Path(".mise/bin", tool).resolve()
+
+
 def table(header: str) -> list[list[str]]:
     """
     Return the cells of each body row of the `CONTRIBUTING.md` table whose
@@ -854,7 +961,7 @@ def table(header: str) -> list[list[str]]:
     """
     body = matched(
         f"CONTRIBUTING.md has no table headed {header}",
-        "CONTRIBUTING.md",
+        ".github/CONTRIBUTING.md",
         rf"\| \*\*{header}\*\* \|.*\n\|[-|]+\|\n((?:\|.*\|\n)+)"
     )
     return [
@@ -914,6 +1021,19 @@ def toml(path: str | Path) -> dict:
     Return the parsed TOML mapping at `path`.
     """
     return loads(read(path))
+
+
+def tracked(*paths: str) -> list[str]:
+    """
+    Return every file git tracks under `paths`, or every tracked file when no
+    path is given.
+    """
+    return run(
+        ["git", "ls-files", "-z", *paths],
+        capture_output = True,
+        check          = True,
+        text           = True
+    ).stdout.split("\0")[:-1]
 
 
 def triggers() -> int:
@@ -989,5 +1109,6 @@ if __name__ == "__main__":
         | gates()
         | checks()
         | tasks()
+        | scripts()
         | filters()
     )

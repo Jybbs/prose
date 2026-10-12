@@ -1,10 +1,10 @@
 <div align="center">
-<img src="site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
+<img src="../site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
-[![Rust](site/public/badges/rust.svg)![1.98+](https://img.shields.io/badge/1.98+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
-[![Python](site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
-[![Coverage](site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
-[![Documentation](site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
+[![Rust](../site/public/badges/rust.svg)![1.98+](https://img.shields.io/badge/1.98+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Python](../site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
+[![Coverage](../site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
+[![Documentation](../site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
 
 </div>
 
@@ -69,11 +69,14 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 
 ```bash
 git clone https://github.com/Jybbs/prose.git
+mise trust prose
+mise -C prose install
 cd prose
-mise install
 mise doctor project
 ```
 
-`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. `CONTRIBUTING.md` at the repository root walks a change from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the commit, to the pull request and the checks that run on it.
+Once mise's shell hook has put `.mise/bin` on the path, a bare `prose` inside the checkout runs the checkout's own build rather than an installed release.
+
+`mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. The contributor guide at `.github/CONTRIBUTING.md` walks a change from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the commit, to the pull request and the checks that run on it.
 
 For the architecture, the [**primitive surface**](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.

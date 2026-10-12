@@ -71,6 +71,17 @@ fn a_package_that_raises_ends_the_run_naming_the_import() {
 }
 
 #[test]
+fn a_precompiled_tree_keeps_its_bytecode_beside_each_module() {
+    let dir = tempfile::tempdir().expect("a scratch corpus");
+    fs_err::write(dir.path().join("mod.py"), "VALUE = 1\n").expect("write a corpus file");
+    let runner = Runner::new(dir.path(), interpreter());
+    assert!(
+        runner.stage.original.join("__pycache__").is_dir(),
+        "the runs read bytecode from beside the module, wherever the environment points the prefix",
+    );
+}
+
+#[test]
 fn a_signal_death_is_a_raise_rather_than_a_timeout() {
     let died = ending(ExitStatus::from_raw(11), "");
     assert_eq!(died.kind, Kind::Raised);
