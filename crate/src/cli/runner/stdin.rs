@@ -38,14 +38,13 @@ pub(super) fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     {
         if diff {
             if let Rewrite::Changed(kind) = rewrite {
-                let heading = diff_heading(present);
                 write_rewrite_diff(
                     &mut writer.into_inner(),
                     &stdin_name(filename),
                     &original,
                     kind,
                     notebook_index.as_deref(),
-                    heading,
+                    Heading::from(present),
                 )?;
             }
         } else if format.is_text() {

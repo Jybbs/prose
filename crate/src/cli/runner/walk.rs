@@ -3,6 +3,7 @@
 //! order as each lands.
 
 use std::{
+    convert,
     path::{Path, PathBuf},
     sync::mpsc,
 };
@@ -11,8 +12,7 @@ use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterato
 use ruff_python_ast::PySourceType;
 use rustc_hash::FxHashMap;
 
-use super::FileOutcome;
-use super::process::failed;
+use super::{FileOutcome, Pass, process::failed};
 use crate::{
     cli::exit_status::ExitStatus,
     walker::{self, Found},
@@ -22,7 +22,10 @@ use crate::{
 /// rendered, `None` for an entry that yields neither.
 type Landed = anyhow::Result<Option<(FileOutcome, Vec<u8>)>>;
 
-pub(super) fn process_paths<F>(paths: &[PathBuf], handle: F) -> Vec<FileOutcome>
+/// Runs `handle` over each formattable file the walk of `paths` yields,
+/// on the rayon pool, returning the outcomes in walker order. A rejected
+/// path fails with an error naming the subcommand of `pass`.
+pub(super) fn process_paths<F>(paths: &[PathBuf], pass: Pass, handle: F) -> Vec<FileOutcome>
 where
     F: Fn(&Path, PySourceType) -> FileOutcome + Send + Sync,
 {
@@ -31,14 +34,7 @@ where
     walker::walk(paths)
         .collect::<Vec<_>>()
         .into_par_iter()
-        .filter_map(|entry| match entry {
-            Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
-            Ok(Found::PassedLink(path)) => {
-                passed_link(&path);
-                None
-            }
-            Err(e) => Some(walk_error(e)),
-        })
+        .filter_map(|entry| handled(entry, pass, &handle, convert::identity))
         .collect()
 }
 
@@ -49,6 +45,7 @@ where
 /// order, the same order [`process_paths`] returns.
 pub(super) fn stream_paths<F, W>(
     paths: &[PathBuf],
+    pass: Pass,
     handle: F,
     mut write: W,
 ) -> anyhow::Result<Vec<FileOutcome>>
@@ -71,7 +68,7 @@ where
                 .into_par_iter()
                 .enumerate()
                 .for_each_with(sender, |sender, (slot, entry)| {
-                    sender.send((slot, landed(&handle, entry))).ok();
+                    sender.send((slot, landed(&handle, entry, pass))).ok();
                 });
         });
         drained = drain_in_order(&receiver, total, &mut outcomes, &mut write);
@@ -108,25 +105,52 @@ where
     Ok(())
 }
 
-/// Runs `handle` over one walk entry, reporting a passed-over symlink
-/// on stderr and turning a walk failure into its own outcome.
-fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>) -> Landed
+/// Runs `handle` over the file one walk entry names. A rejected path or
+/// a walk error fails without reaching `handle`, its outcome wrapped
+/// through `lift`, and a passed-over symlink returns `None` after a note
+/// on stderr.
+fn handled<T>(
+    entry: Result<Found, ignore::Error>,
+    pass: Pass,
+    handle: impl FnOnce(&Path, PySourceType) -> T,
+    lift: impl FnOnce(FileOutcome) -> T,
+) -> Option<T> {
+    match entry {
+        Ok(Found::Formattable(path, source_type)) => Some(handle(&path, source_type)),
+        Ok(Found::PassedLink(path)) => {
+            passed_link(&path);
+            None
+        }
+        Ok(Found::Rejected(path)) => Some(lift(rejected(&path, pass))),
+        Err(e) => Some(lift(walk_error(e))),
+    }
+}
+
+/// Runs `handle` over one walk entry, landing a failure the walk reaches
+/// without `handle` beside an empty block.
+fn landed<F>(handle: &F, entry: Result<Found, ignore::Error>, pass: Pass) -> Landed
 where
     F: Fn(&Path, PySourceType) -> anyhow::Result<(FileOutcome, Vec<u8>)>,
 {
-    match entry {
-        Ok(Found::Formattable(path, source_type)) => handle(&path, source_type).map(Some),
-        Ok(Found::PassedLink(path)) => {
-            passed_link(&path);
-            Ok(None)
-        }
-        Err(e) => Ok(Some((walk_error(e), Vec::new()))),
-    }
+    handled(entry, pass, handle, |outcome| Ok((outcome, Vec::new()))).transpose()
 }
 
 /// Reports a symlink the walk passed over.
 fn passed_link(path: &Path) {
     eprintln!("note: passed over the symlink {}", path.display());
+}
+
+/// Fails a named path the walk rejected, with an error naming the
+/// subcommand of `pass`.
+fn rejected(path: &Path, pass: Pass) -> FileOutcome {
+    failed(
+        ExitStatus::ConfigError,
+        format_args!(
+            "cannot {} `{}`, which is not a `.py`, `.pyi`, `.pyw`, or `.ipynb` file",
+            pass.subcommand(),
+            path.display(),
+        ),
+    )
 }
 
 fn walk_error<E: std::fmt::Display>(err: E) -> FileOutcome {
@@ -142,6 +166,70 @@ mod tests {
     use super::*;
     use crate::testing::formattable;
 
+    const CHECK: Pass = Pass::Diagnose { validate: false };
+
+    /// Seeds `dir` with a script and a module, returning both with the
+    /// script named first.
+    fn script_and_module(dir: &TempDir) -> [PathBuf; 2] {
+        let named = ["script", "a.py"].map(|name| dir.path().join(name));
+        for path in &named {
+            fs_err::write(path, "x = 1\n").expect("seeds the file");
+        }
+        named
+    }
+
+    /// Seeds `dir` with one module per name and returns the walk order
+    /// the driver hands them back in.
+    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
+        for name in names {
+            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
+        }
+        formattable(&[dir.path().to_path_buf()])
+    }
+
+    #[test]
+    fn process_paths_fails_a_rejected_path_and_runs_the_rest() {
+        let dir = TempDir::new().expect("a temporary directory");
+
+        let outcomes = process_paths(&script_and_module(&dir), CHECK, |_, _| {
+            FileOutcome::Failed(ExitStatus::Clean)
+        });
+
+        assert_matches!(
+            outcomes.as_slice(),
+            [
+                FileOutcome::Failed(ExitStatus::ConfigError),
+                FileOutcome::Failed(ExitStatus::Clean),
+            ]
+        );
+    }
+
+    #[test]
+    fn stream_paths_fails_a_rejected_path_without_a_block() {
+        let dir = TempDir::new().expect("a temporary directory");
+        let mut written = Vec::new();
+
+        let outcomes = stream_paths(
+            &script_and_module(&dir),
+            CHECK,
+            |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
+            |block| {
+                written.push(block.to_vec());
+                Ok(())
+            },
+        )
+        .expect("the walk streams");
+
+        assert_eq!(written, [Vec::new(), b"block".to_vec()]);
+        assert_matches!(
+            outcomes.as_slice(),
+            [
+                FileOutcome::Failed(ExitStatus::ConfigError),
+                FileOutcome::Failed(ExitStatus::Clean),
+            ]
+        );
+    }
+
     #[cfg(unix)]
     #[test]
     fn stream_paths_passes_over_a_symlink_without_a_block() {
@@ -153,6 +241,7 @@ mod tests {
 
         let outcomes = stream_paths(
             &[dir.path().to_path_buf()],
+            CHECK,
             |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), Vec::new())),
             |_| {
                 blocks += 1;
@@ -172,6 +261,7 @@ mod tests {
 
         let result = stream_paths(
             &[dir.path().to_path_buf()],
+            CHECK,
             |_, _| Ok((FileOutcome::Failed(ExitStatus::Clean), b"block".to_vec())),
             |_| Err(anyhow::anyhow!("the writer declined")),
         );
@@ -191,6 +281,7 @@ mod tests {
 
         let outcomes = stream_paths(
             &[dir.path().to_path_buf()],
+            CHECK,
             |path, _| {
                 // Holding the block the walk yields first behind every
                 // other one forces the driver to reorder rather than
@@ -219,14 +310,5 @@ mod tests {
     fn walk_error_returns_failed_with_config_error() {
         let outcome = walk_error("synthetic walk failure");
         assert_matches!(outcome, FileOutcome::Failed(ExitStatus::ConfigError));
-    }
-
-    /// Seeds `dir` with one module per name and returns the walk order
-    /// the driver hands them back in.
-    fn seeded(dir: &TempDir, names: &[&str]) -> Vec<PathBuf> {
-        for name in names {
-            fs_err::write(dir.path().join(name), "x = 1\n").expect("seeds the module");
-        }
-        formattable(&[dir.path().to_path_buf()])
     }
 }
