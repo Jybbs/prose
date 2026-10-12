@@ -27,7 +27,7 @@ This variation outlines every icon in Ube at 2 units with round caps and joins, 
 
 ## Variation 2: Duotone Nib Line
 
-This variation thins the outline to 1.5 units and cuts each free stroke end to a point. Each silhouette fills with a tint of its family's color beneath an outline in that color mixed toward the text color, and a wheel-platform icon, which belongs to no family, takes Ube. In the dark scheme, each hue darker than an OKLCH lightness of 0.72 is raised to it, so the `cli` wand's Ube Night and the `layout` basket's Toronto stay clear of the background.
+This variation thins the outline to 1.5 units and cuts each free stroke end to a point. Each silhouette fills with a tint of its family's color beneath an outline in that color mixed toward the text color, and a wheel-platform icon, which belongs to no family, takes Ube. In the dark scheme, each hue darker than an OKLCH lightness of 0.72 is raised to it, which lifts the `cli` wand's Ube Night and the `layout` basket's Toronto clear of the background and lightens the `engine` owl's Ube and the `formatting` feather's Heath.
 
 <IconSpecimen form="line" terminal="nib" tone="duotone" :weight="1.5" />
 
@@ -39,6 +39,6 @@ This variation fills every silhouette solid in Ube at 2.5 units, reverses each d
 
 ## Variation 4: Duotone Fill
 
-This variation fills each silhouette in its family's color with round caps at 2 units, then draws every stroke outside a silhouette in that color mixed toward the text color, taking the same hues as Variation 2 in both schemes, so the families tell apart by color before outline.
+This variation fills each silhouette in its family's color with round caps at 2 units, then draws every stroke outside a silhouette in that color mixed toward the text color, taking the same hues as Variation 2 in both schemes, so a reader tells the families apart by color before outline.
 
 <IconSpecimen form="fill" terminal="round" tone="duotone" :weight="2" />

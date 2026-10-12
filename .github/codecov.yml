@@ -27,4 +27,4 @@ flags:
     paths        : [crate/src]
   site:
     <<    : *flag
-    paths : [site/.vitepress]
+    paths : [site/.vitepress, site/prototypes]

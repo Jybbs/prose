@@ -16,7 +16,8 @@ export interface House {
 }
 
 // Each path is one subpath on a 24-unit grid. A shape is a silhouette, a cut
-// is a detail inside one, and a line is a stroke standing outside every shape.
+// is a detail the fill form reverses out of one, and a line is a stroke the
+// fill form draws in ink on top of the shapes.
 export interface Motif {
   cuts   : readonly string[]
   label  : string

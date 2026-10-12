@@ -13,13 +13,14 @@ import type loader from '../../lib/usage/platforms.data'
 vi.mock('../../lib/usage/platforms.data', async importOriginal =>
   ({ data: await (await importOriginal<{ default: typeof loader }>()).default.load([]) }))
 
+const basket    = emblems.EMBLEMS.get(GLOSSARY_FAMILY_META.layout.badge)!
 const newspaper = emblems.EMBLEMS.get(GLOSSARY_FAMILY_META.docs.badge)!
 
 const house = (overrides: Partial<emblems.House> = {}): emblems.House =>
   ({ form: 'line', terminal: 'round', tone: 'mono', weight: 2, ...overrides })
 
-const draw = (setting: emblems.House, standalone = false) =>
-  mount(Emblem, { props: { emblem: newspaper, house: setting, standalone } })
+const draw = (setting: emblems.House, emblem = newspaper, standalone = false) =>
+  mount(Emblem, { props: { emblem, house: setting, standalone } })
 
 const paths = (motif: emblems.Motif): readonly string[] =>
   [...motif.cuts, ...motif.lines, ...motif.shapes]
@@ -50,7 +51,7 @@ describe('isClosed', () => {
 
 describe('Emblem', () => {
   it('labels an icon standing alone with its motif', () => {
-    const svg = draw(house(), true)
+    const svg = draw(house(), newspaper, true)
     expect(svg.attributes()).toMatchObject({ 'aria-label': 'Newspaper', role: 'img' })
     expect(svg.attributes('aria-hidden')).toBeUndefined()
   })
@@ -70,10 +71,10 @@ describe('Emblem', () => {
   it.each([
     [house(),                                  { mask: 0, outline: 0, paint: 0, strokes: 6 }],
     [house({ tone: 'duotone' }),               { mask: 1, outline: 0, paint: 1, strokes: 6 }],
-    [house({ form: 'fill' }),                  { mask: 1, outline: 1, paint: 1, strokes: 0 }],
-    [house({ form: 'fill', tone: 'duotone' }), { mask: 1, outline: 1, paint: 1, strokes: 0 }]
-  ])('layers %o as %o', (setting, layers) => {
-    const svg = draw(setting)
+    [house({ form: 'fill' }),                  { mask: 1, outline: 1, paint: 1, strokes: 2 }],
+    [house({ form: 'fill', tone: 'duotone' }), { mask: 1, outline: 1, paint: 1, strokes: 2 }]
+  ])('layers the basket for %o as %o', (setting, layers) => {
+    const svg = draw(setting, basket)
     expect({
       mask    : svg.findAll('mask').length,
       outline : svg.findAll('.icon-emblem-outline').length,
@@ -101,6 +102,28 @@ describe('Emblem', () => {
     expect(marker.find('path').attributes('fill')).toBe(fill)
   })
 
+  it('reverses each cut out of the paint it masks', () => {
+    const svg  = draw(house({ form: 'fill' }))
+    const mask = svg.find('mask')
+    expect(svg.find('.icon-emblem-paint').attributes('mask')).toBe(`url(#${mask.attributes('id')})`)
+    expect(mask.find('rect').attributes('fill')).toBe('#fff')
+    expect(mask.findAll('path').map(cut => [cut.attributes('fill'), cut.attributes('stroke')]))
+      .toStrictEqual(newspaper.motif.cuts
+        .map(cut => [emblems.isClosed(cut) ? '#000' : 'none', '#000']))
+  })
+
+  it.each([
+    house(),
+    house({ form: 'fill', terminal: 'nib', tone: 'duotone', weight: 2.5 })
+  ])('sets the house style %o on the drawing', setting => {
+    expect(draw(setting).attributes()).toMatchObject({
+      'data-form'     : setting.form,
+      'data-terminal' : setting.terminal,
+      'data-tone'     : setting.tone,
+      'style'         : `stroke-width: ${setting.weight};`
+    })
+  })
+
   it('draws a round terminal with no markers', () => {
     const svg = draw(house({ tone: 'duotone' }))
     expect(svg.findAll('marker')).toHaveLength(0)
@@ -122,6 +145,13 @@ describe('IconSpecimen', () => {
     const card = specimen().findAll('.icon-specimen-card svg')
     expect(card.map(svg => [svg.attributes('role'), svg.attributes('aria-label')]))
       .toStrictEqual([...emblems.EMBLEMS.values()].map(emblem => ['img', emblem.motif.label]))
+  })
+
+  it('names each chip and sets the family whose hue it takes', () => {
+    const chips = specimen().findAll('.family-chip')
+      .map(chip => [chip.attributes('data-family'), chip.text()])
+    expect(chips).toContainEqual(['docs', 'Docs'])
+    expect(chips).toContainEqual([undefined, 'Linux'])
   })
 
   it('lists the house style it draws', () => {

@@ -49,7 +49,7 @@ export default defineConfig({
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
       reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
-      include          : ['.vitepress/lib/**'],
+      include          : ['.vitepress/lib/**', 'prototypes/**/*.{ts,vue}'],
 
       exclude: [
         '.vitepress/lib/**/*.data.ts',

@@ -10,7 +10,7 @@ import type { HeadConfig, PageData } from 'vitepress'
 export function pageHead(pageData: PageData, version: string): HeadConfig[] {
   const isLanding   = pageData.relativePath === 'index.md'
   const notFound    = pageData.isNotFound === true
-  const landingCard = notFound || sectionOf(pageData.relativePath) === null
+  const landingCard = sectionOf(pageData.relativePath) === null
   const description = notFound ? SITE_TAGLINE : pageData.description || SITE_TAGLINE
   const title       = pageData.frontmatter.name ?? pageData.title
   const ogImage     = ogImageUrl(pageData.relativePath)
