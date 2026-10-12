@@ -1,7 +1,5 @@
 """
-Pins the files and flags `py:lint` hands the checkout's `prose check`,
-and that it fails without starting `prose` when git tracks no Python file
-outside the two fixture trees.
+Pins the files and flags `py:lint` hands the checkout's `prose check`.
 """
 
 from collections.abc import Callable
@@ -53,17 +51,3 @@ def test_lint_checks_the_tracked_python_outside_the_fixture_trees(
         *flags,
         "a.py", "pkg/b.py"
     ]
-
-
-def test_lint_fails_when_git_tracks_no_python_outside_the_fixture_trees(
-    ran: Callable[..., CompletedProcess]
-):
-    """
-    Pins that the task exits nonzero with its message and starts no `prose`
-    when every tracked `.py` file sits in a fixture tree.
-    """
-    finished = ran("lint", ["notes.md", *FIXTURES])
-
-    assert finished.returncode == 1
-    assert finished.stdout == ""
-    assert finished.stderr == "git tracks no Python file outside the fixture trees\n"

@@ -12,11 +12,11 @@ version moved, or the run is a `workflow_dispatch`, reads every page
 of the repository's releases through `gh api`, then cuts a version no
 release carries with `gh release create --draft`, leaves an existing draft
 untouched, and skips a published release. A `gh` call that exits nonzero
-stops the task with an `::error::` annotation carrying what it printed on
-stderr, so no draft is cut after a failed read and a rerun retries it. Emits
-`version=`, `state=` (one of `cut`, `drafted`, `published`, or empty when
-nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is set, stdout
-otherwise, with annotations on stderr.
+stops the task with an `::error::` annotation carrying every line it printed
+on stderr, so no draft is cut after a failed read and a rerun retries it.
+Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or empty
+when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is set,
+stdout otherwise, with annotations on stderr.
 """
 
 from itertools  import chain
@@ -27,7 +27,18 @@ from subprocess import CalledProcessError, DEVNULL, PIPE, check_output
 from sys        import stderr
 from tomllib    import TOMLDecodeError, loads as from_toml
 
+ESCAPES  = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 MANIFEST = "crate/Cargo.toml"
+
+
+def annotation(level: str, message: str) -> str:
+    """
+    Returns the workflow command raising a `level` annotation for
+    `message`, with each `%`, carriage return, and newline escaped the way
+    `@actions/core` escapes a command's message, which the runner reverses
+    when it reads the annotation.
+    """
+    return f"::{level}::{message.translate(ESCAPES)}"
 
 
 def cut_draft(repo: str, version: str) -> str:
@@ -75,13 +86,14 @@ def existing_release(repo: str, version: str) -> dict | None:
 
 def gh(*args: str) -> str:
     """
-    Runs `gh` with `args` and returns what it prints, stopping the task with
-    an `::error::` annotation carrying its stderr when it exits nonzero.
+    Runs `gh` with `args` and returns what it prints, stopping the task
+    with an `::error::` annotation carrying every line of its stderr when it
+    exits nonzero.
     """
     try:
         return check_output(["gh", *args], stderr=PIPE, text=True)
     except CalledProcessError as error:
-        raise SystemExit(f"::error::{error.stderr.strip()}")
+        raise SystemExit(annotation("error", error.stderr.strip()))
 
 
 def main():
@@ -105,14 +117,20 @@ def main():
             state = "drafted"
             url   = release["html_url"]
             print(
-                f"::notice::Draft for {head} already exists, leaving it untouched.",
+                annotation(
+                    level   = "notice",
+                    message = f"Draft for {head} already exists, leaving it untouched."
+                ),
                 file = stderr
             )
         else:
             state = "published"
             url   = release["html_url"]
             print(
-                f"::warning::{head} is already published, skipping the draft cut.",
+                annotation(
+                    level   = "warning",
+                    message = f"{head} is already published, skipping the draft cut."
+                ),
                 file = stderr
             )
 

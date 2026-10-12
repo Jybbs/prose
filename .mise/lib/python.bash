@@ -13,9 +13,5 @@ python_prose() {
     fi
   done < <(git ls-files -z -- "${PYTHON_PATHSPEC[@]}")
 
-  if (( ${#sources[@]} == 0 )); then
-    echo "git tracks no Python file outside the fixture trees" >&2
-    return 1
-  fi
   prose "$subcommand" --no-cache "$@" "${sources[@]}"
 }

@@ -165,25 +165,17 @@ mod tests {
     }
 
     #[test]
-    fn check_parses_with_no_input_source() {
-        let cli = Cli::try_parse_from(["prose", "check"]).expect("parses");
-        let args = command_args!(cli, Check);
-        assert!(args.paths.is_empty());
-        assert!(!args.common.stdin);
-    }
-
-    #[test]
     fn check_parses_with_output_format_github() {
-        let cli =
-            Cli::try_parse_from(["prose", "check", "--output-format", "github"]).expect("parses");
+        let cli = Cli::try_parse_from(["prose", "check", "--output-format", "github", "."])
+            .expect("parses");
         let args = command_args!(cli, Check);
         assert_matches!(args.common.output_format, OutputFormat::Github);
     }
 
     #[test]
     fn check_parses_with_output_format_json() {
-        let cli =
-            Cli::try_parse_from(["prose", "check", "--output-format", "json"]).expect("parses");
+        let cli = Cli::try_parse_from(["prose", "check", "--output-format", "json", "."])
+            .expect("parses");
         let args = command_args!(cli, Check);
         assert_matches!(args.common.output_format, OutputFormat::Json);
     }
@@ -205,6 +197,7 @@ mod tests {
             "align-equals,align-colons",
             "--ignore",
             "alphabetize-siblings",
+            ".",
         ])
         .expect("parses");
         let args = command_args!(cli, Check);
@@ -277,10 +270,19 @@ mod tests {
 
     #[test]
     fn check_validate_defaults_off_and_parses_when_set() {
-        let off = Cli::try_parse_from(["prose", "check"]).expect("parses");
+        let off = Cli::try_parse_from(["prose", "check", "."]).expect("parses");
         assert!(!command_args!(off, Check).validate);
-        let on = Cli::try_parse_from(["prose", "check", "--validate"]).expect("parses");
+        let on = Cli::try_parse_from(["prose", "check", "--validate", "."]).expect("parses");
         assert!(command_args!(on, Check).validate);
+    }
+
+    #[rstest]
+    fn clap_error_status_routes_a_missing_path_to_config_error(
+        #[values("check", "format")] subcommand: &str,
+    ) {
+        let err = parse_err(&["prose", subcommand]);
+        assert_eq!(err.kind(), ErrorKind::MissingRequiredArgument);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
     }
 
     #[test]
@@ -292,8 +294,9 @@ mod tests {
 
     #[test]
     fn clap_error_status_routes_diff_with_non_text_format_to_config_error() {
-        let cli = Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json"])
-            .expect("parses");
+        let cli =
+            Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json", "."])
+                .expect("parses");
         let err = validate_diff_format_combination(&cli).expect("validation surfaces error");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
         assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
@@ -341,19 +344,20 @@ mod tests {
 
     #[test]
     fn color_defaults_to_auto() {
-        let cli = Cli::try_parse_from(["prose", "check"]).expect("parses");
+        let cli = Cli::try_parse_from(["prose", "check", "."]).expect("parses");
         assert_eq!(cli.color, ColorChoice::Auto);
     }
 
     #[test]
     fn color_parses_always_before_subcommand() {
-        let cli = Cli::try_parse_from(["prose", "--color", "always", "check"]).expect("parses");
+        let cli =
+            Cli::try_parse_from(["prose", "--color", "always", "check", "."]).expect("parses");
         assert_eq!(cli.color, ColorChoice::Always);
     }
 
     #[test]
     fn color_parses_never_after_subcommand() {
-        let cli = Cli::try_parse_from(["prose", "check", "--color", "never"]).expect("parses");
+        let cli = Cli::try_parse_from(["prose", "check", "--color", "never", "."]).expect("parses");
         assert_eq!(cli.color, ColorChoice::Never);
     }
 
@@ -405,6 +409,7 @@ mod tests {
             "align-equals",
             "--ignore",
             "alphabetize-siblings",
+            ".",
         ])
         .expect("parses");
         let args = command_args!(cli, Format);
@@ -438,8 +443,15 @@ mod tests {
 
     #[test]
     fn format_rejects_diff_with_output_format_github() {
-        let cli = Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "github"])
-            .expect("parses");
+        let cli = Cli::try_parse_from([
+            "prose",
+            "format",
+            "--diff",
+            "--output-format",
+            "github",
+            ".",
+        ])
+        .expect("parses");
         let err = validate_diff_format_combination(&cli)
             .expect("conflict between --diff and --output-format github fires");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
@@ -447,8 +459,9 @@ mod tests {
 
     #[test]
     fn format_rejects_diff_with_output_format_json() {
-        let cli = Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json"])
-            .expect("parses");
+        let cli =
+            Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json", "."])
+                .expect("parses");
         let err = validate_diff_format_combination(&cli)
             .expect("conflict between --diff and --output-format json fires");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);

@@ -52,7 +52,9 @@ export const SOURCES: readonly ExitCodeSource[] = [
     code   : 4,
     detail : [
       'Returned for a config-file parse error, a malformed `--select` or `--ignore` '
-      + 'flag, or an unknown CLI option.',
+      + 'flag, an unknown CLI option, or a run naming neither a path nor `--stdin`.',
+      'A named path that does not exist returns it too, as does a named file that is not a '
+      + '`.py`, `.pyi`, `.pyw`, or `.ipynb` file, and the other named paths still run.',
       'A `prose cache` subcommand returns it on a permission or filesystem failure.',
       'A malformed flag stops the whole run, whereas a broken ancestor config fails only '
       + 'the files it governs and the rest proceed.',
