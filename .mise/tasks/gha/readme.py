@@ -1,10 +1,10 @@
 #!/usr/bin/env -S uv run --script
-#MISE description="Rewrite the README's relative site/ paths to absolute raw URLs for PyPI"
+# MISE description="Rewrite the README's site/ paths to absolute raw URLs for PyPI"
 # /// script
 # requires-python = ">=3.11"
 # ///
 """
-Rewrite the README's relative `site/` paths to absolute raw URLs.
+Rewrites the README's relative `site/` paths to absolute raw URLs.
 
 Handles both Markdown link form `](../site/...)` and HTML attribute form
 `src="../site/..."`.
@@ -12,7 +12,6 @@ Handles both Markdown link form `](../site/...)` and HTML attribute form
 
 from pathlib import Path
 from re      import sub
-
 
 if __name__ == "__main__":
 

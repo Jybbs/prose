@@ -34,19 +34,16 @@ def cut(task: Callable[[str], ModuleType]) -> ModuleType:
 
 
 @fixture
-def tree(monkeypatch: MonkeyPatch, tmp_path: Path) -> Path:
+def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
     Returns a working tree whose `crate/Cargo.toml` carries version `1.2.3`
     and makes it the current directory. The environment names `owner/repo`,
     no event, and no output file, so the outputs print to stdout.
     """
-    (manifest := tmp_path / "crate/Cargo.toml").parent.mkdir()
-    manifest.write_text(MANIFEST.format("1.2.3"), encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-    return tmp_path
+    return workdir({"crate/Cargo.toml": MANIFEST.format("1.2.3")})
 
 
 def release(tag: str, draft: bool = False) -> dict:
@@ -177,13 +174,19 @@ def test_main_stops_on_the_gh_call_that_fails(
     ("printed", "annotation"),
     [
         param(
-            "HTTP 422: Validation Failed (https://api.github.com/repos/owner/repo/releases)\n"
+            "HTTP 422: Validation Failed "
+            "(https://api.github.com/repos/owner/repo/releases)\n"
             "Release.tag_name already exists\n",
-            "::error::HTTP 422: Validation Failed (https://api.github.com/repos/owner/repo/releases)"
+            "::error::HTTP 422: Validation Failed "
+            "(https://api.github.com/repos/owner/repo/releases)"
             "%0ARelease.tag_name already exists",
             id = "newline"
         ),
-        param("first\r\nsecond\n", "::error::first%0D%0Asecond", id = "carriage return"),
+        param(
+            "first\r\nsecond\n",
+            "::error::first%0D%0Asecond",
+            id = "carriage return"
+        ),
         param("100% of %0A\n", "::error::100%25 of %250A", id = "percent")
     ]
 )

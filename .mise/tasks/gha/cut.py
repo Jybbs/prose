@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --script
-#MISE description="Cut a draft release when the crate version moves, emitting version, state, and URL"
+# MISE description="Cut a draft release when the crate version moves"
 # /// script
 # requires-python = ">=3.11"
 # ///
@@ -8,16 +8,15 @@ Cuts a draft release when `crate/Cargo.toml`'s version moves.
 
 Reads `[package].version` at HEAD and HEAD~1, treating a HEAD~1 that
 lacks the manifest or carries no parseable version as changed. When the
-version moved, or the run is a `workflow_dispatch`, reads every page of
-the repository's releases through `gh api`, then cuts a version no release
-carries with `gh release create --draft`, leaves an existing draft
+version moved, or the run is a `workflow_dispatch`, reads every page
+of the repository's releases through `gh api`, then cuts a version no
+release carries with `gh release create --draft`, leaves an existing draft
 untouched, and skips a published release. A `gh` call that exits nonzero
-stops the task with an `::error::` annotation carrying every line it
-printed on stderr, so no draft is cut after a failed read and a rerun
-retries it. Emits `version=`, `state=` (one of `cut`, `drafted`,
-`published`, or empty when nothing happened), and `url=` to
-`$GITHUB_OUTPUT` when it is set, stdout otherwise, with annotations on
-stderr.
+stops the task with an `::error::` annotation carrying every line it printed
+on stderr, so no draft is cut after a failed read and a rerun retries it.
+Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or empty
+when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is set,
+stdout otherwise, with annotations on stderr.
 """
 
 from itertools  import chain
@@ -28,14 +27,14 @@ from subprocess import CalledProcessError, DEVNULL, PIPE, check_output
 from sys        import stderr
 from tomllib    import TOMLDecodeError, loads as from_toml
 
-ESCAPES  = str.maketrans({"%": "%25", "\r": "%0D", "\n": "%0A"})
+ESCAPES  = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 MANIFEST = "crate/Cargo.toml"
 
 
 def annotation(level: str, message: str) -> str:
     """
-    Returns the workflow command raising a `level` annotation for `message`,
-    with each `%`, carriage return, and newline escaped the way
+    Returns the workflow command raising a `level` annotation for
+    `message`, with each `%`, carriage return, and newline escaped the way
     `@actions/core` escapes a command's message, which the runner reverses
     when it reads the annotation.
     """
@@ -47,8 +46,15 @@ def cut_draft(repo: str, version: str) -> str:
     Creates a draft release for the version and returns its URL.
     """
     return gh(
-        "release", "create", version, "--repo", repo,
-        "--target", "main", "--generate-notes", "--draft"
+        "release",
+        "create",
+        version,
+        "--repo",
+        repo,
+        "--target",
+        "main",
+        "--generate-notes",
+        "--draft"
     ).strip()
 
 
@@ -80,9 +86,9 @@ def existing_release(repo: str, version: str) -> dict | None:
 
 def gh(*args: str) -> str:
     """
-    Runs `gh` with `args` and returns what it prints, stopping the task with
-    an `::error::` annotation carrying every line of its stderr when it exits
-    nonzero.
+    Runs `gh` with `args` and returns what it prints, stopping the task
+    with an `::error::` annotation carrying every line of its stderr when it
+    exits nonzero.
     """
     try:
         return check_output(["gh", *args], stderr=PIPE, text=True)
@@ -95,13 +101,12 @@ def main():
     Compares the version at HEAD with HEAD~1, cuts or reports the version's
     release when it moved or the run was dispatched, and emits the outputs.
     """
-    head    = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
-    changed = previous_version() != head
-    forced  = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    state   = ""
-    url     = ""
+    head   = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
+    forced = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    state  = ""
+    url    = ""
 
-    if changed or forced:
+    if previous_version() != head or forced:
         repo    = environ["GITHUB_REPOSITORY"]
         release = existing_release(repo, head)
 
@@ -111,11 +116,23 @@ def main():
         elif release["draft"]:
             state = "drafted"
             url   = release["html_url"]
-            print(annotation("notice", f"Draft for {head} already exists, leaving it untouched."), file = stderr)
+            print(
+                annotation(
+                    level   = "notice",
+                    message = f"Draft for {head} already exists, leaving it untouched."
+                ),
+                file = stderr
+            )
         else:
             state = "published"
             url   = release["html_url"]
-            print(annotation("warning", f"{head} is already published, skipping the draft cut."), file = stderr)
+            print(
+                annotation(
+                    level   = "warning",
+                    message = f"{head} is already published, skipping the draft cut."
+                ),
+                file = stderr
+            )
 
     emit(state=state, url=url, version=head)
 

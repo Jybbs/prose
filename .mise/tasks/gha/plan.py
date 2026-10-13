@@ -1,0 +1,216 @@
+#!/usr/bin/env -S uv run --script
+# MISE description="Emit the matrix for the wheel build or the corpus subset probe"
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["pyyaml==6.0.3"]
+# ///
+"""
+Plans a workflow run, emitting the matrix its jobs fan out over.
+
+Bare, plans a wheel run. On a tag run, exits nonzero with an
+`::error::` unless `crate/Cargo.toml` carries the tag's version. Reads
+`.github/scripts/platforms.toml`, keeps the entries that carry a `runner`
+(every wheel row does, the sdist row does not), drops the fields no matrix
+row consumes (`label`, `pattern`, `smoke`), and emits `matrix=<json>`
+plus `smoke=wheels-<name>`, naming the artifact the release validate job
+installs.
+
+With `corpus`, plans the subset probe. Reads `GITHUB_EVENT_NAME`, plus
+`PARENT` on a pull request alone. The full probe is one row per rule
+family, each row carrying that family's rules. Every event other than a
+pull request runs it, and so does a pull request whose watched changes reach
+outside a registered rule's module. When every watched change sits under
+`crate/src/rules/<module>/` instead, the probe narrows to one row per family
+those rules belong to, scoped through `PROSE_SETTLE_RULES`. A row is named
+by its family's badge and label, read off the docs site's `FAMILY_META`,
+with membership read off the rule pages under `site/rules/<family>/`.
+
+Lines land in `$GITHUB_OUTPUT` when it is set, stdout otherwise.
+"""
+
+from fnmatch    import fnmatch
+from json       import dumps
+from os         import environ
+from pathlib    import Path
+from re         import MULTILINE, finditer
+from subprocess import check_output, run
+from sys        import argv
+from tomllib    import loads
+from yaml       import BaseLoader, load
+
+
+def badges() -> dict[str, tuple[str, str]]:
+    """
+    Maps each family to its badge and label, read off `FAMILY_META` in the
+    docs site's shared registry.
+    """
+    entry = (
+        r"^\s*(?P<family>\w+)\s*:\s*"
+        r"\{ badge: '(?P<badge>[^']+)', label: '(?P<label>[^']+)'"
+    )
+    path = Path("site/.vitepress/lib/shared/registries.ts")
+    return {
+        match["family"]: (match["badge"], match["label"])
+        for match in finditer(entry, path.read_text(encoding="utf-8"), MULTILINE)
+    }
+
+
+def changed() -> list[str]:
+    """
+    Returns the paths the checked-out merge changes against `PARENT` on a
+    pull request, and none on any other event.
+    """
+    if environ.get("GITHUB_EVENT_NAME") != "pull_request":
+        return []
+
+    parent = environ["PARENT"]
+    run(["git", "fetch", "--depth=1", "-q", "origin", parent], check=True)
+    listed = check_output(["git", "diff", "--name-only", parent, "HEAD"], text=True)
+    return listed.splitlines()
+
+
+def corpus():
+    """
+    Emits the subset probe's matrix, one row per rule family, scoped to
+    the rules a pull request touches or carrying the whole family. A run
+    carrying whole families partitions the rules, so each row claims the
+    pairs its own family opens, the row holding the first rule declaring
+    `PRESERVES_TREE` claims the run of every such rule together, and nothing
+    is probed twice.
+    """
+    slugs   = scoped(changed())
+    meta    = badges()
+    catalog = families()
+    rows    = []
+
+    if unnamed := catalog.keys() - meta.keys():
+        raise SystemExit(
+            f"::error::FAMILY_META carries no badge for {', '.join(sorted(unnamed))}"
+        )
+
+    for family, members in catalog.items():
+        held = [slug for slug in members if slug in slugs] if slugs else members
+        if held:
+            badge, label = meta[family]
+            rows.append(
+                {
+                    "label" : f"{badge} Subsets · {label}",
+                    "pairs" : "touching" if slugs else "owned",
+                    "rules" : " ".join(held)
+                }
+            )
+    emit(matrix(rows))
+
+
+def emit(*lines: str):
+    """
+    Appends `lines` to `$GITHUB_OUTPUT`, or prints them when it is unset.
+    """
+    if path := environ.get("GITHUB_OUTPUT"):
+        with open(path, "a", encoding="utf-8") as f:
+            print(*lines, file=f, sep="\n")
+    else:
+        print(*lines, sep="\n")
+
+
+def families() -> dict[str, list[str]]:
+    """
+    Maps each rule family to its registered slugs, read off the rule pages
+    under `site/rules/<family>/`, failing on a registered rule no page
+    places.
+    """
+    known = set(registry().values())
+    pages = {
+        d.name: sorted(p.stem for p in d.glob("*.md") if p.stem in known)
+        for d in sorted(Path("site/rules").iterdir()) if d.is_dir()
+    }
+    if unplaced := known - {slug for slugs in pages.values() for slug in slugs}:
+        raise SystemExit(
+            "::error::no page under site/rules/<family>/ places "
+            f"{', '.join(sorted(unplaced))}"
+        )
+    return {family: slugs for family, slugs in pages.items() if slugs}
+
+
+def matrix(rows: list[dict]) -> str:
+    """
+    Encodes `rows` as the `matrix=<json>` line a workflow fans out over.
+    """
+    return f"matrix={dumps({'include': rows}, ensure_ascii=False)}"
+
+
+def registry() -> dict[str, str]:
+    """
+    Maps each rule module directory to its slug, the directory's name with
+    `_` read as `-`.
+    """
+    return {
+        d.name: d.name.replace("_", "-")
+        for d in Path("crate/src/rules").iterdir() if d.is_dir()
+    }
+
+
+def scoped(paths: list[str]) -> list[str]:
+    """
+    Returns the slugs of the rule modules `paths` touch, empty when a path
+    the corpus workflow watches sits outside a registered rule's module.
+    """
+    globs   = watched()
+    modules = registry()
+    slugs   = set()
+    for path in paths:
+        if not any(fnmatch(path, glob) for glob in globs):
+            continue
+        match path.split("/"):
+            case ["crate", "src", "rules", module, _, *_] if module in modules:
+                slugs.add(modules[module])
+            case _: return []
+    return sorted(slugs)
+
+
+def verify_tag():
+    """
+    Exits nonzero when a tag run's `crate/Cargo.toml` disagrees with the
+    tag.
+    """
+    if environ.get("GITHUB_REF_TYPE") != "tag":
+        return
+
+    expected = environ["GITHUB_REF_NAME"]
+    actual   = loads(Path("crate/Cargo.toml").read_text())["package"]["version"]
+
+    if actual != expected:
+        raise SystemExit(
+            f"::error::crate/Cargo.toml version mismatch: "
+            f"expected {expected}, got {actual}"
+        )
+
+
+def watched() -> list[str]:
+    """
+    Returns the path globs the corpus workflow's pull-request trigger
+    filters on.
+    """
+    text = Path(".github/workflows/corpus.yml").read_text(encoding="utf-8")
+    return load(text, Loader=BaseLoader)["on"]["pull_request"]["paths"]
+
+
+def wheels():
+    """
+    Verifies a tagged release and emits the wheel build matrix.
+    """
+    verify_tag()
+
+    platforms = loads(Path(".github/scripts/platforms.toml").read_text())["platforms"]
+    include   = [
+        {k: v for k, v in p.items() if k not in {"label", "pattern", "smoke"}}
+        for p in platforms if "runner" in p
+    ]
+    smoke = next(p["name"] for p in platforms if p.get("smoke"))
+
+    emit(matrix(include), f"smoke=wheels-{smoke}")
+
+
+if __name__ == "__main__":
+
+    corpus() if argv[1:] == ["corpus"] else wheels()
