@@ -17,8 +17,8 @@ use crate::{
     diagnostics::{Severity, fired_rules},
     primitives::edit::singleton_groups,
     rules::{
-        align_colons::AlignColons, align_equals::AlignEquals,
-        alphabetize_siblings::AlphabetizeSiblings,
+        align_colons::AlignColons, align_comments::AlignComments, align_equals::AlignEquals,
+        alphabetize_siblings::AlphabetizeSiblings, signature_annotations::SignatureAnnotations,
     },
     testing::{
         FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, at, breaks_compile,
@@ -31,6 +31,7 @@ mod as_written;
 mod batch;
 mod carry;
 mod diagnose;
+mod held;
 mod keep;
 mod registry;
 mod run;

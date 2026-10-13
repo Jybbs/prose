@@ -1,0 +1,46 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/reports_on_an_ignore_stand_outside_its_reach/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 45,
+      "row": 2
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 2
+    },
+    "message": "This `ignore` holds no finding out, so removing it leaves the findings unchanged"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 40,
+      "row": 3
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 3
+    },
+    "message": "This bare `ignore` silences `inert-directives` here, so `# prose: ignore[inert-directives]` holds out the same finding"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 27,
+      "row": 4
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 4
+    },
+    "message": "This `ignore` holds no finding out, so removing it leaves the findings unchanged"
+  }
+]

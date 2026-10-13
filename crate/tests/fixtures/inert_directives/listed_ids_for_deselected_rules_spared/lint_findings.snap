@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/listed_ids_for_deselected_rules_spared/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 46,
+      "row": 8
+    },
+    "fix": null,
+    "location": {
+      "column": 19,
+      "row": 8
+    },
+    "message": "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
+  }
+]

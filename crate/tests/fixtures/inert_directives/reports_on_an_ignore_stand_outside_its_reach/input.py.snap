@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inert_directives/reports_on_an_ignore_stand_outside_its_reach/input.py
+---
+limit = 3  # fmt: skip  # prose: ignore[inert-directives]
+width = 4  # prose: ignore[inert-directives]
+count = 6  # fmt: skip  # prose: ignore
+depth = 5  # prose: ignore

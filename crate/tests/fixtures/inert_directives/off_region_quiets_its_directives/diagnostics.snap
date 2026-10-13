@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/off_region_quiets_its_directives/input.py
+---
+inert-directives@96..125

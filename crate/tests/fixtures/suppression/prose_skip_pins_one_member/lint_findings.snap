@@ -65,7 +65,7 @@ input_file: crate/tests/fixtures/suppression/prose_skip_pins_one_member/input.py
       "column": 1,
       "row": 4
     },
-    "message": "Module constant `short` is not SCREAMING_CASE"
+    "message": "Module constant `short` is not SCREAMING_CASE. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[miscased-constants]` on its line"
   },
   {
     "code": "miscased-constants",

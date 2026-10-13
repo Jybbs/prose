@@ -78,8 +78,8 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Exempt the logical line it ends from every rewrite.',
-    effect  : 'Every auto-fix rule skips the logical line the directive ends. Add '
-            + '`[<rule>, ...]` to narrow it to the named rules. Lint findings still report.',
+    effect  : 'Every auto-fix rule skips the logical line the directive ends. Lint findings '
+            + 'still report, each naming the `# prose: ignore[<rule>]` that silences it.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip',
     form    : '# fmt: skip',
     id      : 'fmt-skip',

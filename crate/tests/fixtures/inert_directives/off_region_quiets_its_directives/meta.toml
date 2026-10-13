@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Directives Inside an Off Region Go Unreported"
+
+description = '''
+The `# fmt: off` region silences every lint across its lines, so the `# fmt: skip` on `limit` and the unknown id on `width` inside it are not reported. **The same unknown id on `depth`, below `# fmt: on`, is reported.**
+'''

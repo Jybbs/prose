@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Listed Id for a Rule the Run Leaves Out Spares Its Directive"
+
+description = '''
+The run carries `align-equals` alone. `skip[strip-trailing-commas]` and `ignore[reassigned-constants]` each name a rule the run leaves out, and `skip[align-equals, strip-trailing-commas]` on the first `connect` call names one beside a rule the run carries, so **all three are spared**, since a run that selects those rules may need them. The `skip[align-equals]` on the second `connect` call names only `align-equals`, which never rewrites a call, so it is reported.
+'''

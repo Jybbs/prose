@@ -43,7 +43,7 @@ The **`skip`** family exempts a line from rewrites, where `# fmt: skip` (*or its
 
 The **`ignore`** family silences lints, where `# prose: ignore[<rule>]` at the end of a line silences the named lint rules on it, for a case where the lint's suggested change does not apply *(a constant the project reassigns on purpose, a binding whose name explains a value the inlined expression would leave unnamed)*. A bare `# prose: ignore` silences every lint on the line.
 
-The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. The block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses. `# prose: keep` on a class header also reaches one lint beside the rules that reorder, in that [[unsorted-positionals]] passes over the field run of that class.
+The two families stay separate, so a statement that needs both its layout kept and its lint silenced carries one of each. A lint finding on a line a skip covers closes its message on the `# prose: ignore[<rule>]` that silences it, and [[inert-directives]] reports a `skip` or `ignore` that holds nothing out, so a directive written in the wrong family, or left behind once the code it covered changed, shows up under `prose check`. The block markers cover both at once, since a `# fmt: off` region suppresses rewrites and lint diagnostics together for every line it encloses. `# prose: keep` on a class header also reaches one lint beside the rules that reorder, in that [[unsorted-positionals]] passes over the field run of that class.
 
 ### Pinning a Dict or a Class Body
 

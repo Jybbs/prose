@@ -415,5 +415,12 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
     "position": 42,
     "preserves_tree": true,
     "slug": "line-overflow"
+  },
+  {
+    "after": [],
+    "imperative": "remove a `skip` or `ignore` directive that holds nothing out",
+    "position": 43,
+    "preserves_tree": true,
+    "slug": "inert-directives"
   }
 ]

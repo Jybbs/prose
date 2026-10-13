@@ -1,0 +1,8 @@
+[docs]
+canonical   = true
+previewable = true
+title       = "Each Directive Holding Nothing Out Is Reported"
+
+description = '''
+With `signature-annotations` beside it, the rule reads four directives. The `# fmt: skip` on `fetch` holds out no rewrite, since no rule in the run rewrites that line, and the `ignore[signature-annotations]` on the fully annotated `render` holds out no finding. **The bare `ignore` on `parse` is reported too**, because it silences every lint on its line, so the report names the `signature-annotations` findings it holds out and the bracketed form holding out the same ones. `signature-annotation`, missing its final `s`, names no rule, so the directive on `store` is reported for that id.
+'''

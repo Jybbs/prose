@@ -69,7 +69,7 @@ Every variant derives a `#[from]` conversion, so `?` propagation converts the un
 
 ## Internal Surface
 
-`suppression_map() -> &SuppressionMap` is `pub(crate)` today, so the in-process *SuppressionMap* type is reachable only from within the crate. A consumer that needs suppression state goes through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and diagnostics. The trait `Rule` that concrete rules implement is `pub(crate)` for the same reason, and both stabilize toward `1.0` so downstream consumers can register their own rule types against a stable trait.
+`suppression_map() -> &SuppressionMap` is `pub(crate)` today, so the in-process *SuppressionMap* type is reachable only from within the crate. `deleting(ranges: &[TextRange]) -> Option<(Self, SourceMap)>` is `pub(crate)` as well, returning a copy reparsed with the ranges deleted beside the map from the source's offsets to the copy's, which the [[inert-directives]] audit runs a rule against to see whether removing one skip directive changes the rule's edits. A consumer that needs suppression state goes through [**`Pipeline::run`**](/primitives/pipeline), which already filters emitted edits and diagnostics. The trait `Rule` that concrete rules implement is `pub(crate)` for the same reason, and both stabilize toward `1.0` so downstream consumers can register their own rule types against a stable trait.
 
 ## Re-Using This Primitive
 

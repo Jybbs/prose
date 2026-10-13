@@ -65,7 +65,7 @@ input_file: crate/tests/fixtures/suppression/all_directives_preformatted_noop/in
       "column": 1,
       "row": 11
     },
-    "message": "Module constant `skipped` is not SCREAMING_CASE"
+    "message": "Module constant `skipped` is not SCREAMING_CASE. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[miscased-constants]` on its line"
   },
   {
     "code": "miscased-constants",
