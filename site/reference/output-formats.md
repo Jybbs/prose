@@ -155,7 +155,7 @@ A final record closes every `json` run, carrying run-wide counts so a reader get
 ::warning file=src/module.py,line=14,col=5,endLine=14,endColumn=8::align consecutive `=` operators
 ```
 
-`endLine` and `endColumn` print only when the finding stays on one line. A finding spanning several lines prints only `line` and `col`, because GitHub's annotation UI shows only the start of a multi-line span. The rule's imperative is the annotation message, and the rule slug appears under the annotation's *"Show context"* expansion.
+`endLine` and `endColumn` print only when the finding stays on one line. A finding spanning several lines prints only `line` and `col`, because GitHub's annotation UI shows only the start of a multi-line span. The annotation message is the finding in the rule's words, led by `cell <n>:` for a finding inside a notebook cell.
 
 The [**GitHub Actions**](/integrations/github-actions) integration page covers the workflow that reads this format.
 
