@@ -1,46 +1,67 @@
-import fs   from 'node:fs'
-import path from 'node:path'
+import fs            from 'node:fs'
+import { isBuiltin } from 'node:module'
+import path          from 'node:path'
 
 import { hash } from 'ohash'
+// Imports `scan` from Rolldown's experimental entry point, which runs the
+// bundler's build phase alone and emits no chunks.
+import { scan } from 'rolldown/experimental'
 
 import { siteDir }             from '../../shared/paths'
 import { readPackageVersions } from '../../shared/version'
 import type { BrandAssets }    from './assets'
-import type { OgPage }         from '../pages'
+import type { Card }           from './pool'
 
-// Every bare specifier the card modules import sits in this list, and each
-// pinned version joins the cache key, so a renderer bump re-renders the cards.
-export const CARD_PACKAGES: readonly string[] = [
-  '@iconify/utils', '@resvg/resvg-js', 'cacache', 'markdown-it', 'ohash', 'satori'
-]
-
-const CARD_VERSIONS = readPackageVersions(siteDir(import.meta.url), CARD_PACKAGES)
-
-const OG_DIR = import.meta.dirname
-
-// Each path the card modules import from outside their own directory, hashed
-// alongside the directory itself so an edit to one moves every card key.
-export const SHARED_SOURCES: readonly string[] = [
-  '../../config/og-url.ts',       '../../markdown/inline-nodes.ts', '../../shared/constants.ts',
-  '../../shared/numerals.ts',     '../../shared/palette.ts',        '../../shared/paths.ts',
-  '../../shared/registries.ts',   '../../shared/svg.ts',            '../../shared/version.ts',
-  '../pages.ts'
-]
-
-const TEMPLATE_DIGEST = hash(
-  [...fs.readdirSync(OG_DIR, { withFileTypes: true })
-    .filter(entry => entry.isFile() && !entry.name.startsWith('.'))
-    .map(entry => entry.name).sort(), ...SHARED_SOURCES]
-    .map(file => fs.readFileSync(path.join(OG_DIR, file), 'utf8'))
-)
-
-type CardInput = OgPage | 'landing'
+// The source of every local module a directory's modules reach, keyed by its
+// path from that directory, and the pinned version of every package those
+// modules import.
+export interface RenderGraph {
+  modules  : Record<string, string>
+  packages : Record<string, string>
+}
 
 export function cardKeyer(
-  brand    : BrandAssets,
-  version  : string,
-  packages : Record<string, string> = CARD_VERSIONS
-): (card: CardInput) => string {
-  const base = { brand: hash(brand), packages, template: TEMPLATE_DIGEST, version }
+  brand   : BrandAssets,
+  graph   : RenderGraph,
+  version : string
+): (card: Card) => string {
+  const base = { brand: hash(brand), graph: hash(graph), version }
   return card => hash({ base, card })
+}
+
+// Scans every module in `dir` with Rolldown, leaving each bare specifier
+// external, and reads the bundler's module graph once the build phase ends, so
+// every module the entries load joins the graph, directly or through another
+// module, whether or not a bundle would keep its code.
+export async function readRenderGraph(dir: string = import.meta.dirname): Promise<RenderGraph> {
+  const root    = fs.realpathSync(dir)
+  const entries = fs.readdirSync(root, { withFileTypes: true })
+    .filter(entry => entry.isFile() && !entry.name.startsWith('.'))
+    .map(entry => path.join(root, entry.name))
+  const loaded: string[] = []
+
+  const released = await scan({
+    external : id => !id.startsWith('.') && !path.isAbsolute(id),
+    input    : entries,
+    logLevel : 'silent',
+    platform : 'node',
+    plugins  : [{ buildEnd() { loaded.push(...this.getModuleIds()) }, name: 'render-graph' }]
+  })
+  // Waits on the promise `scan` resolves to, which settles once Rolldown has
+  // released the bundler.
+  await released
+
+  const { files = [], specifiers = [] } =
+    Object.groupBy(loaded, id => path.isAbsolute(id) ? 'files' : 'specifiers')
+  const packages = new Set(specifiers.filter(id => !isBuiltin(id)).map(packageName))
+
+  return {
+    packages : readPackageVersions(siteDir(import.meta.url), [...packages]),
+    modules  : Object.fromEntries(files.map(file =>
+      [path.relative(root, file), fs.readFileSync(file, 'utf8')]))
+  }
+}
+
+function packageName(specifier: string): string {
+  return specifier.split('/', specifier.startsWith('@') ? 2 : 1).join('/')
 }

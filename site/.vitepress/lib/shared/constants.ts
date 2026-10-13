@@ -6,4 +6,5 @@ export const REPO_URL          = `https://github.com/${REPO_SLUG}`
 export const SHIKI_THEMES      = { dark: 'github-dark', light: 'github-light' } as const
 export const SITE_ALT          = 'Prose, a Python typesetter for the reader.'
 export const SITE_HOSTNAME     = 'https://prose.fyi'
+export const SITE_NAME         = 'Prose'
 export const SITE_TAGLINE      = 'A Python typesetter for the reader.'
