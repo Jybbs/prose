@@ -77,7 +77,7 @@ const STEP_SOURCES: readonly StepSource[] = [
   },
   {
     body     : 'Optionally run Ruff too, for the token-level formatting *Prose* leaves alone.',
-    code     : 'ruff format && prose format',
+    code     : 'ruff format path/ && prose format path/',
     language : 'bash',
     number   : '04',
     title    : 'Compose'

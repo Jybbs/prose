@@ -1,0 +1,6 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Format the tracked Python outside the fixture trees with the checkout's own `prose`"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/python.bash"
+
+python_prose format "$@"

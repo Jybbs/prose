@@ -16,8 +16,8 @@ on:
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/gha/baseline
-      - .mise/tasks/gha/brief
-      - .mise/tasks/gha/plan
+      - .mise/tasks/gha/brief.py
+      - .mise/tasks/gha/plan.py
       - .mise/tasks/gha/prune
       - .mise/tasks/rust/bake
       - .mise/tasks/rust/delta

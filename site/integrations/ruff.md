@@ -10,14 +10,14 @@ tagline: 'alongside Ruff'
 ## Recommended Ordering
 
 ```bash
-ruff format && prose format
+ruff format path/ && prose format path/
 ```
 
 ::: warning Order Matters
 When both tools run on the same file, run Ruff first. *Prose* aligns within the lines as it finds them, so a later `ruff format` that rewraps a line undoes that alignment and a third run is needed.
 :::
 
-A `ruff format` run over *Prose*'s output changes no line breaks, because *Prose* keeps every line break Ruff wrote. What it does remove is the horizontal padding, collapsing an aligned `=` run or a shared comment column back to single spaces, which is why *Prose* runs last. In that order the pair is idempotent, so re-running `ruff format && prose format` after an edit changes only what the edit touched.
+A `ruff format` run over *Prose*'s output changes no line breaks, because *Prose* keeps every line break Ruff wrote. What it does remove is the horizontal padding, collapsing an aligned `=` run or a shared comment column back to single spaces, which is why *Prose* runs last. In that order the pair is idempotent, so re-running `ruff format path/ && prose format path/` after an edit changes only what the edit touched.
 
 ## Ruff Configuration
 

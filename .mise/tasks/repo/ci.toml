@@ -5,6 +5,7 @@ run         = [
   "mise doctor project",
   { tasks = [
     "lock:check",
+    "py:lint",
     "repo:audit",
     "repo:lint",
     "rust:check",
