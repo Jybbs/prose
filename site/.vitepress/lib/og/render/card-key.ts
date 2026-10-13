@@ -2,8 +2,10 @@ import fs            from 'node:fs'
 import { isBuiltin } from 'node:module'
 import path          from 'node:path'
 
-import { hash }  from 'ohash'
-import { build } from 'vite'
+import { hash } from 'ohash'
+// Imports `scan` from Rolldown's experimental entry point, which runs the
+// bundler's build phase alone and emits no chunks.
+import { scan } from 'rolldown/experimental'
 
 import { siteDir }             from '../../shared/paths'
 import { readPackageVersions } from '../../shared/version'
@@ -27,10 +29,10 @@ export function cardKeyer(
   return card => hash({ base, card })
 }
 
-// Bundles every module in `dir` through Vite, leaving each bare specifier
-// external, and reads the bundler's module graph once the build ends, so every
-// module the entries load joins the graph, directly or through another module,
-// whether or not the output keeps its code.
+// Scans every module in `dir` with Rolldown, leaving each bare specifier
+// external, and reads the bundler's module graph once the build phase ends, so
+// every module the entries load joins the graph, directly or through another
+// module, whether or not a bundle would keep its code.
 export async function readRenderGraph(dir: string = import.meta.dirname): Promise<RenderGraph> {
   const root    = fs.realpathSync(dir)
   const entries = fs.readdirSync(root, { withFileTypes: true })
@@ -38,20 +40,16 @@ export async function readRenderGraph(dir: string = import.meta.dirname): Promis
     .map(entry => path.join(root, entry.name))
   const loaded: string[] = []
 
-  await build({
-    configFile : false,
-    logLevel   : 'silent',
-    plugins    : [{ buildEnd() { loaded.push(...this.getModuleIds()) }, name: 'render-graph' }],
-    root       : root,
-    build      : {
-      ssr             : true,
-      write           : false,
-      rolldownOptions : {
-        external : id => !id.startsWith('.') && !path.isAbsolute(id),
-        input    : entries
-      }
-    }
+  const released = await scan({
+    external : id => !id.startsWith('.') && !path.isAbsolute(id),
+    input    : entries,
+    logLevel : 'silent',
+    platform : 'node',
+    plugins  : [{ buildEnd() { loaded.push(...this.getModuleIds()) }, name: 'render-graph' }]
   })
+  // Waits on the promise `scan` resolves to, which settles once Rolldown has
+  // released the bundler.
+  await released
 
   const { files = [], specifiers = [] } =
     Object.groupBy(loaded, id => path.isAbsolute(id) ? 'files' : 'specifiers')
