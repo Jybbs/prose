@@ -225,13 +225,13 @@ pub(crate) fn format_diagnostic(range: TextRange) -> Diagnostic {
     )
 }
 
-/// The formattable paths under `paths`, a walk error or a passed link
-/// failing the test outright.
+/// Returns the formattable paths under `paths`, passing over a symlink
+/// or a rejected path and failing the test on a walk error.
 pub(crate) fn formattable(paths: &[PathBuf]) -> Vec<PathBuf> {
     walk(paths)
         .filter_map(|found| match found.expect("the tree walks") {
             Found::Formattable(path, _) => Some(path),
-            Found::PassedLink(_) => None,
+            Found::PassedLink(_) | Found::Rejected(_) => None,
         })
         .collect()
 }

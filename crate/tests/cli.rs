@@ -1112,6 +1112,8 @@ fn completions_bash_exits_zero() {
 #[case(&["check", "--stdin", "."])]
 #[case(&["check", "-", "--stdin"])]
 #[case(&["check", "-", "a.py"])]
+#[case(&["check"])]
+#[case(&["format"])]
 #[case(&["--not-a-flag"])]
 #[case(&["check", "--select", "not-a-rule", "."])]
 #[case(&["format", "--diff", "--output-format", "json", "."])]
@@ -1330,6 +1332,19 @@ fn format_rewrites_after_check_populated_the_cache() {
 }
 
 #[test]
+fn format_rewrites_the_named_files_beside_a_rejected_one() {
+    let (dir, path) = fixture("misaligned.py", UNALIGNED);
+    let script = dir.path().join("script");
+    fs_err::write(&script, UNALIGNED).expect("writes");
+    let (mut cmd, _cache_dir) = prose_isolated();
+
+    cmd.arg("format").arg(&script).arg(&path).assert().code(4);
+
+    assert_ne!(fs_err::read_to_string(&path).expect("reads"), UNALIGNED);
+    assert_eq!(fs_err::read_to_string(&script).expect("reads"), UNALIGNED);
+}
+
+#[test]
 fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
     let assert = run_stdin(ESCAPE_IN_LITERAL, &["format", "--stdin", "--diff"]).code(1);
 
@@ -1439,6 +1454,32 @@ fn module_format_settles_on_crlf_input() {
     assert!(
         !stderr_utf8(&second).contains("second run"),
         "a CRLF module settles without an unstable-output report",
+    );
+}
+
+#[rstest]
+#[case::check(&["check"], "check")]
+#[case::format(&["format"], "format")]
+#[case::format_diff(&["format", "--diff"], "format")]
+fn named_file_outside_the_python_extensions_exits_four(
+    #[case] args: &[&str],
+    #[case] subcommand: &str,
+) {
+    let (_dir, script) = fixture("script", UNALIGNED);
+    let (mut cmd, _cache_dir) = prose_isolated();
+
+    let assert = cmd.args(args).arg(&script).assert().code(4);
+
+    assert_stderr_has(
+        &assert,
+        &format!(
+            "error: cannot {subcommand} `{}`, which is not a `.py`, `.pyi`, `.pyw`, or `.ipynb` file\n",
+            script.display(),
+        ),
+    );
+    assert!(
+        !stderr_utf8(&assert).contains("All clean"),
+        "a clean line leaked"
     );
 }
 

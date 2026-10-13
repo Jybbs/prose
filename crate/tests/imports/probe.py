@@ -25,12 +25,12 @@ TREE     = "<tree>"
 VALUE    = 1
 
 library = dirname(modules["os"].__file__)
-roots   = []
+ROOTS   = []
 
 
 class Probe:
     """
-    One module of a tree, loaded the way an import loads it.
+    Loads one module of a tree the way an import loads it.
 
     Attributes:
         located : The path the module sits at.
@@ -40,8 +40,8 @@ class Probe:
 
     def __init__(self, located: str, name: str):
         """
-        Builds the probe for the module at `located`, bound to `name`, with no
-        row recorded yet.
+        Builds the probe for the module at `located`, bound to `name`, with
+        no row recorded yet.
 
         Args:
             located : The path the module sits at.
@@ -51,15 +51,15 @@ class Probe:
         self.name    = name
         self.rows    = []
 
-    def bound(self, module: object, annotated: object):
+    def bound(self, annotated: object, module: object):
         """
         Records every name the module bound, each plain constant among them,
         and the names its annotations cover.
 
         Args:
-            module    : The module whose namespace to read.
             annotated : The module's annotations, as reading
                         `module.__annotations__` returns them.
+            module    : The module whose namespace to read.
         """
         self.rows.append(("kind", "ok"))
 
@@ -79,7 +79,8 @@ class Probe:
         """
         Imports the package holding the module, executes the module, and
         reads its annotations the way a consumer reads them, then records
-        what it bound or what any step raised, beside what the run pulled in.
+        what it bound or what any step raised, beside what the run pulled
+        in.
         """
         spec   = spec_from_file_location(self.name, self.located)
         module = module_from_spec(spec)
@@ -92,7 +93,7 @@ class Probe:
         except BaseException as exc:
             self.raised(exc)
         else:
-            self.bound(module, annotated)
+            self.bound(annotated, module)
             self.unevaluated(module)
 
         self.rows += [
@@ -104,9 +105,9 @@ class Probe:
     def package(self):
         """
         Imports the package the module sits in, the way an import of the
-        module imports its package first, so a package whose `__init__` reads
-        the module finds the bound one rather than the empty module this probe
-        is about to register under that name.
+        module imports its package first, so a package whose `__init__`
+        reads the module finds the bound one rather than the empty module
+        this probe is about to register under that name.
         """
         held, _, _ = self.name.rpartition(".")
 
@@ -141,7 +142,7 @@ class Probe:
         Args:
             module: The module whose definitions to read.
         """
-        for held in defined(vars(module).values(), self.name, set()):
+        for held in defined(self.name, module, set()):
             try:
                 annotations(held)
             except BaseException as exc:
@@ -159,28 +160,12 @@ class Probe:
             sink.write(ROW.join(FIELD.join(row) for row in self.rows))
 
 
-def spelt(text: str) -> str:
-    """
-    Spells text with each tree root replaced by `TREE` and the interpreter's
-    standard library directory by `STDLIB`, so a string a run derives from
-    a location reads the same from either tree, across runs whose stage
-    roots carry different process ids, and on any machine.
-
-    Args:
-        text: The text to spell.
-    """
-    for root in roots:
-        text = text.replace(root, TREE)
-
-    return text.replace(library, STDLIB)
-
-
 def annotations(held: object) -> object:
     """
     Reads the annotations of a function or a class the way
-    `annotationlib.get_annotations` reads them in its `VALUE` format, which
-    evaluates every one. A class whose annotations descriptor raises
-    `AttributeError`, as a static type's does, is read through its
+    `annotationlib.get_annotations` reads them in its `VALUE` format,
+    which evaluates every one. A class whose annotations descriptor
+    raises `AttributeError`, as a static type's does, is read through its
     `__annotate__` where it has one and as carrying none otherwise.
 
     Args:
@@ -199,10 +184,10 @@ def annotations(held: object) -> object:
 
 def constant(value: object) -> str | None:
     """
-    Spells a value where its `repr` holds across runs, `None` otherwise. An
-    `int` or `str` subclass spells through its own `repr`, so an enum member
-    reads as the member. Each tree root spells as `TREE`, so a value a module
-    derives from its own location reads the same from either tree.
+    Spells a value where its `repr` holds across runs, `None` otherwise.
+    An `int` or `str` subclass spells through its own `repr`, so an enum
+    member reads as the member. Each tree root spells as `TREE`, so a value
+    a module derives from its own location reads the same from either tree.
 
     Args:
         value: The bound value to spell.
@@ -228,18 +213,18 @@ def constant(value: object) -> str | None:
     )
 
 
-def defined(values, name: str, seen: set):
+def defined(name: str, owner: object, seen: set):
     """
-    Yields each function and class among some values that the module `name`
-    defines, then each one in the body of every such class, reading every
-    value through the functions `wrapped` finds in it.
+    Yields each function and class among the values `owner` binds that the
+    module `name` defines, then each one in the body of every such class,
+    reading every value through the functions `wrapped` finds in it.
 
     Args:
-        values : The values to read.
-        name   : The dotted name of the defining module.
-        seen   : The ids of the definitions already yielded.
+        name  : The dotted name of the defining module.
+        owner : The module or class whose namespace to read.
+        seen  : The ids of the definitions already yielded.
     """
-    for value in values:
+    for value in vars(owner).values():
         for held in wrapped(value):
             if not isinstance(held, FUNCTION | type) or id(held) in seen:
                 continue
@@ -251,7 +236,7 @@ def defined(values, name: str, seen: set):
             yield held
 
             if isinstance(held, type):
-                yield from defined(vars(held).values(), name, seen)
+                yield from defined(name, held, seen)
 
 
 def frames(exc: BaseException):
@@ -268,16 +253,54 @@ def frames(exc: BaseException):
         traceback = traceback.tb_next
 
 
+def main(located: str, name: str, record: str, trees: list):
+    """
+    Runs the module the harness named and writes the record it reads back.
+
+    Args:
+        located : The path the module sits at.
+        name    : The dotted name an import binds it to.
+        record  : The path to write the record to.
+        trees   : The directories to search ahead of the interpreter's own
+                  library, each tree beside the directory its distributions
+                  are installed in.
+    """
+    path[:0] = trees
+    ROOTS.extend(trees)
+
+    probe = Probe(located=located, name=name)
+    probe.load()
+    probe.write(record)
+
+    _exit(0)
+
+
 def missing(exc: BaseException) -> str | None:
     """
-    Returns the name an exception turns on, which is the name a failed
-    `from … import …` asked for or the name a `NameError` or an
-    `AttributeError` could not find, `None` where it names none.
+    Returns the name a failed `from … import …` asked for or the name a
+    `NameError` or an `AttributeError` could not find, `None` where the
+    exception names none.
 
     Args:
         exc: The exception to read.
     """
     return getattr(exc, "name_from", None) or getattr(exc, "name", None)
+
+
+def spelt(text: str) -> str:
+    """
+    Spells text with each tree root replaced by `TREE` and the interpreter's
+    standard library directory by `STDLIB`, so a string a run derives from a
+    location reads the same from either tree, across runs whose stage roots
+    carry different process ids, and on any machine.
+
+    Args:
+        text: The text to spell.
+    """
+    for root in ROOTS:
+        text = text.replace(root, TREE)
+
+    return text.replace(library, STDLIB)
 
 
 def wrapped(value: object) -> tuple:
@@ -299,28 +322,6 @@ def wrapped(value: object) -> tuple:
         return (getattr(value, "func", None),)
 
     return (value,)
-
-
-def main(located: str, name: str, record: str, trees: list):
-    """
-    Runs the module the harness named and writes the record it reads back.
-
-    Args:
-        located : The path the module sits at.
-        name    : The dotted name an import binds it to.
-        record  : The path to write the record to.
-        trees   : The directories to search ahead of the interpreter's own
-                  library, each tree beside the directory its
-                  distributions are installed in.
-    """
-    path[:0] = trees
-    roots.extend(trees)
-
-    probe = Probe(located=located, name=name)
-    probe.load()
-    probe.write(record)
-
-    _exit(0)
 
 
 main(

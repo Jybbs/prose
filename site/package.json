@@ -3,9 +3,10 @@
   "private" : true,
   "type"    : "module",
   "overrides": {
-    "postcss" : "8.5.28",
-    "shiki"   : "4.4.3",
-    "vite"    : "8.3.0"
+    "postcss"  : "8.5.28",
+    "rolldown" : "1.2.10",
+    "shiki"    : "4.4.3",
+    "vite"     : "8.3.0"
   },
   "devDependencies": {
     "@csstools/postcss-global-data"       : "4.0.0",
@@ -50,6 +51,7 @@
     "playwright"                          : "1.63.0",
     "postcss"                             : "8.5.28",
     "postcss-custom-media"                : "12.0.1",
+    "rolldown"                            : "1.2.10",
     "romans"                              : "3.1.0",
     "satori"                              : "0.33.5",
     "smol-toml"                           : "1.9.0",

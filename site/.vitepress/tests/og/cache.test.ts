@@ -13,6 +13,17 @@ const blockedStore = (dir: string): string => {
   return file
 }
 
+// Counts the bucket files under the store's `index-*` directory and the
+// directories there that hold nothing.
+const indexTree = (dir: string): { buckets: number, empty: number } => {
+  const entries = fs.globSync('index-*/**/*', { cwd: dir, withFileTypes: true })
+  return {
+    buckets : entries.filter(entry => entry.isFile()).length,
+    empty   : entries.filter(entry => entry.isDirectory()
+      && fs.readdirSync(path.join(entry.parentPath, entry.name)).length === 0).length
+  }
+}
+
 describe('readCard', () => {
   supportTest('reads back what writeCard stored', async ({ tmpDir }) => {
     await cache.writeCard(tmpDir, 'key', Buffer.from('PNG'))
@@ -37,6 +48,14 @@ describe('pruneCards', () => {
     await cache.writeCard(tmpDir, 'stale', Buffer.from('B'))
     await cache.pruneCards(tmpDir, ['live'])
     expect(Object.keys(await cacache.ls(tmpDir))).toStrictEqual(['live'])
+  })
+
+  supportTest('drops a pruned key\'s bucket and reads the live entry back', async ({ tmpDir }) => {
+    await cache.writeCard(tmpDir, 'live', Buffer.from('A'))
+    await cache.writeCard(tmpDir, 'stale', Buffer.from('B'))
+    await cache.pruneCards(tmpDir, ['live'])
+    expect(indexTree(tmpDir)).toStrictEqual({ buckets: 1, empty: 0 })
+    await expect(cache.readCard(tmpDir, 'live')).resolves.toStrictEqual(Buffer.from('A'))
   })
 
   supportTest('leaves the store alone when every entry is live', async ({ tmpDir }) => {

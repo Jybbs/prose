@@ -1,14 +1,14 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { ogImagePath }                  from '../../config/og-url'
+import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url'
 import { cacheDirFrom, crateDirFrom }   from '../../shared/paths'
 import { readCargoVersion }             from '../../shared/version'
 import { loadBrandAssets }              from './assets'
 import * as cache                       from './cache'
-import { cardKeyer }                    from './card-key'
+import { cardKeyer, readRenderGraph }   from './card-key'
 import { enumeratePages }               from '../pages'
-import { renderCards, type RenderTask } from './pool'
+import * as pool                        from './pool'
 
 export async function buildOgCards(
   srcDir : string,
@@ -19,18 +19,17 @@ export async function buildOgCards(
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = cacheDirFrom(repo, 'og')
-  const keyOf    = cardKeyer(brand, version)
+  const keyOf    = cardKeyer(brand, await readRenderGraph(), version)
+  const taskFor  = (card: pool.Card, outputPath: string): pool.RenderTask =>
+    ({ card, key: keyOf(card), outputPath })
 
-  const tasks: readonly RenderTask[] = [
-    { key: keyOf('landing'), outputPath: ogImagePath('index.md'), page: 'landing' },
-    ...enumeratePages(srcDir, pages).map(page => ({
-      key        : keyOf(page),
-      outputPath : page.outputPath,
-      page
-    }))
+  const tasks = [
+    taskFor('icon', TOUCH_ICON_PATH),
+    taskFor('landing', ogImagePath('index.md')),
+    ...enumeratePages(srcDir, pages).map(page => taskFor(page, page.outputPath))
   ]
 
-  const misses: RenderTask[] = []
+  const misses: pool.RenderTask[] = []
   await Promise.all(tasks.map(async task => {
     const png = await cache.readCard(cacheDir, task.key)
     if (png) writeDist(outDir, task.outputPath, png)
@@ -38,7 +37,7 @@ export async function buildOgCards(
   }))
 
   if (misses.length > 0) {
-    const rendered = await renderCards(brand, version, misses)
+    const rendered = await pool.renderCards(brand, version, misses)
     await Promise.all(rendered.map(async card => {
       writeDist(outDir, card.outputPath, card.png)
       await cache.writeCard(cacheDir, card.key, Buffer.from(card.png))

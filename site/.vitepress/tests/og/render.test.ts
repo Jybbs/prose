@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import type { OgPage }           from '../../lib/og/pages'
 import { loadBrandAssets }       from '../../lib/og/render/assets'
+import { iconSvg }               from '../../lib/og/render/icon'
 import { landingSvg }            from '../../lib/og/render/landing'
 import { fitTitleSize, pageSvg } from '../../lib/og/render/template'
 
@@ -20,6 +21,12 @@ describe('pageSvg', () => {
   it.each(CASES)('renders the %s card', async (name, page) => {
     await expect(pageSvg(page, brand, '0.7.0')).resolves
       .toMatchFileSnapshot(`cards/${name}/output.svg.snap`)
+  })
+})
+
+describe('iconSvg', () => {
+  it('renders the touch icon', async () => {
+    await expect(iconSvg(brand)).resolves.toMatchFileSnapshot('cards/icon/output.svg.snap')
   })
 })
 

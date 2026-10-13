@@ -1,8 +1,7 @@
-import MarkdownIt       from 'markdown-it'
 import type { JSXNode } from 'satori/jsx'
 
-import { inlineNodes }                from '../../markdown/inline-nodes'
 import type { InlineNode }            from '../../markdown/inline-nodes'
+import { bareInlineNodes }            from '../../markdown/inline-text'
 import { formatFolio }                from '../../shared/numerals'
 import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
 
@@ -73,12 +72,10 @@ export function fitTitleSize(text: string, hasCaption: boolean): number {
   return TITLE_SIZES[hasCaption ? 'cap' : 'bare'].find(([max]) => text.length <= max)![1]
 }
 
-const md = new MarkdownIt()
-
 // Renders an emphasis element as the words inside it and a code span as its
-// own chip, because the card carries no styling for emphasis. The `md` above
-// registers no plugin, so the glossary, rule, and primitive kinds the union
-// declares never reach the drop.
+// own chip, because the card carries no styling for emphasis. `bareInlineNodes`
+// parses with no plugin registered, so the glossary, rule, and primitive kinds
+// the union declares never reach the drop.
 function segmentNodes(nodes: readonly InlineNode[]): CaptionSegment[] {
   return nodes.flatMap((node): CaptionSegment[] => {
     if (node.kind === 'code') return [{ code: true, text: node.text }]
@@ -137,7 +134,7 @@ function titleBlock(page: OgPage, accent: string): JSXNode {
       }
     }),
     ...(caption !== undefined ? [parts.el('div', {
-      children : segmentNodes(inlineNodes(md, caption)).map(seg => parts.el('span', {
+      children : segmentNodes(bareInlineNodes(caption)).map(seg => parts.el('span', {
         children : seg.text,
         style    : seg.code ? CODE_CHIP : {}
       })),

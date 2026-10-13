@@ -254,7 +254,7 @@ ANSI color uses the project palette, with **Ube** on the anchor, **Celadon** on 
 
 ## Mutual Exclusion
 
-`--stdin` and `PATH...` cannot be combined on `format` or `check`. A run that passes both fails while parsing its arguments with exit code 4. The `-` argument for stdin follows the same rule, so `prose check - --stdin` and `prose format - a.py` both fail the same way. `--diff` cannot be combined with any `--output-format` other than `text`, since the diff is the text format's own presentation.
+`--stdin` and `PATH...` cannot be combined on `format` or `check`. A run that passes both fails while parsing its arguments with exit code 4, and so does a run that passes neither. The `-` argument for stdin follows the same rule, so `prose check - --stdin` and `prose format - a.py` both fail the same way. `--diff` cannot be combined with any `--output-format` other than `text`, since the diff is the text format's own presentation.
 
 ## Precedence
 

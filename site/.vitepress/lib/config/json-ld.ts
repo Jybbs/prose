@@ -1,3 +1,5 @@
+import { SITE_NAME } from '../shared/constants'
+
 const CONTEXT = 'https://schema.org'
 
 interface ArticleFacts {
@@ -15,12 +17,12 @@ export function landingLd(url: string, version: string, description: string): st
   return JSON.stringify({
     '@context' : CONTEXT,
     '@graph'   : [
-      { '@type': 'WebSite', description, name: 'Prose', url },
+      { '@type': 'WebSite', description, name: SITE_NAME, url },
       {
         '@type'             : 'SoftwareApplication',
         applicationCategory : 'DeveloperApplication',
         license             : 'https://opensource.org/license/mit',
-        name                : 'Prose',
+        name                : SITE_NAME,
         operatingSystem     : 'Linux, macOS, Windows',
         softwareVersion     : version,
         url

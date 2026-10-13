@@ -1,0 +1,7 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "lint"
+#MISE description = "Lint the tracked Python outside the fixture trees with the checkout's own `prose`, rewriting nothing"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/python.bash"
+
+python_prose check ${GITHUB_ACTIONS:+--output-format github} "$@"

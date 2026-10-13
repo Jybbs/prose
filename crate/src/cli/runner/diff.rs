@@ -8,7 +8,7 @@ use ruff_notebook::NotebookIndex;
 
 use crate::{
     cache::{NotebookRewrite, RewriteKind},
-    cli::output,
+    cli::output::{self, Presentation},
 };
 
 /// How each file's diff is headed.
@@ -21,6 +21,20 @@ pub(super) enum Heading {
     Patch,
     /// A `🧵 <name>` line, painted Ube when `color`.
     Thread { color: bool },
+}
+
+impl From<&Presentation> for Heading {
+    /// Heads each file with the `🧵` line on a non-quiet TTY, painting it
+    /// only under color, and with the plain patch header elsewhere.
+    fn from(present: &Presentation) -> Self {
+        if present.decorate_diff() {
+            Self::Thread {
+                color: present.color,
+            }
+        } else {
+            Self::Patch
+        }
+    }
 }
 
 /// Writes a unified diff between `before` and `after`.
@@ -106,6 +120,10 @@ fn write_notebook_diff<W: Write>(
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
+    use rstest::rstest;
+
     use super::*;
 
     const AFTER: &str = "ab = 1\nx  = 2\n";
@@ -115,6 +133,31 @@ mod tests {
         crate::testing::rendered(|buf| {
             write_diff(buf, "sample.py", BEFORE, AFTER, heading).expect("writes");
         })
+    }
+
+    #[test]
+    fn from_presentation_falls_back_to_the_patch_header_off_a_tty() {
+        assert_matches!(Heading::from(&Presentation::windowed()), Heading::Patch);
+    }
+
+    #[rstest]
+    #[case::color_on(true, true)]
+    #[case::color_off(false, false)]
+    fn from_presentation_paints_the_thread_line_only_under_color(
+        #[case] color: bool,
+        #[case] painted: bool,
+    ) {
+        let present = Presentation {
+            color,
+            quiet: false,
+            stderr_color: color,
+            stdout_tty: true,
+        };
+
+        assert_matches!(
+            Heading::from(&present),
+            Heading::Thread { color } if color == painted
+        );
     }
 
     #[test]

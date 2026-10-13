@@ -6,6 +6,7 @@ import { PALETTE } from '../../shared/palette'
 
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200
+export const ICON_SIZE   = 180
 
 // The exact family strings satori matches the loaded font faces against.
 export const FONT = {
@@ -27,8 +28,13 @@ export function el(
   return h(type, props, ...children)
 }
 
-export function toSvg(node: JSXNode, fonts: Font[]): Promise<string> {
-  return satori(node, { fonts, height: CARD_HEIGHT, width: CARD_WIDTH })
+export function toSvg(
+  node   : JSXNode,
+  fonts  : Font[],
+  height : number = CARD_HEIGHT,
+  width  : number = CARD_WIDTH
+): Promise<string> {
+  return satori(node, { fonts, height, width })
 }
 
 export function cardShell(...children: JSXNode[]): JSXNode {
