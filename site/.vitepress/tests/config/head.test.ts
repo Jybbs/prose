@@ -1,13 +1,17 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import matter from 'gray-matter'
+import matter                           from 'gray-matter'
+import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 
 import * as head                                 from '../../lib/config/head'
 import { SITE_ALT, SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
 import { siteDir }                               from '../../lib/shared/paths'
 
-import type { HeadConfig, PageData } from 'vitepress'
+import type { HeadConfig, PageData, SiteData } from 'vitepress'
+
+const site  = siteDir(import.meta.url)
+const files = fs.globSync('**/*.md', { cwd: site, exclude: ['node_modules/**'] })
 
 function page(overrides: Partial<PageData>): PageData {
   return { description: '', frontmatter: {}, relativePath: '', title: '', ...overrides } as PageData
@@ -117,12 +121,34 @@ describe('describePage', () => {
   })
 })
 
-describe('every page but the landing', () => {
-  const site  = siteDir(import.meta.url)
-  const pages = fs.globSync('**/*.md', { cwd: site, exclude: ['node_modules/**'] })
-    .filter(file => file !== 'index.md')
+describe('TITLE_TEMPLATE', () => {
+  const siteData = { title: 'Prose', titleTemplate: head.TITLE_TEMPLATE } as SiteData
 
-  it.each(pages)('%s declares a description field', file => {
+  it.each([
+    ['rules/alignment/align-equals.md', 'align-equals', 'align-equals · Prose'],
+    ['usage/quick-start.md',            'Quick Start',  'Quick Start · Prose'],
+    ['index.md',                        '',             SITE_ALT]
+  ])('renders the <title> of %s through VitePress', (relativePath, title, expected) => {
+    const data = page({ relativePath, title })
+    head.describePage(data)
+    expect(createTitle(siteData, data)).toBe(expected)
+  })
+})
+
+describe('every page', () => {
+  const pages = [...files.map(relativePath => page({ relativePath })), notFoundPageData]
+
+  it.each(pages)('$relativePath links the touch icon', data => {
+    expect(head.pageHead(data, '0.1.0')).toContainEqual(['link', {
+      href  : '/apple-touch-icon.png',
+      rel   : 'apple-touch-icon',
+      sizes : '180x180'
+    }])
+  })
+})
+
+describe('every page but the landing', () => {
+  it.each(files.filter(file => file !== 'index.md'))('%s declares a description field', file => {
     const { data } = matter.read(path.join(site, file))
     expect(head.DESCRIPTION_FIELDS.some(field => typeof data[field] === 'string')).toBe(true)
   })
