@@ -9,7 +9,7 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { canonicalUrl }                               from './lib/config/canonical-url'
-import { pageHead }                                   from './lib/config/head'
+import * as head                                      from './lib/config/head'
 import { injectFixtures }                             from './lib/config/inject-fixtures'
 import { ROBOTS_TXT }                                 from './lib/config/robots'
 import { buildSidebar }                               from './lib/config/sidebar'
@@ -77,7 +77,7 @@ export default defineConfig({
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
-    ['meta', { content: 'Prose',                   property: 'og:site_name'  }],
+    ['meta', { content: constants.SITE_NAME,       property: 'og:site_name'  }],
     ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
   ],
   lastUpdated   : true,
@@ -109,20 +109,20 @@ export default defineConfig({
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
     sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, paths.siteDir(import.meta.url)),
-    siteTitle : 'Prose',
+    siteTitle : constants.SITE_NAME,
     socialLinks: [
       { icon: 'github', link: constants.REPO_URL }
     ]
   },
-  title         : 'Prose',
-  titleTemplate : ':title · Prose',
+  title         : constants.SITE_NAME,
+  titleTemplate : head.TITLE_TEMPLATE,
   async buildEnd(siteConfig) {
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
     const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
   },
   transformHead({ pageData }) {
-    return pageHead(pageData, proseVersion)
+    return head.pageHead(pageData, proseVersion)
   },
   async transformPageData(pageData, { siteConfig }) {
     pageData.frontmatter ||= {}
@@ -134,10 +134,7 @@ export default defineConfig({
       'link',
       { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
-    const fallback = pageData.frontmatter.caption ?? pageData.frontmatter.summary
-    if (!pageData.description && typeof fallback === 'string') {
-      pageData.description = fallback
-    }
+    head.describePage(pageData)
     injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
     injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
     await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)

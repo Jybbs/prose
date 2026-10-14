@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/listed_ids_for_deselected_rules_spared/input.py
+---
+inert-directives@211..238

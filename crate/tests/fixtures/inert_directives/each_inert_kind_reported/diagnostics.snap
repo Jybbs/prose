@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/each_inert_kind_reported/input.py
+---
+inert-directives@168..206
+inert-directives@267..304
+inert-directives@31..42
+inert-directives@91..106

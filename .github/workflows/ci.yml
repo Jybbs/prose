@@ -40,7 +40,7 @@ jobs:
           - command    : mise run repo:audit
             name       : 🪷 Audit
           - command    : mise run repo:lint
-            name       : 🧿 Zizmor
+            name       : 🧷 Workflows
             tools      : zizmor
           - command    : mise run rust:unused
             name       : 🪓 Unused
@@ -55,6 +55,9 @@ jobs:
             shared-key : *debug-key
           - command    : mise run rust:proof
             name       : 🥃 Proof
+            shared-key : *debug-key
+          - command    : mise run py:lint
+            name       : 🪻 Prose
             shared-key : *debug-key
           - command    : mise run wasm:lint
             name       : 🛶 Wasm

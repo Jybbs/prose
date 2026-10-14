@@ -28,7 +28,7 @@ impl Emitter for Github {
             writeln!(
                 writer,
                 "::warning file={}::prose produced output a second run would change ({})",
-                entry.file,
+                escape_property(&entry.file),
                 render_slugs(&entry.rules),
             )?;
         }
@@ -42,13 +42,9 @@ fn emit_one(
     index: Option<&NotebookIndex>,
     diag: &Diagnostic,
 ) -> io::Result<()> {
-    debug_assert!(
-        !diag.message.contains(['%', '\r', '\n']),
-        "rule message must not carry workflow-command escape characters",
-    );
     let (start, end, cell) = located(file, index, diag.range);
-    let name = file.name();
-    let message = cell_message(&diag.message, cell);
+    let name = escape_property(file.name());
+    let message = escape_data(&cell_message(&diag.message, cell));
     write!(
         writer,
         "::warning file={name},line={l},col={c}",
@@ -66,9 +62,28 @@ fn emit_one(
     writeln!(writer, "::{message}")
 }
 
+/// Escapes each `%`, carriage return, and newline in a workflow command's
+/// message, the mapping `@actions/core`'s `escapeData` applies and the
+/// runner reverses.
+fn escape_data(text: &str) -> String {
+    text.replace('%', "%25")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
+/// Escapes a workflow command's property value as `escape_data` escapes a
+/// message, and each `:` and `,` besides, the mapping `@actions/core`'s
+/// `escapeProperty` applies.
+fn escape_property(text: &str) -> String {
+    escape_data(text).replace(':', "%3A").replace(',', "%2C")
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
+
+    use rstest::rstest;
+    use ruff_source_file::SourceFileBuilder;
 
     use super::*;
     use crate::{
@@ -107,6 +122,19 @@ mod tests {
     }
 
     #[test]
+    fn escapes_the_file_name_and_the_message_of_a_diagnostic() {
+        let file = SourceFileBuilder::new("a,b%c:d.py", "x = 1\n").finish();
+        let diag = Diagnostic {
+            message: "first\r\nsecond at 100%".to_owned(),
+            ..format_diagnostic(range(0, 1))
+        };
+        assert_eq!(
+            emit_to_string(&file, &diag),
+            "::warning file=a%2Cb%25c%3Ad.py,line=1,col=1,endLine=1,endColumn=2::first%0D%0Asecond at 100%25\n",
+        );
+    }
+
+    #[test]
     fn propagates_the_error_a_failing_writer_raises() {
         let source = parse("x = 1\n");
         let diag = format_diagnostic(range(0, 1));
@@ -123,12 +151,14 @@ mod tests {
         assert_matches!(result, Err(e) if e.kind() == io::ErrorKind::BrokenPipe);
     }
 
-    #[test]
-    fn warns_for_each_file_a_second_run_would_change() {
+    #[rstest]
+    #[case::plain_name("a.py", "a.py")]
+    #[case::comma_in_name("a,b.py", "a%2Cb.py")]
+    fn warns_for_each_file_a_second_run_would_change(#[case] file: &str, #[case] shown: &str) {
         let source = parse("x = 1\n");
         let summary = EmitterSummary {
             unstable: vec![UnstableEntry {
-                file: "a.py".to_owned(),
+                file: file.to_owned(),
                 rules: vec![RuleId::from("align-colons"), RuleId::from("align-equals")],
             }],
             ..EmitterSummary::default()
@@ -137,7 +167,9 @@ mod tests {
         let emitted = emitted_runs(&Github, &runs, &summary);
         assert_eq!(
             String::from_utf8(emitted).expect("utf-8"),
-            "::warning file=a.py::prose produced output a second run would change (`align-colons`, `align-equals`)\n",
+            format!(
+                "::warning file={shown}::prose produced output a second run would change (`align-colons`, `align-equals`)\n"
+            ),
         );
     }
 }

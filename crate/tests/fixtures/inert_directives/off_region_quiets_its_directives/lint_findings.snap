@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/off_region_quiets_its_directives/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 41,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 12,
+      "row": 5
+    },
+    "message": "`no-such-rule` in this `ignore` names no rule"
+  }
+]

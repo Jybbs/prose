@@ -8,7 +8,7 @@ from dataclasses       import FrozenInstanceError
 from functools         import reduce
 from json              import dumps, loads
 from pathlib           import Path
-from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
+from pytest            import CaptureFixture, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
 from tomllib           import loads as from_toml
 from types             import ModuleType
@@ -118,22 +118,20 @@ def rulesets(task: Callable[[str], ModuleType]) -> ModuleType:
 
 
 @fixture
-def tree(monkeypatch: MonkeyPatch, tmp_path: Path) -> Path:
+def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
     Returns a working tree holding the sample settings, the sample project
     table, and two rulesets, one named `kept` and one named `fresh`, and
     makes it the current directory.
     """
-    for name, text in {
-        ".github/rulesets/a.json" : dumps({"name": "kept"}),
-        ".github/rulesets/b.json" : dumps({"name": "fresh"}),
-        ".github/settings.toml"   : SETTINGS,
-        "crate/pyproject.toml"    : PROJECT
-    }.items():
-        (target := tmp_path / name).parent.mkdir(exist_ok=True, parents=True)
-        target.write_text(text, encoding="utf-8")
-    monkeypatch.chdir(tmp_path)
-    return tmp_path
+    return workdir(
+        {
+            ".github/rulesets/a.json" : dumps({"name": "kept"}),
+            ".github/rulesets/b.json" : dumps({"name": "fresh"}),
+            ".github/settings.toml"   : SETTINGS,
+            "crate/pyproject.toml"    : PROJECT
+        }
+    )
 
 
 def argv(body: dict | None, endpoint: str, method: str) -> list[str]:
@@ -150,7 +148,7 @@ def parsed(rulesets: ModuleType, text: str = SETTINGS) -> Any:
     """
     Returns the record the settings `text` parses to.
     """
-    return rulesets.record(rulesets.Settings, from_toml(text))
+    return rulesets.Settings.from_table(from_toml(text))
 
 
 def tables(table: dict, keys: tuple[str, ...] = ()) -> Iterator[tuple[str, ...]]:
@@ -330,7 +328,7 @@ def test_record_rejects_a_value_that_is_not_a_table(rulesets: ModuleType):
     naming the table.
     """
     with raises(SystemExit, match=r"\[workflow\] is not a table"):
-        rulesets.record(rulesets.Settings, {**from_toml(SETTINGS), "workflow": 1})
+        rulesets.Settings.from_table({**from_toml(SETTINGS), "workflow": 1})
 
 
 @mark.parametrize(

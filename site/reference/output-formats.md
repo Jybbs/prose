@@ -69,15 +69,15 @@ Fields:
 | `cell` | number | *Notebook only.* The one-indexed cell holding the finding, absent for a module |
 | `location` | `{ row, column }` | One-indexed start position |
 | `end_location` | `{ row, column }` | One-indexed end position |
-| `message` | string | The rule's imperative |
-| `fix` | object \| null | `null` for a lint finding, otherwise `{ applicability, edits }` |
-| `fix.applicability` | `"safe"` \| `"unsafe"` \| `"display"` | Confidence that the edits preserve runtime semantics |
+| `message` | string | The finding, in the rule's words |
+| `fix` | object \| null | `null` for a lint finding carrying no suggestion, otherwise `{ applicability, edits }` |
+| `fix.applicability` | `"safe"` \| `"displayonly"` | Confidence that the edits preserve runtime semantics |
 | `fix.edits` | array of `{ before, content, location, end_location }` | The replacement spans an editor or CI can apply |
 | `fix.edits[].before` | string | The original text at the edit's range, paired with `content` for a before and after view without reading the source again |
 
 For a notebook input, each record adds a `cell` field with the one-indexed cell, and its `location` and `end_location` are positions within that cell rather than offsets into the joined source. A module input has no `cell`, and its positions are absolute.
 
-`applicability` is `"safe"` for every auto-fix *Prose* prints in the current release, on the scale Ruff uses, where `safe` means the rewrite preserves runtime semantics and an editor can apply it without asking. The `unsafe` and `display` levels are reserved in the schema for a future rule whose rewrite might change observable behavior, and no shipped rule prints them today.
+`applicability` is `"safe"` for every auto-fix *Prose* prints, on the scale Ruff uses, where `safe` means the rewrite preserves runtime semantics and an editor can apply it without asking. A lint finding carrying a suggestion (*the SCREAMING_CASE rename `miscased-constants` offers, the annotation `signature-annotations` infers*) prints `"displayonly"`, so an editor shows the edit and never applies it on its own.
 
 An auto-fix that touches several lines prints one diagnostic with one entry per line in `fix.edits`. The `align-equals` example padding three consecutive assignments prints as:
 
@@ -155,7 +155,7 @@ A final record closes every `json` run, carrying run-wide counts so a reader get
 ::warning file=src/module.py,line=14,col=5,endLine=14,endColumn=8::align consecutive `=` operators
 ```
 
-`endLine` and `endColumn` print only when the finding stays on one line. A finding spanning several lines prints only `line` and `col`, because GitHub's annotation UI shows only the start of a multi-line span. The rule's imperative is the annotation message, and the rule slug appears under the annotation's *"Show context"* expansion.
+`endLine` and `endColumn` print only when the finding stays on one line. A finding spanning several lines prints only `line` and `col`, because GitHub's annotation UI shows only the start of a multi-line span. The annotation message is the finding in the rule's words, led by `cell <n>:` for a finding inside a notebook cell.
 
 The [**GitHub Actions**](/integrations/github-actions) integration page covers the workflow that reads this format.
 

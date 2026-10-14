@@ -2,7 +2,7 @@
 
 use std::{path::Path, str::FromStr, sync::OnceLock};
 
-use ruff_diagnostics::Edit;
+use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
 use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
@@ -15,6 +15,7 @@ use thiserror::Error;
 use crate::{
     primitives::{
         binding::BindingAnalysis,
+        edit::{apply_edits_mapped, forward_offsets},
         padding::Stranding,
         reserve::{Carry, Columns, Reservations},
     },
@@ -206,6 +207,19 @@ impl Source {
 
     pub fn ast(&self) -> &ModModule {
         &self.ast
+    }
+
+    /// This source reparsed with the sorted, disjoint `ranges` deleted,
+    /// beside the map from its offsets to the copy's, or `None` where
+    /// the shortened text does not parse.
+    pub(crate) fn deleting(&self, ranges: &[TextRange]) -> Option<(Self, SourceMap)> {
+        let (text, map) = apply_edits_mapped(
+            self.text(),
+            ranges.iter().copied().map(Edit::range_deletion).collect(),
+        )?;
+        let cell_offsets = forward_offsets(&self.cell_offsets, &map, text.text_len());
+        let copy = self.reparse_carrying(text, cell_offsets).ok()?;
+        Some((copy, map))
     }
 
     /// Returns this source's text when it differs from `original`, or

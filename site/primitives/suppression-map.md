@@ -22,6 +22,7 @@ A downstream consumer works with suppression through the directives in the sourc
 - A source file declares its directives inline (*`# fmt: off`, `# fmt: skip`, `# prose: skip[<rule>]`, `# prose: ignore[<rule>]`*).
 - The [[pipeline]] reads the directives during `run`.
 - Diagnostics and edits a directive covers are dropped from the returned vectors, with no notice.
+- [[inert-directives]] reports a `skip` or `ignore` directive that holds nothing out of the run.
 
 The type opens toward `1.0`, when the lookup methods become public so downstream tooling can inspect suppression spans (*IDE highlighting of suppressed ranges, lint-coverage reports, suppression audits*).
 
@@ -33,9 +34,16 @@ For code inside the *Prose* crate, the map exposes a constructor and a set of pr
 2. `file_is_suppressed() -> bool` returns true when an unmatched `# prose: off` *(or `# fmt: off`)* sits at or before the first non-blank, non-comment line of the file, so the pipeline returns the source unchanged before any rule runs.
 3. `has_format_suppression() -> bool` reports whether any `# prose: off` region, bare `# prose: skip` span, or `# prose: skip[<rule>]` directive sits in the file.
 4. `has_lint_suppression() -> bool` reports the same for `# prose: ignore` directives.
-5. `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps a `# prose: off` region, which is the check the lint filter reads, so a bare `# prose: skip` opens nothing here and a lint diagnostic on its statement survives.
-6. `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule, or a bare directive that covers every rule.
-7. `suppresses<R: Ranged>(ranged: R, rule: RuleId) -> bool` returns true when the given range overlaps a `# prose: off` region, a bare `# prose: skip` span, or a `# prose: skip[<rule>]` span naming the rule, which is the check the rewrite filter reads.
+5. `ignore_at(line: OneIndexed) -> Option<&Directive>` returns the `# prose: ignore` directive on the line, or `None` where the line carries none.
+6. `ignores() -> &[(OneIndexed, Directive)]` lists every `# prose: ignore` directive beside the line it sits on, in source order.
+7. `intersects<R: Ranged>(ranged: R) -> bool` returns true when the given range overlaps a `# prose: off` region, which is the check the lint filter reads, so a bare `# prose: skip` opens nothing here and a lint diagnostic on its statement survives.
+8. `is_lint_suppressed_at(line: OneIndexed, rule: RuleId) -> bool` returns true when the line carries a `# prose: ignore` directive that names the rule, or a bare directive that covers every rule.
+9. `pins<R: Ranged>(ranged: R, rule: RuleId) -> bool` returns true when a reorder by the rule leaves the range in place, meaning the range overlaps a span `suppresses` reports for the rule or holds the line of a `# prose: on` that closes a region.
+10. `skipped<R: Ranged>(ranged: R) -> bool` returns true when the span of a skip directive overlaps the range, whatever rules it names, which is the check the lint filter reads before closing a finding's message on the `# prose: ignore[<rule>]` that silences it.
+11. `skips() -> &[(TextRange, Directive)]` lists every skip directive beside the span it suppresses, in source order.
+12. `suppresses<R: Ranged>(ranged: R, rule: RuleId) -> bool` returns true when the given range overlaps a `# prose: off` region, a bare `# prose: skip` span, or a `# prose: skip[<rule>]` span naming the rule, which is the check the rewrite filter reads.
+
+Each directive the map records is a `Directive`, holding the comment that carries it and the rules its chunks name, beside every bracketed id among them that names no registered rule, as written. Its `skip_removal(source_text: &str) -> Vec<TextRange>` returns the ranges whose deletion removes the directive's skip chunks, taking the whole comment and the whitespace before it where the comment holds nothing else, so the [[inert-directives]] audit runs a rule over a copy of the source with that one directive gone.
 
 The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. Every entry point above opens at `1.0`.
 
@@ -46,13 +54,13 @@ The directives that feed the map share a grammar the [**Suppression**](/usage/su
 1. `# fmt: off` opens a format-suppression span and `# fmt: on` closes it. A span with no closer runs to the end of the file, or to the end of its notebook cell. Nested or overlapping `# fmt: off` markers flatten, so the first `# fmt: on` after any number of `off` markers closes the span.
 2. `# prose: off` and `# prose: on` use the same span machinery, so a project picks whichever prefix reads better. When `# prose: off` sits at or before the first non-blank, non-comment line of the file and no `# prose: on` follows, the map sets `file_is_suppressed`.
 3. `# yapf: disable` and `# yapf: enable` are recognized as aliases for `# fmt: off` and `# fmt: on`, so a project's existing yapf markers keep working. Other yapf directives are not recognized.
-4. `# fmt: skip` at the end of a line exempts that one logical line from rewrites, scoped to that statement, and leaves its lint diagnostics to report. `# prose: skip` is the equivalent alias.
-5. `# prose: skip[<rule>, <rule>, …]` exempts the listed auto-fix rules across the same logical line `# fmt: skip` covers, with whitespace inside the brackets tolerated and two bracketed directives on one line unioning their rule sets. An unknown rule slug is dropped with no notice.
+4. `# fmt: skip` at the end of a line exempts that one logical line from rewrites, scoped to that statement, and leaves its lint diagnostics to report. `# prose: skip` is the equivalent alias, and either one on a comment carrying a `# prose: skip[<rule>]` widens it to every rule.
+5. `# prose: skip[<rule>, <rule>, …]` exempts the listed auto-fix rules across the same logical line `# fmt: skip` covers, with whitespace inside the brackets tolerated and two bracketed directives on one line unioning their rule sets. An unknown rule slug suppresses nothing and stays on the directive as written, where [[inert-directives]] reports it.
 6. `# prose: ignore[<rule>, <rule>, …]` exempts the listed lint rules on the directive's line, with the same bracket-whitespace tolerance and union behavior. A bare `# prose: ignore` covers every lint rule on the line.
 
 ## Re-Using This Primitive
 
-The [[pipeline]] is the canonical consumer, applying the filter at the point edits are emitted, so a new rule emits its edits unconditionally and the pipeline drops the suppressed groups. A rule whose fix group would otherwise span an exempt row reads `suppresses` itself before grouping, the way the alignment rules exclude a skip-exempt row through the aligner's `is_held` before a column is resolved. [[alphabetize-siblings]], [[band-constants]], and [[modernize-annotations]] read it the same way. The map is built once per source and handed to every reader by reference.
+The [[pipeline]] is the canonical consumer, applying the filter at the point edits are emitted, so a new rule emits its edits unconditionally and the pipeline drops the suppressed groups. A rule whose fix group would otherwise span an exempt row reads `suppresses` itself before grouping, the way the alignment rules exclude a skip-exempt row through the aligner's `is_held` before a column is resolved. [[alphabetize-siblings]], [[band-constants]], and [[modernize-annotations]] read it the same way, and [[inert-directives]] reads the directives themselves, judging each against the run. The map is built once per source and handed to every reader by reference.
 
 A consumer reusing the suppression directives in a different formatter would build the same map and apply the same filter at its own edit-emission point, taking the whole directive set *(format spans, statement-level format markers, per-rule format directives, and per-line lint directives)* without re-implementing the scan.
 

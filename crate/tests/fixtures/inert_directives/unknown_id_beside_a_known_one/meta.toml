@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Unknown Id Is Reported Beside a Known One That Holds a Finding"
+
+description = '''
+The `ignore` on `scale` names `signature-annotations`, which holds out both of that rule's findings on the line, beside `signature-annotation`, which names no rule. **Only the unknown id is reported**, since the directive as a whole still holds findings out.
+'''

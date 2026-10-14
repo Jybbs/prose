@@ -1,0 +1,59 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/inert_directives/each_inert_kind_reported/input.py
+---
+[
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 43,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 32,
+      "row": 1
+    },
+    "message": "This `skip` holds no rewrite out, so every rule it names rewrites the same code without it"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 37,
+      "row": 5
+    },
+    "fix": null,
+    "location": {
+      "column": 22,
+      "row": 5
+    },
+    "message": "This bare `ignore` silences `signature-annotations` here, so `# prose: ignore[signature-annotations]` holds out the same findings"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 70,
+      "row": 9
+    },
+    "fix": null,
+    "location": {
+      "column": 32,
+      "row": 9
+    },
+    "message": "This `ignore` holds no finding out, so removing it leaves the findings unchanged"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 72,
+      "row": 13
+    },
+    "fix": null,
+    "location": {
+      "column": 35,
+      "row": 13
+    },
+    "message": "`signature-annotation` in this `ignore` names no rule"
+  }
+]

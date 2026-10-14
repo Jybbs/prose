@@ -29,11 +29,13 @@ use crate::{
 mod batch;
 mod error;
 mod filter;
+mod held;
 mod validity;
 
 use batch::{Batch, Spliceable};
 pub use error::PipelineError;
 use filter::{prepared_groups, settled_lints};
+pub(crate) use held::Held;
 use validity::compile_gate;
 
 /// Ordered sequence of enabled rules, run against each source file.

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Skip on the Widest Row Holds Its Neighbors' Column"
+
+description = '''
+`align-equals` leaves the skipped `timeout_seconds` row as written either way, yet **its skip still holds something out**, since `align-equals` leaves `host` as written beside the held row and would pad it to `timeout_seconds`'s column once the skip is gone. The skip on the `connect` call holds nothing, because `align-equals` never rewrites a call, so that one is reported.
+'''

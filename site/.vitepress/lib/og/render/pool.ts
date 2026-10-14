@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads'
 import { Resvg } from '@resvg/resvg-js'
 
 import type { BrandAssets } from './assets'
+import { iconSvg }          from './icon'
 import { landingSvg }       from './landing'
 import type { OgPage }      from '../pages'
 import { pageSvg }          from './template'
@@ -13,7 +14,9 @@ interface CardId {
   outputPath : string
 }
 
-export interface RenderTask extends CardId { page: OgPage | 'landing' }
+export type Card = OgPage | 'icon' | 'landing'
+
+export interface RenderTask extends CardId { card: Card }
 
 interface RasterJob extends CardId { svg: string }
 
@@ -30,9 +33,7 @@ export async function renderCards(
   const jobs = await Promise.all(tasks.map(async task => ({
     key        : task.key,
     outputPath : task.outputPath,
-    svg        : task.page === 'landing'
-      ? await landingSvg(brand, version)
-      : await pageSvg(task.page, brand, version)
+    svg        : await cardSvg(brand, task.card, version)
   })))
 
   try {
@@ -44,6 +45,12 @@ export async function renderCards(
     // a runtime without worker support still rasterizes every card, serially
     return jobs.map(rasterize)
   }
+}
+
+function cardSvg(brand: BrandAssets, card: Card, version: string): Promise<string> {
+  if (card === 'icon')    return iconSvg(brand)
+  if (card === 'landing') return landingSvg(brand, version)
+  return pageSvg(card, brand, version)
 }
 
 function partition<T>(items: readonly T[], lanes: number): T[][] {

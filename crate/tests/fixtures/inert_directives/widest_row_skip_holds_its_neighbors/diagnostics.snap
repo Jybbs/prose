@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inert_directives/widest_row_skip_holds_its_neighbors/input.py
+---
+inert-directives@86..97

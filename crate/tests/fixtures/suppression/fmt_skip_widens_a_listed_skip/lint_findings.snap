@@ -1,0 +1,70 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/suppression/fmt_skip_widens_a_listed_skip/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 5,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "host",
+          "content": "HOST"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `host` is not SCREAMING_CASE"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 5,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "port",
+          "content": "PORT"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `port` is not SCREAMING_CASE. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[miscased-constants]` on its line"
+  },
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 16,
+      "row": 3
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "timeout_seconds",
+          "content": "TIMEOUT_SECONDS"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 3
+    },
+    "message": "Module constant `timeout_seconds` is not SCREAMING_CASE"
+  }
+]

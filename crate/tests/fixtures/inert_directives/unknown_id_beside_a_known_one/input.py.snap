@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inert_directives/unknown_id_beside_a_known_one/input.py
+---
+def scale(factor):  # prose: ignore[signature-annotations, signature-annotation]
+    return factor * 2

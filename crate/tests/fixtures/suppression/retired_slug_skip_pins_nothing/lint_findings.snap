@@ -15,7 +15,7 @@ input_file: crate/tests/fixtures/suppression/retired_slug_skip_pins_nothing/inpu
       "column": 12,
       "row": 1
     },
-    "message": "Parameter `width` has no type annotation"
+    "message": "Parameter `width` has no type annotation. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[signature-annotations]` on its line"
   },
   {
     "code": "signature-annotations",
@@ -28,6 +28,19 @@ input_file: crate/tests/fixtures/suppression/retired_slug_skip_pins_nothing/inpu
       "column": 5,
       "row": 1
     },
-    "message": "`render` returns a value but has no return type annotation"
+    "message": "`render` returns a value but has no return type annotation. A `skip` holds out rewrites alone, so holding this finding out takes `# prose: ignore[signature-annotations]` on its line"
+  },
+  {
+    "code": "inert-directives",
+    "end_location": {
+      "column": 52,
+      "row": 1
+    },
+    "fix": null,
+    "location": {
+      "column": 21,
+      "row": 1
+    },
+    "message": "`signature-layout` in this `skip` names no rule"
   }
 ]
