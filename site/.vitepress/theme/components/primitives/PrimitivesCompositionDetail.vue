@@ -6,10 +6,12 @@ import { data as rules }      from '../../../lib/rules/rules.data'
 import type { RenderedRule }  from '../../../lib/rules/rules.data'
 import { useSettledMeasure }  from '../../../lib/composables/use-settled-measure'
 
+import { familyEmblem }                              from '../../../lib/shared/emblems'
 import { pickOr }                                    from '../../../lib/shared/pick-or'
 import { PRIMITIVE_LAYER_NUMERALS, PRIMITIVE_SLUGS } from '../../../lib/shared/registries'
 import type { PrimitiveSlug }                        from '../../../lib/shared/registries'
 import InlineProse                                   from '../base/InlineProse.vue'
+import NibBadge                                      from '../base/NibBadge.vue'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
@@ -98,7 +100,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
               </a>
               <RuleTooltipPopper v-else-if="m.kind === 'rule'" :rule="m.rule">
                 <a class="rule-chip" :href="m.rule.href" :data-family="m.rule.family">
-                  <span class="rule-chip-badge" aria-hidden="true">{{ m.rule.familyBadge }}</span>
+                  <NibBadge :emblem="familyEmblem(m.rule.family)" :size="12.5" />
                   <span class="rule-chip-slug">{{ m.slug }}</span>
                 </a>
               </RuleTooltipPopper>

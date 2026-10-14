@@ -17,7 +17,6 @@ export interface OgPage {
   accent    ?: string
   breadcrumb : readonly string[]
   caption   ?: string
-  category  ?: registries.RuleCategory
   family    ?: registries.RuleFamily
   kind       : OgKind
   outputPath : string
@@ -72,7 +71,6 @@ function buildPage(
       accent     : accentFor(kind, rule.family),
       breadcrumb : ['Rules', registries.FAMILY_META[rule.family].label],
       caption    : rule.caption,
-      category   : rule.category,
       family     : rule.family,
       kind,
       outputPath,

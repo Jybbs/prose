@@ -23,13 +23,13 @@ export const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 1,
     detail : [
-      '`prose check` and `prose format --diff` return this when one or more auto-fix rules '
+      '`prose check` and `prose format --diff` return this when one or more rules '
       + 'would write an edit.',
       '`prose format` returns 0 once the rewrite is written.',
-      'Every auto-fix rule can produce it.'
+      'Every rewriting rule can produce it.'
     ],
     label  : 'Format would change',
-    summary: 'At least one auto-fix rewrite is pending.'
+    summary: 'At least one rewrite is pending.'
   },
   {
     code   : 2,

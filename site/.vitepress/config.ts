@@ -20,6 +20,7 @@ import { glossaryHrefs }                              from './lib/glossary/hrefs
 import { buildPhraseToSlug }                          from './lib/glossary/phrase-map'
 import { glossaryPlugin }                             from './lib/glossary/plugin'
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
+import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
@@ -30,6 +31,7 @@ import { ruleLinkPlugin }                             from './lib/rules/link-plu
 import { readRuleFixtures }                           from './lib/rules/rule-fixtures'
 import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
+import { emblemsOf }                                  from './lib/shared/emblems'
 import { PALETTE, paletteCss }                        from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
@@ -37,6 +39,7 @@ import { sectionRoute }                               from './lib/shared/routes'
 import { toTitleCase }                                from './lib/shared/title-case'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
 import * as version                                   from './lib/shared/version'
+import { readPlatforms }                              from './lib/usage/platforms'
 
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
@@ -47,6 +50,7 @@ const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
 const discoveredPrimitives = discoverPrimitives(paths.primitivesDir(import.meta.url))
+const emblems              = emblemsOf(readPlatforms(paths.repoRoot(import.meta.url)))
 const primitiveIndex       = discoverPrimitiveIndex(paths.primitivesDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
@@ -89,6 +93,7 @@ export default defineConfig({
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
       md.use(proseMarkPlugin)
+      md.use(emblemPlugin(emblems))
       md.use(bodyLinkPlugin)
     },
     lineNumbers : false,

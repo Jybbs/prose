@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import matter                           from 'gray-matter'
+import matter                            from 'gray-matter'
 import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 
 import * as head                                 from '../../lib/config/head'

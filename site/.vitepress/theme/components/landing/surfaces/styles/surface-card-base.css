@@ -110,11 +110,8 @@
   justify-content : center;
   width           : 56px;
   height          : 56px;
-  border          : 1px solid var(--vp-c-divider);
+  border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--vp-c-divider));
   border-radius   : 50%;
-  background      : var(--vp-c-bg);
-  font-size       : 1.55rem;
-  line-height     : 1;
   z-index         : 2;
 }
 

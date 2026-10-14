@@ -72,7 +72,7 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 - [[source]] carries diagnostics that reference rules by *RuleId*, so the structured output formats (JSON, SARIF, GitHub annotations) all report by slug.
 - [[suppression-map]] parses *RuleId* values out of `# prose: ignore[<slug>]` directives.
 
-For the CLI flags that take *RuleId* lists, the [**Quick Start**](/usage/quick-start#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules**](/rules/) page lists every registered slug by category.
+For the CLI flags that take *RuleId* lists, the [**Quick Start**](/usage/quick-start#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules**](/rules/) page lists every registered slug beside its family.
 
 </template>
 

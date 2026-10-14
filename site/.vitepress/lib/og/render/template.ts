@@ -1,9 +1,9 @@
 import type { JSXNode } from 'satori/jsx'
 
-import type { InlineNode }            from '../../markdown/inline-nodes'
-import { bareInlineNodes }            from '../../markdown/inline-text'
-import { formatFolio }                from '../../shared/numerals'
-import { CATEGORY_META, FAMILY_META } from '../../shared/registries'
+import type { InlineNode } from '../../markdown/inline-nodes'
+import { bareInlineNodes } from '../../markdown/inline-text'
+import { formatFolio }     from '../../shared/numerals'
+import { FAMILY_META }     from '../../shared/registries'
 
 import type { BrandAssets, BrandImage } from './assets'
 import { PALETTE }                      from '../../shared/palette'
@@ -50,12 +50,7 @@ function buildCard(glyph: string, page: OgPage, version: string, wordmark: Brand
 }
 
 function buildKicker(page: OgPage): string {
-  const segments = page.breadcrumb.map(s => s.toUpperCase())
-  if (page.category) {
-    const tail = CATEGORY_META[page.category].label.toUpperCase()
-    if (segments.at(-1) !== tail) segments.push(tail)
-  }
-  return `— ${segments.join(' · ')} —`
+  return `— ${page.breadcrumb.map(s => s.toUpperCase()).join(' · ')} —`
 }
 
 function dataPanel(accent: string, page: OgPage, version: string): JSXNode {
@@ -88,7 +83,6 @@ function segmentNodes(nodes: readonly InlineNode[]): CaptionSegment[] {
 function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
   if (page.kind === 'rules' && page.family !== undefined) {
     const rows: Array<[string, string]> = [['Family', page.family]]
-    if (page.category && page.category !== page.family) rows.push(['Category', page.category])
     if (page.pipeline) {
       const { position, total } = page.pipeline
       rows.push(['Pipeline', `${formatFolio(position)} / ${formatFolio(total)}`])

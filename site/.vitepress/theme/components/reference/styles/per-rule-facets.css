@@ -46,10 +46,9 @@
   color  : color-mix(in srgb, var(--family-color) 76%, var(--vp-c-text-1));
 }
 
-.per-rule-facets-badge {
+.per-rule-facets-label .nib-badge {
   margin-right   : 3px;
-  font-size      : 0.85rem;
-  letter-spacing : 0;
+  vertical-align : -2px;
 }
 
 .per-rule-facets-count {
@@ -96,6 +95,10 @@
   margin      : 0;
   border-left : none;
   box-shadow  : none;
+}
+
+.per-rule-facets-rule-head .nib-badge {
+  color : inherit;
 }
 
 .vp-doc .per-rule-facets-rule-head a.rule-link:hover {

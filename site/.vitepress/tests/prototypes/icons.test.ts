@@ -4,6 +4,8 @@ import { mount } from '@vue/test-utils'
 import Emblem                   from '../../../prototypes/icons/Emblem.vue'
 import * as emblems             from '../../../prototypes/icons/emblems'
 import IconSpecimen             from '../../../prototypes/icons/IconSpecimen.vue'
+import NibSpecimen              from '../../../prototypes/icons/NibSpecimen.vue'
+import type { Motif }           from '../../lib/shared/emblems'
 import { GLOSSARY_FAMILY_META } from '../../lib/shared/registries'
 import { data as platforms }    from '../../lib/usage/platforms.data'
 import { rendersAccessibly }    from '../axe'
@@ -22,14 +24,14 @@ const house = (overrides: Partial<emblems.House> = {}): emblems.House =>
 const draw = (setting: emblems.House, emblem = newspaper, standalone = false) =>
   mount(Emblem, { props: { emblem, house: setting, standalone } })
 
-const paths = (motif: emblems.Motif): readonly string[] =>
+const paths = (motif: Motif): readonly string[] =>
   [...motif.cuts, ...motif.lines, ...motif.shapes]
 
 describe('EMBLEMS', () => {
   it('maps every badge and platform emoji the registries declare and nothing else', () => {
     const declared = new Set([
       ...Object.values(GLOSSARY_FAMILY_META).map(meta => meta.badge),
-      ...platforms.map(platform => platform.label.split(' ')[0])
+      ...platforms.map(platform => platform.emoji)
     ])
     expect([...emblems.EMBLEMS.keys()].toSorted()).toStrictEqual([...declared].toSorted())
   })
@@ -136,7 +138,7 @@ describe('IconSpecimen', () => {
   const specimen = () => mount(IconSpecimen, { props: setting })
 
   it('hides every chip and tile icon from assistive technology', () => {
-    const hidden = specimen().findAll('.family-chip svg, .rule-card-badge svg')
+    const hidden = specimen().findAll('.family-chip svg, .icon-specimen-tile svg')
     expect(hidden.map(svg => svg.attributes('aria-hidden')))
       .toStrictEqual(Array.from({ length: 2 * emblems.EMBLEMS.size }, () => 'true'))
   })
@@ -162,3 +164,31 @@ describe('IconSpecimen', () => {
   rendersAccessibly(() => specimen().html())
 })
 
+
+describe('NibSpecimen', () => {
+  const specimen = () => mount(NibSpecimen)
+
+  it('hides every chip and tile badge from assistive technology', () => {
+    const hidden = specimen().findAll('.family-chip svg, .icon-specimen-tile svg')
+    expect(hidden.map(svg => svg.attributes('aria-hidden')))
+      .toStrictEqual(Array.from({ length: 2 * emblems.EMBLEMS.size }, () => 'true'))
+  })
+
+  it.each([
+    ['.family-chip',         'small'],
+    ['.icon-specimen-tile',  'small'],
+    ['.icon-specimen-card', 'large']
+  ])('draws the badges in %s from the %s symbols', (holder, size) => {
+    const used = specimen().findAll(`${holder} use`).map(use => use.attributes('href'))
+    expect(used).toHaveLength(emblems.EMBLEMS.size)
+    expect(used.every(href => href?.endsWith(`-${size}`))).toBe(true)
+  })
+
+  it('labels every card-size badge with its motif', () => {
+    const card = specimen().findAll('.icon-specimen-card svg')
+    expect(card.map(svg => [svg.attributes('role'), svg.attributes('aria-label')]))
+      .toStrictEqual([...emblems.EMBLEMS.values()].map(emblem => ['img', emblem.motif.label]))
+  })
+
+  rendersAccessibly(() => specimen().html())
+})

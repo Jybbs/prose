@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { data as pipeline } from '../../../lib/rules/pipeline.data'
 import { data as rules }    from '../../../lib/rules/rules.data'
+import { familyEmblem }     from '../../../lib/shared/emblems'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 import MiddleEllipsis from '../base/MiddleEllipsis.vue'
+import NibBadge       from '../base/NibBadge.vue'
 </script>
 
 <template>
@@ -29,7 +31,8 @@ import MiddleEllipsis from '../base/MiddleEllipsis.vue'
             <span class="folio">№ {{ formatFolio(rule.position) }}</span>
             <MiddleEllipsis class="pipeline-order-name" :text="rule.slug" :tail="2" />
             <span class="pipeline-order-leader" aria-hidden="true"></span>
-            <span class="pipeline-order-glyph" aria-hidden="true">{{ rule.familyBadge ?? '·' }}</span>
+            <NibBadge v-if="rule.family" :emblem="familyEmblem(rule.family)" :size="15.2" />
+            <span v-else class="pipeline-order-glyph" aria-hidden="true">·</span>
           </a>
         </RuleTooltipPopper>
       </li>

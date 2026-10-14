@@ -4,7 +4,6 @@ import { FAMILIES }    from '../../../../lib/shared/palette'
 export const page: OgPage = {
   accent     : FAMILIES.alignment,
   breadcrumb : ['Rules', 'Alignment'],
-  category   : 'auto-fix',
   family     : 'alignment',
   kind       : 'rules',
   outputPath : 'og/rules/alignment/long.png',

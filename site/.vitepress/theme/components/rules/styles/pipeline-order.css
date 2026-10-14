@@ -94,12 +94,6 @@
   font-size   : var(--prose-text-md);
 }
 
-.pipeline-order-undocumented {
-  --family-color : var(--vp-c-text-3);
-  color          : var(--vp-c-text-3);
-  cursor         : help;
-}
-
 @media (--prose-bp-medium) {
   .pipeline-order-columns { column-count : 1; }
 }

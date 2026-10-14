@@ -190,14 +190,6 @@ export const glossary: Record<string, GlossaryEntry> = {
     rule       : 'reflow-collections'
   },
 
-  'auto-fix': {
-    aliases    : ['auto-fixes', 'auto-fixing', 'Auto-Fix'],
-    definition : 'Auto-fix is the category of rules whose diagnostics carry a rewrite. '
-               + '`prose format` writes the rewrite, and `prose check` reports it as a '
-               + 'pending change.',
-    families   : ['formatting']
-  },
-
   'band': {
     aliases    : ['bands'],
     definition : 'The band is the block of module-level constants, type aliases, and other '
@@ -530,14 +522,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'string\'s value rather than in the source line, so it stays.',
     families   : ['formatting'],
     rule       : 'shed-backslash-continuations'
-  },
-
-  'lint': {
-    aliases    : ['Lint', 'lint violation', 'lint-only', 'linting'],
-    definition : 'Lint is the category of rules whose diagnostics report a finding without '
-               + 'rewriting it. `prose check` and `prose format` both report lints, and '
-               + 'neither changes the source for one.',
-    families   : ['lint']
   },
 
   'match': {

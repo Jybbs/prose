@@ -78,7 +78,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Exempt the logical line it ends from every rewrite.',
-    effect  : 'Every auto-fix rule skips the logical line the directive ends. Lint findings '
+    effect  : 'Every rewriting rule skips the logical line the directive ends. Lint findings '
             + 'still report, each naming the `# prose: ignore[<rule>]` that silences it.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # fmt: skip',
     form    : '# fmt: skip',
@@ -87,7 +87,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Alias for `# fmt: skip`.',
-    effect  : 'Alias for `# fmt: skip`. Every auto-fix rule skips the logical line it ends.',
+    effect  : 'Alias for `# fmt: skip`. Every rewriting rule skips the logical line it ends.',
     example : 'data = {"a": 1, "b": 2, "c": 3}  # prose: skip',
     form    : '# prose: skip',
     id      : 'prose-skip',
@@ -95,7 +95,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Exempt the line from the listed rewrite rules only.',
-    effect  : 'Only the listed auto-fix rules skip that logical line. Two bracketed directives '
+    effect  : 'Only the listed rules skip that logical line. Two bracketed directives '
             + 'on one line combine their rule slugs.',
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
     form    : '# prose: skip[<rule>, ...]',

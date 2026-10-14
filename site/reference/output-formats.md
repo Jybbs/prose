@@ -14,7 +14,7 @@ The format is chosen per run and defaults to `text`. Every format writes diagnos
 
 ## `text`
 
-The default format prints each diagnostic as a rustc-style snippet, where a caret marks the range the finding covers, a label names the rule, and, for a rule that auto-fixes, a HELP block shows the replacement.
+The default format prints each diagnostic as a rustc-style snippet, where a caret marks the range the finding covers, a label names the rule, and, for a diagnostic carrying a fix, a HELP block shows the replacement.
 
 ```
 warning: align consecutive `=` operators
@@ -161,7 +161,7 @@ The [**GitHub Actions**](/integrations/github-actions) integration page covers t
 
 ## `sarif`
 
-One [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document describing the whole run as a single `runs[0]` entry. Each `results[]` entry carries the rule slug as `ruleId`, the source position as a `physicalLocation`, and, for a rule that auto-fixes, the replacement as a `fixes[]` entry with an `artifactChanges[]` payload. The document is deep enough that an inline sample would be harder to read than the schema linked above.
+One [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document describing the whole run as a single `runs[0]` entry. Each `results[]` entry carries the rule slug as `ruleId`, the source position as a `physicalLocation`, and, for a diagnostic carrying a fix, the replacement as a `fixes[]` entry with an `artifactChanges[]` payload. The document is deep enough that an inline sample would be harder to read than the schema linked above.
 
 Upload the SARIF file through GitHub's CodeQL action to show findings in the repository's Security tab:
 

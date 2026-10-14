@@ -69,7 +69,7 @@ pub struct Diagnostic {
     pub message  : String,            // human-readable explanation of the finding
     pub range    : TextRange,         // source span the finding points at
     pub rule     : RuleId,            // slug of the rule that emitted the finding
-    pub severity : Severity,          // `Format` for auto-fix, `Lint` for report-only
+    pub severity : Severity,          // `Format` for a rewrite, `Lint` for report-only
 }
 ```
 
@@ -130,7 +130,7 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they reach the caller.
 - [[binding-analysis]] builds on first read, carries across a reparse where every rule in the batch keeps every binding, and feeds the rules that read it.
 
-For the rule catalog the pipeline runs, the [**Rules**](/rules/) page lists every shipped rule by category, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
+For the rule catalog the pipeline runs, the [**Rules**](/rules/) page lists every shipped rule beside its family, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
 
 </template>
 

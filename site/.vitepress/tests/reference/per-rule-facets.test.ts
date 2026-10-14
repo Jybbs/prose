@@ -13,7 +13,6 @@ vi.mock('../../lib/rules/rules.data', async () =>
 vi.mock('../../lib/reference/facets.data', () => ({
   data: [
     {
-      badge : '',
       family: 'generic',
       label : 'Generic',
       rules : [
@@ -29,7 +28,6 @@ vi.mock('../../lib/reference/facets.data', () => ({
       ]
     },
     {
-      badge : '🧺',
       family: 'layout',
       label : 'Layout',
       rules : [
@@ -82,6 +80,12 @@ describe('PerRuleFacets', () => {
     expect(heads[0].get('.per-rule-facets-label').text()).toContain('Generic')
     expect(heads[0].get('.per-rule-facets-count').text()).toBe('1 facet')
     expect(heads[1].get('.per-rule-facets-count').text()).toBe('3 facets')
+  })
+
+  it('heads a rule family with its badge and the generic scope with none', () => {
+    const heads = mountFacets().findAll('.per-rule-facets-label')
+    expect(heads.map(head => head.find('use').exists() && head.get('use').attributes('href')))
+      .toStrictEqual([false, '#nib-basket-small'])
   })
 
   it('starts collapsed and expands its section on click', async () => {

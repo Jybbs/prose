@@ -161,10 +161,6 @@
   line-height : 1.5;
 }
 
-.primitives-composition-card-rel-mentions .rule-chip-badge {
-  font-size : var(--prose-text-xs);
-}
-
 .primitives-composition-card-rel-mentions .rule-chip-slug {
   font-size : 0.68rem;
 }

@@ -79,7 +79,7 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 - [[pipeline]] drives the rule run that reads the analysis.
 - [[rule-id]] is the handle each rule registers under in the pipeline's ordering.
 
-For the underlying rules catalog, the [**Rules**](/rules/) page lists every shipped rule across categories, the binding-aware rules that read this table included.
+For the underlying rules catalog, the [**Rules**](/rules/) page lists every shipped rule beside its family, the binding-aware rules that read this table included.
 
 </template>
 

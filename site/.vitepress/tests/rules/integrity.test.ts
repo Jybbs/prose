@@ -4,7 +4,6 @@ import { assertCorpusIntegrity }    from '../../lib/rules/integrity'
 
 const rule = (slug: string, related: readonly string[] = []): DiscoveredRule => ({
   caption  : 'caption',
-  category : 'auto-fix',
   family   : 'alignment',
   href     : `/rules/alignment/${slug}`,
   lints    : false,

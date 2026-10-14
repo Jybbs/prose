@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import InlineProse              from '../base/InlineProse.vue'
-import { useGlossaryFolio }     from '../../../lib/composables/use-glossary-folio'
-import { formatFolio }          from '../../../lib/shared/numerals'
-import { GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
+import InlineProse from '../base/InlineProse.vue'
+import FamilyChip  from '../rules/FamilyChip.vue'
+
+import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
+import { railPaint }        from '../../../lib/shared/family-rail'
+import { formatFolio }      from '../../../lib/shared/numerals'
 
 const { active, activeIndex, filtered, step } = useGlossaryFolio()
 </script>
 
 <template>
-  <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
+  <div
+    class="glossary-folio-stage"
+    :data-family="active?.primaryFamily"
+    :style="active ? { '--rail-paint': railPaint(active.families) } : undefined"
+  >
     <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio kicker">
-          <span
-            v-for="family in active.families"
-            :key="family"
-            class="glossary-folio-chip"
-            :data-family="family"
-          >
-            <span class="glossary-folio-badge" aria-hidden="true">{{ GLOSSARY_FAMILY_META[family].badge }}</span>
-            <span class="glossary-folio-folio-family">{{ GLOSSARY_FAMILY_META[family].label }}</span>
-          </span>
+          <FamilyChip v-for="family in active.families" :key="family" :family="family" :linked="false" />
           <span class="glossary-folio-folio-sep" aria-hidden="true">·</span>
           <span>{{ activeIndex < 0 ? '–' : formatFolio(activeIndex + 1) }} / {{ formatFolio(filtered.length) }}</span>
         </p>

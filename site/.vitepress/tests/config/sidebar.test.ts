@@ -13,7 +13,6 @@ import { fixtureDir }               from '../support'
 const rules: readonly DiscoveredRule[] = [
   {
     caption  : 'Align consecutive assignments',
-    category : 'auto-fix',
     family   : 'alignment',
     href     : '/rules/alignment/align-equals',
     lints    : false,
@@ -22,7 +21,6 @@ const rules: readonly DiscoveredRule[] = [
   },
   {
     caption  : 'Alphabetize sibling entries',
-    category : 'auto-fix',
     family   : 'ordering',
     href     : '/rules/ordering/alphabetize-siblings',
     lints    : false,

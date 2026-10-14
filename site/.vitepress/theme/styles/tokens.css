@@ -26,8 +26,11 @@
   --prose-ease-emphasized        : cubic-bezier(0.4, 0, 0.2, 1);
 
   --prose-tint-faint             : 5%;
+  --prose-tint-wash              : 9%;
   --prose-tint-medium            : 14%;
+  --prose-tint-ground            : 16%;
   --prose-tint-strong            : 32%;
+  --prose-tint-ink               : 58%;
 
   --prose-kicker-size            : var(--prose-text-xxs);
   --prose-kicker-size-sm         : 0.62rem;

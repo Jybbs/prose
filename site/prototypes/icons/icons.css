@@ -60,6 +60,10 @@
   gap       : 8px;
 }
 
+.icon-specimen-chips .icon-emblem {
+  --glyph-size : var(--prose-text-md);
+}
+
 .vp-doc .icon-specimen-tiles {
   display               : grid;
   grid-template-columns : repeat(auto-fill, minmax(96px, 1fr));
@@ -75,6 +79,17 @@
   align-items    : center;
   gap            : 6px;
   margin         : 0;
+}
+
+.icon-specimen-tile {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 32px;
+  height          : 32px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : 50%;
+  font-size       : 1.05rem;
 }
 
 .icon-specimen-card {

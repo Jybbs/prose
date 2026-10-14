@@ -104,7 +104,7 @@ The Python wheel ships the binary rather than the library, so a Python consumer 
 - [[suppression-map]] is built during *Source* construction and read by the pipeline at the edit-emission boundary.
 - [[rule-id]] is the handle each rule registers under, which the pipeline's deterministic ordering reads.
 
-For the rule catalog that runs against the *Source*, the [**Rules**](/rules/) page lists every shipped rule by category.
+For the rule catalog that runs against the *Source*, the [**Rules**](/rules/) page lists every shipped rule beside its family.
 
 </template>
 

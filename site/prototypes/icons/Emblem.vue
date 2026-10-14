@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 
-import * as emblems from './emblems'
+import type { Emblem } from '../../.vitepress/lib/shared/emblems'
+import * as emblems    from './emblems'
 
 const TIP_FILLS = { cut: '#000', ink: 'currentColor' } as const
 
 const props = defineProps<{
-  emblem      : emblems.Emblem
+  emblem      : Emblem
   house       : emblems.House
   standalone ?: boolean
 }>()

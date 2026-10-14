@@ -22,13 +22,13 @@ const house = defineProps<House>()
         variant="family-chip"
         :family="emblem.family"
       >
-        <Emblem class="family-chip-badge" :emblem="emblem" :house="house" />
+        <Emblem :emblem="emblem" :house="house" />
         <span>{{ emblem.name }}</span>
       </Chip>
     </div>
     <ul class="icon-specimen-tiles">
       <li v-for="[emoji, emblem] in EMBLEMS" :key="emoji">
-        <span class="rule-card-badge"><Emblem :emblem="emblem" :house="house" /></span>
+        <span class="icon-specimen-tile"><Emblem :emblem="emblem" :house="house" /></span>
         <span class="kicker">{{ emblem.name }}</span>
       </li>
     </ul>

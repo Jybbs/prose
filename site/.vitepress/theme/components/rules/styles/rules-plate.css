@@ -1,101 +1,75 @@
 .rules-plate {
-  display   : grid;
-  gap       : 14px;
   isolation : isolate;
 }
 
-.rules-cluster {
-  position      : relative;
-  padding       : 18px 24px;
-  border        : 1px solid color-mix(in srgb, var(--family-color) 25%, var(--vp-c-divider));
-  border-radius : var(--prose-radius);
-  background    : color-mix(in srgb, var(--family-color) 6%, var(--vp-c-bg));
+.rules-plate-key {
+  display        : flex;
+  flex-wrap      : wrap;
+  gap            : 8px;
+  margin-top     : 24px;
+  padding-bottom : 18px;
+  border-bottom  : 1px solid var(--vp-c-divider);
 }
 
-.rules-cluster:has(.specimen:hover),
-.rules-cluster:focus-within {
-  z-index : 10;
+.rules-plate-letter {
+  display               : grid;
+  grid-template-columns : 3rem minmax(0, 1fr);
+  gap                   : 0 14px;
+  padding               : 12px 0;
+  border-top            : 1px solid var(--vp-c-divider);
 }
 
-.vp-doc a.rules-cluster-head,
-a.rules-cluster-head {
-  display              : flex;
-  align-items          : center;
-  gap                  : 14px;
-  margin-bottom        : 12px;
-  text-decoration-line : none;
-  color                : inherit;
+.rules-plate-key + .rules-plate-letter {
+  margin-top : 18px;
 }
 
-.vp-doc a.rules-cluster-head:hover,
-a.rules-cluster-head:hover {
-  text-decoration-line : none;
-}
-
-.rules-cluster-emoji {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : 48px;
-  height          : 48px;
-  border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--vp-c-divider));
-  border-radius   : 50%;
-  background      : var(--vp-c-bg);
-  font-size       : 1.4rem;
-  line-height     : 1;
-}
-
-.vp-doc .rules-cluster-name,
-.rules-cluster-name {
-  margin      : 0;
-  padding     : 0;
-  border      : none;
+.rules-plate-cap {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 1.55rem;
+  font-size   : 2.1rem;
   line-height : 1;
-  color       : var(--family-color);
-  text-wrap   : balance;
+  color       : var(--vp-c-text-3);
 }
 
-.vp-doc .rules-cluster-specimens,
-.rules-cluster-specimens {
-  display    : flex;
-  flex-wrap  : wrap;
-  gap        : 8px;
-  list-style : none;
+.vp-doc .rules-plate-slugs,
+.rules-plate-slugs {
+  columns    : 2 11rem;
+  column-gap : 24px;
   margin     : 0;
   padding    : 0;
-  isolation  : isolate;
+  list-style : none;
 }
 
-.vp-doc .rules-cluster-specimens > li,
-.rules-cluster-specimens > li {
-  position             : relative;
-  margin               : 0;
-  padding-inline-start : 0;
-  list-style           : none;
+.vp-doc .rules-plate-slugs > li,
+.rules-plate-slugs > li {
+  display      : flex;
+  align-items  : center;
+  gap          : 8px;
+  margin       : 0;
+  padding      : 3px 0;
+  break-inside : avoid;
 }
 
-.vp-doc .rules-cluster-specimens > li::before,
-.vp-doc .rules-cluster-specimens > li::marker {
-  content : none;
+.vp-doc a.rules-plate-slug,
+a.rules-plate-slug {
+  color                 : var(--vp-c-text-1);
+  font-family           : var(--vp-font-family-mono);
+  font-size             : 0.8rem;
+  font-weight           : 400;
+  line-height           : 1.5;
+  text-decoration       : underline transparent;
+  text-underline-offset : 3px;
+  transition            : text-decoration-color var(--prose-transition);
 }
 
-.vp-doc a.specimen,
-a.specimen {
+.vp-doc a.rules-plate-slug:hover,
+a.rules-plate-slug:hover {
+  text-decoration-color : var(--family-color);
+}
+
+.rules-plate-slugs > li:hover,
+.rules-plate-slugs > li:focus-within {
   position : relative;
-  padding  : 4px 9px;
-  color    : var(--vp-c-text-1);
+  z-index  : 20;
 }
-
-.rules-cluster-specimens > li:hover,
-.rules-cluster-specimens > li:focus-within {
-  z-index : 20;
-}
-
-.specimen-slug {
-  color : var(--family-color);
-}
-
