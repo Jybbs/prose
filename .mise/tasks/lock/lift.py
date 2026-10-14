@@ -339,9 +339,9 @@ class Lift:
     @property
     def major(self) -> bool:
         """
-        Returns whether the lift changes the left-most non-zero part of
-        the version, so `0.33.1` to `0.34.0` is major and `2026.7.0` to
-        `2026.9.0` is not.
+        Returns whether the lift changes the left-most non-zero part of the
+        version, which is the minor part of a `0.x` release and the year of
+        a calendar version.
         """
         current, newest = ordered(self.current).release, ordered(self.newest).release
         leading         = next(
