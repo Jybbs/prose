@@ -2,7 +2,7 @@
 
 ***Prose*** formats Python to be legible at a glance, and every rule it ships answers to a snapshot fixture holding the exact source it reads and the exact source it produces. That pairing is what makes a contribution here cheap to review, because a change to behavior arrives as a readable before-and-after in Python rather than as a claim about Rust.
 
-This page walks a change through each step in the order a contributor takes it, from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against, the corpus sweeps that test it, and the style its source keeps, to the commit, the pull request, and the checks that run on it. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, and the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key.
+This page walks a change through each step in the order a contributor takes it, from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against, the corpus sweeps that test it, the style its source keeps, and the pins it lifts, to the commit, the pull request, and the checks that run on it. The [**rule catalog**](https://prose.fyi/rules/) covers what each rule does, and the [**configuration reference**](https://prose.fyi/reference/configuration) covers every key.
 
 ---
 
@@ -231,6 +231,36 @@ The Rust and the Python in the repository each answer to a formatter run through
 That Python is the task scripts under `.mise/tasks/`, the pytest suite under `.mise/tests/`, and the probe `rust:imports` runs inside the interpreter under test, whereas each `input.py` under `crate/tests/fixtures/` and `site/.vitepress/tests/rules/fixtures/` holds whatever shape its rule acts on and stays out of the set. Both Python tasks read the set from `git ls-files`, so a new file joins it once git tracks it. Both also pass `--no-cache`, because the cache key covers the crate's version rather than the code the checkout builds. `mise lint` reports each rewrite and lint finding without applying any, as GitHub Actions annotations when the `🪻 Prose` row runs it. A `# prose: skip` keeps a statement as written where the order the formatter would sort carries meaning, and a `# prose: ignore[<rule>]` silences the lint rules it names on its line, as the [**suppression guide**](https://prose.fyi/usage/suppression) sets out.
 
 A task script written in Python carries a `.py` suffix, which mise drops from the task's name, so `.mise/tasks/repo/audit.py` runs as `repo:audit`. `mise run repo:audit` fails on a tracked file without the suffix that runs through `uv run --script` or carries a [**PEP 723**](https://peps.python.org/pep-0723/) `script` block, since `mise lint` reads only `.py` files. A docstring in that Python opens on a verb in the third person (*"Returns the config"* rather than *"Return the config"*).
+
+---
+
+## 🪵 Lifting a Pin
+
+Every tool, crate, package, and action the repository depends on is pinned to an exact release, and `mise lift` lists each pin behind its newest release in one Markdown table, giving its current and newest versions, whether the lift is major, how many days ago the newest release was published, and each open Dependabot alert the lift clears. It reads each pin from every home it is written in, meaning `.mise/config.toml`, the workspace's Cargo manifests, `site/package.json`, `crate/pyproject.toml` with its lockfile, the PEP 723 block of each task script, the actions the workflows and composite actions use, and the Rust badge in `.github/README.md`. The task runs by hand rather than on a CI row. A stale pin moves through it, so only a major lift that needs code to change earns an issue of its own.
+
+| **Flag** | **Effect** |
+|---|---|
+| `--try` | Lifts every pin in a scratch clone carrying the checkout's uncommitted and untracked files, installs the tools the clone then pins, and runs `mise ci` there under the clone's own config, logging each attempt under `.cache/lift/`. Where that attempt fails, the task retries with each major lift held back in turn and stops at the first attempt that passes, naming the lift that breaks the tree |
+| `--write` | Writes each lift into every home of its pin, keeping each manifest's aligned layout, locks and installs each tool a lifted mise pin names, moves each lifted package in its manager's lockfile, and runs `mise relock`. Beside `--try`, it writes only once an attempt passes, holding back whatever that attempt held |
+| `--hold <pin>` | Leaves the pin where it stands under either flag while the table still lists it, and passes the hold on to each attempt's clone. A name the table omits exits `2` before any trial or write |
+
+These rules decide what a row of the table holds:
+
+- A lift is major where it changes the left-most non-zero part of the version, so `0.33.1` to `0.34.0` is major and `2026.7.0` to `2026.9.0` is not
+- Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the release `[package.metadata.ruff]` names
+- The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry
+- The `min_version` in `.mise/config.toml` names the oldest mise that reads the config rather than a release to lift to, so it takes no row
+
+### Held Back
+
+A major lift held back from a write is recorded below beside its reason, and each later run passes `--hold` for every pin the table names until the change that lift needs lands.
+
+| **Pin** | **Held At** | **Reason** |
+|---|---|---|
+| `markdown-it` | `14.3.1` | Release 15 types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
+| `ruff` | `0.15.22` | The `ruff_*` crates at `0.0.17` drop the `left` field of `ExprCompare`, read its comparators and the range of `ExprCall` through methods, remove `TokenKind::Name`, `TokenFlags::NON_ASCII_NAME`, and `SourceFile::slice`, and make `binary_search_by_start` private, so the crate's rules change before the lift |
+| `satori` | `0.33.5` | The releases after `0.33.5` render each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
+| `typescript` | `6.0.3` | `vue-tsc` 3.3.13 loads `typescript/lib/tsc`, which TypeScript 7 no longer exports, so `site:typecheck` stops before it checks a file |
 
 ---
 
