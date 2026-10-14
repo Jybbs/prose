@@ -81,7 +81,9 @@ jobs:
           shared-key : ${{ matrix.shared-key }}
 
       - name : ${{ matrix.command }}
-        env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
+        env:
+          CODECOV_TOKEN     : ${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}
+          MISE_GITHUB_TOKEN : ${{ matrix.command == 'mise run lock:check' && github.token || '' }}
         run  : ${{ matrix.command }}
 
   press:
