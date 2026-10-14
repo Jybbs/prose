@@ -241,7 +241,7 @@ Every tool, crate, package, and action the repository depends on is pinned to an
 | **Flag** | **Effect** |
 |---|---|
 | `--try` | Lifts every pin in a scratch clone carrying the checkout's uncommitted and untracked files, installs the tools the clone then pins, and runs `mise ci` there under the clone's own config, logging each attempt under `.cache/lift/`. Where that attempt fails, the task retries with each major lift held back in turn and stops at the first attempt that passes, naming the lift that breaks the tree |
-| `--write` | Writes each lift into every home of its pin, keeping each manifest's aligned layout, locks and installs each tool a lifted mise pin names, moves each lifted package in its manager's lockfile, and runs `mise relock`. Beside `--try`, it writes only once an attempt passes, holding back whatever that attempt held |
+| `--write` | Writes each lift into every home of its pin, keeping each manifest's aligned layout, locks and installs each tool a lifted mise pin names, moves each lifted package in its manager's lockfile, and runs `mise relock`. Where the Python pin moves, it removes `crate/.venv`, which mise creates again on the new interpreter. Beside `--try`, it writes only once an attempt passes, holding back whatever that attempt held |
 | `--hold <pin>` | Leaves the pin where it stands under either flag while the table still lists it, and passes the hold on to each attempt's clone. A name the table omits exits `2` before any trial or write |
 
 These rules decide what a row of the table holds:

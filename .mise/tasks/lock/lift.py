@@ -502,10 +502,7 @@ def attempt(holds: set[str], log: Path) -> bool:
     """
     Returns whether `mise ci` passes in a scratch clone of the checkout
     once every lift but `holds` is written there, logging each command the
-    attempt runs and all it prints to `log`. The virtualenv the clone's
-    mise config declares is rebuilt between the write and `mise ci` on the
-    Python the clone then pins, since the write runs under the one it pinned
-    before.
+    attempt runs and all it prints to `log`.
     """
     root = Path.cwd()
     with TemporaryDirectory(prefix="prose-lift.") as scratch, log.open("w") as out:
@@ -513,11 +510,9 @@ def attempt(holds: set[str], log: Path) -> bool:
         output("git", "clone", "--quiet", "--shared", str(root), str(clone))
         carry(clone, root)
 
-        venv = nested(("env", "_", "python", "venv", "path"), toml(CONFIG))
         step = partial(logged, clone, environment=isolated(clone, root), out=out)
         if not step(["mise", "run", "lock:lift", "--write", *flagged("--hold", holds)]):
             return False
-        rmtree(clone / venv, ignore_errors=True)
         return step(["mise", "run", "ci"])
 
 
@@ -998,6 +993,9 @@ def write(lifts: list[Lift]):
     Writes each of `lifts` into every home of its pins, locks and installs
     the tools a lifted mise pin names, moves each lifted package in its
     manager's lockfile under the written toolset, and runs `mise relock`.
+    Where the `python` pin moves, it removes the virtualenv the mise config
+    declares, which mise creates again on the new Python the next time it
+    loads the config.
     """
     edits = defaultdict(set)
     for home, new, old in (edit for lift in lifts for edit in lift.edits):
@@ -1018,6 +1016,11 @@ def write(lifts: list[Lift]):
     if any(pin.source == "mise" for pin in moved):
         output("mise", "lock")
         output("mise", "install")
+    if any(pin.source == "mise" and pin.name == "python" for pin in moved):
+        rmtree(
+            nested(("env", "_", "python", "venv", "path"), toml(CONFIG)),
+            ignore_errors = True
+        )
     if crates:
         output("mise", "x", "--", "cargo", "update", *flagged("--package", crates))
     if locked:

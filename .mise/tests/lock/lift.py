@@ -256,40 +256,6 @@ def test_attempt_runs_ci_in_a_clone_carrying_the_checkout(
     ]
 
 
-def test_attempt_rebuilds_the_virtualenv_before_ci(
-    fp          : FakeProcess,
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    tmp_path    : Path,
-    tree        : Path
-):
-    """
-    Pins that the virtualenv the clone's mise config declares, which the
-    write builds under the Python pinned before the lift, is gone by the
-    time `mise ci` runs in the clone.
-    """
-    seen = []
-    monkeypatch.setattr(lift, "isolated", lambda clone, root: {"PATH": "/bin"})
-    fp.register(["git", "clone", "--quiet", "--shared", str(tree), fp.any()])
-    fp.register(["git", "diff", "--name-only", "--no-renames", "-z", "HEAD"])
-    fp.register(["git", "ls-files", "--exclude-standard", "--others", "-z"])
-    fp.register(
-        ["mise", "run", "lock:lift", "--write"],
-        callback = lambda process: Path(process.kwargs["cwd"], "crate/.venv").mkdir(
-            parents = True
-        )
-    )
-    fp.register(
-        ["mise", "run", "ci"],
-        callback = lambda process: seen.append(
-            Path(process.kwargs["cwd"], "crate/.venv").exists()
-        )
-    )
-
-    assert lift.attempt(set(), tmp_path / "attempt.log")
-    assert seen == [False]
-
-
 def test_carry_copies_every_change_and_untracked_file(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch,
@@ -1424,7 +1390,8 @@ def test_write_moves_every_home_and_each_lifted_package(
     Pins that a write moves every home of each lift, keeping the aligned
     layout of each manifest, locks and installs the tools a lifted mise pin
     names, names each lifted crate and each lifted project requirement to
-    its manager under the written toolset, and runs `mise relock`.
+    its manager under the written toolset, and runs `mise relock`, leaving
+    the virtualenv in place where the `python` pin stays.
     """
     cargo = ["mise", "x", "--", "cargo", "update", "--package", "serde@1.0.229"]
     uv    = [
@@ -1496,6 +1463,7 @@ def test_write_moves_every_home_and_each_lifted_package(
     for command in [*tools, cargo, uv]:
         fp.register(command)
     fp.register(SYNC, stdout=" M Cargo.lock\n")
+    (tree / "crate/.venv").mkdir(parents=True)
 
     lift.write(lifted)
 
@@ -1510,6 +1478,44 @@ def test_write_moves_every_home_and_each_lifted_package(
     )
     assert [list(call) for call in fp.calls] == [*tools, cargo, uv, SYNC]
     assert capsys.readouterr().out == " M Cargo.lock\n"
+    assert (tree / "crate/.venv").is_dir()
+
+
+def test_write_removes_the_virtualenv_where_python_moves(
+    fp   : FakeProcess,
+    lift : ModuleType,
+    tree : Path
+):
+    """
+    Pins that a write lifting the `python` pin removes the virtualenv the
+    mise config declares once the new Python is installed, so mise creates
+    it again on that Python rather than keeping the one it replaced.
+    """
+    for command in [["mise", "lock"], ["mise", "install"], SYNC]:
+        fp.register(command)
+    (tree / "crate/.venv/bin").mkdir(parents=True)
+
+    lift.write(
+        [row(
+            current = "3.14.6",
+            lift    = lift,
+            name    = "python",
+            newest  = "3.15.0",
+            pins    = (pin(
+                lift    = lift,
+                name    = "python",
+                source  = "mise",
+                written = "3.14.6"
+            ),)
+        )]
+    )
+
+    assert not (tree / "crate/.venv").exists()
+    assert [list(call) for call in fp.calls] == [
+        ["mise", "lock"],
+        ["mise", "install"],
+        SYNC
+    ]
 
 
 def test_write_runs_only_the_relock_for_an_npm_lift(
