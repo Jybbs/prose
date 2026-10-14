@@ -985,7 +985,7 @@ def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     for held in [None, *retries]:
         attempted = holds | {held} - {None}
         named     = f"holding back {held}" if held else "with every lift"
-        log       = logs / f"{sub(r'[^\w.-]+', '-', named)}.log"
+        log       = logs / (sub(r"[^\w.-]+", "-", named) + ".log")
         passed    = attempt(attempted, log)
         print(f"{'passed' if passed else 'failed'} {named}, logged at {log}")
         if passed:

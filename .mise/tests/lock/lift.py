@@ -256,6 +256,40 @@ def test_attempt_runs_ci_in_a_clone_carrying_the_checkout(
     ]
 
 
+def test_attempt_rebuilds_the_virtualenv_before_ci(
+    fp          : FakeProcess,
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    tmp_path    : Path,
+    tree        : Path
+):
+    """
+    Pins that the virtualenv the clone's mise config declares, which the
+    write builds under the Python pinned before the lift, is gone by the
+    time `mise ci` runs in the clone.
+    """
+    seen = []
+    monkeypatch.setattr(lift, "isolated", lambda clone, root: {"PATH": "/bin"})
+    fp.register(["git", "clone", "--quiet", "--shared", str(tree), fp.any()])
+    fp.register(["git", "diff", "--name-only", "--no-renames", "-z", "HEAD"])
+    fp.register(["git", "ls-files", "--exclude-standard", "--others", "-z"])
+    fp.register(
+        ["mise", "run", "lock:lift", "--write"],
+        callback = lambda process: Path(process.kwargs["cwd"], "crate/.venv").mkdir(
+            parents = True
+        )
+    )
+    fp.register(
+        ["mise", "run", "ci"],
+        callback = lambda process: seen.append(
+            Path(process.kwargs["cwd"], "crate/.venv").exists()
+        )
+    )
+
+    assert lift.attempt(set(), tmp_path / "attempt.log")
+    assert seen == [False]
+
+
 def test_carry_copies_every_change_and_untracked_file(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch,
@@ -324,8 +358,9 @@ def test_clearing_matches_a_python_package_across_its_spellings(lift: ModuleType
 def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
     """
     Pins that a row carries an open alert on one of its packages whose first
-    patched version the newest release reaches, and none on another package,
-    on a patch the release falls short of, or with no patch at all.
+    patched version is the newest release or one before it, and none on
+    another package, on a patch the release falls short of, or with no patch
+    at all.
     """
     def alert(name: str, number: int, patched: str | None) -> dict:
         """
@@ -356,10 +391,11 @@ def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
         alert("vite", 1, "8.3.2"),
         alert("vite", 2, "9.0.0"),
         alert("vue", 3, "1.0.0"),
-        alert("vite", 4, None)
+        alert("vite", 4, None),
+        alert("vite", 5, "8.3.4")
     ]
 
-    assert lifted.clearing(alerts).alerts == (1,)
+    assert lifted.clearing(alerts).alerts == (1, 5)
 
 
 def test_isolated_drops_what_the_checkout_set(

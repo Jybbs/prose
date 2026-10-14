@@ -259,7 +259,7 @@ A major lift held back from a write is recorded below beside its reason, and eac
 |---|---|---|
 | `markdown-it` | `14.3.1` | Release 15 types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
 | `ruff` | `0.15.22` | The `ruff_*` crates at `0.0.17` drop the `left` field of `ExprCompare`, read its comparators and the range of `ExprCall` through methods, remove `TokenKind::Name`, `TokenFlags::NON_ASCII_NAME`, and `SourceFile::slice`, and make `binary_search_by_start` private, so the crate's rules change before the lift |
-| `satori` | `0.33.5` | Release 0.56 renders each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
+| `satori` | `0.33.5` | The releases after `0.33.5` render each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
 | `typescript` | `6.0.3` | `vue-tsc` 3.3.13 loads `typescript/lib/tsc`, which TypeScript 7 no longer exports, so `site:typecheck` stops before it checks a file |
 
 ---
