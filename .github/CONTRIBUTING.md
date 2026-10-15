@@ -246,7 +246,7 @@ Every tool, crate, package, and action the repository depends on is pinned to an
 
 These rules decide what a row of the table holds:
 
-- A lift is major where it changes the left-most non-zero part of the version, so a lift between two `0.x` releases is major when the minor part changes, and a lift between two calendar versions is major only when the year changes
+- A lift is major where it changes the left-most non-zero part of the version, so a lift between two `0.x.y` releases is major when the minor part changes, a lift between two `0.0.z` releases when the patch part changes, and a lift between two calendar versions only when the year changes
 - Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the release `[package.metadata.ruff]` names
 - The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry
 - The `min_version` in `.mise/config.toml` names the oldest mise that reads the config rather than a release to lift to, so it takes no row

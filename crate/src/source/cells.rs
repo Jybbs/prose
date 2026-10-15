@@ -298,7 +298,7 @@ mod tests {
         let recut = before.recut_cells(offsets, &after.ast().body, after.text());
         assert_eq!(recut[1], TextSize::new(18));
         assert_eq!(recut[2], TextSize::new(28));
-        assert!(recut.windows(2).all(|pair| pair[0] < pair[1]));
+        assert!(recut.is_sorted_by(|a, b| a < b));
     }
 
     #[rstest]

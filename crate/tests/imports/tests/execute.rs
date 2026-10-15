@@ -25,7 +25,7 @@ fn probed(files: &[(&str, &str)], module: &str) -> Outcome {
     let python = interpreter();
     assert!(
         target(&version(&python)) >= PythonVersion::PY314,
-        "the probe tests need the pinned 3.14 interpreter, found {python}",
+        "the probe tests need a 3.14 or later interpreter, found {python}",
     );
     let dir = tempfile::tempdir().expect("a scratch corpus");
     for (path, text) in files {

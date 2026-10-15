@@ -340,8 +340,8 @@ class Lift:
     def major(self) -> bool:
         """
         Returns whether the lift changes the left-most non-zero part of the
-        version, which is the minor part of a `0.x` release and the year of
-        a calendar version.
+        version, which is the minor part of a `0.x.y` release, the patch
+        part of a `0.0.z` release, and the year of a calendar version.
         """
         current, newest = ordered(self.current).release, ordered(self.newest).release
         leading         = next(

@@ -95,7 +95,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Exempt the line from the listed rewrite rules only.',
-    effect  : 'Only the listed rules skip that logical line. Two bracketed directives '
+    effect  : 'Only the rewrites of the listed rules skip that logical line. Two bracketed directives '
             + 'on one line combine their rule slugs.',
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
     form    : '# prose: skip[<rule>, ...]',

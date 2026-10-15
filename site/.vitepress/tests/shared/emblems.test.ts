@@ -10,7 +10,7 @@ import { GLOSSARY_FAMILY_META, type GlossaryFamily } from '../../lib/shared/regi
 const FAMILIES_LISTED = Object.keys(GLOSSARY_FAMILY_META) as GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
 
-// Reads each custom property a stylesheet declares under `selector`.
+// Reads each declaration a stylesheet makes under `selector`.
 function declared(file: string | URL, selector: string): Record<string, string> {
   const props: Record<string, string> = {}
   parseCss(fs.readFileSync(file, 'utf8')).walkRules(rule => {
@@ -92,6 +92,15 @@ describe('the badge ink', () => {
   it.each(cases)('clears 3:1 on its ground in the %s scheme for %s', (_scheme, _who, hue, colors) => {
     const contrast = wcagContrast(mix(hue, colors.text, ink), mix(hue, colors.bg, ground))
     expect(contrast).toBeGreaterThanOrEqual(3)
+  })
+
+  it('applies the ink and the ground these cases measure', () => {
+    const nib = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
+    const hue = 'var(--family-color, var(--vp-c-brand-1))'
+    expect(declared(nib, '.nib-badge').color)
+      .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ink), var(--vp-c-text-1))`)
+    expect(declared(nib, '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link')['background-color'])
+      .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ground), var(--vp-c-bg))`)
   })
 
   it.each(Object.entries(SCHEMES))('keeps each family an ink of its own in the %s scheme', (_scheme, colors) => {
