@@ -39,6 +39,7 @@ manifests = [
   "wasm/Cargo.toml"
 ]
 site      = [
+  ".github/scripts/platforms.toml",
   ".mise/bin/**",
   ".mise/config.toml",
   "site/**/*",
