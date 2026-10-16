@@ -1,7 +1,7 @@
 import { inlineText }                  from '../markdown/inline-text'
 import * as parts                      from '../og/render/parts'
 import * as constants                  from '../shared/constants'
-import { sectionOf }                   from '../shared/registries'
+import { indexSectionOf, sectionOf }   from '../shared/registries'
 import { canonicalUrl }                from './canonical-url'
 import { articleLd, landingLd }        from './json-ld'
 import { ogImageUrl, TOUCH_ICON_PATH } from './og-url'
@@ -12,12 +12,15 @@ export const DESCRIPTION_FIELDS = ['description', 'caption', 'summary'] as const
 export const TITLE_TEMPLATE     = `:title · ${constants.SITE_NAME}`
 
 // Sets the description to the first `DESCRIPTION_FIELDS` entry the frontmatter
-// holds as a string, flattened to plain text, and titles the landing page with
-// the site name and tagline in place of `TITLE_TEMPLATE`.
+// holds as a string, flattened to plain text, titles a section's index page
+// with its `SECTIONS` label, and titles the landing page with the site name and
+// tagline in place of `TITLE_TEMPLATE`.
 export function describePage(pageData: PageData): void {
   const source = DESCRIPTION_FIELDS.map(field => pageData.frontmatter[field])
     .find(value => typeof value === 'string')
   if (source !== undefined) pageData.description = inlineText(source)
+  const section = indexSectionOf(pageData.relativePath)
+  if (section !== undefined) pageData.title = section.label
   if (pageData.relativePath === 'index.md') {
     Object.assign(pageData, { title: constants.SITE_ALT, titleTemplate: false })
   }

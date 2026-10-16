@@ -26,7 +26,7 @@ A rejoined line that would overflow the budget takes parentheses instead, wrappi
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-backslash-continuations]` directive, which covers every line a continued statement spans.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-backslash-continuations]` directive, which covers every line a continued statement spans.
 
 </template>
 

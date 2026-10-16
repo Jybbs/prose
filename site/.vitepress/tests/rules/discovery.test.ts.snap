@@ -7,6 +7,7 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "family": "alignment",
     "href": "/rules/alignment/align-equals",
     "lints": false,
+    "name": "Align Equals",
     "related": [
       "alphabetize-siblings",
     ],
@@ -17,6 +18,7 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
     "family": "ordering",
     "href": "/rules/ordering/alphabetize-siblings",
     "lints": false,
+    "name": "Alphabetize Siblings",
     "related": [],
     "slug": "alphabetize-siblings",
   },

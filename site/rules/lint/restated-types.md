@@ -24,7 +24,7 @@ Nothing here is rewritten, because deciding which of two disagreeing types is co
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[restated-types]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[restated-types]` directive.
 
 </template>
 

@@ -5,14 +5,14 @@ import Emblem                   from '../../../prototypes/icons/Emblem.vue'
 import * as emblems             from '../../../prototypes/icons/emblems'
 import IconSpecimen             from '../../../prototypes/icons/IconSpecimen.vue'
 import NibSpecimen              from '../../../prototypes/icons/NibSpecimen.vue'
+import { data as platforms }    from '../../lib/guide/platforms.data'
 import type { Motif }           from '../../lib/shared/emblems'
 import { GLOSSARY_FAMILY_META } from '../../lib/shared/registries'
-import { data as platforms }    from '../../lib/usage/platforms.data'
 import { rendersAccessibly }    from '../axe'
 
-import type loader from '../../lib/usage/platforms.data'
+import type loader from '../../lib/guide/platforms.data'
 
-vi.mock('../../lib/usage/platforms.data', async importOriginal =>
+vi.mock('../../lib/guide/platforms.data', async importOriginal =>
   ({ data: await (await importOriginal<{ default: typeof loader }>()).default.load([]) }))
 
 const basket    = emblems.EMBLEMS.get(GLOSSARY_FAMILY_META.layout.badge)!

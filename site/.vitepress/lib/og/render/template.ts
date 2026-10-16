@@ -89,8 +89,8 @@ function panelRows(page: OgPage): ReadonlyArray<readonly [string, string]> {
     }
     return rows
   }
-  if (page.kind === 'primitives' && page.primitive) {
-    return [['Section', 'primitives'], ['Surface', page.primitive.stability]]
+  if (page.kind === 'architecture' && page.primitive) {
+    return [['Section', page.kind], ['Surface', page.primitive.stability]]
   }
   return []
 }

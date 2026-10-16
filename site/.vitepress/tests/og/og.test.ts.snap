@@ -36,14 +36,14 @@ exports[`enumeratePages > shapes an OgPage per chapter page, skipping index and 
   {
     "accent": "#6db0b5",
     "breadcrumb": [
-      "Primitives",
+      "Architecture",
     ],
-    "kind": "primitives",
-    "outputPath": "og/primitives/aligner.png",
+    "kind": "architecture",
+    "outputPath": "og/architecture/aligner.png",
     "primitive": {
       "stability": "public",
     },
-    "title": "Aligner",
+    "title": "The Aligner Module",
   },
   {
     "accent": "#adbdcd",
@@ -66,10 +66,10 @@ exports[`enumeratePages > shapes an OgPage per chapter page, skipping index and 
   {
     "accent": "#cdbda5",
     "breadcrumb": [
-      "Usage",
+      "Guide",
     ],
-    "kind": "usage",
-    "outputPath": "og/usage/quick-start.png",
+    "kind": "guide",
+    "outputPath": "og/guide/quick-start.png",
     "title": "Quick Start",
   },
   {

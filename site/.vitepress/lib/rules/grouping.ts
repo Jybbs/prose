@@ -5,7 +5,6 @@ import type { DiscoveredRule }           from './discovery'
 export interface RenderedRule extends DiscoveredRule {
   captionHtml : string
   familyLabel : string
-  name        : string
 }
 
 export interface RulesData {

@@ -1,7 +1,8 @@
 """
 Pins the pins `lock:lift` reads from each home, the reports and registries
-it reads their newest releases from, the rows and the table it prints, the
-holds it accepts, the attempts its trial runs, and what its write changes.
+it reads their newest releases from, the releases mise's cutoff holds back,
+the rows and the tables it prints, the holds it accepts, the attempts its
+trial runs, and what its write changes.
 """
 
 from collections.abc   import Callable
@@ -295,6 +296,34 @@ def test_carry_copies_every_change_and_untracked_file(
     assert not (clone / "ignored").exists()
 
 
+@mark.parametrize(
+    ("age", "published", "cleared"),
+    [
+        param("24h", WHEN, WHEN + timedelta(hours=24), id = "hours"),
+        param("2w", WHEN, WHEN + timedelta(weeks=2), id = "weeks"),
+        param("90s", WHEN, WHEN + timedelta(seconds=90), id = "seconds"),
+        param("30m", WHEN, WHEN + timedelta(minutes=30), id = "minutes"),
+        param("6mo", WHEN, None, id = "months"),
+        param("1y", WHEN, None, id = "year"),
+        param("2024-06-01", WHEN, None, id = "date"),
+        param("24h", None, None, id = "unreported")
+    ]
+)
+def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
+    age       : str,
+    cleared   : datetime | None,
+    lift      : ModuleType,
+    published : datetime | None
+):
+    """
+    Pins that a cutoff counted in seconds, minutes, hours, days, or weeks
+    clears a release that long after it was published, and that a cutoff
+    given as a date or a longer span, or a release reporting no time, has no
+    clearing time.
+    """
+    assert lift.Release("1.99.1", published).cleared(age) == cleared
+
+
 def test_clearing_matches_a_python_package_across_its_spellings(lift: ModuleType):
     """
     Pins that a pip alert on `PyYAML` clears for a pin written `pyyaml`,
@@ -362,6 +391,113 @@ def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
     ]
 
     assert lifted.clearing(alerts).alerts == (1, 5)
+
+
+@mark.parametrize(
+    ("result", "age"),
+    [
+        param({"stdout": "7d\n"}, "7d", id = "set"),
+        param({"returncode": 1}, "24h", id = "unset")
+    ]
+)
+def test_cutoff_reads_the_setting_or_takes_the_default(
+    age    : str,
+    fp     : FakeProcess,
+    lift   : ModuleType,
+    result : dict
+):
+    """
+    Pins that the cutoff is the `minimum_release_age` mise's settings name,
+    and mise's `24h` default where `mise settings get` finds none set, read
+    once however many tools ask for it.
+    """
+    fp.register(["mise", "settings", "get", "minimum_release_age"], **result)
+
+    assert (lift.cutoff(), lift.cutoff()) == (age, age)
+
+
+@mark.parametrize(
+    ("spec", "age", "asked"),
+    [
+        param('rust = "1.99.0"\n', timedelta(hours=24), 1, id = "setting"),
+        param(
+            'rust = { version = "1.99.0", minimum_release_age = "7d" }\n',
+            timedelta(days=7),
+            0,
+            id = "tool option"
+        )
+    ]
+)
+def test_held_lists_each_stable_release_newer_than_the_report(
+    age     : timedelta,
+    asked   : int,
+    fp      : FakeProcess,
+    lift    : ModuleType,
+    spec    : str,
+    workdir : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a tool holds back each stable release newer than the one its
+    report gives, read with the cutoff off and clearing at its publication
+    plus the tool's own cutoff where its spec sets one and the setting
+    otherwise, and that an older release, a prerelease, and a nightly stay
+    out.
+    """
+    workdir({".mise/config.toml": f"[tools]\n{spec}"})
+    listed = [
+        {"created_at": "2026-09-01T00:00:00Z", "version": "1.99.0"},
+        {"created_at": "2026-10-01T00:00:00Z", "version": "1.99.1"},
+        {"created_at": "2026-10-01T00:00:00Z", "version": "2.0.0-beta.1"},
+        {"created_at": "2026-10-01T00:00:00Z", "version": "nightly-2026-10-01"},
+        {"version": "1.99.2"}
+    ]
+    settings = ["mise", "settings", "get", "minimum_release_age"]
+    fp.register(
+        ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"],
+        stdout = dumps(listed)
+    )
+    fp.register(settings, occurrences=asked, returncode=1)
+
+    tool = pin(
+        lift    = lift,
+        name    = "rust",
+        source  = "mise",
+        written = "1.98.1"
+    )
+
+    assert tool.held("1.99.0") == [
+        lift.Held(WHEN + age, "rust", "1.99.1"),
+        lift.Held(None, "rust", "1.99.2")
+    ]
+    assert fp.call_count(settings) == asked
+
+
+def test_held_lists_nothing_at_the_newest_stable_release(
+    fp   : FakeProcess,
+    lift : ModuleType
+):
+    """
+    Pins that a tool whose report gives its newest stable release holds
+    nothing back, newer prereleases included, and never asks mise for the
+    cutoff.
+    """
+    listed = [
+        {"created_at": "2026-10-01T00:00:00Z", "version": "1.99.1"},
+        {"created_at": "2026-10-01T00:00:00Z", "version": "2.0.0-beta.1"}
+    ]
+    fp.register(
+        ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"],
+        stdout = dumps(listed)
+    )
+
+    tool = pin(
+        lift    = lift,
+        name    = "rust",
+        source  = "mise",
+        written = "1.99.1"
+    )
+
+    assert tool.held("1.99.1") == []
 
 
 def test_isolated_drops_what_the_checkout_set(
@@ -469,12 +605,15 @@ def test_main_exits_2_on_a_hold_the_table_omits(
     monkeypatch.setattr(
         lift,
         "table",
-        lambda: [row(
-            current = "1",
-            lift    = lift,
-            name    = "vite",
-            newest  = "2"
-        )]
+        lambda: (
+            [row(
+                current = "1",
+                lift    = lift,
+                name    = "vite",
+                newest  = "2"
+            )],
+            []
+        )
     )
     monkeypatch.setattr(lift, "tried", lambda *args: ran.append("tried"))
     monkeypatch.setattr(lift, "write", lambda *args: ran.append("write"))
@@ -487,6 +626,34 @@ def test_main_exits_2_on_a_hold_the_table_omits(
     assert (stopped.value.code, ran) == (2, [])
     assert "`vite`" in printed.out
     assert "--hold names pins the table omits: nope" in printed.err
+
+
+@mark.parametrize(
+    "held",
+    [
+        param([], id = "none held"),
+        param([("rust", "1.99.1")], id = "held")
+    ]
+)
+def test_main_lists_the_held_releases_apart_from_the_lifts(
+    capsys      : CaptureFixture[str],
+    held        : list[tuple[str, str]],
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch
+):
+    """
+    Pins that the releases the cutoff holds back print in a table of their
+    own below the lifts, and that nothing follows the lifts where none is
+    held.
+    """
+    waiting = [lift.Held(WHEN, name, version) for name, version in held]
+    monkeypatch.setattr(lift, "table", lambda: ([], waiting))
+    monkeypatch.setattr("sys.argv", ["lift"])
+
+    lift.main()
+
+    tail = f"\n{lift.waiting(waiting)}\n" if waiting else ""
+    assert capsys.readouterr().out == f"{lift.rendered([])}\n{tail}"
 
 
 def test_main_writes_the_lifts_the_passing_attempt_kept(
@@ -504,7 +671,7 @@ def test_main_writes_the_lifts_the_passing_attempt_kept(
         newest  = "2.0.0"
     ) for name in ("ruff", "serde", "vite")]
     written = []
-    monkeypatch.setattr(lift, "table", lambda: lifted)
+    monkeypatch.setattr(lift, "table", lambda: (lifted, []))
     monkeypatch.setattr(lift, "tried", lambda holds, lifts: holds | {"ruff"})
     monkeypatch.setattr(
         lift,
@@ -883,17 +1050,16 @@ def test_released_reads_the_time_mise_lists_for_a_tool(
 ):
     """
     Pins that a tool's release time is the `created_at` mise lists beside
-    that version, and that a version listed without one reports no time.
+    that version with its `minimum_release_age` cutoff off, that a version
+    listed without one reports no time, and that one listing serves every
+    version read off the tool.
     """
     listed = [
         {"created_at": "2026-10-01T00:00:00.0Z", "version": "1.99.0"},
         {"version": "3.15.0"}
     ]
-    fp.register(
-        ["mise", "ls-remote", "--json", "rust"],
-        stdout      = dumps(listed),
-        occurrences = 2
-    )
+    remote = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
+    fp.register(remote, stdout=dumps(listed))
 
     tool = pin(
         lift    = lift,
@@ -904,6 +1070,7 @@ def test_released_reads_the_time_mise_lists_for_a_tool(
 
     assert tool.released("1.99.0") == lift.Release("1.99.0", WHEN)
     assert tool.released("3.15.0") == lift.Release("3.15.0")
+    assert fp.call_count(remote) == 1
 
 
 @mark.parametrize(
@@ -1073,12 +1240,15 @@ def test_main_moves_nothing_where_every_lift_is_held(
     monkeypatch.setattr(
         lift,
         "table",
-        lambda: [row(
-            current = "1",
-            lift    = lift,
-            name    = "vite",
-            newest  = "2"
-        )]
+        lambda: (
+            [row(
+                current = "1",
+                lift    = lift,
+                name    = "vite",
+                newest  = "2"
+            )],
+            []
+        )
     )
     monkeypatch.setattr(lift, "tried", lambda *args: ran.append("tried"))
     monkeypatch.setattr(lift, "write", lambda *args: ran.append("write"))
@@ -1265,21 +1435,82 @@ def test_shown_drops_build_metadata_and_cuts_to_its_parts(lift: ModuleType):
     assert lift.Home("README.md", parts=2).shown("1.99.0") == "1.99"
 
 
-def test_tagged_reads_an_annotated_tag_as_the_commit_beneath_it(
-    fp   : FakeProcess,
-    lift : ModuleType
+@mark.parametrize(
+    "text",
+    [
+        param("2026-10-01T00:00:00Z", id = "utc"),
+        param("2026-10-01T02:00:00+02:00", id = "offset"),
+        param("2026-10-01T00:00:00", id = "no zone")
+    ]
+)
+def test_stamp_reads_every_time_as_utc(lift: ModuleType, text: str):
+    """
+    Pins that a time naming a zone, an offset, or none reads as the same
+    instant in UTC, so the held table's clearing time is the hour it labels.
+    """
+    assert lift.stamp(text).isoformat() == "2026-10-01T00:00:00+00:00"
+
+
+def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    released    : list[tuple]
 ):
     """
-    Pins that a lightweight tag maps to the commit it names and that an
-    annotated tag maps to the commit `ls-remote` peels it to, whichever line
-    comes first, since that commit is the one a workflow pins.
+    Pins that the table asks each tool for the releases held back past the
+    newest release its report gives, or past its written version where the
+    report omits it, and lists them by name and then by version.
     """
-    fp.register(
-        ["git", "ls-remote", "--tags", "https://github.com/owner/action"],
-        stdout = f"{NEW}\trefs/tags/v2^{{}}\n{OLD}\trefs/tags/v1\n{OLD}\trefs/tags/v2\n"
+    asked = []
+    found = [
+        pin(
+            keys    = ("tools", "zizmor"),
+            lift    = lift,
+            name    = "zizmor",
+            path    = ".mise/config.toml",
+            source  = "mise",
+            written = "1.31.0"
+        ),
+        pin(
+            keys    = ("tools", "rust"),
+            lift    = lift,
+            name    = "rust",
+            path    = ".mise/config.toml",
+            source  = "mise",
+            written = "1.98.1"
+        )
+    ]
+    holding = {
+        "rust"   : [("rust", "1.99.10"), ("rust", "1.99.2")],
+        "zizmor" : [("zizmor", "1.32.0")]
+    }
+
+    def held(holder: object, newest: str) -> list:
+        """
+        Records the newest release the pin `holder` is held back past and
+        returns the releases `holding` names for it.
+        """
+        asked.append((holder.name, newest))
+        return [lift.Held(None, *each) for each in holding[holder.name]]
+
+    monkeypatch.setattr(lift, "pins", lambda: found)
+    monkeypatch.setattr(lift, "alerts", lambda: [])
+    monkeypatch.setattr(lift.Pin, "held", held)
+    monkeypatch.setattr(
+        lift.Reports,
+        "read",
+        lambda scripts: lift.Reports({("mise", "rust", "1.98.1"): "1.99.0"})
     )
 
-    assert lift.tagged("owner/action") == {"v1": OLD, "v2": NEW}
+    lifts, waiting = lift.table()
+
+    assert sorted(asked) == [("rust", "1.99.0"), ("zizmor", "1.31.0")]
+    assert [(each.name, each.version) for each in waiting] == [
+        ("rust", "1.99.2"),
+        ("rust", "1.99.10"),
+        ("zizmor", "1.32.0")
+    ]
+    assert [(each.name, each.newest) for each in lifts] == [("rust", "1.99.0")]
 
 
 @mark.parametrize(
@@ -1349,8 +1580,26 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
     )
     monkeypatch.setattr(lift, "alerts", lambda: asked.append("alerts") or alerts)
 
-    assert [(each.name, each.alerts) for each in lift.table()] == rows
+    lifts, held = lift.table()
+    assert ([(each.name, each.alerts) for each in lifts], held) == (rows, [])
     assert asked == [[".mise/tasks/repo/audit.py"], *(["alerts"] if read else [])]
+
+
+def test_tagged_reads_an_annotated_tag_as_the_commit_beneath_it(
+    fp   : FakeProcess,
+    lift : ModuleType
+):
+    """
+    Pins that a lightweight tag maps to the commit it names and that an
+    annotated tag maps to the commit `ls-remote` peels it to, whichever line
+    comes first, since that commit is the one a workflow pins.
+    """
+    fp.register(
+        ["git", "ls-remote", "--tags", "https://github.com/owner/action"],
+        stdout = f"{NEW}\trefs/tags/v2^{{}}\n{OLD}\trefs/tags/v1\n{OLD}\trefs/tags/v2\n"
+    )
+
+    assert lift.tagged("owner/action") == {"v1": OLD, "v2": NEW}
 
 
 def test_tried_stops_where_no_attempt_passes(
@@ -1377,6 +1626,27 @@ def test_tried_stops_where_no_attempt_passes(
         )
 
     assert stopped.value.code == "no attempt passed, so nothing is written"
+
+
+def test_waiting_lists_each_held_release_under_the_cutoff(lift: ModuleType):
+    """
+    Pins the sentence naming the cutoff above the held table, and each row
+    beside the time its release clears, empty where no time is known.
+    """
+    held = [
+        lift.Held(WHEN + timedelta(hours=24), "rust", "1.99.1"),
+        lift.Held(None, "zizmor", "1.32.0")
+    ]
+
+    assert lift.waiting(held).splitlines() == [
+        "The `minimum_release_age` cutoff holds these releases back from every "
+        "write until each clears:",
+        "",
+        "| **Pin**  | **Release** | **Clears**           |",
+        "|----------|-------------|----------------------|",
+        "| `rust`   | `1.99.1`    | 2026-10-02 00:00 UTC |",
+        "| `zizmor` | `1.32.0`    |                      |"
+    ]
 
 
 def test_write_moves_every_home_and_each_lifted_package(

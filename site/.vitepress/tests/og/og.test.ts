@@ -18,10 +18,10 @@ describe('enumeratePages', () => {
       'rules/index.md',
       'rules/alignment/index.md',
       'rules/alignment/demo-rule.md',
-      'primitives/aligner.md',
+      'architecture/aligner.md',
       'reference/cli.md',
       'reference/named.md',
-      'usage/quick-start.md',
+      'guide/quick-start.md',
       'integrations/editor.md'
     ]
     expect(enumeratePages(srcDir, pages)).toMatchSnapshot()
@@ -33,7 +33,7 @@ describe('enumeratePages', () => {
   })
 
   it('falls back to internal stability and the titled slug for an undiscovered primitive', () => {
-    const [page] = enumeratePages(srcDir, ['primitives/ghost.md'])
+    const [page] = enumeratePages(srcDir, ['architecture/ghost.md'])
     expect(page).toMatchObject({ primitive: { stability: 'internal' }, title: 'Ghost' })
   })
 })
@@ -61,7 +61,7 @@ describe('cardKeyer', () => {
     expect(keyOf('landing')).not.toBe(cardKey.cardKeyer(brand, graph, '0.2.0')('landing'))
     expect(keyOf('landing')).not.toBe(keyOf('icon'))
     expect(keyOf('landing'))
-      .not.toBe(keyOf({ breadcrumb: [], kind: 'usage', outputPath: 'o', title: 'T' }))
+      .not.toBe(keyOf({ breadcrumb: [], kind: 'guide', outputPath: 'o', title: 'T' }))
   })
 
   it('gives a different key when a module source or a package version changes', () => {

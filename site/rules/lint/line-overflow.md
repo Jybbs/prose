@@ -56,7 +56,7 @@ A literal with no interior whitespace has nowhere legal to break, so a URL, a ha
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[line-overflow]` directive. The [**Lengths**](/reference/configuration#lengths) section of the configuration reference states the hard-limit contract on the caps that this rule completes.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[line-overflow]` directive. The [**Lengths**](/reference/configuration#lengths) section of the configuration reference states the hard-limit contract on the caps that this rule completes.
 
 </template>
 

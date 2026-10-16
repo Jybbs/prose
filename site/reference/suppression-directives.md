@@ -4,7 +4,7 @@ description: "Covers `# fmt: off / on`, `# fmt: skip`, the `# yapf` aliases, `# 
 
 # Suppression Directives
 
-A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or construct scope. The [**Suppression**](/usage/suppression) chapter covers when to reach for each, and this page is the complete list.
+A directive exempts code from *Prose*'s rewrites or lints at the file, block, line, or construct scope. The [**Suppression**](/guide/suppression) chapter covers when to reach for each, and this page is the complete list.
 
 A pragma from another tool *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, and the rest of the Python tooling pragmas)* is invisible to *Prose* wherever it is not named below. The walker reads it as an ordinary comment and the rules ignore it, so it sits beside the directives further down with no further setup.
 
@@ -55,7 +55,9 @@ foo = 1  # prose: skip[align-equals]
 bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 ```
 
-A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list holds nothing out and [[inert-directives]] reports it, and two bracketed directives on one line combine their lists.
+A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list holds nothing out, and two bracketed directives on one line combine their lists. [[inert-directives]] reports the unknown slug, along with a skip whose removal leaves every rule it names making the same edits.
+
+A skipped single-line statement inside an alignment group stays as written while the rows around it still align on one column, so the exempt row reads as a deliberate exception rather than breaking the group, whereas a skipped statement spanning several lines ends the run. A skip naming a layout rule (*`# prose: skip[reflow-calls]`, `# prose: skip[reflow-collections]`*) leaves the line that rule would have split running past its cap, and [[line-overflow]] reports that line unless a `# prose: ignore[line-overflow]` on it silences the report too.
 
 A skip reaches the rewrite rules only, so a lint finding on the statement still prints, its message closing on the `# prose: ignore[<rule>]` that silences it. That directive sits on the line the finding starts on, which for a wrapped statement is its first line rather than the line carrying the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
@@ -148,4 +150,4 @@ A `# prose: off` at the end of a statement *(such as `x = 1  # prose: off`)* is 
 
 Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report, and [[inert-directives]] spares the directive rather than reporting it, since a run that selects the rule needs it.
 
-The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, and the [**Suppression**](/usage/suppression) chapter covers when to reach for each directive.
+The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, and the [**Suppression**](/guide/suppression) chapter covers when to reach for each directive.

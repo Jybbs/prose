@@ -134,4 +134,4 @@ Globs are relative to the directory of the config that declares them, so `tests/
 
 ## Subset by Invocation
 
-`--select` and `--ignore` on the command line take precedence over the configured rule set for one run. The [**Quick Start**](/usage/quick-start#subset-the-active-rules) chapter covers the flags, the [**CLI Reference**](/reference/cli) the full flag list, and the [**Suppression**](/usage/suppression) chapter the per-line opt-outs.
+`--select` and `--ignore` on the command line take precedence over the configured rule set for one run. The [**Quick Start**](/guide/quick-start#subset-the-active-rules) chapter covers the flags, the [**CLI Reference**](/reference/cli) the full flag list, and the [**Suppression**](/guide/suppression) chapter the per-line opt-outs.

@@ -1,4 +1,4 @@
-import type { WheelPlatform }                        from '../usage/platforms'
+import type { WheelPlatform }                        from '../guide/platforms'
 import { lookup }                                    from './lookup'
 import { GLOSSARY_FAMILY_META, type GlossaryFamily } from './registries'
 

@@ -14,7 +14,7 @@ Two forms are recognized, the bare numeric-dot form `# N. text` and the `Step`-p
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[step-narration]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[step-narration]` directive.
 
 </template>
 

@@ -1,4 +1,4 @@
-import type { DiscoveredPrimitive } from '../../lib/primitives/discovery'
+import type { DiscoveredPrimitive } from '../../lib/architecture/discovery'
 import type { DiscoveredRule }      from '../../lib/rules/discovery'
 import { assertCorpusIntegrity }    from '../../lib/rules/integrity'
 
@@ -7,6 +7,7 @@ const rule = (slug: string, related: readonly string[] = []): DiscoveredRule => 
   family   : 'alignment',
   href     : `/rules/alignment/${slug}`,
   lints    : false,
+  name     : slug,
   related,
   slug
 })

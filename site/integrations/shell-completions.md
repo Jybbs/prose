@@ -19,4 +19,4 @@ The script is generated from the flags and rules compiled into the `prose` binar
 
 A new release that adds a flag or a rule shows it in the menu once the script is regenerated. Re-run the install command from the widget against the upgraded binary to overwrite the script, and the next shell session reads the new one.
 
-The [**CLI Reference**](/reference/cli) lists every flag. Completions install after the binary is on `PATH`, so the [**Installation**](/usage/installation) chapter comes first.
+The [**CLI Reference**](/reference/cli) lists every flag. Completions install after the binary is on `PATH`, so the [**Installation**](/guide/installation) chapter comes first.

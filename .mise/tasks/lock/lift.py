@@ -8,12 +8,16 @@
 """
 Lists every pin behind its newest release as one Markdown table, then tries
 the lifts in a scratch clone under `--try` and writes them under `--write`.
+A second table lists each newer tool release mise's `minimum_release_age`
+cutoff holds back, beside the time the cutoff clears it.
 
 A pin is read from each home it is written in. Pins sharing a name, which
 covers every set `repo:audit` holds equal, take one row and move together,
 and so do the `ruff_*` crates with the release `[package.metadata.ruff]`
 names. The reports of mise, Cargo, uv, and bun give the newest release of
-the pins they cover, and a registry gives it for every other pin.
+the pins they cover, and a registry gives it for every other pin. A release
+the cutoff holds back stays out of mise's report, so no row or write takes
+one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
@@ -31,10 +35,11 @@ from collections        import defaultdict
 from collections.abc    import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses        import dataclass, replace
-from datetime           import UTC, datetime
-from functools          import partial, reduce
+from datetime           import UTC, datetime, timedelta
+from functools          import cache, partial, reduce
 from gzip               import decompress
 from io                 import BytesIO
+from itertools          import chain
 from json               import loads as from_json
 from operator           import getitem
 from os                 import environ, pathsep
@@ -42,7 +47,7 @@ from packaging.requirements import Requirement
 from packaging.utils        import canonicalize_name
 from packaging.version      import InvalidVersion, Version
 from pathlib                import Path
-from re             import escape, finditer, search, sub
+from re             import escape, finditer, fullmatch, search, sub
 from shlex          import join
 from shutil         import copy2, rmtree
 from subprocess     import PIPE, STDOUT, run
@@ -56,6 +61,7 @@ from typing         import TextIO
 from urllib.parse   import quote
 from urllib.request import Request, urlopen
 
+AGE          = "24h"
 AGENT        = "prose lock:lift (https://github.com/Jybbs/prose)"
 CARGO_REPORT = ("cargo", "update", "--dry-run", "--verbose", "--workspace")
 CONFIG       = ".mise/config.toml"
@@ -80,7 +86,14 @@ LOGS   = Path(".cache/lift")
 PYPI   = "https://pypi.org/pypi"
 RUFF   = "ruff"
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?P<content>(?:^#(?:| .*)$\s)+)^# ///$"
-USES         = (
+SPANS        = {
+    "d" : "days",
+    "h" : "hours",
+    "m" : "minutes",
+    "s" : "seconds",
+    "w" : "weeks"
+}
+USES = (
     r"uses\s*:\s*(?:&[\w-]+\s+)?(?P<repo>[\w.-]+/[\w.-]+)(?:/[\w./-]*)?"
     r"@(?P<written>[0-9a-f]{40})\b"
 )
@@ -188,6 +201,28 @@ class Pin:
             written = version
         )
 
+    def held(self, newest: str) -> list["Held"]:
+        """
+        Returns each stable release of this tool newer than `newest`, the
+        release mise's report gives under its `minimum_release_age` cutoff,
+        beside the time the cutoff clears it.
+        """
+        floor = ordered(newest)
+        newer = [
+            release for release in self.releases()
+            if (version := ordered(release.version)) > floor
+            if not version.is_prerelease
+        ]
+        if not newer:
+            return []
+        option = ("tools", self.package, "minimum_release_age")
+        age    = nested(option, toml(CONFIG)) or cutoff()
+        return [Held(
+            release.cleared(age),
+            self.name,
+            release.version
+        ) for release in newer]
+
     def released(self, version: str | None = None) -> "Release":
         """
         Returns the release of this pin's package at `version`, or its
@@ -198,9 +233,8 @@ class Pin:
         PyPI lists.
         """
         if self.source == "mise":
-            listed  = from_json(output("mise", "ls-remote", "--json", self.package))
-            created = {each["version"]: each.get("created_at") for each in listed}
-            return Release(version, stamp(created.get(version)))
+            found = (each for each in self.releases() if each.version == version)
+            return next(found, Release(version))
         if self.source == "cargo":
             sleep(1)
             document = fetched(f"{CRATES}/{self.package}/{quote(version)}")
@@ -215,6 +249,26 @@ class Pin:
         files = [file["upload_time_iso_8601"] for file in document["urls"]]
         return Release(document["info"]["version"], stamp(min(files, default=None)))
 
+    @cache
+    def releases(self) -> list["Release"]:
+        """
+        Returns every release mise lists for this tool beside its
+        `created_at`, read with the `minimum_release_age` cutoff off so the
+        releases it holds back are listed too.
+        """
+        listed = output(
+            "mise",
+            "ls-remote",
+            "--json",
+            "--minimum-release-age",
+            "0s",
+            self.package
+        )
+        return [
+            Release(each["version"], stamp(each.get("created_at")))
+            for each in from_json(listed)
+        ]
+
 
 @dataclass(frozen=True)
 class Release:
@@ -225,6 +279,36 @@ class Release:
 
     version   : str
     published : datetime | None = None
+
+    def cleared(self, age: str) -> datetime | None:
+        """
+        Returns when a cutoff of `age`, a count of seconds, minutes, hours,
+        days, or weeks such as `24h`, stops holding this release back, or
+        `None` where the release reports no time or `age` is a date or a
+        longer span.
+        """
+        if self.published is None or not (span := fullmatch(r"(\d+)([dhmsw])", age)):
+            return None
+        return self.published + timedelta(**{SPANS[span[2]]: int(span[1])})
+
+
+@dataclass(frozen=True)
+class Held:
+    """
+    Holds a release mise's `minimum_release_age` cutoff keeps out of its
+    report, beside the row it belongs to and when the cutoff clears it.
+    """
+
+    clears  : datetime | None
+    name    : str
+    version : str
+
+    def cells(self) -> list[str]:
+        """
+        Returns the cells of this release in the held table's column order.
+        """
+        cleared = f"{self.clears:%Y-%m-%d %H:%M} UTC" if self.clears else ""
+        return [f"`{self.name}`", f"`{self.version}`", cleared]
 
 
 @dataclass(frozen=True)
@@ -546,6 +630,20 @@ def carry(clone: Path, root: Path):
             target.unlink(missing_ok=True)
 
 
+@cache
+def cutoff() -> str:
+    """
+    Returns the `minimum_release_age` mise's settings hold every tool to,
+    which is mise's own `24h` default where no setting names one.
+    """
+    read = run(
+        ["mise", "settings", "get", "minimum_release_age"],
+        capture_output = True,
+        text           = True
+    )
+    return read.stdout.strip() if read.returncode == 0 else AGE
+
+
 def downloaded(url: str) -> bytes:
     """
     Returns the body at `url`, requested under the user agent crates.io asks
@@ -635,8 +733,10 @@ def main():
     parser.add_argument("--write", action="store_true")
     flags = parser.parse_args()
 
-    lifts = table()
+    lifts, held = table()
     print(rendered(lifts))
+    if held:
+        print(f"\n{waiting(held)}")
     if unknown := sorted(set(flags.hold) - {lift.name for lift in lifts}):
         parser.error(f"--hold names pins the table omits: {', '.join(unknown)}")
 
@@ -816,10 +916,24 @@ def pins() -> list[Pin]:
     ]
 
 
+def padded(rows: list[list[str]]) -> str:
+    """
+    Returns `rows` as a Markdown table headed by its first row, each column
+    padded to its widest cell.
+    """
+    widths = [max(map(len, column)) for column in zip(*rows)]
+    lines  = [
+        "| " + " | ".join(cell.ljust(width) for cell, width in zip(row, widths)) + " |"
+        for row in rows
+    ]
+    lines.insert(1, "|" + "|".join("-" * (width + 2) for width in widths) + "|")
+    return "\n".join(lines)
+
+
 def rendered(lifts: list[Lift]) -> str:
     """
-    Returns the Markdown table listing `lifts`, each column padded to one
-    width, or a sentence saying no pin trails its newest release.
+    Returns the Markdown table listing `lifts`, or a sentence saying no pin
+    trails its newest release.
     """
     if not lifts:
         return "Every pin stands at its newest release."
@@ -828,14 +942,7 @@ def rendered(lifts: list[Lift]) -> str:
         "**Pin**", "**Current**", "**Newest**",
         "**Major**", "**Days Old**", "**Alerts Cleared**"
     ]
-    rows   = [header, *(lift.cells() for lift in lifts)]
-    widths = [max(map(len, column)) for column in zip(*rows)]
-    lines  = [
-        "| " + " | ".join(cell.ljust(width) for cell, width in zip(row, widths)) + " |"
-        for row in rows
-    ]
-    lines.insert(1, "|" + "|".join("-" * (width + 2) for width in widths) + "|")
-    return "\n".join(lines)
+    return padded([header, *(lift.cells() for lift in lifts)])
 
 
 def python_pins() -> Iterator[Pin]:
@@ -878,19 +985,21 @@ def python_pins() -> Iterator[Pin]:
 
 def stamp(text: str | None) -> datetime | None:
     """
-    Returns the time an ISO 8601 `text` names, read as UTC where it names no
-    zone, or `None` where there is no text.
+    Returns the time an ISO 8601 `text` names as a UTC time, reading a time
+    that names no zone as UTC already, or `None` where there is no text.
     """
     if not text:
         return None
     parsed = datetime.fromisoformat(text)
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC) if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
-def table() -> list[Lift]:
+def table() -> tuple[list[Lift], list[Held]]:
     """
     Returns one row per name whose pins trail their newest release, sorted
-    by name, each carrying the open Dependabot alerts its lift clears.
+    by name, each carrying the open Dependabot alerts its lift clears,
+    beside each newer release mise's `minimum_release_age` cutoff holds back
+    from a tool, sorted by name and version.
     """
     found   = pins()
     reports = Reports.read(sorted({pin.script for pin in found} - {None}))
@@ -898,11 +1007,19 @@ def table() -> list[Lift]:
     for pin in found:
         grouped[pin.name].append(pin)
 
+    tools = [pin for pin in found if pin.source == "mise"]
+    with ThreadPoolExecutor() as pool:
+        newer = pool.map(lambda tool: tool.held(reports.newest(tool)), tools)
+        held  = sorted(
+            chain.from_iterable(newer),
+            key = lambda each: (each.name, ordered(each.version))
+        )
+
     rows = (Lift.of(name, each, reports) for name, each in sorted(grouped.items()))
     if not (lifts := [*filter(None, rows)]):
-        return []
+        return [], held
     open_alerts = alerts()
-    return [lift.clearing(open_alerts) for lift in lifts]
+    return [lift.clearing(open_alerts) for lift in lifts], held
 
 
 def tagged(repo: str) -> dict[str, str]:
@@ -918,6 +1035,20 @@ def tagged(repo: str) -> dict[str, str]:
         for sha, ref in (line.split("\t") for line in listed.splitlines())
     )
     return {tag.removesuffix("^{}"): sha for tag, sha in refs}
+
+
+def waiting(held: list[Held]) -> str:
+    """
+    Returns the Markdown table listing each release in `held` beside when
+    the `minimum_release_age` cutoff clears it, under a sentence naming
+    the cutoff.
+    """
+    header = ["**Pin**", "**Release**", "**Clears**"]
+    listed = padded([header, *(each.cells() for each in held)])
+    return (
+        "The `minimum_release_age` cutoff holds these releases back from every "
+        f"write until each clears:\n\n{listed}"
+    )
 
 
 def site_pins() -> list[Pin]:

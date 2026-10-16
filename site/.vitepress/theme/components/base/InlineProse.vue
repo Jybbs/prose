@@ -2,6 +2,7 @@
 import { useAriaHidden, useHiddenTabindex } from '../../../lib/composables/use-aria-hidden'
 import type { InlineNode }                  from '../../../lib/markdown/inline-nodes'
 import { BODY_LINK_CLASSES }                from '../../../lib/shared/constants'
+import { primitiveRoute }                   from '../../../lib/shared/routes'
 import GlossaryTerm                         from '../glossary/GlossaryTerm.vue'
 import InlineRuleLink                       from '../rules/InlineRuleLink.vue'
 
@@ -18,7 +19,7 @@ const tabindex   = useHiddenTabindex()
     <a
       v-else-if="node.kind === 'primitive'"
       :class="BODY_LINK_CLASSES"
-      :href="`/primitives/${node.slug}`"
+      :href="primitiveRoute(node.slug)"
       :tabindex="tabindex"
     ><strong><code>{{ node.display }}</code></strong></a>
     <code v-else-if="node.kind === 'code'">{{ node.text }}</code>

@@ -1,11 +1,12 @@
 import type MarkdownIt from 'markdown-it'
 
+import type { DiscoveredPrimitive } from '../architecture/discovery'
 import { isInert }                  from '../markdown/inert-env'
 import { walkBodyInlines }          from '../markdown/walk'
-import type { DiscoveredPrimitive } from '../primitives/discovery'
 import { BODY_LINK_CLASSES }        from '../shared/constants'
 import { familyEmblem }             from '../shared/emblems'
 import { nibBadgeHtml }             from '../shared/nib'
+import { primitiveRoute }           from '../shared/routes'
 import type { DiscoveredRule }      from './discovery'
 
 export function ruleLinkPlugin(
@@ -60,7 +61,7 @@ export function ruleLinkPlugin(
       }
       const display = primitives.get(slug)!.name
       return (
-        `<a class="${BODY_LINK_CLASSES}" href="/primitives/${slug}">`
+        `<a class="${BODY_LINK_CLASSES}" href="${primitiveRoute(slug)}">`
         + `<strong><code>${display}</code></strong></a>`
       )
     }

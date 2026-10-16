@@ -3,10 +3,12 @@ import path from 'node:path'
 
 import { parse } from 'postcss'
 
+import { discoverPrimitives } from '../../lib/architecture/discovery'
 import { glossary }           from '../../lib/glossary/entries'
 import * as typingDemo        from '../../lib/landing/typing-demo'
-import { discoverPrimitives } from '../../lib/primitives/discovery'
+import { markdownH1 }         from '../../lib/markdown/h1'
 import { discoverRuleSlugs }  from '../../lib/rules/discovery'
+import { matterPages }        from '../../lib/shared/content-page'
 import * as paths             from '../../lib/shared/paths'
 import * as registries        from '../../lib/shared/registries'
 import * as ruleSchema        from '../../lib/shared/rule-schema'
@@ -65,9 +67,18 @@ describe('suppression scope registry and stylesheet parity', () => {
 })
 
 describe('primitive registry and page parity', () => {
+  const primitives = discoverPrimitives(paths.architectureDir(import.meta.url))
+  const reference  = matterPages(path.join(paths.siteDir(import.meta.url), 'reference'))
+    .map(page => markdownH1(page.content)!)
+
   it('every PRIMITIVE_SLUGS entry has a page, with no orphans', () => {
-    expect(discoverPrimitives(paths.primitivesDir(import.meta.url)).map(p => p.slug).toSorted())
+    expect(primitives.map(p => p.slug).toSorted())
       .toStrictEqual([...registries.PRIMITIVE_SLUGS].toSorted())
+  })
+
+  it.each(primitives)('$title neither matches nor opens on a reference title', ({ title }) => {
+    expect(reference.filter(other => title.startsWith(other) || other.startsWith(title)))
+      .toStrictEqual([])
   })
 })
 

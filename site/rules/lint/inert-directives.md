@@ -28,7 +28,7 @@ A directive inside a `# fmt: off` region is not reported, since the region silen
 
 <template #related-after>
 
-The [**Suppression Directives**](/reference/suppression-directives) reference gives the syntax of every `skip` and `ignore` form, and the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers which family reaches a rewrite and which a lint.
+The [**Suppression Directives**](/reference/suppression-directives) reference gives the syntax of every `skip` and `ignore` form, and the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers which family reaches a rewrite and which a lint.
 
 </template>
 
