@@ -57,6 +57,7 @@ from urllib.parse   import quote
 from urllib.request import Request, urlopen
 
 AGENT        = "prose lock:lift (https://github.com/Jybbs/prose)"
+CARGO_REPORT = ("cargo", "update", "--dry-run", "--verbose", "--workspace")
 CONFIG       = ".mise/config.toml"
 COVERED      = {"bun", "cargo", "mise", "uv"}
 CRATES       = "https://crates.io/api/v1/crates"
@@ -247,13 +248,17 @@ class Reports:
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
         """
-        Returns the reports `bun outdated`, `cargo update --dry-run`, `mise
-        outdated`, and `uv tree --outdated` print, the last over the project
-        and each of `scripts`, run side by side.
+        Returns the reports `bun outdated`, `cargo update --dry-run`,
+        `mise outdated`, and `uv tree --outdated` print, the last over the
+        project and each of `scripts`, run side by side. Cargo's runs under
+        `--workspace`, which lists each locked crate beside its newest
+        release without resolving the graph again, so the report stays
+        readable while every release a dependency accepts is yanked, as
+        every `zip` 8 release `ruff_db` accepts is.
         """
         with ThreadPoolExecutor() as pool:
             bun   = pool.submit(output, "bun", "outdated", cwd="site")
-            cargo = pool.submit(output, "cargo", "update", "--dry-run", "--verbose")
+            cargo = pool.submit(output, *CARGO_REPORT)
             mise  = pool.submit(output, "mise", "outdated", "--bump", "--json")
             uv    = [
                 pool.submit(output, "uv", "tree", "--depth", "1", "--outdated", *target)

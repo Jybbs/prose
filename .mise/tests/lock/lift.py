@@ -1196,13 +1196,12 @@ def test_reports_read_the_newest_release_each_manager_prints(
         )
     )
     fp.register(
-        ["cargo", "update", "--dry-run", "--verbose"],
+        ["cargo", "update", "--dry-run", "--verbose", "--workspace"],
         stdout = (
-            "    Updating crates.io index\n"
+            "     Locking 0 packages to highest Rust 1.99.0 compatible versions\n"
             "    Updating insta v1.48.0 -> v1.49.0\n"
-            "    Updating toml v1.1.6+spec-1.1.0 -> v1.1.8+spec-1.1.0\n"
+            "   Unchanged toml v1.1.6+spec-1.1.0 (available: v1.1.8+spec-1.1.0)\n"
             "   Unchanged ruff_python_ast v0.0.5 (available: v0.0.17)\n"
-            "     Locking 3 packages to latest compatible versions\n"
         )
     )
     fp.register(["mise", "outdated", "--bump", "--json"], stdout=dumps(outdated))
