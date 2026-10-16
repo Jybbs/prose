@@ -7,7 +7,7 @@ summary: "Stores each file's diagnostics and rewrite on disk under a key derived
 tagline: content-addressed result cache
 ---
 
-# The `Cache` Module
+# The `Cache` Type
 
 <PrimitiveLayout primitive="cache">
 

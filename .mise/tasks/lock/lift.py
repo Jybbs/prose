@@ -284,8 +284,9 @@ class Release:
         """
         Returns when a cutoff of `age`, a count of seconds, minutes, hours,
         days, or weeks such as `24h`, stops holding this release back, or
-        `None` where the release reports no time or `age` is a date or a
-        longer span.
+        `None` where the release reports no time or `age` takes another
+        form, such as a date, a span of months or years, or a compound span
+        like `1h30m`.
         """
         if self.published is None or not (span := fullmatch(r"(\d+)([dhmsw])", age)):
             return None
@@ -633,8 +634,8 @@ def carry(clone: Path, root: Path):
 @cache
 def cutoff() -> str:
     """
-    Returns the `minimum_release_age` mise's settings hold every tool to,
-    which is mise's own `24h` default where no setting names one.
+    Returns the `minimum_release_age` mise's settings name, or mise's own
+    `24h` default where no setting names one.
     """
     read = run(
         ["mise", "settings", "get", "minimum_release_age"],

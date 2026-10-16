@@ -11,12 +11,12 @@ tagline: rewrite unit
 
 <PrimitiveLayout primitive="edit">
 
-*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* re-exports the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what Ruff and other Astral-stack consumers use.
+*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* uses the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what Ruff and other Astral-stack consumers use.
 
 
 ## Public Surface
 
-`Edit` itself is `pub` *(re-exported from `ruff_diagnostics`)*, and the `Diagnostic` type a rule emits through the pipeline carries an `Option<Vec<Edit>>` in its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI writes *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
+`Edit` comes from `ruff_diagnostics` with no re-export, and the `Diagnostic` type a rule emits through the pipeline carries its edits inside the `Option<Fix>` of its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI writes *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
 
 The edit helpers *(`apply_edits_mapped`, `apply_inline_edits`, `narrowed_replacement`)* live at `crate/src/primitives/edit/` and are `pub(crate)`. The helpers become `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 

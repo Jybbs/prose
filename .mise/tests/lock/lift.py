@@ -305,6 +305,7 @@ def test_carry_copies_every_change_and_untracked_file(
         param("30m", WHEN, WHEN + timedelta(minutes=30), id = "minutes"),
         param("6mo", WHEN, None, id = "months"),
         param("1y", WHEN, None, id = "year"),
+        param("1h30m", WHEN, None, id = "compound"),
         param("2024-06-01", WHEN, None, id = "date"),
         param("24h", None, None, id = "unreported")
     ]
@@ -318,8 +319,8 @@ def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
     """
     Pins that a cutoff counted in seconds, minutes, hours, days, or weeks
     clears a release that long after it was published, and that a cutoff
-    given as a date or a longer span, or a release reporting no time, has no
-    clearing time.
+    given as a date, a span of months or years, or a compound span, or a
+    release reporting no time, has no clearing time.
     """
     assert lift.Release("1.99.1", published).cleared(age) == cleared
 
@@ -1451,68 +1452,6 @@ def test_stamp_reads_every_time_as_utc(lift: ModuleType, text: str):
     assert lift.stamp(text).isoformat() == "2026-10-01T00:00:00+00:00"
 
 
-def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    released    : list[tuple]
-):
-    """
-    Pins that the table asks each tool for the releases held back past the
-    newest release its report gives, or past its written version where the
-    report omits it, and lists them by name and then by version.
-    """
-    asked = []
-    found = [
-        pin(
-            keys    = ("tools", "zizmor"),
-            lift    = lift,
-            name    = "zizmor",
-            path    = ".mise/config.toml",
-            source  = "mise",
-            written = "1.31.0"
-        ),
-        pin(
-            keys    = ("tools", "rust"),
-            lift    = lift,
-            name    = "rust",
-            path    = ".mise/config.toml",
-            source  = "mise",
-            written = "1.98.1"
-        )
-    ]
-    holding = {
-        "rust"   : [("rust", "1.99.10"), ("rust", "1.99.2")],
-        "zizmor" : [("zizmor", "1.32.0")]
-    }
-
-    def held(holder: object, newest: str) -> list:
-        """
-        Records the newest release the pin `holder` is held back past and
-        returns the releases `holding` names for it.
-        """
-        asked.append((holder.name, newest))
-        return [lift.Held(None, *each) for each in holding[holder.name]]
-
-    monkeypatch.setattr(lift, "pins", lambda: found)
-    monkeypatch.setattr(lift, "alerts", lambda: [])
-    monkeypatch.setattr(lift.Pin, "held", held)
-    monkeypatch.setattr(
-        lift.Reports,
-        "read",
-        lambda scripts: lift.Reports({("mise", "rust", "1.98.1"): "1.99.0"})
-    )
-
-    lifts, waiting = lift.table()
-
-    assert sorted(asked) == [("rust", "1.99.0"), ("zizmor", "1.31.0")]
-    assert [(each.name, each.version) for each in waiting] == [
-        ("rust", "1.99.2"),
-        ("rust", "1.99.10"),
-        ("zizmor", "1.32.0")
-    ]
-    assert [(each.name, each.newest) for each in lifts] == [("rust", "1.99.0")]
-
-
 @mark.parametrize(
     ("reported", "rows", "read"),
     [
@@ -1583,6 +1522,92 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
     lifts, held = lift.table()
     assert ([(each.name, each.alerts) for each in lifts], held) == (rows, [])
     assert asked == [[".mise/tasks/repo/audit.py"], *(["alerts"] if read else [])]
+
+
+def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    released    : list[tuple]
+):
+    """
+    Pins that the table asks each tool for the releases held back past the
+    newest release its report gives, or past its written version where the
+    report omits it, and lists them by name and then by version.
+    """
+    asked = []
+    found = [
+        pin(
+            keys    = ("tools", "zizmor"),
+            lift    = lift,
+            name    = "zizmor",
+            path    = ".mise/config.toml",
+            source  = "mise",
+            written = "1.31.0"
+        ),
+        pin(
+            keys    = ("tools", "rust"),
+            lift    = lift,
+            name    = "rust",
+            path    = ".mise/config.toml",
+            source  = "mise",
+            written = "1.98.1"
+        )
+    ]
+    holding = {
+        "rust"   : [("rust", "1.99.10"), ("rust", "1.99.2")],
+        "zizmor" : [("zizmor", "1.32.0")]
+    }
+
+    def held(holder: object, newest: str) -> list:
+        """
+        Records the newest release the pin `holder` is held back past and
+        returns the releases `holding` names for it.
+        """
+        asked.append((holder.name, newest))
+        return [lift.Held(None, *each) for each in holding[holder.name]]
+
+    monkeypatch.setattr(lift, "pins", lambda: found)
+    monkeypatch.setattr(lift, "alerts", lambda: [])
+    monkeypatch.setattr(lift.Pin, "held", held)
+    monkeypatch.setattr(
+        lift.Reports,
+        "read",
+        lambda scripts: lift.Reports({("mise", "rust", "1.98.1"): "1.99.0"})
+    )
+
+    lifts, waiting = lift.table()
+
+    assert sorted(asked) == [("rust", "1.99.0"), ("zizmor", "1.31.0")]
+    assert [(each.name, each.version) for each in waiting] == [
+        ("rust", "1.99.2"),
+        ("rust", "1.99.10"),
+        ("zizmor", "1.32.0")
+    ]
+    assert [(each.name, each.newest) for each in lifts] == [("rust", "1.99.0")]
+
+
+def test_table_lists_the_held_releases_where_no_pin_trails(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch
+):
+    """
+    Pins that the releases the cutoff holds back still list where every pin
+    stands at the newest release its report gives.
+    """
+    zizmor = pin(
+        keys    = ("tools", "zizmor"),
+        lift    = lift,
+        name    = "zizmor",
+        path    = ".mise/config.toml",
+        source  = "mise",
+        written = "1.31.0"
+    )
+    waiting = [lift.Held(None, "zizmor", "1.31.1")]
+    monkeypatch.setattr(lift, "pins", lambda: [zizmor])
+    monkeypatch.setattr(lift.Pin, "held", lambda holder, newest: waiting)
+    monkeypatch.setattr(lift.Reports, "read", lambda scripts: lift.Reports({}))
+
+    assert lift.table() == ([], waiting)
 
 
 def test_tagged_reads_an_annotated_tag_as_the_commit_beneath_it(
