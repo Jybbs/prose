@@ -2,26 +2,13 @@ export const FAMILY_ORDER = [
   'alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering'
 ] as const
 
-export const CATEGORY_ORDER = ['auto-fix', 'lint'] as const
-
-export type RuleCategory   = (typeof CATEGORY_ORDER)[number]
 export type RuleFamily     = (typeof FAMILY_ORDER)[number]
 export type GlossaryFamily = RuleFamily | 'cli' | 'engine'
-
-interface CategoryMeta {
-  badge : 'A' | 'L'
-  label : string
-}
 
 interface FamilyMeta {
   badge  : string
   label  : string
   warmth : 'cool' | 'warm'
-}
-
-export const CATEGORY_META: Record<RuleCategory, CategoryMeta> = {
-  'auto-fix' : { badge: 'A', label: 'Auto-Fix' },
-  'lint'     : { badge: 'L', label: 'Lint'     }
 }
 
 export const FAMILY_META: Record<RuleFamily, FamilyMeta> = {
@@ -51,8 +38,9 @@ export const SECTIONS = [
 
 export type SectionSlug = (typeof SECTIONS)[number]['slug']
 
-export function categoryOf(family: RuleFamily): RuleCategory {
-  return family === 'lint' ? 'lint' : 'auto-fix'
+export function sectionOf(relativePath: string): SectionSlug | null {
+  const head = relativePath.split('/', 1)[0]
+  return SECTIONS.find(section => section.slug === head)?.slug ?? null
 }
 
 export const PRIMITIVE_LAYERS      = ['analysis', 'base', 'orchestration'] as const

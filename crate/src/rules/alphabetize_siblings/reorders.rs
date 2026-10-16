@@ -4,11 +4,11 @@
 
 use std::{borrow::Cow, ops::Range};
 
-use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Arguments, Expr};
+use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange};
 
 use super::dict::{dict_holds_as_laid_out, dict_sort_key};
-use super::{AlphabetizeSiblings, dunder_list};
+use super::{AlphabetizeSiblings, builds_mapping, dunder_list};
 use crate::{
     config::Config,
     primitives::{
@@ -70,7 +70,7 @@ impl Reorders {
 
     /// Returns the sort over `node`'s entries, or `None` where no entry
     /// of `node` sorts: the rule off or skip-held over `node`, a node of
-    /// another kind, a list or tuple bound to nothing the rule sorts under
+    /// another kind, the arguments of a call building a mapping, a list or tuple bound to nothing the rule sorts under
     /// `parent`, a dict or dunder list held by `# prose: keep` or the
     /// config, or fewer than two entries.
     pub(crate) fn sorted(
@@ -83,7 +83,8 @@ impl Reorders {
             return None;
         }
         match node {
-            AnyNodeRef::Arguments(arguments) => {
+            AnyNodeRef::Arguments(arguments) if !matches!(parent, AnyNodeRef::ExprCall(call) if builds_mapping(call)) =>
+            {
                 let items: Vec<ArgOrKeyword> = arguments.iter_source_order().collect();
                 // A `**` unpacking bounds each run the keywords sort within,
                 // whereas a positional argument pins in place inside one.
@@ -136,14 +137,15 @@ impl Reorders {
     /// The index of the row the sort leaves last among keyword `rows`,
     /// each a name and its value, a row binding an effectful value
     /// pinned in its slot and the rest sorted by name. `None` where the
-    /// rule is off or skip-held over `arguments`.
+    /// rule is off or skip-held over `call`'s arguments, or where `call`
+    /// builds a mapping.
     pub(crate) fn sorted_last_keyword<'a>(
         self,
         source: &Source,
-        arguments: &Arguments,
+        call: &ExprCall,
         rows: impl Iterator<Item = (&'a str, &'a Expr)>,
     ) -> Option<usize> {
-        if !self.sorts(source, arguments) {
+        if !self.sorts(source, &call.arguments) || builds_mapping(call) {
             return None;
         }
         let keys: Vec<Option<&str>> = rows

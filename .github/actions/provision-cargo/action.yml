@@ -31,11 +31,12 @@ runs:
       uses : $/.github/actions/mise-floor
 
     - name : Install mise tools
-      uses : jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492
+      uses : jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7
       with:
-        cache_save   : ${{ inputs.shared-key != '' && inputs.save != 'false' }}
-        install_args : ${{ inputs.tools }}
-        version      : ${{ steps.mise.outputs.version }}
+        cache_max_age_days : 0
+        cache_save         : ${{ inputs.shared-key != '' && inputs.save != 'false' }}
+        install_args       : ${{ inputs.tools }}
+        version            : ${{ steps.mise.outputs.version }}
 
     - name : Restore Cargo cache
       if   : ${{ inputs.shared-key != '' }}

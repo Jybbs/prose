@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Mapping Constructor Keeps Its Keyword Order"
+
+description = '''
+`frozendict(...)`, `dict(...)`, and `configure(...)` each pass their keywords out of alphabetical order. **The `configure` keywords sort to `alpha=2, zeta=1` while the `frozendict` and `dict` keywords keep the order written**, because each keyword of a `dict(...)` or `frozendict(...)` call sets where its key falls in the mapping's iteration order.
+'''

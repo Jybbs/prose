@@ -1,6 +1,7 @@
 import { inlineText }                  from '../markdown/inline-text'
 import * as parts                      from '../og/render/parts'
 import * as constants                  from '../shared/constants'
+import { sectionOf }                   from '../shared/registries'
 import { canonicalUrl }                from './canonical-url'
 import { articleLd, landingLd }        from './json-ld'
 import { ogImageUrl, TOUCH_ICON_PATH } from './og-url'
@@ -25,13 +26,13 @@ export function describePage(pageData: PageData): void {
 export function pageHead(pageData: PageData, version: string): HeadConfig[] {
   const isLanding   = pageData.relativePath === 'index.md'
   const notFound    = pageData.isNotFound === true
-  const landingCard = isLanding || notFound
+  const landingCard = sectionOf(pageData.relativePath) === null
   const description = (notFound ? '' : pageData.description) || constants.SITE_TAGLINE
   const title       = pageData.frontmatter.name ?? pageData.title
-  const ogImage     = ogImageUrl(landingCard ? 'index.md' : pageData.relativePath)
-  const ogTitle     = landingCard ? constants.SITE_NAME : title
-  const ogAlt       = landingCard ? constants.SITE_ALT  : `${title} card`
-  const ogType      = landingCard ? 'website'           : 'article'
+  const ogImage     = ogImageUrl(pageData.relativePath)
+  const ogTitle     = isLanding || notFound ? constants.SITE_NAME : title
+  const ogAlt       = landingCard           ? constants.SITE_ALT  : `${title} card`
+  const ogType      = landingCard           ? 'website'           : 'article'
   const head: HeadConfig[] = [
     ['link', {
       href  : `/${TOUCH_ICON_PATH}`,

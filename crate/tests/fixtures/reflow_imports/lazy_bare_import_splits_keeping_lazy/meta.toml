@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy Comma-Joined Import Splits Into Lazy Imports"
+
+description = '''
+`lazy import os, sys` names two modules on one line. **`split-multi-module` writes `lazy import os` and `lazy import sys`**, so each module still defers loading until the code first uses it.
+'''

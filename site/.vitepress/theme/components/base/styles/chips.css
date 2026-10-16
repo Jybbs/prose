@@ -1,4 +1,3 @@
-.category-chip,
 .family-chip,
 .rule-chip {
   display       : inline-flex;
@@ -7,8 +6,8 @@
   border-radius : 0;
 }
 
-.category-chip,
 .family-chip,
+.vp-doc a.family-chip,
 a.rule-chip {
   text-decoration : none;
   transition      :
@@ -17,36 +16,33 @@ a.rule-chip {
     padding-left      var(--prose-transition);
 }
 
-a.category-chip:hover,
-a.family-chip:hover,
-a.rule-chip:hover {
-  border-left-width : 3px;
-  padding-left      : 7px;
-}
-
-a.category-chip:hover { border-color : var(--category-accent); padding-left : 9px; }
-a.family-chip:hover,
-a.rule-chip:hover     { border-color : var(--family-color); }
-a.family-chip:hover   { padding-left : 9px; }
-
-.category-chip {
-  border-left: 2px solid var(--category-accent);
-}
-
 .family-chip,
 .rule-chip {
   border-left: 2px solid var(--family-color);
 }
 
-.category-chip,
-.family-chip {
+.family-chip,
+.vp-doc a.family-chip {
   gap            : 10px;
   padding        : 6px 14px 6px 10px;
   color          : var(--vp-c-text-1);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
+  font-weight    : 400;
+  line-height    : 24px;
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
+}
+
+a.family-chip:hover,
+a.rule-chip:hover {
+  border-color      : var(--family-color);
+  border-left-width : 3px;
+  padding-left      : 7px;
+}
+
+a.family-chip:hover {
+  padding-left : 9px;
 }
 
 a.rule-chip {
@@ -58,38 +54,10 @@ a.rule-chip {
   vertical-align : baseline;
 }
 
-.rule-chip-badge {
-  font-size: 0.9rem;
-}
-
 .rule-chip-slug {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-xs);
-  color       : var(--family-color);
-}
-
-.vp-doc a.specimen,
-a.specimen {
-  display              : inline-flex;
-  align-items          : baseline;
-  border               : 1px solid color-mix(in srgb, var(--family-color, var(--vp-c-divider)) 30%, transparent);
-  border-radius        : var(--prose-radius);
-  background           : var(--vp-c-bg);
-  text-decoration-line : none;
-  font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-text-xxs);
-  transition           :
-    border-color var(--prose-transition),
-    transform    var(--prose-transition);
-}
-
-.vp-doc a.specimen:hover,
-.vp-doc a.specimen:focus-visible,
-a.specimen:hover,
-a.specimen:focus-visible {
-  border-color         : var(--family-color, var(--vp-c-brand-1));
-  text-decoration-line : none;
-  transform            : translateY(-1px);
+  color       : var(--vp-c-text-1);
 }
 
 .rule-chrome {

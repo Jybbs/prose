@@ -4,7 +4,6 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
 [
   {
     "caption": "Align consecutive assignments",
-    "category": "auto-fix",
     "family": "alignment",
     "href": "/rules/alignment/align-equals",
     "lints": false,
@@ -15,7 +14,6 @@ exports[`discoverRules > discovers rules across family directories, sorted by sl
   },
   {
     "caption": "Alphabetize sibling entries",
-    "category": "auto-fix",
     "family": "ordering",
     "href": "/rules/ordering/alphabetize-siblings",
     "lints": false,

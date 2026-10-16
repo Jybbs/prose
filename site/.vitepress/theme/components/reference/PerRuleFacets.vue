@@ -4,8 +4,10 @@ import { nextTick, ref } from 'vue'
 import InlineRuleLink          from '../rules/InlineRuleLink.vue'
 import { useHashOpen }         from '../../../lib/composables/use-hash-open'
 import { data as facetGroups } from '../../../lib/reference/facets.data'
+import { familyEmblem }        from '../../../lib/shared/emblems'
 import { counted }             from '../../../lib/shared/numerals'
 import InlineProse             from '../base/InlineProse.vue'
+import NibBadge                from '../base/NibBadge.vue'
 import PermalinkAnchor         from '../base/PermalinkAnchor.vue'
 
 const open       = ref<Record<string, boolean>>({})
@@ -46,7 +48,7 @@ useHashOpen(fragment => {
       >
         <span class="per-rule-facets-chevron" aria-hidden="true"></span>
         <span class="kicker per-rule-facets-label">
-          <span v-if="family.badge" class="per-rule-facets-badge" aria-hidden="true">{{ family.badge }}</span>
+          <NibBadge v-if="family.family !== 'generic'" :emblem="familyEmblem(family.family)" :size="13.6" />
           {{ family.label }}
           <span class="per-rule-facets-count">{{ facetCount(family) }}</span>
         </span>

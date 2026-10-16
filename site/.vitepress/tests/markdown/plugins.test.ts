@@ -1,13 +1,15 @@
 import MarkdownIt                from 'markdown-it'
 import type { MarkdownRenderer } from 'vitepress'
 
-import { glossaryPlugin }                          from '../../lib/glossary/plugin'
-import { bodyLinkPlugin }                          from '../../lib/markdown/body-link-plugin'
-import { inertEnv, plainTermsEnv }                 from '../../lib/markdown/inert-env'
-import { proseMarkPlugin }                         from '../../lib/markdown/prose-mark-plugin'
-import { renderPlainInlineHtml }                   from '../../lib/markdown/renderer'
-import type { DiscoveredRule }                     from '../../lib/rules/discovery'
-import { ruleLinkPlugin }                          from '../../lib/rules/link-plugin'
+import { glossaryPlugin }          from '../../lib/glossary/plugin'
+import { bodyLinkPlugin }          from '../../lib/markdown/body-link-plugin'
+import { emblemPlugin }            from '../../lib/markdown/emblem-plugin'
+import { inertEnv, plainTermsEnv } from '../../lib/markdown/inert-env'
+import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
+import { renderPlainInlineHtml }   from '../../lib/markdown/renderer'
+import type { DiscoveredRule }     from '../../lib/rules/discovery'
+import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
+import { emblemsOf }               from '../../lib/shared/emblems'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
   const md = new MarkdownIt()
@@ -30,6 +32,30 @@ describe('proseMarkPlugin', () => {
 describe('bodyLinkPlugin', () => {
   it('adds the body-link class to inline links', () => {
     expect(render(md => md.use(bodyLinkPlugin), '[docs](/x)')).toContain('class="body-link underline-draw"')
+  })
+})
+
+describe('emblemPlugin', () => {
+  const plugin = emblemPlugin(emblemsOf([{ emoji: '🐧', name: 'Linux' }]))
+
+  it('sets an emoji in body text as its labeled badge in the running-text chip', () => {
+    expect(render(md => md.use(plugin), 'the entries with the 🧶 badge')).toContain(
+      'the entries with the <span class="nib-chip" data-family="lint">'
+      + '<svg class="nib-badge" width="16" height="16" viewBox="0 0 24 24" role="img" aria-label="Yarn">'
+      + '<use href="#nib-yarn-small"></use></svg></span> badge'
+    )
+  })
+
+  it('gives a platform badge no family, so it takes Ube', () => {
+    expect(render(md => md.use(plugin), 'built for 🐧'))
+      .toContain('<span class="nib-chip"><svg class="nib-badge"')
+  })
+
+  it.each([
+    ['a heading',   '## The 🧶 Badge'],
+    ['a code span', 'the `🧶` badge']
+  ])('leaves an emoji inside %s as written', (_where, src) => {
+    expect(render(md => md.use(plugin), src)).toContain('🧶')
   })
 })
 
@@ -106,9 +132,11 @@ describe('ruleLinkPlugin', () => {
     expect(run('the `align-equals` rule')).toContain('<InlineRuleLink slug="align-equals" />')
   })
 
-  it('emits an inert rule anchor under the inertHtml env', () => {
+  it('emits an inert rule chip with its family badge under the inertHtml env', () => {
     expect(run('see [[align-equals]]', { inertHtml: true })).toContain(
-      '<a class="rule-link" data-family="alignment" href="/rules/alignment/align-equals">align-equals</a>'
+      '<a class="rule-link" data-family="alignment" href="/rules/alignment/align-equals">'
+      + '<svg class="nib-badge" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<use href="#nib-ladder-small"></use></svg>align-equals</a>'
     )
   })
 

@@ -297,7 +297,7 @@ mod tests {
         let forwarded = forward_offsets(source.cell_offsets(), &map, limit);
 
         assert!(forwarded.iter().all(|offset| *offset <= limit));
-        assert!(forwarded.windows(2).all(|pair| pair[0] <= pair[1]));
+        assert!(forwarded.is_sorted());
     }
 
     #[test]

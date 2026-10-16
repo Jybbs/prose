@@ -27,7 +27,6 @@ exports[`enumeratePages > shapes an OgPage per chapter page, skipping index and 
       "Alignment",
     ],
     "caption": "A demonstration rule",
-    "category": "auto-fix",
     "family": "alignment",
     "kind": "rules",
     "outputPath": "og/rules/alignment/demo-rule.png",

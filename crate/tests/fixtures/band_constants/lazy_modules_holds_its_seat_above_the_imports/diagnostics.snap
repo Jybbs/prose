@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/lazy_modules_holds_its_seat_above_the_imports/input.py
+---
+band-constants@84..193

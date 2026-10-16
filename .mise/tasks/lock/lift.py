@@ -3,7 +3,7 @@
 # MISE description="List, try, and write every outdated pin"
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["packaging==26.3", "tomlkit==0.15.1"]
+# dependencies = ["packaging==26.3", "tomlkit==0.15.2"]
 # ///
 """
 Lists every pin behind its newest release as one Markdown table, then tries
@@ -57,6 +57,7 @@ from urllib.parse   import quote
 from urllib.request import Request, urlopen
 
 AGENT        = "prose lock:lift (https://github.com/Jybbs/prose)"
+CARGO_REPORT = ("cargo", "update", "--dry-run", "--verbose", "--workspace")
 CONFIG       = ".mise/config.toml"
 COVERED      = {"bun", "cargo", "mise", "uv"}
 CRATES       = "https://crates.io/api/v1/crates"
@@ -247,13 +248,17 @@ class Reports:
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
         """
-        Returns the reports `bun outdated`, `cargo update --dry-run`, `mise
-        outdated`, and `uv tree --outdated` print, the last over the project
-        and each of `scripts`, run side by side.
+        Returns the reports `bun outdated`, `cargo update --dry-run`,
+        `mise outdated`, and `uv tree --outdated` print, the last over the
+        project and each of `scripts`, run side by side. Cargo's runs under
+        `--workspace`, which lists each locked crate beside its newest
+        release without resolving the graph again, so the report stays
+        readable while every release a dependency accepts is yanked, as
+        every `zip` 8 release `ruff_db` accepts is.
         """
         with ThreadPoolExecutor() as pool:
             bun   = pool.submit(output, "bun", "outdated", cwd="site")
-            cargo = pool.submit(output, "cargo", "update", "--dry-run", "--verbose")
+            cargo = pool.submit(output, *CARGO_REPORT)
             mise  = pool.submit(output, "mise", "outdated", "--bump", "--json")
             uv    = [
                 pool.submit(output, "uv", "tree", "--depth", "1", "--outdated", *target)
@@ -339,9 +344,9 @@ class Lift:
     @property
     def major(self) -> bool:
         """
-        Returns whether the lift changes the left-most non-zero part of
-        the version, so `0.33.1` to `0.34.0` is major and `2026.7.0` to
-        `2026.9.0` is not.
+        Returns whether the lift changes the left-most non-zero part of the
+        version, which is the minor part of a `0.x.y` release, the patch
+        part of a `0.0.z` release, and the year of a calendar version.
         """
         current, newest = ordered(self.current).release, ordered(self.newest).release
         leading         = next(
@@ -502,10 +507,7 @@ def attempt(holds: set[str], log: Path) -> bool:
     """
     Returns whether `mise ci` passes in a scratch clone of the checkout
     once every lift but `holds` is written there, logging each command the
-    attempt runs and all it prints to `log`. The virtualenv the clone's
-    mise config declares is rebuilt between the write and `mise ci` on the
-    Python the clone then pins, since the write runs under the one it pinned
-    before.
+    attempt runs and all it prints to `log`.
     """
     root = Path.cwd()
     with TemporaryDirectory(prefix="prose-lift.") as scratch, log.open("w") as out:
@@ -513,11 +515,9 @@ def attempt(holds: set[str], log: Path) -> bool:
         output("git", "clone", "--quiet", "--shared", str(root), str(clone))
         carry(clone, root)
 
-        venv = nested(("env", "_", "python", "venv", "path"), toml(CONFIG))
         step = partial(logged, clone, environment=isolated(clone, root), out=out)
         if not step(["mise", "run", "lock:lift", "--write", *flagged("--hold", holds)]):
             return False
-        rmtree(clone / venv, ignore_errors=True)
         return step(["mise", "run", "ci"])
 
 
@@ -998,6 +998,9 @@ def write(lifts: list[Lift]):
     Writes each of `lifts` into every home of its pins, locks and installs
     the tools a lifted mise pin names, moves each lifted package in its
     manager's lockfile under the written toolset, and runs `mise relock`.
+    Where the `python` pin moves, it removes the virtualenv the mise config
+    declares, which mise creates again on the new Python the next time it
+    loads the config.
     """
     edits = defaultdict(set)
     for home, new, old in (edit for lift in lifts for edit in lift.edits):
@@ -1018,6 +1021,11 @@ def write(lifts: list[Lift]):
     if any(pin.source == "mise" for pin in moved):
         output("mise", "lock")
         output("mise", "install")
+    if any(pin.source == "mise" and pin.name == "python" for pin in moved):
+        rmtree(
+            nested(("env", "_", "python", "venv", "path"), toml(CONFIG)),
+            ignore_errors = True
+        )
     if crates:
         output("mise", "x", "--", "cargo", "update", *flagged("--package", crates))
     if locked:

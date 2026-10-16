@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_imports/lazy_bare_import_splits_keeping_lazy/input.py
+---
+reflow-imports@14..15

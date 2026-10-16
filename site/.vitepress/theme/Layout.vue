@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
 
+import NibSprite          from './components/base/NibSprite.vue'
 import BuildMetadata      from './components/layout/BuildMetadata.vue'
 import GlossaryFolioIndex from './components/glossary/GlossaryFolioIndex.vue'
 import NotFound           from './components/layout/NotFound.vue'
@@ -22,6 +23,7 @@ import StarBadge          from './components/layout/StarBadge.vue'
     </template>
     <template #layout-bottom>
       <BuildMetadata />
+      <NibSprite />
       <RuleLinkPopper />
     </template>
     <template #not-found>

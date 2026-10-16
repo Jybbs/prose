@@ -241,12 +241,12 @@ Every tool, crate, package, and action the repository depends on is pinned to an
 | **Flag** | **Effect** |
 |---|---|
 | `--try` | Lifts every pin in a scratch clone carrying the checkout's uncommitted and untracked files, installs the tools the clone then pins, and runs `mise ci` there under the clone's own config, logging each attempt under `.cache/lift/`. Where that attempt fails, the task retries with each major lift held back in turn and stops at the first attempt that passes, naming the lift that breaks the tree |
-| `--write` | Writes each lift into every home of its pin, keeping each manifest's aligned layout, locks and installs each tool a lifted mise pin names, moves each lifted package in its manager's lockfile, and runs `mise relock`. Beside `--try`, it writes only once an attempt passes, holding back whatever that attempt held |
+| `--write` | Writes each lift into every home of its pin, keeping each manifest's aligned layout, locks and installs each tool a lifted mise pin names, moves each lifted package in its manager's lockfile, and runs `mise relock`. Where the Python pin moves, it removes `crate/.venv`, which mise creates again on the new interpreter. Beside `--try`, it writes only once an attempt passes, holding back whatever that attempt held |
 | `--hold <pin>` | Leaves the pin where it stands under either flag while the table still lists it, and passes the hold on to each attempt's clone. A name the table omits exits `2` before any trial or write |
 
 These rules decide what a row of the table holds:
 
-- A lift is major where it changes the left-most non-zero part of the version, so `0.33.1` to `0.34.0` is major and `2026.7.0` to `2026.9.0` is not
+- A lift is major where it changes the left-most non-zero part of the version, so a lift between two `0.x.y` releases is major when the minor part changes, a lift between two `0.0.z` releases when the patch part changes, and a lift between two calendar versions only when the year changes
 - Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the release `[package.metadata.ruff]` names
 - The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry
 - The `min_version` in `.mise/config.toml` names the oldest mise that reads the config rather than a release to lift to, so it takes no row
@@ -255,12 +255,12 @@ These rules decide what a row of the table holds:
 
 A major lift held back from a write is recorded below beside its reason, and each later run passes `--hold` for every pin the table names until the change that lift needs lands.
 
-| **Pin** | **Held At** | **Reason** |
-|---|---|---|
-| `markdown-it` | `14.3.1` | Release 15 types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
-| `ruff` | `0.15.22` | The `ruff_*` crates at `0.0.17` drop the `left` field of `ExprCompare`, read its comparators and the range of `ExprCall` through methods, remove `TokenKind::Name`, `TokenFlags::NON_ASCII_NAME`, and `SourceFile::slice`, and make `binary_search_by_start` private, so the crate's rules change before the lift |
-| `satori` | `0.33.5` | The releases after `0.33.5` render each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
-| `typescript` | `6.0.3` | `vue-tsc` 3.3.13 loads `typescript/lib/tsc`, which TypeScript 7 no longer exports, so `site:typecheck` stops before it checks a file |
+| **Pin** | **Reason** |
+|---|---|
+| `markdown-it` | The next major release types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
+| `ruff` | The newest `ruff_*` crates drop the `left` field of `ExprCompare`, read its comparators and the range of `ExprCall` through methods, remove `TokenKind::Name`, `TokenFlags::NON_ASCII_NAME`, and `SourceFile::slice`, and make `binary_search_by_start` private, so the crate's rules change before the lift |
+| `satori` | The newest release renders each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
+| `typescript` | `vue-tsc` loads `typescript/lib/tsc`, which the next major release no longer exports, so `site:typecheck` stops before it checks a file |
 
 ---
 

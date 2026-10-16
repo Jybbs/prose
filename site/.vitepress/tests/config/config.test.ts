@@ -40,6 +40,7 @@ describe('landingLd', () => {
 describe('ogImagePath', () => {
   it.each([
     ['index.md',                        'og.png'],
+    ['prototypes/icons/index.md',       'og.png'],
     ['reference/cli.md',                'og/reference/cli.png'],
     ['rules/alignment/align-equals.md', 'og/rules/alignment/align-equals.png']
   ])('maps %s', (rel, expected) => {

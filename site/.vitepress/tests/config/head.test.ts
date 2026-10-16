@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import matter                           from 'gray-matter'
+import matter                            from 'gray-matter'
 import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 
 import * as head                                 from '../../lib/config/head'
@@ -68,6 +68,19 @@ describe('pageHead', () => {
     expect(content(tags, 'og:description')).toBe(SITE_TAGLINE)
     expect(content(tags, 'og:url')).toBeUndefined()
     expect(jsonLd(tags)).toBeUndefined()
+  })
+
+  it('gives a page outside every section the landing card and its alt text', () => {
+    const data = page({
+      description  : 'd',
+      relativePath : 'prototypes/icons/index.md',
+      title        : 'Icon Family'
+    })
+    const tags = head.pageHead(data, '0.1.0')
+    expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
+    expect(content(tags, 'og:image:alt')).toBe(SITE_ALT)
+    expect(content(tags, 'og:type')).toBe('website')
+    expect(content(tags, 'og:title')).toBe('Icon Family')
   })
 
   it('prefers the frontmatter name over the page title', () => {

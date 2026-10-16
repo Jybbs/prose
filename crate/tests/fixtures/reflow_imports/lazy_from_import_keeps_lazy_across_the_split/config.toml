@@ -1,0 +1,2 @@
+import-line-length = 40
+target-version     = "3.15"

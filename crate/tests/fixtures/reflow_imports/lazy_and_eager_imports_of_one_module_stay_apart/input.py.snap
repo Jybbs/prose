@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/lazy_and_eager_imports_of_one_module_stay_apart/input.py
+---
+from pkg import alpha, gamma
+lazy from pkg import beta

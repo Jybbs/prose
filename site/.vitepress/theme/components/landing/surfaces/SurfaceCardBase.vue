@@ -5,8 +5,10 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { provideAriaHidden } from '../../../../lib/composables/use-aria-hidden'
 import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
+import { familyEmblem }      from '../../../../lib/shared/emblems'
 import * as registries       from '../../../../lib/shared/registries'
 import InlineProse           from '../../base/InlineProse.vue'
+import NibBadge              from '../../base/NibBadge.vue'
 import SurfaceRail           from './SurfaceRail.vue'
 
 const SPOTLIGHT_FALLBACK_PCT = 50
@@ -22,7 +24,6 @@ const props = defineProps<{
 
 provideAriaHidden(() => props.duplicate)
 
-const category = computed(() => registries.categoryOf(props.family))
 const href     = computed(() => `/rules/${props.family}/`)
 const meta     = computed(() => registries.FAMILY_META[props.family])
 const tabindex = computed(() => (props.duplicate ? -1 : undefined))
@@ -52,7 +53,6 @@ function onPointerMove(event: PointerEvent) {
     class="surface-card panel"
     :aria-hidden="duplicate || undefined"
     :data-family="family"
-    :data-category="category"
     :data-active="active"
     :style="{
       '--spotlight-x' : `${spotlightX}%`,
@@ -68,7 +68,7 @@ function onPointerMove(event: PointerEvent) {
       :tabindex="tabindex"
     />
     <span class="surface-card-number">— {{ number }}</span>
-    <span class="surface-card-icon" aria-hidden="true">{{ meta.badge }}</span>
+    <span class="surface-card-icon nib-ground"><NibBadge :emblem="familyEmblem(family)" :size="24.8" /></span>
     <h3 class="surface-card-label">{{ meta.label }}</h3>
     <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
     <SurfaceRail :rules="rules" />

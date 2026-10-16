@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import NibBadge from '../base/NibBadge.vue'
+
 import { useHiddenTabindex } from '../../../lib/composables/use-aria-hidden'
 import { data as rules }     from '../../../lib/rules/rules.data'
+import { familyEmblem }      from '../../../lib/shared/emblems'
 import { lookup }            from '../../../lib/shared/lookup'
 
 const props = defineProps<{ slug : string }>()
@@ -16,5 +19,5 @@ const rule     = lookup(rules.bySlug, props.slug, 'Inline rule link')
     :data-rule="slug"
     :href="rule.href"
     :tabindex="tabindex"
-  >{{ slug }}</a>
+  ><NibBadge :emblem="familyEmblem(rule.family)" :size="14" />{{ slug }}</a>
 </template>

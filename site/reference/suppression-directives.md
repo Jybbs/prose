@@ -32,7 +32,7 @@ Line-level directives come in two families, `skip` for rewrites and `ignore` for
 
 ### Rewrite Suppression
 
-`# fmt: skip` *(or its equivalent `# prose: skip`)* exempts the logical line it ends from every auto-fix rewrite:
+`# fmt: skip` *(or its equivalent `# prose: skip`)* exempts the logical line it ends from every rewrite:
 
 ```python
 data = {"a": 1, "b": 2, "c": 3}  # fmt: skip

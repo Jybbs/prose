@@ -1,15 +1,14 @@
 import * as registries from '../../lib/shared/registries'
 
-describe('categoryOf', () => {
+describe('sectionOf', () => {
   it.each([
-    ['alignment',  'auto-fix'],
-    ['docs',       'auto-fix'],
-    ['formatting', 'auto-fix'],
-    ['layout',     'auto-fix'],
-    ['lint',       'lint'],
-    ['ordering',   'auto-fix']
-  ] as const)('maps %s to %s', (family, expected) => {
-    expect(registries.categoryOf(family)).toBe(expected)
+    ['index.md',                        null],
+    ['prototypes/icons/index.md',       null],
+    ['reference/cli.md',                'reference'],
+    ['rules/alignment/align-equals.md', 'rules'],
+    ['sandbox/index.md',                'sandbox']
+  ] as const)('maps %s to %s', (rel, expected) => {
+    expect(registries.sectionOf(rel)).toBe(expected)
   })
 })
 
@@ -20,10 +19,6 @@ describe('GLOSSARY_FAMILY_META', () => {
 })
 
 describe('registry types', () => {
-  it('categoryOf returns a RuleCategory', () => {
-    expectTypeOf(registries.categoryOf).returns.toEqualTypeOf<registries.RuleCategory>()
-  })
-
   it('FAMILY_META keys equal the RuleFamily union', () => {
     expectTypeOf<keyof typeof registries.FAMILY_META>().toEqualTypeOf<registries.RuleFamily>()
   })

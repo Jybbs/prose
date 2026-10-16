@@ -25,17 +25,15 @@
 }
 
 .v-popper--theme-rule-card .rule-card {
-  grid-template-columns : auto auto auto;
-  width                 : max-content;
-  max-width             : min(calc(100vw - 32px), 600px);
-  height                : auto;
-  min-height            : 64px;
-  padding               : 12px 16px;
-  border                : 2px solid var(--rule-card-popper-border);
-  border-top            : 3px solid var(--family-color);
-  border-radius         : var(--prose-radius);
-  background            : var(--vp-c-bg);
-  box-shadow            : var(--prose-shadow-tooltip);
+  width         : max-content;
+  max-width     : min(calc(100vw - 32px), 600px);
+  height        : auto;
+  min-height    : 64px;
+  border        : 2px solid var(--rule-card-popper-border);
+  border-top    : 3px solid var(--family-color);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-tooltip);
 }
 
 .v-popper--theme-rule-card,
@@ -44,12 +42,9 @@
 }
 
 .v-popper--theme-rule-card .rule-card-caption {
-  display            : block;
-  -webkit-line-clamp : none;
-  overflow           : visible;
-  max-width          : var(--rule-card-caption-width);
-  text-wrap          : balance;
-  overflow-wrap      : anywhere;
+  max-width     : var(--rule-card-caption-width, 30rem);
+  text-wrap     : balance;
+  overflow-wrap : anywhere;
 }
 
 .v-popper--theme-rule-card .rule-card-caption :where(code) {
