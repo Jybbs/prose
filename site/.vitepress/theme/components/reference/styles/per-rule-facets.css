@@ -82,11 +82,12 @@
   display : flex;
 }
 
-.vp-doc .per-rule-facets-rule-head a.rule-link,
 .per-rule-facets-scope {
+  display       : inline-block;
   padding       : 3px 10px;
   border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
   background    : var(--family-color);
+  font-family   : var(--vp-font-family-mono);
   font-size     : 0.85em;
   color         : var(--vp-c-bg);
 }
@@ -94,20 +95,6 @@
 .vp-doc .per-rule-facets-rule-head a.rule-link {
   margin      : 0;
   border-left : none;
-  box-shadow  : none;
-}
-
-.per-rule-facets-rule-head .nib-badge {
-  color : inherit;
-}
-
-.vp-doc .per-rule-facets-rule-head a.rule-link:hover {
-  background : color-mix(in srgb, var(--family-color) 88%, var(--vp-c-text-1));
-}
-
-.per-rule-facets-scope {
-  display     : inline-block;
-  font-family : var(--vp-font-family-mono);
 }
 
 .per-rule-facets-list {

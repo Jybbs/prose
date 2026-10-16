@@ -103,6 +103,27 @@ describe('the badge ink', () => {
       .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ground), var(--vp-c-bg))`)
   })
 
+  it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
+    const theme     = new URL('../../theme/', import.meta.url)
+    const recolored = fs.globSync('**/*.css', { cwd: theme }).filter(file => {
+      let sets = false
+      parseCss(fs.readFileSync(new URL(file, theme), 'utf8')).walkRules(rule => {
+        if (rule.selector.includes('.nib-badge')) rule.walkDecls('color', () => { sets = true })
+      })
+      return sets
+    })
+    expect(recolored).toStrictEqual(['components/base/styles/nib.css'])
+  })
+
+  it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', () => {
+    const css     = new URL('../../theme/components/rules/styles/pipeline-order.css', import.meta.url)
+    const painted = [] as string[]
+    parseCss(fs.readFileSync(css, 'utf8')).walkRules(rule => {
+      if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
+    })
+    expect(painted).toStrictEqual([])
+  })
+
   it.each(Object.entries(SCHEMES))('keeps each family an ink of its own in the %s scheme', (_scheme, colors) => {
     const inks = FAMILIES_LISTED.map(family => mix(FAMILIES[family], colors.text, ink))
     const gaps = inks.flatMap((a, i) => inks.slice(i + 1).map(b => differenceCiede2000()(a, b)))
