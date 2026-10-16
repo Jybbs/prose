@@ -164,7 +164,7 @@ jobs:
           accountId       : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken        : ${{ secrets.CLOUDFLARE_TOKEN }}
           command         : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
-          wranglerVersion : "4.151.0"
+          wranglerVersion : "4.151.1"
 
   prune:
     name            : 🍂 Prune

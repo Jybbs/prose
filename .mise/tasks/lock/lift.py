@@ -3,7 +3,7 @@
 # MISE description="List, try, and write every outdated pin"
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["packaging==26.3", "tomlkit==0.15.1"]
+# dependencies = ["packaging==26.3", "tomlkit==0.15.2"]
 # ///
 """
 Lists every pin behind its newest release as one Markdown table, then tries
