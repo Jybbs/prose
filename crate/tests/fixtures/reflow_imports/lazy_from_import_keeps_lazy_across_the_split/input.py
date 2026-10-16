@@ -1,0 +1,1 @@
+lazy from pkg.sub import alpha, beta, delta, epsilon, gamma

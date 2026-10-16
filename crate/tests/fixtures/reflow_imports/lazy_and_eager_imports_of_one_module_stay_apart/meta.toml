@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy and an Eager Import of One Module Stay Apart"
+
+description = '''
+`from pkg import alpha`, `lazy from pkg import beta`, and `from pkg import gamma` all name `pkg`. **The two eager statements merge into `from pkg import alpha, gamma` and `lazy from pkg import beta` keeps its own line**, because the merge compares whether a statement imports lazily along with the module, so folding `beta` into an eager statement would load it when the module runs.
+'''

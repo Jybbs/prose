@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/lazy_from_import_keeps_lazy_across_the_split/input.py
+---
+lazy from pkg.sub import alpha, beta
+lazy from pkg.sub import delta, epsilon
+lazy from pkg.sub import gamma

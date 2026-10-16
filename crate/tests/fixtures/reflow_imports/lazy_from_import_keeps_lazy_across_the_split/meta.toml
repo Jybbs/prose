@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy From-Import Stays Lazy Across the Split"
+
+description = '''
+`lazy from pkg.sub import alpha, beta, delta, epsilon, gamma` runs past the `import-line-length` budget of `40`. **Each repeated-prefix line opens on `lazy from pkg.sub`**, the `lazy ` keyword counting toward the budget, so the rows carry `alpha, beta`, then `delta, epsilon`, then `gamma`, and every name the split moves still defers loading `pkg.sub` until the code first uses it.
+'''

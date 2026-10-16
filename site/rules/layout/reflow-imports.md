@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="reflow_imports">
 
-`reflow-imports` splits a from-import that overflows `import-line-length` into a run of `from ... import ...` statements. Each statement repeats the module prefix and packs as many alphabetized names as fit before the next line opens, so the imported names start at the same column after `import` on every line and a deep module path never pushes them rightward.
+`reflow-imports` splits a from-import that overflows `import-line-length` into a run of `from ... import ...` statements. Each statement repeats the module prefix and packs as many alphabetized names as fit before the next line opens, so the imported names start at the same column after `import` on every line and a deep module path never pushes them rightward. A `lazy` import splits the same way, each statement it writes opening on `lazy`.
 
 Two further facets change what one import line carries, one splitting a comma-joined `import` (*the form pycodestyle flags as `E401`*) into a statement per module and one merging a module's repeated `from` statements onto a single line. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
 
@@ -32,7 +32,7 @@ Each move sits behind its own facet, so a project can switch one off without tou
 
 ### `merge-members`
 
-`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Each folded statement's line is removed together with the blank lines on whichever side of it holds fewer, or with those above it where it closes the file, as [[prune-inert-imports]] removes an import. Folded statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
+`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Each folded statement's line is removed together with the blank lines on whichever side of it holds fewer, or with those above it where it closes the file, as [[prune-inert-imports]] removes an import. Folded statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. A `lazy from` statement folds only with another `lazy from` statement of its module, so a merge never changes when a member loads. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
 
 ### `split-multi-module`
 
