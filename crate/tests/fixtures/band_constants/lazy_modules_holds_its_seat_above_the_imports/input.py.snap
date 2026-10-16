@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/lazy_modules_holds_its_seat_above_the_imports/input.py
+---
+from __future__ import annotations
+
+__lazy_modules__ = ["pkg.patterns"]
+
+import sys
+from pkg.patterns import NUMBER
+
+LIMIT = 10
+
+
+def parse(text):
+    return NUMBER.match(text) or sys.exit(1)

@@ -108,12 +108,13 @@ impl<'a> Exploder<'a> {
     fn explode_keywords(
         &self,
         keywords: &CallKeywords<'a>,
-        arguments: &Arguments,
+        call: &ExprCall,
         indent: usize,
     ) -> String {
+        let arguments = &call.arguments;
         let last = self.reorders.sorted_last_keyword(
             self.source,
-            arguments,
+            call,
             keywords.args.iter().map(|arg| (arg.name, arg.value)),
         );
         self.explode_items(
@@ -363,7 +364,7 @@ impl<'a> Exploder<'a> {
         let indent = self.indent_for(arguments.start());
         match keyword_args(self.source, call, resolve_call_params(call, self.targets)) {
             Some(keywords) if !keywords.has_posonly_prefix => {
-                Some(self.explode_keywords(&keywords, arguments, indent))
+                Some(self.explode_keywords(&keywords, call, indent))
             }
             // A call that cannot take keyword form explodes positionally
             // on the length trigger alone, so the count trigger leaves

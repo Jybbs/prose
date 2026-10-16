@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "`__lazy_modules__` Keeps Its Line Above the Imports"
+
+description = '''
+`__lazy_modules__ = ["pkg.patterns"]` sits between the `__future__` import and `import sys`, and `LIMIT = 10` sits at the bottom below `parse`. **`LIMIT` moves up into the band below the imports while `__lazy_modules__` keeps its line above them**, because the interpreter reads `__lazy_modules__` as it runs each import below it, so moving it beneath them would load `pkg.patterns` as soon as the module runs.
+'''

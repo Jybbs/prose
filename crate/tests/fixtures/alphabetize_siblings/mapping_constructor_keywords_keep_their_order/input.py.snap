@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/mapping_constructor_keywords_keep_their_order/input.py
+---
+SPECIALIZATIONS = frozendict(
+    RESUME=("RESUME_CHECK",),
+    BINARY_OP=("BINARY_OP_ADD_INT",),
+)
+COUNTS = dict(zeta=1, alpha=2)
+OPTIONS = configure(alpha=2, zeta=1)

@@ -15,7 +15,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    Stmt, StmtAssign,
+    ExprCall, Stmt, StmtAssign,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -177,6 +177,15 @@ impl<'a> StatementVisitor<'a> for Classes<'a> {
         }
         walk_stmt(self, stmt);
     }
+}
+
+/// True when `call` builds a mapping from its keywords, a `dict(...)` or
+/// `frozendict(...)` call, whose keyword order is the mapping's
+/// iteration order and so holds as written.
+pub(super) fn builds_mapping(call: &ExprCall) -> bool {
+    call.func
+        .as_name_expr()
+        .is_some_and(|name| matches!(name.id.as_str(), "dict" | "frozendict"))
 }
 
 /// True when `assign` binds one of the dunder lists whose elements
