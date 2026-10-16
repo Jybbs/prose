@@ -16,7 +16,7 @@ tagline: rewrite unit
 
 ## Public Surface
 
-`Edit` comes from `ruff_diagnostics` with no re-export, and the `Diagnostic` type a rule emits through the pipeline carries its edits inside the `Option<Fix>` of its `fix` field, visible in every [**output format**](/reference/output-formats) the CLI writes *(json, github, sarif)*. A downstream consumer reading the json output sees every edit's range and content in the `fix.edits[]` array.
+`Edit` comes from `ruff_diagnostics` with no re-export, and the `Diagnostic` type a rule emits through the pipeline carries its edits inside the `Option<Fix>` of its `fix` field. The `text`, `json`, and `sarif` [**output formats**](/reference/output-formats) print those edits, whereas a `github` annotation carries only the message and its position. A downstream consumer reading the `json` output sees each edit's location, original text, and replacement in the `fix.edits[]` array.
 
 The edit helpers *(`apply_edits_mapped`, `apply_inline_edits`, `narrowed_replacement`)* live at `crate/src/primitives/edit/` and are `pub(crate)`. The helpers become `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
 
@@ -25,7 +25,7 @@ The edit helpers *(`apply_edits_mapped`, `apply_inline_edits`, `narrowed_replace
 Each `Edit` carries:
 
 - A `range: TextRange` covering the source span the edit replaces. `TextRange` is byte-indexed *(through `ruff_text_size`)*, so offsets count UTF-8 bytes rather than Unicode scalars or display columns.
-- A `content: Option<String>` carrying the replacement text *(or `None` for a pure deletion)*
+- A `content: Option<Box<str>>` carrying the replacement text *(or `None` for a pure deletion)*
 
 A zero-length range with non-empty content is an insertion. A non-empty range with empty content is a deletion. A non-empty range with non-empty content is a substitution. The three kinds compose, so a rule rewriting one logical change as several local edits emits each as its own `Edit` without coordinating them.
 
@@ -43,7 +43,7 @@ Splices a sorted edit list into a source string and pairs the resulting string w
 
 Folds a list of edits into a source range, returning `Cow::Borrowed` when no edit applies or the in-range edits overlap. [[orderer]] uses it when rendering each block's text, so a block that does not itself rewrite references the source slice directly.
 
-### `narrow_edit(source, range, content) -> Edit`
+### `narrow_edit(text, span, source_slice) -> Option<(TextRange, String)>`
 
 Trims a candidate replacement to its minimal divergent range against the source. A rule producing `"foo = 1\n"` to replace `"foo = 1\n"` emits no edit at all, whereas a rule producing `"foo   = 1\n"` emits an edit covering only the `   ` insertion. A minimal-range edit is cheaper to apply and produces a cleaner diff. The `pub(crate)` entry point is `narrowed_replacement`, which calls this private helper.
 

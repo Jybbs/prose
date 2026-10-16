@@ -11,7 +11,7 @@ tagline: content-addressed result cache
 
 <PrimitiveLayout primitive="cache">
 
-*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a `postcard`-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes)` computed under a per-anchor derivation context. A repeat run over an unchanged file costs a stat, a hash, and a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
+*Cache* is the user-level content-addressed cache that lets `prose check` and `prose format` skip the pipeline for unchanged source. Each entry is a `postcard`-serialized payload carrying the post-pipeline diagnostics and optional rewrite, keyed on the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ name ++ source_type ++ source_bytes)` computed under a per-anchor derivation context. A repeat run over an unchanged file costs a stat, a hash, and a deserialize, with no AST construction, no rule pipeline, and no rewrite computation.
 
 ## Consumer-Visible Surface
 
@@ -31,7 +31,9 @@ The cache key is the **BLAKE3** digest of these inputs concatenated in order:
 2. The resolved rule selection the pipeline runs.
 3. The *Prose* version from `CARGO_PKG_VERSION`.
 4. A private `CACHE_FORMAT_VERSION` constant.
-5. The file's own source bytes.
+5. The file's name, as the run read its path.
+6. The source type the run reads the file as, `python`, `stub`, or `ipynb`.
+7. The file's own source bytes.
 
 The anchor enters ahead of all of them, as the `Hasher::new_derive_key` context the digest opens under. It names which buffer the entry's diagnostics resolve against, so no arrangement of the remaining inputs can carry one anchor's key into the other's space.
 
