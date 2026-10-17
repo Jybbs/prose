@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Write Into a Local of the Same Name Leaves the Module Display Reported"
+
+description = '''
+`lookup` binds a `cache` of its own and stores into that one, so the write lands on the function's local rather than on the module's `cache`. **The module's `cache` is still reported** with the suggested `CACHE` rename, because the rule reads each write against the binding its name resolves to, and nothing writes into the module-level display.
+'''

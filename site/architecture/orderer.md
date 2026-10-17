@@ -11,12 +11,12 @@ tagline: sibling reorder helper
 
 <PrimitiveLayout primitive="orderer">
 
-*Orderer* reorders sibling AST nodes by a classifier closure while keeping each node's attached comments with it and leaving the text between adjacent items in place. [[alphabetize-siblings]] is the canonical consumer, but the primitive is generic over the node kind. Any rule that permutes siblings *(class-body members, dict items, `import` lines)* by some key uses the same machinery rather than re-implementing comment attachment and gap handling.
+The `orderer` module reorders sibling AST nodes by a classifier closure while keeping each node's attached comments with it and leaving the text between adjacent items in place. [[alphabetize-siblings]] is the canonical consumer, but the primitive is generic over the node kind. Any rule that permutes siblings *(class-body members, dict items, `import` lines)* by some key uses the same machinery rather than re-implementing comment attachment and gap handling.
 
 
 ## Public Surface
 
-*Orderer* lives at `crate/src/primitives/orderer/` and is `pub(crate)`. What a downstream caller sees is the rewrite [[alphabetize-siblings]] emits, with the reordered text carried in the `Edit` the rule produces.
+The `orderer` module lives at `crate/src/primitives/orderer/` and is `pub(crate)`. What a downstream caller sees is the rewrite [[alphabetize-siblings]] emits, with the reordered text carried in the `Edit` the rule produces.
 
 The API settles at `1.0`, where a downstream can register its own ordering rule against the same entry points.
 

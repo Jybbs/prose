@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/nested_write_into_a_display_passes/input.py
+---
+handlers = {"open": []}
+menudefs = [("file", []), ("edit", [])]
+
+
+def add_entry(label):
+    menudefs[0][1].append(label)
+
+
+def register(event, callback):
+    handlers[event][0:0] = [callback]

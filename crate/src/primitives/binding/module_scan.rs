@@ -5,12 +5,16 @@
 use ruff_python_ast::{
     Comprehension, ExceptHandler, Expr, ExprContext, ExprName, Pattern, PatternMatchAs,
     PatternMatchMapping, PatternMatchStar, Stmt, StmtClassDef, StmtFunctionDef,
+    helpers::is_mutable_iterable_initializer,
     statement_visitor::{StatementVisitor, walk_stmt},
     visitor::{self, Visitor},
 };
 
-use super::names::{
-    bare_import_bound_name, from_import_bound_name, single_name_assignment, skips_module_scan,
+use super::{
+    BindingAnalysis,
+    names::{
+        bare_import_bound_name, from_import_bound_name, single_name_assignment, skips_module_scan,
+    },
 };
 
 /// A module-scope single-name assignment. The value is `None` for a bare
@@ -19,6 +23,15 @@ pub(crate) struct ModuleAssignment<'src> {
     pub(crate) stmt: &'src Stmt,
     pub(crate) target: &'src ExprName,
     pub(crate) value: Option<&'src Expr>,
+}
+
+impl ModuleAssignment<'_> {
+    /// True when the value is a list, set, or dict display the module
+    /// writes into, per `BindingAnalysis::module_mutated`.
+    pub(crate) fn binds_mutated_display(&self, analysis: &BindingAnalysis) -> bool {
+        self.value.is_some_and(is_mutable_iterable_initializer)
+            && analysis.module_mutated(&self.target.id)
+    }
 }
 
 /// Collects the names a module binds while executing one statement.
@@ -132,9 +145,32 @@ pub(crate) fn module_bound_names(stmt: &Stmt) -> Vec<&str> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::parse;
+
+    #[rstest]
+    #[case::dict_display("table = {}\ntable[\"k\"] = 1\n", true)]
+    #[case::list_display("table = []\ntable.append(1)\n", true)]
+    #[case::set_display("table = {1}\ntable.add(2)\n", true)]
+    #[case::unwritten_display("table = {\"k\": 1}\n", false)]
+    #[case::tuple_display("table = ([],)\ntable[0].append(1)\n", false)]
+    #[case::call_value("table = dict()\ntable[\"k\"] = 1\n", false)]
+    #[case::bare_annotation("table: dict[str, int]\n", false)]
+    fn binds_mutated_display_reads_the_value_and_the_writes(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let sites = module_assignments(&source.ast().body);
+        let site = sites.first().expect("a module assignment");
+        assert_eq!(
+            site.binds_mutated_display(source.binding_analysis()),
+            expected,
+            "{src}"
+        );
+    }
 
     #[test]
     fn module_assignments_descends_compound_bodies_and_skips_scopes() {

@@ -11,12 +11,12 @@ tagline: colon context walker
 
 <PrimitiveLayout primitive="colon-targets">
 
-*ColonTargets* builds alignment members at every `:` context the alignment and singleton rules consume. The contexts in the Python grammar that carry a colon worth aligning are listed below, and the code that finds them is the same for every rule, so the walker lives once in *ColonTargets* and each consuming rule supplies a receiver that handles the members it finds.
+The `colon_targets` module builds alignment members at every `:` context the alignment and singleton rules consume. The contexts in the Python grammar that carry a colon worth aligning are listed below, and the code that finds them is the same for every rule, so the walker lives once in `colon_targets` and each consuming rule supplies a receiver that handles the members it finds.
 
 
 ## Public Surface
 
-*ColonTargets* lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. The consumers today are [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-stranded-padding]] *(which removes pre-colon padding from a group that has no column to align to)*. What a downstream caller sees is the rewrites both rules emit through the diagnostic stream.
+The `colon_targets` module lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. The consumers today are [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-stranded-padding]] *(which removes pre-colon padding from a group that has no column to align to)*. What a downstream caller sees is the rewrites both rules emit through the diagnostic stream.
 
 At `1.0` the trait becomes `pub`, so a downstream can implement a `:`-context rule of its own.
 
