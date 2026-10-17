@@ -125,7 +125,7 @@ fn subdirs(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn every_binding_reader_is_listed_on_the_primitive_page() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let page = fs_err::read_to_string(root.join("../site/primitives/binding-analysis.md"))
+    let page = fs_err::read_to_string(root.join("../site/architecture/binding-analysis.md"))
         .expect("the primitive page reads");
     let listed = page
         .lines()

@@ -29,6 +29,11 @@ use crate::{
     source::Source,
 };
 
+/// The module global naming the modules whose imports run lazily, which
+/// the interpreter reads as it runs each import below it, so a binding of
+/// it pins in its slot above those imports.
+const LAZY_MODULES: &str = "__lazy_modules__";
+
 /// The `flake8` code for an import placed below the top of a file. A
 /// `noqa` naming it pins the statement in its slot.
 const POSITION_CODE: &str = "E402";
@@ -92,8 +97,8 @@ pub(super) fn module_band_plan<'src>(
     let mut sites: Vec<ConstSite<'src>> = Vec::new();
     for (idx, stmt) in body.iter().enumerate() {
         // A `# prose: off` span, a skip directive, a `noqa` naming
-        // `POSITION_CODE`, and a row a `\` join continues each pin their
-        // statement. A pinned member holds its slot and bounds the bands
+        // `POSITION_CODE`, a row a `\` join continues, and a binding of
+        // `LAZY_MODULES` each pin their statement. A pinned member holds its slot and bounds the bands
         // to its side, while its name still binds below, so a reference to
         // a pinned definition or import reads as resolved. An own-line
         // comment run left standing between two blocks pins nothing, since
@@ -101,7 +106,8 @@ pub(super) fn module_band_plan<'src>(
         let const_target = const_binding(stmt);
         let pinned = suppression.suppresses(stmt, BandConstants::SLUG)
             || noqa_names(source, stmt, POSITION_CODE)
-            || source.continues_a_logical_line(stmt.start());
+            || source.continues_a_logical_line(stmt.start())
+            || const_target.is_some_and(|(name, _)| name == LAZY_MODULES);
         // The run this member's block folds in ahead of its code. One
         // sitting directly below the previous member and a blank line
         // off this one documents that member and carries backward onto

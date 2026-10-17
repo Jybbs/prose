@@ -31,7 +31,7 @@ The rule runs ahead of [[reflow-calls]], so the bare `super()` is the text every
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-super-args]` directive, which covers every line a wrapped statement spans.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-super-args]` directive, which covers every line a wrapped statement spans.
 
 </template>
 

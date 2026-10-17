@@ -15,6 +15,7 @@ on:
       - '!LICENSE'
       - '!site/**'
       - site/.vitepress/tests/wasm/**
+      - site/**.md
 
   workflow_dispatch:
 
@@ -88,7 +89,9 @@ jobs:
         uses : $/.github/actions/restore-wasm
 
       - name : ${{ matrix.command }}
-        env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
+        env:
+          CODECOV_TOKEN     : ${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}
+          MISE_GITHUB_TOKEN : ${{ matrix.command == 'mise run lock:check' && github.token || '' }}
         run  : ${{ matrix.command }}
 
   gate:

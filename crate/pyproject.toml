@@ -13,6 +13,7 @@ classifiers     = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Rust",
     "Topic :: Software Development :: Quality Assurance"
 ]
@@ -41,7 +42,7 @@ issues    = "https://github.com/Jybbs/prose/issues"
 source    = "https://github.com/Jybbs/prose"
 
 [dependency-groups]
-test = ["pytest", "pytest-subprocess"]
+test = ["packaging", "pytest", "pytest-subprocess", "tomlkit"]
 
 [tool.maturin]
 bindings = "bin"

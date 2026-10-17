@@ -32,7 +32,7 @@ Two facets exempt an import from the report, whereas the third sets how wide a n
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[bare-imports]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[bare-imports]` directive.
 
 </template>
 

@@ -1,7 +1,7 @@
 <div align="center">
 <img src="../site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="800">
 
-[![Rust](../site/public/badges/rust.svg)![1.98+](https://img.shields.io/badge/1.98+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Rust](../site/public/badges/rust.svg)![1.99+](https://img.shields.io/badge/1.99+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
 [![Python](../site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
 [![Coverage](../site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
 [![Documentation](../site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
@@ -57,7 +57,7 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 - The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, every key, and the `[rules]` toggles.
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
 - The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
-- [**Suppression directives**](https://prose.fyi/usage/suppression) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
+- [**Suppression directives**](https://prose.fyi/reference/suppression-directives) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
 - [**Composition with Ruff**](https://prose.fyi/integrations/ruff) pairs the token-level formatter with `prose format`.
 - [**Editor, pre-commit, and CI integrations**](https://prose.fyi/integrations/) wire *Prose* into the development loop.
 
@@ -79,4 +79,4 @@ Once mise's shell hook has put `.mise/bin` on the path, a bare `prose` inside th
 
 `mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. The contributor guide at `.github/CONTRIBUTING.md` walks a change from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the commit, to the pull request and the checks that run on it.
 
-For the architecture, the [**primitive surface**](https://prose.fyi/primitives/) walks every public type (*`Source`, `Pipeline`, `BindingAnalysis`, `SuppressionMap`, `RuleId`, `Edit`*), and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.
+For the architecture, the [**architecture section**](https://prose.fyi/architecture/) walks the types and modules *Prose* is built from, setting the public `Source`, `Pipeline`, and `RuleId` beside the shared pieces every rule is composed from, and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.

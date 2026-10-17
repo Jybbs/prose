@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_imports/lazy_bare_import_splits_keeping_lazy/input.py
+---
+lazy import os
+lazy import sys

@@ -55,7 +55,7 @@ describe('useFamilyDataset', () => {
 
   it('clears the attribute off the rules tree', () => {
     document.body.dataset.family = 'alignment'
-    route.value = { relativePath: 'usage/index.md' }
+    route.value = { relativePath: 'guide/index.md' }
     mountSetup(composables.useFamilyDataset)
     expect(document.body.dataset.family).toBeUndefined()
   })

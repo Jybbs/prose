@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref }              from 'vue'
+import { ref } from 'vue'
 
-import MiddleEllipsis        from '../base/MiddleEllipsis.vue'
+import MiddleEllipsis from '../base/MiddleEllipsis.vue'
+import NibBadge       from '../base/NibBadge.vue'
+
 import { useMeasuredCssVar } from '../../../lib/composables/use-measured-css-var'
-
 import type { RenderedRule } from '../../../lib/rules/rules.data'
+import { familyEmblem }      from '../../../lib/shared/emblems'
 
 const props = withDefaults(
   defineProps<{
@@ -46,25 +48,17 @@ if (!props.clickable) {
 </script>
 
 <template>
-  <article
-    ref="article"
-    class="rule-card"
-    :data-category="rule.category"
-    :data-family="rule.family"
-  >
+  <article ref="article" class="rule-card" :data-family="rule.family">
     <a v-if="clickable" class="rule-card-cover" :href="rule.href" :aria-label="rule.name" />
     <div v-if="$slots.header" class="rule-card-header"><slot name="header" /></div>
-    <span
-      class="rule-card-badge"
-      :title="rule.familyLabel"
-      aria-hidden="true"
-    >{{ rule.familyBadge }}</span>
-    <div class="rule-card-name">
+    <span class="rule-card-mark nib-ground">
+      <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="18" />
+    </span>
+    <div class="rule-card-body">
       <h3 class="rule-card-slug" :title="rule.slug">
         <MiddleEllipsis :text="rule.slug" />
       </h3>
-      <span class="rule-card-fam">{{ rule.familyLabel }}</span>
+      <p ref="caption" class="rule-card-caption" v-html="rule.captionHtml"></p>
     </div>
-    <p ref="caption" class="rule-card-caption" v-html="rule.captionHtml"></p>
   </article>
 </template>

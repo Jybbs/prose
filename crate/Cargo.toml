@@ -56,7 +56,7 @@ anyhow              = { version = "1.0.104", optional = true }
 blake3              = { version = "1.8.7", optional = true }
 clap                = { workspace = true, optional = true }
 clap_complete       = { version = "4.6.11", optional = true }
-dirs                = { version = "6.0.0", optional = true }
+dirs                = { version = "7.0.0", optional = true }
 fluent-uri          = { version = "0.4.1", optional = true }
 fs-err              = { workspace = true }
 globset             = "0.4.20"
@@ -80,23 +80,23 @@ ruff_python_trivia  = { workspace = true }
 ruff_source_file    = { workspace = true, features = ["serde"] }
 ruff_text_size      = { workspace = true, features = ["serde"] }
 rustc-hash          = { workspace = true }
-schemars            = "1.2.2"
+schemars            = "1.2.3"
 serde               = { workspace = true }
 serde-sarif         = { version = "0.8.0", optional = true }
 serde_ignored       = "0.1.14"
 serde_json          = { workspace = true }
 similar             = { version = "3.2.0", optional = true }
-smallvec            = { version = "1.16.1", features = ["serde"] }
+smallvec            = { version = "1.16.3", features = ["serde"] }
 tempfile            = { version = "3.27.0", optional = true }
 textwrap            = { version = "0.16.4", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror           = "2.0.21"
-toml                = "1.1.6"
+toml                = "1.1.8"
 unicode-width       = "0.2.2"
 
 [dev-dependencies]
 assert_cmd            = "2.2.2"
-indoc                 = "2.0.7"
-insta                 = { version = "1.48.0", features = ["glob", "yaml"] }
-proptest              = "1.11.0"
-rstest                = "0.26.1"
+indoc                 = "2.0.8"
+insta                 = { version = "1.49.0", features = ["glob", "yaml"] }
+proptest              = "1.12.0"
+rstest                = "0.27.0"
 ruff_python_formatter = { workspace = true }

@@ -40,7 +40,7 @@ The default `_*` exempts names starting with an underscore, the Python conventio
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[inlinable-bindings]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[inlinable-bindings]` directive.
 
 </template>
 

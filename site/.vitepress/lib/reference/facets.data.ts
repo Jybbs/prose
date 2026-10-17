@@ -4,7 +4,7 @@ import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
 import { getRenderer }                  from '../markdown/renderer'
 import { discoverRuleIndex }            from '../rules/discovery'
 import * as paths                       from '../shared/paths'
-import { FAMILY_META }                  from '../shared/registries'
+import { FAMILY_META, type RuleFamily } from '../shared/registries'
 import * as ruleSchema                  from '../shared/rule-schema'
 import * as anchors                     from './anchors'
 
@@ -23,8 +23,7 @@ interface RuleGroup {
 }
 
 interface FacetFamily {
-  badge  : string
-  family : string
+  family : RuleFamily | 'generic'
   label  : string
   rules  : readonly RuleGroup[]
 }
@@ -67,7 +66,6 @@ export default defineLoader({
     // Holds the two facets the shared sub-tables give every rule and every
     // alignment rule, each rendered once under the scope that names it.
     const generic: FacetFamily = {
-      badge  : '',
       family : 'generic',
       label  : 'Generic',
       rules  : Object.entries(anchors.HOISTED_SCOPES).map(([key, name]) =>
@@ -92,7 +90,6 @@ export default defineLoader({
       ...[...Map.groupBy(rows, row => row.family)]
         .toSorted(([a], [b]) => a.localeCompare(b))
         .map(([family, ruleGroups]): FacetFamily => ({
-          badge  : FAMILY_META[family].badge,
           family : family,
           label  : FAMILY_META[family].label,
           rules  : ruleGroups.map(({ anchor, facets, rule }) => ({ anchor, facets, rule }))

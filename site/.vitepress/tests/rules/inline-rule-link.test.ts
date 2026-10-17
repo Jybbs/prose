@@ -31,6 +31,14 @@ describe('InlineRuleLink', () => {
     expect(anchor(true).attributes('tabindex')).toBe('-1')
   })
 
+  it('sets the family badge before the slug', () => {
+    const link = anchor(false)
+    expect(link.attributes('data-family')).toBe('alignment')
+    expect(link.find('svg').attributes('aria-hidden')).toBe('true')
+    expect(link.find('use').attributes('href')).toBe('#nib-ladder-small')
+    expect(link.text()).toBe('align-equals')
+  })
+
   it('carries the slug the delegated popper reads', () => {
     expect(anchor(false).attributes('data-rule')).toBe('align-equals')
   })

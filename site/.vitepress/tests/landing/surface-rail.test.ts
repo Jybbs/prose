@@ -34,9 +34,8 @@ vi.mock('@vueuse/core', async importOriginal => {
 })
 
 const rule = (slug: string): RenderedRule => ({
-  family      : 'alignment',
-  familyBadge : '🪜',
-  href        : `/rules/alignment/${slug}`,
+  family : 'alignment',
+  href   : `/rules/alignment/${slug}`,
   slug
 } as RenderedRule)
 
@@ -74,6 +73,11 @@ describe('SurfaceRail', () => {
 
     expect(wrapper.get('.surface-rail-chip').text()).toContain('align-equals')
     expect(wrapper.findAll('.surface-pip.active')).toHaveLength(0)
+  })
+
+  domTest('leads the rule chip with its family\'s small badge', async ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect((await mountRail()).get('.surface-rail-chip use').attributes('href')).toBe('#nib-ladder-small')
   })
 
   domTest('holds every pip in the scrolling window while the roster fits', async ({ reducedMotion }) => {

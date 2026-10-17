@@ -2,15 +2,18 @@ import path from 'node:path'
 
 import type { DefaultTheme } from 'vitepress'
 
+import type { DiscoveredPrimitive } from '../architecture/discovery'
 import { markdownH1 }               from '../markdown/h1'
-import type { DiscoveredPrimitive } from '../primitives/discovery'
 import type { DiscoveredRule }      from '../rules/discovery'
 import { matterPages }              from '../shared/content-page'
 import * as registries              from '../shared/registries'
 import { requireString }            from '../shared/require-string'
 import * as routes                  from '../shared/routes'
 
-type SidebarPrimitive = Pick<DiscoveredPrimitive, 'name' | 'slug' | 'stability'>
+type SidebarPrimitive = Pick<DiscoveredPrimitive, 'slug' | 'stability' | 'title'>
+
+const overview = (slug: registries.SectionSlug): DefaultTheme.SidebarItem =>
+  ({ link: routes.sectionRoute(slug), text: 'Overview' })
 
 const primLink = (slug: string, text: string): DefaultTheme.SidebarItem =>
   ({ link: routes.primitiveRoute(slug), text })
@@ -34,13 +37,13 @@ function primitiveGroups(
   const publicPrimitives   = primitives.filter(p => p.stability === 'public')
   const internalPrimitives = primitives.filter(p => p.stability === 'internal')
   return [
-    { items: [{ link: '/primitives/', text: 'Overview' }], text: label },
+    { items: [overview('architecture')], text: label },
     {
-      items : publicPrimitives.map(p => primLink(p.slug, p.name)),
+      items : publicPrimitives.map(p => primLink(p.slug, p.title)),
       text  : 'Public Surface'
     },
     {
-      items : internalPrimitives.map(p => primLink(p.slug, p.name)),
+      items : internalPrimitives.map(p => primLink(p.slug, p.title)),
       text  : 'Crate Internal'
     }
   ]
@@ -57,8 +60,8 @@ function ruleGroups(label: string, rules: readonly DiscoveredRule[]): DefaultThe
   return [
     {
       items: [
-        { link: '/rules/',             text: 'Overview'    },
-        { link: '/rules/composition/', text: 'Composition' }
+        overview('rules'),
+        { link: `${routes.sectionRoute('rules')}composition/`, text: 'Composition' }
       ],
       text : label
     },
@@ -74,12 +77,12 @@ function sectionGroups(
   srcDir     : string
 ): DefaultTheme.SidebarItem[] {
   switch (slug) {
-    case 'primitives' : return primitiveGroups(label, primitives)
-    case 'rules'      : return ruleGroups(label, rules)
-    case 'sandbox'    : return []
-    default           : return [{
+    case 'architecture' : return primitiveGroups(label, primitives)
+    case 'rules'        : return ruleGroups(label, rules)
+    case 'sandbox'      : return []
+    default             : return [{
       items : [
-        { link: routes.sectionRoute(slug), text: 'Overview' },
+        overview(slug),
         ...sectionPages(path.join(srcDir, slug), slug)
       ],
       text  : label

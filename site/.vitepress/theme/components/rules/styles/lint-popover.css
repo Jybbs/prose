@@ -1,18 +1,13 @@
 .v-popper--theme-rule-card.lint-popover .rule-card {
-  grid-auto-rows        : minmax(0, auto);
-  grid-template-columns : auto auto 1fr;
-  max-height            : 100%;
-  min-height            : auto;
-  overflow              : hidden;
-  padding-bottom        : 8px;
-  row-gap               : 8px;
+  grid-auto-rows : minmax(0, auto);
+  max-height     : 100%;
+  min-height     : auto;
 }
 
 .v-popper--theme-rule-card.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : 1px solid var(--vp-c-divider);
   grid-column   : 1 / -1;
-  margin        : -12px -16px 0;
   min-height    : 0;
   padding       : 8px 16px;
 }

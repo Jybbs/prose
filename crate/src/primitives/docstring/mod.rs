@@ -234,7 +234,7 @@ mod tests {
         });
         assert_eq!(groups.len(), 2);
         assert!(groups.iter().all(|group| group.len() == 1));
-        assert!(groups.windows(2).all(|w| w[0][0].start() < w[1][0].start()));
+        assert!(groups.is_sorted_by(|a, b| a[0].start() < b[0].start()));
     }
 
     #[test]

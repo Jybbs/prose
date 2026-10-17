@@ -16,11 +16,4 @@ describe('groupRules', () => {
     expect(data.byFamily.alignment.map(rule => rule.slug)).toStrictEqual(['align-equals'])
     expect(data.byFamily.docs).toStrictEqual([])
   })
-
-  it('splits the categories and drops a family holding no rule in one', () => {
-    const autoFix = data.byCategory.find(group => group.category === 'auto-fix')!
-    const lint    = data.byCategory.find(group => group.category === 'lint')!
-    expect(autoFix.byFamily.map(group => group.family)).toStrictEqual(['alignment', 'ordering'])
-    expect(lint.byFamily.map(group => group.family)).toStrictEqual(['lint'])
-  })
 })

@@ -55,11 +55,11 @@ const ROLES = {
 // where the accent tokens the OG cards resolve are emitted. Rules pages
 // accent by family instead, so the `rules` slug carries no section hue.
 export const SECTIONS: Record<Exclude<SectionSlug, 'rules'>, string> = {
+  architecture : PALETTE.dexter,
+  guide        : PALETTE.oat,
   integrations : PALETTE.rainee,
-  primitives   : PALETTE.dexter,
   reference    : PALETTE.casper,
-  sandbox      : PALETTE.whiskey,
-  usage        : PALETTE.oat
+  sandbox      : PALETTE.whiskey
 }
 
 const GROUPS = {

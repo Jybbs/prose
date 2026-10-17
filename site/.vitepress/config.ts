@@ -4,10 +4,11 @@ import path from 'node:path'
 import postcssGlobalData                          from '@csstools/postcss-global-data'
 import postcssCustomMedia                         from 'postcss-custom-media'
 import githubDark                                 from 'shiki/themes/github-dark.mjs'
-import { defineConfig, type PageData }            from 'vitepress'
+import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
+import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery'
 import { canonicalUrl }                               from './lib/config/canonical-url'
 import * as head                                      from './lib/config/head'
 import { injectFixtures }                             from './lib/config/inject-fixtures'
@@ -19,10 +20,12 @@ import { glossary }                                   from './lib/glossary/entri
 import { glossaryHrefs }                              from './lib/glossary/hrefs'
 import { buildPhraseToSlug }                          from './lib/glossary/phrase-map'
 import { glossaryPlugin }                             from './lib/glossary/plugin'
+import { readPlatforms }                              from './lib/guide/platforms'
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
+import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
-import { discoverPrimitiveIndex, discoverPrimitives } from './lib/primitives/discovery'
+import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
@@ -30,11 +33,11 @@ import { ruleLinkPlugin }                             from './lib/rules/link-plu
 import { readRuleFixtures }                           from './lib/rules/rule-fixtures'
 import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
+import { emblemsOf }                                  from './lib/shared/emblems'
 import { PALETTE, paletteCss }                        from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
 import { sectionRoute }                               from './lib/shared/routes'
-import { toTitleCase }                                from './lib/shared/title-case'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
 import * as version                                   from './lib/shared/version'
 
@@ -46,8 +49,9 @@ const ruffRelease          = version.readRuffRelease(crate)
 const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
-const discoveredPrimitives = discoverPrimitives(paths.primitivesDir(import.meta.url))
-const primitiveIndex       = discoverPrimitiveIndex(paths.primitivesDir(import.meta.url))
+const discoveredPrimitives = discoverPrimitives(paths.architectureDir(import.meta.url))
+const emblems              = emblemsOf(readPlatforms(paths.repoRoot(import.meta.url)))
+const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = PALETTE.ube
@@ -58,16 +62,6 @@ const fixtureSets          = {
 }
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
-
-function injectSectionName(
-  pageData : PageData,
-  prefix   : string,
-  resolve  : (slug: string) => string | undefined
-): void {
-  const { relativePath } = pageData
-  if (!relativePath.startsWith(prefix) || relativePath.endsWith('index.md')) return
-  pageData.frontmatter.name ??= resolve(path.basename(relativePath, '.md'))
-}
 
 export default defineConfig({
   cacheDir      : paths.vitepressCacheDir(import.meta.url),
@@ -89,6 +83,8 @@ export default defineConfig({
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
       md.use(proseMarkPlugin)
+      md.use(sectionHeadingPlugin)
+      md.use(emblemPlugin(emblems))
       md.use(bodyLinkPlugin)
     },
     lineNumbers : false,
@@ -135,8 +131,9 @@ export default defineConfig({
       { href: canonicalUrl(pageData.relativePath), rel: 'canonical' }
     ])
     head.describePage(pageData)
-    injectSectionName(pageData, 'rules/', slug => toTitleCase(slug, '-'))
-    injectSectionName(pageData, 'primitives/', slug => primitiveIndex.get(slug)?.name)
+    if (pageData.relativePath.startsWith('rules/')) {
+      pageData.frontmatter.name ??= ruleIndex.get(path.basename(pageData.relativePath, '.md'))?.name
+    }
     await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
   },
   vite: {

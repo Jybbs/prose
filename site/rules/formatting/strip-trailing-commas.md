@@ -22,7 +22,7 @@ The strip is unconditional within the contexts named above, so the rule carries 
 
 <template #related-after>
 
-For block-level opt-outs *(a project that keeps the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/usage/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
+For block-level opt-outs *(a project that keeps the trailing comma for diff stability even on multi-line forms)*, [**Suppression**](/guide/suppression) covers the `# fmt: off` / `# fmt: on` block markers.
 
 </template>
 

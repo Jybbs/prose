@@ -53,7 +53,7 @@
   border-radius   : 6px;
   color           : var(--vp-c-text-1);
   text-decoration : none;
-  transition      : background var(--prose-transition), color var(--prose-transition);
+  transition      : color var(--prose-transition);
 }
 
 .pipeline-order .pipeline-order-link,
@@ -66,10 +66,6 @@
 .pipeline-order .pipeline-order-glyph {
   text-decoration      : none;
   text-decoration-line : none;
-}
-
-.pipeline-order .pipeline-order-link:hover {
-  background : color-mix(in srgb, var(--family-color, var(--vp-c-text-1)) 8%, var(--vp-c-bg-soft));
 }
 
 .pipeline-order .pipeline-order-link:hover .pipeline-order-name {
@@ -92,12 +88,6 @@
 .pipeline-order-glyph {
   flex-shrink : 0;
   font-size   : var(--prose-text-md);
-}
-
-.pipeline-order-undocumented {
-  --family-color : var(--vp-c-text-3);
-  color          : var(--vp-c-text-3);
-  cursor         : help;
 }
 
 @media (--prose-bp-medium) {

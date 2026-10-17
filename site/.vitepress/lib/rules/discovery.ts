@@ -3,16 +3,17 @@ import path from 'node:path'
 
 import * as contentPage                     from '../shared/content-page'
 import * as paths                           from '../shared/paths'
-import * as registries                      from '../shared/registries'
+import { FAMILY_ORDER, type RuleFamily }    from '../shared/registries'
 import { requireString, requireStringList } from '../shared/require-string'
 import { ruleRoute }                        from '../shared/routes'
+import { toTitleCase }                      from '../shared/title-case'
 
 export interface DiscoveredRule {
   caption  : string
-  category : registries.RuleCategory
-  family   : registries.RuleFamily
+  family   : RuleFamily
   href     : string
   lints    : boolean
+  name     : string
   related  : readonly string[]
   slug     : string
 }
@@ -39,7 +40,7 @@ export function discoverRuleIndex(rulesDirectory: string): ReadonlyMap<string, D
 }
 
 export function discoverRules(rulesDirectory: string): RuleDiscovery {
-  const families   = new Set<string>(registries.FAMILY_ORDER)
+  const families   = new Set<string>(FAMILY_ORDER)
   const rules      : DiscoveredRule[] = []
   const strayPages : string[] = []
   for (const entry of fs.readdirSync(rulesDirectory, { withFileTypes: true })) {
@@ -52,7 +53,7 @@ export function discoverRules(rulesDirectory: string): RuleDiscovery {
       strayPages.push(...contentPage.contentPages(directory).map(f => `${entry.name}/${f}`))
       continue
     }
-    const family = entry.name as registries.RuleFamily
+    const family = entry.name as RuleFamily
     for (const { data: fm, slug } of contentPage.matterPages(directory)) {
       const caption = requireString(
         fm.caption,
@@ -64,11 +65,11 @@ export function discoverRules(rulesDirectory: string): RuleDiscovery {
       )
       rules.push({
         caption,
-        category : registries.categoryOf(family),
         family,
-        href     : ruleRoute(family, slug),
-        lints    : registries.categoryOf(family) === 'lint' || moduleEmitsLints(slug),
-        related  : relatedSlugs,
+        href    : ruleRoute(family, slug),
+        lints   : family === 'lint' || moduleEmitsLints(slug),
+        name    : toTitleCase(slug, '-'),
+        related : relatedSlugs,
         slug
       })
     }

@@ -1,4 +1,4 @@
-import type { DiscoveredPrimitive }           from '../primitives/discovery'
+import type { DiscoveredPrimitive }           from '../architecture/discovery'
 import type { DiscoveredRule, RuleDiscovery } from './discovery'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling

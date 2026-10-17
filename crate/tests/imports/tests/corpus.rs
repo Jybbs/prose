@@ -53,8 +53,8 @@ fn entry_points_leave_the_walk(
         "idlelib/idle.py",
         "idlelib/idle.pyw",
         "webbrowser.py",
-        "config-3.14-darwin/python-config.py",
-        "config-3.14-x86_64-linux-gnu/python-config.py"
+        "config-3.15-darwin/python-config.py",
+        "config-3.15-x86_64-linux-gnu/python-config.py"
     )]
     relative: &str,
 ) {

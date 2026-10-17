@@ -1,0 +1,106 @@
+.icon-emblem {
+  --emblem-ink : var(--vp-c-brand-1);
+  --glyph-size : 1em;
+  color        : var(--emblem-ink);
+}
+
+.icon-emblem[data-tone="duotone"] {
+  --emblem-hue   : var(--family-color, var(--vp-c-brand-1));
+  --emblem-ink   : color-mix(in oklch, var(--emblem-hue) 80%, var(--vp-c-text-1));
+  --emblem-paint : color-mix(in srgb, var(--emblem-hue) var(--prose-tint-strong), transparent);
+}
+
+.dark .icon-emblem[data-tone="duotone"] {
+  --emblem-hue : oklch(from var(--family-color, var(--vp-c-brand-1)) max(l, 0.72) c h);
+}
+
+.icon-emblem[data-form="fill"]                     { --emblem-paint: var(--emblem-ink); }
+.icon-emblem[data-form="fill"][data-tone="duotone"] { --emblem-paint: var(--emblem-hue); }
+
+.icon-emblem[data-terminal="nib"] {
+  stroke-linecap  : butt;
+  stroke-linejoin : miter;
+}
+
+.icon-emblem-paint {
+  fill   : var(--emblem-paint);
+  stroke : none;
+}
+
+.icon-emblem-outline {
+  stroke : var(--emblem-paint);
+}
+
+.icon-specimen {
+  display        : flex;
+  flex-direction : column;
+  gap            : 20px;
+  margin         : 24px 0 40px;
+}
+
+.icon-specimen-axes {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 6px 18px;
+}
+
+.icon-specimen-axes div {
+  display : flex;
+  gap     : 6px;
+}
+
+.icon-specimen-axes dd {
+  margin : 0;
+  color  : var(--vp-c-text-1);
+}
+
+.icon-specimen-chips {
+  display   : flex;
+  flex-wrap : wrap;
+  gap       : 8px;
+}
+
+.icon-specimen-chips .icon-emblem {
+  --glyph-size : var(--prose-text-md);
+}
+
+.vp-doc .icon-specimen-tiles {
+  display               : grid;
+  grid-template-columns : repeat(auto-fill, minmax(96px, 1fr));
+  gap                   : 14px 8px;
+  margin                : 0;
+  padding               : 0;
+  list-style            : none;
+}
+
+.vp-doc .icon-specimen-tiles li {
+  display        : flex;
+  flex-direction : column;
+  align-items    : center;
+  gap            : 6px;
+  margin         : 0;
+}
+
+.icon-specimen-tile {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : 32px;
+  height          : 32px;
+  border          : 1px solid var(--vp-c-divider);
+  border-radius   : 50%;
+  font-size       : 1.05rem;
+}
+
+.icon-specimen-card {
+  display         : flex;
+  flex-wrap       : wrap;
+  justify-content : center;
+  gap             : 28px;
+  padding         : 28px;
+  background      : var(--prose-panel-wash);
+}
+
+.icon-specimen-card .icon-emblem {
+  --glyph-size : 96px;
+}

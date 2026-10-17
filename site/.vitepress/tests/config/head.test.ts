@@ -1,12 +1,13 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import matter                           from 'gray-matter'
+import matter                            from 'gray-matter'
 import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 
 import * as head                                 from '../../lib/config/head'
 import { SITE_ALT, SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
 import { siteDir }                               from '../../lib/shared/paths'
+import { SECTIONS }                              from '../../lib/shared/registries'
 
 import type { HeadConfig, PageData, SiteData } from 'vitepress'
 
@@ -31,14 +32,14 @@ describe('pageHead', () => {
   it('emits the article shape for a content page', () => {
     const data = page({
       description  : 'd',
-      relativePath : 'usage/quick-start.md',
+      relativePath : 'guide/quick-start.md',
       title        : 'Quick Start'
     })
     const tags = head.pageHead(data, '0.1.0')
     expect(content(tags, 'og:title')).toBe('Quick Start')
     expect(content(tags, 'og:type')).toBe('article')
-    expect(content(tags, 'og:url')).toBe(`${SITE_HOSTNAME}/usage/quick-start`)
-    expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og/usage/quick-start.png`)
+    expect(content(tags, 'og:url')).toBe(`${SITE_HOSTNAME}/guide/quick-start`)
+    expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og/guide/quick-start.png`)
     expect(jsonLd(tags)).toMatchObject({ '@type': 'TechArticle', headline: 'Quick Start' })
   })
 
@@ -68,6 +69,19 @@ describe('pageHead', () => {
     expect(content(tags, 'og:description')).toBe(SITE_TAGLINE)
     expect(content(tags, 'og:url')).toBeUndefined()
     expect(jsonLd(tags)).toBeUndefined()
+  })
+
+  it('gives a page outside every section the landing card and its alt text', () => {
+    const data = page({
+      description  : 'd',
+      relativePath : 'prototypes/icons/index.md',
+      title        : 'Icon Family'
+    })
+    const tags = head.pageHead(data, '0.1.0')
+    expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
+    expect(content(tags, 'og:image:alt')).toBe(SITE_ALT)
+    expect(content(tags, 'og:type')).toBe('website')
+    expect(content(tags, 'og:title')).toBe('Icon Family')
   })
 
   it('prefers the frontmatter name over the page title', () => {
@@ -107,6 +121,12 @@ describe('describePage', () => {
     expect(data.description).toBe('')
   })
 
+  it.each(SECTIONS)('titles $slug/index.md with its label, $label', ({ label, slug }) => {
+    const data = page({ relativePath: `${slug}/index.md` })
+    head.describePage(data)
+    expect(data.title).toBe(label)
+  })
+
   it('titles the landing page with the site name and tagline and drops the template', () => {
     const data = page({ relativePath: 'index.md' })
     head.describePage(data)
@@ -114,7 +134,7 @@ describe('describePage', () => {
   })
 
   it('leaves every other page on the site title template', () => {
-    const data = page({ relativePath: 'usage/quick-start.md', title: 'Quick Start' })
+    const data = page({ relativePath: 'guide/quick-start.md', title: 'Quick Start' })
     head.describePage(data)
     expect(data).toMatchObject({ title: 'Quick Start' })
     expect(data.titleTemplate).toBeUndefined()
@@ -126,8 +146,9 @@ describe('TITLE_TEMPLATE', () => {
 
   it.each([
     ['rules/alignment/align-equals.md', 'align-equals', 'align-equals · Prose'],
-    ['usage/quick-start.md',            'Quick Start',  'Quick Start · Prose'],
-    ['index.md',                        '',             SITE_ALT]
+    ['guide/quick-start.md',            'Quick Start',  'Quick Start · Prose'],
+    ['index.md',                        '',             SITE_ALT],
+    ['sandbox/index.md',                '',             'Sandbox · Prose']
   ])('renders the <title> of %s through VitePress', (relativePath, title, expected) => {
     const data = page({ relativePath, title })
     head.describePage(data)

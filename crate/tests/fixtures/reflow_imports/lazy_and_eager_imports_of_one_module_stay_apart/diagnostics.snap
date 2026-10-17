@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_imports/lazy_and_eager_imports_of_one_module_stay_apart/input.py
+---
+reflow-imports@21..70

@@ -5,7 +5,7 @@ export function familyRoute(family: RuleFamily): string {
 }
 
 export function primitiveRoute(slug: string): string {
-  return `/primitives/${slug}`
+  return `${sectionRoute('architecture')}${slug}`
 }
 
 export function ruleRoute(family: RuleFamily, slug: string): string {

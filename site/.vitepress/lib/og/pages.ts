@@ -2,23 +2,21 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+import { type DiscoveredPrimitive, discoverPrimitiveIndex } from '../architecture/discovery'
 import { ogImagePath }                                      from '../config/og-url'
 import { markdownH1 }                                       from '../markdown/h1'
-import { type DiscoveredPrimitive, discoverPrimitiveIndex } from '../primitives/discovery'
 import { type DiscoveredRule, discoverRuleIndex }           from '../rules/discovery'
 import { readPipeline }                                     from '../rules/pipeline'
 import { FAMILIES, SECTIONS }                               from '../shared/palette'
 import * as registries                                      from '../shared/registries'
 import { toTitleCase }                                      from '../shared/title-case'
 
-const SECTION_SLUGS = new Set<string>(registries.SECTIONS.map(section => section.slug))
 type OgKind = registries.SectionSlug
 
 export interface OgPage {
   accent    ?: string
   breadcrumb : readonly string[]
   caption   ?: string
-  category  ?: registries.RuleCategory
   family    ?: registries.RuleFamily
   kind       : OgKind
   outputPath : string
@@ -29,13 +27,12 @@ export interface OgPage {
 
 export function enumeratePages(srcDir: string, pages: readonly string[]): readonly OgPage[] {
   const rulesIndex      = discoverRuleIndex(path.join(srcDir, 'rules'))
-  const primitivesIndex = discoverPrimitiveIndex(path.join(srcDir, 'primitives'))
+  const primitivesIndex = discoverPrimitiveIndex(path.join(srcDir, 'architecture'))
   const pipeline        = readPipeline(import.meta.url)
   const pipelinePos     = new Map(pipeline.map(r => [r.slug, r.position]))
   const out: OgPage[]   = []
   for (const rel of pages) {
-    if (rel === 'index.md') continue
-    const kind = chapterKind(rel)
+    const kind = registries.sectionOf(rel)
     if (kind === null) continue
     out.push(buildPage(rel, kind, rulesIndex, primitivesIndex, pipeline.length, pipelinePos, srcDir))
   }
@@ -56,15 +53,16 @@ function buildPage(
   pipelinePos     : ReadonlyMap<string, number>,
   srcDir          : string
 ): OgPage {
-  const slug       = pageSlug(rel)
+  const label      = registries.sectionLabel(kind)
   const outputPath = ogImagePath(rel)
+  const slug       = pageSlug(rel)
   if (rel.endsWith('/index.md')) {
     return {
       accent     : accentFor(kind, indexFamily(rel)),
-      breadcrumb : [toTitleCase(kind, '-')],
+      breadcrumb : [label],
       kind,
       outputPath,
-      title      : indexTitle(rel, kind)
+      title      : registries.indexSectionOf(rel)?.label ?? toTitleCase(slug, '-')
     }
   }
   if (kind === 'rules' && rulesIndex.has(slug)) {
@@ -72,39 +70,33 @@ function buildPage(
     const position = pipelinePos.get(slug)
     return {
       accent     : accentFor(kind, rule.family),
-      breadcrumb : ['Rules', registries.FAMILY_META[rule.family].label],
+      breadcrumb : [label, registries.FAMILY_META[rule.family].label],
       caption    : rule.caption,
-      category   : rule.category,
       family     : rule.family,
       kind,
       outputPath,
       pipeline   : position !== undefined ? { position, total: pipelineTotal } : undefined,
-      title      : toTitleCase(slug, '-')
+      title      : rule.name
     }
   }
-  if (kind === 'primitives') {
+  if (kind === 'architecture') {
     const primitive = primitivesIndex.get(slug)
     return {
       accent     : accentFor(kind),
-      breadcrumb : [toTitleCase(kind, '-')],
+      breadcrumb : [label],
       kind,
       outputPath,
       primitive  : { stability: primitive?.stability ?? 'internal' },
-      title      : primitive?.name ?? toTitleCase(slug, '-')
+      title      : primitive?.title ?? toTitleCase(slug, '-')
     }
   }
   return {
     accent     : accentFor(kind),
-    breadcrumb : [toTitleCase(kind, '-')],
+    breadcrumb : [label],
     kind,
     outputPath,
     title      : pageTitle(srcDir, rel)
   }
-}
-
-function chapterKind(rel: string): OgKind | null {
-  const head = rel.split('/', 1)[0]
-  return SECTION_SLUGS.has(head) ? head as OgKind : null
 }
 
 function indexFamily(rel: string): registries.RuleFamily | undefined {
@@ -112,16 +104,9 @@ function indexFamily(rel: string): registries.RuleFamily | undefined {
   return dir !== undefined && dir in registries.FAMILY_META ? dir as registries.RuleFamily : undefined
 }
 
-function indexTitle(rel: string, kind: OgKind): string {
-  if (rel === `${kind}/index.md`) return toTitleCase(kind, '-')
-  const parts = rel.split('/')
-  const tail  = parts.at(-2)!
-  return toTitleCase(tail, '-')
-}
-
 function pageSlug(rel: string): string {
   const stem = path.basename(rel, '.md')
-  return stem === 'index' ? path.basename(path.dirname(rel)) || 'index' : stem
+  return stem === 'index' ? path.basename(path.dirname(rel)) : stem
 }
 
 function pageTitle(srcDir: string, rel: string): string {

@@ -22,7 +22,7 @@ describe('paletteCss', () => {
     '--prose-palette-ube',
     '--prose-family-cli',
     '--prose-role-accent',
-    '--prose-section-usage'
+    '--prose-section-guide'
   ])('emits %s under its group prefix', name => {
     expect(decls.map(([prop]) => prop)).toContain(name)
   })

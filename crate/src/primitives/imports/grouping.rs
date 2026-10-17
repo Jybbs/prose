@@ -8,9 +8,10 @@ use ruff_python_ast::{Alias, Stmt, StmtImportFrom};
 use super::*;
 use crate::primitives::binding::top_level_module;
 
-/// The leading-dot count and module name that tell one `from`-import's
-/// module from another's.
-pub(crate) type ModuleKey<'a> = (u32, Option<&'a str>);
+/// The laziness, leading-dot count, and module name that tell one
+/// `from`-import's module from another's, so a `lazy from` import and an
+/// eager one of the same module read as two modules.
+pub(crate) type ModuleKey<'a> = (bool, u32, Option<&'a str>);
 
 /// Canonical import group. Derived `Ord` ranks the variants in
 /// declaration order, so a sort by group lands `__future__` imports
@@ -79,9 +80,9 @@ pub(crate) fn import_sort_key<'a>(
     })
 }
 
-/// The leading-dot count and module name of a `from`-import.
+/// The laziness, leading-dot count, and module name of a `from`-import.
 pub(crate) fn module_key(node: &StmtImportFrom) -> ModuleKey<'_> {
-    (node.level, node.module.as_deref())
+    (node.is_lazy, node.level, node.module.as_deref())
 }
 
 /// True when the root package of `name` appears in `first_party`.

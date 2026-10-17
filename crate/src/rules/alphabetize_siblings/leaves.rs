@@ -2,7 +2,8 @@
 //! emits one non-overlapping edit per outermost reordering structure.
 //! Positional-or-keyword parameters never reorder and only the
 //! keyword-only block sorts. A call keyword bound to an effectful value
-//! holds its slot while the inert keywords around it sort.
+//! holds its slot while the inert keywords around it sort, and a call
+//! building a mapping keeps every keyword in its slot.
 
 use std::borrow::Cow;
 
@@ -15,7 +16,7 @@ use ruff_python_ast::{
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
-use super::{dict::rewrite_dict_text, dunder_list, joined_text};
+use super::{builds_mapping, dict::rewrite_dict_text, dunder_list, joined_text};
 use crate::{
     primitives::{
         binding::sequence_elts,
@@ -45,8 +46,12 @@ impl<'a> LeafCollector<'a> {
         self.try_emit_inline_reorder(names, |a| Some(a.name.as_str()));
     }
 
-    /// Sorts only the keywords binding an inert value.
+    /// Sorts only the keywords binding an inert value, leaving every
+    /// keyword of a call that builds a mapping as written.
     fn emit_call(&mut self, c: &'a ExprCall) {
+        if builds_mapping(c) {
+            return;
+        }
         for chunk in c.arguments.keywords.split(|kw| kw.arg.is_none()) {
             self.try_emit_inline_reorder(chunk, |kw| {
                 kw.arg.as_deref().filter(|_| !value_is_effectful(&kw.value))

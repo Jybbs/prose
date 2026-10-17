@@ -30,35 +30,29 @@ a.tool-mark:hover {
 
 .vp-doc a.rule-link,
 .rule-card-caption a.rule-link {
-  color               : var(--vp-c-text-1);
-  font-family         : var(--vp-font-family-mono);
-  font-weight         : normal;
-  text-decoration     : none;
-  border-radius       : var(--prose-radius-sm);
-  padding             : 3px 0.42em 3px calc(0.42em + 2px);
-  background-color    : var(--vp-code-bg);
-  box-shadow          : inset 2px 0 0 var(--family-color);
-  background-image    :
-    linear-gradient(var(--family-color), var(--family-color)),
-    linear-gradient(color-mix(in srgb, var(--family-color) 14%, transparent), color-mix(in srgb, var(--family-color) 14%, transparent));
-  background-repeat   : no-repeat;
-  background-position : left bottom, left center;
-  background-size     : 0% 1px, 0% 100%;
-  transition          : background-size var(--prose-transition-slow);
+  display         : inline-block;
+  margin          : 0 0.1em;
+  padding         : 1px 6px 1px 5px;
+  border-left     : 2px solid var(--family-color);
+  color           : var(--vp-c-text-1);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : 0.8em;
+  font-weight     : 500;
+  line-height     : 20px;
+  text-decoration : none;
+  white-space     : nowrap;
+  vertical-align  : baseline;
+  transition      : box-shadow var(--prose-transition);
 }
 
 .vp-doc a.rule-link:hover,
 .rule-card-caption a.rule-link:hover {
-  background-size : 100% 1px, 100% 100%;
+  box-shadow : 0 0 0 1px color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
 }
 
-.vp-doc a.rule-link {
-  font-size : 0.88em;
-  margin    : 0 0.1em;
-}
-
-.rule-card-caption a.rule-link {
-  font-size : var(--vp-code-font-size);
+.rule-link .nib-badge {
+  margin-right   : 5px;
+  vertical-align : -2.5px;
 }
 
 .vp-doc table {

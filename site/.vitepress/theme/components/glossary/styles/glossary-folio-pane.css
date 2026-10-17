@@ -15,7 +15,7 @@
   position      : absolute;
   inset         : 0 auto 0 0;
   width         : 3px;
-  background    : var(--family-color);
+  background    : var(--rail-paint, var(--family-color));
   border-radius : var(--prose-radius) 0 0 var(--prose-radius);
 }
 
@@ -35,15 +35,14 @@
 
 .glossary-folio-folio {
   display      : flex;
+  flex-wrap    : wrap;
   align-items  : center;
-  gap          : 10px;
-  height       : 24px;
+  gap          : 6px 10px;
   padding-left : 6px;
   line-height  : 24px;
 }
 
-.glossary-folio-folio > span,
-.glossary-folio-folio > .glossary-folio-chip {
+.glossary-folio-folio > span:not(.family-chip) {
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
@@ -57,25 +56,6 @@
   gap         : 6px;
   height      : 24px;
   flex-shrink : 0;
-}
-
-.glossary-folio-chip {
-  gap              : 6px;
-  padding          : 0 8px 0 6px;
-  border           : 1px solid color-mix(in srgb, var(--family-color) 38%, var(--vp-c-divider));
-  border-radius    : var(--prose-radius-sm);
-  background       : color-mix(in srgb, var(--family-color) 12%, var(--vp-c-bg));
-  color            : color-mix(in srgb, var(--family-color) 80%, var(--vp-c-text-1));
-}
-
-.glossary-folio-badge {
-  font-size : var(--prose-text-md);
-  filter    : saturate(1.05);
-  transform : translateY(-1px);
-}
-
-.glossary-folio-folio-family {
-  letter-spacing : var(--prose-kicker-tracking);
 }
 
 .glossary-folio-folio-sep {

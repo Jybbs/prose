@@ -1,0 +1,38 @@
+.nib-sprite {
+  position : absolute;
+  width    : 0;
+  height   : 0;
+  overflow : hidden;
+}
+
+.nib-badge {
+  display  : inline-block;
+  flex     : none;
+  overflow : visible;
+  color    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ink), var(--vp-c-text-1));
+}
+
+.nib-chip,
+.nib-ground,
+.rule-chip,
+.rule-link {
+  background-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ground), var(--vp-c-bg));
+}
+
+.nib-chip {
+  display        : inline-block;
+  margin         : 0 0.08em;
+  padding        : 2px 4px;
+  border-radius  : var(--prose-radius-sm);
+  box-shadow     : inset 0 0 0 1px color-mix(in srgb, var(--family-color) var(--prose-tint-strong), transparent);
+  line-height    : 0;
+  vertical-align : calc(-0.15em - 2px);
+}
+
+.nib-chip:not([data-family]) {
+  --family-color : var(--vp-c-brand-1);
+}
+
+.nib-chip .nib-badge {
+  display : block;
+}

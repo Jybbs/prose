@@ -36,7 +36,7 @@ Both directions are written in one pass, so a pair nested inside another redunda
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[reflow-parentheses]` directive, which keeps every line a wrapped statement spans as written.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[reflow-parentheses]` directive, which keeps every line a wrapped statement spans as written.
 
 </template>
 

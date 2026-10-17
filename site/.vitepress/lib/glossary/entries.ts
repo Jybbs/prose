@@ -47,7 +47,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : '`--ignore` removes the named rules from a single run. The flag repeats, and '
                + 'combined with `--select` it subtracts from the selected set.',
     families   : ['cli'],
-    href       : '/usage/quick-start#subset-the-active-rules'
+    href       : '/guide/quick-start#subset-the-active-rules'
   },
 
   '--no-cache': {
@@ -61,7 +61,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : '`--select` restricts one run to the named rules. The flag repeats, and '
                + '`--ignore` then subtracts from that set.',
     families   : ['cli'],
-    href       : '/usage/quick-start#subset-the-active-rules'
+    href       : '/guide/quick-start#subset-the-active-rules'
   },
 
   '--verbose': {
@@ -79,7 +79,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'keeps it inside `Source` and rebuilds it between batches of rules, so each '
                + 'rule reads the tree as the rules before it left the text.',
     families   : ['engine'],
-    href       : '/primitives/source'
+    href       : '/architecture/source'
   },
 
   'BindingAnalysis': {
@@ -89,7 +89,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'reparse whenever the rules in between changed no binding. '
                + '`inlinable-bindings` reads it.',
     families   : ['engine', 'lint'],
-    href       : '/primitives/binding-analysis'
+    href       : '/architecture/binding-analysis'
   },
 
   'BLAKE3': {
@@ -114,7 +114,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'applies the edits of each batch of independent rules in one pass, rebuilds '
                + 'the tree between batches, and returns the final text with its diagnostics.',
     families   : ['engine'],
-    href       : '/primitives/pipeline'
+    href       : '/architecture/pipeline'
   },
 
   'Ruff': {
@@ -131,14 +131,14 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : 'A `RuleId` is a rule\'s slug, the kebab-case name that identifies it in CLI '
                + 'flags, config tables, suppression directives, and diagnostic output.',
     families   : ['engine', 'cli'],
-    href       : '/primitives/rule-id'
+    href       : '/architecture/rule-id'
   },
 
   'Source': {
     definition : '`Source` holds a parsed file, bundling its text, tree, token stream, line '
                + 'index, and suppression map. Every rule reads the file through this value.',
     families   : ['engine'],
-    href       : '/primitives/source'
+    href       : '/architecture/source'
   },
 
   'SuppressionMap': {
@@ -149,7 +149,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`# fmt: skip`, `# yapf`, and `# prose: ignore[...]` directive in the file. '
                + 'A rule checks it before emitting an edit or a diagnostic.',
     families   : ['engine', 'formatting', 'lint'],
-    href       : '/primitives/suppression-map'
+    href       : '/architecture/suppression-map'
   },
 
   'alignment group': {
@@ -159,7 +159,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'or a statement of another kind ends the group, and each group aligns on '
                + 'its own.',
     families   : ['alignment'],
-    href       : '/primitives/aligner'
+    href       : '/architecture/aligner'
   },
 
   'annotation': {
@@ -188,14 +188,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'a bare name. `reflow-collections` keeps a short collection of atomics on '
                + 'one line, since each entry reads at a glance.',
     rule       : 'reflow-collections'
-  },
-
-  'auto-fix': {
-    aliases    : ['auto-fixes', 'auto-fixing', 'Auto-Fix'],
-    definition : 'Auto-fix is the category of rules whose diagnostics carry a rewrite. '
-               + '`prose format` writes the rewrite, and `prose check` reports it as a '
-               + 'pending change.',
-    families   : ['formatting']
   },
 
   'band': {
@@ -261,7 +253,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`=`, `:`, a comparison operator, the `import` keyword, or a trailing `#` '
                + 'so every row\'s token sits at that column.',
     families   : ['alignment'],
-    href       : '/primitives/aligner'
+    href       : '/architecture/aligner'
   },
 
   'comprehension': {
@@ -315,7 +307,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '`"""`, `wrap-docstrings` rewraps a multi-line body, and `expand-docstrings` '
                + 'opens a single-line docstring onto its own lines.',
     families   : ['docs', 'engine'],
-    href       : '/primitives/docstring'
+    href       : '/architecture/docstring'
   },
 
   'docstring-line-length': {
@@ -394,7 +386,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'of the `Vec<Vec<Edit>>` a rule\'s `apply` returns. The pipeline maps each '
                + 'group to one diagnostic and applies or suppresses it as a unit.',
     families   : ['engine'],
-    href       : '/primitives/edit'
+    href       : '/architecture/edit'
   },
 
   'fixture': {
@@ -433,7 +425,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'vendored dependencies and build output stay out of a run without further '
                + 'configuration.',
     families   : ['engine'],
-    href       : '/primitives/walker#ignore-semantics'
+    href       : '/architecture/walker#ignore-semantics'
   },
 
   'idempotent': {
@@ -479,7 +471,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + '(`align-equals`, `inlinable-bindings`), the same spelling in CLI flags, '
                + 'config tables, suppression directives, and diagnostic output.',
     families   : ['engine', 'cli'],
-    href       : '/primitives/rule-id'
+    href       : '/architecture/rule-id'
   },
 
   'leading comment block': {
@@ -507,7 +499,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'binding analysis reads each once per `Source` to record every write and '
                + 'read.',
     families   : ['engine'],
-    href       : '/primitives/binding-analysis'
+    href       : '/architecture/binding-analysis'
   },
 
   'line budget': {
@@ -530,14 +522,6 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'string\'s value rather than in the source line, so it stays.',
     families   : ['formatting'],
     rule       : 'shed-backslash-continuations'
-  },
-
-  'lint': {
-    aliases    : ['Lint', 'lint violation', 'lint-only', 'linting'],
-    definition : 'Lint is the category of rules whose diagnostics report a finding without '
-               + 'rewriting it. `prose check` and `prose format` both report lints, and '
-               + 'neither changes the source for one.',
-    families   : ['lint']
   },
 
   'match': {
@@ -584,7 +568,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'is a single string literal, which is exactly the shape the `docstring` '
                + 'walker matches.',
     families   : ['docs', 'engine'],
-    href       : '/primitives/docstring#the-pep-257-definition'
+    href       : '/architecture/docstring#the-pep-257-definition'
   },
 
   'PEP 585': {
@@ -657,7 +641,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'wrote, so no rule sees a half-applied change, and the binding table carries '
                + 'into the new `Source` when every rule in the batch changed no binding.',
     families   : ['engine'],
-    href       : '/primitives/pipeline'
+    href       : '/architecture/pipeline'
   },
 
   'ruff format': {
@@ -683,7 +667,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'another kind ends it. The word also names one execution of *Prose*, as in '
                + '*a `prose format` run*, in its ordinary sense.',
     families   : ['alignment', 'engine'],
-    href       : '/primitives/aligner'
+    href       : '/architecture/aligner'
   },
 
   'Severity': {
@@ -723,7 +707,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'the tree, re-parsing only the statements the edits touched where it can and '
                + 'the whole file where it cannot.',
     families   : ['engine'],
-    href       : '/primitives/pipeline'
+    href       : '/architecture/pipeline'
   },
 
   'stdin mode': {

@@ -22,7 +22,7 @@ A base named `object` is only the builtin where the module has not rebound that 
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[shed-redundant-base]` directive, which covers every line a wrapped class header spans.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-redundant-base]` directive, which covers every line a wrapped class header spans.
 
 </template>
 

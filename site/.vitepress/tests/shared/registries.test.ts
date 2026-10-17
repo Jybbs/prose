@@ -1,15 +1,46 @@
-import * as registries from '../../lib/shared/registries'
+import MarkdownIt from 'markdown-it'
 
-describe('categoryOf', () => {
+import * as head                from '../../lib/config/head'
+import { sectionHeadingPlugin } from '../../lib/markdown/section-heading-plugin'
+import { enumeratePages }       from '../../lib/og/pages'
+import * as registries          from '../../lib/shared/registries'
+import { fixtureDir }           from '../support'
+
+import type { PageData } from 'vitepress'
+
+describe('a relabeled section', () => {
+  const guide = registries.SECTIONS.find(section => section.slug === 'guide') as { label: string }
+  const label = guide.label
+
+  beforeEach(() => { guide.label = 'Walkthrough' })
+  afterEach(() => { guide.label = label })
+
+  it('heads its index page with the new label', () => {
+    expect(new MarkdownIt().use(sectionHeadingPlugin).render('Body.', { relativePath: 'guide/index.md' }))
+      .toBe('<h1>Walkthrough</h1>\n<p>Body.</p>\n')
+  })
+
+  it('titles its index page with the new label', () => {
+    const data = { frontmatter: {}, relativePath: 'guide/index.md', title: '' } as PageData
+    head.describePage(data)
+    expect(data.title).toBe('Walkthrough')
+  })
+
+  it('names its og breadcrumb and index card with the new label', () => {
+    expect(enumeratePages(fixtureDir(`${import.meta.dirname}/../og`), ['guide/index.md']))
+      .toMatchObject([{ breadcrumb: ['Walkthrough'], title: 'Walkthrough' }])
+  })
+})
+
+describe('sectionOf', () => {
   it.each([
-    ['alignment',  'auto-fix'],
-    ['docs',       'auto-fix'],
-    ['formatting', 'auto-fix'],
-    ['layout',     'auto-fix'],
-    ['lint',       'lint'],
-    ['ordering',   'auto-fix']
-  ] as const)('maps %s to %s', (family, expected) => {
-    expect(registries.categoryOf(family)).toBe(expected)
+    ['index.md',                        null],
+    ['prototypes/icons/index.md',       null],
+    ['reference/cli.md',                'reference'],
+    ['rules/alignment/align-equals.md', 'rules'],
+    ['sandbox/index.md',                'sandbox']
+  ] as const)('maps %s to %s', (rel, expected) => {
+    expect(registries.sectionOf(rel)).toBe(expected)
   })
 })
 
@@ -20,10 +51,6 @@ describe('GLOSSARY_FAMILY_META', () => {
 })
 
 describe('registry types', () => {
-  it('categoryOf returns a RuleCategory', () => {
-    expectTypeOf(registries.categoryOf).returns.toEqualTypeOf<registries.RuleCategory>()
-  })
-
   it('FAMILY_META keys equal the RuleFamily union', () => {
     expectTypeOf<keyof typeof registries.FAMILY_META>().toEqualTypeOf<registries.RuleFamily>()
   })

@@ -26,6 +26,7 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 - A line under a suppression directive or a `# prose: keep` marker.
 - An import a trailing `noqa` comment marks, either bare or naming `E402`, the code the wider ecosystem reports a late import under.
 - A row a `\` line join continues.
+- A `__lazy_modules__` assignment, which Python reads as it runs each import below it, so it keeps its line above the imports it names.
 - Every constant in a reference cycle.
 
 A constant also stays put wherever moving it would change which object a name resolves to while the module runs. That covers:

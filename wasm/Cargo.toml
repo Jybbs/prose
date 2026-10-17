@@ -16,4 +16,4 @@ console_error_panic_hook = "0.1.7"
 prose                    = { path = "../crate", default-features = false }
 serde                    = { workspace = true }
 serde-wasm-bindgen       = "0.6.5"
-wasm-bindgen             = "=0.2.128"
+wasm-bindgen             = "=0.2.129"

@@ -3,4 +3,4 @@
 #MISE description = "Lint the docs-site TypeScript with `oxlint`"
 #MISE dir         = "site"
 
-oxlint .vitepress *.ts "$@"
+oxlint .vitepress prototypes *.ts "$@"

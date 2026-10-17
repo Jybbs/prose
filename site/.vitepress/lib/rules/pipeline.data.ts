@@ -3,12 +3,11 @@ import { defineLoader } from 'vitepress'
 import { discoverRuleIndex } from './discovery'
 import { readPipeline }      from './pipeline'
 import * as paths            from '../shared/paths'
-import * as registries       from '../shared/registries'
+import type { RuleFamily }   from '../shared/registries'
 
 interface PipelineRule {
   documented    : boolean
-  family        : registries.RuleFamily | null
-  familyBadge   : string | null
+  family        : RuleFamily | null
   position      : number
   preservesTree : boolean
   slug          : string
@@ -29,13 +28,11 @@ export default defineLoader({
   load(): PipelineData {
     const discovered = discoverRuleIndex(rulesDirectory)
     const rules      = readPipeline(import.meta.url).map(({ after, position, preserves_tree, slug }) => {
-      const entry      = discovered.get(slug)
-      const familyMeta = entry ? registries.FAMILY_META[entry.family] : null
-      const behind     = after.length > 0 ? ` · runs behind ${after.join(', ')}` : ''
+      const entry  = discovered.get(slug)
+      const behind = after.length > 0 ? ` · runs behind ${after.join(', ')}` : ''
       return {
         documented    : entry !== undefined,
         family        : entry?.family ?? null,
-        familyBadge   : familyMeta?.badge ?? null,
         position      : position,
         preservesTree : preserves_tree,
         slug          : slug,

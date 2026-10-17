@@ -2,6 +2,58 @@
 
 exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
 {
+  "/architecture/": [
+    {
+      "items": [
+        {
+          "link": "/architecture/",
+          "text": "Overview",
+        },
+      ],
+      "text": "Architecture",
+    },
+    {
+      "items": [
+        {
+          "link": "/architecture/aligner",
+          "text": "The aligner Module",
+        },
+      ],
+      "text": "Public Surface",
+    },
+    {
+      "items": [
+        {
+          "link": "/architecture/pipeline",
+          "text": "The Pipeline Type",
+        },
+      ],
+      "text": "Crate Internal",
+    },
+  ],
+  "/guide/": [
+    {
+      "items": [
+        {
+          "link": "/guide/",
+          "text": "Overview",
+        },
+        {
+          "link": "/guide/installation",
+          "text": "Installation",
+        },
+        {
+          "link": "/guide/quick-start",
+          "text": "Quick Start",
+        },
+        {
+          "link": "/guide/suppression",
+          "text": "Suppression",
+        },
+      ],
+      "text": "Guide",
+    },
+  ],
   "/integrations/": [
     {
       "items": [
@@ -31,35 +83,6 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
         },
       ],
       "text": "Integrations",
-    },
-  ],
-  "/primitives/": [
-    {
-      "items": [
-        {
-          "link": "/primitives/",
-          "text": "Overview",
-        },
-      ],
-      "text": "Primitives",
-    },
-    {
-      "items": [
-        {
-          "link": "/primitives/aligner",
-          "text": "Aligner",
-        },
-      ],
-      "text": "Public Surface",
-    },
-    {
-      "items": [
-        {
-          "link": "/primitives/pipeline",
-          "text": "Pipeline",
-        },
-      ],
-      "text": "Crate Internal",
     },
   ],
   "/reference/": [
@@ -161,28 +184,5 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
     },
   ],
   "/sandbox/": [],
-  "/usage/": [
-    {
-      "items": [
-        {
-          "link": "/usage/",
-          "text": "Overview",
-        },
-        {
-          "link": "/usage/installation",
-          "text": "Installation",
-        },
-        {
-          "link": "/usage/quick-start",
-          "text": "Quick Start",
-        },
-        {
-          "link": "/usage/suppression",
-          "text": "Suppression",
-        },
-      ],
-      "text": "Usage",
-    },
-  ],
 }
 `;

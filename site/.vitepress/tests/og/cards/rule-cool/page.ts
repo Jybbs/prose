@@ -5,7 +5,6 @@ export const page: OgPage = {
   accent     : FAMILIES.ordering,
   breadcrumb : ['Rules', 'Ordering'],
   caption    : 'Sorts `import` bands into **runs**',
-  category   : 'auto-fix',
   family     : 'ordering',
   kind       : 'rules',
   outputPath : 'og/rules/ordering/alphabetize-siblings.png',

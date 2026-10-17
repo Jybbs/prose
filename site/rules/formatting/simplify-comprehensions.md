@@ -24,7 +24,7 @@ A comprehension whose element repeats its target unchanged spells a copy, so `[r
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[simplify-comprehensions]` directive, which covers every line a wrapped call spans.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[simplify-comprehensions]` directive, which covers every line a wrapped call spans.
 
 </template>
 

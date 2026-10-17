@@ -1,17 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
-import { useCurrentRule } from '../../../lib/composables/route'
-
-import TaxonomyChip from './TaxonomyChip.vue'
-
-const rule         = useCurrentRule()
-const showFamily   = computed(() => rule.value !== null && rule.value.family !== 'lint')
+import FamilyChip from './FamilyChip.vue'
 </script>
 
 <template>
   <div class="rule-chrome">
-    <TaxonomyChip axis="category" />
-    <TaxonomyChip v-if="showFamily" axis="family" />
+    <FamilyChip />
   </div>
 </template>

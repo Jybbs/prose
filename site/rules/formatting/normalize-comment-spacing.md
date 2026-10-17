@@ -34,7 +34,7 @@ Two spaces is the minimum gap before a trailing comment rather than the target, 
 
 <RuleConfigTable />
 
-The one-space opener and the two-space minimum are both fixed, so the rule carries `enabled` as its only facet. A comment that has to keep its own spacing takes an inline [**Suppression**](/usage/suppression) directive rather than a project-level key, since the exception is per-comment rather than per-project.
+The one-space opener and the two-space minimum are both fixed, so the rule carries `enabled` as its only facet. A comment that has to keep its own spacing takes an inline [**Suppression**](/guide/suppression) directive rather than a project-level key, since the exception is per-comment rather than per-project.
 
 </template>
 

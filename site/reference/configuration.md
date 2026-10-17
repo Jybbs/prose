@@ -95,9 +95,9 @@ The `[rules]` table holds one entry per rule you change. A bare bool is the shor
 
 <PerRuleFacets />
 
-## Rule Categories
+## Rewrites and Lint Findings
 
-Every rule is either auto-fix or lint, and that split decides what a diagnostic does rather than how a rule is configured. An auto-fix rule rewrites the source under `prose format` and reports the pending edit under `prose check`, whereas a lint rule only reports and leaves the change to a person, because its fix depends on a judgment *Prose* does not make. The split sets the `prose check` exit code, `1` for a pending auto-fix and `2` for a lint finding, so a CI gate can tell the two apart. Configuration is the same on both sides, so `<rule> = false` turns either kind off and the facets above tune either kind.
+A diagnostic either carries a rewrite, which `prose format` writes and `prose check` reports as a pending edit, or reports a lint finding, whose fix is left to a person because it depends on a judgment *Prose* does not make. That split sets the `prose check` exit code, `1` for a pending rewrite and `2` for a lint finding, so a CI gate can tell the two apart. Configuration is the same for every rule, so `<rule> = false` turns any rule off and the facets above tune any rule.
 
 ## Key Naming
 
@@ -134,4 +134,4 @@ Globs are relative to the directory of the config that declares them, so `tests/
 
 ## Subset by Invocation
 
-`--select` and `--ignore` on the command line take precedence over the configured rule set for one run. The [**Quick Start**](/usage/quick-start#subset-the-active-rules) chapter covers the flags, the [**CLI Reference**](/reference/cli) the full flag list, and the [**Suppression**](/usage/suppression) chapter the per-line opt-outs.
+`--select` and `--ignore` on the command line take precedence over the configured rule set for one run. The [**Quick Start**](/guide/quick-start#subset-the-active-rules) chapter covers the flags, the [**CLI Reference**](/reference/cli) the full flag list, and the [**Suppression**](/guide/suppression) chapter the per-line opt-outs.

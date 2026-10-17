@@ -57,6 +57,12 @@ describe('Surfaces', () => {
       .toStrictEqual([undefined, undefined, 'true', 'true'])
   })
 
+  domTest('sets each card\'s disc in its family\'s large badge', ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect(mountSurfaces().findAll('.surface-card-icon use').map(use => use.attributes('href')))
+      .toStrictEqual(['#nib-ladder-large', '#nib-harp-large', '#nib-ladder-large', '#nib-harp-large'])
+  })
+
   domTest('leaves every focusable node in the hidden copy out of the tab order', ({ reducedMotion }) => {
     reducedMotion(true)
     const cards      = mountSurfaces().findAll('.surface-card')

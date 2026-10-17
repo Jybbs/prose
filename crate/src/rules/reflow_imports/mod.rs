@@ -399,7 +399,13 @@ impl<'a> Layout<'a> {
         let rows: Vec<String> = node
             .names
             .iter()
-            .map(|alias| format!("import {}", self.source.slice(alias.range())))
+            .map(|alias| {
+                format!(
+                    "{}import {}",
+                    lazy_keyword(node.is_lazy),
+                    self.source.slice(alias.range())
+                )
+            })
             .collect();
         self.groups
             .extend(singleton_groups(self.joined_rows_edit(node, &rows)));
@@ -432,10 +438,12 @@ fn group_aliases<'a>(body: &'a [Stmt], slots: &[usize]) -> impl Iterator<Item = 
 }
 
 /// The `from <dots><module>` head each row of `node` repeats, with the
-/// relative-import leading dots folded into it.
+/// relative-import leading dots folded into it and the `lazy` keyword
+/// ahead of it where `node` imports lazily.
 fn import_head(node: &StmtImportFrom) -> String {
     format!(
-        "from {}",
+        "{}from {}",
+        lazy_keyword(node.is_lazy),
         format_import_from(node.level, node.module.as_deref())
     )
 }
@@ -456,6 +464,12 @@ fn import_keyword_gap<'src>(
         stranding,
     )?;
     Some(source.slice(anchored.gap))
+}
+
+/// The `lazy ` keyword a lazy import's rewritten rows open on, empty for
+/// an eager import.
+fn lazy_keyword(lazy: bool) -> &'static str {
+    if lazy { "lazy " } else { "" }
 }
 
 /// The leading-whitespace prefix of `node`'s line when `node` is a
@@ -538,7 +552,8 @@ mod tests {
     #[case("from .sub import x\n", "from .sub")]
     #[case("from ..pkg import x\n", "from ..pkg")]
     #[case("from typing     import x\n", "from typing")]
-    fn import_head_folds_relative_dots_into_the_repeated_head(
+    #[case("lazy from pkg import x\n", "lazy from pkg")]
+    fn import_head_folds_relative_dots_and_the_lazy_keyword_into_the_repeated_head(
         #[case] src: &str,
         #[case] expected: &str,
     ) {

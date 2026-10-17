@@ -70,4 +70,4 @@ The same JSON output serves editor squiggles and CI annotations. The [**GitHub A
 
 *Prose* parses the whole file on every run, so the time a run takes grows with the file's size rather than with the size of the edit. For a file under a few thousand lines it finishes well within a save hook's latency budget. Format on save rather than on every keystroke, because a format-on-type hook would parse the file on each key and the alignment rules read many lines at once. An editor with an idle hook can run `prose check --output-format json --stdin` after about a second of no typing, which keeps diagnostics current without running the formatter constantly.
 
-The [**Quick Start**](/usage/quick-start) chapter and the [**CLI Reference**](/reference/cli) cover the commands every editor path runs. The [**Ruff**](/integrations/ruff) page covers running Ruff's formatter in the same save hook.
+The [**Quick Start**](/guide/quick-start) chapter and the [**CLI Reference**](/reference/cli) cover the commands every editor path runs. The [**Ruff**](/integrations/ruff) page covers running Ruff's formatter in the same save hook.
