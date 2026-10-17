@@ -29,7 +29,7 @@ The `allow` list takes bare names, and a listed name never produces a finding ev
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[reassigned-constants]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[reassigned-constants]` directive.
 
 </template>
 

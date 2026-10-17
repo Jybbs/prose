@@ -3,6 +3,10 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+export function architectureDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'architecture')
+}
+
 export function cacheDirFrom(root: string, name: string): string {
   return path.join(root, '.cache', name)
 }
@@ -21,10 +25,6 @@ export function fetchCacheDir(metaUrl: string): string {
 
 export function fixturesDirFrom(crate: string): string {
   return path.join(crate, 'tests', 'fixtures')
-}
-
-export function primitivesDir(metaUrl: string): string {
-  return path.join(siteDir(metaUrl), 'primitives')
 }
 
 export function proseBinaryPath(root: string): string {

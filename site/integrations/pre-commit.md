@@ -24,7 +24,7 @@ Add a `local` hook to your `.pre-commit-config.yaml`:
 
 `entry: prose format` rewrites the staged file in place, so the hook fails the commit with a *"fixed by **Prose**"* diff and leaves the rewritten file on disk for you to stage again and re-commit. This is the loop pre-commit runs for every hook that fixes files *(Black, isort, and autopep8 behave the same way)*. For a hook that fails on pending rewrites without writing anything, use `entry: prose check` and run `prose format` yourself before committing again.
 
-`language: system` tells pre-commit to run the `prose` binary already on your `PATH` *(see the [**Installation**](/usage/installation) chapter)* rather than installing a pinned copy into the hook's own environment. A project that prefers a pinned copy uses `language: python` with `additional_dependencies: ["prose-formatter==<version>"]`.
+`language: system` tells pre-commit to run the `prose` binary already on your `PATH` *(see the [**Installation**](/guide/installation) chapter)* rather than installing a pinned copy into the hook's own environment. A project that prefers a pinned copy uses `language: python` with `additional_dependencies: ["prose-formatter==<version>"]`.
 
 `files` keeps the hook to `.py` and `.pyw` files, since pre-commit's `python` type also matches an executable script whose shebang names Python, and `prose format` fails with exit code 4 on a named file outside the extensions it formats.
 

@@ -40,7 +40,7 @@ The facet skips the docstring slot, whose quotes [[frame-docstrings]] rewrites t
 
 <template #related-after>
 
-For a single literal that has to keep the spelling it was written with, [**Suppression**](/usage/suppression) covers the `# prose: skip[normalize-literals]` line directive and the `# fmt: off` / `# fmt: on` block markers.
+For a single literal that has to keep the spelling it was written with, [**Suppression**](/guide/suppression) covers the `# prose: skip[normalize-literals]` line directive and the `# fmt: off` / `# fmt: on` block markers.
 
 </template>
 

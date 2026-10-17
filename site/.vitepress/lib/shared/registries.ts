@@ -28,15 +28,24 @@ export const GLOSSARY_FAMILY_META: Record<GlossaryFamily, Pick<FamilyMeta, 'badg
 
 // Reading order, not alphabetical, because the list order drives the nav.
 export const SECTIONS = [
-  { label: 'Usage',        slug: 'usage'        },
+  { label: 'Guide',        slug: 'guide'        },
   { label: 'Reference',    slug: 'reference'    },
   { label: 'Integrations', slug: 'integrations' },
   { label: 'Rules',        slug: 'rules'        },
-  { label: 'Primitives',   slug: 'primitives'   },
+  { label: 'Architecture', slug: 'architecture' },
   { label: 'Sandbox',      slug: 'sandbox'      }
 ] as const
 
-export type SectionSlug = (typeof SECTIONS)[number]['slug']
+type Section            = (typeof SECTIONS)[number]
+export type SectionSlug = Section['slug']
+
+export function indexSectionOf(relativePath: string): Section | undefined {
+  return SECTIONS.find(section => relativePath === `${section.slug}/index.md`)
+}
+
+export function sectionLabel(slug: SectionSlug): string {
+  return SECTIONS.find(section => section.slug === slug)!.label
+}
 
 export function sectionOf(relativePath: string): SectionSlug | null {
   const head = relativePath.split('/', 1)[0]

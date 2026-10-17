@@ -7,9 +7,11 @@ import { emblemPlugin }            from '../../lib/markdown/emblem-plugin'
 import { inertEnv, plainTermsEnv } from '../../lib/markdown/inert-env'
 import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
 import { renderPlainInlineHtml }   from '../../lib/markdown/renderer'
+import { sectionHeadingPlugin }    from '../../lib/markdown/section-heading-plugin'
 import type { DiscoveredRule }     from '../../lib/rules/discovery'
 import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 import { emblemsOf }               from '../../lib/shared/emblems'
+import { SECTIONS }                from '../../lib/shared/registries'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
   const md = new MarkdownIt()
@@ -26,6 +28,33 @@ describe('proseMarkPlugin', () => {
   it('keeps hyphenated and snake_case compounds literal', () => {
     expect(render(md => md.use(proseMarkPlugin), 'the prose-mark class and prose_mark name'))
       .not.toContain('<span class="prose-mark">')
+  })
+})
+
+describe('sectionHeadingPlugin', () => {
+  const heading = (src: string, env: object): string =>
+    render(md => md.use(sectionHeadingPlugin), src, env)
+
+  it.each(SECTIONS)('heads $slug/index.md with $label', ({ label, slug }) => {
+    expect(heading('Body.', { relativePath: `${slug}/index.md` }))
+      .toBe(`<h1>${label}</h1>\n<p>Body.</p>\n`)
+  })
+
+  it.each([
+    ['a page beneath a section index', 'guide/quick-start.md'],
+    ['a page outside every section',   'prototypes/icons/index.md']
+  ])('leaves %s alone', (_where, relativePath) => {
+    expect(heading('Body.', { relativePath })).toBe('<p>Body.</p>\n')
+  })
+
+  it('leaves an index page whose frontmatter sets heading to false alone', () => {
+    expect(heading('Body.', { frontmatter: { heading: false }, relativePath: 'sandbox/index.md' }))
+      .toBe('<p>Body.</p>\n')
+  })
+
+  it('throws on an index page that types its own H1', () => {
+    expect(() => heading('# Guide', { relativePath: 'guide/index.md' }))
+      .toThrow('guide/index.md types its own H1, which SECTIONS supplies')
   })
 })
 
@@ -125,7 +154,7 @@ describe('ruleLinkPlugin', () => {
 
   it('renders a primitive wiki-link as a body link', () => {
     expect(run('see [[aligner]]'))
-      .toContain('<a class="body-link underline-draw" href="/primitives/aligner">')
+      .toContain('<a class="body-link underline-draw" href="/architecture/aligner">')
   })
 
   it('promotes an inline-code rule slug to a doc link', () => {

@@ -7,9 +7,13 @@ import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
 import { getRenderer }                  from '../markdown/renderer'
 import { matterPages }                  from '../shared/content-page'
 import { siteDir }                      from '../shared/paths'
+import type { SectionSlug }             from '../shared/registries'
 import { requireString }                from '../shared/require-string'
+import { sectionRoute }                 from '../shared/routes'
 
-export type GlanceSection = 'reference' | 'usage'
+const SECTIONS = ['guide', 'reference'] as const satisfies readonly SectionSlug[]
+
+export type GlanceSection = (typeof SECTIONS)[number]
 
 export interface GlanceEntry {
   descriptionNodes : InlineNode[]
@@ -21,8 +25,6 @@ type Glance = Record<GlanceSection, readonly GlanceEntry[]>
 
 declare const data: Glance
 export { data }
-
-const SECTIONS: readonly GlanceSection[] = ['reference', 'usage']
 
 const site = siteDir(import.meta.url)
 
@@ -42,13 +44,13 @@ export default defineLoader({
             fm.description,
             `${section}/${slug}.md is missing the description frontmatter its section glance reads`
           ))),
-          href             : `/${section}/${slug}`,
+          href             : `${sectionRoute(section)}${slug}`,
           title            : requireString(
             markdownH1(content),
             `${section}/${slug}.md has no H1 for its section glance`
           )
         }))
         .toSorted((a, b) => a.title.localeCompare(b.title))
-    return { reference: entries('reference'), usage: entries('usage') }
+    return { guide: entries('guide'), reference: entries('reference') }
   }
 })

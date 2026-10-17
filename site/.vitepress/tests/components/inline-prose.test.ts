@@ -35,7 +35,7 @@ describe('InlineProse', () => {
 
     expect(html).toContain('<code>x</code>')
     expect(html).toContain('<strong>bold</strong>')
-    expect(html).toContain('href="/primitives/source"')
+    expect(html).toContain('href="/architecture/source"')
     expect(html).toContain('A')
   })
 
@@ -69,8 +69,8 @@ describe('InlineProse', () => {
     const nodes: InlineNode[] = [{
       kind     : 'el',
       tag      : 'a',
-      attrs    : { href: '/usage/' },
-      children : [{ kind: 'text', text: 'Usage' }]
+      attrs    : { href: '/guide/' },
+      children : [{ kind: 'text', text: 'Guide' }]
     }]
     expect(renderHidden(nodes).get('a').attributes('tabindex')).toBe('-1')
   })
@@ -79,8 +79,8 @@ describe('InlineProse', () => {
     const w = render([{
       kind     : 'el',
       tag      : 'a',
-      attrs    : { href: '/usage/', tabindex: '0' },
-      children : [{ kind: 'text', text: 'Usage' }]
+      attrs    : { href: '/guide/', tabindex: '0' },
+      children : [{ kind: 'text', text: 'Guide' }]
     }])
     expect(w.get('a').attributes('tabindex')).toBe('0')
   })

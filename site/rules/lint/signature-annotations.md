@@ -22,7 +22,7 @@ The rule also reports a function whose body returns a value and carries no retur
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[signature-annotations]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[signature-annotations]` directive.
 
 </template>
 

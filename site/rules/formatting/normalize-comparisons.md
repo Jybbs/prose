@@ -56,7 +56,7 @@ The same facet reports a test against `True` or `False` rather than rewriting it
 
 <template #related-after>
 
-For per-statement opt-outs, the [**Suppression**](/usage/suppression) chapter covers the `# prose: skip[normalize-comparisons]` directive, which covers every line a wrapped condition spans.
+For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[normalize-comparisons]` directive, which covers every line a wrapped condition spans.
 
 </template>
 

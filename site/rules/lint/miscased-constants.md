@@ -36,7 +36,7 @@ The `allow-pattern` glob is empty by default and exempts nothing beyond the stru
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[miscased-constants]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[miscased-constants]` directive.
 
 </template>
 

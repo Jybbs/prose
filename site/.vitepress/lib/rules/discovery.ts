@@ -6,12 +6,14 @@ import * as paths                           from '../shared/paths'
 import { FAMILY_ORDER, type RuleFamily }    from '../shared/registries'
 import { requireString, requireStringList } from '../shared/require-string'
 import { ruleRoute }                        from '../shared/routes'
+import { toTitleCase }                      from '../shared/title-case'
 
 export interface DiscoveredRule {
   caption  : string
   family   : RuleFamily
   href     : string
   lints    : boolean
+  name     : string
   related  : readonly string[]
   slug     : string
 }
@@ -66,6 +68,7 @@ export function discoverRules(rulesDirectory: string): RuleDiscovery {
         family,
         href    : ruleRoute(family, slug),
         lints   : family === 'lint' || moduleEmitsLints(slug),
+        name    : toTitleCase(slug, '-'),
         related : relatedSlugs,
         slug
       })

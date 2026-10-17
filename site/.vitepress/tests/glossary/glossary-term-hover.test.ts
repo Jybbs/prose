@@ -5,7 +5,7 @@ import { defineComponent, h }     from 'vue'
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
 import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
 
-vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/primitives/' }) }))
+vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/architecture/' }) }))
 
 vi.mock('../../lib/glossary/glossary.data', () => ({
   data: {

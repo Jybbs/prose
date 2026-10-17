@@ -40,7 +40,7 @@ const installCmd = `uv tool install ${PYPI_PACKAGE}`
         <code>{{ installCmd }}</code>
         <CopyButton label="Copy install command" :source="installCmd" :copied-during="2000" />
       </div>
-      <a class="landing-cta-primary" href="/usage/quick-start">
+      <a class="landing-cta-primary" href="/guide/quick-start">
         <span>Quick start</span>
         <span class="landing-cta-arrow" aria-hidden="true">→</span>
       </a>

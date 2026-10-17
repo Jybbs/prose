@@ -268,4 +268,4 @@ This runs `align-equals` on `src/` even when `[rules]` has `align-equals = false
 
 Every flag above is per invocation, so none of them *(`--output-format`, `--color`, `--diff`, `--select`, and `--ignore` included)* can be set in `[tool.prose]`. The configuration file carries the semantic settings *(line lengths, per-rule toggles, per-rule inputs)*, and the command line carries the invocation settings *(input source, output format, color)*.
 
-The [**Quick Start**](/usage/quick-start) chapter walks through the most common commands, and the [**Pipeline Order**](/reference/pipeline-order) reference covers the order rules run in.
+The [**Quick Start**](/guide/quick-start) chapter walks through the most common commands, and the [**Pipeline Order**](/reference/pipeline-order) reference covers the order rules run in.

@@ -64,7 +64,7 @@ A row's fit against the budget is left to the probe alone, so a rule that measur
 
 ## Lint Rules
 
-Lint rules *(the entries above with the 🧶 badge)* never rewrite, so they do not change the source the next rule reads. They could run in any order, and they sit at fixed positions so the registered set stays stable for the [`Pipeline::known_ids`](/primitives/pipeline) consumer and for the `--select` and `--ignore` flags.
+Lint rules *(the entries above with the 🧶 badge)* never rewrite, so they do not change the source the next rule reads. They could run in any order, and they sit at fixed positions so the registered set stays stable for the [`Pipeline::known_ids`](/architecture/pipeline) consumer and for the `--select` and `--ignore` flags.
 
 ## Internal Surface
 

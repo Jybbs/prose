@@ -26,7 +26,7 @@ The keyword-only block past the `*` is a separate matter, along with the fields 
 
 <template #related-after>
 
-For per-line opt-outs, the [**Suppression**](/usage/suppression#tagging-a-line) chapter covers the `# prose: ignore[unsorted-positionals]` directive.
+For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[unsorted-positionals]` directive.
 
 </template>
 

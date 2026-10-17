@@ -18,7 +18,7 @@ The rewrite leaves a `typing` import unread once it has removed every read of th
 
 <Fixture rule="modernize_annotations" case="import_keeps_its_surviving_names" />
 
-A read the rewrite could not remove keeps the import in place, so a suppressed line or a forward reference the rule left alone keeps it. The [**Suppression**](/usage/suppression) chapter covers the directives.
+A read the rewrite could not remove keeps the import in place, so a suppressed line or a forward reference the rule left alone keeps it. The [**Suppression**](/guide/suppression) chapter covers the directives.
 
 ::: tabs key:prose-target-version
 == Python 3.10

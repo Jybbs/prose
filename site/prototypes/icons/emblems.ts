@@ -1,5 +1,5 @@
+import { data as platforms } from '../../.vitepress/lib/guide/platforms.data'
 import { emblemsOf }         from '../../.vitepress/lib/shared/emblems'
-import { data as platforms } from '../../.vitepress/lib/usage/platforms.data'
 
 export interface House {
   form     : 'fill' | 'line'
