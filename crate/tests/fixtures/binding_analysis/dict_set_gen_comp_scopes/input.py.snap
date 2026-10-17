@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 0
     kinds:
       - Assignment
+    mutated: false
     name: pairs
     read_offsets:
       - 57
@@ -25,6 +26,7 @@ bindings:
     first_unconditional_write: 49
     kinds:
       - Comprehension
+    mutated: false
     name: k
     read_offsets:
       - 40
@@ -38,6 +40,7 @@ bindings:
     first_unconditional_write: 52
     kinds:
       - Comprehension
+    mutated: false
     name: v
     read_offsets:
       - 43
@@ -51,6 +54,7 @@ bindings:
     first_unconditional_write: 29
     kinds:
       - Assignment
+    mutated: false
     name: mapping
     read_offsets: []
     runtime_read: false
@@ -63,6 +67,7 @@ bindings:
     first_unconditional_write: 78
     kinds:
       - Comprehension
+    mutated: false
     name: k
     read_offsets:
       - 72
@@ -76,6 +81,7 @@ bindings:
     first_unconditional_write: 81
     kinds:
       - Comprehension
+    mutated: false
     name: _
     read_offsets: []
     runtime_read: false
@@ -88,6 +94,7 @@ bindings:
     first_unconditional_write: 64
     kinds:
       - Assignment
+    mutated: false
     name: keys
     read_offsets: []
     runtime_read: false
@@ -100,6 +107,7 @@ bindings:
     first_unconditional_write: 111
     kinds:
       - Comprehension
+    mutated: false
     name: _
     read_offsets: []
     runtime_read: false
@@ -112,6 +120,7 @@ bindings:
     first_unconditional_write: 114
     kinds:
       - Comprehension
+    mutated: false
     name: v
     read_offsets:
       - 105
@@ -125,6 +134,7 @@ bindings:
     first_unconditional_write: 93
     kinds:
       - Assignment
+    mutated: false
     name: total
     read_offsets: []
     runtime_read: false

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Chosen Through `or` Sorts With the Aliases"
+
+description = '''
+`scanstring` takes `c_scanstring` where it is truthy and `py_scanstring` otherwise, so its value is one of two objects the imports already name, whereas `separator` falls back to the string literal `"/"`, which builds a value. **`scanstring` sorts first as an alias, `MAX_DEPTH` follows as a constant, and `separator` sorts last as module state**, because a choice through `or` or `and` joins the alias cluster only where every operand is an alias.
+'''

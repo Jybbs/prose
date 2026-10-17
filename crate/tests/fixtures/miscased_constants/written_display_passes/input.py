@@ -1,0 +1,16 @@
+dispatch_table     = {}
+encoding_map       = {0x00: 0x00}
+extension_registry = {1: "copyreg"}
+filters            = []
+
+
+def add_filter(item):
+    filters.insert(0, item)
+
+
+def pickle(ob_type, pickle_function):
+    dispatch_table[ob_type] = pickle_function
+
+
+def remove_extension(code):
+    del extension_registry[code]

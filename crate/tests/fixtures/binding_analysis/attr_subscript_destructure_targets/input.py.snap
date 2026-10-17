@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 6
     kinds:
       - ClassDef
+    mutated: false
     name: Holder
     read_offsets:
       - 36
@@ -23,6 +24,7 @@ bindings:
     first_unconditional_write: 25
     kinds:
       - Assignment
+    mutated: true
     name: obj
     read_offsets:
       - 79
@@ -37,6 +39,7 @@ bindings:
     first_unconditional_write: 45
     kinds:
       - Assignment
+    mutated: false
     name: ix
     read_offsets:
       - 96
@@ -50,6 +53,7 @@ bindings:
     first_unconditional_write: 58
     kinds:
       - Assignment
+    mutated: false
     name: xs
     read_offsets:
       - 133
@@ -63,6 +67,7 @@ bindings:
     first_unconditional_write: 105
     kinds:
       - Assignment
+    mutated: false
     name: a
     read_offsets: []
     runtime_read: false
@@ -75,6 +80,7 @@ bindings:
     first_unconditional_write: 108
     kinds:
       - Assignment
+    mutated: false
     name: b
     read_offsets: []
     runtime_read: false
@@ -87,6 +93,7 @@ bindings:
     first_unconditional_write: 120
     kinds:
       - Assignment
+    mutated: false
     name: head
     read_offsets: []
     runtime_read: false
@@ -99,6 +106,7 @@ bindings:
     first_unconditional_write: 126
     kinds:
       - Assignment
+    mutated: false
     name: tail
     read_offsets: []
     runtime_read: false
@@ -111,6 +119,7 @@ bindings:
     first_unconditional_write: 137
     kinds:
       - Assignment
+    mutated: false
     name: c
     read_offsets: []
     runtime_read: false
@@ -123,6 +132,7 @@ bindings:
     first_unconditional_write: 140
     kinds:
       - Assignment
+    mutated: false
     name: d
     read_offsets: []
     runtime_read: false

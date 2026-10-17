@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 0
     kinds:
       - Assignment
+    mutated: false
     name: dicts
     read_offsets:
       - 52
@@ -23,6 +24,7 @@ bindings:
     first_unconditional_write: 47
     kinds:
       - Comprehension
+    mutated: false
     name: d
     read_offsets:
       - 41
@@ -36,6 +38,7 @@ bindings:
     first_unconditional_write: 29
     kinds:
       - Assignment
+    mutated: false
     name: merged
     read_offsets: []
     runtime_read: false

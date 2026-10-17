@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 7
     kinds:
       - Import
+    mutated: false
     name: a
     read_offsets: []
     runtime_read: false
@@ -22,6 +23,7 @@ bindings:
     first_unconditional_write: 16
     kinds:
       - Import
+    mutated: false
     name: b
     read_offsets: []
     runtime_read: false
@@ -34,6 +36,7 @@ bindings:
     first_unconditional_write: 29
     kinds:
       - Import
+    mutated: false
     name: g
     read_offsets: []
     runtime_read: false
@@ -46,6 +49,7 @@ bindings:
     first_unconditional_write: 52
     kinds:
       - Import
+    mutated: false
     name: i
     read_offsets: []
     runtime_read: false
@@ -58,6 +62,7 @@ bindings:
     first_unconditional_write: 68
     kinds:
       - Import
+    mutated: false
     name: l
     read_offsets: []
     runtime_read: false
@@ -70,6 +75,7 @@ bindings:
     first_unconditional_write: 98
     kinds:
       - Import
+    mutated: false
     name: annotations
     read_offsets: []
     runtime_read: false

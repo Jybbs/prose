@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 0
     kinds:
       - Assignment
+    mutated: false
     name: xs
     read_offsets:
       - 31
@@ -24,6 +25,7 @@ bindings:
     first_unconditional_write: ~
     kinds:
       - For
+    mutated: false
     name: i
     read_offsets:
       - 45
@@ -37,6 +39,7 @@ bindings:
     first_unconditional_write: ~
     kinds:
       - For
+    mutated: false
     name: a
     read_offsets:
       - 74
@@ -50,6 +53,7 @@ bindings:
     first_unconditional_write: ~
     kinds:
       - For
+    mutated: false
     name: b
     read_offsets:
       - 78

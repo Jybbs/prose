@@ -23,8 +23,9 @@
 //! sub-band on the value alone.
 
 use ruff_python_ast::{
-    Expr, ExprAttribute, ExprBinOp, ExprList, ExprNumberLiteral, ExprSubscript, ExprTuple,
-    ExprUnaryOp, Number, Operator, Stmt, UnaryOp, helpers::is_dunder, name::UnqualifiedName,
+    Expr, ExprAttribute, ExprBinOp, ExprBoolOp, ExprList, ExprNumberLiteral, ExprSubscript,
+    ExprTuple, ExprUnaryOp, Number, Operator, Stmt, UnaryOp, helpers::is_dunder,
+    name::UnqualifiedName,
 };
 use ruff_python_stdlib::typing::{is_literal_member, is_pep_593_generic_member};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -78,7 +79,10 @@ pub(crate) fn is_type_alias(site: &ModuleAssignment<'_>, ctx: &AliasContext<'_>)
 
 /// True when `value` names an object that already exists rather than
 /// constructing a new one. A `|` union holds only when both sides do,
-/// leaving `int | float` an alias and `1 | 2` a constant.
+/// leaving `int | float` an alias and `1 | 2` a constant. A choice through
+/// `or` or `and` holds only when every operand does, leaving
+/// `c_scanstring or py_scanstring` an alias and `name or "default"` a
+/// constant.
 pub(crate) fn value_is_alias(value: &Expr, ctx: &AliasContext<'_>) -> bool {
     Resolver {
         ctx,
@@ -119,6 +123,7 @@ mod tests {
     #[case::string_value("BASE = \"abc\"\nX = BASE[0]", false)]
     #[case::indirect_dict("A = {\"k\": 1}\nB = A\nX = B[\"k\"]", false)]
     #[case::bare_reference("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS", false)]
+    #[case::choice_with_a_data_operand("SETTINGS = {\"db\": \"pg\"}\nX = SETTINGS or base", false)]
     #[case::runtime_name_slice("IDX = 0\nX = table[IDX]", false)]
     #[case::class_generic("class Box(Generic[T]):\n    pass\nX = Box[int]", true)]
     #[case::imported_generic("from numpy.typing import NDArray\nX = NDArray[float]", true)]
@@ -212,6 +217,11 @@ mod tests {
     #[case::pep593_annotated("X = Annotated[int, Field(gt=0)]", true)]
     #[case::third_party_generic("X = NDArray[float]", true)]
     #[case::nested_union_generic("X = dict[str, int | None]", true)]
+    #[case::or_choice("X = c_scanstring or py_scanstring", true)]
+    #[case::and_choice("X = primary and fallback", true)]
+    #[case::chained_choice("X = first or second or third", true)]
+    #[case::nested_choice("X = (fast and native) or portable", true)]
+    #[case::attribute_choice("X = module.fast or module.slow", true)]
     #[case::number("X = 42", false)]
     #[case::none("X = None", false)]
     #[case::string("X = \"MyClass\"", false)]
@@ -220,6 +230,9 @@ mod tests {
     #[case::dict("X = {\"a\": 1}", false)]
     #[case::tuple("X = (int, str)", false)]
     #[case::int_union("X = 1 | 2", false)]
+    #[case::literal_fallback("X = name or \"default\"", false)]
+    #[case::none_fallback("X = handler or None", false)]
+    #[case::call_operand("X = cached or load()", false)]
     #[case::mixed_union("X = int | 2", false)]
     #[case::arithmetic("X = BASE * 2", false)]
     #[case::call("X = make()", false)]

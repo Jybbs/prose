@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 6
     kinds:
       - ClassDef
+    mutated: false
     name: C
     read_offsets: []
     runtime_read: false
@@ -22,6 +23,7 @@ bindings:
     first_unconditional_write: 13
     kinds:
       - Assignment
+    mutated: false
     name: __secret
     read_offsets: []
     runtime_read: false
@@ -34,6 +36,7 @@ bindings:
     first_unconditional_write: 35
     kinds:
       - FunctionDef
+    mutated: false
     name: get
     read_offsets: []
     runtime_read: false
@@ -46,6 +49,7 @@ bindings:
     first_unconditional_write: 39
     kinds:
       - Parameter
+    mutated: false
     name: self
     read_offsets:
       - 61
