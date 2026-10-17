@@ -100,7 +100,7 @@ mod tests {
     #[case(TokenKind::Rsqb, true)]
     #[case(TokenKind::Rbrace, true)]
     #[case(TokenKind::Lpar, false)]
-    #[case(TokenKind::Name, false)]
+    #[case(TokenKind::Identifier, false)]
     fn is_closer_flags_closing_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
         assert_eq!(is_closer(kind), expected);
     }
@@ -122,7 +122,7 @@ mod tests {
     #[case(TokenKind::Lsqb, true)]
     #[case(TokenKind::Lbrace, true)]
     #[case(TokenKind::Rpar, false)]
-    #[case(TokenKind::Name, false)]
+    #[case(TokenKind::Identifier, false)]
     fn is_opener_flags_opening_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
         assert_eq!(is_opener(kind), expected);
     }

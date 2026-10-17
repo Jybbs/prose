@@ -348,6 +348,19 @@ fn check_json_summary(name: &str, source: &str, code: i32) -> serde_json::Value 
     summary_line(stdout_utf8(&assert))
 }
 
+/// Runs `check` with the cache off over a fresh fixture holding
+/// `source` beside a `pyproject.toml` setting `target-version` to
+/// `version`, returning the assertion beside the fixture's path.
+fn check_targeting(name: &str, source: &str, version: &str) -> (Assert, PathBuf) {
+    let (project, path) = fixture(name, source);
+    write_pyproject(
+        project.path(),
+        &format!("[tool.prose]\ntarget-version = \"{version}\"\n"),
+    );
+    let assert = prose().args(["check", "--no-cache"]).arg(&path).assert();
+    (assert, path)
+}
+
 fn fixture(name: &str, source: &str) -> (TempDir, PathBuf) {
     let dir = tempdir().expect("tempdir");
     let path = dir.path().join(name);
@@ -377,10 +390,6 @@ fn lsp_session(bodies: &[&str]) -> String {
         .collect()
 }
 
-fn prose() -> Command {
-    Command::cargo_bin("prose").expect("prose binary")
-}
-
 /// Pads `dir` with four half-megabyte entries named the way a cache key
 /// is.
 fn pad_with_entries(dir: &Path) {
@@ -388,6 +397,10 @@ fn pad_with_entries(dir: &Path) {
     for slot in 0..4_u32 {
         fs_err::write(dir.join(format!("{slot:064x}")), &filler).expect("writes");
     }
+}
+
+fn prose() -> Command {
+    Command::cargo_bin("prose").expect("prose binary")
 }
 
 fn prose_isolated() -> (Command, TempDir) {
@@ -997,8 +1010,43 @@ fn check_unaligned_fixture_exits_format_change() {
 }
 
 #[test]
+fn check_unary_plus_pattern_parses_under_its_version() {
+    let (assert, _) = check_targeting("plus.py", "match 1:\n    case +1:\n        pass\n", "3.15");
+
+    assert.code(1);
+}
+
+#[test]
 fn check_unparseable_fixture_exits_parse_error() {
     run_fixture("broken.py", "def x(:", &["check"]).code(3);
+}
+
+/// Each source holds syntax the target version rules out, or a semantic
+/// syntax error Python's `compile` raises, so the run exits at the
+/// parse-error status instead of formatting the file.
+#[rstest]
+#[case::lazy_import_below_its_version("lazy import os\n", "3.14", "0..4")]
+#[case::lazy_import_in_a_function("def f():\n    lazy import os\n", "3.15", "13..27")]
+#[case::lazy_import_in_a_try_block(
+    "try:\n    lazy import os\nexcept ImportError:\n    pass\n",
+    "3.15",
+    "9..23"
+)]
+#[case::unary_plus_pattern_below_its_version(
+    "match 1:\n    case +1:\n        pass\n",
+    "3.14",
+    "18..20"
+)]
+fn check_unsupported_syntax_exits_parse_error(
+    #[case] source: &str,
+    #[case] version: &str,
+    #[case] position: &str,
+) {
+    let (assert, path) = check_targeting("gated.py", source, version);
+
+    let assert = assert.code(3);
+    assert_stderr_has(&assert, &format!("parse error in `{}`", path.display()));
+    assert_stderr_has(&assert, &format!("at byte range {position}"));
 }
 
 #[test]
@@ -1676,6 +1724,15 @@ fn notebook_format_preserves_outputs_and_rewrites_code() {
     assert_eq!(parsed["cells"][1]["source"][0], "x  = 1\n");
     assert_eq!(parsed["cells"][1]["execution_count"], 3);
     assert_eq!(parsed["cells"][1]["outputs"][0]["text"][0], "2\n");
+}
+
+#[test]
+fn notebook_gated_cell_exits_parse_error() {
+    let notebook = UNPARSEABLE_CELL.replace("def f(", "lazy import os");
+
+    let (assert, _) = check_targeting("nb.ipynb", &notebook, "3.14");
+
+    assert.code(3);
 }
 
 #[test]

@@ -3,7 +3,7 @@
 //! reparse.
 
 use ruff_notebook::{CellOffsets, Notebook};
-use ruff_python_ast::{PySourceType, Stmt};
+use ruff_python_ast::{PySourceType, PythonVersion, Stmt};
 use ruff_python_parser::ParseError;
 use ruff_source_file::{LineRanges, OneIndexed};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -19,18 +19,42 @@ impl Source {
         notebook: &Notebook,
         name: impl Into<Box<str>>,
     ) -> Result<Self, ParseError> {
-        let mut source = Self::build(
+        Self::build(
             notebook.source_code().to_owned(),
             name,
             PySourceType::Ipynb,
             notebook.cell_offsets().clone(),
-        )?;
-        source.cell_numbers = notebook
+        )
+        .map(|source| source.numbered(notebook))
+    }
+
+    /// Builds the concatenated source of a parsed notebook the way
+    /// [`read`](Self::read) builds a module, checking its cells against
+    /// `version` and attaching each code cell's notebook position.
+    pub(crate) fn read_notebook(
+        notebook: &Notebook,
+        name: impl Into<Box<str>>,
+        version: PythonVersion,
+    ) -> Result<Self, ParseError> {
+        Self::read_cells(
+            notebook.source_code().to_owned(),
+            name,
+            PySourceType::Ipynb,
+            notebook.cell_offsets().clone(),
+            version,
+        )
+        .map(|source| source.numbered(notebook))
+    }
+
+    /// Returns this source carrying the notebook position of each of
+    /// `notebook`'s code cells.
+    fn numbered(mut self, notebook: &Notebook) -> Self {
+        self.cell_numbers = notebook
             .index()
             .iter()
             .map(|cell| cell.cell_index())
             .collect();
-        Ok(source)
+        self
     }
 
     /// Returns the notebook cell holding `offset` short of the synthetic

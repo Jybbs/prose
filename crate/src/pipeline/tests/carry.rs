@@ -27,7 +27,7 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
         let Ok(mut source) = Source::from_path(&path) else {
             continue;
         };
-        let gate = compile_gate(&source, pipeline.target_version);
+        let gate = pipeline.gate(&source);
         for rule in &pipeline.rules {
             source.binding_analysis();
             source.stranded_padding(stranding);
@@ -78,7 +78,7 @@ fn column_tables_hold_at_run_granularity_across_every_splice() {
             let Ok(mut source) = Source::from_path(&path) else {
                 continue;
             };
-            let gate = compile_gate(&source, pipeline.target_version);
+            let gate = pipeline.gate(&source);
             for rule in &pipeline.rules {
                 let Some(spliceable) = Spliceable::landing(&**rule, &source) else {
                     continue;

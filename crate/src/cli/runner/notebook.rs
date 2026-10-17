@@ -47,7 +47,7 @@ pub(super) fn process(text: String, name: String, resolved: &Resolved, pass: Pas
             unstable: None,
         };
     }
-    match Source::from_notebook(&notebook, name.as_str()) {
+    match Source::read_notebook(&notebook, name.as_str(), resolved.pipeline.target_version()) {
         Ok(source) => run(source, notebook, resolved, pass),
         Err(e) => parse_failure(&name, e),
     }

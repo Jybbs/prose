@@ -1,11 +1,12 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{path::Path, str::FromStr, sync::OnceLock};
+use std::{fmt::Display, path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
-use ruff_python_ast::{ModModule, PySourceType, token::Tokens};
-use ruff_python_parser::{ParseError, ParseOptions, Parsed, parse};
+use ruff_python_ast::{ModModule, PySourceType, PythonVersion, token::Tokens};
+use ruff_python_parser::{ParseError, ParseErrorType, ParseOptions, Parsed, parse};
+use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -38,6 +39,15 @@ mod reparse;
 pub(crate) use reparse::slid_range;
 mod tables;
 pub(crate) mod trace;
+mod validity;
+
+/// The name a source read from a buffer rather than a file carries in
+/// its diagnostics.
+pub(crate) const BUFFER_NAME: &str = "<source>";
+
+/// The version whose builtins [`Source::is_builtin`] reads where no
+/// `target-version` is set.
+const UNTARGETED_BUILTINS: PythonVersion = PythonVersion::PY310;
 
 /// Owned wrapper around a parsed Python source file.
 ///
@@ -84,7 +94,7 @@ impl Source {
     pub(crate) fn from_parsed_module(text: String, parsed: Parsed<ModModule>) -> Self {
         Self::from_parsed(
             text,
-            "<source>",
+            BUFFER_NAME,
             PySourceType::default(),
             CellOffsets::default(),
             parsed,
@@ -180,13 +190,53 @@ impl Source {
         Self::build_module(text, name, source_type).map_err(Into::into)
     }
 
+    /// Parses `text` in `source_type`'s mode under `name` and checks it
+    /// against `version`, which is how the CLI, the language server, and
+    /// the sandbox read every file they receive.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ParseError` where `text` does not parse, where it holds
+    /// syntax `version` does not support, or where it holds a semantic
+    /// syntax error such as a `lazy` import inside a function, each
+    /// positioned at the range that fails.
+    pub(crate) fn read(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+        version: PythonVersion,
+    ) -> Result<Self, ParseError> {
+        Self::read_cells(text, name, source_type, CellOffsets::default(), version)
+    }
+
+    /// Builds the source [`read`](Self::read) describes, carrying
+    /// `cell_offsets`.
+    fn read_cells(
+        text: String,
+        name: impl Into<Box<str>>,
+        source_type: PySourceType,
+        cell_offsets: CellOffsets,
+        version: PythonVersion,
+    ) -> Result<Self, ParseError> {
+        let options = ParseOptions::from(source_type).with_target_version(version);
+        let parsed = parse_typed_module(&text, options)?;
+        if let Some(unsupported) = parsed.unsupported_syntax_errors().first() {
+            return Err(rejected(unsupported));
+        }
+        let source = Self::from_parsed(text, name, source_type, cell_offsets, parsed);
+        match source.semantic_error(version) {
+            Some(error) => Err(rejected(&error)),
+            None => Ok(source),
+        }
+    }
+
     fn build(
         text: String,
         name: impl Into<Box<str>>,
         source_type: PySourceType,
         cell_offsets: CellOffsets,
     ) -> Result<Self, ParseError> {
-        let parsed = parse_typed_module(&text, source_type)?;
+        let parsed = parse_typed_module(&text, ParseOptions::from(source_type))?;
         Ok(Self::from_parsed(
             text,
             name,
@@ -209,6 +259,17 @@ impl Source {
         &self.ast
     }
 
+    /// Returns this source's text when it differs from `original`, or
+    /// `None` when they match.
+    pub fn changed_from(&self, original: &str) -> Option<&str> {
+        (self.text() != original).then_some(self.text())
+    }
+
+    /// Returns the comment-range index built during parsing.
+    pub fn comment_ranges(&self) -> &CommentRanges {
+        &self.comment_ranges
+    }
+
     /// This source reparsed with the sorted, disjoint `ranges` deleted,
     /// beside the map from its offsets to the copy's, or `None` where
     /// the shortened text does not parse.
@@ -222,20 +283,27 @@ impl Source {
         Some((copy, map))
     }
 
-    /// Returns this source's text when it differs from `original`, or
-    /// `None` when they match.
-    pub fn changed_from(&self, original: &str) -> Option<&str> {
-        (self.text() != original).then_some(self.text())
-    }
-
-    /// Returns the comment-range index built during parsing.
-    pub fn comment_ranges(&self) -> &CommentRanges {
-        &self.comment_ranges
+    /// This source's buffer beside its parse mode, the pair
+    /// [`build_module`](Self::build_module) rebuilds an equal source
+    /// from. `SourceFile` is `Arc`-backed, so the clone is a refcount
+    /// bump.
+    pub(crate) fn entry_buffer(&self) -> (SourceFile, PySourceType) {
+        (self.file.clone(), self.source_type)
     }
 
     /// Returns `true` when at least one comment lies within `ranged`.
     pub fn intersects_comment<R: Ranged>(&self, ranged: R) -> bool {
         self.comment_ranges.intersects(ranged.range())
+    }
+
+    /// True where `name` is a builtin of `target`, or of 3.10 where no
+    /// target is set, the IPython builtins counting inside a notebook.
+    pub(crate) fn is_builtin(&self, name: &str, target: Option<PythonVersion>) -> bool {
+        is_python_builtin(
+            name,
+            target.unwrap_or(UNTARGETED_BUILTINS).minor,
+            self.is_notebook(),
+        )
     }
 
     /// Returns the range spanning the entire source text.
@@ -256,7 +324,7 @@ impl Source {
     /// Parses `text` as a plain module, returning the tree a probe
     /// rebuild clones per subset.
     pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
-        parse_typed_module(text, PySourceType::default())
+        parse_typed_module(text, ParseOptions::from(PySourceType::default()))
     }
 
     /// Reparses `text` under the original name, carrying `cell_offsets`
@@ -271,7 +339,7 @@ impl Source {
         text: String,
         cell_offsets: CellOffsets,
     ) -> Result<Self, ParseError> {
-        let parsed = parse_typed_module(&text, self.source_type)?;
+        let parsed = parse_typed_module(&text, ParseOptions::from(self.source_type))?;
         let cell_offsets = self.recut_cells(cell_offsets, &parsed.syntax().body, &text);
         let mut next = Self::from_parsed(
             text,
@@ -289,15 +357,7 @@ impl Source {
     /// Accepts a raw `TextRange` or any AST node. The returned `&str`
     /// is guaranteed to fall on `char` boundaries.
     pub fn slice<R: Ranged>(&self, ranged: R) -> &str {
-        self.file.slice(ranged.range())
-    }
-
-    /// This source's buffer beside its parse mode, the pair
-    /// [`build_module`](Self::build_module) rebuilds an equal source
-    /// from. `SourceFile` is `Arc`-backed, so the clone is a refcount
-    /// bump.
-    pub(crate) fn entry_buffer(&self) -> (SourceFile, PySourceType) {
-        (self.file.clone(), self.source_type)
+        &self.text()[ranged.range()]
     }
 
     /// Borrows the underlying `SourceFile`.
@@ -360,7 +420,7 @@ impl FromStr for Source {
     type Err = ParseError;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        Self::parse_named(text.to_owned(), "<source>")
+        Self::parse_named(text.to_owned(), BUFFER_NAME)
     }
 }
 
@@ -388,20 +448,28 @@ fn detect_line_ending(text: &str, tokens: &Tokens) -> LineEnding {
         .map_or(LineEnding::Lf, |(_, ending)| ending)
 }
 
-/// Parses `text` in `source_type`'s mode as a module.
-fn parse_typed_module(
-    text: &str,
-    source_type: PySourceType,
-) -> Result<Parsed<ModModule>, ParseError> {
-    let Some(parsed) = parse(text, ParseOptions::from(source_type))?.try_into_module() else {
+/// Parses `text` as a module under `options`.
+fn parse_typed_module(text: &str, options: ParseOptions) -> Result<Parsed<ModModule>, ParseError> {
+    let Some(parsed) = parse(text, options)?.try_into_module() else {
         unreachable!("module-mode parse never yields a bare expression");
     };
     Ok(parsed)
 }
 
+/// Renders `error` as the `ParseError` a failed parse reports at its
+/// range, carrying its message as the error's text.
+fn rejected(error: &(impl Display + Ranged)) -> ParseError {
+    ParseError {
+        error: ParseErrorType::OtherError(error.to_string()),
+        location: error.range(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::assert_matches;
+
+    use rstest::rstest;
 
     use super::*;
     use crate::testing::{assert_send_sync, parse, range};
@@ -517,6 +585,41 @@ mod tests {
 
         assert_eq!(named.source_file().name(), "probe.py");
         assert_eq!(parse("x = 1\n").source_file().name(), "<source>");
+    }
+
+    #[test]
+    fn read_accepts_the_syntax_its_version_adds() {
+        let source = Source::read(
+            "match 1:\n    case +1:\n        pass\n".to_owned(),
+            "<t>",
+            PySourceType::Python,
+            PythonVersion::PY315,
+        )
+        .expect("a unary plus pattern reads under 3.15");
+        assert_eq!(source.ast().body.len(), 1);
+    }
+
+    #[rstest]
+    #[case::lazy_import_below_its_version("lazy import os\n", PythonVersion::PY314, range(0, 4))]
+    #[case::lazy_import_in_a_function(
+        "def f():\n    lazy import os\n",
+        PythonVersion::PY315,
+        range(13, 27)
+    )]
+    #[case::unary_plus_below_its_version(
+        "match 1:\n    case +1:\n        pass\n",
+        PythonVersion::PY314,
+        range(18, 20)
+    )]
+    fn read_rejects_syntax_the_version_rules_out(
+        #[case] text: &str,
+        #[case] version: PythonVersion,
+        #[case] location: TextRange,
+    ) {
+        let error = Source::read(text.to_owned(), "<t>", PySourceType::Python, version)
+            .expect_err("the syntax fails the read");
+        assert_matches!(error.error, ParseErrorType::OtherError(_));
+        assert_eq!(error.location, location);
     }
 
     #[test]

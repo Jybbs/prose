@@ -113,17 +113,11 @@ pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec
         }
         Expr::Compare(compare) => {
             let walk = Division::at(OperatorPrecedence::from(expr), sheds, source);
-            let held = |operand: &Expr| walk.operand_range(operand, expr.into());
-            out.push(Operand {
-                lead: None,
-                range: held(&compare.left),
-            });
-            for (operator, operand) in compare.ops.iter().zip(&compare.comparators) {
-                out.push(Operand {
-                    lead: Some(operator.as_str()),
-                    range: held(operand),
-                });
-            }
+            let leads = std::iter::once(None).chain(compare.ops.iter().map(|op| Some(op.as_str())));
+            out.extend(leads.zip(&compare.operands).map(|(lead, operand)| Operand {
+                lead,
+                range: walk.operand_range(operand, expr.into()),
+            }));
         }
         _ => return None,
     }

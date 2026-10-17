@@ -7,7 +7,6 @@ use ruff_source_file::OneIndexed;
 use ruff_text_size::TextLen;
 use thiserror::Error;
 
-use super::validity::first_semantic_error;
 use crate::{
     primitives::edit::forward_offsets,
     rules::{RuleId, render_slugs},
@@ -67,7 +66,7 @@ pub(super) fn reparse_or_reject(
         }
     };
     if let Some(version) = gate
-        && let Some(error) = first_semantic_error(&next, version)
+        && let Some(error) = next.semantic_error(version)
     {
         return Err(PipelineError::Compile { error, rule });
     }

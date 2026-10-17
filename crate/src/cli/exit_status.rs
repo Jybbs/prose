@@ -42,7 +42,7 @@ impl ExitStatus {
             Self::Clean => "Clean: no diagnostics, no rewrites pending",
             Self::FormatChange => "Format would change: at least one Severity::Format diagnostic",
             Self::LintViolation => "Lint violation: at least one Severity::Lint diagnostic",
-            Self::ParseError => "Parse error: input could not be parsed as Python",
+            Self::ParseError => "Parse error: input is not valid Python for the target version",
             Self::ConfigError => {
                 "Config error: pyproject.toml, --select / --ignore, or arg validation"
             }

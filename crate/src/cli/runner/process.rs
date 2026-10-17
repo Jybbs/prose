@@ -169,7 +169,12 @@ pub(super) fn process_source(
     if source_type.is_ipynb() {
         return notebook::process(text, name, resolved, pass);
     }
-    match Source::build_module(text, name.as_str(), source_type) {
+    match Source::read(
+        text,
+        name.as_str(),
+        source_type,
+        resolved.pipeline.target_version(),
+    ) {
         Ok(source) => run_pipeline(source, resolved, pass, marker),
         Err(e) => parse_failure(&name, e),
     }

@@ -18,25 +18,24 @@ use std::{collections::BTreeSet, ops::Range, slice};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::PythonVersion;
+use ruff_python_ast::{PySourceType, PythonVersion};
+use ruff_python_parser::ParseError;
 
 use crate::{
     diagnostics::{Diagnostic, fired_rules},
     rules::{Rule, RuleId, independent},
-    source::Source,
+    source::{BUFFER_NAME, Source},
 };
 
 mod batch;
 mod error;
 mod filter;
 mod held;
-mod validity;
 
 use batch::{Batch, Spliceable};
 pub use error::PipelineError;
 use filter::{prepared_groups, settled_lints};
 pub(crate) use held::Held;
-use validity::compile_gate;
 
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
@@ -70,7 +69,7 @@ impl Pipeline {
             rules,
             shares,
             sharing: Sharing::default(),
-            target_version: PythonVersion::default(),
+            target_version: PythonVersion::latest(),
         }
     }
 
@@ -81,10 +80,12 @@ impl Pipeline {
         self
     }
 
-    /// Sets the Python version the compile gate evaluates against.
+    /// Sets the Python version the syntax check and the compile gate
+    /// evaluate against, the newest version the parser models where
+    /// `target_version` is `None`.
     #[must_use]
     pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
-        self.target_version = target_version.unwrap_or_default();
+        self.target_version = target_version.unwrap_or(PythonVersion::latest());
         self
     }
 
@@ -136,7 +137,7 @@ impl Pipeline {
         mut diagnostics: Option<&mut Vec<Diagnostic>>,
         seats: Range<usize>,
     ) -> Result<Source, PipelineError> {
-        let gate = compile_gate(&source, self.target_version);
+        let gate = self.gate(&source);
         let replays = self.sharing == Sharing::Declared;
         let mut batch = Batch::default();
         for (seat, rule) in seats.clone().zip(&self.rules[seats]) {
@@ -169,6 +170,16 @@ impl Pipeline {
             batch.push(seat, &**rule, spliceable.edits);
         }
         batch.close(source, gate, replays)
+    }
+
+    /// Returns the version each rule's output is checked against, or
+    /// `None` when `source` does not itself compile, which disarms the
+    /// gate for the run.
+    fn gate(&self, source: &Source) -> Option<PythonVersion> {
+        source
+            .semantic_error(self.target_version)
+            .is_none()
+            .then_some(self.target_version)
     }
 
     /// The walk [`settle_report`](Self::settle_report),
@@ -287,6 +298,22 @@ impl Pipeline {
         crate::rules::KNOWN_IDS
     }
 
+    /// Reads `text` as a plain module named `<source>` at this
+    /// pipeline's target version, the way the language server and the
+    /// sandbox read a buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `ParseError` [`Source::read`] reports.
+    pub fn read(&self, text: &str) -> Result<Source, ParseError> {
+        Source::read(
+            text.to_owned(),
+            BUFFER_NAME,
+            PySourceType::default(),
+            self.target_version,
+        )
+    }
+
     /// This pipeline's enabled rule slugs in registration order, the
     /// resolved selection that keys the check cache.
     pub(crate) fn rule_ids(&self) -> impl Iterator<Item = RuleId> + use<'_> {
@@ -388,6 +415,12 @@ impl Pipeline {
                 (rule_id, alone)
             })
             .collect()
+    }
+
+    /// Returns the Python version this pipeline checks a source's syntax
+    /// and each rule's output against.
+    pub(crate) fn target_version(&self) -> PythonVersion {
+        self.target_version
     }
 
     /// The enabled rules whose edits would still rewrite `source`,

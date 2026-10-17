@@ -56,8 +56,9 @@ impl Run {
 /// # Errors
 ///
 /// Throws a `JsError` when `config_toml` is not valid config TOML,
-/// when `source` does not parse as Python, or when a rule's output is
-/// rejected by the reparse, the compile gate, or the batch splice.
+/// when `source` does not read as Python under the configured
+/// `target-version`, or when a rule's output is rejected by the
+/// reparse, the compile gate, or the batch splice.
 #[wasm_bindgen]
 pub fn format(config_toml: &str, source: &str, settle: bool) -> Result<JsValue, JsError> {
     // `JsError` construction calls a wasm import that panics on a
@@ -77,7 +78,7 @@ pub fn panic_for_test() {
 fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Error>> {
     let (config, config_notices) = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
-    let (formatted, diagnostics, fired_rules) = pipeline.run(source.parse::<Source>()?)?;
+    let (formatted, diagnostics, fired_rules) = pipeline.run(pipeline.read(source)?)?;
     let unstable_rules = if settle {
         pipeline.unsettled_among(&formatted, &fired_rules)
     } else {
@@ -163,6 +164,14 @@ mod tests {
     fn leaves_unstable_rules_empty_for_a_settled_rewrite() {
         let result = formatted("", "alpha = 1\nb = 22\n");
         assert!(result.unstable_rules.is_empty());
+    }
+
+    #[test]
+    fn rejects_a_lazy_import_below_its_target_version() {
+        assert_matches!(
+            run("target-version = \"3.14\"", "lazy import os\n", true),
+            Err(_)
+        );
     }
 
     #[test]

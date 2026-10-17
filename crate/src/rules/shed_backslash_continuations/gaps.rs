@@ -63,7 +63,7 @@ pub(super) fn ends_atom(kind: TokenKind) -> bool {
             | TokenKind::Float
             | TokenKind::FStringEnd
             | TokenKind::Int
-            | TokenKind::Name
+            | TokenKind::Identifier
             | TokenKind::None
             | TokenKind::Rbrace
             | TokenKind::Rpar
@@ -118,7 +118,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(TokenKind::Name, true)]
+    #[case(TokenKind::Identifier, true)]
     #[case(TokenKind::Rsqb, true)]
     #[case(TokenKind::String, true)]
     #[case(TokenKind::Equal, false)]

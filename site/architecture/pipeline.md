@@ -37,6 +37,10 @@ tagline: deterministic rule runner
 
 `fingerprints(&self) -> Vec<String>` renders one fingerprint per carried rule in registration order, each equal to what that rule's own single-rule pipeline renders, so a consumer comparing two selections position by position reads them without splitting either.
 
+### Reading
+
+`read(&self, text: &str) -> Result<Source, ParseError>` parses an in-memory buffer as a module named `<source>` at the pipeline's target version, the read `prose server` and the WebAssembly bindings give every buffer. A buffer holding syntax that version does not support, or a semantic syntax error such as a `lazy` import inside a function, fails as a `ParseError` at the range that fails before any rule runs. The version comes from `target-version`, and a pipeline built with none set reads at the newest version the parser models.
+
 ### Execution
 
 `run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError>` reads through the registered rules in their canonical order. Each batch of consecutive rules the registry declares independent computes its edits against one buffer, and the pipeline splices them in a single pass and rebuilds the tree through [[source]], which reparses only the statements those edits reached where it can and the whole file where it cannot. The new *Source* feeds the next batch, carrying every table of the previous buffer that all of the batch's edits left standing. A rule the registry does not declare independent of every rule already in the batch, or whose edits overlap one already batched, opens the next batch against the reparsed buffer. When a batch of several rules produces a splice the reparse rejects, the pipeline replays them one at a time, so the error names the rule whose own edits fail. The final text, every diagnostic, and the set of rules whose edits landed return to the caller, so a settle check running afterward reads that set rather than deriving it from the diagnostics.

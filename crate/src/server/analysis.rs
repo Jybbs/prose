@@ -1,7 +1,7 @@
 //! Runs the pipeline over a tracked buffer, bridging prose's engine to the
 //! editor protocol.
 
-use std::{collections::BTreeSet, str::FromStr};
+use std::collections::BTreeSet;
 
 use lsp_types::{Diagnostic as LspDiagnostic, TextEdit};
 use ruff_source_file::PositionEncoding;
@@ -15,7 +15,7 @@ use crate::{
 #[derive(Default)]
 pub(super) struct Formatted {
     /// The whole-document edit, `None` where the buffer is already
-    /// formatted or does not parse.
+    /// formatted or fails to read.
     pub(super) edits: Option<Vec<TextEdit>>,
     /// The rewritten buffer held for a settle check the caller runs
     /// after the edits response is sent, `None` where nothing changed.
@@ -45,17 +45,19 @@ impl Settled {
 }
 
 /// Lints and format-checks the buffer against `config`, mapping each
-/// finding to a protocol diagnostic in the buffer's own coordinates. An
-/// unparseable buffer yields nothing, clearing any stale findings.
+/// finding to a protocol diagnostic in the buffer's own coordinates. A
+/// buffer that fails to read yields nothing, clearing any stale
+/// findings.
 pub(super) fn diagnostics(
     text: &str,
     encoding: PositionEncoding,
     config: &Config,
 ) -> Vec<LspDiagnostic> {
-    let Ok(source) = Source::from_str(text) else {
+    let pipeline = Pipeline::with_defaults(config);
+    let Ok(source) = pipeline.read(text) else {
         return Vec::new();
     };
-    Pipeline::with_defaults(config)
+    pipeline
         .diagnose(&source)
         .iter()
         .map(|diagnostic| to_lsp(&source, diagnostic, encoding))
@@ -64,7 +66,7 @@ pub(super) fn diagnostics(
 
 /// Formats the buffer against `config`, returning one whole-document
 /// edit alongside the rewrite held for a later settle check. A buffer
-/// that is already formatted or does not parse yields neither.
+/// that is already formatted or fails to read yields neither.
 pub(super) fn format_buffer(
     original: &str,
     encoding: PositionEncoding,
@@ -73,13 +75,13 @@ pub(super) fn format_buffer(
     formatted(original, encoding, config).unwrap_or_default()
 }
 
-/// The edit and held rewrite for a buffer the pipeline rewrote,
-/// `None` where it does not parse, a rule's output is rejected, or the
-/// run leaves the text unchanged.
+/// Returns the edit and held rewrite for a buffer the pipeline
+/// rewrote, `None` where it fails to read, a rule's output is rejected,
+/// or the run leaves the text unchanged.
 fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Option<Formatted> {
-    let source = Source::from_str(original).ok()?;
-    let range = full_document_range(&source, encoding);
     let pipeline = Pipeline::with_defaults(config);
+    let source = pipeline.read(original).ok()?;
+    let range = full_document_range(&source, encoding);
     let (settled, _, fired) = pipeline.run(source).ok()?;
     let new_text = settled.changed_from(original)?.to_owned();
     Some(Formatted {
@@ -97,9 +99,19 @@ mod tests {
     use std::assert_matches;
 
     use lsp_types::{DiagnosticSeverity, NumberOrString, Position};
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::BARE_IMPORT_LINT;
+
+    #[test]
+    fn diagnostics_are_empty_for_a_gated_import_below_its_version() {
+        let config = Config {
+            target_version: Some(PythonVersion::PY314),
+            ..Config::default()
+        };
+        assert!(diagnostics("lazy import os\n", PositionEncoding::Utf16, &config).is_empty());
+    }
 
     #[test]
     fn diagnostics_are_empty_for_clean_source() {
@@ -156,20 +168,6 @@ mod tests {
     }
 
     #[test]
-    fn format_buffer_yields_no_edits_for_formatted_source() {
-        let formatted = format_buffer("x = 1\n", PositionEncoding::Utf16, &Config::default());
-
-        assert!(formatted.edits.is_none());
-    }
-
-    #[test]
-    fn format_buffer_yields_no_edits_for_unparseable_source() {
-        let formatted = format_buffer("def foo(", PositionEncoding::Utf16, &Config::default());
-
-        assert!(formatted.edits.is_none());
-    }
-
-    #[test]
     fn format_buffer_replaces_the_whole_document() {
         let edits = format_buffer(
             "alpha = 1\nb = 22\n",
@@ -195,5 +193,19 @@ mod tests {
             }
         );
         assert!(edit.new_text.contains("alpha = 1"));
+    }
+
+    #[test]
+    fn format_buffer_yields_no_edits_for_formatted_source() {
+        let formatted = format_buffer("x = 1\n", PositionEncoding::Utf16, &Config::default());
+
+        assert!(formatted.edits.is_none());
+    }
+
+    #[test]
+    fn format_buffer_yields_no_edits_for_unparseable_source() {
+        let formatted = format_buffer("def foo(", PositionEncoding::Utf16, &Config::default());
+
+        assert!(formatted.edits.is_none());
     }
 }

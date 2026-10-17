@@ -43,6 +43,21 @@ fn with_defaults_respects_rule_toggles() {
     assert!(Pipeline::with_defaults(&config).is_empty());
 }
 
+#[rstest]
+#[case::no_target(None, PythonVersion::latest())]
+#[case::a_set_target(Some(PythonVersion::PY312), PythonVersion::PY312)]
+fn with_defaults_targets_the_configured_version_or_the_newest(
+    #[case] target_version: Option<PythonVersion>,
+    #[case] expected: PythonVersion,
+) {
+    let config = Config {
+        target_version,
+        ..Config::default()
+    };
+
+    assert_eq!(Pipeline::with_defaults(&config).target_version(), expected);
+}
+
 #[test]
 fn with_filters_ignore_subtracts_from_configured_set() {
     let ignore = [AlignEquals::SLUG, AlphabetizeSiblings::SLUG];

@@ -80,11 +80,10 @@ impl Visitor<'_> {
 
     fn qualify(&self, operand: &Expr) -> Option<aligner::Member> {
         let compare = operand.as_compare_expr()?;
-        let op = *compare.ops.first()?;
-        let comparator = compare.comparators.first()?;
+        let (left, &op, comparator) = compare.iter().next()?;
         let member = aligner::line_anchored_member_between(
             self.walker.source,
-            compare.left.range(),
+            left.range(),
             comparator.start(),
             opening_token_kind(op),
             self.stranding,

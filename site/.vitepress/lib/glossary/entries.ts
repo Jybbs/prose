@@ -744,8 +744,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'target-version': {
     aliases    : ['target version'],
     definition : '`target-version` is the top-level config key naming the Python version the '
-               + 'project runs on. The version-gated rules read it, and with it unset no '
-               + 'version-dependent rewrite fires.',
+               + 'project runs on. Every file is checked against it, so syntax that version '
+               + 'does not support fails the file the way a parse error does, and the '
+               + 'version-gated rules read it, firing no version-dependent rewrite with it unset.',
     families   : ['cli', 'lint'],
     href       : '/reference/configuration#top-level-keys'
   },

@@ -193,9 +193,15 @@ impl Source {
     /// token still reaches the token spanning it.
     pub(crate) fn tokens_overlapping(&self, range: TextRange) -> impl Iterator<Item = &Token> {
         let tokens = self.tokens();
-        let first = tokens
-            .binary_search_by_start(range.start())
-            .unwrap_or_else(|slot| slot.saturating_sub(1));
+        let slot = tokens.partition_point(|token| token.start() < range.start());
+        let first = if tokens
+            .get(slot)
+            .is_some_and(|token| token.start() == range.start())
+        {
+            slot
+        } else {
+            slot.saturating_sub(1)
+        };
         tokens[first..]
             .iter()
             .take_while(move |token| token.start() < range.end())
