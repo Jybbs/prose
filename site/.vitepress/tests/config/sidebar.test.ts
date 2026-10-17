@@ -32,7 +32,7 @@ const rules: readonly DiscoveredRule[] = [
 ]
 
 const primitives: readonly Pick<DiscoveredPrimitive, 'slug' | 'stability' | 'title'>[] = [
-  { slug: 'aligner',  stability: 'public',   title: 'The Aligner Module' },
+  { slug: 'aligner',  stability: 'public',   title: 'The aligner Module' },
   { slug: 'pipeline', stability: 'internal', title: 'The Pipeline Type'  }
 ]
 

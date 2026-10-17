@@ -7,7 +7,7 @@ summary: "Computes the padding each row of an alignment group needs and emits th
 tagline: shared column math
 ---
 
-# The `Aligner` Module
+# The `aligner` Module
 
 <PrimitiveLayout primitive="aligner">
 

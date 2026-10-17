@@ -15,6 +15,7 @@ on:
       - '!LICENSE'
       - '!site/**'
       - site/.vitepress/tests/wasm/**
+      - site/**.md
 
   workflow_dispatch:
 

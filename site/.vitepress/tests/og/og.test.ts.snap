@@ -43,7 +43,7 @@ exports[`enumeratePages > shapes an OgPage per chapter page, skipping index and 
     "primitive": {
       "stability": "public",
     },
-    "title": "The Aligner Module",
+    "title": "The aligner Module",
   },
   {
     "accent": "#adbdcd",

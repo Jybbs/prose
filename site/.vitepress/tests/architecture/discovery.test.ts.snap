@@ -8,12 +8,12 @@ exports[`discoverPrimitives > discovers primitives sorted by filename 1`] = `
     ],
     "consumes": [],
     "layer": "base",
-    "name": "Aligner",
+    "name": "aligner",
     "slug": "aligner",
     "stability": "public",
     "summary": "A test aligner primitive.",
     "tagline": "test aligner",
-    "title": "The Aligner Module",
+    "title": "The aligner Module",
   },
   {
     "consumedBy": [

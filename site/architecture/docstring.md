@@ -7,7 +7,7 @@ summary: "Visits every PEP 257 docstring in a module in source order and hands e
 tagline: PEP 257 docstring walker
 ---
 
-# The `Docstring` Module
+# The `docstring` Module
 
 <PrimitiveLayout primitive="docstring">
 

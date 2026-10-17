@@ -7,7 +7,7 @@ summary: "Reorders sibling AST nodes by a classifier closure and keeps each node
 tagline: sibling reorder helper
 ---
 
-# The `Orderer` Module
+# The `orderer` Module
 
 <PrimitiveLayout primitive="orderer">
 

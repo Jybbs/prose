@@ -7,7 +7,7 @@ summary: "Reads through every `:` context in a module and builds an alignment me
 tagline: colon context walker
 ---
 
-# The `ColonTargets` Module
+# The `colon_targets` Module
 
 <PrimitiveLayout primitive="colon-targets">
 

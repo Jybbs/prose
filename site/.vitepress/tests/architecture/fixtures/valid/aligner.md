@@ -7,4 +7,4 @@ summary: "A test aligner primitive."
 tagline: test aligner
 ---
 
-# The `Aligner` Module
+# The `aligner` Module

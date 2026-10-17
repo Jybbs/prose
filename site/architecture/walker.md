@@ -7,7 +7,7 @@ summary: "Ignore-aware filesystem walker yielding every `.py`, `.pyi`, and `.pyw
 tagline: ignore-aware path walker
 ---
 
-# The `Walker` Module
+# The `walker` Module
 
 <PrimitiveLayout primitive="walker">
 

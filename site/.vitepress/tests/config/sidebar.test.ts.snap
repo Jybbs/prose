@@ -16,7 +16,7 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
       "items": [
         {
           "link": "/architecture/aligner",
-          "text": "The Aligner Module",
+          "text": "The aligner Module",
         },
       ],
       "text": "Public Surface",
