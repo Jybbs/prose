@@ -369,8 +369,9 @@ pub(crate) enum UnpackKind {
 /// name is read without an attribute access (`foo(os)`),
 /// `first_unconditional_write` holds the earliest write not nested in a
 /// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
-/// every write is conditional, and `mutated` flips when a read writes
-/// into the object the name holds (`table[key] = value`).
+/// every write is conditional, and `mutated` flips when an item
+/// assignment, an item deletion, or a mutating method writes into the
+/// object the name holds (`table[key] = value`).
 #[derive(Debug, PartialEq, Serialize)]
 struct Binding {
     annotation_read: bool,
@@ -612,7 +613,7 @@ mod tests {
     #[case::attribute_target("import os\ndel os.path\n", "os", false)]
     #[case::subscript_target("d = {}\ndel d['k']\n", "d", false)]
     #[case::never_deleted("import os\nos.getcwd()\n", "os", false)]
-    fn is_deleted_marks_only_a_bare_name_target(
+    fn is_deleted_marks_each_name_a_del_unbinds(
         #[case] src: &str,
         #[case] name: &str,
         #[case] expected: bool,
@@ -714,8 +715,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case::attribute_root("holder = make()\nholder.items[0] = 1\n")]
-    #[case::attribute_store("holder = make()\nholder.items = []\n")]
+    #[case::attribute_root("table = make()\ntable.items[0] = 1\n")]
+    #[case::attribute_store("table = make()\ntable.items = []\n")]
     #[case::item_read("table = {\"k\": 1}\nvalue = table[\"k\"]\n")]
     #[case::key_of_another_write("table = {}\nother = {}\nother[table] = 1\n")]
     #[case::non_mutating_method("table = {}\nvalue = table.get(\"k\")\n")]
@@ -744,6 +745,32 @@ mod tests {
     #[case::global_declaration("table = {}\ndef reset():\n    global table\n    table.clear()\n")]
     fn module_mutated_reads_a_write_into_the_module_binding(#[case] src: &str) {
         assert!(analyze(src).module_mutated("table"));
+    }
+
+    #[rstest]
+    fn module_mutated_reads_each_mutating_method(
+        #[values(
+            "add",
+            "append",
+            "clear",
+            "difference_update",
+            "discard",
+            "extend",
+            "insert",
+            "intersection_update",
+            "pop",
+            "popitem",
+            "remove",
+            "reverse",
+            "setdefault",
+            "sort",
+            "symmetric_difference_update",
+            "update"
+        )]
+        method: &str,
+    ) {
+        let src = format!("table = []\ntable.{method}()\n");
+        assert!(analyze(&src).module_mutated("table"), "{method}");
     }
 
     #[test]

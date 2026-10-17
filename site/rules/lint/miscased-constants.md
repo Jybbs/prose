@@ -13,7 +13,7 @@ layout  : doc
 A name draws the report when it is longer than one character, has no leading underscore, is not already `SCREAMING_CASE`, and binds a value the module never reassigns. Several kinds of binding stay quiet:
 
 1. A global produced by a call is effectful rather than fixed (*`logger = get_logger(__name__)`, `app = build()`*).
-2. A list, dict, or set display the module writes into holds mutable state, whether the write is an item assignment, an item deletion, or a mutating method such as `append` or `update`, applied to the name or to an item the display holds (*`dispatch_table = {}` beneath a `def` storing `dispatch_table[ob_type] = pickle_function`*). A display the module never writes into still draws the rename, as each codec module's `encoding_map` does.
+2. A list, dict, or set display the module writes into holds mutable state, whether the write is an item assignment, an item deletion, or a mutating method such as `append` or `update`, applied to the name or to an item the display holds (*`dispatch_table = {}` above a `def` storing `dispatch_table[ob_type] = pickle_function`*). A display the module never writes into still draws the rename, as each codec module's `encoding_map` does.
 3. A leading underscore marks deliberate module-private state (*`_cache = {}`*).
 4. A dunder such as `__version__` takes the same exemption.
 5. A single-character name reads as a matrix or a scalar by mathematical convention.
