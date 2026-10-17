@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/miscased_constants/alias_chosen_by_or_passes/input.py
+---
+miscased-constants@175..183

@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 0
     kinds:
       - Assignment
+    mutated: false
     name: xs
     read_offsets:
       - 34
@@ -23,6 +24,7 @@ bindings:
     first_unconditional_write: 29
     kinds:
       - Comprehension
+    mutated: false
     name: x
     read_offsets:
       - 46
@@ -36,6 +38,7 @@ bindings:
     first_unconditional_write: 41
     kinds:
       - Walrus
+    mutated: false
     name: y
     read_offsets:
       - 23
@@ -50,6 +53,7 @@ bindings:
     first_unconditional_write: 15
     kinds:
       - Assignment
+    mutated: false
     name: vals
     read_offsets: []
     runtime_read: false

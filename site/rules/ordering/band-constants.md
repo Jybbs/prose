@@ -65,7 +65,7 @@ The facets below tune the band without switching it off, whereas `band-constants
 
 ### `group-subcategories`
 
-`group-subcategories` clusters each band by subcategory, putting the type aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. Setting it to `false` sorts on `(tier, name)` alone, so each tier reads as one alphabetical run.
+`group-subcategories` clusters each band by subcategory, putting the aliases ahead of the `SCREAMING_CASE` constants and those ahead of the remaining module state. A binding whose name is not `SCREAMING_CASE` sorts as an alias wherever its value names an object already built, a choice through `or` or `and` among such objects included (*`opener = TarFile.open`, `scanstring = c_scanstring or py_scanstring`*). Setting it to `false` sorts on `(tier, name)` alone, so each tier reads as one alphabetical run.
 
 ### `max-tiers`
 

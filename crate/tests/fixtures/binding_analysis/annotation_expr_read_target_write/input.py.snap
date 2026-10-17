@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 0
     kinds:
       - Assignment
+    mutated: false
     name: Pair
     read_offsets:
       - 37
@@ -23,6 +24,7 @@ bindings:
     first_unconditional_write: 23
     kinds:
       - Assignment
+    mutated: false
     name: x
     read_offsets: []
     runtime_read: false
@@ -35,6 +37,7 @@ bindings:
     first_unconditional_write: 34
     kinds:
       - Assignment
+    mutated: false
     name: y
     read_offsets: []
     runtime_read: false

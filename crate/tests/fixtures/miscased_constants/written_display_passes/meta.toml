@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Display the Module Writes Into Is Mutable State"
+
+description = '''
+`pickle` stores into `dispatch_table`, `remove_extension` deletes from `extension_registry`, and `add_filter` calls `insert` on `filters`, so each display holds state the module changes after binding it. **None of the three is reported**, because a `SCREAMING_CASE` name would label that state as fixed. Nothing writes into `encoding_map`, so it is still reported with the suggested `ENCODING_MAP` rename.
+'''

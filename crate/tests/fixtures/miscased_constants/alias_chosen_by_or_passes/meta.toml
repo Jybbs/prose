@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Value Chosen Through `or` or `and` Is an Alias"
+
+description = '''
+`scanstring` takes `c_scanstring` where it is truthy and `py_scanstring` otherwise, and `decoder` takes `c_decoder` where it is falsy and `py_decoder` otherwise, so each value is one of the objects its operands already name rather than a value the assignment builds. **Neither name is reported**, because the rule reads a choice through `or` or `and` as an alias wherever every operand is one. `encoding` falls back to the string literal `"utf-8"`, which builds a value, so it is still reported with the suggested `ENCODING` rename.
+'''

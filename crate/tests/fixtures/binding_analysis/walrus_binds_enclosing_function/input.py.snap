@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 4
     kinds:
       - FunctionDef
+    mutated: false
     name: first_one
     read_offsets: []
     runtime_read: false
@@ -22,6 +23,7 @@ bindings:
     first_unconditional_write: 14
     kinds:
       - Parameter
+    mutated: false
     name: items
     read_offsets:
       - 39
@@ -35,6 +37,7 @@ bindings:
     first_unconditional_write: 30
     kinds:
       - Walrus
+    mutated: false
     name: n
     read_offsets:
       - 30

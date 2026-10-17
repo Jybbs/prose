@@ -1,0 +1,28 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/local_write_leaves_the_module_display_reported/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 6,
+      "row": 1
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "cache",
+          "content": "CACHE"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "Module constant `cache` is not SCREAMING_CASE"
+  }
+]
