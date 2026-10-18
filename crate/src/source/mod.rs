@@ -1,11 +1,14 @@
 //! Source-text wrapper bundling parsed AST, token stream, and line index.
 
-use std::{fmt::Display, path::Path, str::FromStr, sync::OnceLock};
+use std::{path::Path, str::FromStr, sync::OnceLock};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_notebook::{CellOffsets, Notebook, NotebookError};
 use ruff_python_ast::{ModModule, PySourceType, PythonVersion, token::Tokens};
-use ruff_python_parser::{ParseError, ParseErrorType, ParseOptions, Parsed, parse};
+use ruff_python_parser::{
+    ParseError, ParseOptions, Parsed, UnsupportedSyntaxError, parse,
+    semantic_errors::SemanticSyntaxError,
+};
 use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_python_trivia::CommentRanges;
 use ruff_source_file::{LineEnding, OneIndexed, SourceFile, SourceFileBuilder, find_newline};
@@ -40,6 +43,7 @@ pub(crate) use reparse::slid_range;
 mod tables;
 pub(crate) mod trace;
 mod validity;
+pub use validity::{Refusal, Target};
 
 /// The name a source read from a buffer rather than a file carries in
 /// its diagnostics.
@@ -49,6 +53,13 @@ pub(crate) const BUFFER_NAME: &str = "<source>";
 /// `target-version` is set.
 const UNTARGETED_BUILTINS: PythonVersion = PythonVersion::PY310;
 
+/// The versions a source is checked against where no `target-version`
+/// is set, the oldest and the newest the parser models. A semantic
+/// syntax error fails such a source only where both report it, and every
+/// version check the checker makes is a threshold, so both reporting it
+/// means every version between them does.
+const UNTARGETED_SYNTAX: [PythonVersion; 2] = [PythonVersion::lowest(), PythonVersion::latest()];
+
 /// Owned wrapper around a parsed Python source file.
 ///
 /// Holds the source text, the syntax tree, the token stream, a lazy
@@ -57,10 +68,13 @@ const UNTARGETED_BUILTINS: PythonVersion = PythonVersion::PY310;
 /// and stranded-padding walks each built on first read or carried
 /// across a reparse from the source before it, beside the f-string
 /// forecast, the call seating, the chain breaks, and the docstring
-/// framings, expansions, and rewraps each reparse drops. `source_type`
-/// is the parse mode and `line_ending` the sequence the text breaks its
-/// lines with, leaving `cell_offsets` and `cell_numbers` to carry a
-/// notebook's cell boundaries and positions, empty for a module.
+/// framings, expansions, and rewraps each reparse drops. `semantic`
+/// holds the semantic-syntax errors the first check found beside the
+/// target it ran at, and `unsupported` the constructs the version a read
+/// parsed at does not support, `read_at` naming the target of that read. `source_type` is the parse mode and
+/// `line_ending` the sequence the text breaks its lines with, leaving
+/// `cell_offsets` and `cell_numbers` to carry a notebook's cell
+/// boundaries and positions, empty for a module.
 #[derive(Debug)]
 pub struct Source {
     ast: ModModule,
@@ -82,10 +96,13 @@ pub struct Source {
     interpolation_spans: OnceLock<Vec<TextRange>>,
     line_ending: LineEnding,
     paren_followers: OnceLock<FxHashSet<TextSize>>,
+    read_at: Target,
+    semantic: OnceLock<Box<(Target, Vec<SemanticSyntaxError>)>>,
     source_type: PySourceType,
     stranded_padding: OnceLock<Box<(Stranding, Vec<Edit>)>>,
     suppression: Box<SuppressionMap>,
     tokens: Tokens,
+    unsupported: Box<[UnsupportedSyntaxError]>,
 }
 
 impl Source {
@@ -163,10 +180,13 @@ impl Source {
             interpolation_spans: OnceLock::new(),
             line_ending,
             paren_followers: OnceLock::new(),
+            read_at: Target::Unset,
+            semantic: OnceLock::new(),
             source_type,
             stranded_padding: OnceLock::new(),
             suppression,
             tokens,
+            unsupported: Box::default(),
         }
     }
 
@@ -179,34 +199,24 @@ impl Source {
     /// if an `.ipynb` is not a valid notebook, and `SourceError::Parse`
     /// if the parsed source is not a valid module.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, SourceError> {
-        let path = path.as_ref();
-        let text = fs_err::read_to_string(path)?;
-        let source_type = PySourceType::try_from_path(path).unwrap_or_default();
-        let name = path.display().to_string();
-        if source_type.is_ipynb() {
-            let notebook = Notebook::from_source_code(&text)?;
-            return Self::from_notebook(&notebook, name).map_err(Into::into);
-        }
-        Self::build_module(text, name, source_type).map_err(Into::into)
+        Self::read_path(path, Target::Unset)
     }
 
-    /// Parses `text` in `source_type`'s mode under `name` and checks it
-    /// against `version`, which is how the CLI, the language server, and
-    /// the sandbox read every file they receive.
+    /// Parses `text` in `source_type`'s mode under `name` at `target`,
+    /// holding each construct that target does not support for
+    /// [`refusals`](Self::refusals) to report, which is how the CLI, the
+    /// language server, and the sandbox read every file they receive.
     ///
     /// # Errors
     ///
-    /// Returns `ParseError` where `text` does not parse, where it holds
-    /// syntax `version` does not support, or where it holds a semantic
-    /// syntax error such as a `lazy` import inside a function, each
-    /// positioned at the range that fails.
+    /// Returns `ParseError` where `text` does not parse.
     pub(crate) fn read(
         text: String,
         name: impl Into<Box<str>>,
         source_type: PySourceType,
-        version: PythonVersion,
+        target: Target,
     ) -> Result<Self, ParseError> {
-        Self::read_cells(text, name, source_type, CellOffsets::default(), version)
+        Self::read_cells(text, name, source_type, CellOffsets::default(), target)
     }
 
     /// Builds the source [`read`](Self::read) describes, carrying
@@ -216,18 +226,19 @@ impl Source {
         name: impl Into<Box<str>>,
         source_type: PySourceType,
         cell_offsets: CellOffsets,
-        version: PythonVersion,
+        target: Target,
     ) -> Result<Self, ParseError> {
+        let version = match target {
+            Target::Unset => PythonVersion::latest(),
+            Target::Version(version) => version,
+        };
         let options = ParseOptions::from(source_type).with_target_version(version);
         let parsed = parse_typed_module(&text, options)?;
-        if let Some(unsupported) = parsed.unsupported_syntax_errors().first() {
-            return Err(rejected(unsupported));
-        }
-        let source = Self::from_parsed(text, name, source_type, cell_offsets, parsed);
-        match source.semantic_error(version) {
-            Some(error) => Err(rejected(&error)),
-            None => Ok(source),
-        }
+        let unsupported = parsed.unsupported_syntax_errors().into();
+        let mut source = Self::from_parsed(text, name, source_type, cell_offsets, parsed);
+        source.read_at = target;
+        source.unsupported = unsupported;
+        Ok(source)
     }
 
     fn build(
@@ -327,6 +338,27 @@ impl Source {
         parse_typed_module(text, ParseOptions::from(PySourceType::default()))
     }
 
+    /// Reads the file at `path` the way [`read`](Self::read) reads a
+    /// buffer at `target`, routing an `.ipynb` through the notebook
+    /// reader.
+    ///
+    /// # Errors
+    ///
+    /// Returns `SourceError::Io` if the read fails, `SourceError::Notebook`
+    /// if an `.ipynb` is not a valid notebook, and `SourceError::Parse`
+    /// if the text does not parse.
+    pub(crate) fn read_path<P: AsRef<Path>>(path: P, target: Target) -> Result<Self, SourceError> {
+        let path = path.as_ref();
+        let text = fs_err::read_to_string(path)?;
+        let source_type = PySourceType::try_from_path(path).unwrap_or_default();
+        let name = path.display().to_string();
+        if source_type.is_ipynb() {
+            let notebook = Notebook::from_source_code(&text)?;
+            return Self::read_notebook(&notebook, name, target).map_err(Into::into);
+        }
+        Self::read(text, name, source_type, target).map_err(Into::into)
+    }
+
     /// Reparses `text` under the original name, carrying `cell_offsets`
     /// forward through [`Self::recut_cells`]. Diagnostic labels keep the
     /// original path or `<source>` placeholder.
@@ -348,6 +380,25 @@ impl Source {
             cell_offsets,
             parsed,
         );
+        next.cell_numbers.clone_from(&self.cell_numbers);
+        Ok(next)
+    }
+
+    /// Returns this source's text read again at `target`, the way
+    /// [`read`](Self::read) reads a file, under its name and carrying its
+    /// cell boundaries and numbering.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ParseError` where the text does not parse.
+    pub(crate) fn reread(&self, target: Target) -> Result<Self, ParseError> {
+        let mut next = Self::read_cells(
+            self.text().to_owned(),
+            self.file.name(),
+            self.source_type,
+            self.cell_offsets.clone(),
+            target,
+        )?;
         next.cell_numbers.clone_from(&self.cell_numbers);
         Ok(next)
     }
@@ -404,10 +455,13 @@ impl Clone for Source {
             interpolation_spans: OnceLock::new(),
             line_ending: self.line_ending,
             paren_followers: OnceLock::new(),
+            read_at: self.read_at,
+            semantic: OnceLock::new(),
             source_type: self.source_type,
             stranded_padding: OnceLock::new(),
             suppression: self.suppression.clone(),
             tokens: self.tokens.clone(),
+            unsupported: self.unsupported.clone(),
         }
     }
 }
@@ -454,15 +508,6 @@ fn parse_typed_module(text: &str, options: ParseOptions) -> Result<Parsed<ModMod
         unreachable!("module-mode parse never yields a bare expression");
     };
     Ok(parsed)
-}
-
-/// Renders `error` as the `ParseError` a failed parse reports at its
-/// range, carrying its message as the error's text.
-fn rejected(error: &(impl Display + Ranged)) -> ParseError {
-    ParseError {
-        error: ParseErrorType::OtherError(error.to_string()),
-        location: error.range(),
-    }
 }
 
 #[cfg(test)]
@@ -587,39 +632,117 @@ mod tests {
         assert_eq!(parse("x = 1\n").source_file().name(), "<source>");
     }
 
-    #[test]
-    fn read_accepts_the_syntax_its_version_adds() {
-        let source = Source::read(
-            "match 1:\n    case +1:\n        pass\n".to_owned(),
-            "<t>",
-            PySourceType::Python,
-            PythonVersion::PY315,
-        )
-        .expect("a unary plus pattern reads under 3.15");
-        assert_eq!(source.ast().body.len(), 1);
+    #[rstest]
+    #[case::a_lazy_import_at_module_scope_untargeted("lazy import os\n", None)]
+    #[case::a_unary_plus_pattern_at_its_version(
+        "match 1:\n    case +1:\n        pass\n",
+        Some(PythonVersion::PY315)
+    )]
+    #[case::a_unary_plus_pattern_untargeted("match 1:\n    case +1:\n        pass\n", None)]
+    #[case::a_walrus_annotation_untargeted("x: (y := 1) = 2\n", None)]
+    fn refusals_clear_syntax_some_version_accepts(
+        #[case] text: &str,
+        #[case] version: Option<PythonVersion>,
+    ) {
+        let target = Target::from(version);
+        let source = Source::read(text.to_owned(), "<t>", PySourceType::Python, target)
+            .expect("the text parses");
+        assert_eq!(source.refusals(target), Vec::new());
     }
 
     #[rstest]
-    #[case::lazy_import_below_its_version("lazy import os\n", PythonVersion::PY314, range(0, 4))]
-    #[case::lazy_import_in_a_function(
+    #[case::a_lazy_import_below_its_version(
+        "lazy import os\n",
+        Some(PythonVersion::PY314),
+        range(0, 4)
+    )]
+    #[case::a_lazy_import_in_a_function(
         "def f():\n    lazy import os\n",
-        PythonVersion::PY315,
+        Some(PythonVersion::PY315),
         range(13, 27)
     )]
-    #[case::unary_plus_below_its_version(
+    #[case::a_lazy_import_in_a_function_untargeted(
+        "def f():\n    lazy import os\n",
+        None,
+        range(13, 27)
+    )]
+    #[case::a_unary_plus_pattern_below_its_version(
         "match 1:\n    case +1:\n        pass\n",
-        PythonVersion::PY314,
+        Some(PythonVersion::PY314),
         range(18, 20)
     )]
-    fn read_rejects_syntax_the_version_rules_out(
+    #[case::a_walrus_annotation_at_3_14(
+        "x: (y := 1) = 2\n",
+        Some(PythonVersion::PY314),
+        range(4, 10)
+    )]
+    fn refusals_name_the_range_the_target_rejects(
         #[case] text: &str,
-        #[case] version: PythonVersion,
+        #[case] version: Option<PythonVersion>,
         #[case] location: TextRange,
     ) {
-        let error = Source::read(text.to_owned(), "<t>", PySourceType::Python, version)
-            .expect_err("the syntax fails the read");
-        assert_matches!(error.error, ParseErrorType::OtherError(_));
-        assert_eq!(error.location, location);
+        let target = Target::from(version);
+        let source = Source::read(text.to_owned(), "<t>", PySourceType::Python, target)
+            .expect("the text parses");
+        let refusals = source.refusals(target);
+        assert_eq!(refusals.first().map(Ranged::range), Some(location));
+    }
+
+    /// Returns the one refusal `text` holds under `target`.
+    fn sole_refusal(text: &str, target: Target) -> Refusal {
+        let source = Source::read(text.to_owned(), "<t>", PySourceType::Python, target)
+            .expect("the text parses");
+        let [refusal] = <[Refusal; 1]>::try_from(source.refusals(target)).expect("one refusal");
+        refusal
+    }
+
+    #[test]
+    fn refusal_message_names_the_target_it_was_checked_against() {
+        let refusal = sole_refusal("def f():\n    lazy import os\n", Target::Unset);
+        assert!(
+            refusal
+                .message(Target::Unset)
+                .ends_with(", which no Python version accepts, with no `target-version` set")
+        );
+        assert!(
+            refusal
+                .message(Target::Version(PythonVersion::PY315))
+                .ends_with(" under `target-version = \"3.15\"`")
+        );
+    }
+
+    #[test]
+    fn refusals_at_another_target_read_the_source_again() {
+        let source = Source::read(
+            "def f():\n    lazy import os\n".to_owned(),
+            "<t>",
+            PySourceType::Python,
+            Target::Unset,
+        )
+        .expect("the text parses");
+        let untargeted = source.refusals(Target::Unset);
+        assert_eq!(untargeted.len(), 1);
+        assert_eq!(
+            source.refusals(Target::Version(PythonVersion::PY314)).len(),
+            2
+        );
+        assert_eq!(source.refusals(Target::Unset).len(), untargeted.len());
+    }
+
+    #[test]
+    fn same_kind_tells_a_semantic_refusal_from_an_unsupported_one() {
+        let semantic = sole_refusal(
+            "def f():\n    lazy import os\n",
+            Target::Version(PythonVersion::PY315),
+        );
+        let unsupported = sole_refusal(
+            "match 1:\n    case +1:\n        pass\n",
+            Target::Version(PythonVersion::PY314),
+        );
+        assert!(semantic.same_kind(&semantic));
+        assert!(unsupported.same_kind(&unsupported));
+        assert!(!semantic.same_kind(&unsupported));
+        assert!(!unsupported.same_kind(&semantic));
     }
 
     #[test]

@@ -10,9 +10,10 @@ use ruff_source_file::{SourceFile, SourceFileBuilder};
 use super::{FileOutcome, Pass, RunSetup, has_format_change, notebook, resolve::Resolved};
 use crate::{
     cache::{Anchor, CacheEntry, CacheEntryRef, NotebookCells, NotebookCellsRef, Rewrite},
+    cli::emit::RefusedEntry,
     cli::exit_status::ExitStatus,
     rules::RuleId,
-    source::Source,
+    source::{Refusal, Source},
     unstable::UnstableRewrite,
 };
 
@@ -56,6 +57,26 @@ pub(super) fn parse_failure(name: &str, e: impl std::fmt::Display) -> FileOutcom
         ExitStatus::ParseError,
         format_args!("parse error in `{name}`: {e}"),
     )
+}
+
+/// The outcome of a file holding syntax its target rejects, printed to
+/// stderr naming the file and the position, and carried into the
+/// structured outputs. `index` translates a notebook's position into its
+/// cell.
+pub(super) fn refused(
+    source: &Source,
+    index: Option<&NotebookIndex>,
+    refusal: &Refusal,
+    resolved: &Resolved,
+) -> FileOutcome {
+    let entry = RefusedEntry::new(
+        source.source_file(),
+        index,
+        refusal,
+        resolved.pipeline.target(),
+    );
+    eprintln!("error: {entry}");
+    FileOutcome::Refused(Box::new(entry))
 }
 
 pub(super) fn process_path(
@@ -169,13 +190,11 @@ pub(super) fn process_source(
     if source_type.is_ipynb() {
         return notebook::process(text, name, resolved, pass);
     }
-    match Source::read(
-        text,
-        name.as_str(),
-        source_type,
-        resolved.pipeline.target_version(),
-    ) {
-        Ok(source) => run_pipeline(source, resolved, pass, marker),
+    match Source::read(text, name.as_str(), source_type, resolved.pipeline.target()) {
+        Ok(source) => match resolved.pipeline.refusal(&source) {
+            Some(refusal) => refused(&source, None, &refusal, resolved),
+            None => run_pipeline(source, resolved, pass, marker),
+        },
         Err(e) => parse_failure(&name, e),
     }
 }

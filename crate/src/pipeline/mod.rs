@@ -14,7 +14,7 @@
 //! editing it, a `format` run re-applying only the rules that edited on
 //! its first pass.
 
-use std::{collections::BTreeSet, ops::Range, slice};
+use std::{collections::BTreeSet, ops::Range, path::Path, slice};
 
 use itertools::Itertools;
 use ruff_diagnostics::Edit;
@@ -24,7 +24,7 @@ use ruff_python_parser::ParseError;
 use crate::{
     diagnostics::{Diagnostic, fired_rules},
     rules::{Rule, RuleId, independent},
-    source::{BUFFER_NAME, Source},
+    source::{BUFFER_NAME, Refusal, Source, SourceError, Target},
 };
 
 mod batch;
@@ -44,7 +44,7 @@ pub struct Pipeline {
     /// [`Sharing::Declared`].
     shares: Vec<Vec<usize>>,
     sharing: Sharing,
-    target_version: PythonVersion,
+    target: Target,
 }
 
 impl Pipeline {
@@ -69,7 +69,7 @@ impl Pipeline {
             rules,
             shares,
             sharing: Sharing::default(),
-            target_version: PythonVersion::latest(),
+            target: Target::Unset,
         }
     }
 
@@ -80,12 +80,12 @@ impl Pipeline {
         self
     }
 
-    /// Sets the Python version the syntax check and the compile gate
-    /// evaluate against, the newest version the parser models where
-    /// `target_version` is `None`.
+    /// Sets the target the syntax check and the compile gate hold a
+    /// source to, every version the parser models where `target_version`
+    /// is `None`.
     #[must_use]
     pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
-        self.target_version = target_version.unwrap_or(PythonVersion::latest());
+        self.target = Target::from(target_version);
         self
     }
 
@@ -172,14 +172,14 @@ impl Pipeline {
         batch.close(source, gate, replays)
     }
 
-    /// Returns the version each rule's output is checked against, or
+    /// Returns the target each rule's output is checked against, or
     /// `None` when `source` does not itself compile, which disarms the
     /// gate for the run.
-    fn gate(&self, source: &Source) -> Option<PythonVersion> {
+    fn gate(&self, source: &Source) -> Option<Target> {
         source
-            .semantic_error(self.target_version)
+            .semantic_error(self.target)
             .is_none()
-            .then_some(self.target_version)
+            .then_some(self.target)
     }
 
     /// The walk [`settle_report`](Self::settle_report),
@@ -298,20 +298,57 @@ impl Pipeline {
         crate::rules::KNOWN_IDS
     }
 
-    /// Reads `text` as a plain module named `<source>` at this
-    /// pipeline's target version, the way the language server and the
+    /// Reads `text` in `source_type`'s mode as a buffer named `<source>`
+    /// at this pipeline's target, the way the language server and the
     /// sandbox read a buffer.
     ///
     /// # Errors
     ///
     /// Returns the `ParseError` [`Source::read`] reports.
-    pub fn read(&self, text: &str) -> Result<Source, ParseError> {
-        Source::read(
-            text.to_owned(),
-            BUFFER_NAME,
-            PySourceType::default(),
-            self.target_version,
-        )
+    pub fn read(&self, text: &str, source_type: PySourceType) -> Result<Source, ParseError> {
+        Source::read(text.to_owned(), BUFFER_NAME, source_type, self.target)
+    }
+
+    /// Reads the file at `path` at this pipeline's target the way the CLI
+    /// reads it, `None` where it holds syntax the target rejects and
+    /// formatting leaves standing.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `SourceError` [`Source::read_path`] reports.
+    pub fn read_path<P: AsRef<Path>>(&self, path: P) -> Result<Option<Source>, SourceError> {
+        let source = Source::read_path(path, self.target)?;
+        Ok(self.refusal(&source).is_none().then_some(source))
+    }
+
+    /// Returns the syntax `source` holds that this pipeline's target
+    /// rejects and formatting leaves standing, `None` for a source the
+    /// target accepts, one a directive at its head suppresses, and one
+    /// whose refused syntax the rules rewrite away. A refusal formatting
+    /// leaves standing is reported where the source holds it, the first
+    /// whose kind the formatted text still holds where one does.
+    pub fn refusal(&self, source: &Source) -> Option<Refusal> {
+        let refusals = source.refusals(self.target);
+        let first = refusals.first()?;
+        if source.suppression_map().file_is_suppressed() {
+            return None;
+        }
+        let standing = match self
+            .format(source.clone())
+            .map(|formatted| formatted.reread(self.target))
+        {
+            Ok(Ok(formatted)) => formatted.refusals(self.target),
+            Ok(Err(_)) | Err(_) => return Some(first.clone()),
+        };
+        if standing.is_empty() {
+            return None;
+        }
+        refusals
+            .iter()
+            .find(|refusal| standing.iter().any(|left| left.same_kind(refusal)))
+            .unwrap_or(first)
+            .clone()
+            .into()
     }
 
     /// This pipeline's enabled rule slugs in registration order, the
@@ -404,23 +441,24 @@ impl Pipeline {
     /// holding its rule as this pipeline constructed it, so a rule that
     /// reads a sibling's flag keeps the value this selection gave it.
     pub fn split(self) -> Vec<(RuleId, Self)> {
-        let (sharing, target_version) = (self.sharing, self.target_version);
+        let (sharing, target) = (self.sharing, self.target);
         self.rules
             .into_iter()
             .map(|rule| {
                 let rule_id = rule.id();
-                let alone = Self::from_rules(vec![rule])
-                    .sharing(sharing)
-                    .targeting(Some(target_version));
+                let alone = Self {
+                    target,
+                    ..Self::from_rules(vec![rule]).sharing(sharing)
+                };
                 (rule_id, alone)
             })
             .collect()
     }
 
-    /// Returns the Python version this pipeline checks a source's syntax
-    /// and each rule's output against.
-    pub(crate) fn target_version(&self) -> PythonVersion {
-        self.target_version
+    /// Returns the target this pipeline holds a source's syntax and each
+    /// rule's output to.
+    pub fn target(&self) -> Target {
+        self.target
     }
 
     /// The enabled rules whose edits would still rewrite `source`,

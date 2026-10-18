@@ -11,6 +11,7 @@ use super::send;
 use crate::server::{
     analysis::{self, Formatted},
     config_cache::ConfigCache,
+    conversion::source_type_of,
     documents::DocumentStore,
     notices::Notices,
 };
@@ -34,11 +35,11 @@ pub(super) fn handle_request(
             let uri = &params.text_document.uri;
             let doc = documents.get(uri);
             let config = doc.map(|doc| configs.resolve(uri, &doc.text));
-            let Formatted { edits, settled } = doc
-                .zip(config.as_ref())
-                .map_or_else(Formatted::default, |(doc, config)| {
-                    analysis::format_buffer(&doc.text, encoding, config)
-                });
+            let Formatted { edits, settled } =
+                doc.zip(config.as_ref())
+                    .map_or_else(Formatted::default, |(doc, config)| {
+                        analysis::format_buffer(&doc.text, source_type_of(uri), encoding, config)
+                    });
             send(connection, Message::Response(Response::new_ok(id, edits)))?;
             let Some(((doc, config), settled)) = doc.zip(config).zip(settled) else {
                 return Ok(());

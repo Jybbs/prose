@@ -24,7 +24,7 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
     let reservations = Config::default().equals_reservations();
     let (mut carried, mut rebuilt, mut columns) = (false, false, false);
     for path in corpus_inputs() {
-        let Ok(mut source) = Source::from_path(&path) else {
+        let Ok(Some(mut source)) = pipeline.read_path(&path) else {
             continue;
         };
         let gate = pipeline.gate(&source);
@@ -75,7 +75,7 @@ fn column_tables_hold_at_run_granularity_across_every_splice() {
         let pipeline = Pipeline::with_defaults(&config);
         let reservations = config.equals_reservations();
         for path in corpus_inputs() {
-            let Ok(mut source) = Source::from_path(&path) else {
+            let Ok(Some(mut source)) = pipeline.read_path(&path) else {
                 continue;
             };
             let gate = pipeline.gate(&source);

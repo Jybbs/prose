@@ -3,9 +3,9 @@
 use std::io::{self, Write};
 
 use ruff_notebook::NotebookIndex;
-use ruff_source_file::SourceFile;
+use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 
-use super::{Emitter, EmitterSummary, Run, diagnostics};
+use super::{Emitter, EmitterSummary, RefusedEntry, Run, diagnostics};
 use crate::{
     diagnostics::Diagnostic,
     findings::{cell_message, located},
@@ -24,6 +24,9 @@ impl Emitter for Github {
         for (file, index, diag) in diagnostics(runs) {
             emit_one(writer, file, index, diag)?;
         }
+        for entry in &summary.refused {
+            emit_refused(writer, entry)?;
+        }
         for entry in &summary.unstable {
             writeln!(
                 writer,
@@ -36,18 +39,21 @@ impl Emitter for Github {
     }
 }
 
-fn emit_one(
+/// Writes one `command` annotation on `file` spanning `start` to `end`,
+/// the end printing only where the span stays on one line, and the
+/// message led by its cell inside a notebook.
+fn annotate(
     writer: &mut dyn Write,
-    file: &SourceFile,
-    index: Option<&NotebookIndex>,
-    diag: &Diagnostic,
+    command: &str,
+    file: &str,
+    (start, end): (LineColumn, LineColumn),
+    message: &str,
+    cell: Option<OneIndexed>,
 ) -> io::Result<()> {
-    let (start, end, cell) = located(file, index, diag.range);
-    let name = escape_property(file.name());
-    let message = escape_data(&cell_message(&diag.message, cell));
     write!(
         writer,
-        "::warning file={name},line={l},col={c}",
+        "::{command} file={name},line={l},col={c}",
+        name = escape_property(file),
         l = start.line,
         c = start.column,
     )?;
@@ -59,7 +65,37 @@ fn emit_one(
             ec = end.column,
         )?;
     }
-    writeln!(writer, "::{message}")
+    writeln!(writer, "::{}", escape_data(&cell_message(message, cell)))
+}
+
+fn emit_one(
+    writer: &mut dyn Write,
+    file: &SourceFile,
+    index: Option<&NotebookIndex>,
+    diag: &Diagnostic,
+) -> io::Result<()> {
+    let (start, end, cell) = located(file, index, diag.range);
+    annotate(
+        writer,
+        "warning",
+        file.name(),
+        (start, end),
+        &diag.message,
+        cell,
+    )
+}
+
+/// Writes the error annotation a file whose syntax its target rejects
+/// lands as, positioned the way a diagnostic's warning is.
+fn emit_refused(writer: &mut dyn Write, entry: &RefusedEntry) -> io::Result<()> {
+    annotate(
+        writer,
+        "error",
+        &entry.file,
+        (entry.start, entry.end),
+        &entry.message,
+        entry.cell,
+    )
 }
 
 /// Escapes each `%`, carriage return, and newline in a workflow command's

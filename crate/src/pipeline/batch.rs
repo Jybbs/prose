@@ -3,12 +3,16 @@
 
 use itertools::Itertools;
 use ruff_diagnostics::{Edit, SourceMap};
-use ruff_python_ast::{PySourceType, PythonVersion};
+use ruff_python_ast::PySourceType;
 use ruff_source_file::SourceFile;
 use ruff_text_size::Ranged;
 
 use super::{PipelineError, error::reparse_or_reject, filter::prepared_groups};
-use crate::{primitives::edit::apply_edits_mapped, rules::Rule, source::Source};
+use crate::{
+    primitives::edit::apply_edits_mapped,
+    rules::Rule,
+    source::{Source, Target},
+};
 
 /// The rules whose fix groups splice into one buffer in a single pass,
 /// each read against the buffer the batch opened on.
@@ -31,7 +35,7 @@ impl<'a> Batch<'a> {
     fn splice(
         self,
         mut source: Source,
-        gate: Option<PythonVersion>,
+        gate: Option<Target>,
         replays: bool,
     ) -> Result<Source, PipelineError> {
         let Some((&(_, first), rest)) = self.members.split_first() else {
@@ -83,7 +87,7 @@ impl<'a> Batch<'a> {
     pub(super) fn close(
         &mut self,
         source: Source,
-        gate: Option<PythonVersion>,
+        gate: Option<Target>,
         replays: bool,
     ) -> Result<Source, PipelineError> {
         std::mem::take(self).splice(source, gate, replays)

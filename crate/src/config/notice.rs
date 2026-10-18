@@ -4,7 +4,7 @@
 
 use std::{fmt, path::Path};
 
-use super::de::unknown_key_notice;
+use super::de::TableNotice;
 
 /// The config forms, highest precedence first.
 pub(super) const PRECEDENCE: [ConfigForm; 3] = [
@@ -49,9 +49,8 @@ pub(super) enum ConfigNotice<'a> {
         shadowed: ConfigForm,
         winner: ConfigForm,
     },
-    /// An unrecognized key under the prose table. Carries the dotted
-    /// key path.
-    UnknownKey(&'a str),
+    /// A notice the prose table raised while it deserialized.
+    Table(TableNotice<'a>),
 }
 
 impl fmt::Display for ConfigNotice<'_> {
@@ -68,16 +67,16 @@ impl fmt::Display for ConfigNotice<'_> {
                 shadowed.label(),
                 dir.display(),
             ),
-            Self::UnknownKey(key) => f.write_str(&unknown_key_notice(key)),
+            Self::Table(notice) => notice.fmt(f),
         }
     }
 }
 
-/// Wraps a notice sink in the unknown-key callback the prose
+/// Wraps a notice sink in the table-notice callback the prose
 /// deserialization takes.
-pub(super) fn unknown_keys<'a, F>(on_notice: &'a mut F) -> impl FnMut(&str) + 'a
+pub(super) fn table_notices<'a, F>(on_notice: &'a mut F) -> impl FnMut(TableNotice<'_>) + 'a
 where
     F: FnMut(ConfigNotice<'_>),
 {
-    |key| on_notice(ConfigNotice::UnknownKey(key))
+    |notice| on_notice(ConfigNotice::Table(notice))
 }

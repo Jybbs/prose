@@ -78,7 +78,11 @@ pub fn panic_for_test() {
 fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Error>> {
     let (config, config_notices) = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
-    let (formatted, diagnostics, fired_rules) = pipeline.run(pipeline.read(source)?)?;
+    let source = pipeline.read(source, Default::default())?;
+    if let Some(refusal) = pipeline.refusal(&source) {
+        return Err(refusal.message(pipeline.target()).into());
+    }
+    let (formatted, diagnostics, fired_rules) = pipeline.run(source)?;
     let unstable_rules = if settle {
         pipeline.unsettled_among(&formatted, &fired_rules)
     } else {

@@ -44,18 +44,18 @@ fn with_defaults_respects_rule_toggles() {
 }
 
 #[rstest]
-#[case::no_target(None, PythonVersion::latest())]
-#[case::a_set_target(Some(PythonVersion::PY312), PythonVersion::PY312)]
-fn with_defaults_targets_the_configured_version_or_the_newest(
+#[case::no_target(None, Target::Unset)]
+#[case::a_set_target(Some(PythonVersion::PY312), Target::Version(PythonVersion::PY312))]
+fn with_defaults_targets_the_configured_version_or_every_version(
     #[case] target_version: Option<PythonVersion>,
-    #[case] expected: PythonVersion,
+    #[case] expected: Target,
 ) {
     let config = Config {
         target_version,
         ..Config::default()
     };
 
-    assert_eq!(Pipeline::with_defaults(&config).target_version(), expected);
+    assert_eq!(Pipeline::with_defaults(&config).target(), expected);
 }
 
 #[test]

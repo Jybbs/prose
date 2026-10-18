@@ -1,15 +1,39 @@
 //! Deserializes the prose table and the shapes serde cannot read on its
 //! own, covering the bool-or-table rule reader, the optional-cap
-//! round-trips, and the notice line rendered for an unrecognized key.
+//! round-trips, and the notices the table raises.
 
 use std::{fmt, marker::PhantomData, num::NonZeroUsize};
 
+use ruff_python_ast::PythonVersion;
 use serde::{
     Deserialize, Deserializer, Serializer,
     de::{IntoDeserializer, MapAccess, Visitor, value::MapAccessDeserializer},
 };
 
 use super::{Config, ConfigError, schema::RuleToggle};
+
+/// A notice the prose table raises while it deserializes.
+pub(crate) enum TableNotice<'a> {
+    /// A `target-version` outside the versions the parser models.
+    UnmodeledTarget(PythonVersion),
+    /// An unrecognized key, carrying its dotted path.
+    UnknownKey(&'a str),
+}
+
+impl fmt::Display for TableNotice<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnmodeledTarget(version) => write!(
+                f,
+                "warning: `target-version` {version} in [tool.prose] names no Python version \
+                 the parser models, which run from {} through {}",
+                PythonVersion::lowest(),
+                PythonVersion::latest(),
+            ),
+            Self::UnknownKey(key) => write!(f, "warning: unknown key `{key}` in [tool.prose]"),
+        }
+    }
+}
 
 /// Deserializes a cap of integer type `T`, or `false` lifting it to
 /// `None`. `true` is rejected with `on_true`.
@@ -49,14 +73,23 @@ where
     )
 }
 
+/// Deserializes `table` into a config, raising a notice through
+/// `on_notice` for each key it does not recognize and for a
+/// `target-version` outside the versions the parser models.
 pub(super) fn deserialize_prose(
     table: toml::Table,
-    on_unknown: &mut dyn FnMut(&str),
+    on_notice: &mut dyn FnMut(TableNotice<'_>),
 ) -> Result<Config, ConfigError> {
-    Ok(serde_ignored::deserialize(
-        toml::Value::Table(table).into_deserializer(),
-        |path| on_unknown(&path.to_string()),
-    )?)
+    let config: Config =
+        serde_ignored::deserialize(toml::Value::Table(table).into_deserializer(), |path| {
+            on_notice(TableNotice::UnknownKey(&path.to_string()))
+        })?;
+    if let Some(version) = config.target_version
+        && !PythonVersion::iter().any(|modeled| modeled == version)
+    {
+        on_notice(TableNotice::UnmodeledTarget(version));
+    }
+    Ok(config)
 }
 
 /// Resolves a rule's config from either a bare bool toggle or a
@@ -98,10 +131,4 @@ pub(super) fn serialize_optional_cap<S: Serializer>(
         Some(n) => serializer.serialize_u64(n.get() as u64),
         None => serializer.serialize_bool(false),
     }
-}
-
-/// Renders the notice line for a key the prose table does not
-/// recognize.
-pub(super) fn unknown_key_notice(key: &str) -> String {
-    format!("warning: unknown key `{key}` in [tool.prose]")
 }

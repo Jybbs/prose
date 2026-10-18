@@ -42,8 +42,10 @@ export const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 3,
     detail : [
-      'Returned by both subcommands when `ruff_python_parser` fails on the source, reports syntax the `target-version` does not support, or finds a semantic syntax error such as a `lazy` import inside a function.',
-      'The pipeline does not run, so no other finding is reported.'
+      'Returned by both subcommands when `ruff_python_parser` fails on the source, or when the '
+      + 'source holds syntax the `target-version` does not support or a semantic syntax error such '
+      + 'as a `lazy` import inside a function that formatting leaves standing.',
+      'No other finding is reported for that file.'
     ],
     label  : 'Parse error',
     summary: 'The input is not valid Python for the target version.'

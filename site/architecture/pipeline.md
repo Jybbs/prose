@@ -39,7 +39,9 @@ tagline: deterministic rule runner
 
 ### Reading
 
-`read(&self, text: &str) -> Result<Source, ParseError>` parses an in-memory buffer as a module named `<source>` at the pipeline's target version, the read `prose server` and the WebAssembly bindings give every buffer. A buffer holding syntax that version does not support, or a semantic syntax error such as a `lazy` import inside a function, fails as a `ParseError` at the range that fails before any rule runs. The version comes from `target-version`, and a pipeline built with none set reads at the newest version the parser models.
+`read(&self, text: &str, source_type: PySourceType) -> Result<Source, ParseError>` parses an in-memory buffer named `<source>` at the pipeline's `target-version`, the read `prose server` and the WebAssembly bindings give every buffer, and `read_path` reads a file the way the command line does, returning `None` for one the target refuses. Neither fails on anything but a parse error.
+
+`refusal(&self, source: &Source) -> Option<Refusal>` reports the syntax a source holds that the target rejects, meaning a construct the target version does not support or a semantic syntax error such as a `lazy` import inside a function. The rules run first and the check reads their output, so a refusal the rules rewrite away passes, as a late `from __future__` import that [[group-imports]] moves to the front does, and a file a `# prose: off` at its head suppresses skips the check. With no `target-version` set, only syntax every version the parser models rejects counts, and a notebook is checked one cell at a time, the way IPython compiles it.
 
 ### Execution
 

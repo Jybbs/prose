@@ -11,7 +11,10 @@ mod common;
 use std::{fmt::Write, path::Path};
 
 use itertools::Itertools;
-use prose::{diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline, source::Source};
+use prose::{
+    config::Config, diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline,
+    source::Source,
+};
 use ruff_python_ast::PySourceType;
 use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_source_file::{LineEnding, UniversalNewlines};
@@ -28,7 +31,7 @@ fn fixtures() {
 
         let (config, harness) = common::fixture_inputs(path);
         let pipeline = common::build_pipeline(domain, &config, &harness);
-        let source = Source::from_path(path).expect("fixture input reads and parses");
+        let source = accepted(path, &config, domain, case);
 
         // `diagnose` reads the source as written, so it runs before the
         // rewrite consumes it. A notebook pins its diagnostics through
@@ -74,8 +77,7 @@ fn fixtures() {
             assert_settles(&pipeline, output, domain, case, "on second pass");
         }
 
-        let fresh_source =
-            Source::from_path(path).expect("fixture input re-reads for determinism check");
+        let fresh_source = accepted(path, &config, domain, case);
         let (fresh_formatted, _, _) = common::build_pipeline(domain, &config, &harness)
             .run(fresh_source)
             .expect("fresh pipeline run succeeds");
@@ -85,6 +87,16 @@ fn fixtures() {
             common::unified_diff(output, fresh_formatted.text()),
         );
     });
+}
+
+/// Reads the fixture input at `path` the way the CLI reads it under the
+/// case's `config`, panicking where the input does not parse or holds
+/// syntax its `target-version` refuses.
+fn accepted(path: &Path, config: &Config, domain: &str, case: &str) -> Source {
+    Pipeline::with_defaults(config)
+        .read_path(path)
+        .expect("fixture input reads and parses")
+        .unwrap_or_else(|| panic!("fixture `{domain}/{case}` holds syntax its target refuses"))
 }
 
 /// Runs `pipeline` over its own `output` and panics where a second

@@ -4,9 +4,10 @@
 use std::collections::BTreeSet;
 
 use lsp_types::{Diagnostic as LspDiagnostic, TextEdit};
+use ruff_python_ast::PySourceType;
 use ruff_source_file::PositionEncoding;
 
-use super::conversion::{full_document_range, to_lsp};
+use super::conversion::{full_document_range, refusal_to_lsp, to_lsp};
 use crate::{
     config::Config, pipeline::Pipeline, rules::RuleId, source::Source, unstable::UnstableRewrite,
 };
@@ -44,19 +45,29 @@ impl Settled {
     }
 }
 
-/// Lints and format-checks the buffer against `config`, mapping each
-/// finding to a protocol diagnostic in the buffer's own coordinates. A
-/// buffer that fails to read yields nothing, clearing any stale
-/// findings.
+/// Lints and format-checks the buffer, read in `source_type`'s mode,
+/// against `config`, mapping each finding to a protocol diagnostic in the
+/// buffer's own coordinates. A buffer that does not parse yields
+/// nothing, clearing any stale findings, and one holding syntax its
+/// target rejects yields that refusal alone as an error.
 pub(super) fn diagnostics(
     text: &str,
+    source_type: PySourceType,
     encoding: PositionEncoding,
     config: &Config,
 ) -> Vec<LspDiagnostic> {
     let pipeline = Pipeline::with_defaults(config);
-    let Ok(source) = pipeline.read(text) else {
+    let Ok(source) = pipeline.read(text, source_type) else {
         return Vec::new();
     };
+    if let Some(refusal) = pipeline.refusal(&source) {
+        return vec![refusal_to_lsp(
+            &source,
+            &refusal,
+            pipeline.target(),
+            encoding,
+        )];
+    }
     pipeline
         .diagnose(&source)
         .iter()
@@ -64,23 +75,34 @@ pub(super) fn diagnostics(
         .collect()
 }
 
-/// Formats the buffer against `config`, returning one whole-document
-/// edit alongside the rewrite held for a later settle check. A buffer
-/// that is already formatted or fails to read yields neither.
+/// Formats the buffer, read in `source_type`'s mode, against `config`,
+/// returning one whole-document edit alongside the rewrite held for a
+/// later settle check. A buffer that is already formatted, does not
+/// parse, or holds syntax its target rejects yields neither.
 pub(super) fn format_buffer(
     original: &str,
+    source_type: PySourceType,
     encoding: PositionEncoding,
     config: &Config,
 ) -> Formatted {
-    formatted(original, encoding, config).unwrap_or_default()
+    formatted(original, source_type, encoding, config).unwrap_or_default()
 }
 
 /// Returns the edit and held rewrite for a buffer the pipeline
-/// rewrote, `None` where it fails to read, a rule's output is rejected,
-/// or the run leaves the text unchanged.
-fn formatted(original: &str, encoding: PositionEncoding, config: &Config) -> Option<Formatted> {
+/// rewrote, `None` where it does not parse, holds syntax its target
+/// rejects, a rule's output is rejected, or the run leaves the text
+/// unchanged.
+fn formatted(
+    original: &str,
+    source_type: PySourceType,
+    encoding: PositionEncoding,
+    config: &Config,
+) -> Option<Formatted> {
     let pipeline = Pipeline::with_defaults(config);
-    let source = pipeline.read(original).ok()?;
+    let source = pipeline
+        .read(original, source_type)
+        .ok()
+        .filter(|source| pipeline.refusal(source).is_none())?;
     let range = full_document_range(&source, encoding);
     let (settled, _, fired) = pipeline.run(source).ok()?;
     let new_text = settled.changed_from(original)?.to_owned();
@@ -99,34 +121,95 @@ mod tests {
     use std::assert_matches;
 
     use lsp_types::{DiagnosticSeverity, NumberOrString, Position};
+    use rstest::rstest;
     use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::BARE_IMPORT_LINT;
 
     #[test]
-    fn diagnostics_are_empty_for_a_gated_import_below_its_version() {
-        let config = Config {
-            target_version: Some(PythonVersion::PY314),
-            ..Config::default()
-        };
-        assert!(diagnostics("lazy import os\n", PositionEncoding::Utf16, &config).is_empty());
-    }
-
-    #[test]
     fn diagnostics_are_empty_for_clean_source() {
-        assert!(diagnostics("x = 1\n", PositionEncoding::Utf16, &Config::default()).is_empty());
+        assert!(
+            diagnostics(
+                "x = 1\n",
+                PySourceType::Python,
+                PositionEncoding::Utf16,
+                &Config::default()
+            )
+            .is_empty()
+        );
     }
 
     #[test]
     fn diagnostics_are_empty_for_unparseable_source() {
-        assert!(diagnostics("def foo(", PositionEncoding::Utf16, &Config::default()).is_empty());
+        assert!(
+            diagnostics(
+                "def foo(",
+                PySourceType::Python,
+                PositionEncoding::Utf16,
+                &Config::default()
+            )
+            .is_empty()
+        );
+    }
+
+    #[rstest]
+    #[case::a_stub(PySourceType::Stub, 1)]
+    #[case::a_module(PySourceType::Python, 0)]
+    fn diagnostics_read_a_buffer_in_its_document_mode(
+        #[case] source_type: PySourceType,
+        #[case] refused: usize,
+    ) {
+        let config = Config {
+            target_version: Some(PythonVersion::PY313),
+            ..Config::default()
+        };
+
+        let published = diagnostics(
+            "def f(x: (y := 1)) -> None: ...\n",
+            source_type,
+            PositionEncoding::Utf16,
+            &config,
+        );
+
+        let errors = published
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == Some(DiagnosticSeverity::ERROR))
+            .count();
+        assert_eq!(errors, refused);
+    }
+
+    #[test]
+    fn diagnostics_report_a_refused_buffer_as_one_error() {
+        let config = Config {
+            target_version: Some(PythonVersion::PY314),
+            ..Config::default()
+        };
+
+        let published = diagnostics(
+            "lazy import os\n",
+            PySourceType::Python,
+            PositionEncoding::Utf16,
+            &config,
+        );
+
+        assert_matches!(
+            published.as_slice(),
+            [LspDiagnostic {
+                code: Some(NumberOrString::String(code)),
+                severity: Some(DiagnosticSeverity::ERROR),
+                ..
+            }] if code == "syntax-error"
+        );
+        assert_eq!(published[0].range.end, Position::new(0, 4));
+        assert!(published[0].message.contains("`target-version = \"3.14\"`"));
     }
 
     #[test]
     fn diagnostics_surface_a_lint_finding_as_a_warning() {
         let published = diagnostics(
             BARE_IMPORT_LINT,
+            PySourceType::Python,
             PositionEncoding::Utf16,
             &Config::default(),
         );
@@ -141,6 +224,7 @@ mod tests {
     fn diagnostics_surface_format_drift_as_information() {
         let published = diagnostics(
             "alpha = 1\nb = 22\n",
+            PySourceType::Python,
             PositionEncoding::Utf16,
             &Config::default(),
         );
@@ -155,6 +239,7 @@ mod tests {
     fn format_buffer_holds_the_settle_report_for_a_settled_rewrite() {
         let formatted = format_buffer(
             "alpha = 1\nb = 22\n",
+            PySourceType::Python,
             PositionEncoding::Utf16,
             &Config::default(),
         );
@@ -171,6 +256,7 @@ mod tests {
     fn format_buffer_replaces_the_whole_document() {
         let edits = format_buffer(
             "alpha = 1\nb = 22\n",
+            PySourceType::Python,
             PositionEncoding::Utf16,
             &Config::default(),
         )
@@ -197,14 +283,24 @@ mod tests {
 
     #[test]
     fn format_buffer_yields_no_edits_for_formatted_source() {
-        let formatted = format_buffer("x = 1\n", PositionEncoding::Utf16, &Config::default());
+        let formatted = format_buffer(
+            "x = 1\n",
+            PySourceType::Python,
+            PositionEncoding::Utf16,
+            &Config::default(),
+        );
 
         assert!(formatted.edits.is_none());
     }
 
     #[test]
     fn format_buffer_yields_no_edits_for_unparseable_source() {
-        let formatted = format_buffer("def foo(", PositionEncoding::Utf16, &Config::default());
+        let formatted = format_buffer(
+            "def foo(",
+            PySourceType::Python,
+            PositionEncoding::Utf16,
+            &Config::default(),
+        );
 
         assert!(formatted.edits.is_none());
     }

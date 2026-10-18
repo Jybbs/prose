@@ -3,12 +3,12 @@
 //! reparse.
 
 use ruff_notebook::{CellOffsets, Notebook};
-use ruff_python_ast::{PySourceType, PythonVersion, Stmt};
+use ruff_python_ast::{PySourceType, Stmt};
 use ruff_python_parser::ParseError;
 use ruff_source_file::{LineRanges, OneIndexed};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
-use super::Source;
+use super::{Source, Target};
 use crate::primitives::slots::item_holding;
 
 impl Source {
@@ -29,19 +29,19 @@ impl Source {
     }
 
     /// Builds the concatenated source of a parsed notebook the way
-    /// [`read`](Self::read) builds a module, checking its cells against
-    /// `version` and attaching each code cell's notebook position.
+    /// [`read`](Self::read) reads a module at `target`, attaching each
+    /// code cell's notebook position.
     pub(crate) fn read_notebook(
         notebook: &Notebook,
         name: impl Into<Box<str>>,
-        version: PythonVersion,
+        target: Target,
     ) -> Result<Self, ParseError> {
         Self::read_cells(
             notebook.source_code().to_owned(),
             name,
             PySourceType::Ipynb,
             notebook.cell_offsets().clone(),
-            version,
+            target,
         )
         .map(|source| source.numbered(notebook))
     }
