@@ -49,23 +49,22 @@ impl Shedder<'_> {
     /// `inner` opens and this pass leaves standing, and false for an
     /// interior carrying no break.
     fn holds_its_breaks_inside(&self, inner: TextRange, nested: &[Edit]) -> bool {
-        let inside_a_shed =
-            |range: TextRange| nested.iter().any(|edit| edit.range().contains_range(range));
         self.source.contains_line_break(inner)
-            && breaks_held_inside(self.source, inner, &inside_a_shed)
+            && breaks_held_inside(self.source, inner, &covered_by(nested))
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
     /// that joins onto one row, read through `nested`. An operand joins
-    /// where no break inside it sits within a bracket it opens and its
-    /// joined form fits behind its operator one indent step past
-    /// `indent`.
+    /// where no break inside it sits within a bracket it opens and this
+    /// pass leaves standing, and where its joined form fits behind its
+    /// operator one indent step past `indent`.
     fn operand_folds(&self, chain: &[Operand], nested: &[Edit], indent: usize) -> Vec<Edit> {
         let item = item_indent(indent);
+        let shed = covered_by(nested);
         chain
             .iter()
             .filter(|operand| {
-                break_depths(self.source, operand.range, &|_| false).all(|depth| depth == 0)
+                break_depths(self.source, operand.range, &shed).all(|depth| depth == 0)
             })
             .flat_map(|operand| {
                 let folds = fold_edits(self.source, operand.range);
@@ -200,6 +199,12 @@ fn broken(source: &Source, chain: &[Operand], nested: &[Edit], indent: usize) ->
         },
         Separator::None,
     )
+}
+
+/// Builds the test of whether a range sits inside one of `edits`, which
+/// a depth walk reads to pass over the parentheses this pass sheds.
+fn covered_by(edits: &[Edit]) -> impl Fn(TextRange) -> bool + '_ {
+    |range| edits.iter().any(|edit| edit.range().contains_range(range))
 }
 
 /// The pair holding `row` whole on one row of its own, one indent step
