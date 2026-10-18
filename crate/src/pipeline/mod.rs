@@ -34,7 +34,8 @@ mod held;
 
 use batch::{Batch, Spliceable};
 pub use error::PipelineError;
-use filter::{prepared_groups, settled_lints};
+pub(crate) use filter::prepared_groups;
+use filter::settled_lints;
 pub(crate) use held::Held;
 
 /// Ordered sequence of enabled rules, run against each source file.

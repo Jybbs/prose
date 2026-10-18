@@ -2,7 +2,8 @@
 //! the parse the bare form produces and the break against the rows its
 //! interior divides into, beside the calls a later explode reshapes. A
 //! boolean chain or a conditional expression forming a test, a `return`
-//! value, or an assignment value earns a pair the break adds around it.
+//! value, an assignment value, or the last element of a bare tuple
+//! standing as one earns a pair the break adds around it.
 
 use std::{borrow::Cow, cmp::Reverse};
 

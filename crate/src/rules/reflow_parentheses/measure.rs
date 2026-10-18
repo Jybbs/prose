@@ -1,7 +1,8 @@
 //! Where a reflow lands: whether a fold fits the budget, whether the
 //! row a pair sits on overflows it, the column a pair reaches once the
-//! pass's earlier edits apply and the padding and alignment rules settle
-//! its row, and the spans an in-place shed removes.
+//! pass's earlier edits apply and the padding, alignment, and later
+//! shortening rules settle its row, and the spans an in-place shed
+//! removes.
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::PythonWhitespace;
@@ -47,8 +48,8 @@ impl Shedder<'_> {
     }
 
     /// The column the text through `range` reaches once the edits
-    /// emitted so far apply and `strip-stranded-padding` settles the row
-    /// it closes on, `range` opening at the row or the logical line the
+    /// emitted so far apply and the padding table settles the row it
+    /// closes on, `range` opening at the row or the logical line the
     /// measure reads from. Text those edits leave on the row the source
     /// writes it on starts from the column `align-equals` shifts that row
     /// to.
@@ -60,9 +61,9 @@ impl Shedder<'_> {
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
-    /// spaces its own flush sides keep and narrowed by the padding
-    /// `strip-stranded-padding` drops inside it and the columns each
-    /// nested candidate sheds alongside it. `None` for an interior no
+    /// spaces its own flush sides keep and narrowed by the columns the
+    /// padding table takes off it and the columns each nested candidate
+    /// sheds alongside it. `None` for an interior no
     /// fold joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
@@ -105,7 +106,7 @@ impl Shedder<'_> {
     }
 
     /// The columns `pair`'s own row carries past its closing paren once
-    /// `strip-stranded-padding` settles it, narrowed by the parentheses
+    /// the padding table settles it, narrowed by the parentheses
     /// this pass sheds along that stretch. The measure closes at the
     /// opening paren of the first later pair on the row that breaks.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {

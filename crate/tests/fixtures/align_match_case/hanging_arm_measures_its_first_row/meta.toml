@@ -3,5 +3,5 @@ previewable = false
 title       = "A Hanging Arm Is Measured Through Its `case` Row"
 
 description = '''
-`case "install"` holds a call whose argument row runs past the **88-column** budget, while its `case` row ends on the `(` the call opens. **`"install"` joins the run and `"build"` folds beside it at the shared column**, because the rule measures the hanging arm only through the bracket ending its `case` row, so the long row beneath never counts against the run.
+`case "install"` holds a call hanging from the `(` that ends its `case` row, its argument row 84 columns wide, so the arm read across all three rows runs past the **88-column** budget. **`"install"` joins the run and `"build"` folds beside it at the shared column**, because the rule measures the hanging arm only through the bracket ending its `case` row, so the rows beneath never count against the run.
 '''

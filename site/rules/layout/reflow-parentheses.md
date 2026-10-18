@@ -28,7 +28,7 @@ The rule also adds a pair where none exists, around a boolean chain or a conditi
 
 The break reaches an operator chain and a conditional expression alone and leaves any other interior at the layout its author wrote, and a conditional its author spread across rows keeps those rows. A pair wrapping one operand of a wider chain or of a conditional expression is left as written too, since opening rows inside a row that overflows either way gains the reader nothing. A pair sitting inside a bracket the rule leaves standing is left as written for the same reason, so the construct that bracket belongs to lays out the rows around it.
 
-Both directions measure a row as the later rules leave it, at the column [[strip-stranded-padding]] and [[align-equals]] settle it to and once [[reflow-calls]] has exploded the calls ahead of the pair, and a pair's row ends at the opening paren of a later pair on it that breaks.
+Both directions measure a row as the later rules leave it, at the column [[strip-stranded-padding]] and [[align-equals]] settle it to and once [[reflow-calls]] has exploded the calls ahead of the pair, and a pair's row ends at the opening paren of a later pair on it that breaks. The measure also counts each rewrite [[prefer-fstring]], [[shed-super-args]], and [[simplify-comprehensions]] makes on the row, so a row one of them brings back inside the budget ends on one line.
 
 Both directions are written in one pass, so a pair nested inside another redundant pair is removed in the same run and each pair tests its own join against the text the earlier removals produce. A break writes its operands through those same removals, leaving the rows it opens carrying the text the rule leaves rather than the text it was handed.
 
