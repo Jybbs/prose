@@ -22,6 +22,7 @@ use crate::{
         },
         slots::starting_within,
         splice::splice_preserves_tree,
+        tokens::string_run_breaks,
     },
     source::Source,
 };
@@ -188,18 +189,22 @@ impl Shedder<'_> {
 
 /// The edits closing each line-spanning whitespace run inside `inner`, to
 /// a single space between two tokens and to nothing against a bracket,
-/// ascending by start.
+/// ascending by start. A run holding a break that stacks a string run
+/// one part per row stays as written.
 pub(super) fn fold_edits(source: &Source, inner: TextRange) -> Vec<Edit> {
     let text = source.slice(inner);
+    let stacked = string_run_breaks(source, inner);
     soft_wrap_runs(text)
-        .map(|(begin, len)| {
+        .filter_map(|(begin, len)| {
             let start = inner.start() + text[..begin].text_len();
             let span = TextRange::at(start, text[begin..begin + len].text_len());
-            if run_closes_to_a_space(text, begin, len) {
-                Edit::range_replacement(" ".to_owned(), span)
-            } else {
-                Edit::range_deletion(span)
-            }
+            (!stacked.iter().any(|&at| span.contains(at))).then(|| {
+                if run_closes_to_a_space(text, begin, len) {
+                    Edit::range_replacement(" ".to_owned(), span)
+                } else {
+                    Edit::range_deletion(span)
+                }
+            })
         })
         .collect()
 }

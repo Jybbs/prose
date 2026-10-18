@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Stacked String Run Keeps Its Rows"
+
+description = '''
+Each value is a `%` format whose string run its author stacked one part per row. **The rule never joins the parts of a run onto one row**, so `msg` breaks into a row per operand although its joined form would fit the budget, and `differing`, whose joined form would not, takes the same layout, each run keeping its second part on a row of its own.
+'''

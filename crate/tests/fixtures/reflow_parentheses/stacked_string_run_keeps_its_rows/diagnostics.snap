@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/stacked_string_run_keeps_its_rows/input.py
+---
+reflow-parentheses@170..321
+reflow-parentheses@51..153

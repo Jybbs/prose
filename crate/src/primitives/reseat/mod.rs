@@ -7,7 +7,7 @@
 //! their columns.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::token::{Token, TokenKind};
+use ruff_python_ast::token::Token;
 use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{LineRanges, OneIndexed, UniversalNewlines};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -19,7 +19,7 @@ use crate::{
         edit::insert_edit,
         inline::{display_width, indent_width},
         range::blocks_span,
-        tokens::{is_closer, is_opener, open_brackets, tokens_within},
+        tokens::{is_row_anchor, open_brackets, tokens_within},
         travel::{frozen_rows, is_movable},
     },
     source::Source,
@@ -103,7 +103,7 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
                 let row_indent = source.line_indent_width(opener);
                 if let Some(code) = after
                     .iter()
-                    .find(|token| at(token) && is_code(token.kind()))
+                    .find(|token| at(token) && is_row_anchor(token.kind()))
                 {
                     token_move(&moved, code)
                 } else if indent == row_indent + INDENT_STEP
@@ -124,12 +124,6 @@ pub(crate) fn push_reseat_edits(source: &Source, removals: &[Edit], edits: &mut 
             insert_edit(edits, Edit::range_deletion(TextRange::at(start, taken)));
         }
     }
-}
-
-/// True for every token kind but a bracket and a comma, the kinds a
-/// row aligns to by intent.
-fn is_code(kind: TokenKind) -> bool {
-    !is_opener(kind) && !is_closer(kind) && kind != TokenKind::Comma
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
 //! Token-kind predicates over the bracket delimiters and the
 //! interpolated-string openers, the characters those delimiters are
 //! written with, the nearest code token before an offset, and the
-//! scans for the brackets a token run leaves open and the tokens
-//! opening inside a range.
+//! scans for the brackets a token run leaves open, the line breaks
+//! stacking a string run, and the tokens opening inside a range.
 
 use ruff_python_ast::token::{Token, TokenKind, Tokens};
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -50,6 +50,12 @@ pub(crate) fn is_opener(kind: TokenKind) -> bool {
     matches!(kind, TokenKind::Lpar | TokenKind::Lsqb | TokenKind::Lbrace)
 }
 
+/// Returns `true` for every token kind but a bracket, a comma, and
+/// trivia, the kinds a continuation row aligns to by intent.
+pub(crate) fn is_row_anchor(kind: TokenKind) -> bool {
+    !is_opener(kind) && !is_closer(kind) && kind != TokenKind::Comma && !kind.is_trivia()
+}
+
 /// The start of every bracket `tokens` leave open once read in order,
 /// innermost last.
 pub(crate) fn open_brackets<'t>(tokens: impl IntoIterator<Item = &'t Token>) -> Vec<TextSize> {
@@ -62,6 +68,29 @@ pub(crate) fn open_brackets<'t>(tokens: impl IntoIterator<Item = &'t Token>) -> 
         }
     }
     open
+}
+
+/// The start of every line break inside `range` that sits between two
+/// parts of an implicitly concatenated string, the breaks that stack a
+/// string run one part per row.
+pub(crate) fn string_run_breaks(source: &Source, range: TextRange) -> Vec<TextSize> {
+    let mut breaks = Vec::new();
+    let mut pending = Vec::new();
+    let mut after_part = false;
+    for token in tokens_within(source, range) {
+        match token.kind() {
+            TokenKind::NonLogicalNewline if after_part => pending.push(token.start()),
+            kind if kind.is_trivia() => {}
+            kind => {
+                if kind == TokenKind::String || is_interpolated_string_start(kind) {
+                    breaks.append(&mut pending);
+                }
+                pending.clear();
+                after_part = kind == TokenKind::String || kind.is_interpolated_string_end();
+            }
+        }
+    }
+    breaks
 }
 
 /// The tokens of `source` opening inside `range`, a token straddling
@@ -125,5 +154,28 @@ mod tests {
     #[case(TokenKind::Identifier, false)]
     fn is_opener_flags_opening_brackets(#[case] kind: TokenKind, #[case] expected: bool) {
         assert_eq!(is_opener(kind), expected);
+    }
+
+    #[rstest]
+    #[case::a_stacked_run("x = (\"a\"\n     \"b\")\n", &["\n     \"b\""])]
+    #[case::an_f_string_closing_a_part("x = (f\"{a}\"\n     \"b\")\n", &["\n     \"b\""])]
+    #[case::a_t_string_run("x = (t\"{a}\"\n     t\"b\")\n", &["\n     t\"b\""])]
+    #[case::a_comment_between_parts("x = (\"a\"  # c\n     \"b\")\n", &["\n     \"b\""])]
+    #[case::a_break_past_an_operator("x = (\"a\" %\n     b)\n", &[])]
+    #[case::a_break_between_two_elements("x = [\"a\",\n     \"b\"]\n", &[])]
+    #[case::a_run_on_one_row("x = (\"a\" \"b\")\n", &[])]
+    fn string_run_breaks_finds_each_break_between_parts(
+        #[case] src: &str,
+        #[case] needles: &[&str],
+    ) {
+        let source = parse(src);
+        let expected: Vec<TextSize> = needles
+            .iter()
+            .map(|needle| at(src, needle).start())
+            .collect();
+        assert_eq!(
+            string_run_breaks(&source, TextRange::up_to(TextSize::of(src))),
+            expected
+        );
     }
 }

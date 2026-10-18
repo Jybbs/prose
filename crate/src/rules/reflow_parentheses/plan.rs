@@ -23,7 +23,7 @@ use crate::{
         inline::{carries_a_continuation, folded_line_form},
         slots::starting_within,
         splice::splice_preserves_tree,
-        tokens::{is_closer, is_opener, tokens_within},
+        tokens::{is_closer, is_opener, string_run_breaks, tokens_within},
         walk::{Interpolations, ParentedProbe, filter_map_over_exprs, walk_parented_exprs},
     },
     source::Source,
@@ -144,9 +144,11 @@ pub(super) fn candidates(source: &Source) -> Vec<Candidate<'_>> {
 
 /// True where every line break inside `inner` closes by folding a pair the
 /// source wrote, each break sitting directly inside a pair whose `(` opens
-/// at one of `written`, and no comment, no string spanning rows, and no
-/// method-chain link opening a row sits inside `inner`.
+/// at one of `written`, and no comment, no string spanning rows, no string
+/// run stacked one part per row, and no method-chain link opening a row
+/// sits inside `inner`.
 fn folds_inside_pairs(source: &Source, inner: TextRange, written: &[TextSize]) -> bool {
+    let stacked = string_run_breaks(source, inner);
     let mut open = Vec::new();
     let mut after_break = false;
     tokens_within(source, inner).all(|token| {
@@ -157,9 +159,12 @@ fn folds_inside_pairs(source: &Source, inner: TextRange, written: &[TextSize]) -
             open.pop();
         }
         let holds = match kind {
-            TokenKind::NonLogicalNewline => open
-                .last()
-                .is_some_and(|start| written.binary_search(start).is_ok()),
+            TokenKind::NonLogicalNewline => {
+                stacked.binary_search(&token.start()).is_err()
+                    && open
+                        .last()
+                        .is_some_and(|start| written.binary_search(start).is_ok())
+            }
             TokenKind::Comment => false,
             TokenKind::Dot => !after_break,
             _ => !source.contains_line_break(token.range()),
