@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/stacked_operand_joins_the_rows_its_author_broke/input.py
+---
+reflow-parentheses@173..308
+reflow-parentheses@41..135

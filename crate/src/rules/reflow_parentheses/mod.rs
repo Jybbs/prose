@@ -15,7 +15,7 @@
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.
 
-use std::{cell::RefCell, cmp::Reverse};
+use std::cell::RefCell;
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
@@ -78,9 +78,9 @@ impl ReflowParentheses {
     }
 
     /// The edits the rules shortening a row after this one land over
-    /// `source`, ascending by start with an enclosing edit ahead of the
-    /// edits inside it. These are the f-strings `prefer-fstring`
-    /// forecasts and the edits of each fix group `shed-super-args` and
+    /// `source`, ascending and disjoint, an edit inside another left
+    /// out. These are the f-strings `prefer-fstring` forecasts and the
+    /// edits of each fix group `shed-super-args` and
     /// `simplify-comprehensions` emit that no skip directive holds,
     /// leaving out each of theirs that covers a line break.
     fn rewrites(&self, source: &Source) -> Vec<Edit> {
@@ -88,15 +88,15 @@ impl ReflowParentheses {
             (self.sheds_super_args, &ShedSuperArgs),
             (self.simplifies_comprehensions, &SimplifyComprehensions),
         ];
-        let mut rewrites: Vec<Edit> = later
-            .into_iter()
-            .filter(|(enabled, _)| *enabled)
-            .flat_map(|(_, rule)| prepared_groups(rule, source).concat())
-            .filter(|edit| !source.contains_line_break(edit.range()))
-            .chain(source.fstring_rewrites(self.fstrings).iter().cloned())
-            .collect();
-        rewrites.sort_unstable_by_key(|edit| (edit.start(), Reverse(edit.end())));
-        rewrites
+        outermost(
+            later
+                .into_iter()
+                .filter(|(enabled, _)| *enabled)
+                .flat_map(|(_, rule)| prepared_groups(rule, source).concat())
+                .filter(|edit| !source.contains_line_break(edit.range()))
+                .chain(source.fstring_rewrites(self.fstrings).iter().cloned())
+                .collect(),
+        )
     }
 }
 

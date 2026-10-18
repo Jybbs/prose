@@ -97,11 +97,15 @@ impl<'src> ParentedProbe<'src> for Probe<'src> {
     }
 }
 
-/// True when every line break inside `inner` sits within a bracket
-/// `inner` itself opens and `shed` reports this pass leaves standing.
-pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds) -> bool {
+/// The depth of each line break inside `inner`, counting the brackets
+/// `inner` itself opens that `shed` reports this pass leaves standing.
+pub(super) fn break_depths<'a>(
+    source: &'a Source,
+    inner: TextRange,
+    shed: Sheds<'a>,
+) -> impl Iterator<Item = usize> + 'a {
     let mut depth = 0_usize;
-    tokens_within(source, inner).all(|token| {
+    tokens_within(source, inner).filter_map(move |token| {
         if !shed(token.range()) {
             if is_opener(token.kind()) {
                 depth += 1;
@@ -109,8 +113,14 @@ pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds)
                 depth = depth.saturating_sub(1);
             }
         }
-        depth > 0 || token.kind() != TokenKind::NonLogicalNewline
+        (token.kind() == TokenKind::NonLogicalNewline).then_some(depth)
     })
+}
+
+/// True when every line break inside `inner` sits within a bracket
+/// `inner` itself opens and `shed` reports this pass leaves standing.
+pub(super) fn breaks_held_inside(source: &Source, inner: TextRange, shed: Sheds) -> bool {
+    break_depths(source, inner, shed).all(|depth| depth > 0)
 }
 
 /// Every grouping pair the module carries a candidate for, ascending by
