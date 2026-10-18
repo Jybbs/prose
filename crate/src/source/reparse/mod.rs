@@ -1,9 +1,9 @@
 //! Reparses only the statements a rule's edits reached and splices them
 //! into the tree and token stream the source already holds.
 //!
-//! `parse_cells_unchecked` parses a range of a buffer and keeps that
-//! range's offsets, so a window's statements and tokens arrive already
-//! placed. Everything outside a window slides by its edits' delta.
+//! Each window's text parses on its own, and its statements and tokens
+//! slide by the window's start into place, while everything outside a
+//! window slides by its edits' delta.
 
 mod deltas;
 mod flags;
@@ -13,9 +13,9 @@ mod window;
 
 use ruff_diagnostics::SourceMap;
 use ruff_notebook::CellOffsets;
-use ruff_python_ast::Stmt;
-use ruff_python_parser::{ParseOptions, parse_cells_unchecked};
-use ruff_text_size::{Ranged, TextLen, TextRange};
+use ruff_python_ast::{token::Token, visitor::transformer::Transformer};
+use ruff_python_parser::{ParseOptions, parse_unchecked_source};
+use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
 
 use self::{deltas::Deltas, slide::Slide, tokens::Reparsed, window::Window};
 use crate::{
@@ -51,7 +51,7 @@ impl Source {
     /// True where this source's tree and token stream equal those a
     /// whole-file parse of its own text produces, every range included.
     fn matches_a_fresh_parse(&self) -> bool {
-        super::parse_typed_module(self.text(), self.source_type)
+        super::parse_typed_module(self.text(), ParseOptions::from(self.source_type))
             .is_ok_and(|fresh| *self.ast() == *fresh.syntax() && self.tokens() == fresh.tokens())
     }
 
@@ -87,13 +87,12 @@ impl Source {
         {
             return None;
         }
-        let options = ParseOptions::from(self.source_type);
         let spans: Vec<TextRange> = covered.iter().map(|window| window.held).collect();
         covered
             .iter()
             .map(|&Window { held, slid }| {
-                self.reparsed_window(text, held, slid, &options)
-                    .or_else(|| self.widened_window(text, held, &spans, &deltas, &options))
+                self.reparsed_window(text, held, slid)
+                    .or_else(|| self.widened_window(text, held, &spans, &deltas))
             })
             .collect::<Option<Vec<_>>>()
             .map(Splice)
@@ -109,7 +108,6 @@ impl Source {
         held: TextRange,
         spans: &[TextRange],
         deltas: &Deltas,
-        options: &ParseOptions,
     ) -> Option<Reparsed> {
         let mut range = held;
         while let Some(outer) = enclosing_window(self, range) {
@@ -120,7 +118,7 @@ impl Source {
                 return None;
             }
             range = outer;
-            let window = self.reparsed_window(text, range, deltas.slide_window(range), options);
+            let window = self.reparsed_window(text, range, deltas.slide_window(range));
             if window.is_some() {
                 return window;
             }
@@ -131,29 +129,37 @@ impl Source {
     /// The reparse of one window, `None` where its slid text does not
     /// parse or lands as anything but the one statement filling a
     /// nested window.
-    fn reparsed_window(
-        &self,
-        text: &str,
-        held: TextRange,
-        slid: TextRange,
-        options: &ParseOptions,
-    ) -> Option<Reparsed> {
-        let parsed = parse_cells_unchecked(text, [slid], options);
+    ///
+    /// The window's text parses on its own from offset zero, and its
+    /// tree and tokens then slide by the window's start into place in
+    /// `text`.
+    fn reparsed_window(&self, text: &str, held: TextRange, slid: TextRange) -> Option<Reparsed> {
+        let window = &text[slid];
+        let parsed = parse_unchecked_source(window, self.source_type);
         let run = window::module_level(self, held);
-        let filled = matches!(&parsed.syntax().body[..], [only] if only.range() == slid);
+        let whole = TextRange::up_to(window.text_len());
+        let filled = matches!(&parsed.syntax().body[..], [only] if only.range() == whole);
         if !parsed.has_valid_syntax() || !(run || filled) {
             return None;
         }
-        let fresh = parsed.tokens().before(slid.end()).to_vec();
+        let fresh: Vec<Token> = parsed
+            .tokens()
+            .before(whole.end())
+            .iter()
+            .map(|&token| flags::retargeted(token, window, token.range() + slid.start()))
+            .collect();
         let delta = window::net_indent(&fresh) - window::net_indent(self.tokens().in_range(held));
-        let stmts: Vec<Stmt> = parsed.into_syntax().body.into_iter().collect();
+        let mut placement = SourceMap::default();
+        placement.push_marker(TextSize::default(), slid.start());
+        let mut body = parsed.into_syntax().body;
+        Slide::new(&Deltas::new(&placement), [], []).visit_body(&mut body);
         Some(Reparsed {
             delta,
             fresh,
             held,
             run,
             slid,
-            stmts,
+            stmts: body.into_iter().collect(),
         })
     }
 
@@ -241,9 +247,8 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
-        primitives::padding::Stranding,
         rules::{RuleId, prefer_fstring::PreferFstring},
-        testing::{parse, range, replacement, woven},
+        testing::{parse, range, replacement, stranding, woven},
     };
 
     /// `text` rewritten by `edits`, spliced where the splice applies and
@@ -306,7 +311,7 @@ mod tests {
         #[case] text: &str,
         #[case] edit: Edit,
     ) {
-        let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), true);
+        let stranding = stranding(true, 88);
         let (rewritten, map) = woven(text, vec![edit]);
         let source = parse(text);
         assert!(

@@ -43,7 +43,7 @@ pub(crate) const TRAILING_GAP: &str = "  ";
 /// the opener between its hash run and its text, which also widens
 /// that gap to the [`TRAILING_GAP`] floor, each carried by slug and
 /// `None` where the rule is off.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct Settling {
     pub(crate) gap: Option<RuleId>,
     pub(crate) opener: Option<RuleId>,

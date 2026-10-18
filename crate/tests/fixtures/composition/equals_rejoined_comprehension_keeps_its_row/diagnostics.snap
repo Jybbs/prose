@@ -3,5 +3,5 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/composition/equals_rejoined_comprehension_keeps_its_row/input.py
 ---
-align-equals@40..41
+align-equals@40..82
 reflow-collections@76..81

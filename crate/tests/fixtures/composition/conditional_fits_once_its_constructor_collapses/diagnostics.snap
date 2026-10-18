@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/conditional_fits_once_its_constructor_collapses/input.py
+---
+simplify-comprehensions@44..83

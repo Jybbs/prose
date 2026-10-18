@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/rules_shortening_a_row_run_ahead_of_an_added_pair/input.py
+---
+modernize-annotations@0..29
+modernize-annotations@37..50
+normalize-literals@268..331
+reflow-parentheses@179..257
+reflow-parentheses@268..349
+reflow-parentheses@53..118
+strip-trailing-commas@210..211

@@ -8,7 +8,6 @@
 //! no annotation at all clears with nothing to check.
 
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
-use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextSize};
 
 use super::PruneInertImports;
@@ -32,13 +31,13 @@ use crate::{
 struct Resolution<'a> {
     analysis: &'a BindingAnalysis,
     body: &'a [Stmt],
-    /// The target's `minor` version beside whether the source is a notebook,
-    /// which together name the builtins a name resolves to.
-    builtins: (u8, bool),
     /// The offset every write in the module precedes.
     end: TextSize,
     seats: Vec<usize>,
     sorts_definitions: bool,
+    source: &'a Source,
+    /// The target whose builtins a name resolves to.
+    target: Option<PythonVersion>,
 }
 
 impl<'a> Resolution<'a> {
@@ -50,10 +49,6 @@ impl<'a> Resolution<'a> {
         Self {
             analysis: source.binding_analysis(),
             body,
-            builtins: (
-                rule.target_version.unwrap_or_default().minor,
-                source.is_notebook(),
-            ),
             end: source.module_range().end(),
             seats: rule
                 .folds
@@ -64,6 +59,8 @@ impl<'a> Resolution<'a> {
                     |bands| slot_positions(&bands.order),
                 ),
             sorts_definitions: rule.sorts_definitions,
+            source,
+            target: rule.target_version,
         }
     }
 
@@ -77,8 +74,7 @@ impl<'a> Resolution<'a> {
         if self.analysis.is_deleted(name) || self.analysis.is_written_globally(name) {
             return false;
         }
-        let (minor, notebook) = self.builtins;
-        if is_python_builtin(name, minor, notebook)
+        if self.source.is_builtin(name, self.target)
             && !self.analysis.is_bound_before(name, self.end)
         {
             return true;

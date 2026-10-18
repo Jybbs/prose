@@ -148,7 +148,6 @@ jobs:
     name            : 🪁 Deploy
     needs           : [checks, press]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
-    permissions     : { contents: read, deployments: write }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 

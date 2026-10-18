@@ -11,12 +11,12 @@ tagline: shared column math
 
 <PrimitiveLayout primitive="aligner">
 
-*Aligner* computes the padding each row of an alignment group needs and emits the edits that write it. Every alignment rule ([[align-colons]], [[align-comments]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) reads the same column math from it, so each rule supplies its list of members and its facets, and *Aligner* resolves the column once.
+The `aligner` module computes the padding each row of an alignment group needs and emits the edits that write it. Every alignment rule ([[align-colons]], [[align-comments]], [[align-comparisons]], [[align-equals]], [[align-imports]], [[align-match-case]]) reads the same column math from it, so each rule supplies its list of members and its facets, and `aligner` resolves the column once.
 
 
 ## Public Surface
 
-*Aligner* lives at `crate/src/primitives/aligner/` and is `pub(crate)`, so code inside the *Prose* crate can reach it and a downstream Rust caller cannot. What a downstream caller sees is the diagnostics the alignment rules emit, each carrying the resolved column in its `Edit`.
+The `aligner` module lives at `crate/src/primitives/aligner/` and is `pub(crate)`, so code inside the *Prose* crate can reach it and a downstream Rust caller cannot. What a downstream caller sees is the diagnostics the alignment rules emit, each carrying the resolved column in its `Edit`.
 
 A downstream consumer can:
 

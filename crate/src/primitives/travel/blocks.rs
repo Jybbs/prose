@@ -11,7 +11,8 @@ use super::*;
 /// rebases through [`hanging_travel`] or onto the landing indent,
 /// whereas one whose rows sit right of that column shifts whole by
 /// however far its own start moved. Rows exactly one indent step past
-/// the opening row hang from it and re-seat one step past the landing.
+/// the opening row hang from it and re-seat one step past the landing,
+/// unless a token of the block on that row starts at their column.
 pub(crate) fn block_shift(
     source: &Source,
     block: &str,
@@ -20,13 +21,18 @@ pub(crate) fn block_shift(
     landing: Landing,
 ) -> Option<Travel> {
     let floor = movable_floor(block, frozen)?;
-    let past_item = floor > source.column_of(landing.item);
-    if past_item && floor != item_indent(source.line_indent_width(start)) {
+    let item = source.column_of(landing.item);
+    if follows(
+        floor,
+        source.line_indent_width(start),
+        item,
+        Head::of(source, start),
+    ) {
         return Some(Travel::rigid(
             landing.column.cast_signed() - source.column_of(start).cast_signed(),
         ));
     }
-    let rebase = if past_item {
+    let rebase = if floor > item {
         item_indent(landing.indent)
     } else {
         landing.indent
@@ -35,6 +41,36 @@ pub(crate) fn block_shift(
         hanging_travel(block, frozen, landing)
             .unwrap_or_else(|| Travel::rigid(rebase.cast_signed() - floor.cast_signed())),
     )
+}
+
+/// Returns the line range of each movable continuation row of the value
+/// at `range`, its start opening inside an item at column `item`, that
+/// moves with that start. Every row moves where the rows move rigidly
+/// the way [`block_shift`] moves them, per [`follows`], and otherwise
+/// each row moves only where it sits beneath a token of the value, per
+/// [`rows_beneath`]. A value whose first row leaves a bracket open hangs
+/// from that row instead wherever its interior rows sit no further in
+/// than one indent step past it, per [`hanging_travel`]. A row a
+/// row-spanning string freezes, a row indented with a tab, and a blank
+/// row stay where the source wrote them.
+pub(crate) fn carried_rows(source: &Source, range: TextRange, item: usize) -> Vec<TextRange> {
+    if !source.contains_line_break(range) {
+        return Vec::new();
+    }
+    let block = source.slice(range);
+    let frozen = frozen_rows(source, range);
+    let indent = source.line_indent_width(range.start());
+    let landing = Landing::own_row(TextSize::default(), indent);
+    let head = Head::of(source, range.start());
+    if hanging_travel(block, &frozen, landing).is_some_and(|travel| travel.rows >= 0)
+        || movable_floor(block, &frozen).is_none_or(|floor| !follows(floor, indent, item, head))
+    {
+        return rows_beneath(source, range, &frozen);
+    }
+    movable_rows(block, &frozen)
+        .filter(|line| !leading_indentation(line.as_str()).contains('\t'))
+        .map(|line| line.range() + range.start())
+        .collect()
 }
 
 /// One flag per row of the block at `range`, set for every row opening
@@ -93,7 +129,7 @@ pub(crate) fn hung_block_through<'s>(
     let opens_a_bracket = block
         .universal_newlines()
         .next()
-        .is_some_and(|head| head.trim_end().ends_with(OPENERS));
+        .is_some_and(|head| ends_on_an_opener(row_tokens(head.as_str())));
     let travel = if opens_a_bracket {
         // A block whose shape [`hanging_travel`] cannot follow holds
         // where it sits.
@@ -145,4 +181,14 @@ pub(crate) fn spans_a_string_part(source: &Source, expr: &Expr) -> bool {
         StringLike::try_from(e)
             .is_ok_and(|run| run.parts().any(|part| source.contains_line_break(part)))
     })
+}
+
+/// True where a block moves rigidly with its start. The block's first row
+/// sits at `indent` inside an item at column `item`, and `floor` is the
+/// column its leftmost movable row starts at. The block moves where the
+/// floor sits past the item's column and either lies off the column one
+/// indent step past the first row, where a hanging row would sit, or
+/// starts beneath a token of `head`, the value's opening row.
+fn follows(floor: usize, indent: usize, item: usize, head: Head) -> bool {
+    floor > item && (floor != item_indent(indent) || head.anchors(floor))
 }

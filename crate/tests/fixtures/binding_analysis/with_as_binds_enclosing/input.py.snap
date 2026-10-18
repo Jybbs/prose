@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 4
     kinds:
       - FunctionDef
+    mutated: false
     name: read_lines
     read_offsets: []
     runtime_read: false
@@ -22,6 +23,7 @@ bindings:
     first_unconditional_write: 15
     kinds:
       - Parameter
+    mutated: false
     name: path
     read_offsets:
       - 36
@@ -36,6 +38,7 @@ bindings:
     first_unconditional_write: 45
     kinds:
       - With
+    mutated: false
     name: f
     read_offsets:
       - 63

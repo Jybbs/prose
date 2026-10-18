@@ -426,7 +426,7 @@ fn widened(text: &str, rng: &mut StdRng) -> Option<String> {
     let names: Vec<_> = parsed
         .tokens()
         .iter()
-        .filter(|token| token.kind() == TokenKind::Name)
+        .filter(|token| token.kind() == TokenKind::Identifier)
         .map(|token| (token.range(), &text[token.range()]))
         .collect();
     let distinct: Vec<_> = names.iter().map(|(_, name)| *name).unique().collect();

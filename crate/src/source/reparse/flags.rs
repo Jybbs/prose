@@ -13,19 +13,19 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{Ranged, TextRange};
 
-/// `token` rewritten over `range`. `text` is the buffer `token`'s own
-/// range indexes.
+/// Returns `token` rewritten over `range`, where `text` is the buffer
+/// `token`'s own range indexes.
 pub(super) fn retargeted(token: Token, text: &str, range: TextRange) -> Token {
     Token::new(token.kind(), range, flags_of(token, text))
 }
 
-/// The flags `token` carries, read from its string flags where it is a
-/// string and from its own text where it is a name. `UNCLOSED_STRING`
-/// is left out.
+/// Returns the flags `token` carries, read from its string flags where
+/// it is a string and from its own text where it is an identifier,
+/// leaving `UNCLOSED_STRING` out.
 fn flags_of(token: Token, text: &str) -> TokenFlags {
     let Some(string) = token.string_flags() else {
-        return if token.kind() == TokenKind::Name && !text[token.range()].is_ascii() {
-            TokenFlags::NON_ASCII_NAME
+        return if token.kind() == TokenKind::Identifier && !text[token.range()].is_ascii() {
+            TokenFlags::NON_ASCII_IDENTIFIER
         } else {
             TokenFlags::empty()
         };
@@ -75,7 +75,7 @@ mod tests {
 
     /// A module carrying one token of every flag-bearing shape, covering
     /// each string prefix in both raw cases, both quote styles, triple
-    /// quoting, and a name outside ASCII.
+    /// quoting, and an identifier outside ASCII.
     const FLAVORS: &str = r#"
 plain = "double"
 single = 'single'

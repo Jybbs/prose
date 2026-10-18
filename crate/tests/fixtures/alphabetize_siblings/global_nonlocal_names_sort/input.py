@@ -4,7 +4,7 @@ def update():
 
 
 def reset_outer():
-    items = []
+    counter, items, registry = 0, [], {}
     def inner():
         nonlocal items, registry, counter
         items.clear()

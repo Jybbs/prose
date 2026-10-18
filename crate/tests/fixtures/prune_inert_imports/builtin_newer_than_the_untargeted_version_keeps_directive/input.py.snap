@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/builtin_newer_than_the_untargeted_version_keeps_directive/input.py
+---
+from __future__ import annotations
+
+
+def collect(errors: ExceptionGroup) -> int:
+    return len(errors.exceptions)

@@ -27,11 +27,13 @@ use crate::{
 };
 
 /// The widths one row's line takes before padding, as the cap check
-/// reads them: `inline` for the whole row on one line, and `expanded`
-/// for the opening row alone where a layout rule can expand the row's
-/// value, `None` where no rule can.
+/// reads them: `inline` for the whole row on one line, `expanded` for
+/// the opening row alone where a layout rule can expand the row's value,
+/// `None` where no rule can, and `carried` for the widest continuation
+/// row the padding moves with the value, `None` where it moves none.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Extent {
+    pub(crate) carried: Option<usize>,
     pub(crate) expanded: Option<usize>,
     pub(crate) inline: usize,
 }
@@ -72,24 +74,6 @@ pub(crate) fn comment_slack(
     })
 }
 
-/// Aligns `members` by splitting the source-ordered run into the
-/// contiguous groups `reading_order_groups` yields and emitting each at
-/// its widest member. A singleton group collapses its gap to the
-/// settings' buffer, or to zero when `settings.strip_singleton` is set.
-pub(super) fn emit_group(
-    source: &Source,
-    members: &[Member],
-    settings: Settings,
-    widenings: &Widenings,
-    edits: &mut Vec<Edit>,
-) {
-    let extents = emitted_extents(source, members, settings, widenings, &[]);
-    edits.extend(
-        group_paddings(members, &extents, settings)
-            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad)),
-    );
-}
-
 /// The width of `member`'s line as the aligner emits it: less the
 /// pre-operator gap the padding replaces, any rewritten post-operator
 /// gap collapsed to one space, a trailing comment at the gap and opener
@@ -121,9 +105,10 @@ pub(super) fn emitted_base_width(
 
 /// Measures each member's emitted [`Extent`] once per run, reading its
 /// line at the width `joined` names where a later rule joins the row
-/// and leaving `expanded` unset. Returns an empty vector where no
-/// line-length cap governs, since [`fits_line_cap`] then reads none of
-/// them.
+/// and leaving `expanded` unset. A member whose line holds no joined
+/// width reads the rows its value carries as `carried`, per
+/// [`carried_width`]. Returns an empty vector where no line-length cap
+/// governs, since [`fits_line_cap`] then reads none of them.
 pub(super) fn emitted_extents(
     source: &Source,
     members: &[Member],
@@ -137,10 +122,18 @@ pub(super) fn emitted_extents(
     members
         .iter()
         .enumerate()
-        .map(|(i, m)| Extent {
-            expanded: None,
-            inline: emitted_base_width(source, *m, cap, joined.get(i).copied().flatten())
-                .saturating_add_signed(widenings.delta(*m)),
+        .map(|(i, m)| {
+            let joined = joined.get(i).copied().flatten();
+            Extent {
+                carried: if joined.is_some() {
+                    None
+                } else {
+                    carried_width(source, *m, cap, widenings)
+                },
+                expanded: None,
+                inline: emitted_base_width(source, *m, cap, joined)
+                    .saturating_add_signed(widenings.delta(*m)),
+            }
         })
         .collect()
 }
@@ -184,6 +177,20 @@ pub(super) fn group_max_width(group: &[Member]) -> usize {
     group.iter().map(|m| m.settled_width).max().unwrap_or(0)
 }
 
+/// Pairs every member with the gap width that lands its aligned token in
+/// its group's shared column, walking the groups `reading_order_groups`
+/// yields in source order. A singleton group collapses its gap to the
+/// settings' buffer, or to zero when `settings.strip_singleton` is set.
+pub(super) fn group_paddings<'m>(
+    members: &'m [Member],
+    extents: &[Extent],
+    settings: Settings,
+) -> impl Iterator<Item = (Member, usize)> + 'm {
+    reading_order_groups(members, extents, settings)
+        .into_iter()
+        .flat_map(move |(group, max_w)| padded_members(group, max_w, settings))
+}
+
 /// Returns the widest `op_width` in `members`, or `0` when the slice
 /// is empty.
 pub(super) fn max_op_width(members: &[Member]) -> usize {
@@ -191,10 +198,10 @@ pub(super) fn max_op_width(members: &[Member]) -> usize {
 }
 
 /// The display column where each member's aligned token lands under
-/// `emit_group`'s column math, each line read with `widenings` and at
-/// the width `joined` names where a later rule writes the row. A
-/// candidate group reports its shared column, any other group the
-/// padding a group of one takes past each member's width, and the
+/// the column math of [`group_paddings`], each line read with
+/// `widenings` and at the width `joined` names where a later rule writes
+/// the row. A candidate group reports its shared column, any other group
+/// the padding a group of one takes past each member's width, and the
 /// value sits [`VALUE_OFFSET`](super::VALUE_OFFSET) columns past the
 /// token.
 pub(crate) fn operator_columns(
@@ -310,6 +317,21 @@ pub(super) fn reading_order_groups<'m>(
     groups
 }
 
+/// Returns the display width of the row opening at `line` once the
+/// comment rules in `settling` settle its trailing comment and the edits
+/// in `padding`, ascending by start, land on it.
+pub(crate) fn settled_row_width(
+    source: &Source,
+    line: TextSize,
+    settling: Settling,
+    padding: &[Edit],
+) -> usize {
+    let row = source.row_tail(line);
+    let slack = comment_slack(source, line, TextRange::empty(line), settling)
+        + padding::slack(source, padding, row);
+    display_width(source.slice(row)).saturating_add_signed(-slack)
+}
+
 /// The width of `member`'s line past `code_end` once the comment rules
 /// in `settings` settle the trailing comment, or the written tail where
 /// no cap governs.
@@ -382,13 +404,40 @@ pub(crate) fn written_groups(
     tally(&reading_order_groups(&members, &extents, settings))
 }
 
+/// Returns the widest line among the continuation rows `member`'s value
+/// carries, each read at its [`settled_row_width`] under `cap`'s comment
+/// and padding rules, widened by the `widenings` on its row, and moved by
+/// the value's shift once the gap the padding replaces is gone and any
+/// rewritten post-operator gap holds one space. `None` where the value
+/// carries no row.
+fn carried_width(
+    source: &Source,
+    member: Member,
+    cap: Cap,
+    widenings: &Widenings,
+) -> Option<usize> {
+    let padding = source.stranded_padding(cap.stranding);
+    let shift = member.value_shift(source, 0);
+    member
+        .carried_rows(source)
+        .into_iter()
+        .map(|row| {
+            settled_row_width(source, row.start(), cap.settling, &padding)
+                .saturating_add_signed(shift + widenings.on_line(row.start()))
+        })
+        .max()
+}
+
 /// True when padding no member of `group` to `max_w` pushes its line
 /// past the governing line-length cap, or when no cap governs. `extents`
 /// carries each member's emitted widths in step with `group`, and a
 /// member whose value a layout rule can expand fits where its opening
-/// row does. A member over the cap even at its singleton fallback gap stays
+/// row does. A row over the cap even at its singleton fallback gap stays
 /// in the run only where the shared column costs it no more width than
-/// the buffer, which holds for the widest member alone.
+/// the buffer, which holds for the widest member alone. The rows a
+/// member's value carries meet the same test apart from its own row, so
+/// a carried row the padding would push past the cap holds the member
+/// out of the column even where its own row is past the cap already.
 fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w: usize) -> bool {
     let Some(cap) = settings.cap.map(|cap| cap.line_length) else {
         return true;
@@ -397,9 +446,14 @@ fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w
     group.iter().zip(extents).all(|(m, extent)| {
         let padding = padding_width(*m, max_w, max_op, settings.buffer);
         let fits = |width: usize| width + padding <= cap;
-        fits(extent.inline)
+        let past_the_cap_anyway =
+            |width: usize| padding == settings.buffer && width + settings.suffix_len(1) > cap;
+        (fits(extent.inline)
             || extent.expanded.is_some_and(fits)
-            || (padding == settings.buffer && extent.inline + settings.suffix_len(1) > cap)
+            || past_the_cap_anyway(extent.inline))
+            && extent
+                .carried
+                .is_none_or(|width| fits(width) || past_the_cap_anyway(width))
     })
 }
 
@@ -414,19 +468,6 @@ fn group_holds(group: &[Member], extents: &[Extent], settings: Settings, shift_c
         .into_option()
         .unwrap_or((0, 0));
     max_w - min_w <= shift_cap && fits_line_cap(group, extents, settings, max_w)
-}
-
-/// Pairs every member with the gap width that lands its aligned token in
-/// its group's shared column, walking the groups `reading_order_groups`
-/// yields in source order.
-fn group_paddings<'m>(
-    members: &'m [Member],
-    extents: &[Extent],
-    settings: Settings,
-) -> impl Iterator<Item = (Member, usize)> + 'm {
-    reading_order_groups(members, extents, settings)
-        .into_iter()
-        .flat_map(move |(group, max_w)| padded_members(group, max_w, settings))
 }
 
 /// [`is_alignment_candidate`] with a pair excused where `joined` names
@@ -469,13 +510,13 @@ mod tests {
     use super::*;
     use crate::{
         rules::RuleId,
-        testing::{align_member, parse, range},
+        testing::{align_member, parse, range, stranding},
     };
 
     /// The padding rule every capped setting here reads, over sources
     /// carrying no padding.
     fn strip() -> Stranding {
-        Stranding::new(RuleId::from("strip-stranded-padding"), true)
+        stranding(true, 88)
     }
 
     /// The comment rules every capped setting here reads, both on.
@@ -501,12 +542,13 @@ mod tests {
         )
     }
 
-    /// The edits `emit_group` writes for `members` under `settings` with
-    /// no widenings.
+    /// Returns the gap edits [`group_paddings`] pads `members` with under
+    /// `settings` with no widenings.
     fn emitted(source: &Source, members: &[Member], settings: Settings) -> Vec<Edit> {
-        let mut edits = Vec::new();
-        emit_group(source, members, settings, &Widenings::default(), &mut edits);
-        edits
+        let extents = emitted_extents(source, members, settings, &Widenings::default(), &[]);
+        group_paddings(members, &extents, settings)
+            .filter_map(|(m, pad)| space_padding_edit(source, m.gap, pad))
+            .collect()
     }
 
     /// Builds the expected `(start, end, content)` tuple for an edit
@@ -598,7 +640,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_aligns_to_shared_column_when_spread_fits_under_cap() {
+    fn group_paddings_align_to_shared_column_when_spread_fits_under_cap() {
         let (source, members) = rows(&[(1, 1), (2, 1), (3, 1)]);
         let edits = emitted(&source, &members, Settings::aligned(cap(10)));
 
@@ -611,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_collapses_single_member_gap_to_suffix_len() {
+    fn group_paddings_collapse_single_member_gap_to_suffix_len() {
         let (source, members) = rows(&[(3, 5)]);
         let edits = emitted(&source, &members, Settings::aligned(cap(8)));
 
@@ -621,7 +663,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_handles_empty_member_slice() {
+    fn group_paddings_handle_empty_member_slice() {
         let source = parse("x = 0\n");
         let edits = emitted(&source, &[], Settings::aligned(cap(8)));
 
@@ -629,7 +671,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_seats_a_widened_buffer_ahead_of_the_token() {
+    fn group_paddings_seat_a_widened_buffer_ahead_of_the_token() {
         let (source, members) = rows(&[(1, 1), (3, 1)]);
         let edits = emitted(&source, &members, Settings::aligned(cap(8)).with_buffer(2));
 
@@ -641,7 +683,7 @@ mod tests {
     }
 
     #[test]
-    fn emit_group_strips_lone_member_gap_when_flag_is_set() {
+    fn group_paddings_strip_lone_member_gap_when_flag_is_set() {
         let (source, members) = rows(&[(3, 5)]);
         let edits = emitted(
             &source,
@@ -911,6 +953,19 @@ mod tests {
     }
 
     #[test]
+    fn settled_row_width_reads_a_row_past_its_comment_and_padding_slack() {
+        // The comment rules take the four-space gap to two and the padding
+        // rule drops the space inside each bracket, settling 19 columns
+        // to 15.
+        let source = parse("x = f(a,\n      [ b ],    # c\n)\n");
+        let padding = strip().edits(&source);
+        assert_eq!(
+            settled_row_width(&source, TextSize::new(9), settling(), &padding),
+            15
+        );
+    }
+
+    #[test]
     fn settled_tail_reads_the_comment_at_the_width_the_comment_rules_leave() {
         let source = parse("a = 1    # note\n");
         let member = align_member(range(1, 2), 0, 1);
@@ -1171,6 +1226,7 @@ mod tests {
             (
                 1,
                 Extent {
+                    carried: None,
                     expanded,
                     inline: 19,
                 },
@@ -1178,6 +1234,7 @@ mod tests {
             (
                 6,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1198,6 +1255,47 @@ mod tests {
     }
 
     #[rstest]
+    #[case::carried_row_lands_on_the_cap(19, vec![11, 11])]
+    #[case::carried_row_would_cross_the_cap(20, vec![10, 5])]
+    fn written_columns_hold_a_row_whose_carried_row_would_cross_the_cap(
+        #[case] carried: usize,
+        #[case] expected: Vec<usize>,
+    ) {
+        let rows = [
+            (
+                6,
+                Extent {
+                    carried: Some(carried),
+                    expanded: None,
+                    inline: 30,
+                },
+            ),
+            (
+                1,
+                Extent {
+                    carried: None,
+                    expanded: None,
+                    inline: 10,
+                },
+            ),
+        ];
+
+        // The width-6 row's own line sits past the cap of 20 at any gap,
+        // so the row its value carries decides whether it joins the
+        // column, which moves that carried row one column right.
+        assert_eq!(
+            written_columns(
+                4,
+                &rows,
+                Settings::aligned(cap(16))
+                    .within(20, strip(), settling())
+                    .with_singleton_strip()
+            ),
+            expected,
+        );
+    }
+
+    #[rstest]
     #[case::even_widths(1, (1, 2))]
     #[case::uneven_widths(3, (1, 0))]
     fn written_groups_count_every_row_of_an_even_group_unpadded(
@@ -1208,6 +1306,7 @@ mod tests {
             (
                 width,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1237,6 +1336,7 @@ mod tests {
             (
                 1,
                 Extent {
+                    carried: None,
                     expanded,
                     inline: 19,
                 },
@@ -1244,6 +1344,7 @@ mod tests {
             (
                 6,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1265,6 +1366,7 @@ mod tests {
         let rows = [(
             3,
             Extent {
+                carried: None,
                 expanded: None,
                 inline: 10,
             },

@@ -25,6 +25,21 @@ fn pipeline_is_send_and_sync() {
 }
 
 #[test]
+fn split_keeps_the_target_on_every_single_rule_pipeline() {
+    let config = Config {
+        target_version: Some(PythonVersion::PY312),
+        ..Config::default()
+    };
+
+    assert!(
+        Pipeline::with_defaults(&config)
+            .split()
+            .iter()
+            .all(|(_, alone)| alone.target() == Target::Version(PythonVersion::PY312))
+    );
+}
+
+#[test]
 fn with_defaults_registers_enabled_rules() {
     let config = Config::default();
     let pipeline = Pipeline::with_defaults(&config);
@@ -41,6 +56,21 @@ fn with_defaults_respects_rule_toggles() {
         .expect("every registered slug parses as a rule toggle");
 
     assert!(Pipeline::with_defaults(&config).is_empty());
+}
+
+#[rstest]
+#[case::no_target(None, Target::Unset)]
+#[case::a_set_target(Some(PythonVersion::PY312), Target::Version(PythonVersion::PY312))]
+fn with_defaults_targets_the_configured_version_or_every_version(
+    #[case] target_version: Option<PythonVersion>,
+    #[case] expected: Target,
+) {
+    let config = Config {
+        target_version,
+        ..Config::default()
+    };
+
+    assert_eq!(Pipeline::with_defaults(&config).target(), expected);
 }
 
 #[test]

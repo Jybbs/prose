@@ -11,7 +11,7 @@ use serde::{Deserialize, de::IntoDeserializer};
 
 use super::{
     Config, ConfigError,
-    notice::{ConfigForm, ConfigNotice, PRECEDENCE, unknown_keys},
+    notice::{ConfigForm, ConfigNotice, PRECEDENCE, table_notices},
     sink::{NoticeDedup, emit_notice},
 };
 
@@ -27,7 +27,7 @@ impl Config {
     {
         table.map_or_else(
             || Ok(Self::default()),
-            |table| Self::from_base_table(table, &mut unknown_keys(on_notice)),
+            |table| Self::from_base_table(table, &mut table_notices(on_notice)),
         )
     }
 

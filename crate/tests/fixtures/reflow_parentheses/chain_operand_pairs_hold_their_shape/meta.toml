@@ -3,5 +3,5 @@ previewable = true
 title       = "A Pair Wrapping One Operand of a Wider Chain Stays as Written"
 
 description = '''
-The `if` condition in `check` is `(flags.alpha or flags.beta) and (flags.gamma or flags.delta)`, over the `code-line-length` of `40`. **Both pairs stay as written**, because each carries precedence, wrapping an `or` group inside the `and`, and each wraps one operand rather than the whole condition, so breaking either would open rows inside a row that overflows either way. The overflow is left for [[line-overflow]] to report.
+The `if` condition in `check` is `(flags.alpha or flags.beta) and (flags.gamma or flags.delta)`, over the `code-line-length` of `40`. The condition gains a pair and breaks at its `and`, and **both operand pairs stay as written on their rows**, because each carries precedence, wrapping an `or` group inside the `and`, and each wraps one operand rather than the whole condition, so breaking either would open rows inside the break around it.
 '''

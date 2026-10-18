@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/conditional_fits_once_its_template_converts/input.py
+---
+def label(first, second, verbose):
+    return f"{first}-{second}" if verbose else the_default_label_for_this_record_xyz

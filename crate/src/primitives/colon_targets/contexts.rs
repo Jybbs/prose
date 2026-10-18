@@ -118,8 +118,8 @@ pub(super) fn parameter_groups(
 }
 
 /// Builds an alignment member for an annotated assignment, anchored on
-/// the `:` between target and annotation. Returns `None` for any other
-/// statement shape.
+/// the `:` between target and annotation, its item closing with the
+/// statement. Returns `None` for any other statement shape.
 fn annotated_assignment(
     source: &Source,
     stmt: &Stmt,
@@ -133,6 +133,7 @@ fn annotated_assignment(
         ann.into(),
         stranding,
     )
+    .map(|member| member.through(ann.end()))
 }
 
 /// Builds a `:`-anchored alignment member whose left-hand side is `lhs`,
@@ -159,8 +160,8 @@ fn colon_member(
 }
 
 /// Builds an alignment member for a `key: value` dict entry, anchored
-/// on the `:` between key and value. Returns `None` for `**spread`
-/// entries that have no key.
+/// on the `:` between key and value, its item closing with the value.
+/// Returns `None` for `**spread` entries that have no key.
 fn dict_item(
     source: &Source,
     dict: &ExprDict,
@@ -168,18 +169,15 @@ fn dict_item(
     stranding: Stranding,
 ) -> Option<aligner::Member> {
     let key = item.key.as_ref()?;
-    colon_member(
-        source,
-        key.range(),
-        (&item.value).into(),
-        dict.into(),
-        stranding,
-    )
+    let value = (&item.value).into();
+    let member = colon_member(source, key.range(), value, dict.into(), stranding)?;
+    Some(member.through(source.paren_aware_range(value, dict.into()).end()))
 }
 
 /// Builds an alignment member for an annotated function parameter,
-/// anchored on the `:` between name and annotation. Returns `None` for
-/// unannotated parameters, signaling a group break to callers.
+/// anchored on the `:` between name and annotation, its item closing
+/// with any default. Returns `None` for unannotated parameters,
+/// signaling a group break to callers.
 fn parameter(
     source: &Source,
     param: AnyParameterRef<'_>,
@@ -193,6 +191,7 @@ fn parameter(
         param.as_parameter().into(),
         stranding,
     )
+    .map(|member| member.through(param.end()))
 }
 
 #[cfg(test)]

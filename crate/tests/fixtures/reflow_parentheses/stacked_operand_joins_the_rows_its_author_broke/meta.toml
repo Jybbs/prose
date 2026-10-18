@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Stacked Operand Joins the Rows Its Author Broke Where It Fits"
+
+description = '''
+Each test is a boolean chain whose author broke the comparison operand after its `==`, and each runs past the **88-column** budget joined, so the rule stacks one operand per row. **The `while` test's comparison joins onto its own row, whereas the `if` test's keeps the break after `==`**, because the joined comparison fits its row in the first and would run past the budget in the second.
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/conditional_fits_once_its_super_call_sheds/input.py
+---
+shed-super-args@75..87

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Fits Once Its `super()` Call Sheds Its Arguments"
+
+description = '''
+`summary` returns a conditional four columns past the **88-column** budget, its first operand a `super(Report, self)` call. **The row ends on one line with no pair added**, because [[reflow-parentheses]] measures the row as [[shed-super-args]] leaves it once `Report, self` is gone, and that row fits.
+'''

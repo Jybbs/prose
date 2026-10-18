@@ -3,5 +3,5 @@ previewable = true
 title       = "A Redundant Pair Joins at the Column the Explode Leaves"
 
 description = '''
-`_c` returns two calls joined by `and`, each wrapped in a redundant grouping pair, on a row past the 60-column budget. `reflow-calls` explodes the first call and puts its closing `)` back at the statement's indent, and **`reflow-parentheses` measures the second pair from the column that closer leaves, where it fits, so the pair's interior joins onto that row and both pairs drop**, rather than the second staying wrapped for a width the explode has already removed.
+`_c` asserts two calls joined by `and`, each wrapped in a redundant grouping pair, on a row past the 60-column budget. `reflow-calls` explodes the first call and puts its closing `)` back at the statement's indent, and **`reflow-parentheses` measures the second pair from the column that closer leaves, where it fits, so the pair's interior joins onto that row and both pairs drop**, rather than the second staying wrapped for a width the explode has already removed.
 '''

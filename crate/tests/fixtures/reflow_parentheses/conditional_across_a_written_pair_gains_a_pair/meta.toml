@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Spread Across a Written Pair Gains a Pair"
+
+description = '''
+The conditional bound to `prefix` spans two rows only because its author broke the pair around its test, and joined it runs past the `code-line-length` of `79`. **The rule reads the conditional at the one row folding that pair leaves, adds a pair around it, and sheds the inner pair**, so the interior lands whole on the row beneath, the same layout the conditional takes when written on one row.
+'''

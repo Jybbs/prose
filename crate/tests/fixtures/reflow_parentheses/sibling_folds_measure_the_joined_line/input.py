@@ -1,4 +1,4 @@
-result = (
+assert (
     alphas + betas
 ) or (
     gammas + deltas

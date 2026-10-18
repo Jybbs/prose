@@ -3,10 +3,12 @@
 //! collapsible statement on one source line. A disqualifying arm
 //! (multi-statement body, compound-statement body, multi-line body,
 //! or a comment between the `:` and the body) ends the run with its
-//! `:` flush against the pattern. An arm whose collapsed line would
+//! `:` flush against the pattern. A folded arm whose body hangs its
+//! later rows from a bracket ending the `case` row takes the run's
+//! column and ends the run instead. An arm whose `case` row would
 //! exceed `Config::code_line_length`, alone or padded to the run's
-//! column, ends the run the same way and splits onto two lines where
-//! it sits folded. Nested matches recurse.
+//! column, ends the run flush and splits onto two lines where its
+//! folded body holds one row. Nested matches recurse.
 
 use std::cell::OnceCell;
 
@@ -66,7 +68,7 @@ impl Rule for AlignMatchCase {
             widenings: OnceCell::new(),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.groups
+        visitor.walker.into_groups()
     }
 
     fn id(&self) -> RuleId {

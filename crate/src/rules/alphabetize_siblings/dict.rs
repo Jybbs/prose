@@ -50,7 +50,9 @@ pub(super) fn dict_sort_key<'a>(
 /// produces text different from the source slice. Returns `None` for
 /// empty dicts, dicts marked `# prose: keep`, single-item dicts, and any
 /// already-canonical case. `edits` are the leaf edits collected from the
-/// dict's descendants, folded into each item block.
+/// dict's descendants, folded into each item block. A multi-line dict the
+/// sort reorders takes its blank lines from [`partition_divider_slots`],
+/// whereas one it leaves in order keeps the gaps its source writes.
 pub(super) fn rewrite_dict_text(
     source: &Source,
     d: &ExprDict,
@@ -96,7 +98,7 @@ pub(super) fn rewrite_dict_text(
     if head_shared && swap_relocates_spanning(source, &order, |idx| item_ranges[idx]) {
         return None;
     }
-    let assembled = if multi_line && !head_shared {
+    let assembled = if permuted && multi_line && !head_shared {
         let divider_slots = partition_divider_slots(source, &order, &d.items, &item_ranges);
         let source_last_has_comma = source.trailing_comma(d.range()).is_some();
         let value_ends: Vec<TextSize> = item_ranges.iter().map(Ranged::end).collect();
@@ -128,15 +130,16 @@ pub(super) fn rewrite_dict_text(
 }
 
 /// True once two or more of `spanning` hold, each saying whether a keyed
-/// entry spans lines, which is the count at which the sort sets a blank
-/// line on either side of every such entry.
+/// entry spans lines, which is the count at which a sort that reorders
+/// the dict sets a blank line on either side of every such entry.
 pub(crate) fn sets_dividers(spanning: impl IntoIterator<Item = bool>) -> bool {
     spanning.into_iter().filter(|&spans| spans).nth(1).is_some()
 }
 
 /// Returns the new-order slot indices after which a blank-line divider
-/// sits, one on either side of each keyed entry whose block spans
-/// lines. A dict with fewer than two such entries yields none.
+/// sits in a dict the sort reorders, one on either side of each keyed
+/// entry whose block spans lines. A dict with fewer than two such
+/// entries yields none.
 fn partition_divider_slots(
     source: &Source,
     order: &[usize],

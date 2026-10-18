@@ -11,6 +11,7 @@ bindings:
     kinds:
       - Assignment
       - AugAssign
+    mutated: false
     name: x
     read_offsets:
       - 7

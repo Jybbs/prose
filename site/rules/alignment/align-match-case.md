@@ -13,11 +13,13 @@ layout  : doc
 The rule acts only on runs of single-statement arms at the same indentation, and an arm folds only where its one-line form fits within `code-line-length`. The rule measures that line with the `:` where the fold writes it, padded out to the run's column one space past the widest pattern, or flush against the pattern of an arm left in a group of its own. It reads the rest of the body's line at the width the other rules leave it, without the padding inside a bracket that [[strip-stranded-padding]] removes, with the space around each `=` at the width [[align-equals]] settles it to, and with a trailing comment at the gap and opener [[align-comments]] and [[normalize-comment-spacing]] settle it to. An arm stays multi-line and ends the run when:
 
 - It holds more than one statement
-- Its body is a compound statement or spans several lines
+- Its body is a compound statement, or spans several lines other than by hanging from a bracket that ends its `case` line
 - A comment follows its `:` on the `case` line
 - Its one-line form, padded out to the run's column, would cross `code-line-length`
 
-The arm's `:` then sits flush against its pattern, and the arms on each side of it align as runs of their own. An arm already folded onto its `case` line ends the run the same way once its padded line would cross the budget, and its body moves onto the next line. An own-line comment between two arms passes through, and the arms on both sides of it still share one column. A nested `match` aligns as a group of its own. Pair the rule with [[strip-stranded-padding]], which strips the padding on a one-arm `match`, and with [[align-colons]], which aligns the separators inside a dict a case body returns.
+The arm's `:` then sits flush against its pattern, and the arms on each side of it align as runs of their own. An arm already folded onto its `case` line ends the run the same way once its padded line would cross the budget, and a body on one row moves onto the next line. An own-line comment between two arms passes through, and the arms on both sides of it still share one column. A nested `match` aligns as a group of its own. Pair the rule with [[strip-stranded-padding]], which strips the padding on a one-arm `match`, and with [[align-colons]], which aligns the separators inside a dict a case body returns.
+
+An arm already folded onto its `case` line whose body spans rows only inside a bracket that ends that line, with its closing bracket opening the last row at the `case` indent, still reads as a row of the table. It takes the run's column as the run's last member and ends the run there, so the arms below it align as a run of their own. The rule measures that arm's `case` line only through the opening bracket, and where the padded line would cross `code-line-length` the `:` sits flush against its pattern with the body left on the `case` line, since moving the body to a row of its own would leave the closing bracket outdented from it.
 
 <template #configuration>
 

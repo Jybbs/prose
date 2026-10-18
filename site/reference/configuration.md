@@ -41,10 +41,10 @@ The top-level keys hold settings that reach several rules. They sit at the docum
 
 <ConfigKeys section="top" />
 
-`target-version` names the Python version the project runs on, in the bare `major.minor` form *(`"3.13"`, `"3.14"`)* that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]].
+`target-version` names the Python version the project runs on, in the bare `major.minor` form *(`"3.13"`, `"3.14"`)* that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]]. A file holding syntax the version does not support, such as a `lazy` import under `"3.14"`, or a semantic syntax error such as a `lazy` import inside a function, fails at exit code `3` naming the file, the position, and the version, unless formatting rewrites the error away. A file a `# prose: off` or `# fmt: off` at its head suppresses skips that check, and a `target-version` under [**Per-Pattern Overrides**](#per-pattern-overrides) holds the files a glob matches to a version of their own.
 
 ::: info Version Gates Need Opt-In
-With no value set, every version-dependent rewrite is skipped rather than assuming a default, so the version-gated rules do nothing on a project that has not set a target.
+With no value set, every version-dependent rewrite is skipped rather than assuming a default, so the version-gated rules do nothing on a project that has not set a target, a name counts as a builtin only where Python 3.10 already defines it, and only syntax every Python version rejects fails a file.
 :::
 
 `report-unstable-output` governs what a `format` run does when a file it just rewrote is one a second run would change again. When on, the run prints an [**unstable-output notice**](/reference/cli#unstable-output) naming the rules that disagree and the command that reproduces the defect, while still writing the rewrite and still setting the exit code from that rewrite alone, since a layout defect belongs to *Prose* rather than to the source. When off, the rewrite is written with no notice, whereas [`prose check --validate`](/reference/cli#prose-check) keeps its settle check, because the key governs the notice rather than the check the flag turns on. The notice also reaches an editor through [`prose server`](/reference/cli#prose-server), once per document per session rather than on every save.

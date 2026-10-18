@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Conditional Ending a Returned Tuple Gains a Pair"
+
+description = '''
+`run` returns a bare tuple whose last element is a conditional expression, on a row past the **88-column** budget. **The rule adds a pair around that element, its `(` ending the `return` row and its interior whole on the row beneath**, because the interior fits that row, so the call to `loads` stays inline on it.
+'''

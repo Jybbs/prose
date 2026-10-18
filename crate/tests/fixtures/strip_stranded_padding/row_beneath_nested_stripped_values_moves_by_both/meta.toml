@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Row Beneath Two Stripped Values Moves by Both"
+
+description = '''
+`"k"` and `"j"` are each the only entry of their dict, both padded two columns before their `:`, and the row holding `2)}}` sits beneath `1` inside `"j"`'s value, which itself sits inside `"k"`'s. **Removing both paddings moves the row four columns left in one pass**, the two columns each value gives up added together, so `2` still sits beneath `1`.
+'''

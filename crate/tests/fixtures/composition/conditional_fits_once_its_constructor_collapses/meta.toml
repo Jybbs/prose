@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Fits Once Its Constructor Collapses"
+
+description = '''
+The assignment ends on a conditional three columns past the **88-column** budget, its first operand a `list` call around a generator. **The row ends on one line with no pair added**, because [[reflow-parentheses]] measures the row as [[simplify-comprehensions]] leaves it once the call becomes a list comprehension, and that row fits.
+'''

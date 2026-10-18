@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A String Part One Indent Step Past Its Keyword Moves With Its Value"
+
+description = '''
+`doc`'s value is a string run whose second part starts one indent step past the keyword, on the column where the first part starts. **Spacing the `=` moves the first part two columns right, and the row beneath it moves the same two columns**, so `" and is in element content."` still starts beneath the first part rather than staying one indent step in.
+'''

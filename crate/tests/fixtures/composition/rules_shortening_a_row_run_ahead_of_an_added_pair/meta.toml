@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Rules Shortening a Row Run Ahead of an Added Pair"
+
+description = '''
+Each statement ends on a conditional one column past the **88-column** budget, and an earlier rule shortens each row by at least that column: [[modernize-annotations]] rewrites `Optional[int]`, [[strip-trailing-commas]] drops the comma closing a call\'s arguments, and [[normalize-literals]] drops a `u` prefix. **Each row ends on one line with no pair added**, because [[reflow-parentheses]] runs after all three and measures the row they leave.
+'''

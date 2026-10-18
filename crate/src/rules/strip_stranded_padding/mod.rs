@@ -10,7 +10,7 @@ use ruff_diagnostics::Edit;
 
 use crate::{
     config::Config,
-    primitives::{edit::singleton_groups, padding::Stranding},
+    primitives::padding::Stranding,
     rules::{Rule, RuleId},
     source::Source,
 };
@@ -36,7 +36,7 @@ impl StripStrandedPadding {
 
 impl Rule for StripStrandedPadding {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
-        singleton_groups(source.stranded_padding(self.stranding).into_owned())
+        self.stranding.groups(source)
     }
 
     fn id(&self) -> RuleId {

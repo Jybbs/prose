@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: ~
     kinds:
       - ExceptHandler
+    mutated: false
     name: e
     read_offsets:
       - 66

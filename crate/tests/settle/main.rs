@@ -345,6 +345,9 @@ struct Probes {
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
     pairs: Vec<Pair>,
+    /// The default pipeline at this budget, which reads each file the
+    /// way the CLI does and passes over one its target refuses.
+    reader: Pipeline,
     /// The rules whose solo verdict this run reports, narrowed the same
     /// way.
     reported: BTreeSet<RuleId>,
@@ -432,6 +435,7 @@ impl Probes {
                 .claims(&preserving, |rule| reported.contains(rule))
                 .then(|| subset(&config, &preserving)),
             pairs,
+            reader: Pipeline::with_defaults(&config),
             reported,
             singles,
             solo,
@@ -533,7 +537,7 @@ fn lengths() -> Vec<usize> {
 /// rules edits the file leaves it as it was.
 fn probe(probes: &Probes, path: &Path) -> Findings {
     let mut findings = Findings::default();
-    let Ok(source) = Source::from_path(path) else {
+    let Ok(Some(source)) = probes.reader.read_path(path) else {
         findings.skipped.insert(path.display().to_string());
         return findings;
     };

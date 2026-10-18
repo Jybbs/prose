@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Ordered Dict Keeps Its Blank Lines and Takes No Dividers"
+
+description = '''
+`notice` already holds its keys in alphabetical order, with `"alpha"` and `"delta"` each spanning rows and a blank line between `"bravo"` and `"charlie"`. **The sort leaves the dict exactly as written**, keeping that blank line and opening none around the two entries spanning rows, because it sets dividers only where it reorders a dict.
+'''

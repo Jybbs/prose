@@ -1,10 +1,10 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize_siblings/global_nonlocal_names_sort/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/global_nonlocal_names_sort/input.py
 ---
 def reset_outer():
-    items = []
+    counter, items, registry = 0, [], {}
     def inner():
         nonlocal counter, items, registry
         items.clear()

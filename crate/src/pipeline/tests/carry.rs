@@ -8,9 +8,7 @@ use itertools::Itertools;
 
 use super::*;
 use crate::{
-    pipeline::error::reparse_or_reject,
-    primitives::{edit::apply_edits_mapped, padding::Stranding},
-    source::slid_range,
+    pipeline::error::reparse_or_reject, primitives::edit::apply_edits_mapped, source::slid_range,
     testing::corpus_inputs,
 };
 
@@ -20,14 +18,14 @@ const WIDTHS: [usize; 6] = [40, 50, 60, 79, 88, 100];
 #[test]
 fn carried_binding_tables_match_the_ones_a_fresh_read_builds() {
     let pipeline = Pipeline::with_defaults(&Config::default());
-    let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), true);
+    let stranding = Config::default().stranded_padding();
     let reservations = Config::default().equals_reservations();
     let (mut carried, mut rebuilt, mut columns) = (false, false, false);
     for path in corpus_inputs() {
-        let Ok(mut source) = Source::from_path(&path) else {
+        let Ok(Some(mut source)) = pipeline.read_path(&path) else {
             continue;
         };
-        let gate = compile_gate(&source, pipeline.target_version);
+        let gate = pipeline.gate(&source);
         for rule in &pipeline.rules {
             source.binding_analysis();
             source.stranded_padding(stranding);
@@ -75,10 +73,10 @@ fn column_tables_hold_at_run_granularity_across_every_splice() {
         let pipeline = Pipeline::with_defaults(&config);
         let reservations = config.equals_reservations();
         for path in corpus_inputs() {
-            let Ok(mut source) = Source::from_path(&path) else {
+            let Ok(Some(mut source)) = pipeline.read_path(&path) else {
                 continue;
             };
-            let gate = compile_gate(&source, pipeline.target_version);
+            let gate = pipeline.gate(&source);
             for rule in &pipeline.rules {
                 let Some(spliceable) = Spliceable::landing(&**rule, &source) else {
                     continue;

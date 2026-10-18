@@ -8,8 +8,15 @@ use std::{
 
 use serde::Serialize;
 
-use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
-use crate::{findings::JsonDiagnostic, rules::RuleId};
+use ruff_source_file::OneIndexed;
+
+use super::{
+    Emitter, EmitterSummary, RefusedEntry, Run, UnstableEntry, diagnostics, write_json_line,
+};
+use crate::{
+    findings::{JsonDiagnostic, JsonLocation},
+    rules::RuleId,
+};
 
 /// Bumped on any breaking change to an existing field shape. An
 /// additive field lands unversioned.
@@ -30,6 +37,12 @@ impl Emitter for Json {
                 &JsonRecord::Diagnostic(JsonDiagnostic::new(file, index, diag, true)),
             )?;
         }
+        for entry in &summary.refused {
+            write_json_line(
+                writer,
+                &JsonRecord::SyntaxError(JsonSyntaxError::new(entry)),
+            )?;
+        }
         write_json_line(writer, &JsonRecord::Summary(JsonSummary::new(summary)))
     }
 }
@@ -40,6 +53,7 @@ impl Emitter for Json {
 enum JsonRecord<'a> {
     Diagnostic(JsonDiagnostic<'a>),
     Summary(JsonSummary<'a>),
+    SyntaxError(JsonSyntaxError<'a>),
 }
 
 #[derive(Serialize)]
@@ -54,6 +68,30 @@ struct JsonSummary<'a> {
     schema_version: u32,
     #[serde(skip_serializing_if = "<[_]>::is_empty")]
     unstable: &'a [UnstableEntry],
+}
+
+/// The record a file whose syntax its target rejects prints, positioned
+/// the way a diagnostic record is.
+#[derive(Serialize)]
+struct JsonSyntaxError<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cell: Option<OneIndexed>,
+    end_location: JsonLocation,
+    filename: &'a str,
+    location: JsonLocation,
+    message: &'a str,
+}
+
+impl<'a> JsonSyntaxError<'a> {
+    fn new(entry: &'a RefusedEntry) -> Self {
+        Self {
+            cell: entry.cell,
+            end_location: entry.end.into(),
+            filename: &entry.file,
+            location: entry.start.into(),
+            message: &entry.message,
+        }
+    }
 }
 
 impl<'a> JsonSummary<'a> {
@@ -217,6 +255,7 @@ mod tests {
             files_visited: 1,
             files_with_diagnostics: 1,
             lint_total: 1,
+            refused: Vec::new(),
             rules_fired,
             unstable: Vec::new(),
         };

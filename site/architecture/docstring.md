@@ -11,12 +11,12 @@ tagline: PEP 257 docstring walker
 
 <PrimitiveLayout primitive="docstring">
 
-*Docstring* visits every PEP 257 docstring in a module and hands each one, in source order, to the rule reading it. The first body statement of the module, of each class, and of each function may be a string literal, and that literal is the docstring. Several rules read the same sequence of docstrings, so the AST traversal lives once in *Docstring* and each rule supplies a closure that returns the edits for one docstring.
+The `docstring` module visits every PEP 257 docstring in a module and hands each one, in source order, to the rule reading it. The first body statement of the module, of each class, and of each function may be a string literal, and that literal is the docstring. Several rules read the same sequence of docstrings, so the AST traversal lives once in `docstring` and each rule supplies a closure that returns the edits for one docstring.
 
 
 ## Public Surface
 
-*Docstring* lives at `crate/src/primitives/docstring/` and is `pub(crate)`. What a downstream caller sees is the rewrites the docstring rules emit through the diagnostic stream.
+The `docstring` module lives at `crate/src/primitives/docstring/` and is `pub(crate)`. What a downstream caller sees is the rewrites the docstring rules emit through the diagnostic stream.
 
 At `1.0` the visiting helpers become `pub`, so a downstream crate can write a docstring rule of its own against them.
 
@@ -65,7 +65,7 @@ Alongside the visiting helpers, a further set of `pub(crate)` helpers returns th
 5. `indent_prefix(source, lit) -> &str` returns the whitespace before the docstring on its first line, which a rule that rewraps the body reads to re-indent the result.
 6. `documented_definitions(source) -> Vec<(&Stmt, &StringLiteral)>` returns every class and function definition whose body opens on a docstring, paired with that literal, in source order. The module docstring is absent, since a module has no definition, so this is the list a rule reads when it compares a docstring against the code beneath it.
 
-[[colon-targets]] finds docstrings through `walk_docstrings` and their entry runs through the `entry_runs` iterator described below, reading each entry's recorded `:` offset when it builds members for colon alignment. The two primitives stay separate because they answer different questions. *Docstring* returns the entry names, the `:` separating each from its description, and the byte range a reorder would move, whereas *Colon-Targets* turns those into the members the aligner's padding math reads. Two views of the same source, each built for its consumer.
+[[colon-targets]] finds docstrings through `walk_docstrings` and their entry runs through the `entry_runs` iterator described below, reading each entry's recorded `:` offset when it builds members for colon alignment. The two primitives stay separate because they answer different questions. The `docstring` module returns the entry names, the `:` separating each from its description, and the byte range a reorder would move, whereas `colon_targets` turns those into the members the aligner's padding math reads. Two views of the same source, each built for its consumer.
 
 ## Section-Parsing Surface
 

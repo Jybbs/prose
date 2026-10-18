@@ -7,14 +7,18 @@ use std::path::PathBuf;
 use lsp_types::{
     Diagnostic as LspDiagnostic, DiagnosticSeverity, NumberOrString, Position, Range, Uri,
 };
+use ruff_python_ast::PySourceType;
 use ruff_source_file::PositionEncoding;
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use crate::{
     diagnostics::{Diagnostic, Severity},
     file_uri::SCHEME,
-    source::Source,
+    source::{Refusal, Source, Target},
 };
+
+/// The `code` a refused buffer's diagnostic carries.
+const SYNTAX_CODE: &str = "syntax-error";
 
 /// The range spanning the whole document, from the start to the position
 /// past its final character.
@@ -37,6 +41,33 @@ pub(super) fn to_lsp(
         source: Some("prose".to_owned()),
         ..LspDiagnostic::default()
     }
+}
+
+/// Renders the syntax a buffer holds that `target` rejects as an
+/// error-severity protocol diagnostic at the refused range.
+pub(super) fn refusal_to_lsp(
+    source: &Source,
+    refusal: &Refusal,
+    target: Target,
+    encoding: PositionEncoding,
+) -> LspDiagnostic {
+    LspDiagnostic {
+        code: Some(NumberOrString::String(SYNTAX_CODE.to_owned())),
+        message: refusal.message(target),
+        range: range_of(source, refusal.range(), encoding),
+        severity: Some(DiagnosticSeverity::ERROR),
+        source: Some("prose".to_owned()),
+        ..LspDiagnostic::default()
+    }
+}
+
+/// Returns the parse mode the document at `uri` reads in, a stub for a
+/// `.pyi` path and a plain module for any other.
+pub(super) fn source_type_of(uri: &Uri) -> PySourceType {
+    to_path(uri)
+        .and_then(PySourceType::try_from_path)
+        .filter(|source_type| !source_type.is_ipynb())
+        .unwrap_or_default()
 }
 
 /// Turns a `file://` URI into a filesystem path, or `None` for a URI that
@@ -172,6 +203,18 @@ mod tests {
         #[case] expected: DiagnosticSeverity,
     ) {
         assert_eq!(severity_of(severity), expected);
+    }
+
+    #[rstest]
+    #[case::a_module("file:///pkg/a.py", PySourceType::Python)]
+    #[case::a_stub("file:///pkg/a.pyi", PySourceType::Stub)]
+    #[case::a_notebook_document("file:///pkg/a.ipynb", PySourceType::Python)]
+    #[case::a_scheme_naming_no_file("untitled:Untitled-1", PySourceType::Python)]
+    fn source_type_of_reads_the_parse_mode_off_the_path(
+        #[case] document: &str,
+        #[case] expected: PySourceType,
+    ) {
+        assert_eq!(source_type_of(&uri(document)), expected);
     }
 
     #[test]

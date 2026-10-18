@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/conditional_fits_once_its_super_call_sheds/input.py
+---
+class Report(Base):
+
+    def summary(self, detailed):
+        return super().summary_lines() if detailed else self.cached_summary_text

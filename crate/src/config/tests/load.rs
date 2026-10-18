@@ -33,7 +33,7 @@ fn load_collecting_precedence(dir: &Path) -> (Config, Vec<(ConfigForm, ConfigFor
 fn loaded_with_unknown_keys(dir: &Path) -> (Config, Vec<String>) {
     let mut captured = Vec::new();
     let config = Config::load_with_notices(dir, |notice| {
-        if let ConfigNotice::UnknownKey(key) = notice {
+        if let ConfigNotice::Table(TableNotice::UnknownKey(key)) = notice {
             captured.push(key.to_owned());
         }
     })

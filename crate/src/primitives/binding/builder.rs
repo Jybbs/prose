@@ -6,7 +6,6 @@
 use std::{collections::BTreeSet, sync::OnceLock};
 
 use indexmap::IndexMap;
-use itertools::Itertools;
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
@@ -26,6 +25,27 @@ use super::{
 };
 use crate::primitives::{sorted_slot, walk::walk_stmt};
 
+/// Every non-dunder `list`, `dict`, and `set` method that changes the
+/// object in place.
+const MUTATING_METHODS: [&str; 16] = [
+    "add",
+    "append",
+    "clear",
+    "difference_update",
+    "discard",
+    "extend",
+    "insert",
+    "intersection_update",
+    "pop",
+    "popitem",
+    "remove",
+    "reverse",
+    "setdefault",
+    "sort",
+    "symmetric_difference_update",
+    "update",
+];
+
 pub(super) struct Builder {
     annotation_depth: usize,
     annotation_offsets: FxHashSet<TextSize>,
@@ -36,6 +56,7 @@ pub(super) struct Builder {
     deleted: FxHashSet<Name>,
     function_scope_at: FxHashMap<TextSize, ScopeId>,
     global_writes: FxHashMap<Name, Vec<TextSize>>,
+    mutation_offsets: FxHashSet<TextSize>,
     runtime_offsets: FxHashSet<TextSize>,
     scope_stack: Vec<ScopeId>,
     scopes: Vec<Scope>,
@@ -54,6 +75,7 @@ impl Builder {
             deleted: FxHashSet::default(),
             function_scope_at: FxHashMap::default(),
             global_writes: FxHashMap::default(),
+            mutation_offsets: FxHashSet::default(),
             runtime_offsets: FxHashSet::default(),
             scope_stack: Vec::new(),
             scopes: Vec::new(),
@@ -155,7 +177,7 @@ impl Builder {
                 }
             }
             Expr::Starred(starred) => self.for_each_target_name(&starred.value, f),
-            _ => walk_expr(self, target),
+            _ => self.walk_target(target),
         }
     }
 
@@ -190,12 +212,24 @@ impl Builder {
     /// Marks each operand an order comparison ranks (`{open, stat} <=
     /// supports_dir_fd`).
     fn mark_comparison(&mut self, node: &ExprCompare) {
-        let operands = std::iter::once(node.left.as_ref()).chain(&node.comparators);
-        for ((left, right), op) in operands.tuple_windows().zip(&node.ops) {
+        for (left, op, right) in node.iter() {
             if matches!(op, CmpOp::Gt | CmpOp::GtE | CmpOp::Lt | CmpOp::LtE) {
                 self.mark_runtime_read(left);
                 self.mark_runtime_read(right);
             }
+        }
+    }
+
+    /// Records the name at the root of `receiver` as written into, past
+    /// zero or more subscripts, so `table[key] = value` and
+    /// `table[key].append(value)` both mark `table`.
+    fn mark_mutation(&mut self, receiver: &Expr) {
+        let root = std::iter::successors(Some(receiver), |expr| {
+            expr.as_subscript_expr().map(|subscript| &*subscript.value)
+        })
+        .last();
+        if let Some(Expr::Name(name)) = root {
+            self.mutation_offsets.insert(name.start());
         }
     }
 
@@ -372,6 +406,7 @@ impl Builder {
                 bare_read: false,
                 first_unconditional_write: None,
                 kinds: SmallVec::new(),
+                mutated: false,
                 name: name.into(),
                 read_offsets: SmallVec::new(),
                 runtime_read: false,
@@ -395,16 +430,11 @@ impl Builder {
         self.visit_annotation(&node.annotation);
         if let Some(value) = &node.value {
             self.visit_expr(value);
-        }
-        match node.target.as_ref() {
-            Expr::Name(name) => {
-                if let Some(value) = &node.value {
-                    self.assignment_values.insert(name.start(), value.range());
-                }
-                self.record_target(&node.target, BindingKind::Assignment);
+            if let Expr::Name(name) = node.target.as_ref() {
+                self.assignment_values.insert(name.start(), value.range());
             }
-            target => walk_expr(self, target),
         }
+        self.record_target(&node.target, BindingKind::Assignment);
     }
 
     fn visit_assign(&mut self, node: &StmtAssign) {
@@ -430,7 +460,7 @@ impl Builder {
             self.record_write(name.id.as_str(), name.start(), BindingKind::AugAssign);
         } else {
             self.visit_expr(&node.value);
-            walk_expr(self, &node.target);
+            self.walk_target(&node.target);
         }
     }
 
@@ -441,16 +471,14 @@ impl Builder {
         self.visit_expr(test);
     }
 
-    /// Records each name a `del` unbinds, which is neither a read nor a
-    /// write, and walks any other target shape for its own reads.
+    /// Records each name a `del` unbinds, a deletion being neither a read
+    /// nor a write, and reaches each name inside a tuple or list target.
+    /// Walks any other target shape through `walk_target`.
     fn visit_delete(&mut self, node: &StmtDelete) {
         for target in &node.targets {
-            match target {
-                Expr::Name(name) => {
-                    self.deleted.insert(name.id.clone());
-                }
-                _ => walk_expr(self, target),
-            }
+            self.for_each_target_name(target, &mut |builder, name, _| {
+                builder.deleted.insert(name.into());
+            });
         }
     }
 
@@ -536,6 +564,15 @@ impl Builder {
         self.visit_body(&node.body);
     }
 
+    /// Walks a target other than a bare name for the reads it holds,
+    /// recording the name a subscript target writes into.
+    fn walk_target(&mut self, target: &Expr) {
+        if target.is_subscript_expr() {
+            self.mark_mutation(target);
+        }
+        walk_expr(self, target);
+    }
+
     pub(super) fn finish(mut self) -> BindingAnalysis {
         for deferred in std::mem::take(&mut self.deferred_reads) {
             if let Some(binding_id) = resolve_in_chain(&self.scopes, deferred.scope, &deferred.name)
@@ -550,14 +587,9 @@ impl Builder {
         // Folded after the deferred reads land, so a forward reference
         // from an annotation to a name bound later still records.
         for binding in &mut self.bindings {
-            binding.annotation_read = binding
-                .read_offsets
-                .iter()
-                .any(|offset| self.annotation_offsets.contains(offset));
-            binding.runtime_read = binding
-                .read_offsets
-                .iter()
-                .any(|offset| self.runtime_offsets.contains(offset));
+            binding.annotation_read = binding.read_at_any(&self.annotation_offsets);
+            binding.mutated = binding.read_at_any(&self.mutation_offsets);
+            binding.runtime_read = binding.read_at_any(&self.runtime_offsets);
         }
         let mut unpack_targets = FxHashMap::default();
         for group in &self.unpack_groups {
@@ -600,12 +632,17 @@ impl<'a> Visitor<'a> for Builder {
                     self.record_use(name.id.as_str(), name.start(), None);
                 }
             }
-            Expr::Attribute(attr) => match attr.value.as_ref() {
-                Expr::Name(name) if name.ctx.is_load() => {
-                    self.record_use(name.id.as_str(), name.start(), Some(attr.attr.as_str()))
+            Expr::Attribute(attr) => {
+                if MUTATING_METHODS.contains(&attr.attr.as_str()) {
+                    self.mark_mutation(&attr.value);
                 }
-                _ => walk_expr(self, expr),
-            },
+                match attr.value.as_ref() {
+                    Expr::Name(name) if name.ctx.is_load() => {
+                        self.record_use(name.id.as_str(), name.start(), Some(attr.attr.as_str()))
+                    }
+                    _ => walk_expr(self, expr),
+                }
+            }
             Expr::Named(named) => self.record_walrus(named),
             Expr::Lambda(lambda) => self.enter_lambda(lambda),
             Expr::ListComp(ExprListComp {

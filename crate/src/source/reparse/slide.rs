@@ -39,11 +39,16 @@ macro_rules! slide_node {
 }
 
 /// Slides the range of whichever variant `$node` holds, leaving the
-/// walk to reach its children.
+/// walk to reach its children. A variant whose node derives its range
+/// rather than holding a `range` field takes its own arm after the `;`.
 macro_rules! slide_variants {
-    ($node:expr, $slide:expr, $enum:ident, $($variant:ident),+ $(,)?) => {
+    (
+        $node:expr, $slide:expr, $enum:ident, $($variant:ident),+ $(,)?
+        $(; $($pattern:pat => $arm:expr),+ $(,)?)?
+    ) => {
         match $node {
             $($enum::$variant(inner) => inner.range = $slide(inner.range),)+
+            $($($pattern => $arm,)+)?
         }
     };
 }
@@ -197,7 +202,6 @@ impl Transformer for Slide<'_> {
             BooleanLiteral,
             BoolOp,
             BytesLiteral,
-            Call,
             Compare,
             Dict,
             DictComp,
@@ -223,7 +227,8 @@ impl Transformer for Slide<'_> {
             Tuple,
             UnaryOp,
             Yield,
-            YieldFrom,
+            YieldFrom;
+            Expr::Call(call) => call.range_start = self.deltas.shift(call.range_start),
         );
         if let Expr::Attribute(attribute) = &mut *expr {
             self.slide_name(&mut attribute.attr);

@@ -1,9 +1,0 @@
-[docs]
-previewable = false
-title       = "A Padded Statement Moves Its Keywords Off Their Shared Column"
-
-description = '''
-`formatter = Formatter(...)` sits below `labels_map` and `label_width`, with `file` on the opening line and `offset_width`, `label_width`, and `show_caches` on continuation lines starting at the same column as `file`. Padding `formatter` out to `label_width`'s column moves the call, and `file` with it, two columns right, whereas the continuation lines stay where they were written. **The keywords no longer start at one column, so every `=` in the call takes a single space on each side instead of aligning.**
-
-`renderer` below it is never padded, and its `antialias` and `color_depth` still align, which shows the single spacing above follows from the shift rather than from anything about call-site keywords.
-'''

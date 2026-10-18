@@ -64,7 +64,7 @@ where
 
 /// True when `order` is the identity permutation `0..order.len()`, the
 /// signal a reorder left every slot in source position.
-pub(super) fn is_identity(order: &[usize]) -> bool {
+pub(crate) fn is_identity(order: &[usize]) -> bool {
     order.iter().copied().eq(0..order.len())
 }
 

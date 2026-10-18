@@ -9,7 +9,7 @@ use ruff_source_file::SourceFileBuilder;
 
 use super::{
     FileOutcome, Pass,
-    process::{Marker, drive, failed, parse_failure},
+    process::{Marker, drive, failed, parse_failure, refused},
     resolve::Resolved,
 };
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, source::Source};
@@ -47,8 +47,11 @@ pub(super) fn process(text: String, name: String, resolved: &Resolved, pass: Pas
             unstable: None,
         };
     }
-    match Source::from_notebook(&notebook, name.as_str()) {
-        Ok(source) => run(source, notebook, resolved, pass),
+    match Source::read_notebook(&notebook, name.as_str(), resolved.pipeline.target()) {
+        Ok(source) => match resolved.pipeline.refusal(&source) {
+            Some(refusal) => refused(&source, Some(notebook.index()), &refusal, resolved),
+            None => run(source, notebook, resolved, pass),
+        },
         Err(e) => parse_failure(&name, e),
     }
 }

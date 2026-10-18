@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An `elif` Condition Stacks Its Operands Where It Fits One Row"
+
+description = '''
+The `elif` condition in `pick` runs past the **88-column** budget by one column, while its joined form would fit the row inside a pair at 87. **The rule adds a pair and still lands each operand of its `and` chain on a row of its own**, because a test breaks at its boolean operator first whatever room the row inside the pair leaves.
+'''
