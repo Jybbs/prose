@@ -27,11 +27,13 @@ use crate::{
 };
 
 /// The widths one row's line takes before padding, as the cap check
-/// reads them: `inline` for the whole row on one line, and `expanded`
-/// for the opening row alone where a layout rule can expand the row's
-/// value, `None` where no rule can.
+/// reads them: `inline` for the whole row on one line, `expanded` for
+/// the opening row alone where a layout rule can expand the row's value,
+/// `None` where no rule can, and `carried` for the widest continuation
+/// row the padding moves with the value, `None` where it moves none.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Extent {
+    pub(crate) carried: Option<usize>,
     pub(crate) expanded: Option<usize>,
     pub(crate) inline: usize,
 }
@@ -103,11 +105,10 @@ pub(super) fn emitted_base_width(
 
 /// Measures each member's emitted [`Extent`] once per run, reading its
 /// line at the width `joined` names where a later rule joins the row
-/// and leaving `expanded` unset. A member whose value carries rows its
-/// line holds no joined width for reads as the widest of its own line
-/// and those rows, per [`carried_width`]. Returns an empty vector where
-/// no line-length cap governs, since [`fits_line_cap`] then reads none
-/// of them.
+/// and leaving `expanded` unset. A member whose line holds no joined
+/// width reads the rows its value carries as `carried`, per
+/// [`carried_width`]. Returns an empty vector where no line-length cap
+/// governs, since [`fits_line_cap`] then reads none of them.
 pub(super) fn emitted_extents(
     source: &Source,
     members: &[Member],
@@ -123,15 +124,15 @@ pub(super) fn emitted_extents(
         .enumerate()
         .map(|(i, m)| {
             let joined = joined.get(i).copied().flatten();
-            let own = emitted_base_width(source, *m, cap, joined)
-                .saturating_add_signed(widenings.delta(*m));
             Extent {
-                expanded: None,
-                inline: if joined.is_some() {
-                    own
+                carried: if joined.is_some() {
+                    None
                 } else {
-                    own.max(carried_width(source, *m, cap, widenings))
+                    carried_width(source, *m, cap, widenings)
                 },
+                expanded: None,
+                inline: emitted_base_width(source, *m, cap, joined)
+                    .saturating_add_signed(widenings.delta(*m)),
             }
         })
         .collect()
@@ -407,9 +408,14 @@ pub(crate) fn written_groups(
 /// carries, each read at its [`settled_row_width`] under `cap`'s comment
 /// and padding rules, widened by the `widenings` on its row, and moved by
 /// the value's shift once the gap the padding replaces is gone and any
-/// rewritten post-operator gap holds one space. Zero where the value
+/// rewritten post-operator gap holds one space. `None` where the value
 /// carries no row.
-fn carried_width(source: &Source, member: Member, cap: Cap, widenings: &Widenings) -> usize {
+fn carried_width(
+    source: &Source,
+    member: Member,
+    cap: Cap,
+    widenings: &Widenings,
+) -> Option<usize> {
     let padding = source.stranded_padding(cap.stranding);
     let shift = member.value_shift(source, 0);
     member
@@ -420,16 +426,18 @@ fn carried_width(source: &Source, member: Member, cap: Cap, widenings: &Widening
                 .saturating_add_signed(shift + widenings.on_line(row.start()))
         })
         .max()
-        .unwrap_or(0)
 }
 
 /// True when padding no member of `group` to `max_w` pushes its line
 /// past the governing line-length cap, or when no cap governs. `extents`
 /// carries each member's emitted widths in step with `group`, and a
 /// member whose value a layout rule can expand fits where its opening
-/// row does. A member over the cap even at its singleton fallback gap stays
+/// row does. A row over the cap even at its singleton fallback gap stays
 /// in the run only where the shared column costs it no more width than
-/// the buffer, which holds for the widest member alone.
+/// the buffer, which holds for the widest member alone. The rows a
+/// member's value carries meet the same test apart from its own row, so
+/// a carried row the padding would push past the cap holds the member
+/// out of the column even where its own row is past the cap already.
 fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w: usize) -> bool {
     let Some(cap) = settings.cap.map(|cap| cap.line_length) else {
         return true;
@@ -438,9 +446,14 @@ fn fits_line_cap(group: &[Member], extents: &[Extent], settings: Settings, max_w
     group.iter().zip(extents).all(|(m, extent)| {
         let padding = padding_width(*m, max_w, max_op, settings.buffer);
         let fits = |width: usize| width + padding <= cap;
-        fits(extent.inline)
+        let past_the_cap_anyway =
+            |width: usize| padding == settings.buffer && width + settings.suffix_len(1) > cap;
+        (fits(extent.inline)
             || extent.expanded.is_some_and(fits)
-            || (padding == settings.buffer && extent.inline + settings.suffix_len(1) > cap)
+            || past_the_cap_anyway(extent.inline))
+            && extent
+                .carried
+                .is_none_or(|width| fits(width) || past_the_cap_anyway(width))
     })
 }
 
@@ -1213,6 +1226,7 @@ mod tests {
             (
                 1,
                 Extent {
+                    carried: None,
                     expanded,
                     inline: 19,
                 },
@@ -1220,6 +1234,7 @@ mod tests {
             (
                 6,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1240,6 +1255,47 @@ mod tests {
     }
 
     #[rstest]
+    #[case::carried_row_lands_on_the_cap(19, vec![11, 11])]
+    #[case::carried_row_would_cross_the_cap(20, vec![10, 5])]
+    fn written_columns_hold_a_row_whose_carried_row_would_cross_the_cap(
+        #[case] carried: usize,
+        #[case] expected: Vec<usize>,
+    ) {
+        let rows = [
+            (
+                6,
+                Extent {
+                    carried: Some(carried),
+                    expanded: None,
+                    inline: 30,
+                },
+            ),
+            (
+                1,
+                Extent {
+                    carried: None,
+                    expanded: None,
+                    inline: 10,
+                },
+            ),
+        ];
+
+        // The width-6 row's own line sits past the cap of 20 at any gap,
+        // so the row its value carries decides whether it joins the
+        // column, which moves that carried row one column right.
+        assert_eq!(
+            written_columns(
+                4,
+                &rows,
+                Settings::aligned(cap(16))
+                    .within(20, strip(), settling())
+                    .with_singleton_strip()
+            ),
+            expected,
+        );
+    }
+
+    #[rstest]
     #[case::even_widths(1, (1, 2))]
     #[case::uneven_widths(3, (1, 0))]
     fn written_groups_count_every_row_of_an_even_group_unpadded(
@@ -1250,6 +1306,7 @@ mod tests {
             (
                 width,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1279,6 +1336,7 @@ mod tests {
             (
                 1,
                 Extent {
+                    carried: None,
                     expanded,
                     inline: 19,
                 },
@@ -1286,6 +1344,7 @@ mod tests {
             (
                 6,
                 Extent {
+                    carried: None,
                     expanded: None,
                     inline: 10,
                 },
@@ -1307,6 +1366,7 @@ mod tests {
         let rows = [(
             3,
             Extent {
+                carried: None,
                 expanded: None,
                 inline: 10,
             },

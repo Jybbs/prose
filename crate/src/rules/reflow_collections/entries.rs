@@ -59,8 +59,14 @@ impl Entry<'_> {
     /// where the text writes the row's code as the source does, so a
     /// value the text rewrites carries none. The width leaves out the
     /// padding written ahead of the `:` past `key_text` and counts `tail`
-    /// columns closing the text's last row. Zero where no row moves.
-    fn carried_width(&self, source: &Source, key: TextSize, key_text: &str, tail: usize) -> usize {
+    /// columns closing the text's last row. `None` where no row moves.
+    fn carried_width(
+        &self,
+        source: &Source,
+        key: TextSize,
+        key_text: &str,
+        tail: usize,
+    ) -> Option<usize> {
         let opening = source.line_index(self.value.start()).get();
         let carried: Vec<(usize, &str)> = carried_rows(source, self.value, source.column_of(key))
             .into_iter()
@@ -78,7 +84,7 @@ impl Entry<'_> {
             .filter(|(row, line)| carried.contains(&(*row, line.trim_start())))
             .map(|(row, line)| display_width(&line) + if row == last { tail } else { 0 })
             .max()
-            .map_or(0, |width| width.saturating_sub(padded))
+            .map(|width| width.saturating_sub(padded))
     }
 }
 
@@ -305,16 +311,13 @@ impl<'a> Layouter<'a> {
                     + entry.key_width
                     + opening_width(entry.text[key_text.len()..].trim_start_matches(' '));
                 Extent {
+                    carried: entry.carried_width(self.source, item.start(), key_text, tail),
                     expanded: None,
-                    inline: opening.max(entry.carried_width(
-                        self.source,
-                        item.start(),
-                        key_text,
-                        tail,
-                    )),
+                    inline: opening,
                 }
             } else {
                 Extent {
+                    carried: None,
                     expanded: opener_width(
                         self.source,
                         &self.one_row,

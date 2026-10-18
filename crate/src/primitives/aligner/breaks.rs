@@ -145,6 +145,7 @@ impl Cuts<'_> {
         let mut extents = self.extents[start..=end].to_vec();
         if let Some(row) = self.rows[end].filter(|_| broken) {
             extents[end - start] = Extent {
+                carried: None,
                 expanded: None,
                 inline: row.opener,
             };
@@ -190,6 +191,9 @@ pub(crate) fn breaking_columns(
         .into_iter()
         .zip(statements)
         .map(|(extent, statement)| Extent {
+            carried: extent
+                .carried
+                .map(|width| width.saturating_add_signed(statement.shift)),
             inline: extent.inline.saturating_add_signed(statement.shift),
             ..extent
         })
