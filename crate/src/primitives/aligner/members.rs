@@ -137,6 +137,7 @@ fn anchored_member(
     let line_start = source.text().line_start(anchor);
     Member {
         baseline: source.width_between(line_start, span.start()),
+        end: anchor,
         gap: TextRange::new(span.end(), anchor),
         line_start,
         op_width: 0,
@@ -167,12 +168,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::{rules::RuleId, testing::parse};
-
-    /// The `strip-stranded-padding` terms, running where `enabled` holds.
-    fn stranding(enabled: bool) -> Stranding {
-        Stranding::new(RuleId::from("strip-stranded-padding"), enabled)
-    }
+    use crate::testing::{parse, stranding};
 
     #[rstest]
     #[case::padding_stripped("( a ) = 1\n", true, 3)]
@@ -184,7 +180,7 @@ mod tests {
         #[case] settled: usize,
     ) {
         let source = parse(src);
-        let member = line_anchored_member(&source, TextSize::new(6), stranding(enabled));
+        let member = line_anchored_member(&source, TextSize::new(6), stranding(enabled, 88));
         assert_eq!((member.width, member.settled_width), (5, settled));
     }
 
@@ -197,7 +193,7 @@ mod tests {
             TextSize::new(1),
             TextRange::new(TextSize::new(2), TextSize::new(4)),
             TokenKind::Colon,
-            stranding(true),
+            stranding(true, 88),
         );
         assert!(member.is_some());
     }
@@ -212,7 +208,7 @@ mod tests {
             TextSize::new(6),
             TextRange::new(TextSize::new(7), TextSize::new(14)),
             TokenKind::Colon,
-            stranding(true),
+            stranding(true, 88),
         );
         assert!(member.is_none());
     }
@@ -220,7 +216,7 @@ mod tests {
     #[test]
     fn line_anchored_member_collapses_gap_at_line_start() {
         let source = parse("xy\n");
-        let member = line_anchored_member(&source, TextSize::new(0), stranding(true));
+        let member = line_anchored_member(&source, TextSize::new(0), stranding(true, 88));
 
         // The anchor sits at line start, with an empty gap and zero
         // width.

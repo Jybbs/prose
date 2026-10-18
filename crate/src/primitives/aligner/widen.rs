@@ -4,7 +4,7 @@
 use ruff_text_size::{TextRange, TextSize};
 
 use super::{Member, Settings};
-use crate::{primitives::inline::display_width, source::Source};
+use crate::source::Source;
 
 /// One member's line start, its gap, and the widening it seats on
 /// that line.
@@ -12,9 +12,11 @@ pub(crate) type Widening = (TextSize, TextRange, isize);
 
 /// The widening each collected member seats on its own line, the gap
 /// ahead of the token brought to the settings' buffer and the
-/// post-operator gap brought to one space. A line-cap check adds the
-/// entries of the other members sharing a member's line, and an entry
-/// goes below zero where the rule narrows a gap.
+/// post-operator gap brought to one space, beside the move of each
+/// continuation row a decided column carries, keyed by an empty gap at
+/// the row's start. A line-cap check adds the entries of the other
+/// members sharing a member's line, and an entry goes below zero where
+/// the rule narrows a gap.
 #[derive(Default)]
 pub(crate) struct Widenings(Vec<Widening>);
 
@@ -51,6 +53,17 @@ impl Widenings {
         self.line(line_start).map(|&(.., delta)| delta).sum()
     }
 
+    /// Seats the `delta` columns a decided column moves the continuation
+    /// row opening at `line_start` by, read by every later line-cap check
+    /// over that row.
+    pub(crate) fn seat_row(&mut self, line_start: TextSize, delta: isize) {
+        let entry = (line_start, TextRange::empty(line_start), delta);
+        let slot = self
+            .0
+            .partition_point(|&(line, gap, _)| (line, gap.start()) <= (line_start, line_start));
+        self.0.insert(slot, entry);
+    }
+
     /// The entries on the line opening at `line_start`.
     fn line(&self, line_start: TextSize) -> impl Iterator<Item = &Widening> {
         let from = self.0.partition_point(|&(line, ..)| line < line_start);
@@ -71,12 +84,7 @@ pub(crate) fn widening_entries(
 ) -> Vec<Widening> {
     members
         .filter_map(|m| {
-            let gap_part =
-                settings.buffer.cast_signed() - display_width(source.slice(m.gap)).cast_signed();
-            let value_part = m
-                .rewritten_value_gap(source)
-                .map_or(0, |g| 1 - display_width(source.slice(g)).cast_signed());
-            let delta = gap_part + value_part;
+            let delta = m.value_shift(source, settings.buffer);
             (delta != 0).then_some((m.line_start, m.gap, delta))
         })
         .collect()

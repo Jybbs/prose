@@ -1,0 +1,9 @@
+[docs]
+previewable = false
+title       = "Keywords Beneath a Padded Statement Stay on One Column"
+
+description = '''
+`formatter = Formatter(...)` sits below `labels_map` and `label_width`, with `file` on the opening line and `offset_width`, `label_width`, and `show_caches` on continuation lines starting at the same column as `file`. Padding `formatter` out to `label_width`'s column moves the call, and `file` with it, two columns right, **and each continuation line moves the same two columns**, so the keywords still start at one column and their `=` align on the column `offset_width` sets.
+
+`renderer` below it takes no padding, so its rows stay where they were written while its `antialias` and `color_depth` align the same way.
+'''

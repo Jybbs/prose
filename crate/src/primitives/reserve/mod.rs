@@ -15,6 +15,7 @@ use ruff_python_ast::{
     AnyNodeRef, Expr, InterpolatedStringElement, Stmt,
     visitor::{Visitor, walk_expr},
 };
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 #[cfg(test)]
@@ -31,7 +32,7 @@ use crate::{
         padding::{self, Stranding},
         range::{covers, overlaps},
         scope::sub_bodies,
-        slots::item_holding,
+        slots::slot_holding,
         walk,
     },
     rules::{
@@ -58,8 +59,9 @@ pub(crate) struct Carry {
 
 /// The columns each aligned value shifts by once the alignment
 /// settles, one entry per reservation ascending by start, each carrying
-/// the span from the value's own start to the end of its physical row.
-/// A construct nested inside an aligned value moves with it, and the
+/// the span from the value's own start to the end of its physical row,
+/// beside one entry per continuation row the value carries with it. A
+/// construct nested inside an aligned value moves with it, and the
 /// shift composes with a caller's own placement.
 #[derive(Clone, Debug)]
 pub(crate) struct Columns {
@@ -119,13 +121,40 @@ impl Columns {
         runs
     }
 
+    /// The shifts starting where the nearest one at or before `offset`
+    /// starts, none ahead of the first.
+    fn nearest(&self, offset: TextSize) -> impl Iterator<Item = &Shift> {
+        let held = slot_holding(&self.shifts, offset).map_or(&[][..], |last| &self.shifts[..=last]);
+        let start = held.last().map(Ranged::start);
+        held.iter()
+            .rev()
+            .take_while(move |shift| Some(shift.start()) == start)
+    }
+
     /// The columns the alignment moves `offset` by, zero where no
     /// reservation covers it. A reservation never spans a row, so the
-    /// nearest one starting at or before `offset` is the only candidate.
-    fn shift(&self, offset: TextSize) -> isize {
-        item_holding(&self.shifts, offset)
-            .filter(|shift| shift.span.contains(offset))
-            .map_or(0, |shift| shift.columns)
+    /// nearest start at or before `offset` holds the only candidates,
+    /// several where values nested one inside another each carry the
+    /// row, whose shifts sum. A row a value carries moves whole, so its
+    /// shift adds to that of a value opening later on the row.
+    fn shift(&self, source: &Source, offset: TextSize) -> isize {
+        let held = |from: TextSize| -> isize {
+            self.nearest(from)
+                .filter(|shift| shift.span.contains(offset))
+                .map(|shift| shift.columns)
+                .sum()
+        };
+        let line = source.text().line_start(offset);
+        let opens_past_the_line_start = self
+            .nearest(offset)
+            .next()
+            .is_some_and(|shift| shift.start() > line);
+        held(offset)
+            + if opens_past_the_line_start {
+                held(line)
+            } else {
+                0
+            }
     }
 
     /// The column `offset` lands at, falling back to the column its own
@@ -133,7 +162,7 @@ impl Columns {
     pub(crate) fn column_in(&self, source: &Source, offset: TextSize) -> usize {
         source
             .column_of(offset)
-            .saturating_add_signed(self.shift(offset))
+            .saturating_add_signed(self.shift(source, offset))
     }
 
     /// The column `offset` lands at once `edits` place it at `placed`,
@@ -149,7 +178,7 @@ impl Columns {
         if breaks_row_ahead(source, edits, offset) {
             return placed;
         }
-        placed.saturating_add_signed(self.shift(offset))
+        placed.saturating_add_signed(self.shift(source, offset))
     }
 
     /// The shifts of this table a splice over `map` cannot carry into
@@ -190,10 +219,15 @@ impl Columns {
                 continue;
             };
             landed.insert(span);
-            match item_holding(&fresh.shifts, span.start()).filter(|held| held.span == span) {
-                Some(held) if held.columns != shift.columns => escapes.push(format!(
-                    "{span:?} moved from {} to {} columns",
-                    shift.columns, held.columns
+            let held: Vec<isize> = fresh
+                .nearest(span.start())
+                .filter(|held| held.span == span)
+                .map(|held| held.columns)
+                .collect();
+            match held.first() {
+                Some(&columns) if !held.contains(&shift.columns) => escapes.push(format!(
+                    "{span:?} moved from {} to {columns} columns",
+                    shift.columns
                 )),
                 Some(_) => {}
                 None => escapes.push(format!("{span:?} carried where the fresh table holds none")),
@@ -369,7 +403,7 @@ impl Reservations {
             widenings.extend(entries.into_iter().map(|entry| (base + index, entry)));
         }
         runs.extend(visitor.colons.iter().map(Scope::of));
-        let seated =
+        let mut seated =
             aligner::Widenings::from_entries(widenings.iter().map(|&(_, entry)| entry).collect());
         let colons = measure.colon_shifts(&visitor.colons, &seated);
         let place = |member: aligner::Member| {
@@ -421,14 +455,29 @@ impl Reservations {
             } else {
                 aligner::operator_columns(source, &run.members, settings, &seated, &joined)
             };
-            shifts.extend(placed.iter().zip(columns).filter_map(|(&placed, column)| {
-                let (start, at) = placed?;
-                Some(Shift {
-                    columns: (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed(),
-                    run: base + index,
-                    span: source.row_tail(start),
-                })
-            }));
+            for ((&placed, member), column) in placed.iter().zip(&run.members).zip(columns) {
+                let Some((start, at)) = placed else {
+                    continue;
+                };
+                let columns = (column + aligner::VALUE_OFFSET).cast_signed() - at.cast_signed();
+                let carried = member.rows_moved_by(source, columns);
+                for row in &carried {
+                    seated.seat_row(row.start(), columns);
+                    widenings.push((
+                        base + index,
+                        (row.start(), TextRange::empty(row.start()), columns),
+                    ));
+                }
+                shifts.extend(
+                    std::iter::once(start)
+                        .chain(carried.iter().map(Ranged::start))
+                        .map(|from| Shift {
+                            columns,
+                            run: base + index,
+                            span: source.row_tail(from),
+                        }),
+                );
+            }
         }
         shifts.sort_unstable_by_key(Ranged::start);
         Columns {
@@ -975,6 +1024,27 @@ mod tests {
         let text = "aaaa = 2\nb = [\n    1234\n]\n";
         assert_eq!(landed(text, 12, &[13]), vec![4]);
         assert_eq!(landed(text, 16, &[13]), vec![7]);
+    }
+
+    #[rstest]
+    #[case::stacked_strings("aaaa = 1\nb = (\"x\"\n     \"y\")\n", &[23], &[8])]
+    #[case::nested_values(
+        "aaaa = 1\nb = foo(x=bar(1,\n              2),\n        yy=3)\n",
+        &[40, 52, 55],
+        &[19, 11, 16]
+    )]
+    fn columns_move_a_carried_row_with_its_value(
+        #[case] text: &str,
+        #[case] values: &[u32],
+        #[case] expected: &[usize],
+    ) {
+        // Padding `b` out to `aaaa`'s column moves its value three columns,
+        // and every row aligned beneath the value moves with it. A keyword
+        // buffered inside the value moves the rows it carries by its own
+        // shift on top.
+        let mut config = capped(88);
+        config.rules.reflow_calls.enabled = false;
+        assert_eq!(landed_under(&config, text, values), expected);
     }
 
     #[rstest]

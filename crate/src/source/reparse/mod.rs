@@ -247,9 +247,8 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
-        primitives::padding::Stranding,
         rules::{RuleId, prefer_fstring::PreferFstring},
-        testing::{parse, range, replacement, woven},
+        testing::{parse, range, replacement, stranding, woven},
     };
 
     /// `text` rewritten by `edits`, spliced where the splice applies and
@@ -312,7 +311,7 @@ mod tests {
         #[case] text: &str,
         #[case] edit: Edit,
     ) {
-        let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), true);
+        let stranding = stranding(true, 88);
         let (rewritten, map) = woven(text, vec![edit]);
         let source = parse(text);
         assert!(

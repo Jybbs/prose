@@ -297,6 +297,8 @@ impl Config {
         padding::Stranding::new(
             StripStrandedPadding::SLUG,
             self.rules.strip_stranded_padding.enabled,
+            self.code_width(),
+            self.comment_settling(),
         )
     }
 

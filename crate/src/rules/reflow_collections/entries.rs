@@ -9,6 +9,7 @@
 use std::borrow::Cow;
 
 use ruff_python_ast::{AnyNodeRef, DictItem, Expr, ExprDict, token::TokenKind};
+use ruff_source_file::UniversalNewlines;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
 use super::{
@@ -24,18 +25,19 @@ use crate::{
         layout::opener_width,
         orderer::is_identity,
         tokens::code_token_before,
-        travel::Landing,
+        travel::{Landing, carried_rows},
     },
     rules::{
         align_colons::AlignColons, alphabetize_siblings::sets_dividers, reflow_calls::Reshaper,
         stack_adjacent_strings::concatenated_run,
     },
+    source::Source,
 };
 
 /// One dict entry as the expand path writes it: its key text and the
 /// width that key settles to, `None` and zero for a `**` unpacking,
 /// the entry's text and its display width at the canonical `": "`,
-/// and the offset its value starts at. `nested` holds where the value,
+/// and the source range its value spans. `nested` holds where the value,
 /// written on one row, spans rows only because a literal inside it
 /// takes the collection layout where it lands, or because the value is
 /// a `%` or `str.format()` template holding a call that explodes where a
@@ -45,8 +47,39 @@ struct Entry<'a> {
     key_width: usize,
     nested: bool,
     text: Cow<'a, str>,
-    value_start: TextSize,
+    value: TextRange,
     width: usize,
+}
+
+impl Entry<'_> {
+    /// Returns the widest row of this entry's text that moves with its
+    /// value when `align-colons` pads its `:`. The rows are the value's
+    /// [`carried_rows`] in `source` beside a key starting at `key`, each
+    /// read in the text at its distance below the value's opening row
+    /// where the text writes the row's code as the source does, so a
+    /// value the text rewrites carries none. The width leaves out the
+    /// padding written ahead of the `:` past `key_text` and counts `tail`
+    /// columns closing the text's last row. Zero where no row moves.
+    fn carried_width(&self, source: &Source, key: TextSize, key_text: &str, tail: usize) -> usize {
+        let opening = source.line_index(self.value.start()).get();
+        let carried: Vec<(usize, &str)> = carried_rows(source, self.value, source.column_of(key))
+            .into_iter()
+            .map(|row| {
+                let offset = source.line_index(row.start()).get() - opening;
+                (offset, source.slice(row).trim_start())
+            })
+            .collect();
+        let rest = &self.text[key_text.len()..];
+        let padded = rest.len() - rest.trim_start_matches(' ').len();
+        let last = self.text.universal_newlines().count() - 1;
+        self.text
+            .universal_newlines()
+            .enumerate()
+            .filter(|(row, line)| carried.contains(&(*row, line.trim_start())))
+            .map(|(row, line)| display_width(&line) + if row == last { tail } else { 0 })
+            .max()
+            .map_or(0, |width| width.saturating_sub(padded))
+    }
 }
 
 /// The text a dict entry keeps between its key and its value, the
@@ -133,7 +166,7 @@ impl<'a> Layouter<'a> {
                 key_width: 0,
                 nested: false,
                 text: Cow::Owned(format!("**{value_text}")),
-                value_start: value_range.start(),
+                value: value_range,
                 width,
             };
         };
@@ -186,7 +219,7 @@ impl<'a> Layouter<'a> {
             key_width,
             nested,
             text,
-            value_start: value_range.start(),
+            value: value_range,
             width,
         }
     }
@@ -249,7 +282,8 @@ impl<'a> Layouter<'a> {
     /// for `align-colons`, a break for a key spanning rows, and otherwise
     /// the key's settled width beside the row's [`Extent`], which
     /// measures the value's opening row where a layout rule can expand a
-    /// one-row value.
+    /// one-row value. A value spanning rows reads as the widest of its
+    /// opening row and the rows it moves with, per [`Entry::carried_width`].
     fn row(
         &self,
         entry: &Entry<'a>,
@@ -267,11 +301,17 @@ impl<'a> Layouter<'a> {
                 return Slot::Break;
             }
             let extent = if spans_rows(&entry.text) {
+                let opening = indent
+                    + entry.key_width
+                    + opening_width(entry.text[key_text.len()..].trim_start_matches(' '));
                 Extent {
                     expanded: None,
-                    inline: indent
-                        + entry.key_width
-                        + opening_width(entry.text[key_text.len()..].trim_start_matches(' ')),
+                    inline: opening.max(entry.carried_width(
+                        self.source,
+                        item.start(),
+                        key_text,
+                        tail,
+                    )),
                 }
             } else {
                 Extent {
@@ -279,7 +319,7 @@ impl<'a> Layouter<'a> {
                         self.source,
                         &self.one_row,
                         &item.value,
-                        entry.value_start,
+                        entry.value.start(),
                         dict,
                     )
                     .map(|width| indent + entry.key_width + CANONICAL_SEPARATOR + width),

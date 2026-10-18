@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Rows That Would Cross the Line Length Stay"
+
+description = '''
+Under a `code-line-length` of 30, each `:` gains the space it lacks and moves its value one column right. `moved`'s second row is 29 columns wide, so **it moves the same one column and ends at the limit**. `held`'s second row already ends at the limit, so moving it would carry it past 30, and **that row stays where it was written** while the value still gains its space.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Rows Beneath a Padded Value Move With It"
+
+description = '''
+`"_overlapped"` and `"status"` each continue their value onto a row starting at the column of the value's first string. **Padding the `:` moves each value right, and the row beneath it moves the same number of columns**, so the second string still sits beneath the first and the `%` operand beneath its string. `"hang"`'s call hangs its argument one indent step past the entry and closes at the entry's indent, so its rows stay where they were written.
+'''

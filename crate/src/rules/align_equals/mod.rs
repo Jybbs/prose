@@ -63,7 +63,7 @@ impl Rule for AlignEquals {
                 Run::Candidate(group) => visitor.walker.emit_if_candidate(&group),
             }
         }
-        visitor.walker.groups
+        visitor.walker.into_groups()
     }
 
     fn id(&self) -> RuleId {

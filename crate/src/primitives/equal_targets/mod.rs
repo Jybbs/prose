@@ -95,9 +95,9 @@ pub(crate) fn parameter_groups(
 /// Returns the alignment member for an annotated `x: int = 1`, plain
 /// `x = 1`, augmented `x += 1`, or PEP 695 `type X[T] = list[T]`
 /// statement, measuring the left-hand side paren-aware and a `type`
-/// statement's head from its keyword through its type parameter list.
-/// `None` for any other shape or when the span up to the operator breaks
-/// across lines.
+/// statement's head from its keyword through its type parameter list,
+/// its item closing with the statement. `None` for any other shape or
+/// when the span up to the operator breaks across lines.
 fn assignment(source: &Source, stmt: &Stmt, stranding: Stranding) -> Option<aligner::Member> {
     let equals = |head: TextRange| {
         equal_member(
@@ -108,7 +108,7 @@ fn assignment(source: &Source, stmt: &Stmt, stranding: Stranding) -> Option<alig
             stranding,
         )
     };
-    match stmt {
+    let member = match stmt {
         Stmt::AnnAssign(a) => {
             let annotation = source.paren_aware_range(a.annotation.as_ref().into(), a.into());
             equals(a.target.range().cover(annotation))
@@ -143,7 +143,8 @@ fn assignment(source: &Source, stmt: &Stmt, stranding: Stranding) -> Option<alig
             equals(TextRange::new(a.start(), head_end))
         }
         _ => None,
-    }
+    };
+    member.map(|member| member.through(stmt.end()))
 }
 
 /// Builds an `=`-anchored member with `target` as the LHS span,
@@ -169,10 +170,11 @@ fn equal_member(
     Some(member.with_value_gap(TextSize::of('='), value_start))
 }
 
-/// Returns the alignment member for a `name=value` keyword argument, or
-/// `None` for a positional argument or a `**` unpacking. A keyword whose
-/// value spans lines still qualifies, since its `=` sits on the keyword's
-/// first line where [`equal_member`] anchors it.
+/// Returns the alignment member for a `name=value` keyword argument,
+/// its item closing with the value, or `None` for a positional argument
+/// or a `**` unpacking. A keyword whose value spans lines still
+/// qualifies, since its `=` sits on the keyword's first line where
+/// [`equal_member`] anchors it.
 fn keyword(
     source: &Source,
     arg: ArgOrKeyword<'_>,
@@ -189,11 +191,13 @@ fn keyword(
         keyword.into(),
         stranding,
     )
+    .map(|member| member.through(keyword.end()))
 }
 
 /// Returns the alignment member for an annotated function parameter
-/// carrying a default value, or `None` for any other shape. Width spans
-/// the parameter name through the annotation's paren-aware end, and the
+/// carrying a default value, its item closing with the default, or
+/// `None` for any other shape. Width spans the parameter name through
+/// the annotation's paren-aware end, and the
 /// value-side gap is recovered against the parameter-with-default node so
 /// a parenthesized default keeps its `(`.
 fn parameter(
@@ -216,4 +220,5 @@ fn parameter(
         with_default.into(),
         stranding,
     )
+    .map(|member| member.through(with_default.end()))
 }

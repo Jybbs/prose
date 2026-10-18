@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/align_equals/shared_row_moves_by_both_shifts/input.py
+---
+align-equals@10..52
+align-equals@18..19
+align-equals@54..55
