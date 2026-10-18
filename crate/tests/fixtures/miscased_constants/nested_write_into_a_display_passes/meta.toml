@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Write Into an Item the Display Holds Spares the Display"
+
+description = '''
+`add_entry` appends to the list at `menudefs[0][1]` and `register` assigns a slice of the list at `handlers[event]`, so each write lands on an object the display holds rather than on the display itself. **Neither name is reported**, because the rule follows the subscripts back to the name the write starts from, and the display's contents change either way.
+'''

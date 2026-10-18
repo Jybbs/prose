@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/prune_inert_imports/deleted_in_a_tuple_holds_its_import/input.py
+---
+import os
+import sys
+
+del (sys, os)
+
+value = 1

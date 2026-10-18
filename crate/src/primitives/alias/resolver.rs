@@ -21,6 +21,9 @@ impl<'src> Resolver<'_, 'src> {
                 right,
                 ..
             }) => self.union_arm(left) && self.union_arm(right),
+            Expr::BoolOp(ExprBoolOp { values, .. }) => {
+                values.iter().all(|operand| self.alias_value(operand))
+            }
             Expr::Subscript(subscript) => !self.subscript_is_runtime(subscript),
             _ => UnqualifiedName::from_expr(value).is_some_and(|base| self.dotted_is_alias(&base)),
         }

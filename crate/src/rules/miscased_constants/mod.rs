@@ -1,11 +1,12 @@
 //! Flags a module-level single-name assignment whose value is inert,
 //! whose name nothing reassigns, and whose name is not `SCREAMING_CASE`,
 //! carving out a single-character name, a leading underscore, a
-//! `TypeAlias` annotation, an alias value, a lambda, the
-//! `if TYPE_CHECKING:` block, a name the module's own `__all__` lists,
-//! every name where that `__all__` cannot be listed statically, and the
-//! per-project `allow_pattern`. The rename is display-only, and
-//! notebooks are skipped whole.
+//! `TypeAlias` annotation, an alias value, a lambda, a list, set, or
+//! dict display the module writes into, the `if TYPE_CHECKING:` block, a
+//! name the module's own `__all__` lists, every name where that
+//! `__all__` cannot be listed statically, and the per-project
+//! `allow_pattern`. The rename is display-only, and notebooks are
+//! skipped whole.
 
 use heck::ToShoutySnakeCase;
 use ruff_diagnostics::Edit;
@@ -45,7 +46,8 @@ impl MiscasedConstants {
 
     /// True when `site` binds a module constant miscased against
     /// `SCREAMING_CASE`, no carve-out from the module doc sparing it. The
-    /// value must be present, inert, and neither a lambda nor a type.
+    /// value must be present, inert, neither a lambda nor a type, and not
+    /// a collection display the module writes into.
     fn is_miscased(
         &self,
         site: &ModuleAssignment<'_>,
@@ -58,6 +60,7 @@ impl MiscasedConstants {
             && !is_screaming_case(name)
             && !surface.exports(name)
             && !ctx.analysis().module_reassigned(name)
+            && !site.binds_mutated_display(ctx.analysis())
             && !is_explicit_type_alias(site.stmt)
             && !self.allow_pattern.matches(name)
             && !is_type_alias(site, ctx)
@@ -123,6 +126,13 @@ mod tests {
         assert_eq!(fix.edits()[0].content(), Some("MAX_RETRIES"));
         assert!(only.message.contains("`max_retries`"));
         assert_eq!(&source.text()[only.range], "max_retries");
+    }
+
+    #[rstest]
+    #[case::main_block("if __name__ == \"__main__\":\n    libs = []\n    libs.append(\"-lm\")\n")]
+    #[case::loop_body("for flag in flags:\n    options = {}\n    options[flag] = True\n")]
+    fn displays_written_inside_a_compound_statement_are_spared(#[case] src: &str) {
+        assert!(rule().lint(&parse(src)).is_empty(), "{src}");
     }
 
     #[rstest]

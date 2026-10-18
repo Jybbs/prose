@@ -203,6 +203,16 @@ impl BindingAnalysis {
             .then_some(binding.read_offsets.as_slice())
     }
 
+    /// Returns `true` when the module writes into the object the
+    /// module-scope binding for `name` holds. An item assignment, an item
+    /// deletion, and a mutating `list`, `dict`, or `set` method read off
+    /// the name or off any subscript of it each count (`table[key] = value`,
+    /// `del table[key]`, `table[key].append`).
+    pub(crate) fn module_mutated(&self, name: &str) -> bool {
+        self.module_binding(name)
+            .is_some_and(|binding| binding.mutated)
+    }
+
     /// The names the module scope binds that are read inside each of
     /// `ranges`, which ascend and never overlap, one set per range.
     pub(crate) fn module_names_read_within(&self, ranges: &[TextRange]) -> Vec<FxHashSet<&str>> {
@@ -356,10 +366,12 @@ pub(crate) enum UnpackKind {
 /// One named binding in some scope, with every observed write and read.
 /// `attributes` collects the distinct attribute names read off the
 /// binding (`os.environ` records `environ`), `bare_read` flips when the
-/// name is read without an attribute access (`foo(os)`), and
+/// name is read without an attribute access (`foo(os)`),
 /// `first_unconditional_write` holds the earliest write not nested in a
 /// conditional branch (`if`/`for`/`while`/`try`/`match`), or `None` when
-/// every write is conditional.
+/// every write is conditional, and `mutated` flips when an item
+/// assignment, an item deletion, or a mutating method writes into the
+/// object the name holds (`table[key] = value`).
 #[derive(Debug, PartialEq, Serialize)]
 struct Binding {
     annotation_read: bool,
@@ -367,11 +379,21 @@ struct Binding {
     bare_read: bool,
     first_unconditional_write: Option<TextSize>,
     kinds: SmallVec<[BindingKind; 2]>,
+    mutated: bool,
     name: Name,
     read_offsets: SmallVec<[TextSize; 4]>,
     runtime_read: bool,
     scope: ScopeId,
     write_offsets: SmallVec<[TextSize; 2]>,
+}
+
+impl Binding {
+    /// True when any read of this binding sits at one of `offsets`.
+    fn read_at_any(&self, offsets: &FxHashSet<TextSize>) -> bool {
+        self.read_offsets
+            .iter()
+            .any(|offset| offsets.contains(offset))
+    }
 }
 
 /// One lexical scope plus its binding table keyed by name.
@@ -585,11 +607,13 @@ mod tests {
 
     #[rstest]
     #[case::module_scope("import os\ndel os\n", "os", true)]
+    #[case::parenthesized_tuple("import os\ndel (sys, os)\n", "os", true)]
+    #[case::bracketed_list("import os\ndel [os]\n", "os", true)]
     #[case::function_scope("def f(x):\n    del x\n", "x", true)]
     #[case::attribute_target("import os\ndel os.path\n", "os", false)]
     #[case::subscript_target("d = {}\ndel d['k']\n", "d", false)]
     #[case::never_deleted("import os\nos.getcwd()\n", "os", false)]
-    fn is_deleted_marks_only_a_bare_name_target(
+    fn is_deleted_marks_each_name_a_del_unbinds(
         #[case] src: &str,
         #[case] name: &str,
         #[case] expected: bool,
@@ -688,6 +712,65 @@ mod tests {
     #[case("x = 1\n")]
     fn module_function_reads_returns_none_unless_name_is_one_def(#[case] src: &str) {
         assert!(analyze(src).module_function_reads("f").is_none());
+    }
+
+    #[rstest]
+    #[case::attribute_root("table = make()\ntable.items[0] = 1\n")]
+    #[case::attribute_store("table = make()\ntable.items = []\n")]
+    #[case::item_read("table = {\"k\": 1}\nvalue = table[\"k\"]\n")]
+    #[case::key_of_another_write("table = {}\nother = {}\nother[table] = 1\n")]
+    #[case::non_mutating_method("table = {}\nvalue = table.get(\"k\")\n")]
+    #[case::parameter_shadows("table = {}\ndef f(table):\n    table.append(1)\n")]
+    #[case::local_shadows("table = {}\ndef f():\n    table = {}\n    table[\"k\"] = 1\n")]
+    #[case::unbound("value = 1\n")]
+    #[case::write_through_another_name("table = {}\nother = table\nother[\"k\"] = 1\n")]
+    fn module_mutated_is_false_without_a_write_into_the_module_binding(#[case] src: &str) {
+        assert!(!analyze(src).module_mutated("table"));
+    }
+
+    #[rstest]
+    #[case::item_store("table = {}\ntable[\"k\"] = 1\n")]
+    #[case::item_delete("table = {\"k\": 1}\ndel table[\"k\"]\n")]
+    #[case::item_delete_in_a_tuple("table = {\"k\": 1}\ndel (table[\"k\"], other)\n")]
+    #[case::augmented_item("table = {\"k\": 1}\ntable[\"k\"] += 1\n")]
+    #[case::annotated_item("table = {}\ntable[\"k\"]: int = 1\n")]
+    #[case::slice_store("table = []\ntable[:] = [1]\n")]
+    #[case::unpacked_item("table = {}\ntable[\"k\"], other = 1, 2\n")]
+    #[case::for_target("table = [0]\nfor table[0] in range(3):\n    pass\n")]
+    #[case::nested_item("table = {\"k\": {}}\ntable[\"k\"][\"j\"] = 1\n")]
+    #[case::method_call("table = []\ntable.append(1)\n")]
+    #[case::nested_method("table = {\"k\": []}\ntable[\"k\"].append(1)\n")]
+    #[case::bound_method("table = []\nregister = table.append\n")]
+    #[case::function_above("def register(k, v):\n    table[k] = v\ntable = {}\n")]
+    #[case::global_declaration("table = {}\ndef reset():\n    global table\n    table.clear()\n")]
+    fn module_mutated_reads_a_write_into_the_module_binding(#[case] src: &str) {
+        assert!(analyze(src).module_mutated("table"));
+    }
+
+    #[rstest]
+    fn module_mutated_reads_each_mutating_method(
+        #[values(
+            "add",
+            "append",
+            "clear",
+            "difference_update",
+            "discard",
+            "extend",
+            "insert",
+            "intersection_update",
+            "pop",
+            "popitem",
+            "remove",
+            "reverse",
+            "setdefault",
+            "sort",
+            "symmetric_difference_update",
+            "update"
+        )]
+        method: &str,
+    ) {
+        let src = format!("table = []\ntable.{method}()\n");
+        assert!(analyze(&src).module_mutated("table"), "{method}");
     }
 
     #[test]

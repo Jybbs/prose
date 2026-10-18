@@ -10,6 +10,7 @@ bindings:
     first_unconditional_write: 4
     kinds:
       - FunctionDef
+    mutated: false
     name: globalized
     read_offsets: []
     runtime_read: false
@@ -22,6 +23,7 @@ bindings:
     first_unconditional_write: 35
     kinds:
       - Assignment
+    mutated: false
     name: x
     read_offsets: []
     runtime_read: false
@@ -34,6 +36,7 @@ bindings:
     first_unconditional_write: 47
     kinds:
       - FunctionDef
+    mutated: false
     name: nested
     read_offsets: []
     runtime_read: false
@@ -46,6 +49,7 @@ bindings:
     first_unconditional_write: 61
     kinds:
       - Assignment
+    mutated: false
     name: y
     read_offsets: []
     runtime_read: false
@@ -58,6 +62,7 @@ bindings:
     first_unconditional_write: 75
     kinds:
       - FunctionDef
+    mutated: false
     name: inner
     read_offsets:
       - 121
@@ -71,6 +76,7 @@ bindings:
     first_unconditional_write: 111
     kinds:
       - Assignment
+    mutated: false
     name: y
     read_offsets: []
     runtime_read: false

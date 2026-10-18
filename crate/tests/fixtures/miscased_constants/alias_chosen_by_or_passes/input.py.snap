@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/miscased_constants/alias_chosen_by_or_passes/input.py
+---
+from _json import scanstring as c_scanstring
+
+
+def py_scanstring(s, end):
+    return s, end
+
+
+scanstring = c_scanstring or py_scanstring
+decoder    = c_decoder and py_decoder
+encoding   = preferred_encoding or "utf-8"

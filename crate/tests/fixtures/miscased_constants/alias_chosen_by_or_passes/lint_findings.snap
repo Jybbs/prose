@@ -1,0 +1,28 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/alias_chosen_by_or_passes/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 9,
+      "row": 10
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "encoding",
+          "content": "ENCODING"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 10
+    },
+    "message": "Module constant `encoding` is not SCREAMING_CASE"
+  }
+]

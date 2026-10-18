@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Name a Parenthesized `del` Unbinds Keeps Its Import"
+
+description = '''
+Nothing reads `os` or `sys` after `import os` and `import sys`, and `del (sys, os)` unbinds both through one parenthesized target. **Both imports stay**, because the rule counts each name inside a tuple or list target of `del` as a use, exactly as it counts the bare name in `del os`.
+'''

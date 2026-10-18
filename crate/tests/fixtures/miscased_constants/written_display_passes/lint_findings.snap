@@ -1,0 +1,28 @@
+---
+source: crate/tests/integration.rs
+expression: json
+input_file: crate/tests/fixtures/miscased_constants/written_display_passes/input.py
+---
+[
+  {
+    "code": "miscased-constants",
+    "end_location": {
+      "column": 13,
+      "row": 2
+    },
+    "fix": {
+      "applicability": "displayonly",
+      "edits": [
+        {
+          "before": "encoding_map",
+          "content": "ENCODING_MAP"
+        }
+      ]
+    },
+    "location": {
+      "column": 1,
+      "row": 2
+    },
+    "message": "Module constant `encoding_map` is not SCREAMING_CASE"
+  }
+]

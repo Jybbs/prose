@@ -11,12 +11,12 @@ tagline: ignore-aware path walker
 
 <PrimitiveLayout primitive="walker">
 
-*Walker* finds the files the `check` and `format` subcommands run on. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* and Jupyter notebook *(`.ipynb`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `Walk`, so it reads gitignore files with the same semantics Ripgrep, fd, and the other tree-walking tools built on that crate share.
+The `walker` module finds the files the `check` and `format` subcommands run on. Given a list of path arguments, it yields every Python source file *(`.py`, `.pyi`, `.pyw`)* and Jupyter notebook *(`.ipynb`)* under those paths, honoring `.gitignore`, `.ignore`, and the user's global ignore file. The walker wraps the [**`ignore`**](https://docs.rs/ignore/) crate's `Walk`, so it reads gitignore files with the same semantics Ripgrep, fd, and the other tree-walking tools built on that crate share.
 
 
 ## Consumer-Visible Surface
 
-*Walker* lives at `crate/src/walker.rs` and is `pub(crate)`, so this page documents the CLI behavior the function produces rather than a type a downstream caller can call. What a downstream caller sees is the set of files `prose check` and `prose format` operate on, settled before any [[source]] is built or any [[pipeline]] runs.
+The `walker` module lives at `crate/src/walker.rs`, and its `walk` function is `pub(crate)`, so this page documents the CLI behavior `walk` produces rather than a type a downstream caller can call. What a downstream caller sees is the set of files `prose check` and `prose format` operate on, settled before any [[source]] is built or any [[pipeline]] runs.
 
 A downstream consumer reaches the walker through the CLI's path-mode arguments. Stdin mode bypasses the walker entirely, whether invoked through `--stdin` or the `-` positional alias, because the input stream is a single source written straight to stdout.
 

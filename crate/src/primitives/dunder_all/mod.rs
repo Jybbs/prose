@@ -23,10 +23,10 @@ pub(crate) enum DunderAll<'a> {
     Listed(FxHashSet<&'a str>),
     /// The module writes `__all__` nowhere.
     Undeclared,
-    /// A write no static read settles, an attribute read off the
-    /// module-scope `__all__` anywhere in the module, a write inside a
-    /// compound statement, or a statement other than an assignment binding
-    /// the name.
+    /// A write no static read settles, an attribute read off or a write
+    /// into the module-scope `__all__` anywhere in the module, a write
+    /// inside a compound statement, or a statement other than an
+    /// assignment binding the name.
     Unreadable,
 }
 
@@ -34,7 +34,8 @@ impl<'a> DunderAll<'a> {
     /// Reads every statement in `source` that writes or binds `__all__`
     /// into one surface.
     pub(crate) fn of(source: &'a Source) -> Self {
-        if source.binding_analysis().module_attribute_count(DUNDER_ALL) > 0 {
+        let analysis = source.binding_analysis();
+        if analysis.module_attribute_count(DUNDER_ALL) > 0 || analysis.module_mutated(DUNDER_ALL) {
             return Self::Unreadable;
         }
         let mut listed: Option<FxHashSet<&str>> = None;
@@ -124,13 +125,8 @@ fn string_items(value: &Expr) -> Option<Vec<&str>> {
 }
 
 fn writes_dunder_all(expr: &Expr) -> bool {
-    match expr {
-        Expr::Name(name) => name.ctx.is_store() && name.id == DUNDER_ALL,
-        Expr::Subscript(subscript) => {
-            subscript.ctx.is_store() && names_dunder_all(&subscript.value)
-        }
-        _ => false,
-    }
+    expr.as_name_expr()
+        .is_some_and(|name| name.ctx.is_store() && name.id == DUNDER_ALL)
 }
 
 #[cfg(test)]
@@ -163,6 +159,7 @@ mod tests {
     #[case::with_target("with open(path) as __all__:\n    pass\n")]
     #[case::walrus("(__all__ := [\"other\"])\n")]
     #[case::deleted("__all__ = [\"a\"]\ndel __all__\n")]
+    #[case::deleted_item("__all__ = [\"a\", \"b\"]\ndel __all__[0]\n")]
     #[case::definition("def __all__():\n    pass\n")]
     #[case::function_for_target(
         "def setup():\n    global __all__\n    for __all__ in [[\"other\"]]:\n        pass\n"
