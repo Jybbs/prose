@@ -7,7 +7,8 @@
 //! over-budget operator chain or conditional expression breaks across
 //! rows one operand per row, and one whose interior breaks sit inside a
 //! bracket of its own sheds in place. An over-budget boolean chain or
-//! conditional ending a statement's row gains a pair the break adds.
+//! conditional forming a test, a `return` value, or an assignment value
+//! gains a pair the break adds.
 //! `plan` finds the pairs, `chain` divides an interior into operands,
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.

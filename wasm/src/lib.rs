@@ -10,6 +10,7 @@ use prose::{
     rules::RuleId,
     source::Source,
 };
+use ruff_text_size::Ranged;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -80,7 +81,8 @@ fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Err
     let pipeline = Pipeline::with_defaults(&config);
     let source = pipeline.read(source, Default::default())?;
     if let Some(refusal) = pipeline.refusal(&source) {
-        return Err(refusal.message(pipeline.target()).into());
+        let message = refusal.message(pipeline.target());
+        return Err(format!("{message} at byte range {:?}", refusal.range()).into());
     }
     let (formatted, diagnostics, fired_rules) = pipeline.run(source)?;
     let unstable_rules = if settle {
@@ -174,7 +176,7 @@ mod tests {
     fn rejects_a_lazy_import_below_its_target_version() {
         assert_matches!(
             run("target-version = \"3.14\"", "lazy import os\n", true),
-            Err(_)
+            Err(error) if error.to_string().ends_with(" at byte range 0..4")
         );
     }
 

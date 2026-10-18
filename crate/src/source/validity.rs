@@ -817,6 +817,17 @@ mod tests {
         );
     }
 
+    #[test]
+    fn semantic_error_rechecks_a_source_under_another_target() {
+        let source = parse("x: (y := 1) = 2\n");
+        assert_eq!(source.semantic_error(Target::Unset), None);
+        assert!(
+            source
+                .semantic_error(Target::Version(PythonVersion::PY315))
+                .is_some()
+        );
+    }
+
     #[rstest]
     #[case::await_at_module_scope("await x\n")]
     #[case::await_in_a_class_inside_an_async_function(

@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/elif_condition_stacks_where_it_fits/input.py
+---
+def pick(path, transcript, limits):
+    if path is None:
+        return None
+    elif (
+        path != transcript
+        and path.suffix == ".jsonl"
+        and path.stat().st_size > limits
+    ):
+        return path
+    return None

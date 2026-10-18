@@ -947,6 +947,21 @@ fn check_json_summary_counts_a_changed_file() {
 }
 
 #[test]
+fn check_names_the_refusal_formatting_leaves_standing() {
+    let assert = run_fixture(
+        "late.py",
+        "import os\nfrom __future__ import annotations\n\n\ndef f():\n    lazy import json\n    return json\n\n\nprint(os.sep)\n",
+        &["check", "--no-cache"],
+    )
+    .code(3);
+
+    assert_stderr_has(
+        &assert,
+        "line 6, column 5: lazy import not allowed inside functions",
+    );
+}
+
+#[test]
 fn check_no_cache_flag_runs_clean() {
     run_fixture("clean.py", "x = 1\n", &["check", "--no-cache"]).success();
 }

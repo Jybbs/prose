@@ -25,6 +25,21 @@ fn pipeline_is_send_and_sync() {
 }
 
 #[test]
+fn split_keeps_the_target_on_every_single_rule_pipeline() {
+    let config = Config {
+        target_version: Some(PythonVersion::PY312),
+        ..Config::default()
+    };
+
+    assert!(
+        Pipeline::with_defaults(&config)
+            .split()
+            .iter()
+            .all(|(_, alone)| alone.target() == Target::Version(PythonVersion::PY312))
+    );
+}
+
+#[test]
 fn with_defaults_registers_enabled_rules() {
     let config = Config::default();
     let pipeline = Pipeline::with_defaults(&config);

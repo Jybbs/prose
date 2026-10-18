@@ -282,6 +282,18 @@ mod tests {
     }
 
     #[test]
+    fn format_buffer_yields_no_edits_for_a_refused_buffer() {
+        let formatted = format_buffer(
+            "alpha = 1\nb = 22\n\n\ndef f():\n    lazy import os\n",
+            PySourceType::Python,
+            PositionEncoding::Utf16,
+            &Config::default(),
+        );
+
+        assert!(formatted.edits.is_none());
+    }
+
+    #[test]
     fn format_buffer_yields_no_edits_for_formatted_source() {
         let formatted = format_buffer(
             "x = 1\n",

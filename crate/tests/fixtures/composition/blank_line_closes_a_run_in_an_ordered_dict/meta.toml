@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Blank Line Closes a Run in a Dict Already in Order"
+
+description = '''
+`D` is already in key order, with a blank line between `"aaaaaaaaaaaaaa"` and the run of `"b"` and `"c"`, under a `code-line-length` of `60`. **`"c"` keeps its tuple on one row**, because [[alphabetize-siblings]] keeps the blank line in a dict it leaves in order, so [[reflow-collections]] measures `"c"` at the column of its own run rather than at the long key\'s column across the blank line.
+'''

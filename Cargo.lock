@@ -1539,6 +1539,7 @@ version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",
  "prose",
+ "ruff_text_size",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",

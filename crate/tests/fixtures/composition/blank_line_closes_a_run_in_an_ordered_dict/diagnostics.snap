@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/blank_line_closes_a_run_in_an_ordered_dict/input.py
+---
+align-colons@39..51
+reflow-collections@95..96

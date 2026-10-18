@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Conditional Spread Across Rows Keeps Its Rows"
+
+description = '''
+The conditional bound to `x` sits in a pair its author broke across two rows, past the `code-line-length` of `40` once joined. **The pair and its rows stay as written**, because a conditional its author spread across rows has no fold the rule can rejoin, so the break never divides it at its `if` and its `else`.
+'''

@@ -25,7 +25,7 @@ The constructors cover the common cases:
 2. `Source::from_str(text: &str) -> Result<Self, ParseError>` parses an in-memory string, returning a *Source* whose synthetic filename is `<source>`. Use it in test fixtures and any other case where the text exists in memory and needs no `target-version` check.
 3. `Source::parse_named(text: String, name: &str) -> Result<Self, ParseError>` parses an in-memory string the way `from_str` does while carrying `name` the way a file-backed value carries its path, so a diagnostic drawn from text in memory still names the file it came from. A corpus sweep reading a checkpoint back uses it, since the buffer is in memory and the reported defect has to name the file on disk.
 
-The command line, the language server, and the sandbox read through [[pipeline]] instead, whose `read` and `read_path` parse at the pipeline's `target-version` and whose `refusal` reports the syntax that version rejects, so the target gates all three the same way.
+The command line, the language server, and the sandbox each parse at the `target-version` of their [[pipeline]] and ask its `refusal` for the syntax that version rejects, so the target gates all three the same way.
 
 *Source* also implements `Clone`, which copies the text, the tree, the token stream, and the comment indexes while leaving each lazy table to fill on the copy's own first read, so a consumer that formats one buffer several ways pays for the parse once and for each derived table only where it reads one.
 

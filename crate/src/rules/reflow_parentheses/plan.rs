@@ -1,8 +1,8 @@
 //! Reads each grouping pair into the reflow it earns, the shed against
 //! the parse the bare form produces and the break against the rows its
 //! interior divides into, beside the calls a later explode reshapes. A
-//! boolean chain or a conditional expression ending a statement's row
-//! outside every bracket earns a pair the break adds around it.
+//! boolean chain or a conditional expression forming a test, a `return`
+//! value, or an assignment value earns a pair the break adds around it.
 
 use std::{borrow::Cow, cmp::Reverse};
 

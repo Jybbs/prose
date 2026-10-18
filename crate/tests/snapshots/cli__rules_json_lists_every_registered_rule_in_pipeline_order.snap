@@ -58,6 +58,9 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   {
     "after": [
       "shed-backslash-continuations",
+      "normalize-literals",
+      "modernize-annotations",
+      "strip-trailing-commas",
       "normalize-comparisons"
     ],
     "imperative": "remove a redundant grouping parenthesis pair, or break one that runs past the line budget",

@@ -35,7 +35,7 @@ The snippets are rendered by [**`annotate-snippets`**](https://docs.rs/annotate-
 
 ## `json`
 
-One Ruff-compatible record per diagnostic on its own line, in NDJSON, closed by a summary record. The record shape matches what Ruff and ESLint print, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
+One Ruff-compatible record per diagnostic or refused file on its own line, in NDJSON, closed by a summary record. The record shape matches what Ruff and ESLint print, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding, `"syntax_error"` for a file its `target-version` refuses, and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
 
 ```json
 {

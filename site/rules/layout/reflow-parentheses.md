@@ -1,5 +1,5 @@
 ---
-caption : "Removes a grouping parenthesis pair that changes nothing, and breaks one whose joined form overflows `code-line-length` into a row per operand, adding the pair around a condition or a conditional that ends an over-budget statement."
+caption : "Removes a grouping parenthesis pair that changes nothing, and breaks one whose joined form overflows `code-line-length` into a row per operand, adding the pair around an over-budget test, returned value, or assigned value."
 related : [shed-backslash-continuations, reflow-collections, reflow-signatures, line-overflow]
 layout  : doc
 ---
@@ -22,7 +22,7 @@ A multi-line pair joins onto one line when the joined form fits the budget. The 
 
 Where the joined form crosses the budget, the pair breaks rather than staying as the author left it. The opening bracket takes its row alone, the closing bracket opens the row beneath the last operand, and the interior sits between them one indent step in. An interior that fits a row of its own takes that row whole, and one that does not takes a row per operand, each row led by the operator joining it to the row above, so a reader finds every `and` in one column rather than at three different row ends. A conditional expression divides at its `if` and its `else`, leaving each branch and the test whole on its row. A boolean chain forming the test of an `if`, `elif`, or `while` takes a row per operand even where it would fit one row, since a test breaks at its boolean operator first. A pair the author already broke takes the same layout, so the operator arrives in the same place whether the rule opened the row or the author did.
 
-The rule also adds a pair where none exists, around a boolean chain or a conditional expression written on one row that forms the test of an `if`, `elif`, or `while`, the value of a `return` or an assignment, or the last element of a bare tuple standing as such a value. Each of those ends its statement's row outside every bracket, so the added pair opens at the end of the head and closes the statement, and the row breaks at the expression's own operator before [[reflow-calls]] reads it, leaving a call inside an operand inline wherever its row now fits. An over-budget expression anywhere else carrying no parentheses is left for [[line-overflow]] to report.
+The rule also adds a pair where none exists, around a boolean chain or a conditional expression, written on one row or spread across rows only inside pairs its author wrote, that forms the test of an `if`, `elif`, or `while`, the value of a `return` or an assignment, or the last element of a bare tuple standing as such a value. Each of those ends its statement's row outside every bracket, so the added pair opens at the end of the head and closes the statement, and the row breaks at the expression's own operator before [[reflow-calls]] reads it, leaving a call inside an operand inline wherever its row now fits. An over-budget expression anywhere else carrying no parentheses is left for [[line-overflow]] to report.
 
 <Fixture rule="reflow_parentheses" case="over_budget_condition_gains_a_pair" />
 

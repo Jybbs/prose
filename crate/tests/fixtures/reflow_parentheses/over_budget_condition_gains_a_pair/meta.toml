@@ -3,5 +3,5 @@ previewable = true
 title       = "An Over-Budget Condition Gains a Pair and Breaks at Its Operator"
 
 description = '''
-The `if` condition in `latest` carries no parentheses and runs past the **88-column** budget. **The rule adds a pair around the condition and lands each operand of its `and` on a row of its own**, even though the joined condition would fit one row inside the pair, because a test breaks at its boolean operator first. The call to `abs` then fits its row, so [[reflow-calls]] leaves it inline rather than breaking its argument list open.
+The `if` condition in `latest` carries no parentheses and runs past the **88-column** budget. **The rule adds a pair around the condition and lands each operand of its `and` on a row of its own**, the layout a test takes whether or not its joined form fits one row inside the pair. The call to `abs` then fits its row, so [[reflow-calls]] leaves it inline rather than breaking its argument list open.
 '''
