@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/hanging_arm_past_the_budget_stays_folded/input.py
+---
+def route(request):
+    match request.method:
+        case "GET": return render_template_with_its_request_context_and_all_of_its_defaults(
+            request.path
+        )
+        case "POST": return accept(request)

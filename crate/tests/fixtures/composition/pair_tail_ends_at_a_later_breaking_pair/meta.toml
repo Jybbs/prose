@@ -3,5 +3,5 @@ previewable = false
 title       = "A Pair's Row Ends at a Later Pair That Breaks"
 
 description = '''
-`stop = (-maxsize - 1) if (index.stop is None) else index.stop` holds two grouping pairs. At a `code-line-length` of 50, `(index.stop is None)` breaks across rows wherever the first pair lands, so **`reflow-parentheses` measures `(-maxsize - 1)` only through the `(` that opens the second pair** and sheds it on its row, rather than breaking it for a second pass to fold.
+`stop = (-maxsize - 1), (index.stop is None and step)` holds two grouping pairs. At a `code-line-length` of 50, the pair around the tuple's last element breaks across rows wherever the first pair lands, so **`reflow-parentheses` measures `(-maxsize - 1)` only through the `(` that opens the second pair** and sheds it on its row, rather than breaking it for a second pass to fold.
 '''

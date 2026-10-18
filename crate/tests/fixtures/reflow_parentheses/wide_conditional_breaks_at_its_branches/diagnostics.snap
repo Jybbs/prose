@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/wide_conditional_breaks_at_its_branches/input.py
+---
+reflow-parentheses@8..111

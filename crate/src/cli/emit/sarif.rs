@@ -15,13 +15,18 @@ use serde_sarif::sarif::{
     Sarif as SarifDoc, ToolComponent,
 };
 
-use super::{Emitter, EmitterSummary, Run, UnstableEntry, diagnostics, write_json_line};
+use super::{
+    Emitter, EmitterSummary, RefusedEntry, Run, UnstableEntry, diagnostics, write_json_line,
+};
 use crate::{
     diagnostics::Diagnostic,
     file_uri,
     findings::{cell_message, line_columns, located},
     rules::render_slugs,
 };
+
+/// The `ruleId` a refused file's result reports under.
+const SYNTAX_RULE: &str = "syntax-error";
 
 /// The `ruleId` an unstable-output result reports under.
 const UNSTABLE_RULE: &str = "unstable-output";
@@ -110,6 +115,31 @@ fn sarif_result(
     }
 }
 
+/// The error-level result a file whose syntax its target rejects lands
+/// as, positioned the way a diagnostic's result is.
+fn refused_result(entry: &RefusedEntry) -> SarifResult {
+    let message = cell_message(&entry.message, entry.cell);
+    SarifResult::builder()
+        .rule_id(SYNTAX_RULE)
+        .level(ResultLevel::Error)
+        .message(message.as_str())
+        .locations(vec![
+            Location::builder()
+                .physical_location(
+                    PhysicalLocation::builder()
+                        .artifact_location(
+                            ArtifactLocation::builder()
+                                .uri(file_uri::from_path(&entry.file))
+                                .build(),
+                        )
+                        .region(region(entry.start, entry.end))
+                        .build(),
+                )
+                .build(),
+        ])
+        .build()
+}
+
 /// The error-level result an unstable rewrite lands as.
 fn unstable_result(entry: &UnstableEntry) -> SarifResult {
     let message = format!(
@@ -139,6 +169,7 @@ fn unstable_result(entry: &UnstableEntry) -> SarifResult {
 fn sarif_run(runs: &[Run<'_>], summary: &EmitterSummary) -> SarifRun {
     let rules: Vec<ReportingDescriptor> = diagnostics(runs)
         .map(|(_, _, d)| d.rule.as_str())
+        .chain((!summary.refused.is_empty()).then_some(SYNTAX_RULE))
         .chain((!summary.unstable.is_empty()).then_some(UNSTABLE_RULE))
         .collect::<BTreeSet<_>>()
         .into_iter()
@@ -146,6 +177,7 @@ fn sarif_run(runs: &[Run<'_>], summary: &EmitterSummary) -> SarifRun {
         .collect();
     let results: Vec<SarifResult> = diagnostics(runs)
         .map(|(file, index, diag)| sarif_result(file, index, diag))
+        .chain(summary.refused.iter().map(refused_result))
         .chain(summary.unstable.iter().map(unstable_result))
         .collect();
     SarifRun::builder()

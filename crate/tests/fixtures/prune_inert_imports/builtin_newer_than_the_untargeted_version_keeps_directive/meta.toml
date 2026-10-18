@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Builtin Newer Than 3.10 Keeps the Directive Without a Target"
+
+description = '''
+No `target-version` is set, and `collect` annotates `ExceptionGroup`, a builtin only from Python 3.11. **The directive stays**, because a project with no target reads the 3.10 builtins, where `ExceptionGroup` is unbound and the annotation would fail as soon as `collect` is defined.
+'''

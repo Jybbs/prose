@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_conditional_gains_a_pair/input.py
+---
+def runner(invoke):
+    def run(payload):
+        result = invoke(payload)
+        return result.returncode, (
+            loads(result.stdout) if result.stdout.strip() else None
+        )
+
+    return run

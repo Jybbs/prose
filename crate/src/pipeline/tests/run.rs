@@ -201,6 +201,20 @@ fn run_flags_a_byte_identical_duplicate_edit() {
 }
 
 #[test]
+fn run_rejects_output_that_breaks_a_nested_scope() {
+    let pipeline = Pipeline::from_rules(vec![sentinel(
+        "breaks-a-loop",
+        vec![replacement("break", 13, 17)],
+    )]);
+    let source = parse("def f():\n    pass\n");
+
+    assert_matches!(
+        pipeline.run(source),
+        Err(PipelineError::Compile { rule, .. }) if rule.as_str() == "breaks-a-loop"
+    );
+}
+
+#[test]
 fn run_resolves_a_lint_range_against_the_settled_source() {
     // The lint rule registers ahead of the rewriting rule, which
     // inserts a line above the ignored statement. Collecting lints

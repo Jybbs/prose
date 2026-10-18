@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/blank_line_closes_a_run_in_an_ordered_dict/input.py
+---
+D = {
+    "aaaaaaaaaaaaaa": 1,
+
+    "b" : 2,
+    "c" : ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "yyyy")
+}

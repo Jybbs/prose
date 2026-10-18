@@ -6,7 +6,6 @@
 use std::{collections::BTreeSet, sync::OnceLock};
 
 use indexmap::IndexMap;
-use itertools::Itertools;
 use ruff_python_ast::{
     CmpOp, ExceptHandler, Expr, ExprCompare, ExprDictComp, ExprGenerator, ExprLambda, ExprList,
     ExprListComp, ExprNamed, ExprSetComp, ExprTuple, Identifier, MatchCase, Operator, Parameters,
@@ -213,8 +212,7 @@ impl Builder {
     /// Marks each operand an order comparison ranks (`{open, stat} <=
     /// supports_dir_fd`).
     fn mark_comparison(&mut self, node: &ExprCompare) {
-        let operands = std::iter::once(node.left.as_ref()).chain(&node.comparators);
-        for ((left, right), op) in operands.tuple_windows().zip(&node.ops) {
+        for (left, op, right) in node.iter() {
             if matches!(op, CmpOp::Gt | CmpOp::GtE | CmpOp::Lt | CmpOp::LtE) {
                 self.mark_runtime_read(left);
                 self.mark_runtime_read(right);

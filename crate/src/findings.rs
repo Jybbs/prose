@@ -96,7 +96,7 @@ impl<'a> JsonFix<'a> {
 }
 
 #[derive(Serialize)]
-struct JsonLocation {
+pub(crate) struct JsonLocation {
     column: OneIndexed,
     row: OneIndexed,
 }

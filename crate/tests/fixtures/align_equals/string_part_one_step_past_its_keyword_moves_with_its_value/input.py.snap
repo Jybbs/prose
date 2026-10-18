@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/string_part_one_step_past_its_keyword_moves_with_its_value/input.py
+---
+defproperty(
+    Text,
+    doc = "True iff this text node contains only whitespace"
+          " and is in element content."
+)

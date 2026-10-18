@@ -10,14 +10,14 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::leading_indentation;
 use ruff_source_file::{LineRanges, UniversalNewlines};
-use ruff_text_size::{TextRange, TextSize};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
     primitives::{
         edit::apply_inline_edits,
         padding,
-        tokens::{CLOSERS, OPENERS},
+        tokens::{CLOSERS, OPENERS, string_run_breaks},
         travel::spans_a_string_part,
     },
     source::Source,
@@ -51,8 +51,8 @@ pub(crate) fn end_column(text: &str, indent: usize) -> usize {
 /// the borrowed slice when it carries no break and the soft-wrap
 /// collapse when `expr` joins operands with an operator. `None` for
 /// every other multi-line expression, for one holding a string part
-/// that spans rows, for one a backslash continues, and for one hanging
-/// a method chain's links.
+/// that spans rows or a string run stacked one part per row, for one a
+/// backslash continues, and for one hanging a method chain's links.
 pub(crate) fn folded_line_form<'s>(
     source: &Source,
     expr: &Expr,
@@ -63,6 +63,7 @@ pub(crate) fn folded_line_form<'s>(
     }
     (is_operator_tree(expr)
         && !spans_a_string_part(source, expr)
+        && string_run_breaks(source, expr.range()).is_empty()
         && !carries_a_continuation(slice)
         && !hangs_a_chain_link(slice))
     .then(|| Cow::Owned(collapse_soft_wraps(slice)))

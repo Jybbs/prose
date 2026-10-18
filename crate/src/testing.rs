@@ -18,7 +18,9 @@ use crate::{
     pipeline::Pipeline,
     primitives::{
         aligner,
+        comments::Settling,
         edit::apply_edits_mapped,
+        padding::Stranding,
         tiering::{Evaluated, call_reachable, eval_time_refs_of},
     },
     rules::{Rule, RuleId},
@@ -114,6 +116,7 @@ impl Rule for GuardedRule {
 pub(crate) fn align_member(gap: TextRange, line_start: u32, width: usize) -> aligner::Member {
     aligner::Member {
         baseline: (gap.start() - TextSize::new(line_start)).to_usize() - width,
+        end: gap.end(),
         gap,
         line_start: TextSize::new(line_start),
         op_width: 0,
@@ -316,6 +319,18 @@ pub(crate) fn self_overlapping() -> GroupSentinelRule {
         groups: vec![vec![replacement("Y", 0, 3), replacement("Z", 2, 5)]],
         id: RuleId::from("self-overlapping"),
     }
+}
+
+/// Returns the `strip-stranded-padding` terms a primitive test reads,
+/// running where `enabled` holds within a `line_length` budget that no
+/// comment rule settles a row against.
+pub(crate) fn stranding(enabled: bool, line_length: usize) -> Stranding {
+    Stranding::new(
+        RuleId::from("strip-stranded-padding"),
+        enabled,
+        line_length,
+        Settling::default(),
+    )
 }
 
 /// The text `edits` weave into `text`, beside the `SourceMap` of the

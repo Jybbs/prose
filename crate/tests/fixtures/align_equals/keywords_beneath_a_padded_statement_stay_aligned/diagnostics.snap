@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/align_equals/keywords_beneath_a_padded_statement_stay_aligned/input.py
+---
+align-equals@10..220
+align-equals@102..232
+align-equals@275..319

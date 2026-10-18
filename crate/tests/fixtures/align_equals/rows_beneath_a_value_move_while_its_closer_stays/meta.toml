@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Rows Beneath a Value Move While Its Closer Stays"
+
+description = '''
+Padding `x` one column out to `ab`'s column moves its call one column right. `bar(b,` starts on the column of `a` and `c),` on the column of `b`, so **both rows move the same one column**, whereas the closing `)` sits at the statement's own indent beneath no token of the call and **stays where it was written**.
+'''

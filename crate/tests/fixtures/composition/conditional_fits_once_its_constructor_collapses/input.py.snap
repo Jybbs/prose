@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/conditional_fits_once_its_constructor_collapses/input.py
+---
+def collect(records, detailed):
+    names = [record.name for record in records] if detailed else the_default_names_list

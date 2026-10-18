@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Row Two Moved Values Share Moves by Both Shifts"
+
+description = '''
+Padding `b` three columns out to `aaaa`'s column moves `foo(...)` and every row aligned beneath it three columns right, and inside the call the one space set on each side of `x`'s `=` moves `bar(...)` two more columns. **The row holding `2),` sits beneath both values, so it moves by the five columns the two shifts add up to**, keeping `2` beneath `1`, whereas `yy=3` moves the three columns `b`'s shift gives it before its own `=` takes its spaces.
+'''

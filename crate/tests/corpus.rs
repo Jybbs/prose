@@ -21,9 +21,10 @@ use prose::{
     diagnostics::Severity,
     pipeline::{Pipeline, PipelineError, SettleReport},
     rules::{RuleId, render_slugs},
-    source::Source,
+    source::{Source, Target},
 };
 use ruff_python_ast::PythonVersion;
+use rustc_hash::FxHashMap;
 
 use common::{
     Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified,
@@ -363,16 +364,23 @@ fn probe(
 /// Sweeps every slice of `plan` over the file at `path`, each fold
 /// resuming behind its parent's recorded text parsed under the file's
 /// own name and a slice whose parent failed folding from the top on
-/// its own.
+/// its own. The file is read once per target the way the CLI reads it,
+/// and a target the file fails to read under, or whose syntax check it
+/// fails, skips every slice at that target.
 fn sweep(plan: &Plan, path: &Path) -> Findings {
     let mut findings = Findings::default();
-    let Ok(source) = Source::from_path(path) else {
-        findings.skipped += 1;
-        return findings;
-    };
+    let mut read: FxHashMap<Target, Option<Source>> = FxHashMap::default();
     let name = path.display().to_string();
     let mut recorded: Vec<Option<BTreeMap<usize, String>>> = Vec::with_capacity(plan.slices.len());
     for (seat, slice) in plan.slices.iter().enumerate() {
+        let Some(source) = read.entry(slice.pipeline.target()).or_insert_with(|| {
+            let source = slice.pipeline.read_path(path).ok().flatten();
+            findings.skipped += usize::from(source.is_none());
+            source
+        }) else {
+            recorded.push(None);
+            continue;
+        };
         let (entry, from) = match slice.parent.map(|parent| &recorded[parent]) {
             Some(Some(stops)) => (
                 Source::parse_named(stops[&slice.cut].clone(), &name)

@@ -1,11 +1,13 @@
 //! The padding `strip-stranded-padding` drops, read ahead of that rule
 //! by a rule measuring a row at the width the pipeline settles it to.
-//! [`Stranding`] names the padding rule and whether it runs, so a row
-//! its skip directive holds stays out of the prediction and a disabled
-//! rule predicts nothing, [`Stranding::edits`] lists every deletion and
-//! collapse the rule emits over a source, [`beside`] merges in the
-//! rewrites a later rule forecasts, and [`slack`] sums the columns
-//! those edits take off one span.
+//! [`Stranding`] names the padding rule, whether it runs, and the line
+//! length and comment rules its row moves are measured against, so a
+//! row its skip directive holds stays out of the prediction and a
+//! disabled rule predicts nothing,
+//! [`Stranding::edits`] lists every deletion and collapse the rule
+//! emits over a source and [`Stranding::groups`] files them as the rule
+//! does, [`beside`] merges in the rewrites a later rule forecasts, and
+//! [`slack`] sums the columns those edits take off one span.
 
 use std::borrow::Cow;
 
@@ -22,8 +24,11 @@ use crate::{
     primitives::{
         aligner,
         colon_targets::ColonEmitter,
+        comments::Settling,
+        edit::singleton_groups,
         inline::display_width,
         range::covers,
+        reseat::RowMoves,
         tokens::{is_delimiter_padding, is_interpolated_string_start},
     },
     rules::RuleId,
@@ -31,16 +36,25 @@ use crate::{
 };
 
 /// The padding rule a prediction reads, carried by rule slug beside
-/// whether the rule runs at all.
+/// whether the rule runs at all. `line_length` is the budget a row stays
+/// within when the rule's edits move it right, the row read at the width
+/// the comment rules `settling` names leave it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct Stranding {
     enabled: bool,
+    line_length: usize,
     rule: RuleId,
+    settling: Settling,
 }
 
 impl Stranding {
-    pub(crate) fn new(rule: RuleId, enabled: bool) -> Self {
-        Self { enabled, rule }
+    pub(crate) fn new(rule: RuleId, enabled: bool, line_length: usize, settling: Settling) -> Self {
+        Self {
+            enabled,
+            line_length,
+            rule,
+            settling,
+        }
     }
 
     /// The delimiter padding runs inside `range` that no skip directive
@@ -50,12 +64,38 @@ impl Stranding {
             .filter(move |gap| !aligner::is_held(source, self.rule, gap.start()))
     }
 
+    /// The fix groups the rule files over the statements and docstrings
+    /// `windows` reach, the colon groups and their row moves first and a
+    /// group per delimiter padding run inside a window after them, none
+    /// where the rule is off.
+    fn walk(self, source: &Source, windows: &[TextRange]) -> Vec<Vec<Edit>> {
+        if !self.enabled {
+            return Vec::new();
+        }
+        let mut emitter = Emitter {
+            groups: Vec::new(),
+            moves: RowMoves::default(),
+            source,
+            stranding: self,
+        };
+        emitter.walk_within(source, windows);
+        let mut groups = emitter.into_groups();
+        groups.extend(singleton_groups(
+            windows
+                .iter()
+                .flat_map(|window| self.stripped_gaps(source, *window))
+                .map(Edit::range_deletion),
+        ));
+        groups
+    }
+
     /// Every edit the padding rule emits over `source`, ascending by
     /// start, none where the rule is off. A colon group no shared
     /// column justifies has its pre-colon gap cleared and its post-colon
-    /// gap collapsed to one space, and the whitespace run directly
-    /// inside a bracket delimiter is deleted, a row the rule's skip
-    /// directive holds keeping every gap it carries.
+    /// gap collapsed to one space, each continuation row its value
+    /// carries moving with it, and the whitespace run directly inside a
+    /// bracket delimiter is deleted, a row the rule's skip directive
+    /// holds keeping every gap it carries.
     pub(crate) fn edits(self, source: &Source) -> Vec<Edit> {
         self.edits_within(source, &[source.module_range()])
     }
@@ -66,22 +106,23 @@ impl Stranding {
     /// every edit, whereas over a splice's windows it is the entries a
     /// reparse there could have changed.
     pub(crate) fn edits_within(self, source: &Source, windows: &[TextRange]) -> Vec<Edit> {
-        if !self.enabled {
-            return Vec::new();
+        let mut edits = self.walk(source, windows).concat();
+        edits.retain(|edit| covers(edit.range(), windows));
+        edits.sort_by_key(Ranged::start);
+        edits
+    }
+
+    /// The edits of [`edits`](Self::edits) in the fix groups the rule
+    /// files, ascending by start, each edit its own group except the
+    /// move of a continuation row a stripped value carries, which joins
+    /// the group of that value's first `:` edit.
+    pub(crate) fn groups(self, source: &Source) -> Vec<Vec<Edit>> {
+        let mut groups = self.walk(source, &[source.module_range()]);
+        for group in &mut groups {
+            group.sort_by_key(Ranged::start);
         }
-        let mut emitter = Emitter {
-            edits: Vec::new(),
-            rule: self.rule,
-            source,
-        };
-        emitter.walk_within(source, windows);
-        emitter.edits.extend(windows.iter().flat_map(|window| {
-            self.stripped_gaps(source, *window)
-                .map(Edit::range_deletion)
-        }));
-        emitter.edits.retain(|edit| covers(edit.range(), windows));
-        emitter.edits.sort_by_key(Ranged::start);
-        emitter.edits
+        groups.sort_by_key(|group| group.first().map(Ranged::start));
+        groups
     }
 
     /// Returns the columns the rule takes off `span`, the display width
@@ -98,9 +139,51 @@ impl Stranding {
 }
 
 struct Emitter<'a> {
-    edits: Vec<Edit>,
-    rule: RuleId,
+    groups: Vec<Vec<Edit>>,
+    /// The continuation rows the stripped values carry, each filed with
+    /// the group of the first value's `:` edit.
+    moves: RowMoves,
     source: &'a Source,
+    stranding: Stranding,
+}
+
+impl Emitter<'_> {
+    /// Returns `true` where each of `rows` stays within the line length
+    /// once it moves `shift` columns beside the moves already recorded
+    /// for it, each row read at its [`aligner::settled_row_width`] under
+    /// the comment rules and the rule's own delimiter padding deletions
+    /// on the row. A move to the left always fits.
+    fn fits(&self, rows: &[TextRange], shift: isize) -> bool {
+        shift <= 0
+            || rows.iter().all(|row| {
+                let stripped: Vec<Edit> = self
+                    .stranding
+                    .stripped_gaps(self.source, self.source.row_tail(row.start()))
+                    .map(Edit::range_deletion)
+                    .collect();
+                aligner::settled_row_width(
+                    self.source,
+                    row.start(),
+                    self.stranding.settling,
+                    &stripped,
+                )
+                .saturating_add_signed(self.moves.shift(row.start()) + shift)
+                    <= self.stranding.line_length
+            })
+    }
+
+    /// The fix groups recorded, each row move appended to the group its
+    /// first carrying value's `:` edit opened.
+    fn into_groups(mut self) -> Vec<Vec<Edit>> {
+        self.moves.file_into(self.source, &mut self.groups);
+        self.groups
+    }
+
+    /// Opens a fix group holding `edit`, returning its index.
+    fn open(&mut self, edit: Edit) -> usize {
+        self.groups.push(vec![edit]);
+        self.groups.len() - 1
+    }
 }
 
 impl ColonEmitter for Emitter<'_> {
@@ -113,29 +196,45 @@ impl ColonEmitter for Emitter<'_> {
     /// `align_colons` and emits nothing here. The pre-colon `width > 0`
     /// guard skips a `:` sitting on its own indented line, where the gap
     /// is leading indent rather than padding. The `value_gap` rewrite
-    /// skips a value that opens on a later line.
+    /// skips a value that opens on a later line. The continuation rows
+    /// the value carries move with it in the group of its first `:`
+    /// edit, unless a row moving right would cross the line length, which
+    /// holds every row the value carries where the source wrote it.
     fn handle(&mut self, members: &[aligner::Member]) {
         if aligner::is_alignment_candidate(members) {
             return;
         }
-        for m in members {
-            if m.width > 0 {
-                self.edits
-                    .extend(aligner::space_padding_edit(self.source, m.gap, 0));
+        for &m in members {
+            let mut cause = None;
+            let pad = if m.width > 0 {
+                cause = aligner::space_padding_edit(self.source, m.gap, 0).map(|e| self.open(e));
+                0
+            } else {
+                display_width(self.source.slice(m.gap))
+            };
+            if let Some(gap) = m.rewritten_value_gap(self.source)
+                && let Some(edit) = aligner::space_padding_edit(self.source, gap, 1)
+            {
+                let group = self.open(edit);
+                cause.get_or_insert(group);
             }
-            if let Some(gap) = m.rewritten_value_gap(self.source) {
-                self.edits
-                    .extend(aligner::space_padding_edit(self.source, gap, 1));
+            let Some(cause) = cause else {
+                continue;
+            };
+            let shift = m.value_shift(self.source, pad);
+            let rows = m.rows_moved_by(self.source, shift);
+            if self.fits(&rows, shift) {
+                self.moves.carry(cause, &rows, shift);
             }
         }
     }
 
     fn rule(&self) -> RuleId {
-        self.rule
+        self.stranding.rule
     }
 
     fn stranding(&self) -> Stranding {
-        Stranding::new(self.rule, true)
+        self.stranding
     }
 }
 
@@ -166,16 +265,17 @@ mod tests {
     use ruff_text_size::TextSize;
 
     use super::*;
-    use crate::testing::{align_member, parse, range, replacement};
+    use crate::testing::{align_member, parse, range, replacement, stranding};
 
     fn run_strip(source: &Source, members: &[aligner::Member]) -> Vec<Edit> {
         let mut emitter = Emitter {
-            edits: Vec::new(),
-            rule: RuleId::from("strip-stranded-padding"),
+            groups: Vec::new(),
+            moves: RowMoves::default(),
             source,
+            stranding: stranding(true, 88),
         };
         emitter.handle(members);
-        emitter.edits
+        emitter.into_groups().concat()
     }
 
     #[test]
@@ -235,7 +335,7 @@ mod tests {
         #[case] padded: &[&str],
     ) {
         let source = parse(src);
-        let stranding = Stranding::new(RuleId::from("strip-stranded-padding"), enabled);
+        let stranding = stranding(enabled, 88);
         let gaps: Vec<u32> = stranding
             .edits(&source)
             .iter()
@@ -249,6 +349,34 @@ mod tests {
             })
             .collect();
         assert_eq!(gaps, expected);
+    }
+
+    #[rstest]
+    #[case::within_the_line_length(14, 2)]
+    #[case::past_the_line_length(13, 1)]
+    fn edits_move_a_row_right_only_within_the_line_length(
+        #[case] line_length: usize,
+        #[case] expected: usize,
+    ) {
+        // The `:` gains its space and moves `(1,` one column right, which
+        // carries the 13-column row beneath it to 14.
+        let source = parse("x = {\"k\":(1,\n          2)}\n");
+        let stranding = stranding(true, line_length);
+        assert_eq!(stranding.edits(&source).len(), expected);
+    }
+
+    #[test]
+    fn groups_file_a_row_move_with_the_colon_edit_moving_it() {
+        let source = parse("x = {\"k\"  : (1,\n             2)}\ny = [ 3]\n");
+        let groups: Vec<Vec<TextRange>> = stranding(true, 88)
+            .groups(&source)
+            .iter()
+            .map(|group| group.iter().map(Ranged::range).collect())
+            .collect();
+        assert_eq!(
+            groups,
+            [vec![range(8, 10), range(16, 18)], vec![range(38, 39)]]
+        );
     }
 
     #[test]

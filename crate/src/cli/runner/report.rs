@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
-    outcomes
+    let mut summary = outcomes
         .iter()
         .filter_map(|o| match o {
             FileOutcome::Done {
@@ -25,7 +25,7 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 unstable,
                 ..
             } => Some((diagnostics, file, rewrite, unstable)),
-            FileOutcome::Failed(_) => None,
+            FileOutcome::Failed(_) | FileOutcome::Refused(_) => None,
         })
         .fold(
             EmitterSummary::default(),
@@ -46,7 +46,15 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
                 }
                 summary
             },
-        )
+        );
+    summary.refused = outcomes
+        .iter()
+        .filter_map(|outcome| match outcome {
+            FileOutcome::Refused(entry) => Some((**entry).clone()),
+            FileOutcome::Done { .. } | FileOutcome::Failed(_) => None,
+        })
+        .collect();
+    summary
 }
 
 pub(super) fn finish<E: Write>(
@@ -108,6 +116,7 @@ pub(super) fn status_from_outcomes(
                     .unwrap_or_default()
             }
             FileOutcome::Failed(s) => *s,
+            FileOutcome::Refused(_) => ExitStatus::ParseError,
         })
         .max()
         .unwrap_or_default()
@@ -155,7 +164,7 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
         .iter()
         .filter_map(|o| match o {
             FileOutcome::Done { cached, .. } => Some(*cached),
-            FileOutcome::Failed(_) => None,
+            FileOutcome::Failed(_) | FileOutcome::Refused(_) => None,
         })
         .fold(
             (0_usize, 0_usize),
@@ -173,7 +182,9 @@ fn report_verbose<W: Write>(outcomes: &[FileOutcome], cache_enabled: bool, write
 /// logged to stderr or by a format run leaving lint whose disclosure is
 /// the lint-remainder line instead.
 fn summarize(outcomes: &[FileOutcome], summary: &EmitterSummary, mode: Mode) -> Option<Summary> {
-    let failed = outcomes.iter().any(|o| matches!(o, FileOutcome::Failed(_)));
+    let failed = outcomes
+        .iter()
+        .any(|o| matches!(o, FileOutcome::Failed(_) | FileOutcome::Refused(_)));
     let resolved = match mode {
         Mode::Check => match summary.diagnostics_total {
             0 => Summary::Clean,

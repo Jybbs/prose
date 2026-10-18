@@ -1,7 +1,8 @@
 //! Where a reflow lands: whether a fold fits the budget, whether the
 //! row a pair sits on overflows it, the column a pair reaches once the
-//! pass's earlier edits apply and the padding and alignment rules settle
-//! its row, and the spans an in-place shed removes.
+//! pass's earlier edits apply and the padding, alignment, and later
+//! shortening rules settle its row, and the spans an in-place shed
+//! removes.
 
 use ruff_diagnostics::Edit;
 use ruff_python_trivia::PythonWhitespace;
@@ -12,13 +13,18 @@ use super::{
     Shedder,
     plan::{Candidate, shed_columns},
 };
-use crate::primitives::{
-    edit::{apply_inline_edits, insert_edit},
-    inline::{
-        display_width, run_closes_to_a_space, settled_head_column, settled_width, soft_wrap_runs,
+use crate::{
+    primitives::{
+        edit::{apply_inline_edits, insert_edit},
+        inline::{
+            display_width, run_closes_to_a_space, settled_head_column, settled_width,
+            soft_wrap_runs,
+        },
+        slots::starting_within,
+        splice::splice_preserves_tree,
+        tokens::string_run_breaks,
     },
-    slots::starting_within,
-    splice::splice_preserves_tree,
+    source::Source,
 };
 
 impl Shedder<'_> {
@@ -43,8 +49,8 @@ impl Shedder<'_> {
     }
 
     /// The column the text through `range` reaches once the edits
-    /// emitted so far apply and `strip-stranded-padding` settles the row
-    /// it closes on, `range` opening at the row or the logical line the
+    /// emitted so far apply and the padding table settles the row it
+    /// closes on, `range` opening at the row or the logical line the
     /// measure reads from. Text those edits leave on the row the source
     /// writes it on starts from the column `align-equals` shifts that row
     /// to.
@@ -56,9 +62,9 @@ impl Shedder<'_> {
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
-    /// spaces its own flush sides keep and narrowed by the padding
-    /// `strip-stranded-padding` drops inside it and the columns each
-    /// nested candidate sheds alongside it. `None` for an interior no
+    /// spaces its own flush sides keep and narrowed by the columns the
+    /// padding table takes off it and the columns each nested candidate
+    /// sheds alongside it. `None` for an interior no
     /// fold joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
@@ -101,7 +107,7 @@ impl Shedder<'_> {
     }
 
     /// The columns `pair`'s own row carries past its closing paren once
-    /// `strip-stranded-padding` settles it, narrowed by the parentheses
+    /// the padding table settles it, narrowed by the parentheses
     /// this pass sheds along that stretch. The measure closes at the
     /// opening paren of the first later pair on the row that breaks.
     fn tail_width(&self, pair: TextRange, candidates: &[Candidate]) -> usize {
@@ -143,23 +149,11 @@ impl Shedder<'_> {
         row > self.code_line_length
     }
 
-    /// Emits an edit closing each line-spanning whitespace run inside
-    /// `inner`, to a single space between two tokens and to nothing
-    /// against a bracket.
+    /// Emits the [`fold_edits`] closing each line-spanning whitespace run
+    /// inside `inner`.
     pub(super) fn push_fold_edits(&mut self, inner: TextRange) {
-        let text = self.source.slice(inner);
-        for (begin, len) in soft_wrap_runs(text) {
-            let start = inner.start() + text[..begin].text_len();
-            let end = start + text[begin..begin + len].text_len();
-            let span = TextRange::new(start, end);
-            insert_edit(
-                &mut self.edits,
-                if run_closes_to_a_space(text, begin, len) {
-                    Edit::range_replacement(" ".to_owned(), span)
-                } else {
-                    Edit::range_deletion(span)
-                },
-            );
+        for edit in fold_edits(self.source, inner) {
+            insert_edit(&mut self.edits, edit);
         }
     }
 
@@ -191,4 +185,26 @@ impl Shedder<'_> {
         splice_preserves_tree(self.source, pair, &candidate.flush.padded(bare))
             .then_some((open, close))
     }
+}
+
+/// The edits closing each line-spanning whitespace run inside `inner`, to
+/// a single space between two tokens and to nothing against a bracket,
+/// ascending by start. A run holding a break that stacks a string run
+/// one part per row stays as written.
+pub(super) fn fold_edits(source: &Source, inner: TextRange) -> Vec<Edit> {
+    let text = source.slice(inner);
+    let stacked = string_run_breaks(source, inner);
+    soft_wrap_runs(text)
+        .filter_map(|(begin, len)| {
+            let start = inner.start() + text[..begin].text_len();
+            let span = TextRange::at(start, text[begin..begin + len].text_len());
+            (!stacked.iter().any(|&at| span.contains(at))).then(|| {
+                if run_closes_to_a_space(text, begin, len) {
+                    Edit::range_replacement(" ".to_owned(), span)
+                } else {
+                    Edit::range_deletion(span)
+                }
+            })
+        })
+        .collect()
 }

@@ -377,8 +377,22 @@ fn lsp_session(bodies: &[&str]) -> String {
         .collect()
 }
 
-fn prose() -> Command {
-    Command::cargo_bin("prose").expect("prose binary")
+/// The JSON of a Python notebook holding one code cell per entry of
+/// `cells`.
+fn notebook_of(cells: &[&str]) -> String {
+    serde_json::json!({
+        "cells": cells.iter().map(|cell| serde_json::json!({
+            "cell_type": "code",
+            "execution_count": null,
+            "metadata": {},
+            "outputs": [],
+            "source": [cell],
+        })).collect::<Vec<_>>(),
+        "metadata": {"language_info": {"name": "python"}},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    })
+    .to_string()
 }
 
 /// Pads `dir` with four half-megabyte entries named the way a cache key
@@ -388,6 +402,10 @@ fn pad_with_entries(dir: &Path) {
     for slot in 0..4_u32 {
         fs_err::write(dir.join(format!("{slot:064x}")), &filler).expect("writes");
     }
+}
+
+fn prose() -> Command {
+    Command::cargo_bin("prose").expect("prose binary")
 }
 
 fn prose_isolated() -> (Command, TempDir) {
@@ -457,6 +475,19 @@ fn suppressed_project() -> TempDir {
     let dir = tempdir().expect("tempdir");
     write_pyproject(dir.path(), SUPPRESSING_PYPROJECT);
     dir
+}
+
+/// Runs `args` with the cache off over a fresh fixture holding `source`
+/// beside a `pyproject.toml` setting `target-version` to `version`,
+/// returning the assertion beside the fixture's path.
+fn targeting(name: &str, source: &str, version: &str, args: &[&str]) -> (Assert, PathBuf) {
+    let (project, path) = fixture(name, source);
+    write_pyproject(
+        project.path(),
+        &format!("[tool.prose]\ntarget-version = \"{version}\"\n"),
+    );
+    let assert = prose().args(args).arg("--no-cache").arg(&path).assert();
+    (assert, path)
 }
 
 /// Runs `seed` against `path` under a cache directory of its own,
@@ -833,6 +864,23 @@ fn check_file_in_another_project_draws_its_own_config() {
 }
 
 #[test]
+fn check_github_reports_a_refused_file_as_an_error_annotation() {
+    let (assert, _) = targeting(
+        "gated.py",
+        "lazy import os\n",
+        "3.14",
+        &["check", "--output-format", "github"],
+    );
+
+    let assert = assert.code(3);
+    assert_stdout_has(
+        &assert,
+        ",line=1,col=1,endLine=1,endColumn=5::Cannot use `lazy`",
+    );
+    assert_stdout_has(&assert, "::error file=");
+}
+
+#[test]
 fn check_json_closes_clean_run_with_summary_envelope() {
     let summary = check_json_summary("clean.py", "x = 1\n", 0);
 
@@ -847,6 +895,33 @@ fn check_json_counts_a_collapsing_literal_as_changed() {
     let summary = check_json_summary("collapse.py", COLLAPSING_DICT, 1);
 
     assert_eq!(summary["files_changed"], 1);
+}
+
+#[test]
+fn check_json_reports_a_refused_file_as_a_syntax_error_record() {
+    let (assert, path) = targeting("gated.py", "lazy import os\n", "3.14", &CHECK_JSON);
+
+    let assert = assert.code(3);
+    let records: Vec<serde_json::Value> = stdout_utf8(&assert).lines().map(json).collect();
+    let record = &records[0];
+    assert_eq!(record["kind"], "syntax_error");
+    assert_eq!(record["filename"], path.display().to_string());
+    assert_eq!(
+        record["location"],
+        serde_json::json!({"row": 1, "column": 1})
+    );
+    assert_eq!(
+        record["end_location"],
+        serde_json::json!({"row": 1, "column": 5})
+    );
+    assert!(
+        record["message"]
+            .as_str()
+            .is_some_and(|message| message.ends_with("under `target-version = \"3.14\"`")),
+        "message was {}",
+        record["message"],
+    );
+    assert_eq!(records[1]["kind"], "summary");
 }
 
 #[test]
@@ -868,6 +943,21 @@ fn check_json_summary_counts_a_changed_file() {
             .is_empty(),
         "rules_fired was {:?}",
         summary["rules_fired"],
+    );
+}
+
+#[test]
+fn check_names_the_refusal_formatting_leaves_standing() {
+    let assert = run_fixture(
+        "late.py",
+        "import os\nfrom __future__ import annotations\n\n\ndef f():\n    lazy import json\n    return json\n\n\nprint(os.sep)\n",
+        &["check", "--no-cache"],
+    )
+    .code(3);
+
+    assert_stderr_has(
+        &assert,
+        "line 6, column 5: lazy import not allowed inside functions",
     );
 }
 
@@ -896,6 +986,18 @@ fn check_package_init_reports_its_unread_import() {
     .code(2);
 }
 
+#[test]
+fn check_passes_a_future_import_a_rule_moves_to_the_front() {
+    let assert = run_fixture(
+        "late.py",
+        "import os\nfrom __future__ import annotations\n\nprint(os.sep)\n",
+        &["check", "--no-cache"],
+    );
+
+    assert_ne!(assert.get_output().status.code(), Some(3));
+    assert!(!stderr_utf8(&assert).contains("syntax error"));
+}
+
 #[rstest]
 fn check_reads_the_equals_widenings_from_the_columns_table(
     #[values("align-colons", "align-match-case", "align-colons,align-match-case")] rules: &str,
@@ -914,6 +1016,85 @@ fn check_reads_the_equals_widenings_from_the_columns_table(
         .assert();
 
     assert_eq!(stderr_utf8(&assert).matches("build\tcolumns\n").count(), 1);
+}
+
+#[rstest]
+#[case::a_stub("stub.pyi", 3)]
+#[case::a_module("module.py", 0)]
+fn check_refuses_a_stub_annotation_a_module_accepts(#[case] name: &str, #[case] code: i32) {
+    let (assert, _) = targeting(
+        name,
+        "def f(x: (y := 1)) -> None: ...\n",
+        "3.13",
+        &["check"],
+    );
+
+    assert.code(code);
+}
+
+/// Each source holds syntax the target version rules out, or a semantic
+/// syntax error Python's `compile` raises, so the run exits at the
+/// parse-error status naming the file, the position, and the target.
+#[rstest]
+#[case::lazy_import_below_its_version(
+    "lazy import os\n",
+    "3.14",
+    "line 1, column 1",
+    "Cannot use `lazy` import statement on Python 3.14"
+)]
+#[case::lazy_import_in_a_class(
+    "class C:\n    lazy import os\n",
+    "3.15",
+    "line 2, column 5",
+    "lazy import not allowed inside classes"
+)]
+#[case::lazy_import_in_a_function(
+    "def f():\n    lazy import os\n",
+    "3.15",
+    "line 2, column 5",
+    "lazy import not allowed inside functions"
+)]
+#[case::lazy_import_in_a_try_block(
+    "try:\n    lazy import os\nexcept ImportError:\n    pass\n",
+    "3.15",
+    "line 2, column 5",
+    "lazy import not allowed inside try/except blocks"
+)]
+#[case::lazy_future_import(
+    "lazy from __future__ import annotations\n\n\ndef f(x: Later) -> None:\n    pass\n\n\nclass Later:\n    pass\n",
+    "3.15",
+    "line 1, column 1",
+    "lazy from __future__ import is not allowed"
+)]
+#[case::lazy_star_import(
+    "lazy from os import *\n",
+    "3.15",
+    "line 1, column 1",
+    "lazy from ... import * is not allowed"
+)]
+#[case::unary_plus_pattern_below_its_version(
+    "match 1:\n    case +1:\n        pass\n",
+    "3.14",
+    "line 2, column 10",
+    "Unary '+' is not allowed in a literal pattern on Python 3.14"
+)]
+fn check_refuses_syntax_the_target_rejects(
+    #[case] source: &str,
+    #[case] version: &str,
+    #[case] position: &str,
+    #[case] message: &str,
+) {
+    let (assert, path) = targeting("gated.py", source, version, &["check"]);
+
+    let assert = assert.code(3);
+    assert_stderr_has(
+        &assert,
+        &format!(
+            "error: syntax error in `{}`, {position}: {message}",
+            path.display()
+        ),
+    );
+    assert_stderr_has(&assert, &format!("under `target-version = \"{version}\"`"));
 }
 
 #[test]
@@ -970,8 +1151,56 @@ fn check_respects_cache_disabled_in_pyproject() {
 }
 
 #[test]
+fn check_sarif_reports_a_refused_file_as_an_error_result() {
+    let (assert, _) = targeting(
+        "gated.py",
+        "lazy import os\n",
+        "3.14",
+        &["check", "--output-format", "sarif"],
+    );
+
+    let assert = assert.code(3);
+    let document = json(stdout_utf8(&assert));
+    let result = &document["runs"][0]["results"][0];
+    assert_eq!(result["ruleId"], "syntax-error");
+    assert_eq!(result["level"], "error");
+    assert_eq!(
+        result["locations"][0]["physicalLocation"]["region"]["startLine"],
+        1
+    );
+}
+
+#[rstest]
+#[case::prose_off("# prose: off\nlazy import os\n")]
+#[case::fmt_off("# fmt: off\nlazy import os\n")]
+fn check_skips_the_syntax_check_of_a_suppressed_file(#[case] source: &str) {
+    let (assert, _) = targeting("suppressed.py", source, "3.14", &["check"]);
+
+    assert.success();
+}
+
+#[test]
 fn check_stdin_clean_exits_zero() {
     run_stdin("x = 1\n", &["check", "--stdin"]).success();
+}
+
+#[test]
+fn check_stdin_refuses_syntax_the_target_rejects() {
+    let project = tempdir().expect("tempdir");
+    write_pyproject(project.path(), "[tool.prose]\ntarget-version = \"3.14\"\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+
+    let assert = cmd
+        .args(["check", "--stdin"])
+        .write_stdin("lazy import os\n")
+        .current_dir(project.path())
+        .assert()
+        .code(3);
+
+    assert_stderr_has(
+        &assert,
+        "line 1, column 1: Cannot use `lazy` import statement",
+    );
 }
 
 #[test]
@@ -1209,6 +1438,20 @@ fn format_diff_renders_diff_and_leaves_file_unchanged() {
 }
 
 #[test]
+fn format_diff_rewrites_a_unary_plus_pattern_at_its_version() {
+    let (assert, _) = targeting(
+        "plus.py",
+        "match 1:\n    case +1:\n        pass\n",
+        "3.15",
+        &["format", "--diff"],
+    );
+
+    let assert = assert.code(1);
+    assert_stdout_has(&assert, "+    case +1: pass");
+    assert!(!stderr_utf8(&assert).contains("syntax error"));
+}
+
+#[test]
 fn format_diff_summary_reports_would_reformat() {
     let assert = run_fixture("unaligned.py", UNALIGNED, &["format", "--diff"]).code(1);
 
@@ -1311,6 +1554,21 @@ fn format_no_cache_flag_rewrites_when_needed() {
     assert.success();
 
     assert_ne!(after, UNALIGNED);
+}
+
+#[test]
+fn format_refuses_a_file_and_leaves_it_as_written() {
+    let source = "def f():\n    lazy import os\n    return os.sep\n";
+    let (project, path) = fixture("gated.py", source);
+    write_pyproject(project.path(), "[tool.prose]\ntarget-version = \"3.15\"\n");
+
+    prose()
+        .args(["format", "--no-cache"])
+        .arg(&path)
+        .assert()
+        .code(3);
+
+    assert_eq!(fs_err::read_to_string(&path).expect("reads"), source);
 }
 
 #[test]
@@ -1486,6 +1744,15 @@ fn named_file_outside_the_python_extensions_exits_four(
 #[test]
 fn no_args_prints_help_and_exits_clean() {
     prose().assert().success();
+}
+
+#[test]
+fn notebook_cell_opening_on_a_future_import_passes() {
+    let notebook = notebook_of(&["import os\n", "from __future__ import annotations\n"]);
+
+    let assert = run_fixture("nb.ipynb", &notebook, &["check", "--no-cache"]);
+
+    assert!(!stderr_utf8(&assert).contains("syntax error"));
 }
 
 #[test]
@@ -1679,6 +1946,15 @@ fn notebook_format_preserves_outputs_and_rewrites_code() {
 }
 
 #[test]
+fn notebook_lazy_import_cell_passes_at_its_version() {
+    let notebook = notebook_of(&["lazy import os\nprint(os.sep)\n"]);
+
+    let (assert, _) = targeting("nb.ipynb", &notebook, "3.15", &["check"]);
+
+    assert!(!stderr_utf8(&assert).contains("syntax error"));
+}
+
+#[test]
 fn notebook_malformed_json_exits_parse_error() {
     run_fixture("bad.ipynb", "{not valid json", &["check", "--no-cache"]).code(3);
 }
@@ -1697,6 +1973,30 @@ fn notebook_non_python_through_stdin_is_echoed_verbatim() {
     .success();
 
     assert_eq!(stdout_utf8(&assert), NON_PYTHON);
+}
+
+#[rstest]
+#[case::a_lazy_import_below_its_version(
+    "lazy import os\nprint(os.sep)\n",
+    "3.14",
+    "cell 2, line 1, column 1: Cannot use `lazy` import statement"
+)]
+#[case::a_lazy_import_in_a_function(
+    "def f():\n    lazy import os\n",
+    "3.15",
+    "cell 2, line 2, column 5: lazy import not allowed inside functions"
+)]
+fn notebook_refused_cell_names_its_cell(
+    #[case] cell: &str,
+    #[case] version: &str,
+    #[case] position: &str,
+) {
+    let notebook = notebook_of(&["x = 1\n", cell]);
+
+    let (assert, _) = targeting("nb.ipynb", &notebook, version, &["check"]);
+
+    let assert = assert.code(3);
+    assert_stderr_has(&assert, position);
 }
 
 #[test]

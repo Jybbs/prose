@@ -1,6 +1,6 @@
-//! Divides an operator chain into the operands a break lands one per
-//! row, reading the chain off its own outermost node and against the
-//! pairs the same pass sheds.
+//! Divides an operator chain or a conditional expression into the
+//! operands a break lands one per row, reading the expression off its
+//! own outermost node and against the pairs the same pass sheds.
 
 use ruff_python_ast::{AnyNodeRef, Expr, ExprRef, OperatorPrecedence};
 use ruff_text_size::{Ranged, TextRange};
@@ -78,19 +78,21 @@ impl<'a> Division<'a> {
     }
 }
 
-/// True for the three nodes a break divides into rows.
-pub(super) fn is_operator_chain(expr: ExprRef) -> bool {
+/// True for the nodes a break divides into rows, the three operator
+/// chains and a conditional expression.
+pub(super) fn divides(expr: ExprRef) -> bool {
     matches!(
         expr,
-        ExprRef::BinOp(_) | ExprRef::BoolOp(_) | ExprRef::Compare(_)
+        ExprRef::BinOp(_) | ExprRef::BoolOp(_) | ExprRef::Compare(_) | ExprRef::If(_)
     )
 }
 
-/// The operands `expr`'s outermost operator chain divides into, in
-/// source order. An operand `sheds` reports a pair around carries the
-/// bare range and divides further where its own node joins at the same
-/// level. A boolean chain joining at the other operator stays whole on
-/// its row. `None` for an expression that is no operator chain.
+/// The operands `expr`'s outermost node divides into, in source order.
+/// An operand `sheds` reports a pair around carries the bare range and
+/// divides further where its own node joins at the same level. A boolean
+/// chain joining at the other operator stays whole on its row, and a
+/// conditional expression divides at its `if` and its `else`, leaving
+/// each branch whole. `None` for an expression [`divides`] rejects.
 pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec<Operand>> {
     let mut out = Vec::new();
     match expr {
@@ -113,17 +115,23 @@ pub(super) fn operands(source: &Source, expr: &Expr, sheds: Sheds) -> Option<Vec
         }
         Expr::Compare(compare) => {
             let walk = Division::at(OperatorPrecedence::from(expr), sheds, source);
-            let held = |operand: &Expr| walk.operand_range(operand, expr.into());
-            out.push(Operand {
-                lead: None,
-                range: held(&compare.left),
-            });
-            for (operator, operand) in compare.ops.iter().zip(&compare.comparators) {
-                out.push(Operand {
-                    lead: Some(operator.as_str()),
-                    range: held(operand),
-                });
-            }
+            let leads = std::iter::once(None).chain(compare.ops.iter().map(|op| Some(op.as_str())));
+            out.extend(leads.zip(&compare.operands).map(|(lead, operand)| Operand {
+                lead,
+                range: walk.operand_range(operand, expr.into()),
+            }));
+        }
+        Expr::If(conditional) => {
+            let walk = Division::at(OperatorPrecedence::from(expr), sheds, source);
+            let branches = [
+                (None, &*conditional.body),
+                (Some("if"), &*conditional.test),
+                (Some("else"), &*conditional.orelse),
+            ];
+            out.extend(branches.map(|(lead, operand)| Operand {
+                lead,
+                range: walk.operand_range(operand, expr.into()),
+            }));
         }
         _ => return None,
     }
@@ -157,19 +165,16 @@ mod tests {
     #[case("a and b", true)]
     #[case("a + b", true)]
     #[case("a < b", true)]
-    fn is_operator_chain_covers_the_three_dividing_nodes(
-        #[case] src: &str,
-        #[case] expected: bool,
-    ) {
+    #[case("a if b else c", true)]
+    fn divides_covers_the_chains_and_a_conditional(#[case] src: &str, #[case] expected: bool) {
         let source = parse(src);
-        assert_eq!(is_operator_chain(first_expr(&source).into()), expected);
+        assert_eq!(divides(first_expr(&source).into()), expected);
     }
 
     #[rstest]
     #[case("value")]
     #[case("helper(a, b)")]
     #[case("[a, b]")]
-    #[case("a if b else c")]
     #[case("-a")]
     fn operands_declines_an_expression_that_is_no_chain(#[case] src: &str) {
         assert!(divided(src, false).is_none());
@@ -185,6 +190,8 @@ mod tests {
     #[case("a + (b + c) + d", &["a", "(b + c)", "d"])]
     #[case("a | b | c", &["a", "b", "c"])]
     #[case("not a and b", &["not a", "b"])]
+    #[case("load(a) if a else None", &["load(a)", "a", "None"])]
+    #[case("a if b else c if d else e", &["a", "b", "c if d else e"])]
     fn operands_divide_a_chain_at_its_outermost_level(
         #[case] src: &str,
         #[case] expected: &[&str],

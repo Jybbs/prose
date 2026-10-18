@@ -4,20 +4,26 @@
 //! a walrus binding, a one-element tuple, and a pair holding one
 //! boolean operator inside a chain at the other all survive. A wrapped
 //! pair folds onto one line when the bare form fits, one holding an
-//! over-budget operator chain breaks across rows one operand per row,
-//! and one whose interior breaks sit inside a bracket of its own sheds
-//! in place. `plan` finds the pairs, `chain` divides an interior into
-//! operands, `measure` answers whether each direction fits, and
-//! `render` builds the broken text.
+//! over-budget operator chain or conditional expression breaks across
+//! rows one operand per row, and one whose interior breaks sit inside a
+//! bracket of its own sheds in place. An over-budget boolean chain or
+//! conditional forming a test, a `return` value, an assignment value, or
+//! the last element of a bare tuple standing as one gains a pair the
+//! break adds. Each row is measured as the later rules shortening it
+//! leave it.
+//! `plan` finds the pairs, `chain` divides an interior into operands,
+//! `measure` answers whether each direction fits, and `render` builds
+//! the broken text.
 
 use std::cell::RefCell;
 
 use ruff_diagnostics::Edit;
-use ruff_text_size::TextRange;
+use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
+    pipeline::prepared_groups,
     primitives::{
         edit::{insert_edit, singleton_groups},
         fracture::outermost,
@@ -25,7 +31,10 @@ use crate::{
         reseat::push_reseat_edits,
         reserve,
     },
-    rules::{Rule, RuleId},
+    rules::{
+        Rule, RuleId, prefer_fstring::PreferFstring, shed_super_args::ShedSuperArgs,
+        simplify_comprehensions::SimplifyComprehensions,
+    },
     source::Source,
 };
 
@@ -40,8 +49,11 @@ use plan::{Candidate, candidates, outermost_calls};
 #[derive(Debug)]
 pub(crate) struct ReflowParentheses {
     code_line_length: usize,
+    fstrings: PreferFstring,
     reflows_calls: bool,
     reservations: reserve::Reservations,
+    sheds_super_args: bool,
+    simplifies_comprehensions: bool,
     stranding: padding::Stranding,
 }
 
@@ -56,10 +68,35 @@ impl ReflowParentheses {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
+            fstrings: config.fstrings(),
             reflows_calls: config.rules.reflow_calls.enabled,
             reservations: config.equals_reservations(),
+            sheds_super_args: config.rules.shed_super_args.enabled,
+            simplifies_comprehensions: config.rules.simplify_comprehensions.enabled,
             stranding: config.stranded_padding(),
         }
+    }
+
+    /// The edits the rules shortening a row after this one land over
+    /// `source`, ascending and disjoint, an edit inside another left
+    /// out. These are the f-strings `prefer-fstring` forecasts and the
+    /// edits of each fix group `shed-super-args` and
+    /// `simplify-comprehensions` emit that no skip directive holds,
+    /// leaving out each of theirs that covers a line break.
+    fn rewrites(&self, source: &Source) -> Vec<Edit> {
+        let later: [(bool, &dyn Rule); 2] = [
+            (self.sheds_super_args, &ShedSuperArgs),
+            (self.simplifies_comprehensions, &SimplifyComprehensions),
+        ];
+        outermost(
+            later
+                .into_iter()
+                .filter(|(enabled, _)| *enabled)
+                .flat_map(|(_, rule)| prepared_groups(rule, source).concat())
+                .filter(|edit| !source.contains_line_break(edit.range()))
+                .chain(source.fstring_rewrites(self.fstrings).iter().cloned())
+                .collect(),
+        )
     }
 }
 
@@ -74,7 +111,9 @@ impl Rule for ReflowParentheses {
         } else {
             Vec::new()
         };
-        let padding = source.stranded_padding(self.stranding);
+        let stranded = source.stranded_padding(self.stranding);
+        let rewrites = self.rewrites(source);
+        let padding = padding::beside(&stranded, &rewrites);
         let reservations = source.columns(&self.reservations);
         let mut shedder = Shedder {
             breaks: RefCell::default(),
@@ -99,9 +138,10 @@ impl Rule for ReflowParentheses {
 /// budget test reads the columns the preceding edits produce. `calls`
 /// holds the outermost call ranges `reflow-calls` explodes where their
 /// row overflows, empty where that rule is off. `padding` is every edit
-/// `strip-stranded-padding` emits over the source and `reservations` the
-/// columns `align-equals` shifts each aligned value to, the two tables
-/// every measure settles a row through. `breaks` holds, for the candidate
+/// `strip-stranded-padding` emits over the source beside the
+/// [`ReflowParentheses::rewrites`] later rules land, and `reservations`
+/// the columns `align-equals` shifts each aligned value to, the two
+/// tables every measure settles a row through. `breaks` holds, for the candidate
 /// under test, whether each later pair on its row breaks.
 struct Shedder<'a> {
     breaks: RefCell<FxHashMap<TextRange, bool>>,
@@ -119,9 +159,10 @@ impl Shedder<'_> {
     /// joined line fits the budget. A candidate inside an open fold
     /// drops its parentheses alone, leaving that fold's own edits to
     /// close the break. A pair whose joined line overflows breaks across
-    /// rows where it holds an operator chain, sheds in place where an
-    /// enclosing bracket holds its breaks, re-seating the rows its
-    /// parens moved, and holds otherwise.
+    /// rows where it holds an operator chain or a conditional expression.
+    /// Otherwise a pair the source wrote sheds in place where an enclosing
+    /// bracket holds its breaks, re-seating the rows its parens moved, and
+    /// holds where none does, whereas a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let Candidate { inner, pair, .. } = *candidate;

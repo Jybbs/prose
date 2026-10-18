@@ -13,7 +13,7 @@ use crate::{diagnostics::Diagnostic, rules::Rule, source::Source};
 /// Applies `rule` to `source` and returns its fix groups with the
 /// suppressed and empty ones removed. A group is dropped whole as soon
 /// as one of its edits falls under a suppression span for `rule`.
-pub(super) fn prepared_groups(rule: &dyn Rule, source: &Source) -> Vec<Vec<Edit>> {
+pub(crate) fn prepared_groups(rule: &dyn Rule, source: &Source) -> Vec<Vec<Edit>> {
     let mut groups = rule.apply(source);
     let rule_id = rule.id();
     let suppression = source.suppression_map();

@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use prose::{pipeline::Pipeline, source::Source};
+use prose::pipeline::Pipeline;
 use ruff_diagnostics::Applicability;
 use ruff_source_file::LineIndex;
 use ruff_text_size::{Ranged, TextSize};
@@ -30,7 +30,8 @@ pub(crate) struct Formatted {
     pub(crate) rejected: BTreeMap<String, String>,
     /// How many files the run rewrote.
     pub(crate) rewritten: usize,
-    /// How many files the pipeline could not read or parse.
+    /// How many files the pipeline could not read or parse, or left as
+    /// written because their syntax fails its target.
     pub(crate) unread: usize,
 }
 
@@ -58,11 +59,11 @@ pub(crate) fn edit_rows(lines: &LineIndex, text: &str, range: &Range<usize>) -> 
 
 /// Formats every file of a tree in place and returns the files it read and
 /// rejected, how many it rewrote, the safe fixes each file's run recorded,
-/// and how many files it could not read or parse.
+/// and how many files it could not read or parse or left as written.
 ///
-/// A file the pipeline could not read, parse, or format is left as it was,
-/// an unread or unparsed file only counted and a file the pipeline could not
-/// format named beside its error.
+/// A file the pipeline could not read, parse, accept, or format is left as
+/// it was, an unread, unparsed, or refused file only counted and a file the
+/// pipeline could not format named beside its error.
 pub(crate) fn format_tree(tree: &Path, pipeline: &Pipeline) -> Formatted {
     let files: Vec<PathBuf> = python_files(tree).collect();
     swept(&files, |path| formatted(path, pipeline, tree))
@@ -75,10 +76,10 @@ pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
 
 /// What formatting one file of `tree` in place left behind, recording one
 /// unread file and nothing else where the pipeline could not read or parse
-/// it.
+/// it or its syntax fails the pipeline's target.
 fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
     let _slot = Slot::open(path.display().to_string());
-    let Ok(source) = Source::from_path(path) else {
+    let Ok(Some(source)) = pipeline.read_path(path) else {
         return Formatted {
             unread: 1,
             ..Formatted::default()

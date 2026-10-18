@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/rows_beneath_a_value_move_while_its_closer_stays/input.py
+---
+ab = 1
+x  = foo(a,
+         bar(b,
+             c),
+)

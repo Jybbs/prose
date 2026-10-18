@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Arm Hanging From Its Case Row Takes the Run's Column and Ends the Run"
+
+description = '''
+`case "install"` sits folded with its call's argument on a row of its own and the `)` back at the `case` indent, so its body spans three rows only inside the bracket ending its `case` row. **The arm pads its `:` to the column `"uninstall"` sets for `"build"` and `"uninstall"` above it, and ends the run there**, so `"format"` and `"lint-everything"` below align as a run of their own rather than sharing the column `"lint-everything"` would set for all five.
+'''

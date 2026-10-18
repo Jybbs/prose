@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Hanging Rows Stay While Rows Aligned Beneath a Value Move"
+
+description = '''
+Padding `b` and `y` one column out to the name above each moves both calls one column right. `b`'s call hangs its arguments one indent step past the statement and closes at the statement's indent, so **those rows stay where they were written**. `y`'s second argument starts at the column of its first, so **that row moves the same one column as the call**, and `bbbbbbbbbbbb` still sits beneath `aaaaaaaaaaaa`.
+'''

@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/strip_stranded_padding/rows_beneath_a_stripped_value_move_with_it/input.py
+---
+MESSAGE = {"_overlapped": ("Unsupported platform for Windows-only "
+                           "'_overlapped'")}

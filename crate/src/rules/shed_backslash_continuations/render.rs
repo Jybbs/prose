@@ -67,11 +67,11 @@ mod tests {
     #[rstest]
     #[case(TokenKind::Plus, TokenKind::Int, " ")]
     #[case(TokenKind::Equal, TokenKind::Lsqb, " ")]
-    #[case(TokenKind::Name, TokenKind::Dot, "")]
-    #[case(TokenKind::Dot, TokenKind::Name, "")]
-    #[case(TokenKind::Name, TokenKind::Lsqb, "")]
-    #[case(TokenKind::Name, TokenKind::Lpar, "")]
-    #[case(TokenKind::Name, TokenKind::Comma, "")]
+    #[case(TokenKind::Identifier, TokenKind::Dot, "")]
+    #[case(TokenKind::Dot, TokenKind::Identifier, "")]
+    #[case(TokenKind::Identifier, TokenKind::Lsqb, "")]
+    #[case(TokenKind::Identifier, TokenKind::Lpar, "")]
+    #[case(TokenKind::Identifier, TokenKind::Comma, "")]
     #[case(TokenKind::Int, TokenKind::Newline, "")]
     fn join_text_spaces_only_where_the_pair_takes_one(
         #[case] token: TokenKind,

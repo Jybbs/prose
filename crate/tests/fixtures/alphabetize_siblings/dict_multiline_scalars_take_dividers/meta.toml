@@ -3,5 +3,5 @@ previewable = false
 title       = "Paired Multi-Line Scalars Take Their Dividers Mid-Run"
 
 description = '''
-`"bravo"` and `"charlie"` each carry a parenthesized two-line string among the one-line `"alpha"`, `"delta"`, and `"echo"`. **Both sort into their alphabetical places as scalars, and blank-line dividers open around each of them mid-run**, between `"alpha"` and `"delta"`, rather than fencing one contiguous block at the tail, because a dict with more than one multi-line entry takes dividers around each of them.
+`"bravo"` and `"charlie"` each carry a parenthesized two-line string among the one-line `"alpha"`, `"delta"`, and `"echo"`. **Both sort into their alphabetical places as scalars, and blank-line dividers open around each of them mid-run**, between `"alpha"` and `"delta"`, rather than fencing one contiguous block at the tail, because a dict the sort reorders takes dividers around each multi-line entry once it holds more than one.
 '''

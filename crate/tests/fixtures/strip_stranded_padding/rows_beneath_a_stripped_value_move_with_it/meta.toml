@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Rows Beneath a Stripped Value Move With It"
+
+description = '''
+`"_overlapped"` is the dict's only entry, padded before its `:`, and its value continues onto a row starting at the column of the value's first string. **Removing the padding moves the value two columns left, and the row beneath it moves the same two columns**, so the second string still sits beneath the first.
+'''

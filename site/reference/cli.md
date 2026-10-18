@@ -30,7 +30,7 @@ Rewrites Python files to the *Prose* style and exits 0 once the rewrites are wri
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, removing them from whichever set would otherwise run |
 | `PATH...` | one or more paths, or `-` | required without `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes: `0` clean or rewrites written, `1` a `--diff` run found a pending rewrite, `2` lint findings reported, `3` parse error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*. A rewrite the [**settle check**](#unstable-output) reports as unstable is still written and still sets the exit code as any other rewrite would, with its notice going to stderr rather than changing the code.
+Exit codes: `0` clean or rewrites written, `1` a `--diff` run found a pending rewrite, `2` lint findings reported, `3` parse or syntax error, `4` config error *(see [**Exit Codes**](/reference/exit-codes))*. A rewrite the [**settle check**](#unstable-output) reports as unstable is still written and still sets the exit code as any other rewrite would, with its notice going to stderr rather than changing the code.
 
 ```bash
 prose format src/
@@ -71,7 +71,7 @@ Reports what would change without writing anything, so a CI gate reads `1` *(a r
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules |
 | `PATH...` | one or more paths, or `-` | required without `--stdin` | Files or directories to check, or `-` to read source from stdin |
 
-Exit codes: `0` clean, `1` a rewrite is pending, `2` lint findings reported, `3` parse error, `4` config error.
+Exit codes: `0` clean, `1` a rewrite is pending, `2` lint findings reported, `3` parse or syntax error, `4` config error.
 
 ```bash
 prose check .

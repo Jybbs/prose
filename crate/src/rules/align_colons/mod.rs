@@ -67,7 +67,7 @@ impl Rule for AlignColons {
             .walker
             .set_widenings(self.reservations.widenings(source));
         emitter.walk(source);
-        emitter.walker.groups
+        emitter.walker.into_groups()
     }
 
     fn id(&self) -> RuleId {

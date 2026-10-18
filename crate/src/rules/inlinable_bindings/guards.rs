@@ -59,9 +59,9 @@ fn guarded_arms(stmt: &Stmt) -> Option<Vec<TextRange>> {
 /// an expression that defers nothing. A lambda defers its body alone,
 /// and a comprehension's spans leave out its first iterable.
 fn guarded_spans(expr: &Expr) -> Option<Vec<TextRange>> {
-    let generators = match expr {
-        Expr::DictComp(ExprDictComp { generators, .. })
-        | Expr::Generator(ExprGenerator { generators, .. })
+    let generators: &[_] = match expr {
+        Expr::DictComp(ExprDictComp { generators, .. }) => generators,
+        Expr::Generator(ExprGenerator { generators, .. })
         | Expr::ListComp(ExprListComp { generators, .. })
         | Expr::SetComp(ExprSetComp { generators, .. }) => generators,
         Expr::Lambda(lambda) => return Some(vec![lambda.body.range()]),

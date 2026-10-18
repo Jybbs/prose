@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Over-Limit Value Aligns Only While Its Rows Fit"
+
+description = '''
+Under a `code-line-length` of 26, each `"key"` line runs past the limit at any gap, so the `%` row beneath its value decides whether the entry joins the `:` column. Padding the `:` moves the value one column right, and the `%` row moves with it. In `moved`, that row is 25 columns wide, so **it ends at the limit and both entries share the column**. In `held`, the row already ends at the limit, so moving it would carry it to 27, and **both entries stay as written**.
+'''

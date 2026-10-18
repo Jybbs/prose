@@ -259,7 +259,6 @@ A major lift held back from a write is recorded below beside its reason, and eac
 | **Pin** | **Reason** |
 |---|---|
 | `markdown-it` | The next major release types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
-| `ruff` | The newest `ruff_*` crates drop the `left` field of `ExprCompare`, read its comparators and the range of `ExprCall` through methods, remove `TokenKind::Name`, `TokenFlags::NON_ASCII_NAME`, and `SourceFile::slice`, and make `binary_search_by_start` private, so the crate's rules change before the lift |
 | `satori` | The newest release renders each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
 | `typescript` | `vue-tsc` loads `typescript/lib/tsc`, which the next major release no longer exports, so `site:typecheck` stops before it checks a file |
 

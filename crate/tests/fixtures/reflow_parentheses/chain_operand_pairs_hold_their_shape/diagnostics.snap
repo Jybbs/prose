@@ -3,4 +3,4 @@ source: crate/tests/integration.rs
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/reflow_parentheses/chain_operand_pairs_hold_their_shape/input.py
 ---
-
+reflow-parentheses@25..85

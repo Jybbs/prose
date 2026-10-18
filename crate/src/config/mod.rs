@@ -53,8 +53,9 @@ mod sink;
 #[cfg(feature = "native")]
 mod source;
 
+pub(crate) use de::TableNotice;
 pub(crate) use de::deserialize_rule;
-use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap, unknown_key_notice};
+use de::{deserialize_optional_cap, deserialize_prose, serialize_optional_cap};
 pub(crate) use json_schema::rule_schema;
 pub use schema::*;
 
@@ -113,14 +114,15 @@ impl Config {
     /// [`ConfigSource`] consults.
     fn from_base_table(
         mut table: toml::Table,
-        on_unknown: &mut dyn FnMut(&str),
+        on_notice: &mut dyn FnMut(TableNotice<'_>),
     ) -> Result<Self, ConfigError> {
         table.remove("overrides");
-        deserialize_prose(table, on_unknown)
+        deserialize_prose(table, on_notice)
     }
 
     /// Parses a `prose.toml` string at its document root, returning the
-    /// config beside one notice line per key it did not recognize.
+    /// config beside one notice line per key it did not recognize and
+    /// per `target-version` outside the versions the parser models.
     ///
     /// # Errors
     ///
@@ -128,8 +130,8 @@ impl Config {
     pub fn from_prose_toml_str(contents: &str) -> Result<(Self, Vec<String>), ConfigError> {
         let table = toml::from_str(contents)?;
         let mut notices = Vec::new();
-        let config = Self::from_base_table(table, &mut |key: &str| {
-            notices.push(unknown_key_notice(key));
+        let config = Self::from_base_table(table, &mut |notice: TableNotice<'_>| {
+            notices.push(notice.to_string());
         })?;
         Ok((config, notices))
     }
@@ -295,6 +297,8 @@ impl Config {
         padding::Stranding::new(
             StripStrandedPadding::SLUG,
             self.rules.strip_stranded_padding.enabled,
+            self.code_width(),
+            self.comment_settling(),
         )
     }
 

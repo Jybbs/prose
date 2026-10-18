@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Wide Conditional Breaks at Its `if` and Its `else`"
+
+description = '''
+The value bound to `label` is a conditional expression too wide for one row even inside a pair. **The rule adds a pair and lands the conditional on three rows, the `if` and the `else` each leading the row they open**, so each branch and the test read on rows of their own.
+'''

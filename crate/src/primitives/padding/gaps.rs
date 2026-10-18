@@ -73,7 +73,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{parse, range};
+    use crate::testing::{parse, range, stranding};
 
     /// Every delimiter-padding gap across `src`.
     fn delimiter_gaps(src: &str) -> Vec<TextRange> {
@@ -135,7 +135,7 @@ mod tests {
         #[case] expected: isize,
     ) {
         let source = parse(src);
-        let edits = Stranding::new(RuleId::from("strip-stranded-padding"), true).edits(&source);
+        let edits = stranding(true, 88).edits(&source);
         assert_eq!(slack(&source, &edits, range(start, end)), expected);
     }
 }

@@ -1,17 +1,16 @@
 //! The pipeline's reparse- and compile-failure path and its error type.
 
 use ruff_diagnostics::SourceMap;
-use ruff_python_ast::{PySourceType, PythonVersion};
+use ruff_python_ast::PySourceType;
 use ruff_python_parser::{ParseError, ParseOptions, parse, semantic_errors::SemanticSyntaxError};
 use ruff_source_file::OneIndexed;
 use ruff_text_size::TextLen;
 use thiserror::Error;
 
-use super::validity::first_semantic_error;
 use crate::{
     primitives::edit::forward_offsets,
     rules::{RuleId, render_slugs},
-    source::Source,
+    source::{Source, Target},
 };
 
 /// Failure modes surfaced by the pipeline itself.
@@ -53,7 +52,7 @@ pub(super) fn reparse_or_reject(
     new_text: String,
     rule: RuleId,
     map: &SourceMap,
-    gate: Option<PythonVersion>,
+    gate: Option<Target>,
 ) -> Result<Source, PipelineError> {
     let next = match source.splice_of(&new_text, map) {
         Some(splice) => source.spliced(new_text, map, splice, rule),
@@ -66,8 +65,8 @@ pub(super) fn reparse_or_reject(
             next
         }
     };
-    if let Some(version) = gate
-        && let Some(error) = first_semantic_error(&next, version)
+    if let Some(target) = gate
+        && let Some(error) = next.semantic_error(target)
     {
         return Err(PipelineError::Compile { error, rule });
     }

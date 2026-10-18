@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/ordered_dict_keeps_its_blank_lines/input.py
+---
+notice = {
+    "alpha": (
+        "first part "
+        "second part"
+    ),
+    "bravo": "b",
+
+    "charlie": "c",
+    "delta": (
+        "third part "
+        "fourth part"
+    ),
+}

@@ -25,13 +25,11 @@ pub(super) struct Test<'a> {
 impl<'a> Test<'a> {
     /// The test `compare` states, or `None` for a chained comparison.
     pub(super) fn of(compare: &'a ExprCompare) -> Option<Self> {
-        let ([op], [right]) = (&*compare.ops, &*compare.comparators) else {
-            return None;
-        };
+        let (left, &op, right) = compare.as_single()?;
         Some(Self {
             compare,
-            left: &compare.left,
-            op: *op,
+            left,
+            op,
             right,
         })
     }

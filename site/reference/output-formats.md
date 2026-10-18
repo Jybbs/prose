@@ -6,7 +6,7 @@ description: "Covers the `text`, `json`, `github`, and `sarif` formats."
 
 `--output-format` selects the format diagnostics print in, with one format per kind of reader. `text` is the default for a person reading a terminal, printing rustc-style snippets with carets and a suggested fix. `json` prints Ruff-shaped NDJSON for editor plugins and tooling, in the record shape editor diagnostic panels already read. `github` prints workflow commands that <Tool slug="github" /> renders as inline annotations. `sarif` prints a [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document for upload to [**GitHub Code Scanning**](https://docs.github.com/en/code-security/code-scanning), which keeps findings across runs in the repository's Security tab.
 
-The format is chosen per run and defaults to `text`. Every format writes diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can separate the two streams without reading exit codes.
+The format is chosen per run and defaults to `text`. Every format writes diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can separate the two streams without reading exit codes. A file whose syntax its `target-version` rejects prints its `syntax error` line on stderr as well, naming the file, the position, and the version, and the `json`, `github`, and `sarif` formats also print it as a record at that position, so a reader positions it the way it positions a diagnostic.
 
 ::: warning Diff Mode Is Text-Only
 `--diff` needs `text`, since the diff is the text format's own presentation. Any other pairing exits `4` while the arguments are parsed.
@@ -35,7 +35,7 @@ The snippets are rendered by [**`annotate-snippets`**](https://docs.rs/annotate-
 
 ## `json`
 
-One Ruff-compatible record per diagnostic on its own line, in NDJSON, closed by a summary record. The record shape matches what Ruff and ESLint print, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
+One Ruff-compatible record per diagnostic or refused file on its own line, in NDJSON, closed by a summary record. The record shape matches what Ruff and ESLint print, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding, `"syntax_error"` for a file its `target-version` refuses, and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
 
 ```json
 {
@@ -145,6 +145,18 @@ A final record closes every `json` run, carrying run-wide counts so a reader get
 | `rules_fired` | `{ "<slug>": count }` | Findings per rule, sorted by key so the output is deterministic |
 | `schema_version` | integer | Increments on any change to an existing field's shape, whereas an added field arrives unversioned |
 
+A file whose syntax its `target-version` rejects prints one `"syntax_error"` record ahead of the summary in place of its diagnostics, carrying `filename`, `cell` for a notebook, `location`, `end_location`, and a `message` naming the version.
+
+```json
+{
+  "kind"         : "syntax_error",
+  "filename"     : "src/module.py",
+  "location"     : { "row": 1, "column": 1 },
+  "end_location" : { "row": 1, "column": 5 },
+  "message"      : "Cannot use `lazy` import statement on Python 3.14 (syntax was added in Python 3.15) under `target-version = \"3.14\"`"
+}
+```
+
 `schema_version` versions the whole NDJSON contract, incrementing when a release changes the shape of an existing field and staying put when a release only adds fields, so a reader can pin its parsing to a known version and still read newer added fields. The summary record, the leading `kind` field, and each edit's `before` were all added this way, so a reader that reads only `code`, `location`, and `message` parses them unchanged.
 
 ## `github`
@@ -155,13 +167,15 @@ A final record closes every `json` run, carrying run-wide counts so a reader get
 ::warning file=src/module.py,line=14,col=5,endLine=14,endColumn=8::align consecutive `=` operators
 ```
 
+A file whose syntax its `target-version` rejects prints an `::error` command at that position in place of its warnings.
+
 `endLine` and `endColumn` print only when the finding stays on one line. A finding spanning several lines prints only `line` and `col`, because GitHub's annotation UI shows only the start of a multi-line span. The annotation message is the finding in the rule's words, led by `cell <n>:` for a finding inside a notebook cell.
 
 The [**GitHub Actions**](/integrations/github-actions) integration page covers the workflow that reads this format.
 
 ## `sarif`
 
-One [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document describing the whole run as a single `runs[0]` entry. Each `results[]` entry carries the rule slug as `ruleId`, the source position as a `physicalLocation`, and, for a diagnostic carrying a fix, the replacement as a `fixes[]` entry with an `artifactChanges[]` payload. The document is deep enough that an inline sample would be harder to read than the schema linked above.
+One [**SARIF 2.1.0**](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) document describing the whole run as a single `runs[0]` entry. Each `results[]` entry carries the rule slug as `ruleId`, the source position as a `physicalLocation`, and, for a diagnostic carrying a fix, the replacement as a `fixes[]` entry with an `artifactChanges[]` payload. A file whose syntax its `target-version` rejects lands as an `error`-level result under the `ruleId` `syntax-error`. The document is deep enough that an inline sample would be harder to read than the schema linked above.
 
 Upload the SARIF file through GitHub's CodeQL action to show findings in the repository's Security tab:
 

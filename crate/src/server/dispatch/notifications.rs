@@ -13,7 +13,9 @@ use lsp_types::{
 use ruff_source_file::PositionEncoding;
 
 use super::send;
-use crate::server::{analysis, config_cache::ConfigCache, documents::DocumentStore};
+use crate::server::{
+    analysis, config_cache::ConfigCache, conversion::source_type_of, documents::DocumentStore,
+};
 
 /// `notification`'s params where its method is `N`'s, and otherwise the
 /// notification handed back for the next method to read.
@@ -89,7 +91,7 @@ fn publish(
     let diagnostics = doc
         .map(|doc| {
             let config = configs.resolve(uri, &doc.text);
-            analysis::diagnostics(&doc.text, encoding, &config)
+            analysis::diagnostics(&doc.text, source_type_of(uri), encoding, &config)
         })
         .unwrap_or_default();
     let params = PublishDiagnosticsParams {

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_conditional_gains_a_pair/input.py
+---
+reflow-parentheses@109..164

@@ -11,7 +11,9 @@ use ruff_text_size::{TextRange, TextSize};
 
 use crate::{
     config::MaxShift,
-    primitives::{comments::Settling, padding::Stranding},
+    primitives::{
+        comments::Settling, inline::display_width, padding::Stranding, travel::carried_rows,
+    },
     rules::RuleId,
     source::Source,
 };
@@ -26,8 +28,8 @@ mod widen;
 
 pub(crate) use breaks::{Breakable, Statement, breaking_columns};
 pub(crate) use emit::{
-    Extent, comment_slack, forecast_columns, operator_columns, settled_tail, space_padding_edit,
-    written_columns, written_groups,
+    Extent, comment_slack, forecast_columns, operator_columns, settled_row_width, settled_tail,
+    space_padding_edit, written_columns, written_groups,
 };
 pub(crate) use grouping::{
     Slot, adjacent_member_groups, keyed_line_adjacent_groups, line_adjacent_groups,
@@ -55,10 +57,14 @@ pub(crate) const VALUE_OFFSET: usize = 2;
 /// padded the content ahead of the gap, so the column math reads the
 /// second. `op_width` right-aligns a variable-width operator and stays
 /// zero otherwise. `value_gap` runs from just past the operator to the
-/// value, `None` where the rule leaves that spacing alone.
+/// value, `None` where the rule leaves that spacing alone. `end` closes
+/// the item the row opens, whose continuation rows past the row move
+/// with the value, and sits at the aligned token where the row carries
+/// none.
 #[derive(Clone, Copy)]
 pub(crate) struct Member {
     pub baseline: usize,
+    pub end: TextSize,
     pub gap: TextRange,
     pub line_start: TextSize,
     pub op_width: usize,
@@ -74,6 +80,7 @@ impl Member {
     fn written(baseline: usize, width: usize) -> Self {
         Self {
             baseline,
+            end: TextSize::default(),
             gap: TextRange::default(),
             line_start: TextSize::default(),
             op_width: 0,
@@ -81,6 +88,18 @@ impl Member {
             value_gap: None,
             width,
         }
+    }
+
+    /// The line range of each continuation row of this member's item
+    /// that moves with its value, per [`carried_rows`], empty where the
+    /// value opens past its operator's row or the rule leaves the
+    /// post-operator gap alone.
+    pub(crate) fn carried_rows(self, source: &Source) -> Vec<TextRange> {
+        self.rewritten_value_gap(source)
+            .filter(|gap| gap.end() < self.end)
+            .map_or_else(Vec::new, |gap| {
+                carried_rows(source, TextRange::new(gap.end(), self.end), self.baseline)
+            })
     }
 
     /// The post-operator gap an aligned row rewrites to one space,
@@ -91,6 +110,16 @@ impl Member {
             .filter(|gap| !source.contains_line_break(*gap))
     }
 
+    /// The rows [`Self::carried_rows`] lists where the value moves
+    /// `shift` columns, empty where it stays.
+    pub(crate) fn rows_moved_by(self, source: &Source, shift: isize) -> Vec<TextRange> {
+        if shift == 0 {
+            Vec::new()
+        } else {
+            self.carried_rows(source)
+        }
+    }
+
     /// This member's alignment slot, bridging the run when its row is
     /// skip-held for `rule` so neighbors align around it.
     pub(crate) fn slot(self, source: &Source, rule: RuleId) -> Slot<Self> {
@@ -99,6 +128,23 @@ impl Member {
         } else {
             Slot::Member(self)
         }
+    }
+
+    /// Returns a copy of `self` whose item closes at `end`, so the
+    /// continuation rows its value carries reach that far.
+    pub(crate) fn through(mut self, end: TextSize) -> Self {
+        self.end = end;
+        self
+    }
+
+    /// The columns this member's value moves once its gap holds `pad`
+    /// spaces and any post-operator gap it rewrites holds one.
+    pub(crate) fn value_shift(self, source: &Source, pad: usize) -> isize {
+        let width = |gap: TextRange| display_width(source.slice(gap)).cast_signed();
+        pad.cast_signed() - width(self.gap)
+            + self
+                .rewritten_value_gap(source)
+                .map_or(0, |gap| 1 - width(gap))
     }
 
     /// Returns a copy of `self` with `op_width` set to the operator's

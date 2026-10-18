@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_equals/shared_row_moves_by_both_shifts/input.py
+---
+aaaa = 1
+b    = foo(x = bar(1,
+                   2),
+           yy = 3)

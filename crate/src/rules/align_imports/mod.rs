@@ -49,7 +49,7 @@ impl Rule for AlignImports {
             walker: aligner::AlignWalker::new(source, self.settings, Self::SLUG),
         };
         visitor.visit_body(&source.ast().body);
-        visitor.walker.groups
+        visitor.walker.into_groups()
     }
 
     fn id(&self) -> RuleId {

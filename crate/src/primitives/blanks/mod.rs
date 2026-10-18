@@ -98,13 +98,7 @@ fn is_main_guard(stmt: &Stmt) -> bool {
     let Some(cmp) = if_stmt.test.as_compare_expr() else {
         return false;
     };
-    let ([CmpOp::Eq], Some(left), Some(right)) = (
-        cmp.ops.as_ref(),
-        cmp.left.as_name_expr(),
-        cmp.comparators
-            .first()
-            .and_then(Expr::as_string_literal_expr),
-    ) else {
+    let Some((Expr::Name(left), CmpOp::Eq, Expr::StringLiteral(right))) = cmp.as_single() else {
         return false;
     };
     left.id == "__name__" && right.value.to_str() == "__main__"

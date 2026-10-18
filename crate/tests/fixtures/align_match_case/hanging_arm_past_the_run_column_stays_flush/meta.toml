@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hanging Arm Past the Budget at the Run's Column Stays Flush and Folded"
+
+description = '''
+`case "GET", _` hangs its call's argument from the `(` ending its `case` row, and that row fits at 84 columns with its `:` flush, whereas padding the `:` out to the column `"POST", "/submissions"` sets would carry it to 99, past the 88-column `code-line-length`. **The arm drops the padding it carried and keeps its body on the `case` row**, since moving the body onto a row of its own would leave its closing `)` outdented from the body, while `"GET", "/"` and `"POST", "/submissions"` above it align as a run of two.
+'''

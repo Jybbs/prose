@@ -180,6 +180,35 @@ fn from_prose_toml_str_returns_a_notice_for_each_unknown_key() {
     );
 }
 
+#[rstest]
+#[case::below_the_oldest("3.1", true)]
+#[case::past_the_newest("4.0", true)]
+#[case::a_modeled_version("3.14", false)]
+fn from_prose_toml_str_warns_on_a_target_version_the_parser_does_not_model(
+    #[case] version: &str,
+    #[case] warns: bool,
+) {
+    let (config, notices) =
+        Config::from_prose_toml_str(&format!("target-version = \"{version}\"\n")).expect("parses");
+
+    assert_eq!(
+        config.target_version.map(|target| target.to_string()),
+        Some(version.to_owned())
+    );
+    assert_eq!(
+        notices,
+        warns
+            .then(|| {
+                format!(
+                    "warning: `target-version` {version} in [tool.prose] names no Python version \
+                     the parser models, which run from 3.7 through 3.15"
+                )
+            })
+            .into_iter()
+            .collect::<Vec<_>>(),
+    );
+}
+
 #[test]
 fn from_pyproject_str_rejects_a_non_table_prose_entry() {
     assert_toml_error("[tool]\nprose = 1\n");

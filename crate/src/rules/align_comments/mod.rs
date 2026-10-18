@@ -48,7 +48,7 @@ impl Rule for AlignComments {
         for group in trailing_comment_groups(source, walker.rule, self.stranding) {
             walker.emit_group_or_buffer(&group);
         }
-        walker.groups
+        walker.into_groups()
     }
 
     fn id(&self) -> RuleId {

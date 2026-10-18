@@ -7,7 +7,6 @@
 
 use ruff_python_ast::helpers::is_dunder;
 use ruff_python_ast::{Expr, Stmt, StmtClassDef, StmtFunctionDef};
-use ruff_python_stdlib::builtins::is_python_builtin;
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -84,9 +83,7 @@ pub(super) fn module_band_plan<'src>(
     let aliases = rule
         .group_subcategories
         .then(|| AliasContext::new(body, analysis));
-    let builtins_minor = rule.target_version.unwrap_or_default().minor;
-    let notebook = source.is_notebook();
-    let is_builtin = |name: &str| is_python_builtin(name, builtins_minor, notebook);
+    let is_builtin = |name: &str| source.is_builtin(name, rule.target_version);
     let suppression = source.suppression_map();
     let mut def_at: FxHashMap<&'src str, usize> = FxHashMap::default();
     let mut dup_defs: FxHashSet<&'src str> = FxHashSet::default();

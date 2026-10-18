@@ -14,7 +14,7 @@ use super::{
     de::deserialize_prose,
     discover::{holding_dir, walk_prose_table},
     merge::merge_tables,
-    notice::{ConfigNotice, unknown_keys},
+    notice::{ConfigNotice, table_notices},
     overrides::{Override, take_overrides},
     script,
     sink::NoticeDedup,
@@ -76,7 +76,7 @@ impl ConfigSource {
         F: FnMut(ConfigNotice<'_>),
     {
         let overrides = take_overrides(&mut table, on_notice)?;
-        let base_toml = deserialize_prose(table.clone(), &mut unknown_keys(on_notice))?.to_toml();
+        let base_toml = deserialize_prose(table.clone(), &mut table_notices(on_notice))?.to_toml();
         Ok(Self {
             anchor,
             base: table,

@@ -22,7 +22,7 @@ use super::{
 };
 use crate::{
     cache::{Anchor, Cache, Rewrite},
-    cli::emit::{EmitterSummary, Run, Text},
+    cli::emit::{EmitterSummary, RefusedEntry, Run, Text},
     config::Config,
     diagnostics::Diagnostic,
     unstable::UnstableRewrite,
@@ -66,6 +66,9 @@ enum FileOutcome {
         unstable: Option<Box<UnstableRewrite>>,
     },
     Failed(ExitStatus),
+    /// A file holding syntax its target rejects, reported at the
+    /// parse-error status and carried into the structured outputs.
+    Refused(Box<RefusedEntry>),
 }
 
 impl FileOutcome {
@@ -94,7 +97,7 @@ impl FileOutcome {
     }
 
     /// The emitter run this outcome renders through, `None` for a file
-    /// that failed.
+    /// that failed or that its target refused.
     fn run(&self) -> Option<Run<'_>> {
         match self {
             Self::Done {
@@ -103,16 +106,17 @@ impl FileOutcome {
                 notebook_index,
                 ..
             } => Some(Run::new(file, diagnostics, notebook_index.as_deref())),
-            Self::Failed(_) => None,
+            Self::Failed(_) | Self::Refused(_) => None,
         }
     }
 
     /// The source file and settle report this outcome carries, `None`
-    /// for a settled rewrite and for a file that failed.
+    /// for a settled rewrite and for a file that failed or that its
+    /// target refused.
     fn unstable(&self) -> Option<(&SourceFile, &UnstableRewrite)> {
         match self {
             Self::Done { file, unstable, .. } => unstable.as_deref().map(|rewrite| (file, rewrite)),
-            Self::Failed(_) => None,
+            Self::Failed(_) | Self::Refused(_) => None,
         }
     }
 }
