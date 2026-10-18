@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hanging Arm Past the Budget on Its Own Stays Folded"
+
+description = '''
+`case "GET"` hangs its call's argument from the `(` ending its `case` row, and that row runs to 92 columns even with its `:` flush, past the 88-column `code-line-length`. **The arm drops the padding it carried and keeps its body on the `case` row** rather than splitting the body onto a row of its own, and `"POST"` below it folds alone with its `:` flush.
+'''

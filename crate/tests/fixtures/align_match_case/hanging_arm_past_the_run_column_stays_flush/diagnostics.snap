@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/align_match_case/hanging_arm_past_the_run_column_stays_flush/input.py
+---
+align-match-case@205..218
+align-match-case@83..161

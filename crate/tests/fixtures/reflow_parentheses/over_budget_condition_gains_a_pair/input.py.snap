@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/over_budget_condition_gains_a_pair/input.py
+---
+def latest(transcript, moment):
+    stamps = []
+    if transcript:
+        for path in transcript.parent.glob("*.jsonl"):
+            with suppress(OSError):
+                written = path.stat().st_mtime
+                if (
+                    path != transcript
+                    and abs(written - moment) <= RECENT.total_seconds()
+                ):
+                    stamps.append((written, path))
+    return max(stamps, default=(0.0, None))[1]

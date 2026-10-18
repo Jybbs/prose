@@ -12,13 +12,17 @@ use super::{
     Shedder,
     plan::{Candidate, shed_columns},
 };
-use crate::primitives::{
-    edit::{apply_inline_edits, insert_edit},
-    inline::{
-        display_width, run_closes_to_a_space, settled_head_column, settled_width, soft_wrap_runs,
+use crate::{
+    primitives::{
+        edit::{apply_inline_edits, insert_edit},
+        inline::{
+            display_width, run_closes_to_a_space, settled_head_column, settled_width,
+            soft_wrap_runs,
+        },
+        slots::starting_within,
+        splice::splice_preserves_tree,
     },
-    slots::starting_within,
-    splice::splice_preserves_tree,
+    source::Source,
 };
 
 impl Shedder<'_> {
@@ -143,23 +147,11 @@ impl Shedder<'_> {
         row > self.code_line_length
     }
 
-    /// Emits an edit closing each line-spanning whitespace run inside
-    /// `inner`, to a single space between two tokens and to nothing
-    /// against a bracket.
+    /// Emits the [`fold_edits`] closing each line-spanning whitespace run
+    /// inside `inner`.
     pub(super) fn push_fold_edits(&mut self, inner: TextRange) {
-        let text = self.source.slice(inner);
-        for (begin, len) in soft_wrap_runs(text) {
-            let start = inner.start() + text[..begin].text_len();
-            let end = start + text[begin..begin + len].text_len();
-            let span = TextRange::new(start, end);
-            insert_edit(
-                &mut self.edits,
-                if run_closes_to_a_space(text, begin, len) {
-                    Edit::range_replacement(" ".to_owned(), span)
-                } else {
-                    Edit::range_deletion(span)
-                },
-            );
+        for edit in fold_edits(self.source, inner) {
+            insert_edit(&mut self.edits, edit);
         }
     }
 
@@ -191,4 +183,22 @@ impl Shedder<'_> {
         splice_preserves_tree(self.source, pair, &candidate.flush.padded(bare))
             .then_some((open, close))
     }
+}
+
+/// The edits closing each line-spanning whitespace run inside `inner`, to
+/// a single space between two tokens and to nothing against a bracket,
+/// ascending by start.
+pub(super) fn fold_edits(source: &Source, inner: TextRange) -> Vec<Edit> {
+    let text = source.slice(inner);
+    soft_wrap_runs(text)
+        .map(|(begin, len)| {
+            let start = inner.start() + text[..begin].text_len();
+            let span = TextRange::at(start, text[begin..begin + len].text_len());
+            if run_closes_to_a_space(text, begin, len) {
+                Edit::range_replacement(" ".to_owned(), span)
+            } else {
+                Edit::range_deletion(span)
+            }
+        })
+        .collect()
 }

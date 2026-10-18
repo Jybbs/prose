@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An Entry Breaking Open in a Sorted Dict Stays in Its Run"
+
+description = '''
+`CASES` already holds its keys in order, and the `"restore-of-both-in-a-cluster"` row crosses the `code-line-length` of `80` with or without its padding, so [[reflow-collections]] breaks its tuple open across three rows. **The entry keeps its place in the run it shares with `"restore-of-the-working-tree"` and `"shallow-abbreviated-depth"`, padded to their column with no blank line after it**, because [[alphabetize-siblings]] reorders nothing here and so keeps the blank lines the source writes rather than setting one on either side of each entry spanning rows.
+'''

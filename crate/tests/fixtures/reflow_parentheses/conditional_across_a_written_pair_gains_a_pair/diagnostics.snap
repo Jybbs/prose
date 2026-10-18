@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/conditional_across_a_written_pair_gains_a_pair/input.py
+---
+reflow-parentheses@52..156

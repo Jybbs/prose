@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/align_match_case/hanging_arm_past_the_run_column_stays_flush/input.py
+---
+def route(request):
+    match request.method, request.path:
+        case "GET", "/"             : return index()
+        case "POST", "/submissions" : return accept(request)
+        case "GET", _: return render_template_with_its_request_context_and_defaults(
+            request.path
+        )

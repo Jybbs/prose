@@ -22,6 +22,7 @@ use crate::{
         colon_targets::dict_entry_slot,
         inline::{display_width, end_column, opening_width, spans_rows},
         layout::opener_width,
+        orderer::is_identity,
         tokens::code_token_before,
         travel::Landing,
     },
@@ -294,8 +295,9 @@ impl<'a> Layouter<'a> {
     /// layout rule can expand that value and doing so leaves the run in
     /// fewer groups, or in as many with fewer rows unpadded, reading rows
     /// in the order `order` leaves them. A key spanning rows or, without
-    /// a sort, a blank line closes a run, and a `**` unpacking passes
-    /// through one. Under a sort, nothing is re-serialized where
+    /// a sort that reorders the dict, a blank line closes a run, and a
+    /// `**` unpacking passes through one. Wherever the sort reaches the
+    /// dict, whether or not it reorders it, nothing is re-serialized where
     /// [`sets_dividers`] would hold.
     fn seat_entries(
         &self,
@@ -306,7 +308,7 @@ impl<'a> Layouter<'a> {
         order: Option<&[usize]>,
         settings: aligner::Settings,
     ) {
-        let reassembled = order.is_some();
+        let reorders = order.is_some_and(|order| !is_identity(order));
         let node = AnyNodeRef::from(dict);
         let mut runs: Vec<Vec<(usize, (usize, Extent))>> = vec![Vec::new()];
         for position in 0..entries.len() {
@@ -319,7 +321,7 @@ impl<'a> Layouter<'a> {
                 tails[index],
             );
             if matches!(row, Slot::Break)
-                || (!reassembled
+                || (!reorders
                     && position > 0
                     && self
                         .source
@@ -367,7 +369,7 @@ impl<'a> Layouter<'a> {
                 seats.extend(overflowing);
             }
         }
-        if reassembled
+        if order.is_some()
             && sets_dividers(entries.iter().enumerate().map(|(index, entry)| {
                 entry.key.is_some()
                     && (spans_rows(&entry.text) || seats.iter().any(|&(seat, _)| seat == index))

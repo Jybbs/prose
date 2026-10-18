@@ -1,0 +1,13 @@
+CASES = {
+    "restore-of-both": (
+        "git restore --staged --worktree crate/src/x.rs", "discard"
+    ),
+
+    "restore-of-both-in-a-cluster" : ("git restore -SW crate/src/x.rs", "discard"),
+    "restore-of-the-working-tree"  : ("git restore crate/src/x.rs", "discard"),
+    "shallow-abbreviated-depth"    : ("git fetch --dep=1", "shallow"),
+
+    "switch-discarding-changes": (
+        "git switch --discard-changes main", "discard"
+    ),
+}

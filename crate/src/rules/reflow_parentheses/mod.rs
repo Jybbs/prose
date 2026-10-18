@@ -4,11 +4,13 @@
 //! a walrus binding, a one-element tuple, and a pair holding one
 //! boolean operator inside a chain at the other all survive. A wrapped
 //! pair folds onto one line when the bare form fits, one holding an
-//! over-budget operator chain breaks across rows one operand per row,
-//! and one whose interior breaks sit inside a bracket of its own sheds
-//! in place. `plan` finds the pairs, `chain` divides an interior into
-//! operands, `measure` answers whether each direction fits, and
-//! `render` builds the broken text.
+//! over-budget operator chain or conditional expression breaks across
+//! rows one operand per row, and one whose interior breaks sit inside a
+//! bracket of its own sheds in place. An over-budget boolean chain or
+//! conditional ending a statement's row gains a pair the break adds.
+//! `plan` finds the pairs, `chain` divides an interior into operands,
+//! `measure` answers whether each direction fits, and `render` builds
+//! the broken text.
 
 use std::cell::RefCell;
 
@@ -119,9 +121,10 @@ impl Shedder<'_> {
     /// joined line fits the budget. A candidate inside an open fold
     /// drops its parentheses alone, leaving that fold's own edits to
     /// close the break. A pair whose joined line overflows breaks across
-    /// rows where it holds an operator chain, sheds in place where an
-    /// enclosing bracket holds its breaks, re-seating the rows its
-    /// parens moved, and holds otherwise.
+    /// rows where it holds an operator chain or a conditional expression.
+    /// Otherwise a pair the source wrote sheds in place where an enclosing
+    /// bracket holds its breaks, re-seating the rows its parens moved, and
+    /// holds where none does, whereas a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let Candidate { inner, pair, .. } = *candidate;
