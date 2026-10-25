@@ -2,21 +2,10 @@
   padding    : 0;
   background : transparent;
   border     : none;
-  outline    : none;
   box-shadow : none;
 }
 
-.v-popper--theme-rule-card {
-  --rule-card-popper-border : color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
-}
-
-.v-popper--theme-rule-card .v-popper__arrow-outer {
-  border-color : var(--rule-card-popper-border);
-}
-
-.v-popper--theme-rule-card .v-popper__arrow-inner {
-  border-color : var(--vp-c-bg);
-}
+.v-popper--theme-rule-card { --popper-accent : var(--family-color); }
 
 .v-popper--theme-rule-card .v-popper__wrapper {
   transition :
@@ -29,16 +18,11 @@
   max-width     : min(calc(100vw - var(--prose-space-32)), var(--prose-width-600));
   height        : auto;
   min-height    : var(--prose-size-64);
-  border        : var(--prose-border-2) solid var(--rule-card-popper-border);
-  border-top    : var(--prose-border-3) solid var(--family-color);
+  border        : var(--prose-border-2) solid var(--popper-border);
+  border-top    : var(--prose-border-3) solid var(--popper-accent);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
-}
-
-.v-popper--theme-rule-card,
-.v-popper--theme-rule-card * {
-  outline : none !important;
 }
 
 .v-popper--theme-rule-card .rule-card-caption {

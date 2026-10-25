@@ -194,7 +194,7 @@
 }
 
 @media (--prose-bp-mobile) {
-  .per-rule-facets-meaning {
+  .vp-doc .per-rule-facets-meaning {
     padding-left : 0;
   }
 }

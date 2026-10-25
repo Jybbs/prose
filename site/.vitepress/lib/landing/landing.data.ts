@@ -76,7 +76,8 @@ const STEP_SOURCES: readonly StepSource[] = [
     title    : 'Run'
   },
   {
-    body     : 'Optionally run Ruff too, for the token-level formatting *Prose* leaves alone.',
+    body     : 'In a project that already runs Ruff, run `ruff format` first, since a later '
+             + '`ruff format` removes the padding *Prose* writes.',
     code     : 'ruff format path/ && prose format path/',
     language : 'bash',
     number   : '04',
@@ -91,12 +92,12 @@ export default defineLoader({
     const withBody = renderer.inlineNodeField(md, STEP_SOURCES, 'body')
     const workflow = await renderer.renderFencedField(md, withBody, 'code')
     return {
+      workflow : workflow,
       surfaces : FAMILY_ORDER.map((family, i) => ({
         bodyNodes : inlineNodes(md, SURFACE_BODIES[family]),
-        family,
-        number   : formatFolio(i + 1)
-      })),
-      workflow
+        family    : family,
+        number    : formatFolio(i + 1)
+      }))
     }
   }
 })

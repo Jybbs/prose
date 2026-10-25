@@ -1,5 +1,5 @@
-//! The cache key: a BLAKE3 digest over the source, its name, the
-//! config, the resolved rule selection, and the version inputs,
+//! The cache key: a BLAKE3 digest over the source, its name and type,
+//! the config, the resolved rule selection, and the version inputs,
 //! domain-separated by the anchor naming which buffer the entry's
 //! diagnostics resolve against.
 
@@ -11,20 +11,6 @@ pub(super) const CACHE_FORMAT_VERSION: &str = "10";
 
 /// How many hex characters of the generation digest name the directory.
 const GENERATION_LEN: usize = 16;
-
-/// The directory segment this build's entries live under. A version
-/// bump lands on a fresh segment.
-#[must_use]
-pub(super) fn generation() -> String {
-    generation_for(env!("CARGO_PKG_VERSION"), CACHE_FORMAT_VERSION)
-}
-
-fn generation_for(prose_version: &str, format_version: &str) -> String {
-    let mut hasher = blake3::Hasher::new();
-    framed(&mut hasher, prose_version.as_bytes());
-    framed(&mut hasher, format_version.as_bytes());
-    hasher.finalize().to_hex()[..GENERATION_LEN].to_owned()
-}
 
 /// Which buffer an entry's diagnostics resolve against. A `check` and a
 /// structured `format` record `diagnose`'s list against the source as
@@ -49,11 +35,11 @@ impl Anchor {
 }
 
 /// BLAKE3 digest of the config TOML, rule slugs, Prose version, cache
-/// format version, source type, and source bytes, taken under the
-/// anchor's key-derivation context. The config TOML, source type, and
-/// source bytes are length-framed, the rule slugs are newline-delimited
-/// and hold no newline of their own, and the two version strings are
-/// fixed by the build.
+/// format version, file name, source type, and source bytes, taken under
+/// the anchor's key-derivation context. The config TOML, file name,
+/// source type, and source bytes are length-framed, the rule slugs are
+/// newline-delimited and hold no newline of their own, and the two
+/// version strings are fixed by the build.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct CacheKey(pub(super) blake3::Hash);
 
@@ -119,8 +105,22 @@ impl CacheKeyPrefix {
     }
 }
 
+/// The directory segment this build's entries live under. A version
+/// bump lands on a fresh segment.
+#[must_use]
+pub(super) fn generation() -> String {
+    generation_for(env!("CARGO_PKG_VERSION"), CACHE_FORMAT_VERSION)
+}
+
 /// Absorbs `bytes` behind its little-endian `u64` length.
 fn framed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
     hasher.update(&(bytes.len() as u64).to_le_bytes());
     hasher.update(bytes);
+}
+
+fn generation_for(prose_version: &str, format_version: &str) -> String {
+    let mut hasher = blake3::Hasher::new();
+    framed(&mut hasher, prose_version.as_bytes());
+    framed(&mut hasher, format_version.as_bytes());
+    hasher.finalize().to_hex()[..GENERATION_LEN].to_owned()
 }

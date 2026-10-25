@@ -6,6 +6,7 @@ import { parse as parseCss }                              from 'postcss'
 import * as emblems                                  from '../../lib/shared/emblems'
 import { FAMILIES, PALETTE }                         from '../../lib/shared/palette'
 import { GLOSSARY_FAMILY_META, type GlossaryFamily } from '../../lib/shared/registries'
+import { siteSheets }                                from '../support'
 
 const FAMILIES_LISTED = Object.keys(GLOSSARY_FAMILY_META) as GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
@@ -104,15 +105,14 @@ describe('the badge ink', () => {
   })
 
   it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
-    const theme     = new URL('../../theme/', import.meta.url)
-    const recolored = fs.globSync('**/*.css', { cwd: theme }).filter(file => {
+    const recolored = siteSheets().filter(({ root }) => {
       let sets = false
-      parseCss(fs.readFileSync(new URL(file, theme), 'utf8')).walkRules(rule => {
+      root.walkRules(rule => {
         if (rule.selector.includes('.nib-badge')) rule.walkDecls('color', () => { sets = true })
       })
       return sets
     })
-    expect(recolored).toStrictEqual(['components/base/styles/nib.css'])
+    expect(recolored.map(sheet => sheet.file)).toStrictEqual(['.vitepress/theme/components/base/styles/nib.css'])
   })
 
   it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', () => {

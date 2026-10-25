@@ -11,3 +11,15 @@
   opacity   : 1;
   transform : translateY(0);
 }
+
+:where(.v-popper--theme-glossary, .v-popper--theme-rule-card) {
+  --popper-border : color-mix(in srgb, var(--popper-accent) var(--prose-tint-55), var(--vp-c-divider));
+}
+
+:where(.v-popper--theme-glossary, .v-popper--theme-rule-card) .v-popper__arrow-outer {
+  border-color : var(--popper-border);
+}
+
+:where(.v-popper--theme-glossary, .v-popper--theme-rule-card) .v-popper__arrow-inner {
+  border-color : var(--vp-c-bg);
+}

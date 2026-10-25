@@ -23,6 +23,7 @@ import { parse }               from 'postcss'
 
 import { paletteCss } from '../../lib/shared/palette'
 import { siteDir }    from '../../lib/shared/paths'
+import { siteSheets } from '../support'
 
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'
@@ -73,10 +74,9 @@ class Vocabulary {
   // Reads each custom property and custom media the `declaring` sheets declare,
   // and each custom property the `reading` sheets pass to `color-mix()` or read
   // as a font family.
-  static read(declaring: string[], reading: string[]): Vocabulary {
+  static read(declaring: Root[], reading: Root[]): Vocabulary {
     const vocabulary = new Vocabulary(facedBy(reading), new Set(), mixedBy(reading), new Set())
-    for (const sheet of declaring) {
-      const root = parse(sheet)
+    for (const root of declaring) {
       root.walkDecls(/^--/, decl => { vocabulary.properties.add(decl.prop) })
       root.walkAtRules('custom-media', rule => { vocabulary.media.add(rule.params.split(/\s/)[0]) })
     }
@@ -157,8 +157,7 @@ class Vocabulary {
 
   // Lists each value a stylesheet writes in place of a token, by the line it
   // sits on.
-  strays(css: string): Stray[] {
-    const root  = parse(css)
+  strays(root: Root): Stray[] {
     const found = this.mediaStrays(root)
     root.walkDecls(decl => { found.push(...this.declarationStrays(decl)) })
     return found.toSorted((a, b) => a.line - b.line)
@@ -167,15 +166,13 @@ class Vocabulary {
 
 const read = (file: string): string => fs.readFileSync(path.join(SITE, file), 'utf8')
 
-const STYLESHEETS = fs.globSync(['.vitepress/theme/**/*.css', 'prototypes/**/*.css'], { cwd: SITE })
-  .filter(file => file !== TOKENS)
-  .toSorted()
-
-const TOKEN_SHEET = read(TOKENS)
+const SHEETS      = siteSheets()
+const STYLESHEETS = SHEETS.filter(({ file }) => file !== TOKENS)
+const TOKEN_SHEET = SHEETS.find(({ file }) => file === TOKENS)!.root
 const VITEPRESS   = fs.globSync('node_modules/vitepress/dist/client/theme-default/styles/*.css', { cwd: SITE })
 const VOCABULARY  = Vocabulary.read(
-  [TOKEN_SHEET, paletteCss(), ...VITEPRESS.map(read)],
-  STYLESHEETS.map(read)
+  [TOKEN_SHEET, parse(paletteCss()), ...VITEPRESS.map(file => parse(read(file)))],
+  STYLESHEETS.map(({ root }) => root)
 )
 
 // Adds the custom properties the config writes into the page head, which carry
@@ -186,9 +183,8 @@ for (const [, prop] of read('.vitepress/config.ts').matchAll(/(--prose-[\w-]+):/
 
 // Names each custom property the sheets read as a font family, directly or
 // through another custom property that a family list reads.
-function facedBy(sheets: string[]): Set<string> {
+function facedBy(roots: Root[]): Set<string> {
   const faced = new Set<string>()
-  const roots = sheets.map(sheet => parse(sheet))
   for (let size = -1; size !== faced.size;) {
     size = faced.size
     for (const root of roots) {
@@ -228,10 +224,10 @@ function families(shorthand: boolean, nodes: ComponentValue[]): ComponentValue[]
 
 // Names each custom property the sheets read as a `color-mix()` argument,
 // since a percentage such a property holds is a share.
-function mixedBy(sheets: string[]): Set<string> {
+function mixedBy(roots: Root[]): Set<string> {
   const mixed = new Set<string>()
-  for (const sheet of sheets) {
-    parse(sheet).walkDecls(decl => {
+  for (const root of roots) {
+    root.walkDecls(decl => {
       walk(parseListOfComponentValues(tokenize({ css: decl.value })), ({ node, parent }) => {
         const ref = named(node, 'var') && named(parent, 'color-mix') ? referenced(node) : undefined
         if (ref) mixed.add(ref[4].value)
@@ -252,15 +248,14 @@ function referenced(node: FunctionNode): TokenIdent | undefined {
 }
 
 describe('the site stylesheets', () => {
-  it.each(STYLESHEETS)('%s writes every value through a declared token', file => {
-    expect(VOCABULARY.strays(read(file))).toStrictEqual([])
+  it.each(STYLESHEETS)('$file writes every value through a declared token', ({ root }) => {
+    expect(VOCABULARY.strays(root)).toStrictEqual([])
   })
 })
 
 describe('tokens.css', () => {
-  const root   = parse(TOKEN_SHEET)
   const tokens = [] as Declaration[]
-  root.walkDecls(/^--prose-/, decl => { tokens.push(decl) })
+  TOKEN_SHEET.walkDecls(/^--prose-/, decl => { tokens.push(decl) })
 
   it('declares each literal once within a family', () => {
     const literals = tokens.filter(({ value }) => !value.includes('var('))
@@ -279,7 +274,7 @@ describe('tokens.css', () => {
     const sources = fs.globSync(['.vitepress/{lib,theme}/**/*.{css,ts,vue}', 'prototypes/**/*.{css,ts,vue}'], { cwd: SITE })
       .filter(file => file !== TOKENS)
       .map(read)
-    root.walkDecls(({ value }) => { sources.push(value) })
+    TOKEN_SHEET.walkDecls(({ value }) => { sources.push(value) })
     const readers = sources.join('\n')
     const unread  = tokens.filter(({ prop }) => !new RegExp(`${prop}(?![\\w-])`).test(readers))
     expect(unread.map(({ prop }) => prop)).toStrictEqual([])
@@ -287,8 +282,11 @@ describe('tokens.css', () => {
 })
 
 describe('strays', () => {
-  const strayed = (css: string) =>
-    new Vocabulary(facedBy([css]), VOCABULARY.media, mixedBy([css]), VOCABULARY.properties).strays(css)
+  const strayed = (css: string) => {
+    const root = parse(css)
+    return new Vocabulary(facedBy([root]), VOCABULARY.media, mixedBy([root]), VOCABULARY.properties)
+      .strays(root)
+  }
 
   it.each([
     { css: '.a { margin: 0 14px; }',                                                            kind: 'length',   value: '14px' },

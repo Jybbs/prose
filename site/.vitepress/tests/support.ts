@@ -2,6 +2,7 @@ import fs   from 'node:fs'
 import os   from 'node:os'
 import path from 'node:path'
 
+import { parse as parseCss, type Root }    from 'postcss'
 import { test as base, type MockInstance } from 'vitest'
 
 interface SupportFixtures {
@@ -16,6 +17,17 @@ export function expectSlugIndex(
   dir   : string
 ): void {
   expect([...index(dir).keys()]).toStrictEqual(list(dir).map(entry => entry.slug))
+}
+
+// Parses every stylesheet under the theme and the prototypes in path order,
+// each beside its path within the site.
+export function siteSheets(): { file: string, root: Root }[] {
+  const site  = new URL('../../', import.meta.url)
+  const files = fs.globSync(['.vitepress/theme/**/*.css', 'prototypes/**/*.css'], { cwd: site })
+  return files.toSorted().map(file => ({
+    file : file,
+    root : parseCss(fs.readFileSync(new URL(file, site), 'utf8'))
+  }))
 }
 
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>

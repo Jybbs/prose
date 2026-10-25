@@ -4,7 +4,6 @@
   cursor                : help;
   text-decoration       : underline dotted var(--underline-accent) var(--prose-border-1);
   text-underline-offset : var(--prose-space-3);
-  outline               : none;
 }
 
 a.glossary-anchor {
@@ -20,18 +19,14 @@ a.glossary-anchor {
   text-decoration-style : solid;
 }
 
-.v-popper--theme-glossary {
-  --tooltip-accent : var(--prose-palette-celadon);
-  --tooltip-edge   : color-mix(in srgb, var(--tooltip-accent) var(--prose-tint-55), var(--vp-c-divider));
-}
+.v-popper--theme-glossary { --popper-accent : var(--prose-palette-celadon); }
 
 .v-popper--theme-glossary .v-popper__inner {
   max-width     : var(--prose-width-22rem);
   min-width     : var(--prose-width-14rem);
   padding       : var(--prose-space-12) var(--prose-space-16);
-  outline       : none;
-  border        : var(--prose-border-2) solid var(--tooltip-edge);
-  border-top    : var(--prose-border-3) solid var(--tooltip-accent);
+  border        : var(--prose-border-2) solid var(--popper-border);
+  border-top    : var(--prose-border-3) solid var(--popper-accent);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
@@ -40,21 +35,8 @@ a.glossary-anchor {
   line-height   : 1.5;
 }
 
-.v-popper--theme-glossary,
-.v-popper--theme-glossary * {
-  outline : none !important;
-}
-
 .v-popper--theme-glossary .v-popper__wrapper {
   transition : opacity 120ms ease-out, transform 120ms ease-out;
-}
-
-.v-popper--theme-glossary .v-popper__arrow-outer {
-  border-color : var(--tooltip-edge);
-}
-
-.v-popper--theme-glossary .v-popper__arrow-inner {
-  border-color : var(--vp-c-bg);
 }
 
 .glossary-tooltip-title {
@@ -87,7 +69,7 @@ a.glossary-anchor {
   margin          : var(--prose-space-12) calc(var(--prose-space-16) * -1) calc(var(--prose-space-12) * -1);
   padding         : var(--prose-space-6) var(--prose-space-16);
   border-radius   : 0 0 calc(var(--prose-radius) - var(--prose-border-2)) calc(var(--prose-radius) - var(--prose-border-2));
-  background      : var(--tooltip-edge);
+  background      : var(--popper-border);
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-label-size);
   letter-spacing  : var(--prose-meta-tracking);
@@ -99,5 +81,5 @@ a.glossary-anchor {
 }
 
 .glossary-tooltip-link:hover {
-  background : color-mix(in srgb, var(--tooltip-accent) var(--prose-tint-75), var(--vp-c-divider));
+  background : color-mix(in srgb, var(--popper-accent) var(--prose-tint-75), var(--vp-c-divider));
 }
