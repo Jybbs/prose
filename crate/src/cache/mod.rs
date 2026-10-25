@@ -1,13 +1,14 @@
 //! User-level content-addressed cache for `prose check` and `prose format`.
 //!
-//! Keys are BLAKE3 digests over the source bytes, the active config's
-//! canonical TOML, the resolved rule selection, the Prose version, the
-//! private `CACHE_FORMAT_VERSION`, and the `Anchor` naming which
-//! buffer the diagnostics resolve against, with a notebook's entry
-//! also holding the code cells the run read. Entries live one file per
-//! key under the platform's cache directory via `PROSE_CACHE_DIR` →
-//! `dirs::cache_dir()`, inserts land through a temporary sibling and
-//! `rename`, and LRU eviction by mtime sweeps once per run.
+//! Keys are BLAKE3 digests over the source bytes, the file's name, its
+//! source type, the active config's canonical TOML, the resolved rule
+//! selection, the Prose version, the private `CACHE_FORMAT_VERSION`, and
+//! the `Anchor` naming which buffer the diagnostics resolve against,
+//! with a notebook's entry also holding the code cells the run read.
+//! Entries live one file per key under the platform's cache directory
+//! via `PROSE_CACHE_DIR` → `dirs::cache_dir()`, inserts land through a
+//! temporary sibling and `rename`, and LRU eviction by mtime sweeps once
+//! per run.
 
 mod engine;
 mod key;
@@ -23,6 +24,7 @@ pub use records::{
 #[cfg(test)]
 mod tests {
     use std::{
+        collections::HashSet,
         path::Path,
         time::{Duration, SystemTime},
     };
@@ -30,12 +32,10 @@ mod tests {
     use ruff_python_ast::PySourceType;
     use tempfile::TempDir;
 
-    use super::key::CACHE_FORMAT_VERSION;
-    use super::*;
+    use super::{key::CACHE_FORMAT_VERSION, *};
     use crate::{
         diagnostics::Diagnostic,
-        rules::RuleId,
-        rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
+        rules::{RuleId, align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings},
         testing::{format_diagnostic, range},
         unstable::UnstableRewrite,
     };
@@ -50,23 +50,6 @@ mod tests {
             .expect("opens the directory")
             .set_modified(stale)
             .expect("backdates the directory");
-    }
-    #[test]
-    fn key_for_separates_two_names_carrying_the_same_bytes() {
-        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
-        assert_ne!(
-            prefix.key_for("pkg/__init__.py", b"x = 1\n", PySourceType::Python),
-            prefix.key_for("pkg/mod.py", b"x = 1\n", PySourceType::Python)
-        );
-    }
-
-    #[test]
-    fn key_for_separates_a_notebook_from_a_module_of_the_same_bytes() {
-        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
-        assert_ne!(
-            prefix.key_for("mod.py", b"x = 1\n", PySourceType::Python),
-            prefix.key_for("mod.py", b"x = 1\n", PySourceType::Ipynb)
-        );
     }
 
     fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
@@ -97,6 +80,7 @@ mod tests {
             unstable: None,
         }
     }
+
     /// A generation directory beside the cache's own, holding one
     /// entry-shaped file.
     fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
@@ -150,12 +134,7 @@ mod tests {
             env!("CARGO_PKG_VERSION"),
             "1",
         )
-        .key_for(
-            "mod.py",
-            b"x = 1
-",
-            PySourceType::Python,
-        );
+        .key_for("mod.py", b"x = 1\n", PySourceType::Python);
         let key_b = CacheKeyPrefix::with_versions(
             CONFIG_A,
             rules(),
@@ -163,12 +142,7 @@ mod tests {
             env!("CARGO_PKG_VERSION"),
             "2",
         )
-        .key_for(
-            "mod.py",
-            b"x = 1
-",
-            PySourceType::Python,
-        );
+        .key_for("mod.py", b"x = 1\n", PySourceType::Python);
         assert_ne!(key_a, key_b);
     }
 
@@ -190,12 +164,7 @@ mod tests {
             "0.2.3",
             CACHE_FORMAT_VERSION,
         )
-        .key_for(
-            "mod.py",
-            b"x = 1
-",
-            PySourceType::Python,
-        );
+        .key_for("mod.py", b"x = 1\n", PySourceType::Python);
         let key_b = CacheKeyPrefix::with_versions(
             CONFIG_A,
             rules(),
@@ -203,12 +172,7 @@ mod tests {
             "0.3.0",
             CACHE_FORMAT_VERSION,
         )
-        .key_for(
-            "mod.py",
-            b"x = 1
-",
-            PySourceType::Python,
-        );
+        .key_for("mod.py", b"x = 1\n", PySourceType::Python);
         assert_ne!(key_a, key_b);
     }
 
@@ -233,30 +197,14 @@ mod tests {
         let as_written = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
         let rewritten = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::Rewritten);
         assert_ne!(
-            as_written.key_for(
-                "mod.py",
-                b"x = 1
-",
-                PySourceType::Python
-            ),
-            rewritten.key_for(
-                "mod.py",
-                b"x = 1
-",
-                PySourceType::Python
-            )
+            as_written.key_for("mod.py", b"x = 1\n", PySourceType::Python),
+            rewritten.key_for("mod.py", b"x = 1\n", PySourceType::Python)
         );
         assert_eq!(
-            as_written.key_for(
-                "mod.py",
-                b"x = 1
-",
-                PySourceType::Python
-            ),
+            as_written.key_for("mod.py", b"x = 1\n", PySourceType::Python),
             CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(
                 "mod.py",
-                b"x = 1
-",
+                b"x = 1\n",
                 PySourceType::Python
             ),
         );
@@ -338,6 +286,7 @@ mod tests {
         // next insert back over it.
         assert_eq!(capped.info().entries, 4);
     }
+
     #[test]
     fn compact_evicts_until_under_cap() {
         let (_tmp, cache) = cached();
@@ -392,6 +341,7 @@ mod tests {
         assert_eq!(report.entries, 1);
         assert_eq!(capped.info().entries, 1);
     }
+
     #[test]
     fn compact_prunes_a_generation_past_the_grace_window() {
         let (_tmp, cache) = cached();
@@ -424,6 +374,16 @@ mod tests {
         let report = cache.compact();
         assert_eq!(report.entries, 0);
         assert_eq!(report.bytes, 0);
+    }
+
+    #[test]
+    fn info_and_compact_leave_the_own_output_ledger_alone() {
+        let (_tmp, cache) = cached();
+        cache.record_own_output(&key(b"x = 1\n", CONFIG_A, rules()));
+
+        assert_eq!(cache.info().entries, 0);
+        assert_eq!(cache.compact(), CleanReport::default());
+        assert!(cache.owns_output(&key(b"x = 1\n", CONFIG_A, rules())));
     }
 
     #[test]
@@ -476,32 +436,6 @@ mod tests {
         let info = cache.info();
         assert_eq!(info.entries, 0);
         assert_eq!(info.bytes, 0);
-    }
-
-    #[test]
-    fn info_and_compact_leave_the_own_output_ledger_alone() {
-        let (_tmp, cache) = cached();
-        cache.record_own_output(&key(b"x = 1\n", CONFIG_A, rules()));
-
-        assert_eq!(cache.info().entries, 0);
-        assert_eq!(cache.compact(), CleanReport::default());
-        assert!(cache.owns_output(&key(b"x = 1\n", CONFIG_A, rules())));
-    }
-
-    #[test]
-    fn own_output_marker_round_trips_across_instances() {
-        let (tmp, cache) = cached();
-        let marked = key(b"y = 1\n", CONFIG_A, rules());
-        let unmarked = key(b"z = 2\n", CONFIG_A, rules());
-        cache.record_own_output(&marked);
-
-        let reopened = Cache {
-            inserted: std::sync::atomic::AtomicBool::new(false),
-            ..cache_in(&tmp, 100)
-        };
-
-        assert!(reopened.owns_output(&marked));
-        assert!(!reopened.owns_output(&unmarked));
     }
 
     #[test]
@@ -594,6 +528,29 @@ mod tests {
     }
 
     #[test]
+    fn key_for_separates_every_source_type_of_the_same_bytes() {
+        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        let keys: HashSet<CacheKey> = [
+            PySourceType::Python,
+            PySourceType::Stub,
+            PySourceType::Ipynb,
+        ]
+        .map(|source_type| prefix.key_for("mod.py", b"x = 1\n", source_type))
+        .into_iter()
+        .collect();
+        assert_eq!(keys.len(), 3);
+    }
+
+    #[test]
+    fn key_for_separates_two_names_carrying_the_same_bytes() {
+        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        assert_ne!(
+            prefix.key_for("pkg/__init__.py", b"x = 1\n", PySourceType::Python),
+            prefix.key_for("pkg/mod.py", b"x = 1\n", PySourceType::Python)
+        );
+    }
+
+    #[test]
     fn lookup_returns_none_for_corrupt_entry() {
         let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
@@ -606,5 +563,21 @@ mod tests {
         let (_tmp, cache) = cached();
         let key = key(b"x = 1\n", CONFIG_A, rules());
         assert!(cache.lookup(&key).is_none());
+    }
+
+    #[test]
+    fn own_output_marker_round_trips_across_instances() {
+        let (tmp, cache) = cached();
+        let marked = key(b"y = 1\n", CONFIG_A, rules());
+        let unmarked = key(b"z = 2\n", CONFIG_A, rules());
+        cache.record_own_output(&marked);
+
+        let reopened = Cache {
+            inserted: std::sync::atomic::AtomicBool::new(false),
+            ..cache_in(&tmp, 100)
+        };
+
+        assert!(reopened.owns_output(&marked));
+        assert!(!reopened.owns_output(&unmarked));
     }
 }

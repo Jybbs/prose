@@ -8,7 +8,7 @@ description: "Covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml
 
 A `prose.toml` keeps its keys at the document root, which is the form this page shows throughout, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under `.config/`. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix, so every key below has a `[tool.prose.<…>]` equivalent for a project that keeps one manifest.
 
-The top-level keys hold the settings that reach several rules. `target-version` takes the bare `major.minor` form *(`"3.13"`, `"3.14"`)* that `mypy`'s `python_version` setting uses, and the rules whose rewrites depend on the runtime read it directly. The two docstring budgets *(`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose)* let a project keep code-shaped tables wide and description prose at a comfortable reading width, and `docstring-structured-policy` puts both under one budget for a project that prefers one width.
+The top-level keys hold the settings that reach several rules. `target-version` takes the bare `major.minor` form (*`"3.13"`, `"3.14"`*) that `mypy`'s `python_version` setting uses, and the rules whose rewrites depend on the runtime read it directly. The two docstring budgets (*`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose*) let a project keep code-shaped tables wide and description prose at a comfortable reading width, and `docstring-structured-policy` puts both under one budget for a project that prefers one width.
 
 To turn rules off or adjust them, write the `[rules]` table:
 
@@ -16,12 +16,12 @@ To turn rules off or adjust them, write the `[rules]` table:
 code-line-length = 88
 
 [rules]
-align-colons      = { max-shift = false }
-align-equals      = false
+align-colons       = { max-shift = false }
+align-equals       = false
 reflow-collections = { max-atomics = 3 }
 ```
 
-A bare `false` turns a rule off, an inline table sets its facets and leaves the rule on, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may read better as a `[rules.<rule>]` sub-table *(`[tool.prose.rules.<rule>]` in the manifest)*, which takes the same settings as the inline form.
+A bare `false` turns a rule off, an inline table sets its facets and leaves the rule on, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may read better as a `[rules.<rule>]` sub-table (*`[tool.prose.rules.<rule>]` in the manifest*), which takes the same settings as the inline form.
 
 ## Where *Prose* Looks
 
@@ -41,7 +41,7 @@ The top-level keys hold settings that reach several rules. They sit at the docum
 
 <ConfigKeys section="top" />
 
-`target-version` names the Python version the project runs on, in the bare `major.minor` form *(`"3.13"`, `"3.14"`)* that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]]. A file holding syntax the version does not support, such as a `lazy` import under `"3.14"`, or a semantic syntax error such as a `lazy` import inside a function, fails at exit code `3` naming the file, the position, and the version, unless formatting rewrites the error away. A file a `# prose: off` or `# fmt: off` at its head suppresses skips that check, and a `target-version` under [**Per-Pattern Overrides**](#per-pattern-overrides) holds the files a glob matches to a version of their own.
+`target-version` names the Python version the project runs on, in the bare `major.minor` form (*`"3.13"`, `"3.14"`*) that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]]. A file holding syntax the version does not support, such as a `lazy` import under `"3.14"`, or a semantic syntax error such as a `lazy` import inside a function, fails at exit code `3` naming the file, the position, and the version, unless formatting rewrites the error away. A file a `# prose: off` or `# fmt: off` at its head suppresses skips that check, and a `target-version` under [**Per-Pattern Overrides**](#per-pattern-overrides) holds the files a glob matches to a version of their own.
 
 ::: info Version Gates Need Opt-In
 With no value set, every version-dependent rewrite is skipped rather than assuming a default, so the version-gated rules do nothing on a project that has not set a target, a name counts as a builtin only where Python 3.10 already defines it, and only syntax every Python version rejects fails a file.
@@ -53,7 +53,7 @@ The two checks differ in reach, in that a `format` run, and the editor message [
 
 ## Lengths
 
-The `*-line-length` caps are hard limits, and every rule that lays out code fits within them rather than reading the budget as a hint. `code-line-length` governs code lines, `import-line-length` governs import lines, and `docstring-line-length` governs docstring description prose and section entries, whereas the count keys *(`max-args`, `max-params`, `max-dict-entries`, `max-links`)* choose a layout only for lines that already fit under a cap.
+The `*-line-length` caps are hard limits, and every rule that lays out code fits within them rather than reading the budget as a hint. `code-line-length` governs code lines, `import-line-length` governs import lines, and `docstring-line-length` governs docstring description prose and section entries, whereas the count keys (*`max-args`, `max-params`, `max-dict-entries`, `max-links`*) choose a layout only for lines that already fit under a cap.
 
 A construct with a legal multi-line layout takes it once its line crosses the cap, whatever its count says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its own budget. Where padding would carry a row past its cap, a layout rule lays out the row's import or value first so the row aligns within the cap. [[reflow-imports]] splits an import in an [[align-imports]] run, [[reflow-collections]] expands a collection value or, while [[reflow-calls]] runs, explodes a call value in an [[align-colons]] dict entry, and in an [[align-equals]] run of assignments [[reflow-collections]] expands a collection value and [[reflow-calls]] explodes a call value. The two value rules break a value open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded. Any row no layout rule brings under the cap leaves the run unpadded, the way a row over `max-shift` does. A `case` arm is the exception, in that [[align-match-case]] keeps an arm on two lines where its folded line would cross the cap, its `:` flush against the pattern, and aligns the arms on each side of it as runs of their own.
 
@@ -61,13 +61,15 @@ Several alignment rules reach the same row, since [[align-colons]], [[align-equa
 
 A trailing comment counts toward the cap like any other span on the line, since *Prose* places it through [[normalize-comment-spacing]] and [[align-comments]] rather than leaving it untouched. A row already past its cap before any padding therefore keeps its own gap and joins a shared column only where that column adds no width to it, which only the widest row of a run satisfies. Alignment never pushes an over-budget line further out, and [[line-overflow]] reports the remainder at the narrowest width the row can reach. A layout rule measures a row only up to its trailing comment, though, so a line whose code fits while its comment runs past the cap keeps its layout, and [[line-overflow]] reports it unless the part past the cap is a run of tool pragmas or `# prose:` directives ending the comment.
 
-A cap no legal layout can meet *(a deep indent, a long identifier, a cap set below what a statement needs)* leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains, so an unsatisfiable cap shows up as a finding in `prose check` and a flagged line in the sandbox rather than as a setting that did nothing.
+A cap no legal layout can meet (*a deep indent, a long identifier, a cap set below what a statement needs*) leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains, so an unsatisfiable cap shows up as a finding in `prose check` and a flagged line in the sandbox rather than as a setting that did nothing.
 
 ## Cache
 
-The `[cache]` table tunes the per-user [**cache**](/reference/cache) *Prose* keeps for repeat runs *(`[tool.prose.cache]` in a `pyproject.toml`)*. Every key defaults to its standard value, so a project that does not write the table gets the cache at its full size.
+The `[cache]` table tunes the per-user [**cache**](/reference/cache) *Prose* keeps for repeat runs (*`[tool.prose.cache]` in a `pyproject.toml`*). Every key defaults to its standard value, so a project that does not write the table gets the cache at its full size.
 
 <ConfigKeys section="cache" />
+
+The sample below raises both caps above their defaults, for a tree whose entries outgrow them:
 
 ```toml
 [cache]
@@ -78,7 +80,7 @@ max-size-mib = 250
 
 ## Imports
 
-The `[imports]` table names the project's first-party packages *(`[tool.prose.imports]` in a `pyproject.toml`)*, so [[group-imports]] places their imports with the relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) fill the local-package section.
+The `[imports]` table names the project's first-party packages (*`[tool.prose.imports]` in a `pyproject.toml`*), so [[group-imports]] places their imports with the relative imports in the local-package section rather than the external `from` section. With no list, only relative imports (`from .`, `from ..pkg`) fill the local-package section.
 
 <ConfigKeys section="imports" />
 

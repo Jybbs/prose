@@ -93,9 +93,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'BLAKE3': {
-    definition : 'BLAKE3 is the hash function the cache keys on. The key digests the source '
-               + 'bytes, the active configuration serialized as TOML, and the *Prose* '
-               + 'version, so a change to any of the three produces a new key.',
+    definition : 'BLAKE3 is the hash function the cache keys on. The key digests the file\'s '
+               + 'bytes, path, and source type together with the run\'s configuration, rule '
+               + 'selection, and *Prose* version, so a change to any of them produces a new key.',
     families   : ['engine', 'cli'],
     href       : '/reference/cache#key-shape'
   },
@@ -145,9 +145,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : [
       'suppression map', 'suppression directive', 'suppression directives', 'suppression'
     ],
-    definition : '`SuppressionMap` is the per-`Source` index of every `# fmt: off`, '
-               + '`# fmt: skip`, `# yapf`, and `# prose: ignore[...]` directive in the file. '
-               + 'A rule checks it before emitting an edit or a diagnostic.',
+    definition : '`SuppressionMap` is the per-`Source` index of every `# prose: off`, '
+               + '`# prose: skip`, and `# prose: ignore[...]` directive in the file, together '
+               + 'with the `# fmt:` and `# yapf:` aliases. The pipeline reads it to drop each '
+               + 'suppressed edit and lint diagnostic.',
     families   : ['engine', 'formatting', 'lint'],
     href       : '/architecture/suppression-map'
   },
@@ -174,10 +175,11 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'applicability': {
-    definition : 'Applicability is the confidence level on an auto-fix\'s `fix` payload, in '
-               + 'the shape Ruff\'s output uses. `safe` means the rewrite preserves runtime '
-               + 'semantics and an editor can apply it without asking, whereas `unsafe` and '
-               + '`display` are reserved in the schema for compatibility.',
+    definition : 'Applicability is the confidence level on a diagnostic\'s `fix` payload, in '
+               + 'the shape Ruff\'s output uses. `safe` marks an auto-fix that preserves '
+               + 'runtime semantics, so an editor can apply it without asking, whereas '
+               + '`displayonly` marks a lint\'s suggestion, which an editor shows and never '
+               + 'applies on its own.',
     families   : ['cli', 'engine'],
     href       : '/reference/output-formats#json'
   },
@@ -185,8 +187,8 @@ export const glossary: Record<string, GlossaryEntry> = {
   'atomic': {
     aliases    : ['atomic literal', 'atomic literals'],
     definition : 'An atomic is a single indivisible value, an integer, a float, a string, or '
-               + 'a bare name. `reflow-collections` keeps a short collection of atomics on '
-               + 'one line, since each entry reads at a glance.',
+               + 'a bare name. `reflow-collections` packs a run of atomics in an expanded '
+               + 'collection across as few rows as fit, at most `max-atomics` to a row.',
     rule       : 'reflow-collections'
   },
 
@@ -231,9 +233,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'cache': {
     aliases    : ['Cache', 'cached', 'caching'],
     definition : 'The cache is the on-disk store of results *Prose* keeps per user, so a '
-               + 'repeat `prose check` or `prose format` run skips a file whose bytes, '
-               + 'configuration, and *Prose* version have not changed. It is keyed by BLAKE3, '
-               + 'capped by the `[cache] max-size-mib` LRU limit, bypassed for one run with '
+               + 'repeat `prose check` or `prose format` run skips a file whose bytes, path, '
+               + 'configuration, and rule selection have not changed under the same *Prose* '
+               + 'version. It is keyed by BLAKE3, held under the `[cache] max-size-mib` and '
+               + '`max-entries` caps by LRU eviction, bypassed for one run with '
                + '`--no-cache`, and emptied with `prose cache clean`.',
     families   : ['engine', 'cli'],
     href       : '/reference/cache'
@@ -293,9 +296,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'decorator': {
     aliases    : ['decorators', 'decorated function', 'decorated functions'],
     definition : 'A decorator is an `@name` line above a function or class that wraps it at '
-               + 'definition time. `alphabetize-siblings` sorts decorated functions together '
-               + 'within each framework\'s decorator group, and `space-statements` keeps a '
-               + 'decorator attached to its `def`.',
+               + 'definition time. `alphabetize-siblings` keeps a decorated module-level '
+               + 'definition in its slot, whereas a decorated method still sorts, among the '
+               + 'properties where `@property` or `@cached_property` leads it. '
+               + '`space-statements` keeps a decorator attached to its `def`.',
     families   : ['ordering', 'formatting'],
     href       : 'https://docs.python.org/3/glossary.html#term-decorator'
   },
@@ -331,8 +335,9 @@ export const glossary: Record<string, GlossaryEntry> = {
   'enum': {
     aliases    : ['Enum', 'enums', 'enum member', 'enum members'],
     definition : 'An enum is a subclass of `enum.Enum` whose body lists named constants. '
-               + '`alphabetize-siblings` sorts the members by name, except where explicit '
-               + 'integer or string values give them an order of their own.',
+               + '`alphabetize-siblings` sorts the members by name, and keeps the written '
+               + 'order where `auto` or a `__new__` numbers the members by position, where an '
+               + '`_order_` spells that order out, or where two members share a value.',
     families   : ['ordering'],
     href       : 'https://docs.python.org/3/library/enum.html'
   },

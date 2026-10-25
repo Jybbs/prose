@@ -22,7 +22,7 @@ layout  : doc
 | Imports | Alphabetical within each [[group-imports]] section |
 | Docstring entries | Parameter entries follow the signature order, all else alphabetical |
 
-Order that carries meaning stays as written, covering positional-only parameters ahead of the `/`, enum members whose values come from `auto` or from a `__new__` that numbers them, and tuple-unpacking targets.
+Order that carries meaning stays as written, covering positional-only parameters ahead of the `/`, the members of an enumeration whose values or aliases depend on where each member sits, and tuple-unpacking targets.
 
 At module scope the classes and the functions sort as one run with every class above every function, each band alphabetical and the function band grouped as dunder, private, public the way methods are, so a module reads its classes first and its functions below them whatever order the author interleaved them in.
 
@@ -32,7 +32,7 @@ A definition stays behind any sibling it names at evaluation time (*a base class
 - A module-level constant whose value reads a name through an attribute or a subscript holds every definition above it that evaluates that name, which is the order [[band-constants]] keeps the constant in, so `class B(A)` never sorts below an `x = A.f` written beneath it.
 - A module-level call reaches through to what it runs, pinning the run against the names its target reads at evaluation time, where a method call on a class reaches the whole class body, and a definition reaches the same way through the decorators, bases, metaclass, and defaults it evaluates as it binds.
 - A class whose base list runs a call or a subscript on a name the module does not itself define fences the run at its own slot. The fence holds because a metaclass and a `__class_getitem__` hook both run at class creation, and a hook reached through a compiled module calls back into the module that imported it, so no static read follows where it reaches. The fence is one-sided, in that nothing written above such a class may sort below it, whereas every definition written below it was unbound when the hook ran and still sorts freely.
-- An enumeration whose members take their value from `auto` or from a `__new__` that numbers them as it runs keeps the order its author wrote, since sorting it would change each member's value, whereas one that spells every value out still sorts.
+- An enumeration keeps the order its author wrote where its members take their value from `auto` or from a `__new__` that numbers them as it runs, since sorting it would change each member's value. An `_order_` spelling the order out holds it as well, since the loader checks the members against it. Two members sharing a value hold it too, since the one written first becomes canonical and the other its alias. An enumeration that spells out a distinct value for every member still sorts.
 - A decorated definition at module scope keeps its slot outright whereas a decorated method still sorts, and a reference cycle leaves its run in source order.
 - Inside a class body the constants and the annotated fields sort through one dependency graph, so a constant a method default or base class reads stays above it.
 
@@ -48,7 +48,7 @@ A docstring entry mirrors the signature the rule leaves, so the entries read in 
 
 <RuleConfigTable />
 
-The order itself follows fixed per-construct conventions, with method groups following the dunders, properties, privates, publics order and Pydantic fields following required then optional. [[group-imports]] moves consecutive imports into their canonical sections (*a `from __future__` import first, then bare, then external `from`, then local-package*) and `alphabetize-siblings` sorts the names within each, with the `imports.first-party` list under `[imports]` *(see the [configuration reference](/reference/configuration#imports))* naming the packages that join the local-package section alongside relative imports.
+The order itself follows fixed per-construct conventions, with method groups following the dunders, properties, privates, publics order and Pydantic fields following required then optional. [[group-imports]] moves consecutive imports into their canonical sections (*a `from __future__` import first, then bare, then external `from`, then local-package*) and `alphabetize-siblings` sorts the names within each, with the `imports.first-party` list under `[imports]` (*see the [configuration reference](/reference/configuration#imports)*) naming the packages that join the local-package section alongside relative imports.
 
 </template>
 

@@ -58,7 +58,7 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
 - The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
 - [**Suppression directives**](https://prose.fyi/reference/suppression-directives) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
-- [**Composition with Ruff**](https://prose.fyi/integrations/ruff) pairs the token-level formatter with `prose format`.
+- The [**Ruff integration**](https://prose.fyi/integrations/ruff) covers running *Prose* in a project that already runs Ruff.
 - [**Editor, pre-commit, and CI integrations**](https://prose.fyi/integrations/) wire *Prose* into the development loop.
 
 ---

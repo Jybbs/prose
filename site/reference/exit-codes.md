@@ -25,7 +25,7 @@ The [**GitHub Actions**](/integrations/github-actions) integration page covers t
 
 ## Composition With Ruff
 
-When a job [**runs Ruff too**](/integrations/ruff), each tool exits with its own code from its own step, and a non-zero exit from either fails the gate with no extra wiring. The codes do not combine, so the failing step tells the developer which tool reported the finding. Under the default step order the job stops at the first non-zero step, so when both would fail, only the first shows. `if: always()` on the *Prose* step runs it regardless, so both results appear in one run.
+When a job [**runs Ruff's linter too**](/integrations/ruff#in-ci), each tool exits with its own code from its own step, and a non-zero exit from either fails the gate with no extra wiring. The codes do not combine, so the failing step tells the developer which tool reported the finding. Under the default step order the job stops at the first non-zero step, so when both would fail, only the first shows. `if: always()` on the *Prose* step runs it regardless, so both results appear in one run.
 
 ## Help Output
 

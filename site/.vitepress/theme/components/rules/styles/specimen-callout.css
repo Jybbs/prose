@@ -2,21 +2,10 @@
   padding    : 0;
   background : transparent;
   border     : none;
-  outline    : none;
   box-shadow : none;
 }
 
-.v-popper--theme-rule-card {
-  --rule-card-popper-border : color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
-}
-
-.v-popper--theme-rule-card .v-popper__arrow-outer {
-  border-color : var(--rule-card-popper-border);
-}
-
-.v-popper--theme-rule-card .v-popper__arrow-inner {
-  border-color : var(--vp-c-bg);
-}
+.v-popper--theme-rule-card { --popper-accent : var(--family-color); }
 
 .v-popper--theme-rule-card .v-popper__wrapper {
   transition :
@@ -29,16 +18,11 @@
   max-width     : min(calc(100vw - 32px), 600px);
   height        : auto;
   min-height    : 64px;
-  border        : 2px solid var(--rule-card-popper-border);
-  border-top    : 3px solid var(--family-color);
+  border        : 2px solid var(--popper-border);
+  border-top    : 3px solid var(--popper-accent);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
-}
-
-.v-popper--theme-rule-card,
-.v-popper--theme-rule-card * {
-  outline : none !important;
 }
 
 .v-popper--theme-rule-card .rule-card-caption {

@@ -2,6 +2,7 @@ import fs   from 'node:fs'
 import os   from 'node:os'
 import path from 'node:path'
 
+import { parse as parseCss, type Root }    from 'postcss'
 import { test as base, type MockInstance } from 'vitest'
 
 interface SupportFixtures {
@@ -16,6 +17,15 @@ export function expectSlugIndex(
   dir   : string
 ): void {
   expect([...index(dir).keys()]).toStrictEqual(list(dir).map(entry => entry.slug))
+}
+
+// Parses every stylesheet under the theme, each beside its path within it.
+export function themeSheets(): { file: string, root: Root }[] {
+  const theme = new URL('../theme/', import.meta.url)
+  return fs.globSync('**/*.css', { cwd: theme }).map(file => ({
+    file : file,
+    root : parseCss(fs.readFileSync(new URL(file, theme), 'utf8'))
+  }))
 }
 
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>
