@@ -21,10 +21,6 @@
   text-transform : none;
 }
 
-.pipeline-order .pipeline-order-entry {
-  list-style : none;
-}
-
 .pipeline-order .pipeline-order-columns {
   margin               : 0;
   padding              : 0;
@@ -36,6 +32,7 @@
 
 .pipeline-order .pipeline-order-entry {
   break-inside : avoid;
+  list-style   : none;
   margin       : 0 0 2px;
 }
 

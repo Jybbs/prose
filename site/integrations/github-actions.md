@@ -80,7 +80,7 @@ The key changes whenever a config file changes, so a configuration edit starts f
 
 ## Pairing With Ruff in CI
 
-A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step writes to the runner's disk:
+A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
 
 ```yaml
 - run: uv tool install ruff

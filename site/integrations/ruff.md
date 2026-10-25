@@ -20,7 +20,11 @@ extend-ignore = [
   "E251",    # spaces around a keyword's `=`
   "E272",    # space before `import` / `as`
   "E501",    # line length
+  "E701",    # a `case` arm on its pattern's line
 ]
+
+[lint.isort]
+split-on-trailing-comma = false
 
 [format]
 skip-magic-trailing-comma = true
@@ -31,12 +35,14 @@ Each entry in the block covers one conflict:
 | **Code** | **Conflict** | **Reason** |
 |---|---|---|
 | `COM812` | *The lint adds trailing commas back* | [[strip-trailing-commas]] removes them from multi-line collections and signatures |
-| `E203` | *The lint reports whitespace before `:`* | [[align-colons]] writes it in dict literals, annotated assignments, signatures, and docstring `Args:` sections |
+| `E203` | *The lint reports whitespace before `:`* | [[align-colons]] writes it in dict literals, annotated assignments, signatures, and docstring `Args:` sections, and [[align-match-case]] writes it before each folded arm's `:` |
 | `E221` | *The lint reports multiple spaces before `=`* | [[align-equals]] writes them across consecutive assignments at one indentation |
 | `E251` | *The lint reports spaces around a keyword argument's `=`* | [[align-equals]] writes them around each keyword sitting alone on its line in an exploded call |
 | `E272` | *The lint reports multiple spaces before `import` or `as`* | [[align-imports]] writes them across `from ... import ...` and `import ... as ...` runs |
 | `E501` | *The lint reports lines longer than `line-length`* | Padding a short row out to a wide column can push it past the limit |
+| `E701` | *The lint reports a statement on the same line as its `:`* | [[align-match-case]] folds a short `case` arm onto its pattern's line |
 | `skip-magic-trailing-comma` | *The formatter explodes a collection whenever it ends in a trailing comma* | [[reflow-collections]] decides collection layout by width and count rather than by a trailing comma |
+| `split-on-trailing-comma` | *The formatter warns that isort's default conflicts with `skip-magic-trailing-comma`* | Ruff prints the warning on every `ruff format` run until the two settings agree |
 
 ## Running Both Formatters
 
@@ -47,7 +53,7 @@ ruff format path/ && prose format path/
 ```
 
 ::: warning Order Matters
-Run Ruff first whenever both tools format the same file. A `ruff format` run over *Prose*'s output removes the horizontal padding, collapsing an aligned `=` run or a shared comment column back to single spaces, so a file Ruff formats last loses the alignment *Prose* wrote.
+Run Ruff first whenever both tools format the same file. A `ruff format` run over *Prose*'s output removes the horizontal padding, collapsing an aligned `=` run to single spaces and a shared comment column to the two spaces Ruff writes before each `#`, so a file Ruff formats last loses the alignment *Prose* wrote.
 :::
 
 The two formatters also lay out some constructs differently, so a `ruff format` run over *Prose*'s output re-breaks those as well. It rejoins a short dict or signature *Prose* writes one entry per line, and it writes a row of names *Prose* packs one name per line. *Prose* reads Ruff's line breaks and blank lines the way it reads any source, rewriting the ones its rules govern and keeping the rest as Ruff wrote them. A second run of the pair can therefore change a file once more, where `ruff format` adds a blank line or re-breaks a construct that *Prose* then keeps as Ruff wrote it.

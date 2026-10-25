@@ -58,4 +58,4 @@ The same repository's `ruff-format` hook stays out, since it would remove the pa
 
 ## Exit Codes
 
-The hook reads the same [**Exit Codes**](/reference/exit-codes) the CLI uses. A `format` hook exits 0 once its rewrites are written, yet pre-commit still fails it for modifying a file, as the Local Hook section describes. A `check` hook instead fails the commit on its exit code whenever a change is pending.
+The hook reads the same [**Exit Codes**](/reference/exit-codes) the CLI uses. A `format` hook exits `0` once its rewrites are written, yet pre-commit still fails it for modifying a file, as the Local Hook section describes. A lint finding exits `2` and fails a `format` hook and a `check` hook alike, whereas only a `check` hook fails on its exit code whenever a change is pending.

@@ -37,4 +37,17 @@ describe('the theme cascade', () => {
     })
     expect(outranked).toStrictEqual([])
   })
+
+  it('keeps every outline out of the glossary and rule-card sheets', () => {
+    const popups = new Set([
+      'components/glossary/styles/glossary.css',
+      'components/rules/styles/specimen-callout.css'
+    ])
+    const declared = SHEETS.filter(({ file }) => popups.has(file)).flatMap(({ file, root }) => {
+      const lines = [] as string[]
+      root.walkDecls(/^outline/, decl => { lines.push(`${file}:${decl.source?.start?.line}`) })
+      return lines
+    })
+    expect(declared).toStrictEqual([])
+  })
 })
