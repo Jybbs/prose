@@ -6,10 +6,10 @@
 
 .v-popper--theme-rule-card.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
-  border-bottom : 1px solid var(--vp-c-divider);
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
   grid-column   : 1 / -1;
   min-height    : 0;
-  padding       : 8px 16px;
+  padding       : var(--prose-space-8) var(--prose-space-16);
 }
 
 .lint-shorthand {
@@ -18,17 +18,17 @@
   flex-wrap   : wrap;
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-xs);
-  gap         : 0.4rem;
+  gap         : var(--prose-space-0-4rem);
 }
 
 .lint-chip {
   border-radius : var(--prose-radius-sm);
-  padding       : 0.1rem 0.45rem;
+  padding       : var(--prose-space-0-1rem) var(--prose-space-0-45rem);
 }
 
 .lint-chip-insert,
 .lint-chip-struck {
-  background : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-8), transparent);
 }
 
 .lint-chip-insert {
@@ -41,14 +41,14 @@
 }
 
 .lint-chip-suggest {
-  background : color-mix(in srgb, var(--family-color) 12%, transparent);
+  background : color-mix(in srgb, var(--family-color) var(--prose-tint-12), transparent);
   color      : var(--family-color);
 }
 
 /* Nothing is struck through on an insert, so the added text carries the
    accent and the anchor beside it stays plain. */
 .lint-inserted {
-  background      : color-mix(in srgb, var(--family-color) 18%, transparent);
+  background      : color-mix(in srgb, var(--family-color) var(--prose-tint-18), transparent);
   color           : var(--family-color);
   text-decoration : none;
 }
@@ -60,7 +60,7 @@
 .lint-block {
   display        : flex;
   flex-direction : column;
-  gap            : 6px;
+  gap            : var(--prose-space-6);
   min-height     : 0;
 }
 
@@ -69,15 +69,15 @@
   flex-direction : column;
   min-height     : 0;
   overflow       : hidden;
-  border         : 1px solid color-mix(in srgb, var(--side-color) 40%, var(--vp-c-divider));
+  border         : var(--prose-border-1) solid color-mix(in srgb, var(--side-color) var(--prose-tint-40), var(--vp-c-divider));
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-code-block-bg);
 }
 
 .lint-block-label {
-  padding        : 3px 12px;
-  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 40%, transparent);
-  background     : color-mix(in srgb, var(--side-color) 12%, var(--vp-code-block-bg));
+  padding        : var(--prose-space-3) var(--prose-space-12);
+  border-bottom  : var(--prose-border-1) solid color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-40), transparent);
+  background     : color-mix(in srgb, var(--side-color) var(--prose-tint-12), var(--vp-code-block-bg));
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
@@ -88,7 +88,7 @@
 .lint-block-code {
   flex-grow  : 0;
   min-height : 0;
-  padding    : 8px 12px;
+  padding    : var(--prose-space-8) var(--prose-space-12);
   overflow   : auto;
 }
 
@@ -107,5 +107,5 @@
 .lint-message code {
   color       : var(--family-color);
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.86em;
+  font-size   : var(--prose-text-0-86em);
 }

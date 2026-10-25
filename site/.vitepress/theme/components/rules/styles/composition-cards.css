@@ -86,7 +86,7 @@
 
 .vp-doc a.composition-cards-chip,
 .composition-cards-chip {
-  --card-ink            : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), black 48%);
+  --card-ink            : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), var(--vp-c-black) var(--prose-tint-48));
   display               : grid;
   grid-template-columns : 0fr;
   align-items           : center;
@@ -107,7 +107,7 @@
   display     : inline-flex;
   align-items : center;
   min-width   : 0;
-  padding     : 0 9px;
+  padding     : 0 var(--prose-space-9);
   overflow    : hidden;
   white-space : nowrap;
   opacity     : 0;
@@ -117,7 +117,7 @@
 
 .composition-cards-chip-slug {
   font-size      : var(--prose-text-xxs);
-  letter-spacing : 0.04em;
+  letter-spacing : var(--prose-tracking-0-04em);
   text-transform : uppercase;
 }
 
@@ -129,14 +129,14 @@
   display         : inline-flex;
   align-items     : center;
   justify-content : flex-end;
-  min-height      : 22px;
+  min-height      : var(--prose-size-22);
 }
 
 .composition-cards-ticks {
   display         : flex;
   align-items     : center;
   justify-content : flex-end;
-  gap             : 3px;
+  gap             : var(--prose-space-3);
 }
 
 .composition-cards-tick-item {
@@ -145,9 +145,9 @@
 }
 
 .composition-cards-ticks .composition-cards-chip {
-  min-width     : 2px;
-  height        : 24px;
-  border-radius : 1px;
+  min-width     : var(--prose-size-2);
+  height        : var(--prose-size-24);
+  border-radius : var(--prose-radius-1);
 }
 
 .composition-cards-ticks .composition-cards-tick-item:hover .composition-cards-chip,
@@ -174,9 +174,9 @@
 .vp-doc .composition-cards-list .composition-cards-bar {
   display    : flex;
   flex-wrap  : nowrap;
-  gap        : 3px;
-  width      : 60px;
-  margin     : 12px 0 0 auto;
+  gap        : var(--prose-space-3);
+  width      : var(--prose-size-60);
+  margin     : var(--prose-space-12) 0 0 auto;
   transition : width 0.36s var(--card-ease-morph) var(--card-grow);
 }
 
@@ -194,12 +194,12 @@
   grid-template-columns : 1fr;
   justify-items         : center;
   width                 : 100%;
-  height                : 24px;
-  border-radius         : 2px;
+  height                : var(--prose-size-24);
+  border-radius         : var(--prose-radius-2);
 }
 
 .vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip-label {
-  padding    : 0 10px;
+  padding    : 0 var(--prose-space-10);
   transition : opacity 0.18s var(--card-ease-morph);
 }
 

@@ -16,8 +16,8 @@
   display         : flex;
   flex-direction  : column;
   min-width       : 0;
-  min-height      : 320px;
-  padding         : 28px;
+  min-height      : var(--prose-size-320);
+  padding         : var(--prose-space-28);
   background      : var(--vp-c-bg-soft);
   color           : var(--vp-c-text-1);
   transition      :
@@ -42,7 +42,8 @@
   inset                : 0;
   z-index              : 0;
   border-radius        : var(--prose-radius);
-  text-indent          : -9999px;
+  text-indent          : 100%;
+  white-space          : nowrap;
   overflow             : hidden;
   text-decoration-line : none;
 }
@@ -59,8 +60,8 @@
   position       : absolute;
   inset          : 0;
   background     : radial-gradient(
-    420px circle at var(--spotlight-x) var(--spotlight-y),
-    color-mix(in oklab, var(--family-color) 14%, transparent) 0%,
+    var(--prose-size-420) circle at var(--spotlight-x) var(--spotlight-y),
+    color-mix(in oklab, var(--family-color) var(--prose-tint-medium), transparent) 0%,
     transparent 60%
   );
   pointer-events : none;
@@ -74,7 +75,7 @@
   top           : 0;
   left          : 0;
   right         : 0;
-  height        : 3px;
+  height        : var(--prose-size-3);
   background    : linear-gradient(90deg, transparent, var(--family-color), transparent);
   opacity       : 0;
   transition    : opacity var(--prose-transition-slow);
@@ -90,8 +91,8 @@
 .surface-card[data-active="true"],
 .surface-card:focus-within {
   border-color : var(--family-color);
-  transform    : translateY(-2px);
-  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) 55%, transparent);
+  transform    : translateY(calc(var(--prose-space-2) * -1));
+  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
 }
 
 .surface-card-number {
@@ -103,25 +104,25 @@
 
 .surface-card-icon {
   position        : absolute;
-  top             : 22px;
-  right           : 22px;
+  top             : var(--prose-space-22);
+  right           : var(--prose-space-22);
   display         : flex;
   align-items     : center;
   justify-content : center;
-  width           : 56px;
-  height          : 56px;
-  border          : 1px solid color-mix(in srgb, var(--family-color) 35%, var(--vp-c-divider));
+  width           : var(--prose-size-56);
+  height          : var(--prose-size-56);
+  border          : var(--prose-border-1) solid color-mix(in srgb, var(--family-color) var(--prose-tint-35), var(--vp-c-divider));
   border-radius   : 50%;
   z-index         : 2;
 }
 
 .surface-card-label {
-  margin      : 42px 0 12px;
+  margin      : var(--prose-space-42) 0 var(--prose-space-12);
   padding     : 0;
   border      : none;
   font-family : var(--prose-font-display);
   font-weight : 500;
-  font-size   : 2rem;
+  font-size   : var(--prose-text-2rem);
   line-height : 1.05;
   color       : var(--vp-c-text-1);
   text-wrap   : balance;
@@ -137,5 +138,5 @@
 
 .surface-card-blurb :where(code) {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.9em;
+  font-size   : var(--prose-text-0-9em);
 }

@@ -1,8 +1,8 @@
 .landing-workflow-body {
   display               : grid;
   grid-template-columns : auto minmax(0, 1fr);
-  column-gap            : 24px;
-  row-gap               : 14px;
+  column-gap            : var(--prose-space-24);
+  row-gap               : var(--prose-space-14);
   align-items           : center;
   min-width             : 0;
 }
@@ -16,10 +16,10 @@
   font-family    : var(--prose-font-display);
   font-style     : italic;
   font-weight    : 500;
-  font-size      : 1.4rem;
+  font-size      : var(--prose-text-1-4rem);
   line-height    : 1;
   letter-spacing : var(--prose-meta-tracking);
-  color          : color-mix(in srgb, var(--workflow-accent) 70%, var(--vp-c-text-1));
+  color          : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-70), var(--vp-c-text-1));
   writing-mode   : vertical-rl;
   transform      : rotate(180deg);
   text-align     : center;
@@ -30,7 +30,7 @@
   grid-column : 2;
   grid-row    : 1;
   margin      : 0;
-  max-width   : 64ch;
+  max-width   : var(--prose-width-64ch);
   font-family : var(--vp-font-family-base);
   font-size   : var(--prose-text-md);
   line-height : 1.6;
@@ -39,7 +39,7 @@
 
 .landing-workflow-prose :is(code, em) {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.85em;
+  font-size   : var(--prose-text-0-85em);
   font-style  : normal;
   color       : var(--vp-c-text-1);
 }
@@ -69,7 +69,7 @@
     writing-mode   : horizontal-tb;
     transform      : none;
     text-align     : left;
-    font-size      : 1.3rem;
+    font-size      : var(--prose-text-1-3rem);
     letter-spacing : 0;
     color          : var(--vp-c-text-1);
   }

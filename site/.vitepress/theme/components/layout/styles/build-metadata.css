@@ -1,12 +1,12 @@
 .build-metadata {
-  margin          : 24px auto 0;
-  padding         : 18px 18px 14px;
-  max-width       : 1120px;
-  border-top      : 1px solid var(--vp-c-divider);
+  margin          : var(--prose-space-24) auto 0;
+  padding         : var(--prose-space-18) var(--prose-space-18) var(--prose-space-14);
+  max-width       : var(--prose-width-1120);
+  border-top      : var(--prose-border-1) solid var(--vp-c-divider);
   display         : flex;
   flex-wrap       : wrap;
   justify-content : center;
-  gap             : 16px 52px;
+  gap             : var(--prose-space-16) var(--prose-space-52);
   font-family     : var(--vp-font-family-mono);
   letter-spacing  : var(--prose-folio-tracking);
 }
@@ -15,7 +15,7 @@
   display        : flex;
   flex-direction : column;
   align-items    : center;
-  gap            : 1px;
+  gap            : var(--prose-space-1);
 }
 
 .build-metadata-value {
@@ -30,7 +30,7 @@
 
 .build-metadata-label {
   text-transform : uppercase;
-  letter-spacing : 0.12em;
+  letter-spacing : var(--prose-tracking-0-12em);
   font-size      : var(--prose-text-meta);
   color          : var(--vp-c-text-3);
 }

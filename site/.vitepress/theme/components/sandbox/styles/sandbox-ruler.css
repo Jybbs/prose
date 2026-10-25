@@ -1,21 +1,21 @@
 .sandbox-ruler-head {
   display     : flex;
   flex-wrap   : wrap;
-  gap         : 0.75rem 1.25rem;
+  gap         : var(--prose-space-0-75rem) var(--prose-space-1-25rem);
   align-items : center;
 }
 
 .sandbox-ruler {
-  --sandbox-ruler-chip-h  : 20px;
-  --sandbox-ruler-gap     : 5px;
+  --sandbox-ruler-chip-h  : var(--prose-size-20);
+  --sandbox-ruler-gap     : var(--prose-space-5);
   --sandbox-ruler-major   : var(--vp-c-text-3);
   --sandbox-ruler-minor   : var(--vp-c-divider);
-  --sandbox-ruler-nums-h  : 14px;
+  --sandbox-ruler-nums-h  : var(--prose-size-14);
   --sandbox-ruler-row     : calc(var(--sandbox-ruler-chip-h) + var(--sandbox-ruler-gap));
-  --sandbox-ruler-track-h : 16px;
+  --sandbox-ruler-track-h : var(--prose-size-16);
 
   position       : relative;
-  flex           : 1 1 16rem;
+  flex           : 1 1 var(--prose-width-16rem);
   min-width      : 0;
   height         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--sandbox-ruler-nums-h));
   container-type : inline-size;
@@ -30,16 +30,16 @@
   right        : 0;
   left         : 0;
   height       : var(--sandbox-ruler-track-h);
-  border-block : 1px solid var(--sandbox-ruler-minor);
-  border-right : 1px solid var(--sandbox-ruler-major);
+  border-block : var(--prose-border-1) solid var(--sandbox-ruler-minor);
+  border-right : var(--prose-border-1) solid var(--sandbox-ruler-major);
   background   : repeating-linear-gradient(
                    90deg,
-                   var(--sandbox-ruler-major) 0 1px,
+                   var(--sandbox-ruler-major) 0 var(--prose-size-1),
                    transparent 0 calc(100% / 3)
                  ) left top / 100% 100% no-repeat,
                  repeating-linear-gradient(
                    90deg,
-                   var(--sandbox-ruler-minor) 0 1px,
+                   var(--sandbox-ruler-minor) 0 var(--prose-size-1),
                    transparent 0 calc(100% / 15)
                  ) left bottom / 100% 62% no-repeat;
 }
@@ -47,9 +47,9 @@
 .sandbox-ruler-default {
   position   : absolute;
   top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2);
-  width      : 6px;
-  height     : 6px;
-  transform  : translate(-3px, -3px) rotate(45deg);
+  width      : var(--prose-size-6);
+  height     : var(--prose-size-6);
+  transform  : translate(-50%, -50%) rotate(45deg);
   background : var(--hue);
   opacity    : 0.8;
   transition : top var(--prose-transition);
@@ -57,11 +57,11 @@
 
 .sandbox-ruler-num {
   position    : absolute;
-  top         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + 3px);
+  top         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--prose-space-3));
   transform   : translateX(-50%);
   color       : var(--vp-c-text-3);
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.6rem;
+  font-size   : var(--prose-text-0-6rem);
   line-height : 1;
   transition  : top var(--prose-transition);
 }
@@ -94,18 +94,18 @@
 
 .sandbox-ruler-marker {
   position   : absolute;
-  top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row) + var(--sandbox-ruler-chip-h) - 2px);
+  top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row) + var(--sandbox-ruler-chip-h) - var(--prose-space-2));
   bottom     : var(--sandbox-ruler-nums-h);
-  left       : -5px;
-  width      : 10px;
+  left       : calc(var(--prose-size-10) / -2);
+  width      : var(--prose-size-10);
   transition : top var(--prose-transition);
 }
 
 .sandbox-ruler-marker::before {
   content    : '';
   position   : absolute;
-  inset      : 0 4px;
-  background : color-mix(in srgb, var(--hue) 70%, var(--vp-c-text-3));
+  inset      : 0 var(--prose-space-4);
+  background : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
   transition : background var(--prose-transition);
 }
 
@@ -120,11 +120,11 @@
   left          : 0;
   z-index       : 1;
   display       : inline-flex;
-  gap           : 0.4rem;
+  gap           : var(--prose-space-0-4rem);
   align-items   : center;
   height        : var(--sandbox-ruler-chip-h);
-  padding       : 0 7px;
-  border        : 1px solid color-mix(in srgb, var(--hue) 55%, var(--vp-c-divider));
+  padding       : 0 var(--prose-space-7);
+  border        : var(--prose-border-1) solid color-mix(in srgb, var(--hue) var(--prose-tint-55), var(--vp-c-divider));
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   line-height   : 1;
@@ -140,35 +140,35 @@
 
 .sandbox-ruler-stop:focus-visible .sandbox-ruler-chip {
   outline        : var(--prose-focus-ring);
-  outline-offset : 1px;
+  outline-offset : var(--prose-space-1);
 }
 
 .sandbox-ruler-chip-label {
   color          : var(--vp-c-text-2);
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.62rem;
-  letter-spacing : 0.05em;
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-tracking-0-05em);
   text-transform : uppercase;
 }
 
 .sandbox-ruler-chip-value {
   color                : var(--vp-c-text-1);
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.68rem;
+  font-size            : var(--prose-text-0-68rem);
   font-variant-numeric : tabular-nums;
 }
 
 .sandbox-ruler-chip-input {
-  width       : 3.4rem;
-  padding     : 0 5px;
+  width       : var(--prose-size-3-4rem);
+  padding     : 0 var(--prose-space-5);
   color       : var(--vp-c-text-1);
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.68rem;
+  font-size   : var(--prose-text-0-68rem);
   cursor      : text;
   user-select : text;
 }
 
 .sandbox-ruler-chip-input:focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : -1px;
+  outline-offset : calc(var(--prose-space-1) * -1);
 }

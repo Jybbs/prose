@@ -1,14 +1,14 @@
 .landing-cta {
   --stamp-accent : var(--prose-palette-whiskey);
-  --stamp-ink    : color-mix(in srgb, var(--stamp-accent) 65%, var(--vp-c-text-1));
+  --stamp-ink    : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-65), var(--vp-c-text-1));
   --panel-bg     : var(--vp-c-bg);
   --panel-edge   : var(--vp-c-divider);
 
   position              : relative;
-  margin-top            : 76px;
+  margin-top            : var(--prose-space-76);
   display               : grid;
-  grid-template-columns : 196px minmax(0, 1fr);
-  border                : 1px solid var(--vp-c-divider);
+  grid-template-columns : var(--prose-width-196) minmax(0, 1fr);
+  border                : var(--prose-border-1) solid var(--vp-c-divider);
   background            : var(--vp-c-bg-soft);
   overflow              : hidden;
   text-align            : left;
@@ -17,15 +17,15 @@
 .landing-cta-panel {
   position     : relative;
   background   : var(--panel-bg);
-  border-right : 1px solid var(--panel-edge);
-  min-height   : 200px;
+  border-right : var(--prose-border-1) solid var(--panel-edge);
+  min-height   : var(--prose-size-200);
   overflow     : hidden;
 }
 
 .landing-cta-face {
   position        : absolute;
   inset           : 0;
-  padding         : 16px 14px;
+  padding         : var(--prose-space-16) var(--prose-space-14);
   display         : flex;
   flex-direction  : column;
   align-items     : center;
@@ -34,17 +34,17 @@
 
 .landing-cta-toggle {
   position        : absolute;
-  top             : 8px;
-  right           : 8px;
+  top             : var(--prose-space-8);
+  right           : var(--prose-space-8);
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
-  width           : 26px;
-  height          : 26px;
+  width           : var(--prose-size-26);
+  height          : var(--prose-size-26);
   padding         : 0;
-  border          : 1px solid color-mix(in srgb, var(--stamp-accent) 30%, var(--panel-edge));
+  border          : var(--prose-border-1) solid color-mix(in srgb, var(--stamp-accent) var(--prose-tint-30), var(--panel-edge));
   border-radius   : 50%;
-  background      : color-mix(in srgb, var(--stamp-accent) 8%, var(--panel-bg));
+  background      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-8), var(--panel-bg));
   color           : var(--stamp-ink);
   cursor          : pointer;
   font-family     : var(--vp-font-family-mono);
@@ -54,8 +54,8 @@
   z-index         : 5;
 }
 .landing-cta-toggle:hover {
-  background   : color-mix(in srgb, var(--stamp-accent) 22%, var(--vp-c-bg));
-  border-color : color-mix(in srgb, var(--stamp-accent) 55%, var(--panel-edge));
+  background   : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-22), var(--vp-c-bg));
+  border-color : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--panel-edge));
   transform    : scale(1.06);
 }
 
@@ -68,31 +68,31 @@
 .landing-cta-swap-enter-from,
 .landing-cta-swap-leave-to {
   opacity   : 0;
-  transform : translateY(8px);
+  transform : translateY(var(--prose-space-8));
 }
 
 .landing-cta-body {
   position              : relative;
-  padding               : 18px 22px;
+  padding               : var(--prose-space-18) var(--prose-space-22);
   display               : grid;
   grid-template-columns : minmax(0, 1fr) auto;
-  column-gap            : 18px;
-  row-gap               : 4px;
+  column-gap            : var(--prose-space-18);
+  row-gap               : var(--prose-space-4);
   align-items           : center;
 }
 
 .landing-cta-kicker {
   grid-column : 1 / 3;
-  margin      : 0 0 4px;
+  margin      : 0 0 var(--prose-space-4);
 }
 
 .landing-cta-lede {
   grid-column : 1 / 3;
-  margin      : 0 0 10px;
-  max-width   : 48ch;
+  margin      : 0 0 var(--prose-space-10);
+  max-width   : var(--prose-width-48ch);
   font-family : var(--prose-font-display);
   font-weight : 400;
-  font-size   : 1.25rem;
+  font-size   : var(--prose-text-1-25rem);
   line-height : 1.3;
   color       : var(--vp-c-text-1);
 }
@@ -106,9 +106,9 @@
   grid-column   : 1;
   display       : inline-flex;
   align-items   : center;
-  gap           : 10px;
-  padding       : 8px 44px 8px 14px;
-  border        : 1px solid var(--vp-c-divider);
+  gap           : var(--prose-space-10);
+  padding       : var(--prose-space-8) var(--prose-space-44) var(--prose-space-8) var(--prose-space-14);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   font-family   : var(--vp-font-family-mono);
@@ -129,7 +129,7 @@
 
 .landing-cta-cmd > button.copy {
   top       : 50%;
-  right     : 6px;
+  right     : var(--prose-space-6);
   transform : translateY(-50%);
 }
 
@@ -137,8 +137,8 @@
   grid-column          : 2;
   display              : inline-flex;
   align-items          : center;
-  gap                  : 6px;
-  padding              : 8px 16px;
+  gap                  : var(--prose-space-6);
+  padding              : var(--prose-space-8) var(--prose-space-16);
   border-radius        : var(--prose-radius-sm);
   background           : var(--vp-c-brand-1);
   color                : var(--vp-c-bg);
@@ -158,7 +158,7 @@
   transition : transform var(--prose-transition);
 }
 .landing-cta-primary:hover .landing-cta-arrow {
-  transform : translateX(3px);
+  transform : translateX(var(--prose-space-3));
 }
 
 @media (--prose-bp-card-stack) {
@@ -167,6 +167,6 @@
   }
   .landing-cta-panel {
     border-right  : none;
-    border-bottom : 1px solid var(--panel-edge);
+    border-bottom : var(--prose-border-1) solid var(--panel-edge);
   }
 }

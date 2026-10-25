@@ -1,12 +1,12 @@
 .glossary-folio-index-narrow {
-  margin-top : 32px;
+  margin-top : var(--prose-space-32);
 }
 
 .glossary-folio-index-narrow .glossary-folio-list {
   max-height : none;
 }
 
-@media (min-width: 1280px) {
+@media (--prose-bp-wide) {
   .glossary-folio-index-narrow {
     display : none !important;
   }
@@ -17,7 +17,7 @@
 }
 
 .vp-doc .glossary-folio-letter {
-  margin : 0 0 4px;
+  margin : 0 0 var(--prose-space-4);
 }
 
 .vp-doc .glossary-folio-row-slug {
@@ -44,47 +44,47 @@
 .glossary-folio-index {
   display        : flex;
   flex-direction : column;
-  gap            : 12px;
-  margin         : 20px 0 0;
+  gap            : var(--prose-space-12);
+  margin         : var(--prose-space-20) 0 0;
 }
 
 .glossary-folio-search-header {
   display        : flex;
   flex-direction : column;
-  gap            : 4px;
+  gap            : var(--prose-space-4);
 }
 
 .glossary-folio-search {
   display     : flex;
   align-items : center;
-  gap         : 10px;
-  padding     : 6px 14px;
+  gap         : var(--prose-space-10);
+  padding     : var(--prose-space-6) var(--prose-space-14);
   background  : var(--vp-c-bg-soft);
   transition  : border-color var(--prose-transition), background var(--prose-transition);
 }
 
 .glossary-folio-search:hover {
-  border-color : color-mix(in srgb, var(--prose-palette-ube) 35%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-35), var(--vp-c-divider));
   background   : var(--vp-c-bg);
 }
 
 .glossary-folio-search:focus-within {
-  border-color : color-mix(in srgb, var(--prose-palette-ube) 55%, var(--vp-c-divider));
-  box-shadow   : 0 0 0 3px color-mix(in srgb, var(--prose-palette-ube) 20%, transparent);
+  border-color : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-55), var(--vp-c-divider));
+  box-shadow   : 0 0 0 var(--prose-border-3) color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-20), transparent);
 }
 
 .glossary-folio-search-glyph {
   display     : block;
   flex-shrink : 0;
-  width       : 14px;
-  height      : 14px;
+  width       : var(--prose-size-14);
+  height      : var(--prose-size-14);
   color       : var(--vp-c-text-2);
 }
 
 .glossary-folio-input {
   flex        : 1;
   min-width   : 0;
-  height      : 22px;
+  height      : var(--prose-size-22);
   border      : none;
   background  : transparent;
   font-family : var(--vp-font-family-base);
@@ -115,7 +115,7 @@
 }
 
 .glossary-folio-empty {
-  padding     : 12px 4px;
+  padding     : var(--prose-space-12) var(--prose-space-4);
   font-family : var(--vp-font-family-base);
   font-size   : var(--prose-text-sm);
   color       : var(--vp-c-text-3);
@@ -125,23 +125,23 @@
   background  : transparent;
   padding     : 0;
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.9em;
+  font-size   : var(--prose-text-0-9em);
   color       : var(--vp-c-text-2);
 }
 
 .glossary-folio-list {
-  max-height : calc(100vh - 240px);
+  max-height : calc(100vh - var(--prose-size-240));
   overflow-y : auto;
 }
 
 .glossary-folio-block + .glossary-folio-block {
-  margin-top : 14px;
+  margin-top : var(--prose-space-14);
 }
 
 .glossary-folio-letter {
-  margin         : 0 0 4px;
-  padding        : 0 4px 4px;
-  border-bottom  : 1px solid var(--vp-c-divider);
+  margin         : 0 0 var(--prose-space-4);
+  padding        : 0 var(--prose-space-4) var(--prose-space-4);
+  border-bottom  : var(--prose-border-1) solid var(--vp-c-divider);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-meta);
   font-weight    : 500;
@@ -160,12 +160,12 @@
 
 .glossary-folio-row {
   display               : grid;
-  grid-template-columns : 3px 1fr;
+  grid-template-columns : var(--prose-size-3) 1fr;
   align-items           : center;
-  gap                   : 10px;
+  gap                   : var(--prose-space-10);
   width                 : 100%;
-  min-height            : 24px;
-  padding               : 3px 8px;
+  min-height            : var(--prose-size-24);
+  padding               : var(--prose-space-3) var(--prose-space-8);
   border                : none;
   border-radius         : var(--prose-radius-sm);
   background            : transparent;
@@ -176,7 +176,7 @@
 
 .glossary-folio-row-rail {
   align-self    : stretch;
-  border-radius : 2px;
+  border-radius : var(--prose-radius-2);
   background    : var(--rail-paint, var(--family-color));
 }
 
@@ -191,7 +191,7 @@
 }
 
 .glossary-folio-row:hover {
-  background : color-mix(in srgb, var(--family-color) 10%, transparent);
+  background : color-mix(in srgb, var(--family-color) var(--prose-tint-10), transparent);
 }
 
 .glossary-folio-row:hover .glossary-folio-row-slug {
@@ -199,7 +199,7 @@
 }
 
 .glossary-folio-row.is-active {
-  background : color-mix(in srgb, var(--family-color) 22%, transparent);
+  background : color-mix(in srgb, var(--family-color) var(--prose-tint-22), transparent);
 }
 
 .glossary-folio-row.is-active .glossary-folio-row-slug {

@@ -4,7 +4,7 @@
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card).v-popper__popper--hidden .v-popper__wrapper {
   opacity   : 0;
-  transform : translateY(-4px);
+  transform : translateY(calc(var(--prose-space-4) * -1));
 }
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card).v-popper__popper--shown .v-popper__wrapper {
@@ -13,7 +13,7 @@
 }
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card) {
-  --popper-border : color-mix(in srgb, var(--popper-accent) 55%, var(--vp-c-divider));
+  --popper-border : color-mix(in srgb, var(--popper-accent) var(--prose-tint-55), var(--vp-c-divider));
 }
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card) .v-popper__arrow-outer {

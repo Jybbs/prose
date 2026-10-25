@@ -4,16 +4,22 @@
 @custom-media --prose-bp-tablet     (max-width: 760px);
 @custom-media --prose-bp-medium     (max-width: 820px);
 @custom-media --prose-bp-desktop    (max-width: 960px);
+@custom-media --prose-bp-wide       (min-width: 1280px);
 
 :root {
   --prose-font-display           : 'Fraunces Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --prose-radius                 : 8px;
+  --prose-radius-1               : 1px;
+  --prose-radius-2               : 2px;
+  --prose-radius-3               : 3px;
   --prose-radius-sm              : 4px;
+  --prose-radius-6               : 6px;
+  --prose-radius                 : 8px;
+  --prose-radius-pill            : 999px;
 
-  --prose-focus-ring             : 2px solid var(--vp-c-brand-1);
+  --prose-focus-ring             : var(--prose-border-2) solid var(--vp-c-brand-1);
 
   --prose-shadow-lift            : 0 12px 28px -10px;
   --prose-shadow-tooltip         : 0 8px 24px rgba(0, 0, 0, 0.28);
@@ -25,40 +31,306 @@
 
   --prose-ease-emphasized        : cubic-bezier(0.4, 0, 0.2, 1);
 
+  --prose-tint-4                 : 4%;
   --prose-tint-faint             : 5%;
+  --prose-tint-6                 : 6%;
+  --prose-tint-7                 : 7%;
+  --prose-tint-8                 : 8%;
   --prose-tint-wash              : 9%;
+  --prose-tint-10                : 10%;
+  --prose-tint-12                : 12%;
   --prose-tint-medium            : 14%;
   --prose-tint-ground            : 16%;
+  --prose-tint-18                : 18%;
+  --prose-tint-20                : 20%;
+  --prose-tint-22                : 22%;
+  --prose-tint-24                : 24%;
+  --prose-tint-25                : 25%;
+  --prose-tint-28                : 28%;
+  --prose-tint-30                : 30%;
   --prose-tint-strong            : 32%;
+  --prose-tint-35                : 35%;
+  --prose-tint-38                : 38%;
+  --prose-tint-40                : 40%;
+  --prose-tint-42                : 42%;
+  --prose-tint-45                : 45%;
+  --prose-tint-48                : 48%;
+  --prose-tint-50                : 50%;
+  --prose-tint-55                : 55%;
+  --prose-tint-56                : 56%;
   --prose-tint-ink               : 58%;
+  --prose-tint-60                : 60%;
+  --prose-tint-64                : 64%;
+  --prose-tint-65                : 65%;
+  --prose-tint-68                : 68%;
+  --prose-tint-70                : 70%;
+  --prose-tint-75                : 75%;
+  --prose-tint-76                : 76%;
+  --prose-tint-78                : 78%;
+  --prose-tint-80                : 80%;
+  --prose-tint-82                : 82%;
+  --prose-tint-85                : 85%;
+  --prose-tint-88                : 88%;
+  --prose-tint-95                : 95%;
+
+  --prose-tracking-0-01em        : 0.01em;
+  --prose-tracking-0-02em        : 0.02em;
+  --prose-tracking-0-04em        : 0.04em;
+  --prose-tracking-0-05em        : 0.05em;
+  --prose-tracking-0-06em        : 0.06em;
+  --prose-tracking-0-08em        : 0.08em;
+  --prose-tracking-0-1em         : 0.1em;
+  --prose-tracking-0-12em        : 0.12em;
+  --prose-tracking-0-14em        : 0.14em;
+  --prose-tracking-0-16em        : 0.16em;
+  --prose-tracking-0-18em        : 0.18em;
 
   --prose-kicker-size            : var(--prose-text-xxs);
-  --prose-kicker-size-sm         : 0.62rem;
-  --prose-kicker-tracking        : 0.14em;
+  --prose-kicker-size-sm         : var(--prose-text-meta);
+  --prose-kicker-tracking        : var(--prose-tracking-0-14em);
 
   --prose-label-size             : var(--prose-text-xxs);
-  --prose-label-tracking         : 0.1em;
-  --prose-label-tracking-loose   : 0.08em;
+  --prose-label-tracking         : var(--prose-tracking-0-1em);
+  --prose-label-tracking-loose   : var(--prose-tracking-0-08em);
 
-  --prose-meta-tracking          : 0.06em;
-  --prose-folio-tracking         : 0.04em;
-  --prose-display-tracking-wide  : 0.18em;
+  --prose-meta-tracking          : var(--prose-tracking-0-06em);
+  --prose-folio-tracking         : var(--prose-tracking-0-04em);
+  --prose-display-tracking-wide  : var(--prose-tracking-0-18em);
 
+  --prose-text-0-54rem           : 0.54rem;
+  --prose-text-0-56rem           : 0.56rem;
+  --prose-text-0-58rem           : 0.58rem;
+  --prose-text-0-6rem            : 0.6rem;
   --prose-text-meta              : 0.62rem;
+  --prose-text-0-65rem           : 0.65rem;
+  --prose-text-0-66rem           : 0.66rem;
+  --prose-text-0-68rem           : 0.68rem;
   --prose-text-xxs               : 0.7rem;
+  --prose-text-0-74rem           : 0.74rem;
   --prose-text-xs                : 0.78rem;
-  --prose-text-code              : 0.78rem;
+  --prose-text-0-8rem            : 0.8rem;
+  --prose-text-0-84rem           : 0.84rem;
   --prose-text-sm                : 0.85rem;
+  --prose-text-0-875rem          : 0.875rem;
+  --prose-text-0-88rem           : 0.88rem;
+  --prose-text-0-92rem           : 0.92rem;
   --prose-text-md                : 0.95rem;
+  --prose-text-0-98rem           : 0.98rem;
+  --prose-text-1rem              : 1rem;
+  --prose-text-1-02rem           : 1.02rem;
+  --prose-text-1-05rem           : 1.05rem;
+  --prose-text-1-15rem           : 1.15rem;
+  --prose-text-1-2rem            : 1.2rem;
+  --prose-text-1-25rem           : 1.25rem;
+  --prose-text-1-3rem            : 1.3rem;
+  --prose-text-1-35rem           : 1.35rem;
+  --prose-text-1-4rem            : 1.4rem;
+  --prose-text-1-5rem            : 1.5rem;
+  --prose-text-1-6rem            : 1.6rem;
+  --prose-text-1-7rem            : 1.7rem;
+  --prose-text-1-8rem            : 1.8rem;
+  --prose-text-2rem              : 2rem;
+  --prose-text-2-1rem            : 2.1rem;
+  --prose-text-2-2rem            : 2.2rem;
+  --prose-text-2-4rem            : 2.4rem;
+  --prose-text-2-6rem            : 2.6rem;
+  --prose-text-2-8rem            : 2.8rem;
+  --prose-text-3-4rem            : 3.4rem;
 
-  --prose-pad-card-snug          : 10px 14px;
+  --prose-text-0-6em             : 0.6em;
+  --prose-text-0-7em             : 0.7em;
+  --prose-text-0-8em             : 0.8em;
+  --prose-text-0-84em            : 0.84em;
+  --prose-text-0-85em            : 0.85em;
+  --prose-text-0-86em            : 0.86em;
+  --prose-text-0-88em            : 0.88em;
+  --prose-text-0-9em             : 0.9em;
+  --prose-text-0-95em            : 0.95em;
+  --prose-text-1em               : 1em;
 
-  --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) 30%, var(--vp-c-bg));
+  --prose-text-15                : 15px;
+
+  --prose-text-code              : var(--prose-text-xs);
+
+  --prose-leading-20             : 20px;
+  --prose-leading-24             : 24px;
+
+  --prose-leading-3rem           : 3rem;
+
+  --prose-space-0-5              : 0.5px;
+  --prose-space-1                : 1px;
+  --prose-space-2                : 2px;
+  --prose-space-2-5              : 2.5px;
+  --prose-space-3                : 3px;
+  --prose-space-4                : 4px;
+  --prose-space-5                : 5px;
+  --prose-space-6                : 6px;
+  --prose-space-7                : 7px;
+  --prose-space-8                : 8px;
+  --prose-space-9                : 9px;
+  --prose-space-10               : 10px;
+  --prose-space-11               : 11px;
+  --prose-space-12               : 12px;
+  --prose-space-13               : 13px;
+  --prose-space-14               : 14px;
+  --prose-space-15               : 15px;
+  --prose-space-16               : 16px;
+  --prose-space-17               : 17px;
+  --prose-space-18               : 18px;
+  --prose-space-20               : 20px;
+  --prose-space-22               : 22px;
+  --prose-space-23               : 23px;
+  --prose-space-24               : 24px;
+  --prose-space-28               : 28px;
+  --prose-space-32               : 32px;
+  --prose-space-34               : 34px;
+  --prose-space-36               : 36px;
+  --prose-space-40               : 40px;
+  --prose-space-42               : 42px;
+  --prose-space-44               : 44px;
+  --prose-space-48               : 48px;
+  --prose-space-52               : 52px;
+  --prose-space-54               : 54px;
+  --prose-space-72               : 72px;
+  --prose-space-76               : 76px;
+  --prose-space-80               : 80px;
+  --prose-space-88               : 88px;
+  --prose-space-96               : 96px;
+  --prose-space-108              : 108px;
+
+  --prose-space-0-1rem           : 0.1rem;
+  --prose-space-0-25rem          : 0.25rem;
+  --prose-space-0-3rem           : 0.3rem;
+  --prose-space-0-4rem           : 0.4rem;
+  --prose-space-0-45rem          : 0.45rem;
+  --prose-space-0-5rem           : 0.5rem;
+  --prose-space-0-7rem           : 0.7rem;
+  --prose-space-0-75rem          : 0.75rem;
+  --prose-space-0-85rem          : 0.85rem;
+  --prose-space-0-9rem           : 0.9rem;
+  --prose-space-1rem             : 1rem;
+  --prose-space-1-1rem           : 1.1rem;
+  --prose-space-1-25rem          : 1.25rem;
+  --prose-space-1-5rem           : 1.5rem;
+  --prose-space-2rem             : 2rem;
+  --prose-space-3rem             : 3rem;
+
+  --prose-space-0-08em           : 0.08em;
+  --prose-space-0-1em            : 0.1em;
+  --prose-space-0-15em           : 0.15em;
+  --prose-space-0-18em           : 0.18em;
+  --prose-space-0-2em            : 0.2em;
+  --prose-space-0-3em            : 0.3em;
+  --prose-space-0-35em           : 0.35em;
+  --prose-space-0-4em            : 0.4em;
+  --prose-space-0-45em           : 0.45em;
+  --prose-space-0-5em            : 0.5em;
+  --prose-space-0-65em           : 0.65em;
+  --prose-space-1-1em            : 1.1em;
+
+  --prose-space-1ch              : 1ch;
+
+  --prose-size-1                 : 1px;
+  --prose-size-2                 : 2px;
+  --prose-size-3                 : 3px;
+  --prose-size-4                 : 4px;
+  --prose-size-6                 : 6px;
+  --prose-size-7                 : 7px;
+  --prose-size-8                 : 8px;
+  --prose-size-10                : 10px;
+  --prose-size-11                : 11px;
+  --prose-size-12                : 12px;
+  --prose-size-13                : 13px;
+  --prose-size-14                : 14px;
+  --prose-size-15                : 15px;
+  --prose-size-16                : 16px;
+  --prose-size-18                : 18px;
+  --prose-size-20                : 20px;
+  --prose-size-22                : 22px;
+  --prose-size-24                : 24px;
+  --prose-size-26                : 26px;
+  --prose-size-28                : 28px;
+  --prose-size-30                : 30px;
+  --prose-size-32                : 32px;
+  --prose-size-36                : 36px;
+  --prose-size-40                : 40px;
+  --prose-size-56                : 56px;
+  --prose-size-60                : 60px;
+  --prose-size-64                : 64px;
+  --prose-size-72                : 72px;
+  --prose-size-78                : 78px;
+  --prose-size-80                : 80px;
+  --prose-size-96                : 96px;
+  --prose-size-110               : 110px;
+  --prose-size-132               : 132px;
+  --prose-size-180               : 180px;
+  --prose-size-200               : 200px;
+  --prose-size-240               : 240px;
+  --prose-size-260               : 260px;
+  --prose-size-320               : 320px;
+  --prose-size-420               : 420px;
+
+  --prose-size-2-1rem            : 2.1rem;
+  --prose-size-2-6rem            : 2.6rem;
+  --prose-size-3rem              : 3rem;
+  --prose-size-3-4rem            : 3.4rem;
+  --prose-size-5-5rem            : 5.5rem;
+  --prose-size-9rem              : 9rem;
+  --prose-size-30rem             : 30rem;
+
+  --prose-size-0-5em             : 0.5em;
+  --prose-size-0-78em            : 0.78em;
+  --prose-size-1em               : 1em;
+  --prose-size-1-05em            : 1.05em;
+  --prose-size-1-4em             : 1.4em;
+  --prose-size-1-5em             : 1.5em;
+
+  --prose-width-180              : 180px;
+  --prose-width-196              : 196px;
+  --prose-width-220              : 220px;
+  --prose-width-232              : 232px;
+  --prose-width-260              : 260px;
+  --prose-width-280              : 280px;
+  --prose-width-300              : 300px;
+  --prose-width-360              : 360px;
+  --prose-width-600              : 600px;
+  --prose-width-640              : 640px;
+  --prose-width-720              : 720px;
+  --prose-width-960              : 960px;
+  --prose-width-1120             : 1120px;
+
+  --prose-width-11rem            : 11rem;
+  --prose-width-14rem            : 14rem;
+  --prose-width-16rem            : 16rem;
+  --prose-width-22rem            : 22rem;
+  --prose-width-30rem            : 30rem;
+  --prose-width-94rem            : 94rem;
+
+  --prose-width-18ch             : 18ch;
+  --prose-width-42ch             : 42ch;
+  --prose-width-48ch             : 48ch;
+  --prose-width-60ch             : 60ch;
+  --prose-width-62ch             : 62ch;
+  --prose-width-64ch             : 64ch;
+  --prose-width-72ch             : 72ch;
+
+  --prose-border-1               : 1px;
+  --prose-border-2               : 2px;
+  --prose-border-3               : 3px;
+  --prose-border-4               : 4px;
+  --prose-border-5               : 5px;
+
+  --prose-pad-card-snug          : var(--prose-space-10) var(--prose-space-14);
+
+  --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-30), var(--vp-c-bg));
+  --prose-panel-wash-card        : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-35), var(--vp-c-bg));
+
+  --prose-scrollbar-thumb        : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-45), var(--vp-c-divider));
 
   --vp-c-brand-1                 : var(--prose-palette-ube);
   --vp-c-brand-2                 : var(--prose-palette-ube-mid);
   --vp-c-brand-3                 : var(--prose-palette-ube-pale);
-  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) 14%, transparent);
+  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-medium), transparent);
 
   --vp-c-tip-1                   : var(--vp-c-brand-1);
   --vp-c-tip-2                   : var(--vp-c-brand-3);
@@ -80,7 +352,7 @@
   --vp-c-brand-1          : var(--prose-palette-ube-pale);
   --vp-c-brand-2          : var(--prose-palette-ube-mid);
   --vp-c-brand-3          : var(--prose-palette-ube);
-  --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) 16%, transparent);
+  --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
   --vp-c-bg-soft          : var(--prose-palette-woodsmoke);
   --vp-code-block-bg      : var(--prose-shiki-dark-bg);
   --prose-role-emphasis   : var(--prose-palette-champagne);

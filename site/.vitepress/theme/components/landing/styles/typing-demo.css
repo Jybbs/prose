@@ -2,9 +2,9 @@
   position              : relative;
   display               : grid;
   grid-template-columns : minmax(0, 0.95fr) minmax(0, 1.5fr);
-  gap                   : 18px;
+  gap                   : var(--prose-space-18);
   margin                : 0 auto;
-  max-width             : 1120px;
+  max-width             : var(--prose-width-1120);
 }
 
 .typing-demo-config-prelude {
@@ -18,10 +18,10 @@
 
 .typing-demo-replay {
   position       : absolute;
-  top            : 12px;
-  right          : 12px;
-  padding        : 6px 14px;
-  border         : 1px solid var(--vp-c-divider);
+  top            : var(--prose-space-12);
+  right          : var(--prose-space-12);
+  padding        : var(--prose-space-6) var(--prose-space-14);
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
   color          : var(--vp-c-text-2);

@@ -4,15 +4,15 @@
 
 .tool-mark .tool-mark-icon {
   display        : inline-block;
-  width          : 0.78em;
-  height         : 0.78em;
-  margin-right   : 3px;
-  vertical-align : -0.08em;
+  width          : var(--prose-size-0-78em);
+  height         : var(--prose-size-0-78em);
+  margin-right   : var(--prose-space-3);
+  vertical-align : calc(var(--prose-space-0-08em) * -1);
 }
 
 .tool-bare .tool-mark-icon {
   margin-right   : 0;
-  width          : 1em;
-  height         : 1em;
-  vertical-align : -0.18em;
+  width          : var(--prose-size-1em);
+  height         : var(--prose-size-1em);
+  vertical-align : calc(var(--prose-space-0-18em) * -1);
 }

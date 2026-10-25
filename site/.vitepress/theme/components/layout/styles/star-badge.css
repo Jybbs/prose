@@ -1,10 +1,10 @@
 .star-count {
   display             : inline-flex;
   align-items         : center;
-  gap                 : 4px;
-  margin-inline-start : 6px;
-  padding             : 2px 8px;
-  border              : 1px solid var(--vp-c-divider);
+  gap                 : var(--prose-space-4);
+  margin-inline-start : var(--prose-space-6);
+  padding             : var(--prose-space-2) var(--prose-space-8);
+  border              : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius       : 0;
   color               : var(--vp-c-text-2);
   font-family         : var(--vp-font-family-mono);

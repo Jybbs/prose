@@ -1,6 +1,6 @@
 .glyph {
-  width           : var(--glyph-size, 14px);
-  height          : var(--glyph-size, 14px);
+  width           : var(--glyph-size, var(--prose-size-14));
+  height          : var(--glyph-size, var(--prose-size-14));
   stroke          : currentColor;
   stroke-width    : 2;
   stroke-linecap  : round;

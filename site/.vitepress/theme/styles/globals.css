@@ -1,11 +1,11 @@
 :focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : 2px;
+  outline-offset : var(--prose-space-2);
 }
 
 ::-webkit-scrollbar {
-  width  : 8px;
-  height : 8px;
+  width  : var(--prose-size-8);
+  height : var(--prose-size-8);
 }
 
 ::-webkit-scrollbar-track {
@@ -13,7 +13,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color : color-mix(in srgb, var(--prose-palette-ube) 45%, var(--vp-c-divider));
+  background-color : var(--prose-scrollbar-thumb);
   border-radius    : var(--prose-radius-sm);
 }
 
@@ -23,7 +23,7 @@
 
 * {
   scrollbar-width : thin;
-  scrollbar-color : color-mix(in srgb, var(--prose-palette-ube) 45%, var(--vp-c-divider)) transparent;
+  scrollbar-color : var(--prose-scrollbar-thumb) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

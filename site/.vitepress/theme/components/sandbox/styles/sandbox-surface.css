@@ -6,11 +6,11 @@
 
 .sandbox-surface-actions {
   position : absolute;
-  right    : 10px;
-  bottom   : 8px;
+  right    : var(--prose-space-10);
+  bottom   : var(--prose-space-8);
   z-index  : 4;
   display  : flex;
-  gap      : 4px;
+  gap      : var(--prose-space-4);
 }
 
 /* The corners reveal on hover, whereas these hold visible, the pane having no
@@ -26,11 +26,11 @@
 
 .sandbox-surface-guide {
   position       : absolute;
-  top            : 1px;
-  bottom         : 1px;
-  left           : calc(22px + var(--guide-col) * 1ch);
+  top            : var(--prose-space-1);
+  bottom         : var(--prose-space-1);
+  left           : calc(var(--prose-space-22) + var(--guide-col) * var(--prose-space-1ch));
   width          : 0;
-  border-left    : 2px dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) 75%, transparent);
+  border-left    : var(--prose-border-2) dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) var(--prose-tint-75), transparent);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
   pointer-events : none;

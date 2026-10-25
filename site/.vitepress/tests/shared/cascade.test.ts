@@ -1,6 +1,6 @@
-import { themeSheets } from '../support'
+import { siteSheets } from '../support'
 
-const SHEETS = themeSheets()
+const SHEETS = siteSheets()
 
 describe('the theme cascade', () => {
   it('keeps the focus ring, since no stylesheet removes an outline with `!important`', () => {
@@ -40,8 +40,8 @@ describe('the theme cascade', () => {
 
   it('keeps every outline out of the glossary and rule-card sheets', () => {
     const popups = new Set([
-      'components/glossary/styles/glossary.css',
-      'components/rules/styles/specimen-callout.css'
+      '.vitepress/theme/components/glossary/styles/glossary.css',
+      '.vitepress/theme/components/rules/styles/specimen-callout.css'
     ])
     const declared = SHEETS.filter(({ file }) => popups.has(file)).flatMap(({ file, root }) => {
       const lines = [] as string[]

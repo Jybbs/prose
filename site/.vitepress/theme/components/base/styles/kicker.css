@@ -11,15 +11,15 @@
 
 .kicker[data-variant="rule"]::before {
   content           : "— ";
-  margin-inline-end : 4px;
+  margin-inline-end : var(--prose-space-4);
 }
 
 .kicker[data-variant="rule"]::after {
   content             : " —";
-  margin-inline-start : 4px;
+  margin-inline-start : var(--prose-space-4);
 }
 
 .vp-doc .custom-block-title {
-  margin-bottom : 8px;
+  margin-bottom : var(--prose-space-8);
   font-weight   : 700;
 }

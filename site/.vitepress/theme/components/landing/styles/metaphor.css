@@ -1,24 +1,24 @@
 .landing-metaphor {
-  padding-top : 72px;
-  border-top  : 1px solid var(--vp-c-divider);
+  padding-top : var(--prose-space-72);
+  border-top  : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .landing-definition {
   position   : relative;
-  margin     : 36px 0 0;
-  padding    : 32px 40px 36px;
+  margin     : var(--prose-space-36) 0 0;
+  padding    : var(--prose-space-32) var(--prose-space-40) var(--prose-space-36);
   background : var(--vp-c-bg-soft);
 }
 
 .landing-definition-kicker {
-  margin : 0 0 16px;
+  margin : 0 0 var(--prose-space-16);
 }
 
 .landing-definition-head {
   display       : flex;
   align-items   : baseline;
-  gap           : 10px;
-  margin-bottom : 22px;
+  gap           : var(--prose-space-10);
+  margin-bottom : var(--prose-space-22);
 }
 
 .landing-definition-word {
@@ -27,7 +27,7 @@
   border      : none;
   font-family : var(--prose-font-display);
   font-weight : 500;
-  font-size   : 2.2rem;
+  font-size   : var(--prose-text-2-2rem);
   line-height : 1;
   color       : var(--prose-palette-ube);
   text-wrap   : balance;
@@ -41,14 +41,14 @@
 
 .landing-definition-leader {
   flex    : 1;
-  margin  : 0 6px 0.35em;
+  margin  : 0 var(--prose-space-6) var(--prose-space-0-35em);
   opacity : 0.5;
 }
 
 .landing-definition-pos {
   font-family : var(--prose-font-display);
   font-style  : italic;
-  font-size   : 1rem;
+  font-size   : var(--prose-text-1rem);
   color       : var(--vp-c-text-3);
 }
 
@@ -58,24 +58,24 @@
   padding        : 0;
   display        : flex;
   flex-direction : column;
-  gap            : 12px;
+  gap            : var(--prose-space-12);
 }
 
 .landing-definition-list li {
   display     : flex;
   align-items : baseline;
-  gap         : 12px;
+  gap         : var(--prose-space-12);
 }
 
 .landing-definition-num {
   display        : inline-block;
-  padding        : 1px 8px;
-  border-radius  : 999px;
+  padding        : var(--prose-space-1) var(--prose-space-8);
+  border-radius  : var(--prose-radius-pill);
   background     : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), transparent);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xxs);
   color          : var(--vp-c-brand-1);
-  vertical-align : 0.18em;
+  vertical-align : var(--prose-space-0-18em);
   flex           : 0 0 auto;
 }
 
@@ -88,15 +88,15 @@
 }
 
 .landing-definition-rule {
-  margin     : 22px 0;
+  margin     : var(--prose-space-22) 0;
   border     : 0;
-  border-top : 1px solid var(--vp-c-divider);
+  border-top : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .landing-definition-copy p {
-  margin      : 0 0 14px;
+  margin      : 0 0 var(--prose-space-14);
   font-family : var(--vp-font-family-base);
-  font-size   : 1rem;
+  font-size   : var(--prose-text-1rem);
   line-height : 1.65;
   color       : var(--vp-c-text-2);
 }
