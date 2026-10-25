@@ -4,10 +4,12 @@ import path from 'node:path'
 import {
   isFunctionNode,
   isTokenNode,
+  isWhitespaceNode,
   parseListOfComponentValues,
   walk
 } from '@csstools/css-parser-algorithms'
 import {
+  isTokenComma,
   isTokenDimension,
   isTokenHash,
   isTokenIdent,
@@ -22,9 +24,9 @@ import { parse }               from 'postcss'
 import { paletteCss } from '../../lib/shared/palette'
 import { siteDir }    from '../../lib/shared/paths'
 
-import type { FunctionNode }      from '@csstools/css-parser-algorithms'
-import type { TokenIdent }        from '@csstools/css-tokenizer'
-import type { Declaration, Root } from 'postcss'
+import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
+import type { TokenIdent }                   from '@csstools/css-tokenizer'
+import type { Declaration, Root }            from 'postcss'
 
 // Holds the absolute and font-relative length units CSS Values 4 defines,
 // leaving out the viewport and container units, which measure a share of the
@@ -33,7 +35,17 @@ const LENGTH_UNITS   = new Set([
   'cap', 'ch', 'cm', 'em', 'ex', 'ic', 'in', 'lh', 'mm', 'pc', 'pt', 'px', 'q', 'rcap', 'rch',
   'rem', 'rex', 'ric', 'rlh'
 ])
+// Holds the keywords the `font` shorthand writes for its size or line height,
+// meaning the `font-size` keywords CSS Fonts 4 defines and the `normal` line
+// height.
+const SIZE_KEYWORDS  = new Set([
+  'large', 'larger', 'math', 'medium', 'normal', 'small', 'smaller', 'x-large', 'x-small',
+  'xx-large', 'xx-small', 'xxx-large'
+])
 const COLOR_KEYWORDS = new Set(['currentcolor', 'transparent'])
+const SYSTEM_FONTS   = new Set([
+  'caption', 'icon', 'menu', 'message-box', 'small-caption', 'status-bar'
+])
 const WIDE_KEYWORDS  = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
 
 const SITE   = siteDir(import.meta.url)
@@ -115,23 +127,17 @@ class Vocabulary {
 
     const face = decl.prop === 'font-family' || this.faces.has(decl.prop)
     if (face || decl.prop === 'font') {
-      // The family list of the `font` shorthand follows its last size or function.
-      const sized = nodes.findLastIndex(node =>
-        isFunctionNode(node) || (isTokenNode(node) && isTokenNumeric(node.value)))
-      for (const [index, node] of nodes.entries()) {
-        if (!isTokenNode(node)) continue
-        const token  = node.value
-        const family = (face || index > sized)
-          && isTokenIdent(token) && !WIDE_KEYWORDS.has(token[4].value.toLowerCase())
+      for (const { value: token } of families(!face, nodes).filter(isTokenNode)) {
+        const family = isTokenIdent(token) && !WIDE_KEYWORDS.has(token[4].value.toLowerCase())
         if (isTokenString(token) || family) report('typeface', token[2], token[1])
       }
     }
     return found
   }
 
-  // Lists each media or container query that writes a dimension or names a
-  // custom media nothing declares, beside each custom media a stylesheet
-  // declares for itself.
+  // Lists each media or container query that writes a dimension, and each media
+  // query naming a custom media nothing declares, beside each custom media a
+  // stylesheet declares for itself.
   private mediaStrays(root: Root): Stray[] {
     const found: Stray[] = []
     root.walkAtRules('custom-media', rule => {
@@ -139,7 +145,8 @@ class Vocabulary {
     })
     root.walkAtRules(/^(container|media)$/, rule => {
       for (const token of tokenize({ css: rule.params })) {
-        const custom = isTokenIdent(token) && token[4].value.startsWith('--')
+        const custom = rule.name === 'media'
+          && isTokenIdent(token) && token[4].value.startsWith('--')
         if (isTokenDimension(token) || (custom && !this.media.has(token[4].value))) {
           found.push({ kind: 'media', line: rule.source!.start!.line, value: token[1] })
         }
@@ -177,18 +184,46 @@ for (const [, prop] of read('.vitepress/config.ts').matchAll(/(--prose-[\w-]+):/
   VOCABULARY.properties.add(prop)
 }
 
-// Names each custom property the sheets read as a font family.
+// Names each custom property the sheets read as a font family, directly or
+// through another custom property that a family list reads.
 function facedBy(sheets: string[]): Set<string> {
   const faced = new Set<string>()
-  for (const sheet of sheets) {
-    parse(sheet).walkDecls(/^font(-family)?$/, decl => {
-      for (const node of parseListOfComponentValues(tokenize({ css: decl.value }))) {
-        const ref = named(node, 'var') ? referenced(node) : undefined
-        if (ref) faced.add(ref[4].value)
-      }
-    })
+  const roots = sheets.map(sheet => parse(sheet))
+  for (let size = -1; size !== faced.size;) {
+    size = faced.size
+    for (const root of roots) {
+      root.walkDecls(decl => {
+        if (decl.prop !== 'font' && decl.prop !== 'font-family' && !faced.has(decl.prop)) return
+        const nodes = parseListOfComponentValues(tokenize({ css: decl.value }))
+        for (const node of families(decl.prop === 'font', nodes)) {
+          const ref = named(node, 'var') ? referenced(node) : undefined
+          if (ref) faced.add(ref[4].value)
+        }
+      })
+    }
   }
   return faced
+}
+
+// Returns the family list a `font` or `font-family` value writes, beside the
+// fallback each `var()` in it holds. In the `font` shorthand the list starts
+// after the last size or line height ahead of its first comma, or at the last
+// value there where a `var()` holds the size, and a system font keyword holds
+// no family.
+function families(shorthand: boolean, nodes: ComponentValue[]): ComponentValue[] {
+  const keyword = (node: ComponentValue) =>
+    isTokenNode(node) && isTokenIdent(node.value) ? node.value[4].value.toLowerCase() : ''
+  const comma = nodes.findIndex(node => isTokenNode(node) && isTokenComma(node.value))
+  const head  = nodes.slice(0, comma < 0 ? nodes.length : comma)
+  const last  = head.findLastIndex(node => !isWhitespaceNode(node))
+  const sized = head.findLastIndex(node => isFunctionNode(node) || SIZE_KEYWORDS.has(keyword(node))
+    || (isTokenNode(node) && isTokenNumeric(node.value)))
+  if (shorthand && comma < 0 && last === 0 && SYSTEM_FONTS.has(keyword(head[0]))) return []
+  return nodes.slice(shorthand ? Math.min(sized + 1, last) : 0).flatMap(node => {
+    if (!named(node, 'var')) return [node]
+    const fallback = node.value.findIndex(item => isTokenNode(item) && isTokenComma(item.value))
+    return fallback < 0 ? [node] : [node, ...families(false, node.value.slice(fallback + 1))]
+  })
 }
 
 // Names each custom property the sheets read as a `color-mix()` argument,
@@ -269,6 +304,15 @@ describe('strays', () => {
     { css: '.a { font: var(--prose-text-1rem) "Lora"; }',                                       kind: 'typeface', value: '"Lora"' },
     { css: '.a { font: 600 var(--prose-text-1rem) Georgia; }',                                  kind: 'typeface', value: 'Georgia' },
     { css: '.a { --a: Georgia; font-family: var(--a); }',                                       kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font: italic 100% Georgia; }',                                                 kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font: italic var(--prose-text-1rem) Georgia; }',                               kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font: italic bold larger Georgia; }',                                          kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font: var(--prose-text-1rem) / normal Georgia; }',                             kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font: var(--prose-text-1rem) Georgia, var(--vp-font-family-base); }',          kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font-family: Georgia, var(--vp-font-family-base); }',                          kind: 'typeface', value: 'Georgia' },
+    { css: '.a { font-family: var(--vp-font-family-base, Georgia); }',                          kind: 'typeface', value: 'Georgia' },
+    { css: '.a { --a: Georgia; font: var(--prose-text-1rem) var(--a); }',                       kind: 'typeface', value: 'Georgia' },
+    { css: '.a { --a: var(--b); --b: Georgia; font-family: var(--a); }',                        kind: 'typeface', value: 'Georgia' },
     { css: '@container (min-width: 400px) { .a { color: inherit; } }',                          kind: 'media',    value: '400px' },
     { css: '@custom-media --a (max-width: 999px);',                                             kind: 'media',    value: '--a' },
     { css: '@media (min-width: 1280px) { .a { color: inherit; } }',                             kind: 'media',    value: '1280px' },
@@ -299,6 +343,10 @@ describe('strays', () => {
       '  line-height : 1.6;',
       '}',
       '.b { font-family: inherit; }',
+      '.c { --weight: bold; font: var(--weight) var(--prose-text-sm) var(--prose-font-display); }',
+      '.d { font: caption; }',
+      '@container card (inline-size > 0) { .a { color: inherit; } }',
+      '@container --card (inline-size > 0) { .a { color: inherit; } }',
       '@media (--prose-bp-wide) { .a { color: inherit; } }',
       '@media (prefers-reduced-motion: reduce) { .a { color: inherit; } }'
     ].join('\n')

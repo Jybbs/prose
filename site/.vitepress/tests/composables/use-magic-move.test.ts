@@ -70,10 +70,10 @@ describe('useMagicMove', () => {
     expect(panel.value).toBeNull()
     expect(watchdogMs.value).toBe(magicMoveWatchdogMs(0))
 
-    document.documentElement.style.setProperty('--prose-rule-draw-ms', '420')
+    document.documentElement.style.setProperty('--prose-rule-draw-ms', '300')
     onTestFinished(() => { document.documentElement.style.removeProperty('--prose-rule-draw-ms') })
     await precompile('a', 'b')
     expect(panel.value).not.toBeNull()
-    expect(watchdogMs.value).toBe(magicMoveWatchdogMs(420))
+    expect(watchdogMs.value).toBe(magicMoveWatchdogMs(300))
   })
 })
