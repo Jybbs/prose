@@ -1,12 +1,12 @@
 .primitives-composition-card {
   display        : flex;
   flex-direction : column;
-  gap            : 14px;
-  margin-top     : 14px;
-  padding        : 18px 22px;
+  gap            : var(--prose-space-14);
+  margin-top     : var(--prose-space-14);
+  padding        : var(--prose-space-18) var(--prose-space-22);
   background     : var(--vp-c-bg);
-  border         : 1px solid var(--vp-c-divider);
-  border-top     : 3px solid var(--layer-accent);
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
+  border-top     : var(--prose-border-3) solid var(--layer-accent);
   border-radius  : var(--prose-radius-sm);
 }
 
@@ -14,39 +14,39 @@
   display        : flex;
   align-items    : center;
   text-align     : left;
-  gap            : 14px;
-  padding-bottom : 12px;
-  border-bottom  : 1px solid color-mix(in srgb, var(--vp-c-divider) 70%, var(--layer-accent));
+  gap            : var(--prose-space-14);
+  padding-bottom : var(--prose-space-12);
+  border-bottom  : var(--prose-border-1) solid color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-70), var(--layer-accent));
 }
 
 .primitives-composition-card-layer-numeral {
-  width       : 32px;
-  height      : 32px;
-  font-size   : 1.05rem;
+  width       : var(--prose-size-32);
+  height      : var(--prose-size-32);
+  font-size   : var(--prose-text-1-05rem);
   line-height : 1;
   background  : var(--layer-accent);
-  box-shadow  : 0 0 0 2px color-mix(in srgb, var(--layer-accent) 25%, var(--vp-c-bg));
+  box-shadow  : 0 0 0 var(--prose-border-2) color-mix(in srgb, var(--layer-accent) var(--prose-tint-25), var(--vp-c-bg));
   flex-shrink : 0;
 }
 
 .primitives-composition-card-head-text {
   display        : flex;
   flex-direction : column;
-  gap            : 3px;
+  gap            : var(--prose-space-3);
   min-width      : 0;
   flex           : 1;
 }
 
 .primitives-composition-card-name {
   font-family : var(--prose-font-display);
-  font-size   : 1rem;
+  font-size   : var(--prose-text-1rem);
   line-height : 1.1;
   color       : var(--vp-c-text-1);
 }
 
 .primitives-composition-card-summary {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.68rem;
+  font-size   : var(--prose-text-0-68rem);
   line-height : 1.5;
   color       : var(--vp-c-text-2);
 }
@@ -54,38 +54,38 @@
 .vp-doc .primitives-composition-card-summary code,
 .primitives-composition-card-summary code {
   font-family   : var(--vp-font-family-mono);
-  font-size     : 1em;
+  font-size     : var(--prose-text-1em);
   color         : var(--vp-c-brand-1);
   background    : var(--vp-c-default-soft);
-  padding       : 1px 4px;
-  border-radius : 4px;
+  padding       : var(--prose-space-1) var(--prose-space-4);
+  border-radius : var(--prose-radius-sm);
 }
 
 .primitives-composition-card-rel {
   display               : grid;
-  grid-template-columns : 78px minmax(0, 1fr);
-  column-gap            : 10px;
+  grid-template-columns : var(--prose-size-78) minmax(0, 1fr);
+  column-gap            : var(--prose-space-10);
   align-items           : center;
 }
 
 .primitives-composition-card-rel-label {
   font-family    : var(--vp-font-family-mono);
-  font-size      : 0.54rem;
+  font-size      : var(--prose-text-0-54rem);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
   text-align     : left;
   white-space    : nowrap;
-  color          : color-mix(in srgb, var(--layer-accent) 70%, var(--vp-c-text-2));
+  color          : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-2));
 }
 
 .primitives-composition-card-rel-mentions {
   display     : flex;
   flex-wrap   : wrap;
   align-items : center;
-  gap         : 5px 16px;
-  min-height  : 24px;
+  gap         : var(--prose-space-5) var(--prose-space-16);
+  min-height  : var(--prose-size-24);
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.68rem;
+  font-size   : var(--prose-text-0-68rem);
   color       : var(--vp-c-text-2);
 }
 
@@ -93,21 +93,21 @@
 .primitives-composition-card-mention {
   display              : inline-flex;
   align-items          : center;
-  gap                  : 5px;
-  font-size            : 0.68rem;
+  gap                  : var(--prose-space-5);
+  font-size            : var(--prose-text-0-68rem);
   color                : var(--vp-c-text-1);
   text-decoration-line : none;
-  border-bottom        : 1px solid transparent;
+  border-bottom        : var(--prose-border-1) solid transparent;
   transition           : color        140ms var(--prose-ease-emphasized),
                          border-color 140ms var(--prose-ease-emphasized);
 }
 
 .vp-doc .primitives-composition-card-mention[data-layer="base"],
-.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--layer-base)          70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-base)          40%, transparent); }
+.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--layer-base)          var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-base)          var(--prose-tint-40), transparent); }
 .vp-doc .primitives-composition-card-mention[data-layer="orchestration"],
-.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--layer-orchestration) 70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-orchestration) 40%, transparent); }
+.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--layer-orchestration) var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-orchestration) var(--prose-tint-40), transparent); }
 .vp-doc .primitives-composition-card-mention[data-layer="analysis"],
-.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--layer-analysis)      70%, var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-analysis)      40%, transparent); }
+.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--layer-analysis)      var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-analysis)      var(--prose-tint-40), transparent); }
 
 .vp-doc .primitives-composition-card-mention:hover,
 .primitives-composition-card-mention:hover {
@@ -115,9 +115,9 @@
 }
 
 .primitives-composition-card-mention-chip {
-  width       : 18px;
-  height      : 18px;
-  font-size   : 0.7rem;
+  width       : var(--prose-size-18);
+  height      : var(--prose-size-18);
+  font-size   : var(--prose-text-xxs);
   line-height : 1;
 }
 
@@ -130,7 +130,7 @@
 }
 
 .primitives-composition-card-mention-ext {
-  font-size : 0.68rem;
+  font-size : var(--prose-text-0-68rem);
   color     : var(--vp-c-text-3);
 }
 
@@ -143,7 +143,7 @@
 .primitives-composition-card-mention-item:not(:last-child)::after {
   content        : "·";
   position       : absolute;
-  left           : calc(100% + 8px);
+  left           : calc(100% + var(--prose-space-8));
   top            : 50%;
   transform      : translate(-50%, -50%);
   color          : var(--vp-c-text-3);
@@ -155,14 +155,14 @@
 }
 
 .primitives-composition-card-rel-mentions a.rule-chip {
-  gap         : 6px;
-  padding     : 2px 8px 2px 6px;
-  font-size   : 0.68rem;
+  gap         : var(--prose-space-6);
+  padding     : var(--prose-space-2) var(--prose-space-8) var(--prose-space-2) var(--prose-space-6);
+  font-size   : var(--prose-text-0-68rem);
   line-height : 1.5;
 }
 
 .primitives-composition-card-rel-mentions .rule-chip-slug {
-  font-size : 0.68rem;
+  font-size : var(--prose-text-0-68rem);
 }
 
 .primitives-composition-card-hint {

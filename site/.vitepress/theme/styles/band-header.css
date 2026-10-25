@@ -1,7 +1,7 @@
 .band-head {
   display     : flex;
   align-items : center;
-  gap         : 9px;
+  gap         : var(--prose-space-9);
 }
 
 .band-name {
@@ -9,12 +9,12 @@
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : color-mix(in srgb, var(--band-accent) 75%, var(--vp-c-text-2));
+  color          : color-mix(in srgb, var(--band-accent) var(--prose-tint-75), var(--vp-c-text-2));
   flex-shrink    : 0;
 }
 
 .band-rule {
   flex-grow  : 1;
-  height     : 1px;
-  background : color-mix(in srgb, var(--band-accent) 30%, var(--vp-c-divider));
+  height     : var(--prose-size-1);
+  background : color-mix(in srgb, var(--band-accent) var(--prose-tint-30), var(--vp-c-divider));
 }

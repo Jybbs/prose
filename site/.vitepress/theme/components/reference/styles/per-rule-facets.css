@@ -5,18 +5,18 @@
 .per-rule-facets {
   display        : flex;
   flex-direction : column;
-  gap            : 6px;
-  margin         : 1.5rem 0;
+  gap            : var(--prose-space-6);
+  margin         : var(--prose-space-1-5rem) 0;
 }
 
 .per-rule-facets-head {
   display     : flex;
   align-items : center;
-  gap         : 9px;
+  gap         : var(--prose-space-9);
   width       : 100%;
-  padding     : 7px 0 7px 14px;
+  padding     : var(--prose-space-7) 0 var(--prose-space-7) var(--prose-space-14);
   border      : none;
-  border-left : 2px solid var(--family-color);
+  border-left : var(--prose-border-2) solid var(--family-color);
   background  : transparent;
   text-align  : left;
   cursor      : pointer;
@@ -31,9 +31,9 @@
   flex          : none;
   width         : 0;
   height        : 0;
-  border-top    : 4px solid transparent;
-  border-bottom : 4px solid transparent;
-  border-left   : 5px solid var(--family-color);
+  border-top    : var(--prose-border-4) solid transparent;
+  border-bottom : var(--prose-border-4) solid transparent;
+  border-left   : var(--prose-border-5) solid var(--family-color);
   transition    : transform var(--prose-transition);
 }
 
@@ -43,12 +43,12 @@
 
 .vp-doc .per-rule-facets-label {
   margin : 0;
-  color  : color-mix(in srgb, var(--family-color) 76%, var(--vp-c-text-1));
+  color  : color-mix(in srgb, var(--family-color) var(--prose-tint-76), var(--vp-c-text-1));
 }
 
 .per-rule-facets-label .nib-badge {
-  margin-right   : 3px;
-  vertical-align : -2px;
+  margin-right   : var(--prose-space-3);
+  vertical-align : calc(var(--prose-space-2) * -1);
 }
 
 .per-rule-facets-count {
@@ -57,25 +57,25 @@
 
 .per-rule-facets-count::before {
   content : '·';
-  margin  : 0 0.5em;
+  margin  : 0 var(--prose-space-0-5em);
 }
 
 .per-rule-facets-body {
-  padding : 10px 0 2px;
+  padding : var(--prose-space-10) 0 var(--prose-space-2);
 }
 
 .per-rule-facets-rule {
-  padding-left : 14px;
-  border-left  : 2px solid var(--family-color);
+  padding-left : var(--prose-space-14);
+  border-left  : var(--prose-border-2) solid var(--family-color);
 }
 
 .per-rule-facets-rule + .per-rule-facets-rule {
-  margin-top : 18px;
+  margin-top : var(--prose-space-18);
 }
 
 .vp-doc .per-rule-facets-rule-head {
   display : flex;
-  margin  : 0 0 10px -14px;
+  margin  : 0 0 var(--prose-space-10) calc(var(--prose-space-14) * -1);
 }
 
 .per-rule-facets-rule-head .v-popper--theme-rule-card {
@@ -84,11 +84,11 @@
 
 .per-rule-facets-scope {
   display       : inline-block;
-  padding       : 3px 10px;
+  padding       : var(--prose-space-3) var(--prose-space-10);
   border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
   background    : var(--family-color);
   font-family   : var(--vp-font-family-mono);
-  font-size     : 0.85em;
+  font-size     : var(--prose-text-0-85em);
   color         : var(--vp-c-bg);
 }
 
@@ -105,7 +105,7 @@
 }
 
 .per-rule-facets-entry {
-  padding : 10px 0;
+  padding : var(--prose-space-10) 0;
 }
 
 .per-rule-facets-entry:first-child {
@@ -117,14 +117,14 @@
 }
 
 .per-rule-facets-entry + .per-rule-facets-entry {
-  border-top : 1px solid var(--vp-c-divider);
+  border-top : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .per-rule-facets-term {
   display     : flex;
   flex-wrap   : wrap;
   align-items : center;
-  gap         : 0.4rem 0.75rem;
+  gap         : var(--prose-space-0-4rem) var(--prose-space-0-75rem);
   margin      : 0;
 }
 
@@ -141,7 +141,7 @@
 
   position    : static;
   align-self  : center;
-  margin-left : 0.3em;
+  margin-left : var(--prose-space-0-3em);
   font-size   : var(--prose-text-sm);
 }
 
@@ -152,12 +152,12 @@
 .per-rule-facets-badges {
   display     : inline-flex;
   align-items : center;
-  gap         : 0.4rem;
+  gap         : var(--prose-space-0-4rem);
   margin-left : auto;
 }
 
 .per-rule-facets-badges > span {
-  padding       : 2px 0.5em;
+  padding       : var(--prose-space-2) var(--prose-space-0-5em);
   border-radius : var(--prose-radius-sm);
   font-size     : var(--prose-text-xs);
 }
@@ -171,8 +171,8 @@
 .per-rule-facets-default {
   display     : inline-flex;
   align-items : baseline;
-  gap         : 0.4em;
-  background  : color-mix(in srgb, var(--family-color) 14%, transparent);
+  gap         : var(--prose-space-0-4em);
+  background  : color-mix(in srgb, var(--family-color) var(--prose-tint-medium), transparent);
 }
 
 .per-rule-facets-default-label {
@@ -185,9 +185,9 @@
 }
 
 .vp-doc .per-rule-facets-meaning {
-  max-width    : 62ch;
-  margin       : 6px 0 0;
-  padding-left : 0.9rem;
+  max-width    : var(--prose-width-62ch);
+  margin       : var(--prose-space-6) 0 0;
+  padding-left : var(--prose-space-0-9rem);
   font-size    : var(--prose-text-sm);
   line-height  : 1.6;
   color        : var(--vp-c-text-2);

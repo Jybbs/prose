@@ -13,7 +13,7 @@
   position      : absolute;
   inset         : 0;
   border        : 0;
-  border-radius : calc(var(--prose-radius) - 1px);
+  border-radius : calc(var(--prose-radius) - var(--prose-border-1));
   background    : transparent;
   color         : transparent;
   caret-color   : var(--vp-c-text-1);
@@ -23,5 +23,5 @@
 
 .sandbox-code-editor-input:focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : -2px;
+  outline-offset : calc(var(--prose-space-2) * -1);
 }

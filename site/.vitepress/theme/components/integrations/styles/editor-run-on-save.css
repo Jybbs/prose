@@ -1,27 +1,27 @@
 .editor-card {
   display               : grid;
-  grid-template-columns : 232px 1fr;
-  margin                : 1.5rem 0;
+  grid-template-columns : var(--prose-width-232) 1fr;
+  margin                : var(--prose-space-1-5rem) 0;
   background            : var(--vp-c-bg);
 }
 
 .editor-card-index {
-  padding      : 14px 14px 18px 18px;
-  border-right : 1px solid var(--vp-c-divider);
+  padding      : var(--prose-space-14) var(--prose-space-14) var(--prose-space-18) var(--prose-space-18);
+  border-right : var(--prose-border-1) solid var(--vp-c-divider);
   background   : var(--vp-c-bg-soft);
 }
 
 .editor-card-edition {
   display        : block;
-  margin-bottom  : 14px;
-  padding-bottom : 13px;
-  border-bottom  : 2px double var(--vp-c-divider);
+  margin-bottom  : var(--prose-space-14);
+  padding-bottom : var(--prose-space-13);
+  border-bottom  : var(--prose-border-2) double var(--vp-c-divider);
 }
 
 .editor-card .editor-card-list {
   display        : flex;
   flex-direction : column;
-  gap            : 2px;
+  gap            : var(--prose-space-2);
   margin         : 0;
   padding        : 0;
   list-style     : none;
@@ -34,9 +34,9 @@
 .editor-card-row {
   display       : flex;
   align-items   : center;
-  gap           : 10px;
+  gap           : var(--prose-space-10);
   width         : 100%;
-  padding       : 8px;
+  padding       : var(--prose-space-8);
   border        : 0;
   border-radius : var(--prose-radius-sm);
   background    : transparent;
@@ -47,11 +47,11 @@
 }
 
 .editor-card-row:hover {
-  background : color-mix(in srgb, var(--prose-palette-celadon) 7%, transparent);
+  background : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-7), transparent);
 }
 
 .editor-card-row.is-active {
-  background : color-mix(in srgb, var(--prose-palette-celadon) 14%, transparent);
+  background : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-medium), transparent);
 }
 
 .editor-card-row-mark,
@@ -60,29 +60,29 @@
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
-  width           : var(--mark-size, 22px);
-  height          : var(--mark-size, 22px);
+  width           : var(--mark-size, var(--prose-size-22));
+  height          : var(--mark-size, var(--prose-size-22));
   flex            : 0 0 auto;
-  border          : 1px solid color-mix(in srgb, var(--prose-palette-celadon) var(--mark-strength, 28%), var(--vp-c-divider));
+  border          : var(--prose-border-1) solid color-mix(in srgb, var(--prose-palette-celadon) var(--mark-strength, var(--prose-tint-28)), var(--vp-c-divider));
   border-radius   : 50%;
   background      : var(--vp-c-bg);
 }
 
 .shell-card-modal-mark {
-  --mark-size      : 26px;
-  --mark-strength  : 60%;
-  --mark-icon-size : 14px;
+  --mark-size      : var(--prose-size-26);
+  --mark-strength  : var(--prose-tint-60);
+  --mark-icon-size : var(--prose-size-14);
 }
 
 .editor-card-row.is-active .editor-card-row-mark {
-  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-65), var(--vp-c-divider));
 }
 
 .editor-card-row-mark .tool-mark-icon,
 .shell-card-tab-mark .tool-mark-icon,
 .shell-card-modal-mark .tool-mark-icon {
-  width          : var(--mark-icon-size, 12px);
-  height         : var(--mark-icon-size, 12px);
+  width          : var(--mark-icon-size, var(--prose-size-12));
+  height         : var(--mark-icon-size, var(--prose-size-12));
   margin-right   : 0;
   vertical-align : 0;
 }
@@ -100,7 +100,7 @@
 }
 
 .editor-card-row.is-active .editor-card-row-name {
-  color : color-mix(in srgb, var(--prose-palette-celadon) 60%, var(--vp-c-text-1));
+  color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-60), var(--vp-c-text-1));
 }
 
 .editor-card-faces {
@@ -119,9 +119,9 @@
 .editor-card-face-head {
   display       : flex;
   align-items   : baseline;
-  gap           : 10px;
-  padding       : 14px 18px;
-  border-bottom : 1px solid var(--vp-c-divider);
+  gap           : var(--prose-space-10);
+  padding       : var(--prose-space-14) var(--prose-space-18);
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .editor-card-face-target {
@@ -150,13 +150,13 @@
 
   .editor-card-index {
     border-right  : none;
-    border-bottom : 1px solid var(--vp-c-divider);
+    border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
   }
 
   .editor-card-list {
     flex-direction : row;
     flex-wrap      : wrap;
-    gap            : 4px;
+    gap            : var(--prose-space-4);
   }
 
   .editor-card-row {

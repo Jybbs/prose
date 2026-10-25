@@ -1,8 +1,8 @@
 .underline-draw {
-  background : linear-gradient(var(--underline-accent), var(--underline-accent)) no-repeat left bottom / 0% 1px;
+  background : linear-gradient(var(--underline-accent), var(--underline-accent)) no-repeat left bottom / 0% var(--prose-size-1);
   transition : background-size var(--prose-transition-slow);
 }
 
 .underline-draw:hover {
-  background-size : 100% 1px;
+  background-size : 100% var(--prose-size-1);
 }

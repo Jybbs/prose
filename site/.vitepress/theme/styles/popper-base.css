@@ -4,7 +4,7 @@
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card).v-popper__popper--hidden .v-popper__wrapper {
   opacity   : 0;
-  transform : translateY(-4px);
+  transform : translateY(calc(var(--prose-space-4) * -1));
 }
 
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card).v-popper__popper--shown .v-popper__wrapper {

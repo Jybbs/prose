@@ -1,19 +1,19 @@
 .sandbox {
   position  : relative;
   left      : 50%;
-  width     : min(94rem, calc(100vw - 3rem));
+  width     : min(var(--prose-width-94rem), calc(100vw - var(--prose-space-3rem)));
   transform : translateX(-50%);
 }
 
 .sandbox-surfaces {
   display               : grid;
   grid-template-columns : minmax(0, 2fr) minmax(0, 1fr);
-  gap                   : 1.25rem;
+  gap                   : var(--prose-space-1-25rem);
   align-items           : stretch;
 }
 
 .sandbox-surfaces > * {
-  min-height : 30rem;
+  min-height : var(--prose-size-30rem);
 }
 
 .sandbox-py {
@@ -44,11 +44,11 @@
 }
 
 .sandbox-refresh {
-  right : 40px;
+  right : var(--prose-space-40);
 }
 
 .sandbox-share {
-  right : 72px;
+  right : var(--prose-space-72);
 }
 
 .sandbox-refresh[data-armed] {
@@ -59,29 +59,29 @@
 
 .sandbox-refresh-tip {
   position       : absolute;
-  top            : 8px;
-  right          : 108px;
+  top            : var(--prose-space-8);
+  right          : var(--prose-space-108);
   z-index        : 3;
   display        : flex;
   align-items    : center;
-  height         : 28px;
-  padding        : 0 10px;
-  border         : 1px solid color-mix(in srgb, var(--prose-role-warning) 55%, var(--vp-c-divider));
+  height         : var(--prose-size-28);
+  padding        : 0 var(--prose-space-10);
+  border         : var(--prose-border-1) solid color-mix(in srgb, var(--prose-role-warning) var(--prose-tint-55), var(--vp-c-divider));
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
   box-shadow     : var(--prose-shadow-tooltip);
   color          : var(--vp-c-text-1);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xxs);
-  letter-spacing : 0.04em;
+  letter-spacing : var(--prose-tracking-0-04em);
   white-space    : nowrap;
   pointer-events : none;
 }
 
 .sandbox-announce {
   position    : absolute;
-  width       : 1px;
-  height      : 1px;
+  width       : var(--prose-size-1);
+  height      : var(--prose-size-1);
   margin      : 0;
   overflow    : hidden;
   clip        : rect(0 0 0 0);
@@ -91,7 +91,7 @@
 .sandbox-deck {
   position      : relative;
   z-index       : 20;
-  margin-bottom : 1.5rem;
+  margin-bottom : var(--prose-space-1-5rem);
   background    : var(--vp-c-bg-soft);
 }
 
@@ -102,10 +102,10 @@
 
 .sandbox-deck-lock {
   position   : absolute;
-  top        : 4px;
-  right      : 8px;
+  top        : var(--prose-space-4);
+  right      : var(--prose-space-8);
   z-index    : 1;
-  padding    : 6px;
+  padding    : var(--prose-space-6);
   border     : 0;
   background : transparent;
   color      : var(--vp-c-text-3);
@@ -123,15 +123,15 @@
 
 .sandbox-deck-lock:focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : 1px;
+  outline-offset : var(--prose-space-1);
 }
 
 .sandbox-deck-lock-icon {
-  --glyph-size : 15px;
+  --glyph-size : var(--prose-size-15);
 }
 
 .sandbox-deck-body {
-  padding : 0.75rem 1.25rem 1.25rem;
+  padding : var(--prose-space-0-75rem) var(--prose-space-1-25rem) var(--prose-space-1-25rem);
 }
 
 .sandbox-deck-head {
@@ -139,7 +139,7 @@
   align-items     : center;
   justify-content : center;
   width           : 100%;
-  padding         : 0.45rem;
+  padding         : var(--prose-space-0-45rem);
   border          : 0;
   background      : transparent;
   color           : var(--vp-c-text-2);
@@ -149,16 +149,16 @@
 
 .sandbox-deck-head:hover {
   color      : var(--vp-c-text-1);
-  background : color-mix(in srgb, var(--vp-c-text-1) 4%, transparent);
+  background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-4), transparent);
 }
 
 .sandbox-deck-head[aria-expanded='true'] {
-  border-bottom : 1px solid var(--vp-c-divider);
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .sandbox-deck-head:focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : -2px;
+  outline-offset : calc(var(--prose-space-2) * -1);
 }
 
 @media (--prose-bp-tablet) {
@@ -184,7 +184,7 @@
 
 .sandbox-toml-gutter {
   flex-shrink : 0;
-  padding     : 18px 0 18px 10px;
+  padding     : var(--prose-space-18) 0 var(--prose-space-18) var(--prose-space-10);
   font-size   : var(--prose-text-xs);
   line-height : 1.6;
   user-select : none;
@@ -192,7 +192,7 @@
 
 .sandbox-toml-gutter > span {
   display : block;
-  width   : 12px;
+  width   : var(--prose-size-12);
   height  : calc(var(--prose-text-xs) * 1.6);
 }
 
@@ -200,13 +200,13 @@
   content     : "▲";
   display     : block;
   color       : var(--vp-c-warning-1);
-  font-size   : 0.58rem;
+  font-size   : var(--prose-text-0-58rem);
   line-height : inherit;
   text-align  : center;
 }
 
 .sandbox-toml-body .code-panel-code {
-  padding-left : 8px;
+  padding-left : var(--prose-space-8);
 }
 
 /* An unrecognized key is not a lint finding, so the wave takes the warning hue
@@ -218,7 +218,7 @@
 }
 
 .sandbox-toml-display .line:has(.lint-flag) {
-  background : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+  background : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-10), transparent);
 }
 
 /* The count sits in the strip the message list used to hold. That keeps the
@@ -226,23 +226,23 @@
 .config-notice-strip {
   display        : flex;
   align-items    : center;
-  gap            : 6px;
+  gap            : var(--prose-space-6);
   margin         : 0;
-  padding        : 7px 14px;
-  border-top     : 1px solid var(--vp-c-divider);
-  background     : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+  padding        : var(--prose-space-7) var(--prose-space-14);
+  border-top     : var(--prose-border-1) solid var(--vp-c-divider);
+  background     : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-10), transparent);
   color          : var(--vp-c-warning-1);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
-  letter-spacing : 0.02em;
+  letter-spacing : var(--prose-tracking-0-02em);
 }
 
 .config-notice-popover .config-notice-card {
   display        : flex;
   flex-direction : column;
-  gap            : 12px;
-  max-width      : 42ch;
-  padding        : 4px 2px;
+  gap            : var(--prose-space-12);
+  max-width      : var(--prose-width-42ch);
+  padding        : var(--prose-space-4) var(--prose-space-2);
 }
 
 /* The trail places the key under the tables it was written in, so the struck
@@ -251,7 +251,7 @@
   display     : flex;
   align-items : center;
   flex-wrap   : wrap;
-  gap         : 5px;
+  gap         : var(--prose-space-5);
   margin      : 0;
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-xs);
@@ -269,16 +269,16 @@
 .config-notice-fixes {
   display        : flex;
   flex-direction : column;
-  gap            : 7px;
+  gap            : var(--prose-space-7);
 }
 
 .config-notice-fix {
   display        : grid;
-  grid-template-columns: 14px 1fr auto;
+  grid-template-columns: var(--prose-size-14) 1fr auto;
   align-items    : center;
-  gap            : 9px;
-  padding        : 7px 11px;
-  border         : 1px solid var(--vp-c-divider);
+  gap            : var(--prose-space-9);
+  padding        : var(--prose-space-7) var(--prose-space-11);
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
   color          : var(--vp-c-text-1);
@@ -291,8 +291,8 @@
 
 .config-notice-fix:hover,
 .config-notice-fix:focus-visible {
-  border-color : color-mix(in srgb, var(--vp-c-warning-1) 55%, transparent);
-  background   : color-mix(in srgb, var(--vp-c-warning-1) 10%, transparent);
+  border-color : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-55), transparent);
+  background   : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-10), transparent);
 }
 
 .config-notice-default {
@@ -311,12 +311,12 @@
 
 .config-notice-absent {
   display              : grid;
-  grid-template-columns: 14px 1fr;
+  grid-template-columns: var(--prose-size-14) 1fr;
   align-items          : center;
-  gap                  : 9px;
-  margin               : 2px 0 0;
-  padding              : 5px 12px;
-  border-top           : 1px solid var(--vp-c-divider);
+  gap                  : var(--prose-space-9);
+  margin               : var(--prose-space-2) 0 0;
+  padding              : var(--prose-space-5) var(--prose-space-12);
+  border-top           : var(--prose-border-1) solid var(--vp-c-divider);
   font-family          : var(--vp-font-family-mono);
   font-size            : var(--prose-text-xs);
 }

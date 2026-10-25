@@ -7,7 +7,7 @@
 }
 
 .v-popper--theme-rule-card {
-  --rule-card-popper-border : color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
+  --rule-card-popper-border : color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
 }
 
 .v-popper--theme-rule-card .v-popper__arrow-outer {
@@ -26,11 +26,11 @@
 
 .v-popper--theme-rule-card .rule-card {
   width         : max-content;
-  max-width     : min(calc(100vw - 32px), 600px);
+  max-width     : min(calc(100vw - var(--prose-space-32)), var(--prose-width-600));
   height        : auto;
-  min-height    : 64px;
-  border        : 2px solid var(--rule-card-popper-border);
-  border-top    : 3px solid var(--family-color);
+  min-height    : var(--prose-size-64);
+  border        : var(--prose-border-2) solid var(--rule-card-popper-border);
+  border-top    : var(--prose-border-3) solid var(--family-color);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
@@ -42,7 +42,7 @@
 }
 
 .v-popper--theme-rule-card .rule-card-caption {
-  max-width     : var(--rule-card-caption-width, 30rem);
+  max-width     : var(--rule-card-caption-width, var(--prose-width-30rem));
   text-wrap     : balance;
   overflow-wrap : anywhere;
 }

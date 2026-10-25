@@ -7,21 +7,20 @@
 @keyframes sandbox-plate-settle {
   from {
     opacity   : 0;
-    translate : 0 -4px;
+    translate : 0 calc(var(--prose-space-4) * -1);
   }
 }
 
 .sandbox-plate {
-  --prose-panel-wash : color-mix(in srgb, var(--vp-c-bg-alt) 35%, var(--vp-c-bg));
-  --sandbox-plate-accent     : var(--family-color, var(--vp-c-brand-1));
-  --sandbox-plate-control-h  : 22px;
-  --sandbox-plate-switch-w   : 40px;
+  --sandbox-plate-accent    : var(--family-color, var(--vp-c-brand-1));
+  --sandbox-plate-control-h : var(--prose-size-22);
+  --sandbox-plate-switch-w  : var(--prose-size-40);
 
   width         : 100%;
   min-width     : 0;
-  border        : 1px solid color-mix(in srgb, var(--sandbox-plate-accent) 40%, var(--vp-c-divider));
+  border        : var(--prose-border-1) solid color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-40), var(--vp-c-divider));
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--sandbox-plate-accent) 4%, var(--prose-panel-wash));
+  background    : color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-4), var(--prose-panel-wash-card));
 }
 
 .sandbox-plate .rule-card {
@@ -34,7 +33,7 @@
 }
 
 .sandbox-plate-stub {
-  padding : 12px 16px;
+  padding : var(--prose-space-12) var(--prose-space-16);
 }
 
 .sandbox-plate-stub-slug {
@@ -50,7 +49,7 @@
 .sandbox-plate-close {
   position     : absolute;
   top          : 50%;
-  right        : 16px;
+  right        : var(--prose-space-16);
   border-color : var(--vp-c-divider);
   background   : var(--vp-c-bg);
   color        : var(--vp-c-text-3);
@@ -60,14 +59,14 @@
 }
 
 .sandbox-plate-close:hover {
-  border-color : color-mix(in srgb, var(--sandbox-plate-accent) 55%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-55), var(--vp-c-divider));
   color        : var(--sandbox-plate-accent);
 }
 
 .sandbox-plate-divider {
   position         : relative;
-  height           : 1px;
-  margin           : 0 16px;
+  height           : var(--prose-size-1);
+  margin           : 0 var(--prose-space-16);
   background       : var(--vp-c-divider);
   transform        : scaleX(0);
   transform-origin : left;
@@ -77,10 +76,10 @@
 .sandbox-plate-divider::after {
   content    : "";
   position   : absolute;
-  top        : -1px;
+  top        : calc(var(--prose-space-1) * -1);
   left       : 0;
-  width      : 30px;
-  height     : 2px;
+  width      : var(--prose-size-30);
+  height     : var(--prose-size-2);
   background : var(--sandbox-plate-accent);
 }
 
@@ -89,8 +88,8 @@
 .sandbox-plate-rows {
   display               : grid;
   grid-template-columns : max-content minmax(0, 1fr) max-content;
-  column-gap            : 1.1rem;
-  padding               : 0 16px 8px;
+  column-gap            : var(--prose-space-1-1rem);
+  padding               : 0 var(--prose-space-16) var(--prose-space-8);
   animation             : sandbox-plate-settle var(--prose-transition-slow);
 }
 
@@ -99,11 +98,11 @@
   grid-column           : 1 / -1;
   grid-template-columns : subgrid;
   align-items           : center;
-  min-height            : 2.1rem;
+  min-height            : var(--prose-size-2-1rem);
 }
 
 .sandbox-plate-row + .sandbox-plate-row {
-  border-top : 1px solid var(--vp-c-divider);
+  border-top : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .sandbox-plate-label {
@@ -111,12 +110,12 @@
   font-family    : var(--vp-font-family-mono);
   font-weight    : 500;
   font-size      : var(--prose-text-xxs);
-  letter-spacing : 0.02em;
+  letter-spacing : var(--prose-tracking-0-02em);
   text-transform : uppercase;
 }
 
 .sandbox-plate-hint {
-  padding-block : 0.25rem;
+  padding-block : var(--prose-space-0-25rem);
   color         : var(--vp-c-text-3);
   font-family   : var(--vp-font-family-base);
   font-style    : italic;
@@ -125,13 +124,13 @@
 }
 
 .sandbox-plate-hint code {
-  padding       : 2px 6px;
+  padding       : var(--prose-space-2) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--vp-c-text-1) 8%, transparent);
+  background    : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-8), transparent);
   color         : var(--sandbox-plate-accent);
   font-family   : var(--vp-font-family-mono);
   font-style    : normal;
-  font-size     : 0.86em;
+  font-size     : var(--prose-text-0-86em);
   white-space   : nowrap;
 }
 
@@ -145,8 +144,8 @@
   height        : var(--sandbox-plate-control-h);
   padding       : 0;
   border        : 0;
-  border-radius : 999px;
-  background    : color-mix(in srgb, var(--vp-c-text-3) 40%, transparent);
+  border-radius : var(--prose-radius-pill);
+  background    : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-40), transparent);
   cursor        : pointer;
   transition    : background var(--prose-transition);
 }
@@ -157,23 +156,23 @@
 
 .sandbox-plate-switch-knob {
   position      : absolute;
-  top           : 3px;
-  left          : 3px;
-  width         : 16px;
-  height        : 16px;
+  top           : var(--prose-space-3);
+  left          : var(--prose-space-3);
+  width         : var(--prose-size-16);
+  height        : var(--prose-size-16);
   border-radius : 50%;
   background    : var(--vp-c-bg);
   transition    : transform var(--prose-transition);
 }
 
 .sandbox-plate-switch[aria-checked='true'] .sandbox-plate-switch-knob {
-  transform : translateX(18px);
+  transform : translateX(var(--prose-space-18));
 }
 
 .sandbox-plate-number,
 .sandbox-plate-text {
   height        : var(--sandbox-plate-control-h);
-  border        : 1px solid color-mix(in srgb, var(--sandbox-plate-accent) 55%, var(--vp-c-divider));
+  border        : var(--prose-border-1) solid color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-55), var(--vp-c-divider));
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   color         : var(--vp-c-text-1);
@@ -185,19 +184,19 @@
   width                : var(--sandbox-plate-switch-w);
   padding              : 0;
   font-variant-numeric : tabular-nums;
-  line-height          : calc(var(--sandbox-plate-control-h) - 2px);
+  line-height          : calc(var(--sandbox-plate-control-h) - var(--prose-border-2));
 }
 
 .sandbox-plate-text {
-  width   : 9rem;
-  padding : 0 0.4rem;
+  width   : var(--prose-size-9rem);
+  padding : 0 var(--prose-space-0-4rem);
 }
 
 .sandbox-plate-switch:focus-visible,
 .sandbox-plate-number:focus-visible,
 .sandbox-plate-text:focus-visible {
   outline        : var(--prose-focus-ring);
-  outline-offset : 1px;
+  outline-offset : var(--prose-space-1);
 }
 
 @media (--prose-bp-medium) {
@@ -206,8 +205,8 @@
   }
 
   .sandbox-plate-row {
-    row-gap       : 0.1rem;
-    padding-block : 0.4rem;
+    row-gap       : var(--prose-space-0-1rem);
+    padding-block : var(--prose-space-0-4rem);
   }
 
   .sandbox-plate-label {

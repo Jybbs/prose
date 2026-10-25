@@ -1,9 +1,9 @@
 .fixture {
-  margin : 1.25rem 0;
+  margin : var(--prose-space-1-25rem) 0;
 }
 
 .fixture-lead {
-  margin : 0 0 1rem;
+  margin : 0 0 var(--prose-space-1rem);
 }
 
 .fixture-lead :first-child { margin-top    : 0; }
@@ -12,21 +12,21 @@
 .fixture-bar {
   display         : flex;
   justify-content : flex-end;
-  padding         : 0 0 8px;
+  padding         : 0 0 var(--prose-space-8);
 }
 
 .fixture-toggle {
   display       : inline-flex;
-  padding       : 2px;
-  border        : 1px solid var(--vp-c-divider);
+  padding       : var(--prose-space-2);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
 }
 
 .fixture-toggle-pill {
-  padding         : 3px 12px;
+  padding         : var(--prose-space-3) var(--prose-space-12);
   border          : none;
-  border-radius   : calc(var(--prose-radius-sm) - 1px);
+  border-radius   : calc(var(--prose-radius-sm) - var(--prose-border-1));
   background      : transparent;
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-text-meta);
@@ -42,7 +42,7 @@
 }
 
 .fixture-toggle-pill[aria-selected="true"] {
-  background : color-mix(in srgb, var(--side-color) 20%, var(--vp-c-bg));
+  background : color-mix(in srgb, var(--side-color) var(--prose-tint-20), var(--vp-c-bg));
   color      : var(--side-color);
 }
 
@@ -61,7 +61,7 @@
   display         : flex;
   align-items     : center;
   justify-content : center;
-  border          : 1px solid var(--vp-c-divider);
+  border          : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius   : var(--prose-radius-sm);
   background      : var(--vp-c-bg-soft);
   font-family     : var(--vp-font-family-mono);
@@ -85,7 +85,7 @@
 
 .fixture-pair-doc .shiki-magic-move-container {
   margin      : 0;
-  padding     : 14px 16px;
+  padding     : var(--prose-space-14) var(--prose-space-16);
   background  : transparent;
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-code);

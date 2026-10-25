@@ -18,9 +18,9 @@
 .fixture-card {
   position      : relative;
   margin        : 0;
-  border        : 1px solid var(--vp-c-divider);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-left   : none;
-  padding-left  : 3px;
+  padding-left  : var(--prose-size-3);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg-soft);
   transition    :
@@ -34,7 +34,7 @@
   left           : 0;
   top            : 0;
   bottom         : 0;
-  width          : 3px;
+  width          : var(--prose-size-3);
   background     : var(--rail-paint, var(--family-color, var(--vp-c-divider)));
   border-radius  : var(--prose-radius-sm) 0 0 var(--prose-radius-sm);
   pointer-events : none;
@@ -46,7 +46,7 @@
 }
 
 .fixture-card:hover {
-  border-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) 50%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-50), var(--vp-c-divider));
 }
 
 .fixture-card.is-open {
@@ -57,8 +57,8 @@
   display               : grid;
   grid-template-columns : minmax(0, 1fr) auto;
   align-items           : center;
-  gap                   : 12px;
-  padding               : 4px 12px 4px 4px;
+  gap                   : var(--prose-space-12);
+  padding               : var(--prose-space-4) var(--prose-space-12) var(--prose-space-4) var(--prose-space-4);
   cursor                : pointer;
 }
 
@@ -66,9 +66,9 @@
   display               : grid;
   grid-template-columns : auto minmax(0, 1fr);
   align-items           : baseline;
-  column-gap            : 10px;
+  column-gap            : var(--prose-space-10);
   width                 : 100%;
-  padding               : 8px 4px 8px 12px;
+  padding               : var(--prose-space-8) var(--prose-space-4) var(--prose-space-8) var(--prose-space-12);
   border                : none;
   background            : transparent;
   text-align            : left;
@@ -79,7 +79,7 @@
 
 .fixture-card-num {
   font-family          : var(--vp-font-family-mono);
-  font-size            : 0.65rem;
+  font-size            : var(--prose-text-0-65rem);
   font-variant-numeric : tabular-nums;
   letter-spacing       : var(--prose-folio-tracking);
   color                : var(--vp-c-text-3);
@@ -97,7 +97,7 @@
   font-family    : var(--vp-font-family-mono);
   font-weight    : 600;
   font-size      : var(--prose-text-sm);
-  letter-spacing : 0.02em;
+  letter-spacing : var(--prose-tracking-0-02em);
   line-height    : 1.35;
   text-transform : uppercase;
   color          : var(--vp-c-text-1);
@@ -109,7 +109,7 @@
 
 .fixture-card-title code {
   font-family    : var(--vp-font-family-mono);
-  font-size      : 1em;
+  font-size      : var(--prose-text-1em);
   text-transform : none;
   color          : var(--prose-palette-ube);
 }
@@ -148,14 +148,14 @@
 }
 
 .fixture-card-body-content {
-  padding : 0 12px 12px;
+  padding : 0 var(--prose-space-12) var(--prose-space-12);
 }
 
 .fixture-card-desc {
   position    : relative;
-  margin      : 0 0 14px;
-  padding-top : 13px;
-  border-top  : 1px solid var(--vp-c-divider);
+  margin      : 0 0 var(--prose-space-14);
+  padding-top : var(--prose-space-13);
+  border-top  : var(--prose-border-1) solid var(--vp-c-divider);
   color       : var(--vp-c-text-2);
   font-size   : var(--prose-text-sm);
 }
@@ -163,10 +163,10 @@
 .fixture-card-desc::before {
   content    : "";
   position   : absolute;
-  top        : -1px;
+  top        : calc(var(--prose-space-1) * -1);
   left       : 0;
-  width      : 30px;
-  height     : 2px;
+  width      : var(--prose-size-30);
+  height     : var(--prose-size-2);
   background : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
 }
 
@@ -178,29 +178,29 @@
 .fixture-card-desc :last-child  { margin-bottom : 0; }
 
 .fixture-card-desc p {
-  margin      : 0 0 0.5em;
+  margin      : 0 0 var(--prose-space-0-5em);
   line-height : 1.55;
 }
 
 .fixture-card-desc ul {
-  margin       : 0.4em 0 0;
-  padding-left : 1.1em;
+  margin       : var(--prose-space-0-4em) 0 0;
+  padding-left : var(--prose-space-1-1em);
   line-height  : 1.5;
 }
 
 .fixture-card-desc li {
-  margin : 0.1em 0;
+  margin : var(--prose-space-0-1em) 0;
 }
 
 .fixture-card-desc code {
   font-family : var(--vp-font-family-mono);
-  font-size   : 0.85em;
+  font-size   : var(--prose-text-0-85em);
   color       : var(--prose-palette-ube);
 }
 
 .fixture-card-rule {
-  height           : 2px;
-  margin           : 0 0 14px;
+  height           : var(--prose-size-2);
+  margin           : 0 0 var(--prose-space-14);
   background       : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
   transform        : scaleX(0);
   transform-origin : left;

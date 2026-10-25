@@ -1,13 +1,13 @@
 .surfaces-carousel {
-  --surfaces-card-width : 360px;
-  --surfaces-gap        : 18px;
+  --surfaces-card-width : var(--prose-width-360);
+  --surfaces-gap        : var(--prose-space-18);
   position : relative;
   width    : 100vw;
-  margin   : 8px calc(50% - 50vw) 0;
-  padding  : 32px 0 8px;
+  margin   : var(--prose-space-8) calc(50% - 50vw) 0;
+  padding  : var(--prose-space-32) 0 var(--prose-space-8);
   overflow : hidden;
-  -webkit-mask-image : linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
-          mask-image : linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image : linear-gradient(90deg, transparent 0%, var(--vp-c-black) 5%, var(--vp-c-black) 95%, transparent 100%);
+          mask-image : linear-gradient(90deg, transparent 0%, var(--vp-c-black) 5%, var(--vp-c-black) 95%, transparent 100%);
 }
 
 .surfaces-carousel-track {
@@ -15,7 +15,7 @@
   align-items : stretch;
   gap         : var(--surfaces-gap);
   width       : max-content;
-  padding     : 0 32px;
+  padding     : 0 var(--prose-space-32);
   will-change : transform;
 }
 
@@ -39,23 +39,23 @@
 
 @media (--prose-bp-desktop) {
   .surfaces-carousel {
-    --surfaces-card-width : 300px;
-    --surfaces-gap        : 14px;
+    --surfaces-card-width : var(--prose-width-300);
+    --surfaces-gap        : var(--prose-space-14);
   }
 }
 
 @media (--prose-bp-mobile) {
   .surfaces-carousel {
-    --surfaces-card-width : 260px;
-    --surfaces-gap        : 12px;
+    --surfaces-card-width : var(--prose-width-260);
+    --surfaces-gap        : var(--prose-space-12);
   }
 }
 
 .landing-small-button {
   display              : inline-flex;
   align-items          : center;
-  padding              : 4px 12px;
-  border               : 1px solid var(--vp-c-divider);
+  padding              : var(--prose-space-4) var(--prose-space-12);
+  border               : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius        : var(--prose-radius-sm);
   background           : var(--vp-c-bg-soft);
   color                : var(--vp-c-text-2);

@@ -2,7 +2,7 @@
 .rule-chip {
   display       : inline-flex;
   align-items   : center;
-  border        : 1px solid var(--vp-c-divider);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : 0;
 }
 
@@ -18,18 +18,18 @@ a.rule-chip {
 
 .family-chip,
 .rule-chip {
-  border-left: 2px solid var(--family-color);
+  border-left: var(--prose-border-2) solid var(--family-color);
 }
 
 .family-chip,
 .vp-doc a.family-chip {
-  gap            : 10px;
-  padding        : 6px 14px 6px 10px;
+  gap            : var(--prose-space-10);
+  padding        : var(--prose-space-6) var(--prose-space-14) var(--prose-space-6) var(--prose-space-10);
   color          : var(--vp-c-text-1);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   font-weight    : 400;
-  line-height    : 24px;
+  line-height    : var(--prose-leading-24);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
 }
@@ -37,17 +37,17 @@ a.rule-chip {
 a.family-chip:hover,
 a.rule-chip:hover {
   border-color      : var(--family-color);
-  border-left-width : 3px;
-  padding-left      : 7px;
+  border-left-width : var(--prose-border-3);
+  padding-left      : var(--prose-space-7);
 }
 
 a.family-chip:hover {
-  padding-left : 9px;
+  padding-left : var(--prose-space-9);
 }
 
 a.rule-chip {
-  gap            : 8px;
-  padding        : 3px 10px 3px 8px;
+  gap            : var(--prose-space-8);
+  padding        : var(--prose-space-3) var(--prose-space-10) var(--prose-space-3) var(--prose-space-8);
   color          : var(--vp-c-text-1);
   font-size      : var(--prose-text-xs);
   line-height    : 1.6;
@@ -64,6 +64,6 @@ a.rule-chip {
   display       : flex;
   flex-wrap     : wrap;
   align-items   : center;
-  gap           : 10px;
-  margin-bottom : 12px;
+  gap           : var(--prose-space-10);
+  margin-bottom : var(--prose-space-12);
 }

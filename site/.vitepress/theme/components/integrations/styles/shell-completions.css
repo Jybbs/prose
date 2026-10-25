@@ -1,7 +1,7 @@
 .shell-card {
   position      : relative;
-  padding-right : 132px;
-  margin        : 1.5rem 0;
+  padding-right : var(--prose-size-132);
+  margin        : var(--prose-space-1-5rem) 0;
 }
 
 .shell-card-stack {
@@ -10,15 +10,15 @@
 
 .shell-card-tab {
   position      : absolute;
-  right         : -132px;
-  width         : 132px;
+  right         : calc(var(--prose-size-132) * -1);
+  width         : var(--prose-size-132);
   display       : inline-flex;
   align-items   : center;
-  gap           : 8px;
-  padding       : 8px 12px;
-  border        : 1px solid var(--vp-c-divider);
+  gap           : var(--prose-space-8);
+  padding       : var(--prose-space-8) var(--prose-space-12);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-left   : none;
-  border-radius : 0 6px 6px 0;
+  border-radius : 0 var(--prose-radius-6) var(--prose-radius-6) 0;
   background    : var(--vp-c-bg-soft);
   color         : var(--vp-c-text-2);
   text-align    : left;
@@ -27,7 +27,7 @@
   font-family   : inherit;
   font-size     : inherit;
   transition    : background var(--prose-transition), border-color var(--prose-transition), color var(--prose-transition);
-  top           : calc(23px + var(--idx) * 44px);
+  top           : calc(var(--prose-space-23) + var(--idx) * var(--prose-space-44));
   z-index       : 1;
 }
 
@@ -39,34 +39,34 @@
 }
 
 .shell-card-tab:hover {
-  background : color-mix(in srgb, var(--prose-palette-celadon) 9%, var(--vp-c-bg-soft));
+  background : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-wash), var(--vp-c-bg-soft));
   color      : var(--vp-c-text-1);
 }
 
 .shell-card-tab.is-active,
 .shell-card-tab.is-active:hover {
-  background   : color-mix(in srgb, var(--prose-palette-celadon) 24%, var(--vp-c-bg-soft));
-  border-color : color-mix(in srgb, var(--prose-palette-celadon) 65%, var(--vp-c-divider));
+  background   : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-24), var(--vp-c-bg-soft));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-65), var(--vp-c-divider));
   color        : var(--vp-c-text-1);
   z-index      : 5;
 }
 
 .shell-card-tab.is-active .shell-card-tab-mark {
-  border-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-70), var(--vp-c-divider));
 }
 
 .shell-card-modal {
   display        : flex;
   flex-direction : column;
   background     : var(--vp-c-bg);
-  min-height     : 260px;
+  min-height     : var(--prose-size-260);
 }
 
 .shell-card-modal-head {
   display     : flex;
   align-items : center;
-  gap         : 12px;
-  padding     : 14px 18px;
+  gap         : var(--prose-space-12);
+  padding     : var(--prose-space-14) var(--prose-space-18);
 }
 
 .shell-card-modal-body {
@@ -80,8 +80,8 @@
 
 .shell-card-modal-note {
   margin      : 0;
-  padding     : 0 18px 14px;
-  font-size   : 0.92rem;
+  padding     : 0 var(--prose-space-18) var(--prose-space-14);
+  font-size   : var(--prose-text-0-92rem);
   line-height : 1.55;
   color       : var(--vp-c-text-2);
 }
@@ -89,7 +89,7 @@
 .shell-card-modal-note code {
   font-family   : var(--vp-font-family-mono);
   font-size     : var(--vp-code-font-size);
-  padding       : 3px 6px;
+  padding       : var(--prose-space-3) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-code-bg);
   color         : var(--prose-palette-ube);
@@ -98,5 +98,5 @@
 @media (--prose-bp-card-stack) {
   .shell-card        { padding-right: 0; }
   .shell-card-modal  { min-height: auto; }
-  .shell-card-tab    { position: relative; right: auto; top: auto; width: auto; border-radius: var(--prose-radius-sm); border-left: 1px solid var(--vp-c-divider); margin: 0 4px 6px 12px; }
+  .shell-card-tab    { position: relative; right: auto; top: auto; width: auto; border-radius: var(--prose-radius-sm); border-left: var(--prose-border-1) solid var(--vp-c-divider); margin: 0 var(--prose-space-4) var(--prose-space-6) var(--prose-space-12); }
 }

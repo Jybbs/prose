@@ -1,15 +1,15 @@
 .int-card-grid {
   display               : grid;
-  grid-template-columns : repeat(auto-fill, minmax(260px, 1fr));
-  gap                   : 1rem;
-  margin                : 1.5rem 0;
+  grid-template-columns : repeat(auto-fill, minmax(var(--prose-width-260), 1fr));
+  gap                   : var(--prose-space-1rem);
+  margin                : var(--prose-space-1-5rem) 0;
 }
 
 .int-card {
   position      : relative;
-  padding       : 1rem 1.1rem 0.85rem;
+  padding       : var(--prose-space-1rem) var(--prose-space-1-1rem) var(--prose-space-0-85rem);
   background    : var(--vp-c-bg-soft);
-  border        : 1px solid var(--vp-c-divider);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   color         : var(--vp-c-text-1);
   transition    :
@@ -42,7 +42,7 @@
 }
 
 .int-card .int-kicker {
-  margin         : 0 0 0.3rem;
+  margin         : 0 0 var(--prose-space-0-3rem);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-kicker-size-sm);
   letter-spacing : var(--prose-label-tracking-loose);
@@ -51,19 +51,19 @@
 }
 
 .int-card .int-title {
-  margin      : 0 0 0.5rem;
+  margin      : 0 0 var(--prose-space-0-5rem);
   border      : none;
   padding     : 0;
   font-family : var(--prose-font-display);
   font-style  : italic;
-  font-size   : 1.2rem;
+  font-size   : var(--prose-text-1-2rem);
   font-weight : 500;
   color       : var(--vp-c-text-1);
 }
 
 .int-card .int-body {
-  margin      : 0 0 0.7rem;
-  font-size   : 0.88rem;
+  margin      : 0 0 var(--prose-space-0-7rem);
+  font-size   : var(--prose-text-0-88rem);
   line-height : 1.45;
   color       : var(--vp-c-text-2);
 }
@@ -75,7 +75,7 @@
 .int-card .int-body code {
   font-family   : var(--vp-font-family-mono);
   background    : var(--vp-c-bg);
-  padding       : 1px 5px;
+  padding       : var(--prose-space-1) var(--prose-space-5);
   border-radius : var(--prose-radius-sm);
   font-size     : var(--prose-text-xs);
 }

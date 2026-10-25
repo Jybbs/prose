@@ -3,8 +3,8 @@
   --layer-orchestration : var(--prose-palette-whiskey);
   --layer-analysis      : var(--prose-palette-ube);
 
-  margin     : 1.5rem 0;
-  padding    : 12px 14px;
+  margin     : var(--prose-space-1-5rem) 0;
+  padding    : var(--prose-space-12) var(--prose-space-14);
   background : var(--vp-c-bg);
 }
 

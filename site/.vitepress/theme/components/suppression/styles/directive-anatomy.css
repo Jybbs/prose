@@ -1,7 +1,7 @@
 .directive-anatomy [data-role="comment"]   { --part-color : var(--vp-c-text-3); }
-.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-palette-ube)     65%, var(--vp-c-text-1)); }
-.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-palette-apricot) 70%, var(--vp-c-text-1)); }
-.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) 70%, var(--vp-c-text-1)); }
+.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-palette-ube)     var(--prose-tint-65), var(--vp-c-text-1)); }
+.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-70), var(--vp-c-text-1)); }
+.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-70), var(--vp-c-text-1)); }
 
 .directive-anatomy {
   background : var(--prose-panel-wash);
@@ -10,43 +10,43 @@
 .directive-anatomy-index {
   display        : flex;
   flex-direction : column;
-  gap            : 20px;
-  padding        : 18px 20px 22px;
+  gap            : var(--prose-space-20);
+  padding        : var(--prose-space-18) var(--prose-space-20) var(--prose-space-22);
 }
 
 .directive-anatomy-band {
   display        : flex;
   flex-direction : column;
-  gap            : 8px;
+  gap            : var(--prose-space-8);
 }
 
 .directive-anatomy-band-head {
   --band-accent : var(--scope-tint);
 
-  padding : 0 2px;
+  padding : 0 var(--prose-space-2);
 }
 
 .directive-anatomy-band-badge {
-  width       : 22px;
-  height      : 22px;
+  width       : var(--prose-size-22);
+  height      : var(--prose-size-22);
   flex-shrink : 0;
-  background  : color-mix(in srgb, var(--scope-tint) 80%, var(--vp-c-bg));
-  font-size   : 0.92rem;
+  background  : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
+  font-size   : var(--prose-text-0-92rem);
   line-height : 1;
 }
 
 .directive-anatomy-band-cells {
   display   : flex;
   flex-wrap : wrap;
-  gap       : 6px;
+  gap       : var(--prose-space-6);
 }
 
 .directive-anatomy-thumb {
   display       : inline-flex;
   align-items   : center;
-  padding       : 2px 9px 3px;
-  border        : 1px solid var(--vp-c-divider);
-  border-radius : 3px;
+  padding       : var(--prose-space-2) var(--prose-space-9) var(--prose-space-3);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-3);
   background    : var(--vp-c-bg);
   cursor        : pointer;
   transition    : border-color var(--prose-transition),
@@ -64,8 +64,8 @@
 }
 
 .directive-anatomy-thumb[data-active="true"] {
-  border-color : color-mix(in srgb, var(--scope-tint) 60%, var(--vp-c-divider));
-  background   : color-mix(in srgb, var(--scope-tint) 10%, var(--vp-c-bg));
+  border-color : color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
+  background   : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
 }
 
 .directive-anatomy-thumb[data-active="true"] .directive-anatomy-thumb-form {
@@ -73,15 +73,15 @@
 }
 
 .directive-anatomy-plate {
-  padding               : 18px 32px 22px;
+  padding               : var(--prose-space-18) var(--prose-space-32) var(--prose-space-22);
   display               : grid;
   grid-template-columns : 1fr;
-  gap                   : 14px;
+  gap                   : var(--prose-space-14);
   position              : relative;
-  border-top            : 2px solid color-mix(in srgb, var(--scope-tint) 60%, var(--vp-c-divider));
+  border-top            : var(--prose-border-2) solid color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
   background-image      : radial-gradient(
     ellipse at 50% 100%,
-    color-mix(in srgb, var(--scope-tint) 10%, transparent) 0%,
+    color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), transparent) 0%,
     transparent 70%
   );
 }
@@ -96,16 +96,16 @@
 
 .directive-anatomy-part-col {
   display            : grid;
-  grid-template-rows : auto 28px auto;
+  grid-template-rows : auto var(--prose-size-28) auto;
   align-items        : start;
   justify-items      : center;
   text-align         : center;
-  padding            : 0 6px;
+  padding            : 0 var(--prose-space-6);
 }
 
 .directive-anatomy-part {
   font-family : var(--vp-font-family-mono);
-  font-size   : clamp(1.35rem, 2.3vw, 2rem);
+  font-size   : clamp(var(--prose-text-1-35rem), 2.3vw, var(--prose-text-2rem));
   line-height : 1.15;
   background  : transparent;
   padding     : 0;
@@ -118,31 +118,31 @@
 
 .directive-anatomy-tick {
   display    : block;
-  width      : 1px;
-  height     : 24px;
-  margin     : 2px 0;
-  background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) 50%, var(--vp-c-divider));
+  width      : var(--prose-size-1);
+  height     : var(--prose-size-24);
+  margin     : var(--prose-space-2) 0;
+  background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
 }
 
 .directive-anatomy-label {
   font-family    : var(--prose-font-display);
   font-style     : italic;
-  font-size      : 0.92rem;
-  color          : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) 75%, var(--vp-c-text-2));
+  font-size      : var(--prose-text-0-92rem);
+  color          : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
 }
 
 .directive-anatomy-info {
   display        : flex;
   flex-direction : column;
-  gap            : 4px;
+  gap            : var(--prose-space-4);
 }
 
 .directive-anatomy-effect {
   margin      : 0;
-  max-width   : 72ch;
+  max-width   : var(--prose-width-72ch);
   font-family : var(--vp-font-family-base);
   font-style  : italic;
-  font-size   : 0.98rem;
+  font-size   : var(--prose-text-0-98rem);
   line-height : 1.55;
   color       : var(--vp-c-text-2);
 }
@@ -154,8 +154,8 @@
 .vp-doc .directive-anatomy-pre,
 .directive-anatomy-pre {
   margin        : 0;
-  padding       : 12px 14px;
-  border        : 1px solid var(--vp-c-divider);
+  padding       : var(--prose-space-12) var(--prose-space-14);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   font-family   : var(--vp-font-family-mono);
@@ -170,6 +170,6 @@
   white-space : pre;
 }
 
-.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-palette-apricot) 75%, var(--vp-c-text-1)); font-weight : 500; }
+.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1)); font-weight : 500; }
 .directive-anatomy-line[data-line-kind="comment"]   { color : var(--vp-c-text-3); }
 .directive-anatomy-line[data-line-kind="code"]      { color : var(--vp-c-text-1); }

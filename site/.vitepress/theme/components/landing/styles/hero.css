@@ -9,14 +9,14 @@
   display         : flex;
   justify-content : center;
   align-items     : center;
-  padding         : 88px 24px 32px;
+  padding         : var(--prose-space-88) var(--prose-space-24) var(--prose-space-32);
   overflow        : visible;
   isolation       : isolate;
 }
 
 .landing-hero-watermarks {
   position           : absolute;
-  top                : -24px;
+  top                : calc(var(--prose-space-24) * -1);
   left               : 50%;
   transform          : translateX(-50%);
   width              : 100vw;
@@ -24,8 +24,8 @@
   z-index            : 0;
   overflow           : clip;
   pointer-events     : none;
-  -webkit-mask-image : linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
-          mask-image : linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+  -webkit-mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
+          mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
 }
 
 .landing-hero-watermark {
@@ -43,7 +43,7 @@
 }
 
 .landing-hero-watermark-big {
-  width : 110px;
+  width : var(--prose-size-110);
   height: auto;
 }
 
@@ -51,7 +51,7 @@
   font-family : var(--prose-font-display);
   font-style  : normal;
   font-weight : 700;
-  font-size   : 2.4rem;
+  font-size   : var(--prose-text-2-4rem);
   line-height : 1;
   color       : var(--prose-palette-ube);
 }
@@ -71,7 +71,7 @@
   position : relative;
   z-index  : 1;
   margin   : 0;
-  width    : min(640px, 72vw);
+  width    : min(var(--prose-width-640), 72vw);
 }
 
 .landing-hero-wordmark img {
@@ -82,9 +82,9 @@
 
 @media (--prose-bp-card-stack) {
   .landing-hero-watermark-big {
-    width : 80px;
+    width : var(--prose-size-80);
   }
   .landing-hero-watermark-small {
-    font-size : 1.6rem;
+    font-size : var(--prose-text-1-6rem);
   }
 }

@@ -4,7 +4,7 @@
 }
 
 .vp-doc :not(pre) > code {
-  font-size : 0.88em;
+  font-size : var(--prose-text-0-88em);
 }
 
 .vp-doc a.body-link,
@@ -31,14 +31,14 @@ a.tool-mark:hover {
 .vp-doc a.rule-link,
 .rule-card-caption a.rule-link {
   display         : inline-block;
-  margin          : 0 0.1em;
-  padding         : 1px 6px 1px 5px;
-  border-left     : 2px solid var(--family-color);
+  margin          : 0 var(--prose-space-0-1em);
+  padding         : var(--prose-space-1) var(--prose-space-6) var(--prose-space-1) var(--prose-space-5);
+  border-left     : var(--prose-border-2) solid var(--family-color);
   color           : var(--vp-c-text-1);
   font-family     : var(--vp-font-family-mono);
-  font-size       : 0.8em;
+  font-size       : var(--prose-text-0-8em);
   font-weight     : 500;
-  line-height     : 20px;
+  line-height     : var(--prose-leading-20);
   text-decoration : none;
   white-space     : nowrap;
   vertical-align  : baseline;
@@ -47,34 +47,33 @@ a.tool-mark:hover {
 
 .vp-doc a.rule-link:hover,
 .rule-card-caption a.rule-link:hover {
-  box-shadow : 0 0 0 1px color-mix(in srgb, var(--family-color) 55%, var(--vp-c-divider));
+  box-shadow : 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
 }
 
 .rule-link .nib-badge {
-  margin-right   : 5px;
-  vertical-align : -2.5px;
+  margin-right   : var(--prose-space-5);
+  vertical-align : calc(var(--prose-space-2-5) * -1);
 }
 
 .vp-doc table {
-  margin-top      : 1.5rem;
+  margin-top      : var(--prose-space-1-5rem);
   border-collapse : separate;
   border-spacing  : 0;
-  border          : 1px solid var(--vp-c-divider);
+  border          : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius   : var(--prose-radius);
   overflow        : hidden;
 }
 
-.vp-doc th {
-  padding        : var(--prose-pad-card-snug);
-  background     : var(--vp-c-bg-soft);
-  border-bottom  : 1px solid var(--vp-c-divider);
-  letter-spacing : var(--prose-label-tracking);
-  font-weight    : 700;
-}
-
+.vp-doc th,
 .vp-doc td {
   padding       : var(--prose-pad-card-snug);
-  border-bottom : 1px solid var(--vp-c-divider);
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
+}
+
+.vp-doc th {
+  background     : var(--vp-c-bg-soft);
+  letter-spacing : var(--prose-label-tracking);
+  font-weight    : 700;
 }
 
 .vp-doc tr:last-child td {

@@ -2,7 +2,7 @@
 .landing-cta-ledger-leader,
 .exit-code-index-leader {
   align-self    : end;
-  border-bottom : 1px dotted color-mix(in srgb, var(--vp-c-text-3) 50%, transparent);
+  border-bottom : var(--prose-border-1) dotted color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-50), transparent);
   height        : 0;
   margin-block  : 0;
 }
@@ -10,9 +10,9 @@
 .editor-card-row-leader,
 .pipeline-order-leader {
   flex          : 1 1 auto;
-  min-width     : 8px;
+  min-width     : var(--prose-size-8);
   align-self    : center;
-  height        : 1em;
-  border-bottom : 1px dotted var(--vp-c-divider);
-  transform     : translateY(-2px);
+  height        : var(--prose-size-1em);
+  border-bottom : var(--prose-border-1) dotted var(--vp-c-divider);
+  transform     : translateY(calc(var(--prose-space-2) * -1));
 }
