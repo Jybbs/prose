@@ -21,12 +21,6 @@
   text-transform : none;
 }
 
-.pipeline-order-columns,
-.pipeline-order .pipeline-order-entry {
-  list-style                : none;
-  list-style-type           : none;
-}
-
 .pipeline-order .pipeline-order-columns {
   margin               : 0;
   padding              : 0;
@@ -38,11 +32,8 @@
 
 .pipeline-order .pipeline-order-entry {
   break-inside : avoid;
+  list-style   : none;
   margin       : 0 0 2px;
-}
-
-.pipeline-order .pipeline-order-entry::marker {
-  content : '';
 }
 
 .pipeline-order .pipeline-order-link {
@@ -91,5 +82,5 @@
 }
 
 @media (--prose-bp-medium) {
-  .pipeline-order-columns { column-count : 1; }
+  .pipeline-order .pipeline-order-columns { column-count : 1; }
 }

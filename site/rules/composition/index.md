@@ -8,13 +8,13 @@ Each case on this page pairs a small Python source with the rule set it turns on
 
 ## The Canonical Case
 
-One module-level constant exercises a rule from each family:
+One module-level constant exercises a rule from each of the alignment, formatting, layout, and ordering families:
 
-- Its values use the legacy `Union[…]` form, so [[modernize-annotations]] rewrites them to the `|` operator and removes the `typing` import they read through.
+- Its values use the legacy `Union[…]` form, so [[modernize-annotations]] rewrites them to the `|` operator and removes the `typing` import they read through, together with the blank line below it.
 - The literal overflows `code-line-length` on one line, so [[reflow-collections]] writes it one entry per line.
 - The entries sit in the order the author wrote them rather than alphabetical, so [[alphabetize-siblings]] sorts them.
 - The keys then sit one per line in a column, so [[align-colons]] computes the padding from the widths the rewrite leaves.
-- The removed import leaves a gap where it stood, so [[space-statements]] closes it.
+- [[space-statements]] runs too and writes nothing, since the import leaves no gap where it stood.
 
 The rules run against the same block, re-parsing between each so every later rule measures the rewritten source.
 

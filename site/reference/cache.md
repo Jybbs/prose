@@ -4,7 +4,7 @@ description: "Covers the per-user cache, the `[cache]` keys, the `--no-cache` fl
 
 # Cache
 
-*Prose* caches each file's result, keyed on the file's bytes, the configuration that governs it, the rules the run selects, the *Prose* version, and the diagnostic anchor, meaning whether the entry's diagnostics refer to the text before or after a rewrite. A repeat `prose check` or `prose format` over an unchanged file then costs a stat, a hash, and a deserialize, because a cache hit prints the stored diagnostics without running the pipeline.
+*Prose* caches each file's result, keyed on the file's bytes, its path as the run names it, the source type the run reads it as, the configuration that governs it, the rules the run selects, the *Prose* version, and the diagnostic anchor, meaning whether the entry's diagnostics refer to the text before or after a rewrite. A repeat `prose check` or `prose format` over an unchanged file then costs a stat, a hash, and a deserialize, because a cache hit prints the stored diagnostics without running the pipeline.
 
 The cache is on by default, with the `[cache]` table tuning it, `--no-cache` bypassing it for one run, and `prose cache clean` emptying it.
 
@@ -16,9 +16,9 @@ An entry also stores the [**unstable-output**](/reference/cli#unstable-output) r
 
 The cache lives per user, at a path that depends on the platform:
 
-| Platform | Path |
+| **Platform** | **Path** |
 |---|---|
-| Linux | `$XDG_CACHE_HOME/prose` *(default `~/.cache/prose`)* |
+| Linux | `$XDG_CACHE_HOME/prose` (*default `~/.cache/prose`*) |
 | macOS | `~/Library/Caches/prose` |
 | Windows | `%LOCALAPPDATA%\prose\cache` |
 
@@ -28,16 +28,18 @@ Each entry is one file named by the 64-character lowercase hex form of its key, 
 
 ## Key Shape
 
-The key is the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ source_bytes)`, computed under a key-derivation context that separates the two diagnostic anchors. The inputs:
+The key is the **BLAKE3** digest of `(config_toml ++ rule_ids ++ prose_version ++ cache_format_version ++ name ++ source_type ++ source_bytes)`, computed under a key-derivation context that separates the two diagnostic anchors. The inputs:
 
 - the canonical TOML serialization of the `Config` governing the file, so reordering the keys in a config file produces the same key
 - the rule set the run resolves after the config toggles and the `--select` and `--ignore` flags, so a run over a subset of rules keys separately from a full run
 - the *Prose* version from `CARGO_PKG_VERSION`, so a version bump invalidates every entry
 - a private `CACHE_FORMAT_VERSION` constant that changes when the on-disk entry format changes, so the public version number is free to follow semver without unrelated cache turnover
+- the file's path as the run names it, since a rule reads the path (*an `__init__.py` marks a package*), so two files holding the same bytes key apart
+- the source type the run reads the file as, `python`, `stub`, or `ipynb`, so a module and a notebook holding the same bytes key apart
 - the bytes of the file being formatted
 - the diagnostic anchor, which names whether the entry's diagnostics refer to the original text or to the rewritten text and enters as the derivation context rather than as another input, so a `prose check` and a `prose format` each read the entry their own mode wrote rather than printing the other's diagnostics
 
-Two working copies of the same file under the same configuration share a cache hit, because the key reflects the file's content rather than its path.
+Two working copies of the same file under the same configuration share a cache hit only where each run names the file by the same path, as `prose check .` run from each copy's root does, whereas an absolute path names each copy apart.
 
 ## Eviction
 
@@ -47,9 +49,11 @@ An insert writes to a `.tmp`-suffixed sibling and then renames it onto the final
 
 ## Configuration
 
-The keys under the `[cache]` table *(`[tool.prose.cache]` in a `pyproject.toml`)*:
+The keys under the `[cache]` table (*`[tool.prose.cache]` in a `pyproject.toml`*):
 
 <ConfigKeys section="cache" />
+
+The sample below raises both caps above their defaults, for a tree whose entries outgrow them:
 
 ```toml
 [cache]

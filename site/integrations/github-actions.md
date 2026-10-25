@@ -80,16 +80,16 @@ The key changes whenever a config file changes, so a configuration edit starts f
 
 ## Pairing With Ruff in CI
 
-A project that runs [**Ruff**](https://docs.astral.sh/ruff/) too runs both tools as check steps, each failing the job on a pending rewrite without writing to the runner's disk:
+A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
 
 ```yaml
 - run: uv tool install ruff
 - run: uv tool install prose-formatter
-- run: ruff format --check .
+- run: ruff check .
 - run: prose check .
 ```
 
-The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off in Ruff's linter and why Ruff's step comes first.
+The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off in Ruff's linter and why `ruff format` runs ahead of `prose format` wherever both write.
 
 ## Exit Codes
 
