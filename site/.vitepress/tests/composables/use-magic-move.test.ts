@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { useMagicMove }         from '../../lib/composables/use-magic-move'
 import { magicMoveWatchdogMs }  from '../../lib/markdown/magic-move-options'
-import { ruleDrawMs }           from '../../lib/shared/paint'
 
 const commits: string[] = []
 const retained = { current: { tokens: [{ key: 'k', content: 'x' }] }, previous: { tokens: [{ key: 'j', content: 'y' }] } }
@@ -71,8 +70,10 @@ describe('useMagicMove', () => {
     expect(panel.value).toBeNull()
     expect(watchdogMs.value).toBe(magicMoveWatchdogMs(0))
 
+    document.documentElement.style.setProperty('--prose-rule-draw-ms', '420')
+    onTestFinished(() => { document.documentElement.style.removeProperty('--prose-rule-draw-ms') })
     await precompile('a', 'b')
     expect(panel.value).not.toBeNull()
-    expect(watchdogMs.value).toBe(magicMoveWatchdogMs(ruleDrawMs()))
+    expect(watchdogMs.value).toBe(magicMoveWatchdogMs(420))
   })
 })

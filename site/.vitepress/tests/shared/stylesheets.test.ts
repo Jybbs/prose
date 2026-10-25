@@ -11,6 +11,7 @@ import {
   isTokenDimension,
   isTokenHash,
   isTokenIdent,
+  isTokenNumeric,
   isTokenPercentage,
   isTokenString,
   tokenize
@@ -26,7 +27,8 @@ import type { TokenIdent }        from '@csstools/css-tokenizer'
 import type { Declaration, Root } from 'postcss'
 
 // Holds the absolute and font-relative length units CSS Values 4 defines,
-// leaving out the viewport and container units, which measure a share of a box.
+// leaving out the viewport and container units, which measure a share of the
+// viewport or of a container.
 const LENGTH_UNITS   = new Set([
   'cap', 'ch', 'cm', 'em', 'ex', 'ic', 'in', 'lh', 'mm', 'pc', 'pt', 'px', 'q', 'rcap', 'rch',
   'rem', 'rex', 'ric', 'rlh'
@@ -46,18 +48,21 @@ interface Stray {
 }
 
 // Holds the custom media and properties the token sheets declare, beside the
-// custom properties the stylesheets read as `color-mix()` arguments.
+// custom properties the stylesheets pass to `color-mix()` or read as a font
+// family.
 class Vocabulary {
   constructor(
+    readonly faces      : Set<string>,
     readonly media      : Set<string>,
     readonly mixed      : Set<string>,
     readonly properties : Set<string>
   ) {}
 
   // Reads each custom property and custom media the `declaring` sheets declare,
-  // and each custom property the `mixing` sheets read as a share.
-  static read(declaring: string[], mixing: string[]): Vocabulary {
-    const vocabulary = new Vocabulary(new Set(), mixedBy(mixing), new Set())
+  // and each custom property the `reading` sheets pass to `color-mix()` or read
+  // as a font family.
+  static read(declaring: string[], reading: string[]): Vocabulary {
+    const vocabulary = new Vocabulary(facedBy(reading), new Set(), mixedBy(reading), new Set())
     for (const sheet of declaring) {
       const root = parse(sheet)
       root.walkDecls(/^--/, decl => { vocabulary.properties.add(decl.prop) })
@@ -67,8 +72,8 @@ class Vocabulary {
   }
 
   // Lists each value a declaration writes in place of a token, meaning a length,
-  // a color, a typeface, or a `color-mix()` share, beside the `--prose-*` token
-  // it redeclares and each `--prose-*` or `--vp-*` property it reads that
+  // a color, a typeface, or a `color-mix()` share, beside each `--prose-*`
+  // property it declares and each `--prose-*` or `--vp-*` property it reads that
   // nothing declares.
   private declarationStrays(decl: Declaration): Stray[] {
     const found: Stray[] = []
@@ -108,9 +113,15 @@ class Vocabulary {
       }
     })
 
-    if (decl.prop === 'font' || decl.prop === 'font-family') {
-      for (const { value: token } of nodes.filter(isTokenNode)) {
-        const family = decl.prop === 'font-family'
+    const face = decl.prop === 'font-family' || this.faces.has(decl.prop)
+    if (face || decl.prop === 'font') {
+      // The family list of the `font` shorthand follows its last size or function.
+      const sized = nodes.findLastIndex(node =>
+        isFunctionNode(node) || (isTokenNode(node) && isTokenNumeric(node.value)))
+      for (const [index, node] of nodes.entries()) {
+        if (!isTokenNode(node)) continue
+        const token  = node.value
+        const family = (face || index > sized)
           && isTokenIdent(token) && !WIDE_KEYWORDS.has(token[4].value.toLowerCase())
         if (isTokenString(token) || family) report('typeface', token[2], token[1])
       }
@@ -118,11 +129,15 @@ class Vocabulary {
     return found
   }
 
-  // Lists each media query that writes a length or names a custom media nothing
-  // declares.
+  // Lists each media or container query that writes a dimension or names a
+  // custom media nothing declares, beside each custom media a stylesheet
+  // declares for itself.
   private mediaStrays(root: Root): Stray[] {
     const found: Stray[] = []
-    root.walkAtRules('media', rule => {
+    root.walkAtRules('custom-media', rule => {
+      found.push({ kind: 'media', line: rule.source!.start!.line, value: rule.params.split(/\s/)[0] })
+    })
+    root.walkAtRules(/^(container|media)$/, rule => {
       for (const token of tokenize({ css: rule.params })) {
         const custom = isTokenIdent(token) && token[4].value.startsWith('--')
         if (isTokenDimension(token) || (custom && !this.media.has(token[4].value))) {
@@ -162,6 +177,20 @@ for (const [, prop] of read('.vitepress/config.ts').matchAll(/(--prose-[\w-]+):/
   VOCABULARY.properties.add(prop)
 }
 
+// Names each custom property the sheets read as a font family.
+function facedBy(sheets: string[]): Set<string> {
+  const faced = new Set<string>()
+  for (const sheet of sheets) {
+    parse(sheet).walkDecls(/^font(-family)?$/, decl => {
+      for (const node of parseListOfComponentValues(tokenize({ css: decl.value }))) {
+        const ref = named(node, 'var') ? referenced(node) : undefined
+        if (ref) faced.add(ref[4].value)
+      }
+    })
+  }
+  return faced
+}
+
 // Names each custom property the sheets read as a `color-mix()` argument,
 // since a percentage such a property holds is a share.
 function mixedBy(sheets: string[]): Set<string> {
@@ -188,7 +217,7 @@ function referenced(node: FunctionNode): TokenIdent | undefined {
 }
 
 describe('the site stylesheets', () => {
-  it.each(STYLESHEETS)('%s writes every value through a token tokens.css declares', file => {
+  it.each(STYLESHEETS)('%s writes every value through a declared token', file => {
     expect(VOCABULARY.strays(read(file))).toStrictEqual([])
   })
 })
@@ -224,7 +253,7 @@ describe('tokens.css', () => {
 
 describe('strays', () => {
   const strayed = (css: string) =>
-    new Vocabulary(VOCABULARY.media, mixedBy([css]), VOCABULARY.properties).strays(css)
+    new Vocabulary(facedBy([css]), VOCABULARY.media, mixedBy([css]), VOCABULARY.properties).strays(css)
 
   it.each([
     { css: '.a { margin: 0 14px; }',                                                            kind: 'length',   value: '14px' },
@@ -238,6 +267,10 @@ describe('strays', () => {
     { css: '.a { color: rgb(0 0 0 / 28%); }',                                                   kind: 'color',    value: 'rgb(0 0 0 / 28%)' },
     { css: '.a { font-family: Georgia; }',                                                      kind: 'typeface', value: 'Georgia' },
     { css: '.a { font: var(--prose-text-1rem) "Lora"; }',                                       kind: 'typeface', value: '"Lora"' },
+    { css: '.a { font: 600 var(--prose-text-1rem) Georgia; }',                                  kind: 'typeface', value: 'Georgia' },
+    { css: '.a { --a: Georgia; font-family: var(--a); }',                                       kind: 'typeface', value: 'Georgia' },
+    { css: '@container (min-width: 400px) { .a { color: inherit; } }',                          kind: 'media',    value: '400px' },
+    { css: '@custom-media --a (max-width: 999px);',                                             kind: 'media',    value: '--a' },
     { css: '@media (min-width: 1280px) { .a { color: inherit; } }',                             kind: 'media',    value: '1280px' },
     { css: '@media (--prose-bp-huge) { .a { color: inherit; } }',                               kind: 'media',    value: '--prose-bp-huge' },
     { css: '.a { gap: var(--prose-space-19); }',                                                kind: 'token',    value: '--prose-space-19' },
@@ -262,6 +295,7 @@ describe('strays', () => {
       '  width       : calc(100vw - var(--prose-space-32));',
       '  transform   : translate(-50%, var(--a-offset)) rotate(-6deg);',
       '  font-family : var(--vp-font-family-mono);',
+      '  font        : italic 600 var(--prose-text-sm) / 1.4 var(--prose-font-display);',
       '  line-height : 1.6;',
       '}',
       '.b { font-family: inherit; }',
