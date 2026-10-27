@@ -1,5 +1,4 @@
 .kicker,
-.vp-doc .custom-block-title,
 .vp-doc th {
   margin         : 0;
   font-family    : var(--vp-font-family-mono);
@@ -17,9 +16,4 @@
 .kicker[data-variant="rule"]::after {
   content             : " —";
   margin-inline-start : var(--prose-space-4);
-}
-
-.vp-doc .custom-block-title {
-  margin-bottom : var(--prose-space-8);
-  font-weight   : 700;
 }

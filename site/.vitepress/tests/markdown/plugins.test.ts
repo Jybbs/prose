@@ -1,16 +1,17 @@
-import MarkdownIt                from 'markdown-it'
-import type { MarkdownRenderer } from 'vitepress'
+import MarkdownIt                                        from 'markdown-it'
+import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
 import { glossaryPlugin }          from '../../lib/glossary/plugin'
 import { bodyLinkPlugin }          from '../../lib/markdown/body-link-plugin'
+import { calloutPlugin }           from '../../lib/markdown/callout-plugin'
 import { emblemPlugin }            from '../../lib/markdown/emblem-plugin'
 import { inertEnv, plainTermsEnv } from '../../lib/markdown/inert-env'
-import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
 import { renderPlainInlineHtml }   from '../../lib/markdown/renderer'
 import { sectionHeadingPlugin }    from '../../lib/markdown/section-heading-plugin'
 import type { DiscoveredRule }     from '../../lib/rules/discovery'
 import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 import { emblemsOf }               from '../../lib/shared/emblems'
+import { siteDir }                 from '../../lib/shared/paths'
 import { SECTIONS }                from '../../lib/shared/registries'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
@@ -19,15 +20,30 @@ const render = (configure: (md: MarkdownIt) => void, src: string, env: object = 
   return md.render(src, env)
 }
 
-describe('proseMarkPlugin', () => {
-  it('wraps a standalone Prose in a prose-mark span', () => {
-    expect(render(md => md.use(proseMarkPlugin), 'Prose formats code'))
-      .toContain('<span class="prose-mark">Prose</span>')
+describe('calloutPlugin', () => {
+  const callout = async (src: string): Promise<string> => {
+    const md = await createMarkdownRenderer(siteDir(import.meta.url), {
+      config: renderer => { renderer.use(calloutPlugin) }
+    })
+    return md.render(src)
+  }
+
+  it.each([
+    ['danger',  '†', 'Danger'],
+    ['info',    '¶', 'Info'],
+    ['tip',     '§', 'Tip'],
+    ['warning', '†', 'Warning']
+  ])('opens a %s callout on its mark, its kind word, and its title', async (kind, mark, label) => {
+    await expect(callout(`::: ${kind} Holds \`x\`\nBody.\n:::`)).resolves.toContain(
+      `<div class="${kind} custom-block"><p class="custom-block-title">`
+      + `<span class="callout-mark" aria-hidden="true">${mark}</span>`
+      + `<span class="callout-kind">${label}</span>`
+      + '<span class="callout-title">Holds <code>x</code></span></p>')
   })
 
-  it('keeps hyphenated and snake_case compounds literal', () => {
-    expect(render(md => md.use(proseMarkPlugin), 'the prose-mark class and prose_mark name'))
-      .not.toContain('<span class="prose-mark">')
+  it('leaves the title out of a callout the page gives none', async () => {
+    await expect(callout('::: tip\nBody.\n:::'))
+      .resolves.toContain('<span class="callout-kind">Tip</span></p>')
   })
 })
 
@@ -60,7 +76,7 @@ describe('sectionHeadingPlugin', () => {
 
 describe('bodyLinkPlugin', () => {
   it('adds the body-link class to inline links', () => {
-    expect(render(md => md.use(bodyLinkPlugin), '[docs](/x)')).toContain('class="body-link underline-draw"')
+    expect(render(md => md.use(bodyLinkPlugin), '[docs](/x)')).toContain('class="body-link"')
   })
 })
 
@@ -154,7 +170,7 @@ describe('ruleLinkPlugin', () => {
 
   it('renders a primitive wiki-link as a body link', () => {
     expect(run('see [[aligner]]'))
-      .toContain('<a class="body-link underline-draw" href="/architecture/aligner">')
+      .toContain('<a class="body-link" href="/architecture/aligner">')
   })
 
   it('promotes an inline-code rule slug to a doc link', () => {

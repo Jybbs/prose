@@ -39,7 +39,7 @@
   margin      : 0;
   padding     : var(--prose-space-0-85rem) var(--prose-space-1rem);
   background  : var(--vp-c-bg-soft);
-  border-left : var(--prose-border-3) solid var(--prose-palette-ube);
+  border-left : var(--prose-border-3) solid var(--vp-c-divider);
 }
 
 .pq-row .pq-aside code {

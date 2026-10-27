@@ -5,10 +5,36 @@
 .rules-plate-key {
   display        : flex;
   flex-wrap      : wrap;
-  gap            : var(--prose-space-8);
+  gap            : var(--prose-space-12) var(--prose-space-28);
   margin-top     : var(--prose-space-24);
-  padding-bottom : var(--prose-space-18);
+  padding-bottom : var(--prose-space-20);
   border-bottom  : var(--prose-border-1) solid var(--vp-c-divider);
+}
+
+.rules-plate-key .family-chip {
+  padding    : var(--prose-space-2) 0;
+  border     : 0;
+  background : none;
+  cursor     : pointer;
+  transition : color var(--prose-transition-slow);
+}
+
+.rules-plate-key .family-chip > span {
+  text-decoration       : underline var(--prose-border-1) var(--vp-c-divider);
+  text-underline-offset : var(--prose-space-0-45em);
+  transition            : text-decoration-color var(--prose-transition);
+}
+
+.rules-plate-key .family-chip[aria-pressed="true"] > span {
+  text-decoration-color : var(--vp-c-text-1);
+}
+
+.rules-plate[data-raised] .rules-plate-key .family-chip {
+  color : var(--vp-c-text-2);
+}
+
+.rules-plate[data-raised] .rules-plate-key .family-chip.is-raised {
+  color : var(--vp-c-text-1);
 }
 
 .rules-plate-letter {
@@ -49,6 +75,7 @@
   margin       : 0;
   padding      : var(--prose-space-3) 0;
   break-inside : avoid;
+  cursor       : pointer;
 }
 
 .vp-doc a.rules-plate-slug,
@@ -60,12 +87,23 @@ a.rules-plate-slug {
   line-height           : 1.5;
   text-decoration       : underline transparent;
   text-underline-offset : var(--prose-space-3);
-  transition            : text-decoration-color var(--prose-transition);
+  transition            :
+    color                 var(--prose-transition-slow),
+    text-decoration-color var(--prose-transition);
 }
 
 .vp-doc a.rules-plate-slug:hover,
 a.rules-plate-slug:hover {
-  text-decoration-color : var(--family-color);
+  text-decoration-color : currentColor;
+}
+
+.vp-doc .rules-plate[data-raised] a.rules-plate-slug {
+  color : var(--vp-c-text-2);
+}
+
+.vp-doc .rules-plate[data-raised] .is-raised a.rules-plate-slug {
+  color       : var(--vp-c-text-1);
+  font-weight : 500;
 }
 
 .rules-plate-slugs > li:hover,

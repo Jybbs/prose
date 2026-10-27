@@ -1,7 +1,3 @@
-.per-rule-facets-section[data-family='generic'] {
-  --family-color : var(--prose-palette-casper);
-}
-
 .per-rule-facets {
   display        : flex;
   flex-direction : column;

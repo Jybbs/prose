@@ -3,27 +3,16 @@ import fs from 'node:fs'
 import { differenceCiede2000, interpolate, wcagContrast } from 'culori'
 import { parse as parseCss }                              from 'postcss'
 
-import * as emblems                                  from '../../lib/shared/emblems'
-import { FAMILIES, PALETTE }                         from '../../lib/shared/palette'
-import { GLOSSARY_FAMILY_META, type GlossaryFamily } from '../../lib/shared/registries'
-import { siteSheets }                                from '../support'
+import * as emblems    from '../../lib/shared/emblems'
+import * as palette    from '../../lib/shared/palette'
+import * as registries from '../../lib/shared/registries'
+import * as support    from '../support'
 
-const FAMILIES_LISTED = Object.keys(GLOSSARY_FAMILY_META) as GlossaryFamily[]
+const FAMILIES_LISTED = Object.keys(registries.GLOSSARY_FAMILY_META) as registries.GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
 
-// Reads each declaration a stylesheet makes under `selector`.
-function declared(file: string | URL, selector: string): Record<string, string> {
-  const props: Record<string, string> = {}
-  parseCss(fs.readFileSync(file, 'utf8')).walkRules(rule => {
-    if (rule.selector !== selector) return
-    rule.walkDecls(decl => { props[decl.prop] = decl.value })
-  })
-  return props
-}
-
-const VITEPRESS = new URL('../../../node_modules/vitepress/dist/client/theme-default/styles/vars.css', import.meta.url)
-const tokens    = declared(new URL('../../theme/styles/tokens.css', import.meta.url), ':root')
-const share     = (token: string): number => parseFloat(tokens[token]) / 100
+const tokens = support.declared(new URL('../../theme/styles/tokens.css', import.meta.url), ':root')
+const share  = (token: string): number => parseFloat(tokens[token]) / 100
 
 interface Scheme {
   bg    : string
@@ -31,14 +20,21 @@ interface Scheme {
   text  : string
 }
 
-// Reads the page and text colors VitePress declares for one scheme beside the
-// brand color `tokens.css` sets for it.
-function scheme(selector: string, brand: string): Scheme {
-  const vars = declared(VITEPRESS, selector)
-  return { bg: vars['--vp-c-bg'], brand, text: vars['--vp-c-text-1'] }
+// Reads the page ground the palette declares and the text color VitePress
+// declares for one scheme, beside the brand color `tokens.css` sets for it.
+function scheme(brand: string, name: 'dark' | 'light'): Scheme {
+  const selector = name === 'dark' ? '.dark' : ':root'
+  return {
+    bg    : palette.GROUNDS.page[name],
+    brand : brand,
+    text  : support.vitepressVar('--vp-c-text-1', selector)
+  }
 }
 
-const SCHEMES = { dark: scheme('.dark', PALETTE['ube-pale']), light: scheme(':root', PALETTE.ube) }
+const SCHEMES = {
+  dark  : scheme(palette.PALETTE['ube-pale'], 'dark'),
+  light : scheme(palette.PALETTE.ube, 'light')
+}
 
 // Mixes the way `color-mix(in srgb, hue <share>, base)` does.
 const mix = (hue: string, base: string, amount: number) => interpolate([base, hue], 'rgb')(amount)
@@ -48,7 +44,7 @@ describe('emblemsOf', () => {
 
   it('keys every family badge and platform emoji on its emblem', () => {
     expect([...map.keys()]).toStrictEqual([
-      ...FAMILIES_LISTED.map(family => GLOSSARY_FAMILY_META[family].badge), '🐧', '🍎'
+      ...FAMILIES_LISTED.map(family => registries.GLOSSARY_FAMILY_META[family].badge), '🐧', '🍎'
     ])
   })
 
@@ -65,7 +61,7 @@ describe('emblemsOf', () => {
 describe('familyEmblem', () => {
   it.each(FAMILIES_LISTED)('names the %s emblem after its family label', family => {
     expect(emblems.familyEmblem(family))
-      .toMatchObject({ family, name: GLOSSARY_FAMILY_META[family].label })
+      .toMatchObject({ family, name: registries.GLOSSARY_FAMILY_META[family].label })
   })
 })
 
@@ -82,30 +78,41 @@ describe('MOTIFS', () => {
 })
 
 describe('the badge ink', () => {
-  const ink    = share('--prose-tint-ink')
-  const ground = share('--prose-tint-ground')
+  const ink     = share('--prose-tint-ink')
+  const ground  = (colors: Scheme) => mix(colors.text, colors.bg, share('--prose-tint-faint'))
+  const schemes = Object.entries(SCHEMES)
+  const raised  = schemes.flatMap(([name, colors]) =>
+    registries.FAMILY_ORDER.map(family => [name, family, colors] as const))
 
-  const cases = Object.entries(SCHEMES).flatMap(([name, colors]) => [
-    ...FAMILIES_LISTED.map(family => [name, family, FAMILIES[family], colors] as const),
-    [name, 'platform', colors.brand, colors] as const
-  ])
-
-  it.each(cases)('clears 3:1 on its ground in the %s scheme for %s', (_scheme, _who, hue, colors) => {
-    const contrast = wcagContrast(mix(hue, colors.text, ink), mix(hue, colors.bg, ground))
-    expect(contrast).toBeGreaterThanOrEqual(3)
+  it.each(schemes)('clears 3:1 at rest on the neutral ground in the %s scheme', (_scheme, colors) => {
+    expect(wcagContrast(colors.text, ground(colors))).toBeGreaterThanOrEqual(3)
   })
+
+  it.each(schemes)('clears 3:1 for a platform on the neutral ground in the %s scheme', (_, colors) => {
+    expect(wcagContrast(mix(colors.brand, colors.text, ink), ground(colors))).toBeGreaterThanOrEqual(3)
+  })
+
+  it.each(raised)(
+    'clears 3:1 raised on the page in the %s scheme for %s',
+    (_scheme, family, colors) => {
+      expect(wcagContrast(mix(palette.FAMILIES[family], colors.text, ink), colors.bg))
+        .toBeGreaterThanOrEqual(3)
+    }
+  )
 
   it('applies the ink and the ground these cases measure', () => {
     const nib = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
-    const hue = 'var(--family-color, var(--vp-c-brand-1))'
-    expect(declared(nib, '.nib-badge').color)
-      .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ink), var(--vp-c-text-1))`)
-    expect(declared(nib, '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link')['background-color'])
-      .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ground), var(--vp-c-bg))`)
+    expect(support.declared(nib, '.nib-badge').color)
+      .toBe('color-mix(in srgb, var(--family-color) var(--prose-tint-ink), var(--vp-c-text-1))')
+    const grounds = '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link'
+    expect(support.declared(nib, grounds)['background-color'])
+      .toBe('var(--prose-chip-ground)')
+    expect(tokens['--prose-chip-ground'])
+      .toBe('color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg))')
   })
 
   it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
-    const recolored = siteSheets().filter(({ root }) => {
+    const recolored = support.siteSheets().filter(({ root }) => {
       let sets = false
       root.walkRules(rule => {
         if (rule.selector.includes('.nib-badge')) rule.walkDecls('color', () => { sets = true })
@@ -124,8 +131,8 @@ describe('the badge ink', () => {
     expect(painted).toStrictEqual([])
   })
 
-  it.each(Object.entries(SCHEMES))('keeps each family an ink of its own in the %s scheme', (_scheme, colors) => {
-    const inks = FAMILIES_LISTED.map(family => mix(FAMILIES[family], colors.text, ink))
+  it.each(schemes)('keeps each raised family an ink of its own in the %s scheme', (_scheme, colors) => {
+    const inks = registries.FAMILY_ORDER.map(family => mix(palette.FAMILIES[family], colors.text, ink))
     const gaps = inks.flatMap((a, i) => inks.slice(i + 1).map(b => differenceCiede2000()(a, b)))
     expect(Math.min(...gaps)).toBeGreaterThan(5)
   })

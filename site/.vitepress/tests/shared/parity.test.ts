@@ -50,8 +50,25 @@ const facetedPages = discovered.flatMap(rule => {
 })
 
 describe('family registry and stylesheet parity', () => {
-  it('every glossary family has a [data-family] accent, with no orphans', () => {
-    expect(accentKeys('family')).toStrictEqual(glossaryFamilies)
+  it('every rule family has a [data-family] accent and a [data-raised] hue, with no orphans', () => {
+    const ruleFamilies = [...registries.FAMILY_ORDER].sort()
+    expect(accentKeys('family')).toStrictEqual(ruleFamilies)
+    expect(accentKeys('raised')).toStrictEqual(ruleFamilies)
+  })
+
+  it('draws each rule family in ink until a [data-raised] container names it', () => {
+    const values = new Map<string, string>()
+    parse(styles('accents.css')).walkDecls(decl => {
+      const selector = (decl.parent as { selector: string }).selector
+      values.set(`${selector} ${decl.prop}`, decl.value.replaceAll(/\s+/g, ' '))
+    })
+    expect(values.get(':root --family-color')).toBe('var(--vp-c-text-1)')
+    for (const family of registries.FAMILY_ORDER) {
+      expect.soft(values.get(`[data-family="${family}"] --family-color`))
+        .toBe(`var(--raised-${family}, var(--vp-c-text-1))`)
+      expect.soft(values.get(`[data-raised="${family}"] --raised-${family}`))
+        .toBe(`var(--prose-family-${family})`)
+    }
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {

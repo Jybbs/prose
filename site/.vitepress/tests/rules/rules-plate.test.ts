@@ -21,9 +21,41 @@ const plate = () => mount(RulesPlate, {
 })
 
 describe('RulesPlate', () => {
-  it('sets every family chip once as the key, each linking its family page', () => {
-    expect(plate().findAll('.rules-plate-key .family-chip').map(chip => chip.attributes('href')))
-      .toStrictEqual(FAMILY_ORDER.map(family => `/rules/${family}/`))
+  it('sets every family once as the key, each a button that pins its family', () => {
+    const chips = plate().findAll('.rules-plate-key .family-chip').map(chip =>
+      [chip.element.tagName, chip.attributes('data-family'), chip.attributes('aria-pressed')])
+    expect(chips).toStrictEqual(FAMILY_ORDER.map(family => ['BUTTON', family, 'false']))
+  })
+
+  it('raises the family a reader points at in the key until the pointer leaves', async () => {
+    const w    = plate()
+    const chip = w.get('.rules-plate-key [data-family="ordering"]')
+    await chip.trigger('mouseenter')
+    expect(w.get('.rules-plate').attributes('data-raised')).toBe('ordering')
+    expect(w.findAll('.rules-plate-slugs > li.is-raised').map(item => item.text()))
+      .toStrictEqual(['alphabetize-siblings'])
+    await chip.trigger('mouseleave')
+    expect(w.get('.rules-plate').attributes('data-raised')).toBeUndefined()
+  })
+
+  it('holds a clicked family raised until a second click or Escape releases it', async () => {
+    const w    = plate()
+    const chip = w.get('.rules-plate-key [data-family="lint"]')
+    await chip.trigger('click')
+    expect(chip.attributes('aria-pressed')).toBe('true')
+    expect(w.get('.rules-plate').attributes('data-raised')).toBe('lint')
+    const other = w.get('.rules-plate-key [data-family="ordering"]')
+    await other.trigger('mouseenter')
+    expect([chip.attributes('aria-pressed'), other.attributes('aria-pressed')])
+      .toStrictEqual(['true', 'false'])
+    await other.trigger('mouseleave')
+    await chip.trigger('click')
+    expect(w.get('.rules-plate').attributes('data-raised')).toBeUndefined()
+    await w.get('.rules-plate-slugs > li[data-family="alignment"]').trigger('click')
+    expect(w.get('.rules-plate').attributes('data-raised')).toBe('alignment')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await w.vm.$nextTick()
+    expect(w.get('.rules-plate').attributes('data-raised')).toBeUndefined()
   })
 
   it('hangs one letter per first letter of a slug, its rules beneath it', () => {

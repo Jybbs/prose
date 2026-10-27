@@ -3,7 +3,6 @@ import path from 'node:path'
 
 import postcssGlobalData                          from '@csstools/postcss-global-data'
 import postcssCustomMedia                         from 'postcss-custom-media'
-import githubDark                                 from 'shiki/themes/github-dark.mjs'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
@@ -22,9 +21,9 @@ import { buildPhraseToSlug }                          from './lib/glossary/phras
 import { glossaryPlugin }                             from './lib/glossary/plugin'
 import { readPlatforms }                              from './lib/guide/platforms'
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
+import { calloutPlugin }                              from './lib/markdown/callout-plugin'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
-import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
@@ -53,7 +52,6 @@ const discoveredPrimitives = discoverPrimitives(paths.architectureDir(import.met
 const emblems              = emblemsOf(readPlatforms(paths.repoRoot(import.meta.url)))
 const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
-const shikiDarkBg          = githubDark.colors?.['editor.background'] as string
 const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const fixtureSets          = {
@@ -71,8 +69,7 @@ export default defineConfig({
     ['link', { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' }],
     ['meta', { content: themeColor,                name:     'theme-color'   }],
     ['meta', { content: 'summary_large_image',     name:     'twitter:card'  }],
-    ['meta', { content: constants.SITE_NAME,       property: 'og:site_name'  }],
-    ['style', {}, `:root{--prose-shiki-dark-bg:${shikiDarkBg}}`]
+    ['meta', { content: constants.SITE_NAME,       property: 'og:site_name'  }]
   ],
   lastUpdated   : true,
   markdown: {
@@ -82,8 +79,8 @@ export default defineConfig({
       md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
-      md.use(proseMarkPlugin)
       md.use(sectionHeadingPlugin)
+      md.use(calloutPlugin)
       md.use(emblemPlugin(emblems))
       md.use(bodyLinkPlugin)
     },

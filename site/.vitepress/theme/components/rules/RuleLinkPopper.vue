@@ -64,7 +64,7 @@ onBeforeUnmount(() => clearTimeout(timer))
     theme="rule-card"
     :auto-hide="false"
     :no-auto-focus="true"
-    :popper-class="`rule-card-popper fam-${rule?.family ?? ''}`"
+    popper-class="rule-card-popper"
     :popper-triggers="[]"
     :reference-node="reference"
     :shown="rule !== null"

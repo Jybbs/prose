@@ -33,7 +33,7 @@ const installCmd = `uv tool install ${PYPI_PACKAGE}`
     <div class="landing-cta-body">
       <p class="landing-cta-kicker kicker">Read on</p>
       <p class="landing-cta-lede">
-        Bring <em><span class="prose-mark">Prose</span></em> to your own pages and make the next save <em>legible</em>.
+        Bring <em>Prose</em> to your own pages and make the next save <em>legible</em>.
       </p>
       <div class="landing-cta-cmd copy-host" aria-label="Install command">
         <span class="landing-cta-prompt" aria-hidden="true">$</span>

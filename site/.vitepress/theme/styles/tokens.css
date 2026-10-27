@@ -52,9 +52,7 @@
   --prose-tint-35                : 35%;
   --prose-tint-38                : 38%;
   --prose-tint-40                : 40%;
-  --prose-tint-42                : 42%;
   --prose-tint-45                : 45%;
-  --prose-tint-48                : 48%;
   --prose-tint-50                : 50%;
   --prose-tint-55                : 55%;
   --prose-tint-56                : 56%;
@@ -71,7 +69,6 @@
   --prose-tint-82                : 82%;
   --prose-tint-85                : 85%;
   --prose-tint-88                : 88%;
-  --prose-tint-95                : 95%;
 
   --prose-tracking-0-01em        : 0.01em;
   --prose-tracking-0-02em        : 0.02em;
@@ -324,18 +321,14 @@
 
   --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-30), var(--vp-c-bg));
   --prose-panel-wash-card        : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-35), var(--vp-c-bg));
+  --prose-chip-ground            : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg));
 
-  --prose-scrollbar-thumb        : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-45), var(--vp-c-divider));
+  --prose-scrollbar-thumb        : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-45), var(--vp-c-divider));
 
   --vp-c-brand-1                 : var(--prose-palette-ube);
   --vp-c-brand-2                 : var(--prose-palette-ube-mid);
   --vp-c-brand-3                 : var(--prose-palette-ube-pale);
   --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-medium), transparent);
-
-  --vp-c-tip-1                   : var(--vp-c-brand-1);
-  --vp-c-tip-2                   : var(--vp-c-brand-3);
-  --vp-c-tip-3                   : var(--vp-c-brand-3);
-  --vp-c-tip-soft                : var(--vp-c-brand-soft);
 
   --vp-button-brand-active-bg    : var(--prose-palette-ube-deep);
   --vp-button-brand-bg           : var(--vp-c-brand-1);
@@ -344,19 +337,20 @@
   --vp-button-brand-hover-border : transparent;
 
   --vp-code-block-bg             : var(--prose-palette-grams-hair);
+  --vp-code-color                : var(--vp-c-text-1);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
+  --vp-code-link-color           : var(--prose-role-link);
+  --vp-code-link-hover-color     : var(--prose-role-link);
 }
 
 .dark {
-  --vp-c-brand-1          : var(--prose-palette-ube-pale);
-  --vp-c-brand-2          : var(--prose-palette-ube-mid);
-  --vp-c-brand-3          : var(--prose-palette-ube);
-  --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
-  --vp-c-bg-soft          : var(--prose-palette-woodsmoke);
-  --vp-code-block-bg      : var(--prose-shiki-dark-bg);
-  --prose-role-emphasis   : var(--prose-palette-champagne);
-  --prose-role-link-hover : var(--prose-palette-ube);
+  --vp-c-brand-1     : var(--prose-palette-ube-pale);
+  --vp-c-brand-2     : var(--prose-palette-ube-mid);
+  --vp-c-brand-3     : var(--prose-palette-ube);
+  --vp-c-brand-soft  : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
+  --vp-c-bg-soft     : var(--prose-palette-woodsmoke);
+  --vp-code-block-bg : var(--prose-shiki-dark-bg);
 }
 
 .shiki,

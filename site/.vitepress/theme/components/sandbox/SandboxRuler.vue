@@ -5,7 +5,6 @@ import type { CSSProperties }                      from 'vue'
 
 import type { LengthKnob } from '../../../lib/sandbox/config-schema.data'
 import * as rulerScale     from '../../../lib/sandbox/ruler-scale'
-import { PALETTE }         from '../../../lib/shared/palette'
 
 const props = defineProps<{
   lengths : readonly LengthKnob[]
@@ -13,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  dragging  : [key: string, hue: string],
+  dragging  : [key: string],
   preview   : [key: string, value: number],
   setLength : [key: string, value: number]
 }>()
@@ -23,7 +22,6 @@ const MIN  = rulerScale.LENGTH_MIN
 const SPAN = MAX - MIN
 
 const DRAG_SLOP = 3
-const HUE_NAMES: readonly (keyof typeof PALETTE)[] = ['ube', 'dexter', 'whiskey']
 const MARKS     = [MIN, 80, 130, MAX] as const
 
 interface DragState {
@@ -96,7 +94,7 @@ function dragEnd(event: PointerEvent): void {
   if (held) emit('setLength', held.key, held.value)
   preview.value = null
   drag.value    = null
-  emit('dragging', '', '')
+  emit('dragging', '')
 }
 
 function dragMove(knob: LengthKnob, event: PointerEvent): void {
@@ -109,14 +107,14 @@ function dragMove(knob: LengthKnob, event: PointerEvent): void {
   emit('preview', knob.key, value)
 }
 
-function dragStart(hue: string, knob: LengthKnob, event: PointerEvent): void {
+function dragStart(knob: LengthKnob, event: PointerEvent): void {
   if (editing.value === knob.key || event.button !== 0 || !trackEl.value) return
   event.preventDefault()
   const stop = event.currentTarget as HTMLElement
   const rect = trackEl.value.getBoundingClientRect()
   const unit = rect.width / SPAN
   stop.setPointerCapture(event.pointerId)
-  emit('dragging', knob.key, hue)
+  emit('dragging', knob.key)
   drag.value = {
     key       : knob.key,
     live      : false,
@@ -131,10 +129,6 @@ function focusInput(el: unknown): void {
   if (el instanceof HTMLInputElement && el !== document.activeElement) el.select()
 }
 
-function hueOf(index: number): string {
-  return `var(--prose-palette-${HUE_NAMES[index % HUE_NAMES.length]})`
-}
-
 function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
   const next = rulerScale.steppedLength(event.key, event.shiftKey, props.valueOf(knob.key))
   if (next === null) return
@@ -142,9 +136,8 @@ function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
   emit('setLength', knob.key, rulerScale.clampLength(next))
 }
 
-function stopStyle(index: number, knob: LengthKnob): CSSProperties {
+function stopStyle(knob: LengthKnob): CSSProperties {
   return {
-    '--hue'  : hueOf(index),
     '--pct'  : rulerScale.pctOfLength(shownValue(knob)),
     '--tier' : tierOf(knob.key)
   }
@@ -161,11 +154,11 @@ function tierOf(key: string): number {
     <div ref="trackEl" class="sandbox-ruler" role="group" aria-label="Line lengths" :style="{ '--rows': rows }">
       <div class="sandbox-ruler-track" aria-hidden="true" />
       <span
-        v-for="(knob, index) in lengths"
+        v-for="knob in lengths"
         :key="`default-${knob.key}`"
         class="sandbox-ruler-default"
         aria-hidden="true"
-        :style="{ left: `${rulerScale.pctOfLength(knob.default)}%`, '--hue': hueOf(index) }"
+        :style="{ left: `${rulerScale.pctOfLength(knob.default)}%` }"
       />
       <span
         v-for="mark in MARKS"
@@ -175,10 +168,10 @@ function tierOf(key: string): number {
         :style="{ left: `${rulerScale.pctOfLength(mark)}%` }"
       >{{ mark }}</span>
       <div
-        v-for="(knob, index) in lengths"
+        v-for="knob in lengths"
         :key="knob.key"
         class="sandbox-ruler-stop"
-        :style="stopStyle(index, knob)"
+        :style="stopStyle(knob)"
         :data-dragging="drag?.key === knob.key || null"
         :role="editing === knob.key ? undefined : 'slider'"
         :tabindex="editing === knob.key ? undefined : 0"
@@ -186,7 +179,7 @@ function tierOf(key: string): number {
         :aria-valuemin="MIN"
         :aria-valuemax="MAX"
         :aria-valuenow="shownValue(knob)"
-        @pointerdown="dragStart(hueOf(index), knob, $event)"
+        @pointerdown="dragStart(knob, $event)"
         @pointermove="dragMove(knob, $event)"
         @pointerup="dragEnd"
         @pointercancel="dragEnd"

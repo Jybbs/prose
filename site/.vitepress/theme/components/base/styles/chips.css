@@ -18,7 +18,7 @@ a.rule-chip {
 
 .family-chip,
 .rule-chip {
-  border-left: var(--prose-border-2) solid var(--family-color);
+  border-left: var(--prose-border-2) solid var(--vp-c-divider);
 }
 
 .family-chip,
@@ -36,7 +36,7 @@ a.rule-chip {
 
 a.family-chip:hover,
 a.rule-chip:hover {
-  border-color      : var(--family-color);
+  border-color      : var(--vp-c-text-3);
   border-left-width : var(--prose-border-3);
   padding-left      : var(--prose-space-7);
 }

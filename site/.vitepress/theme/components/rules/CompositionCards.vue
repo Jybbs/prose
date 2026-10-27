@@ -15,18 +15,14 @@ import { data as composition }            from '../../../lib/rules/composition.d
 import { casesForRule, type RuleSegment } from '../../../lib/rules/rule-view'
 import { data as rules }                  from '../../../lib/rules/rules.data'
 import type { SavedSession }              from '../../../lib/sandbox/session'
-import { railPaint }                      from '../../../lib/shared/family-rail'
 import type { FixtureTab }                from '../../../lib/shared/fixture-tab'
 import InlineProse                        from '../base/InlineProse.vue'
 
 interface CardRow extends FixtureEntry {
-  case           : string
-  dominantFamily : string | null
-  headlinePaint  : string
-  railPaint      : string
-  sandboxSeed    : SavedSession
-  segments       : readonly RuleSegment[]
-  titleHtml      : string
+  case        : string
+  sandboxSeed : SavedSession
+  segments    : readonly RuleSegment[]
+  titleHtml   : string
 }
 
 const props = defineProps<{ rule?: string }>()
@@ -34,21 +30,15 @@ const props = defineProps<{ rule?: string }>()
 const { frontmatter } = useData()
 
 function toCardRow(entry: CompositionCase): CardRow {
-  const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
   return {
     ...fixtureEntry(frontmatter.value, COMPOSITION_RULE, entry.case),
-    case           : entry.case,
-    dominantFamily : families[0] ?? null,
-    headlinePaint  : railPaint(families, 'to right'),
-    railPaint      : railPaint(families),
-    sandboxSeed    : { configToml: entry.configToml, source: entry.source },
-    titleHtml      : entry.titleHtml,
-    segments       : entry.rules.map((slug, idx) => ({
-      family : families[idx] ?? null,
-      index  : idx + 1,
-      rule   : rules.bySlug[slug] ?? null,
-      slug
-    }))
+    case        : entry.case,
+    sandboxSeed : { configToml: entry.configToml, source: entry.source },
+    titleHtml   : entry.titleHtml,
+    segments    : entry.rules.map((slug, idx) => {
+      const rule = rules.bySlug[slug] ?? null
+      return { family: rule?.family ?? null, index: idx + 1, rule, slug }
+    })
   }
 }
 
@@ -82,9 +72,7 @@ useHashOpen(fragment => {
       :id="row.case"
       class="fixture-card"
       :class="{ 'is-open': activeCase === row.case }"
-      :data-family="row.dominantFamily"
       :data-edits="row.changesSource"
-      :style="{ '--rail-paint': row.railPaint, '--headline-paint': row.headlinePaint }"
       @click="toggle(row)"
     >
       <div class="fixture-card-summary-row">

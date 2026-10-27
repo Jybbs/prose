@@ -2,9 +2,10 @@
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
+import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
+import { useRaisedFamily }  from '../../../lib/composables/use-raised-family'
 import { railPaint }        from '../../../lib/shared/family-rail'
 import { stripSuffix }      from '../../../lib/shared/strip-suffix'
-import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 
 const props = defineProps<{ forceRender?: boolean }>()
 
@@ -16,10 +17,11 @@ const onGlossaryPage = computed(() =>
 const visible = computed(() => props.forceRender || onGlossaryPage.value)
 
 const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
+const { on, shown }                                   = useRaisedFamily()
 </script>
 
 <template>
-  <aside v-if="visible" class="glossary-folio-index" aria-label="Glossary index">
+  <aside v-if="visible" class="glossary-folio-index" aria-label="Glossary index" :data-raised="shown">
     <div class="glossary-folio-search-header">
       <span class="glossary-folio-meta">{{ filtered.length }} of {{ ordered.length }}</span>
       <div class="glossary-folio-search panel">
@@ -48,9 +50,13 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
             <button
               type="button"
               class="glossary-folio-row"
-              :class="{ 'is-active': entry.slug === selected }"
+              :class="{
+                'is-active' : entry.slug === selected,
+                'is-raised' : shown !== null && entry.families.includes(shown)
+              }"
               :data-family="entry.primaryFamily"
               :style="{ '--rail-paint': railPaint(entry.families) }"
+              v-bind="on(entry.primaryFamily)"
               @click="selected = entry.slug"
             >
               <span class="glossary-folio-row-rail" aria-hidden="true"></span>

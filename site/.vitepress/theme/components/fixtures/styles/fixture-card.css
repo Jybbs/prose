@@ -1,10 +1,8 @@
-/* Shared chrome for fixture cards. Two variants share the same shell:
-   single-rule cards drawn by FixtureCard.vue carry a solid family-color rail,
-   and multi-rule cards drawn by CompositionCards.vue carry a top-to-bottom
-   gradient rail through each rule's family color in pipeline order. Both
-   leave the folio to the counter below, so one run numbers every card a
-   page shows. The rail stays painted whether the card is open or closed,
-   and no-edit cards mute it via `data-edits="false"`. */
+/* Draws the chrome the single-rule cards in FixtureCard.vue and the
+   multi-rule cards in CompositionCards.vue share. Both carry a rail in ink
+   and leave the folio to the counter below, so one run numbers every card a
+   page shows. The rail stays painted whether the card is open or closed, and
+   no-edit cards mute it via `data-edits="false"`. */
 
 @counter-style prose-fixture-folio {
   system : extends decimal;
@@ -35,7 +33,7 @@
   top            : 0;
   bottom         : 0;
   width          : var(--prose-size-3);
-  background     : var(--rail-paint, var(--family-color, var(--vp-c-divider)));
+  background     : var(--family-color);
   border-radius  : var(--prose-radius-sm) 0 0 var(--prose-radius-sm);
   pointer-events : none;
   transition     : opacity var(--prose-transition);
@@ -46,7 +44,7 @@
 }
 
 .fixture-card:hover {
-  border-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-50), var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--family-color) var(--prose-tint-50), var(--vp-c-divider));
 }
 
 .fixture-card.is-open {
@@ -111,7 +109,7 @@
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-1em);
   text-transform : none;
-  color          : var(--prose-palette-ube);
+  color          : var(--vp-code-color);
 }
 
 .fixture-card-actions {
@@ -167,7 +165,7 @@
   left       : 0;
   width      : var(--prose-size-30);
   height     : var(--prose-size-2);
-  background : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
+  background : var(--family-color);
 }
 
 .fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-desc::before {
@@ -195,13 +193,13 @@
 .fixture-card-desc code {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-0-85em);
-  color       : var(--prose-palette-ube);
+  color       : var(--vp-code-color);
 }
 
 .fixture-card-rule {
   height           : var(--prose-size-2);
   margin           : 0 0 var(--prose-space-14);
-  background       : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
+  background       : var(--family-color);
   transform        : scaleX(0);
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;

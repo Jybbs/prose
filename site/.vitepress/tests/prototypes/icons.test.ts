@@ -68,6 +68,7 @@ describe('Emblem', () => {
   it('sets the family whose hue a duotone takes', () => {
     const svg = draw(house({ tone: 'duotone' }))
     expect(svg.attributes('data-family')).toBe('docs')
+    expect(svg.attributes('style')).toContain('--emblem-family: var(--prose-family-docs);')
   })
 
   it.each([
@@ -122,7 +123,7 @@ describe('Emblem', () => {
       'data-form'     : setting.form,
       'data-terminal' : setting.terminal,
       'data-tone'     : setting.tone,
-      'style'         : `stroke-width: ${setting.weight};`
+      'style'         : expect.stringContaining(`stroke-width: ${setting.weight};`)
     })
   })
 

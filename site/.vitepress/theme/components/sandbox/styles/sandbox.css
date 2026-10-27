@@ -52,8 +52,8 @@
 }
 
 .sandbox-refresh[data-armed] {
-  border-color : var(--prose-role-warning);
-  color        : var(--prose-role-warning);
+  border-color : var(--prose-role-warning-rule);
+  color        : var(--prose-role-warning-ink);
   opacity      : 1;
 }
 
@@ -66,7 +66,7 @@
   align-items    : center;
   height         : var(--prose-size-28);
   padding        : 0 var(--prose-space-10);
-  border         : var(--prose-border-1) solid color-mix(in srgb, var(--prose-role-warning) var(--prose-tint-55), var(--vp-c-divider));
+  border         : var(--prose-border-1) solid var(--prose-role-warning-rule);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
   box-shadow     : var(--prose-shadow-tooltip);
@@ -210,11 +210,10 @@
 }
 
 /* An unrecognized key is not a lint finding, so the wave takes the warning hue
-   rather than the lint family's. Its row takes the wash a whole-line finding
+   rather than the squiggle's. Its row takes the wash a whole-line finding
    takes on the formatted panel. */
 .sandbox-toml .lint-flag {
-  --family-color     : var(--vp-c-warning-1);
-  --underline-accent : var(--vp-c-warning-1);
+  --lint-color : var(--vp-c-warning-1);
 }
 
 .sandbox-toml-display .line:has(.lint-flag) {

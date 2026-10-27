@@ -42,7 +42,6 @@ function clearFocus(token: sources.Token): void {
         :aria-selected="view === d"
         class="az-index-tab"
         :class="{ 'is-active': view === d }"
-        :data-domain="d"
         @click="view = d"
       >{{ sources.DOMAIN_LABELS[d] }}</button>
     </nav>
@@ -52,14 +51,13 @@ function clearFocus(token: sources.Token): void {
         v-for="[domain, tokens] in visibleGroups"
         :key="domain"
         class="az-index-section"
-        :data-domain="domain"
       >
         <header class="az-index-section-head">
           <span class="kicker az-index-section-folio">{{ sources.DOMAIN_LABELS[domain] }}</span>
           <span class="az-index-section-count">{{ tokens.length }} entries</span>
         </header>
         <ul class="az-index-keys">
-          <li v-for="token in tokens" :key="token.key" class="az-index-key" :data-domain="domain">
+          <li v-for="token in tokens" :key="token.key" class="az-index-key">
             <VDropdown
               theme="az-index"
               @apply-show="focus = token"
@@ -71,7 +69,7 @@ function clearFocus(token: sources.Token): void {
                 :aria-current="focus?.key === token.key ? 'true' : undefined"
               >{{ token.key }}</a>
               <template #popper>
-                <aside class="az-index-detail" :data-domain="token.domain">
+                <aside class="az-index-detail">
                   <header class="az-index-detail-banner">
                     <span class="az-index-detail-kicker">{{ sources.DOMAIN_LABELS[token.domain] }}</span>
                   </header>

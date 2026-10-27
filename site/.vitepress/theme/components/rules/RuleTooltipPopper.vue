@@ -7,7 +7,7 @@ defineProps<{ rule: RenderedRule | null }>()
 </script>
 
 <template>
-  <VTooltip v-if="rule" theme="rule-card" :no-auto-focus="true" :popper-class="`rule-card-popper fam-${rule.family}`">
+  <VTooltip v-if="rule" theme="rule-card" :no-auto-focus="true" popper-class="rule-card-popper">
     <slot />
     <template #popper>
       <RuleCard :rule="rule" :clickable="false" />
