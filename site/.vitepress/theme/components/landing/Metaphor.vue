@@ -37,7 +37,7 @@ import LandingSection from './LandingSection.vue'
           disappears, forcing the eye to slow down.
         </p>
         <p>
-          <em><span class="prose-mark">Prose</span></em> restores it. Aligned columns let the eye skim,
+          <em>Prose</em> restores it. Aligned columns let the eye skim,
           one-per-line collections make each entry a unit, and alphabetized
           groupings give every reader the same landmarks.
         </p>

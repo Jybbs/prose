@@ -19,7 +19,7 @@ import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
 const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
-const props   = defineProps<{ guide?: number | null, guideHue?: string, sandbox: ProseSandbox }>()
+const props   = defineProps<{ guide?: number | null, sandbox: ProseSandbox }>()
 const editing = defineModel<boolean>('editing', { default: false })
 const { diagnostics, drawn, error, formatNow, formatted, source, unstable } = props.sandbox
 
@@ -282,7 +282,7 @@ onUnmounted(run.cancel)
       v-if="guide != null"
       class="sandbox-surface-guide"
       aria-hidden="true"
-      :style="{ '--guide-col': guide, '--guide-hue': guideHue || undefined }"
+      :style="{ '--guide-col': guide }"
     />
     <header v-show="!editing" class="code-panel-label">app.py</header>
     <SandboxCodeEditor

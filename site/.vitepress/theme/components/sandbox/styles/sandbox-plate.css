@@ -12,7 +12,7 @@
 }
 
 .sandbox-plate {
-  --sandbox-plate-accent    : var(--family-color, var(--vp-c-brand-1));
+  --sandbox-plate-accent    : var(--family-color);
   --sandbox-plate-control-h : var(--prose-size-22);
   --sandbox-plate-switch-w  : var(--prose-size-40);
 

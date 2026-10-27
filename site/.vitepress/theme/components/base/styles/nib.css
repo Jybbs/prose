@@ -6,17 +6,18 @@
 }
 
 .nib-badge {
-  display  : inline-block;
-  flex     : none;
-  overflow : visible;
-  color    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ink), var(--vp-c-text-1));
+  display    : inline-block;
+  flex       : none;
+  overflow   : visible;
+  color      : color-mix(in srgb, var(--family-color) var(--prose-tint-ink), var(--vp-c-text-1));
+  transition : color var(--prose-transition-slow);
 }
 
 .nib-chip,
 .nib-ground,
 .rule-chip,
 .rule-link {
-  background-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ground), var(--vp-c-bg));
+  background-color : var(--prose-chip-ground);
 }
 
 .nib-chip {
@@ -24,7 +25,7 @@
   margin         : 0 var(--prose-space-0-08em);
   padding        : var(--prose-space-2) var(--prose-space-4);
   border-radius  : var(--prose-radius-sm);
-  box-shadow     : inset 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color) var(--prose-tint-strong), transparent);
+  box-shadow     : inset 0 0 0 var(--prose-border-1) var(--vp-c-divider);
   line-height    : 0;
   vertical-align : calc(var(--prose-space-0-15em) * -1 - var(--prose-space-2));
 }

@@ -33,6 +33,17 @@ export function siteSheets(): { file: string, root: Root }[] {
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>
   path.join(metaDir, 'fixtures', ...parts)
 
+// Reads the value the VitePress default theme gives `prop` under `selector`,
+// `:root` for the light scheme and `.dark` for the dark.
+export function vitepressVar(prop: string, selector: string): string {
+  const vars = new URL('../../node_modules/vitepress/dist/client/theme-default/styles/vars.css', import.meta.url)
+  let value = ''
+  parseCss(fs.readFileSync(vars, 'utf8')).walkRules(rule => {
+    if (rule.selector === selector) rule.walkDecls(prop, decl => { value = decl.value })
+  })
+  return value
+}
+
 // Supplies a temporary directory removed after the test, and a `console.warn`
 // spy the suite's `restoreMocks` default restores.
 export const supportTest = base.extend<SupportFixtures>({

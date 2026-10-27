@@ -1,5 +1,5 @@
 .glossary-anchor {
-  --underline-accent : var(--prose-palette-celadon);
+  --underline-accent : var(--vp-c-text-3);
 
   cursor                : help;
   text-decoration       : underline dotted var(--underline-accent) var(--prose-border-1);
@@ -19,7 +19,7 @@ a.glossary-anchor {
   text-decoration-style : solid;
 }
 
-.v-popper--theme-glossary { --popper-accent : var(--prose-palette-celadon); }
+.v-popper--theme-glossary { --popper-accent : var(--vp-c-text-3); }
 
 .v-popper--theme-glossary .v-popper__inner {
   max-width     : var(--prose-width-22rem);
@@ -44,7 +44,7 @@ a.glossary-anchor {
   font-family : var(--prose-font-display);
   font-size   : var(--prose-text-md);
   font-weight : 700;
-  color       : var(--prose-palette-celadon);
+  color       : var(--vp-c-text-1);
   white-space : nowrap;
 }
 

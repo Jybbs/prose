@@ -175,12 +175,6 @@ const VOCABULARY  = Vocabulary.read(
   STYLESHEETS.map(({ root }) => root)
 )
 
-// Adds the custom properties the config writes into the page head, which carry
-// the dark code-block ground.
-for (const [, prop] of read('.vitepress/config.ts').matchAll(/(--prose-[\w-]+):/g)) {
-  VOCABULARY.properties.add(prop)
-}
-
 // Names each custom property the sheets read as a font family, directly or
 // through another custom property that a family list reads.
 function facedBy(roots: Root[]): Set<string> {

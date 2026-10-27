@@ -1,7 +1,7 @@
 .lint-flag {
-  --family-color     : var(--prose-family-lint);
+  --lint-color       : var(--prose-role-squiggle);
   --lint-wave        : url('../../../../assets/lint-wave.svg');
-  --underline-accent : var(--family-color);
+  --underline-accent : var(--lint-color);
 
   cursor   : help;
   position : relative;
@@ -15,7 +15,7 @@
   inset-inline     : 0;
   bottom           : calc(var(--prose-space-3) * -1);
   height           : var(--prose-size-4);
-  background       : color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
+  background       : var(--lint-color);
   -webkit-mask     : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
   mask             : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
   transform        : scaleX(1);
@@ -42,8 +42,8 @@
   inset-block         : calc(var(--prose-space-1) * -1);
   z-index             : -1;
   height              : auto;
-  border-inline-start : var(--prose-border-2) solid var(--family-color);
-  background          : color-mix(in srgb, var(--family-color) var(--prose-tint-12), transparent);
+  border-inline-start : var(--prose-border-2) solid var(--lint-color);
+  background          : color-mix(in srgb, var(--lint-color) var(--prose-tint-12), transparent);
   -webkit-mask        : none;
   mask                : none;
 }

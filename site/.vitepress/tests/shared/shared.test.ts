@@ -197,30 +197,23 @@ describe('railPaint', () => {
   it.each([
     [[],            'var(--vp-c-divider)'],
     [[null],        'var(--vp-c-divider)'],
-    [['alignment'], 'var(--prose-family-alignment)']
+    [['alignment'], 'var(--raised-alignment, var(--vp-c-text-1))']
   ])('paints a single or empty rail %j', (families, expected) => {
     expect(railPaint(families)).toBe(expected)
   })
 
-  it('builds a gradient across multiple families', () => {
-    expect(railPaint(['alignment', 'ordering'])).toBe(
-      'linear-gradient(to bottom, var(--prose-family-alignment), var(--prose-family-ordering))'
-    )
-  })
-
-  it('honors a custom direction', () => {
-    expect(railPaint(['lint', 'docs'], 'to right')).toBe(
-      'linear-gradient(to right, var(--prose-family-lint), var(--prose-family-docs))'
-    )
+  it('builds a gradient across multiple families, each in ink until its family is raised', () => {
+    expect(railPaint(['alignment', 'ordering'])).toBe('linear-gradient(to bottom, '
+      + 'var(--raised-alignment, var(--vp-c-text-1)), var(--raised-ordering, var(--vp-c-text-1)))')
   })
 
   const familyArb = fc.constantFrom('alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering')
 
   test.prop([fc.array(familyArb, { minLength: 2, maxLength: 5 })])(
-    'names every family token in a multi-family gradient',
+    'names the raise token of every family in a multi-family gradient',
     (families) => {
       const out = railPaint(families)
-      for (const family of families) expect(out).toContain(`var(--prose-family-${family})`)
+      for (const family of families) expect(out).toContain(`var(--raised-${family},`)
     }
   )
 })

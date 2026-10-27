@@ -92,7 +92,7 @@ defineExpose({ hide, show })
     :key="key"
     theme="rule-card"
     placement="bottom-start"
-    popper-class="lint-popover fam-lint"
+    popper-class="lint-popover"
     auto-boundary-max-size
     :auto-hide="false"
     :distance="6"

@@ -5,13 +5,13 @@
 }
 
 .icon-emblem[data-tone="duotone"] {
-  --emblem-hue   : var(--family-color, var(--vp-c-brand-1));
+  --emblem-hue   : var(--emblem-family, var(--vp-c-brand-1));
   --emblem-ink   : color-mix(in oklch, var(--emblem-hue) var(--prose-tint-80), var(--vp-c-text-1));
   --emblem-paint : color-mix(in srgb, var(--emblem-hue) var(--prose-tint-strong), transparent);
 }
 
 .dark .icon-emblem[data-tone="duotone"] {
-  --emblem-hue : oklch(from var(--family-color, var(--vp-c-brand-1)) max(l, 0.72) c h);
+  --emblem-hue : oklch(from var(--emblem-family, var(--vp-c-brand-1)) max(l, 0.72) c h);
 }
 
 .icon-emblem[data-form="fill"]                     { --emblem-paint: var(--emblem-ink); }

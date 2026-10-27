@@ -50,8 +50,10 @@ const facetedPages = discovered.flatMap(rule => {
 })
 
 describe('family registry and stylesheet parity', () => {
-  it('every glossary family has a [data-family] accent, with no orphans', () => {
-    expect(accentKeys('family')).toStrictEqual(glossaryFamilies)
+  it('every rule family has a [data-family] accent and a [data-raised] hue, with no orphans', () => {
+    const ruleFamilies = [...registries.FAMILY_ORDER].sort()
+    expect(accentKeys('family')).toStrictEqual(ruleFamilies)
+    expect(accentKeys('raised')).toStrictEqual(ruleFamilies)
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {

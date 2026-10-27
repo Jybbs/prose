@@ -30,7 +30,7 @@
   bottom         : var(--prose-space-1);
   left           : calc(var(--prose-space-22) + var(--guide-col) * var(--prose-space-1ch));
   width          : 0;
-  border-left    : var(--prose-border-2) dotted color-mix(in srgb, var(--guide-hue, var(--prose-palette-ube)) var(--prose-tint-75), transparent);
+  border-left    : var(--prose-border-2) dotted color-mix(in srgb, var(--vp-c-text-2) var(--prose-tint-75), transparent);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
   pointer-events : none;

@@ -64,7 +64,7 @@
 }
 
 .glossary-folio-search:hover {
-  border-color : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-35), var(--vp-c-divider));
+  border-color : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-35), var(--vp-c-divider));
   background   : var(--vp-c-bg);
 }
 
@@ -178,6 +178,20 @@
   align-self    : stretch;
   border-radius : var(--prose-radius-2);
   background    : var(--rail-paint, var(--family-color));
+  opacity       : 0.35;
+  transition    : opacity var(--prose-transition-slow);
+}
+
+.glossary-folio-row.is-raised .glossary-folio-row-rail {
+  opacity : 1;
+}
+
+.vp-doc .glossary-folio-row.is-raised .glossary-folio-row-slug {
+  color : var(--vp-c-text-1);
+}
+
+.glossary-folio-row.is-raised .glossary-folio-row-slug {
+  font-weight : 500;
 }
 
 .glossary-folio-row-slug {

@@ -14,7 +14,7 @@
   left          : 0;
   width         : var(--prose-size-2);
   border-radius : var(--prose-radius-2);
-  background    : var(--family-color, var(--vp-c-brand-1));
+  background    : var(--vp-c-brand-1);
 }
 
 .VPDoc .VPDocFooter {
@@ -182,7 +182,7 @@ div[class*='language-'] {
   right            : var(--prose-space-12);
   bottom           : var(--prose-space-8);
   height           : var(--prose-size-1);
-  background       : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-85), var(--vp-c-text-1));
+  background       : var(--vp-c-text-2);
   transform        : scaleX(0);
   transform-origin : right center;
   opacity          : 0;

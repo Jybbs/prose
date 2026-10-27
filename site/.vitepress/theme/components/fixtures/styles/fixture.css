@@ -42,8 +42,8 @@
 }
 
 .fixture-toggle-pill[aria-selected="true"] {
-  background : color-mix(in srgb, var(--side-color) var(--prose-tint-20), var(--vp-c-bg));
-  color      : var(--side-color);
+  background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-wash), var(--vp-c-bg));
+  color      : var(--vp-c-text-1);
 }
 
 .fixture-nochange {

@@ -92,7 +92,7 @@
   padding       : var(--prose-space-3) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-code-bg);
-  color         : var(--prose-palette-ube);
+  color         : var(--vp-code-color);
 }
 
 @media (--prose-bp-card-stack) {

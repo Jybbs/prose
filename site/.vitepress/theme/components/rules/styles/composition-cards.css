@@ -1,13 +1,12 @@
 /* Composition cards. Multi-rule worked examples rendered from the fixture
    tree, over the shared .fixture-card chrome in fixture-card.css. Each row
-   carries a folio number, a top-to-bottom gradient rail through every rule's
-   family color in pipeline order, and a rule indicator. The indicator is a
-   filled family-colored block. Collapsed, the rules are tall skinny ticks on
-   the right of the headline, and hovering a tick unfurls it leftward into a
-   labeled rectangle in uppercase mono. Clicking the card drops the rules into
-   a full-width segmented bar below the before/after pair, descending with
-   the card's growing edge then spreading leftward a beat later, the rule
-   names fading in once the spread has landed. */
+   carries a folio number, the card's ink rail, and a rule indicator, which
+   is a block filled with a light tint of ink. Collapsed, the rules are tall
+   skinny ticks on the right of the headline, and hovering a tick unfurls it
+   leftward into a labeled rectangle in uppercase mono. Clicking the card
+   drops the rules into a full-width segmented bar below the before/after
+   pair, descending with the card's growing edge then spreading leftward a
+   beat later, the rule names fading in once the spread has landed. */
 
 .vp-doc .composition-cards-list,
 .composition-cards-list {
@@ -17,18 +16,6 @@
   list-style : none;
   margin     : 0;
   padding    : 0;
-}
-
-.composition-cards-list .fixture-card:hover {
-  --card-hover-ground : var(--vp-c-bg-soft);
-  border-color        : transparent;
-  background          :
-    linear-gradient(var(--card-hover-ground), var(--card-hover-ground)) padding-box,
-    var(--rail-paint) border-box;
-}
-
-.composition-cards-list .fixture-card.is-open:hover {
-  --card-hover-ground : var(--vp-c-bg);
 }
 
 .vp-doc .composition-cards-list > li,
@@ -81,17 +68,17 @@
 /* The filled block, shared by the ticks and the bar. Collapsed it sits on a
    0fr label track clipped by `min-width: 0` + `overflow: hidden`, so the
    reveal animates `grid-template-columns` to the label's natural width with
-   no fake `max-width`. The label is uppercase mono in a darkened tone of the
-   block's own family color, with comfortable horizontal padding. */
+   no fake `max-width`. The label is uppercase mono in the text color, with
+   comfortable horizontal padding. */
 
 .vp-doc a.composition-cards-chip,
 .composition-cards-chip {
-  --card-ink            : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), var(--vp-c-black) var(--prose-tint-48));
+  --card-ink            : var(--vp-c-text-1);
   display               : grid;
   grid-template-columns : 0fr;
   align-items           : center;
   overflow              : hidden;
-  background            : var(--family-color, var(--vp-c-divider));
+  background            : color-mix(in srgb, var(--family-color) var(--prose-tint-24), var(--vp-c-bg));
   font-family           : var(--vp-font-family-mono);
   line-height           : 1.2;
   text-decoration       : none;

@@ -2,15 +2,11 @@
 import { mount }              from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
-const { browser, route } = vi.hoisted(() => ({
-  browser : { value: true },
-  route   : { value: { relativePath: 'rules/alignment/align-equals.md' } }
+const { route } = vi.hoisted(() => ({
+  route : { value: { relativePath: 'rules/alignment/align-equals.md' } }
 }))
 
-vi.mock('vitepress', () => ({
-  get inBrowser() { return browser.value },
-  useData: () => ({ page: route })
-}))
+vi.mock('vitepress', () => ({ useData: () => ({ page: route }) }))
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
@@ -41,30 +37,5 @@ describe('provideCurrentRule', () => {
     const Parent = defineComponent({ setup() { composables.provideCurrentRule(); return () => h(Child) } })
     mount(Parent)
     expect(injected?.value?.slug).toBe('align-equals')
-  })
-})
-
-describe('useFamilyDataset', () => {
-  beforeEach(() => { browser.value = true })
-
-  it('mirrors the family of a rule route onto the body element', () => {
-    route.value = { relativePath: 'rules/alignment/align-equals.md' }
-    mountSetup(composables.useFamilyDataset)
-    expect(document.body.dataset.family).toBe('alignment')
-  })
-
-  it('clears the attribute off the rules tree', () => {
-    document.body.dataset.family = 'alignment'
-    route.value = { relativePath: 'guide/index.md' }
-    mountSetup(composables.useFamilyDataset)
-    expect(document.body.dataset.family).toBeUndefined()
-  })
-
-  it('leaves the attribute alone when there is no document', () => {
-    document.body.dataset.family = 'alignment'
-    browser.value = false
-    route.value = { relativePath: 'rules/ordering/alphabetize-siblings.md' }
-    mountSetup(composables.useFamilyDataset)
-    expect(document.body.dataset.family).toBe('alignment')
   })
 })

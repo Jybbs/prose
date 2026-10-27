@@ -69,7 +69,7 @@
   flex-direction : column;
   min-height     : 0;
   overflow       : hidden;
-  border         : var(--prose-border-1) solid color-mix(in srgb, var(--side-color) var(--prose-tint-40), var(--vp-c-divider));
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-code-block-bg);
 }
@@ -77,12 +77,12 @@
 .lint-block-label {
   padding        : var(--prose-space-3) var(--prose-space-12);
   border-bottom  : var(--prose-border-1) solid color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-40), transparent);
-  background     : color-mix(in srgb, var(--side-color) var(--prose-tint-12), var(--vp-code-block-bg));
+  background     : var(--vp-code-block-bg);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-  color          : var(--side-color);
+  color          : var(--vp-c-text-2);
 }
 
 .lint-block-code {
@@ -105,7 +105,7 @@
 }
 
 .lint-message code {
-  color       : var(--family-color);
+  color       : var(--vp-code-color);
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-0-86em);
 }

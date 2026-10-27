@@ -3,6 +3,7 @@ import InlineProse from '../base/InlineProse.vue'
 import FamilyChip  from '../rules/FamilyChip.vue'
 
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
+import { BODY_LINK_CLASS }  from '../../../lib/shared/constants'
 import { railPaint }        from '../../../lib/shared/family-rail'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
@@ -32,7 +33,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
         </div>
       </header>
       <h2 class="glossary-folio-headword">
-        <a v-if="active.href" :href="active.href">{{ active.slug }}</a>
+        <a v-if="active.href" :class="BODY_LINK_CLASS" :href="active.href">{{ active.slug }}</a>
         <span v-else>{{ active.slug }}</span>
       </h2>
       <p v-if="active.aliases.length > 0" class="glossary-folio-aliases">

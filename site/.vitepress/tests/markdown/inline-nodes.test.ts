@@ -2,7 +2,6 @@ import MarkdownIt from 'markdown-it'
 
 import { glossaryPlugin }          from '../../lib/glossary/plugin'
 import { blockNodes, inlineNodes } from '../../lib/markdown/inline-nodes'
-import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
 import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 
 const rules = new Map([
@@ -17,7 +16,6 @@ function renderer(): MarkdownIt {
   const md = new MarkdownIt()
   md.use(ruleLinkPlugin(rules as never, primitives as never))
   md.use(glossaryPlugin(phrases, hrefs))
-  md.use(proseMarkPlugin)
   return md
 }
 
@@ -50,15 +48,6 @@ describe('inlineNodes', () => {
         { kind: 'text', text: 'an ' },
         { kind: 'term', slug: 'atomic', text: 'atom' }
       ]
-    }])
-  })
-
-  it('walks the Prose mark into a balanced span rather than raw html', () => {
-    expect(inlineNodes(renderer(), 'Prose')).toStrictEqual([{
-      kind     : 'el',
-      attrs    : { class: 'prose-mark' },
-      tag      : 'span',
-      children : [{ kind: 'text', text: 'Prose' }]
     }])
   })
 

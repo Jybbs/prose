@@ -12,7 +12,6 @@ const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
       <button
         v-for="row in codes"
         :key="row.code"
-        :data-exit-code="row.code"
         :class="{ active: row.code === selected }"
         class="exit-code-index-row"
         type="button"
@@ -22,7 +21,6 @@ const { active: selectedRow, selected } = useTabSelect(codes, c => c.code)
         <span class="exit-code-index-num">{{ row.code }}</span>
         <span class="exit-code-index-label">{{ row.label }}</span>
         <span class="exit-code-index-leader" aria-hidden="true" />
-        <span class="exit-code-index-mark" aria-hidden="true" />
       </button>
     </nav>
     <article class="exit-code-entry" :data-exit-code="selectedRow.code" aria-live="polite">

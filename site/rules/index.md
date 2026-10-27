@@ -2,7 +2,7 @@
 description: "Every rule Prose runs, listed from A to Z beside its family."
 ---
 
-Each rule belongs to one family, whose chip below opens the family's page and whose badge leads each of its slugs in the list from A to Z.
+Each rule belongs to one family, whose badge leads each of its slugs in the list from A to Z. A family's badges take its color while a reader points at or focuses that family in the key below or one of its rules, and a click holds the color until a second click or Escape.
 
 The [**suppression directives**](/reference/suppression-directives) silence any rule on a line or a block, and the [**`enabled`**](/reference/configuration#per-rule-facets) facet turns any rule off across a project without changing the rest of the pipeline.
 

@@ -50,7 +50,7 @@
   width      : var(--prose-size-6);
   height     : var(--prose-size-6);
   transform  : translate(-50%, -50%) rotate(45deg);
-  background : var(--hue);
+  background : var(--vp-c-text-2);
   opacity    : 0.8;
   transition : top var(--prose-transition);
 }
@@ -105,13 +105,13 @@
   content    : '';
   position   : absolute;
   inset      : 0 var(--prose-space-4);
-  background : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
+  background : var(--vp-c-text-3);
   transition : background var(--prose-transition);
 }
 
 .sandbox-ruler-stop:hover .sandbox-ruler-marker::before,
 .sandbox-ruler-stop[data-dragging] .sandbox-ruler-marker::before {
-  background : var(--hue);
+  background : var(--vp-c-text-1);
 }
 
 .sandbox-ruler-chip {
@@ -124,7 +124,7 @@
   align-items   : center;
   height        : var(--sandbox-ruler-chip-h);
   padding       : 0 var(--prose-space-7);
-  border        : var(--prose-border-1) solid color-mix(in srgb, var(--hue) var(--prose-tint-55), var(--vp-c-divider));
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   line-height   : 1;
@@ -135,7 +135,7 @@
 
 .sandbox-ruler-stop:hover .sandbox-ruler-chip,
 .sandbox-ruler-stop[data-dragging] .sandbox-ruler-chip {
-  border-color : var(--hue);
+  border-color : var(--vp-c-text-1);
 }
 
 .sandbox-ruler-stop:focus-visible .sandbox-ruler-chip {

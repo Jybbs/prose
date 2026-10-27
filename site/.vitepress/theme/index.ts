@@ -16,9 +16,9 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import { provideCurrentRule, useFamilyDataset } from '../lib/composables/route'
-import { stripSuffix }                          from '../lib/shared/strip-suffix'
-import Layout                                   from './Layout.vue'
+import { provideCurrentRule } from '../lib/composables/route'
+import { stripSuffix }        from '../lib/shared/strip-suffix'
+import Layout                 from './Layout.vue'
 
 import 'virtual:prose-palette.css'
 import './styles/tokens.css'
@@ -35,7 +35,6 @@ import './styles/leaders.css'
 import './styles/panel.css'
 import './styles/pips.css'
 import './styles/popper-base.css'
-import './styles/prose-mark.css'
 import './styles/underline-draw.css'
 import './styles/vitepress-chrome.css'
 
@@ -57,7 +56,6 @@ export default {
   Layout,
   setup() {
     provideCurrentRule()
-    useFamilyDataset()
   },
   enhanceApp({ app }) {
     enhanceAppWithTabs(app)

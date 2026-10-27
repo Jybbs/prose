@@ -16,7 +16,7 @@
 
 .exit-code-index-row {
   display               : grid;
-  grid-template-columns : var(--prose-size-24) auto 1fr var(--prose-size-10);
+  grid-template-columns : var(--prose-size-24) auto 1fr;
   align-items           : baseline;
   gap                   : var(--prose-space-14);
   padding               : var(--prose-space-12);
@@ -32,7 +32,7 @@
 
 .exit-code-index-row:hover,
 .exit-code-index-row.active {
-  background : color-mix(in srgb, var(--exit-code-accent) var(--exit-code-wash, var(--prose-tint-6)), transparent);
+  background : color-mix(in srgb, var(--vp-c-text-1) var(--exit-code-wash, var(--prose-tint-6)), transparent);
   color      : var(--vp-c-text-1);
 }
 
@@ -45,7 +45,6 @@
   font-variant-numeric : tabular-nums lining-nums;
   font-size            : var(--prose-text-1rem);
   text-align           : right;
-  color                : var(--exit-code-accent);
 }
 
 .exit-code-index-label {
@@ -59,17 +58,9 @@
   margin  : 0 var(--prose-space-4) var(--prose-space-4);
 }
 
-.exit-code-index-mark {
-  align-self : center;
-  display    : block;
-  width      : var(--prose-size-8);
-  height     : var(--prose-size-8);
-  background : var(--exit-code-accent);
-}
-
 .exit-code-entry {
   padding-inline-start : var(--prose-space-18);
-  border-left          : var(--prose-border-2) solid var(--exit-code-accent);
+  border-left          : var(--prose-border-2) solid var(--vp-c-divider);
 }
 
 .exit-code-entry-head {
@@ -85,7 +76,7 @@
   font-size            : var(--prose-text-2-6rem);
   font-weight          : 500;
   line-height          : 1;
-  color                 : var(--exit-code-accent);
+  color                : var(--vp-c-text-1);
 }
 
 .exit-code-entry-label {
@@ -130,7 +121,7 @@
   left      : 0;
   top       : var(--prose-space-0-45em);
   font-size : var(--prose-text-0-6em);
-  color     : var(--exit-code-accent);
+  color     : var(--vp-c-text-3);
 }
 
 .exit-code-entry-details > li::marker {
