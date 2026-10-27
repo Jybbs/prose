@@ -83,6 +83,7 @@
   background-color : var(--vp-code-bg);
 }
 
-.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a code {
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a code,
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a:hover code {
   color : var(--vp-code-link-color);
 }

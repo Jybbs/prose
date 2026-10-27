@@ -3,25 +3,15 @@ import fs from 'node:fs'
 import { differenceCiede2000, interpolate, wcagContrast } from 'culori'
 import { parse as parseCss }                              from 'postcss'
 
-import * as emblems                 from '../../lib/shared/emblems'
-import * as palette                 from '../../lib/shared/palette'
-import * as registries              from '../../lib/shared/registries'
-import { siteSheets, vitepressVar } from '../support'
+import * as emblems    from '../../lib/shared/emblems'
+import * as palette    from '../../lib/shared/palette'
+import * as registries from '../../lib/shared/registries'
+import * as support    from '../support'
 
 const FAMILIES_LISTED = Object.keys(registries.GLOSSARY_FAMILY_META) as registries.GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
 
-// Reads each declaration a stylesheet makes under `selector`.
-function declared(file: string | URL, selector: string): Record<string, string> {
-  const props: Record<string, string> = {}
-  parseCss(fs.readFileSync(file, 'utf8')).walkRules(rule => {
-    if (rule.selector !== selector) return
-    rule.walkDecls(decl => { props[decl.prop] = decl.value })
-  })
-  return props
-}
-
-const tokens = declared(new URL('../../theme/styles/tokens.css', import.meta.url), ':root')
+const tokens = support.declared(new URL('../../theme/styles/tokens.css', import.meta.url), ':root')
 const share  = (token: string): number => parseFloat(tokens[token]) / 100
 
 interface Scheme {
@@ -34,7 +24,11 @@ interface Scheme {
 // declares for one scheme, beside the brand color `tokens.css` sets for it.
 function scheme(brand: string, name: 'dark' | 'light'): Scheme {
   const selector = name === 'dark' ? '.dark' : ':root'
-  return { bg: palette.GROUNDS.page[name], brand, text: vitepressVar('--vp-c-text-1', selector) }
+  return {
+    bg    : palette.GROUNDS.page[name],
+    brand : brand,
+    text  : support.vitepressVar('--vp-c-text-1', selector)
+  }
 }
 
 const SCHEMES = {
@@ -108,16 +102,17 @@ describe('the badge ink', () => {
 
   it('applies the ink and the ground these cases measure', () => {
     const nib = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
-    expect(declared(nib, '.nib-badge').color)
+    expect(support.declared(nib, '.nib-badge').color)
       .toBe('color-mix(in srgb, var(--family-color) var(--prose-tint-ink), var(--vp-c-text-1))')
-    expect(declared(nib, '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link')['background-color'])
+    const grounds = '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link'
+    expect(support.declared(nib, grounds)['background-color'])
       .toBe('var(--prose-chip-ground)')
     expect(tokens['--prose-chip-ground'])
       .toBe('color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg))')
   })
 
   it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
-    const recolored = siteSheets().filter(({ root }) => {
+    const recolored = support.siteSheets().filter(({ root }) => {
       let sets = false
       root.walkRules(rule => {
         if (rule.selector.includes('.nib-badge')) rule.walkDecls('color', () => { sets = true })

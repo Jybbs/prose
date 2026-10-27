@@ -33,6 +33,16 @@ export function siteSheets(): { file: string, root: Root }[] {
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>
   path.join(metaDir, 'fixtures', ...parts)
 
+// Reads each declaration a stylesheet makes under `selector`.
+export function declared(file: string | URL, selector: string): Record<string, string> {
+  const props: Record<string, string> = {}
+  parseCss(fs.readFileSync(file, 'utf8')).walkRules(rule => {
+    if (rule.selector !== selector) return
+    rule.walkDecls(decl => { props[decl.prop] = decl.value })
+  })
+  return props
+}
+
 // Reads the value the VitePress default theme gives `prop` under `selector`,
 // `:root` for the light scheme and `.dark` for the dark.
 export function vitepressVar(prop: string, selector: string): string {

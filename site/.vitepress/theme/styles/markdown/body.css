@@ -2,25 +2,25 @@
   font-size : var(--prose-text-0-88em);
 }
 
-/* A code span paints its ground over the underline its link draws, so the
-   span takes the link's color and draws the underline again above that
-   ground. */
 .vp-doc a.body-link,
-.vp-doc a.body-link code,
 .vp-doc a.tool-mark,
-a.tool-mark,
-a.tool-mark code {
+a.tool-mark {
   color                 : var(--prose-role-link);
   text-decoration       : underline var(--prose-border-1) color-mix(in srgb, currentColor var(--prose-tint-40), transparent);
   text-underline-offset : var(--prose-space-0-2em);
   transition            : text-decoration-color var(--prose-transition);
 }
 
+/* VitePress colors only a code span its link holds directly, so a span the
+   link wraps in `<strong>` takes the link's color here. */
+.vp-doc a.body-link code,
+a.tool-mark code {
+  color : var(--vp-code-link-color);
+}
+
 .vp-doc a.body-link:hover,
-.vp-doc a.body-link:hover code,
 .vp-doc a.tool-mark:hover,
-a.tool-mark:hover,
-a.tool-mark:hover code {
+a.tool-mark:hover {
   color                 : var(--prose-role-link);
   text-decoration-color : currentColor;
 }

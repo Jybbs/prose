@@ -2,8 +2,8 @@ import { converter, formatHex, interpolate, parse, wcagContrast } from 'culori'
 import { parse as parseCss }                                      from 'postcss'
 import githubDark                                                 from 'shiki/themes/github-dark.mjs'
 
-import * as palette     from '../../lib/shared/palette'
-import { vitepressVar } from '../support'
+import * as palette from '../../lib/shared/palette'
+import * as support from '../support'
 
 const CHIPS   = ['danger', 'warning'] as const
 const SCHEMES = ['dark', 'light'] as const
@@ -69,7 +69,7 @@ describe('GROUNDS', () => {
   it.each([['dark', '.dark'], ['light', ':root']] as const)(
     'reads the %s page ground VitePress declares',
     (scheme, selector) => {
-      expect(palette.GROUNDS.page[scheme]).toBe(vitepressVar('--vp-c-bg', selector))
+      expect(palette.GROUNDS.page[scheme]).toBe(support.vitepressVar('--vp-c-bg', selector))
     }
   )
 
@@ -118,4 +118,42 @@ describe('SCHEME_ROLES', () => {
       expect(wcagContrast(roles[`${kind}-rule`]!, page)).toBeGreaterThanOrEqual(3)
     }
   )
+})
+
+describe('the hues the roles mix', () => {
+  it.each(SCHEMES)('grounds the %s warning and danger chips on 12%% of their hues', scheme => {
+    const page  = palette.GROUNDS.page[scheme]
+    const mixed = (hue: string) => formatHex(interpolate([page, hue], 'rgb')(0.12))
+    expect(palette.SCHEME_ROLES[scheme]['warning-ground']).toBe(mixed(palette.PALETTE.eureka))
+    expect(palette.SCHEME_ROLES[scheme]['danger-ground']).toBe(mixed(palette.PALETTE.apricot))
+  })
+
+  it.each(SCHEMES)('shades the %s squiggle from Apricot', scheme => {
+    expect(palette.SCHEME_ROLES[scheme].squiggle)
+      .toBe(palette.shadeReading(palette.GROUNDS.code[scheme], palette.PALETTE.apricot, 3))
+  })
+
+  it('reads the light code ground tokens.css sets', () => {
+    const tokens = new URL('../../theme/styles/tokens.css', import.meta.url)
+    expect(support.declared(tokens, ':root')['--vp-code-block-bg']).toBe('var(--prose-palette-grams-hair)')
+    expect(palette.GROUNDS.code.light).toBe(palette.PALETTE['grams-hair'])
+  })
+})
+
+describe('the sheets reading the roles', () => {
+  const links = '.vp-doc a.body-link,\n.vp-doc a.tool-mark,\na.tool-mark'
+  const code  = '.vp-doc .custom-block:is(.tip, .info, .warning, .danger) code'
+
+  it.each([
+    ['components/fixtures/styles/lint-findings.css', '.lint-flag',                    '--lint-color',    'var(--prose-role-squiggle)'],
+    ['styles/markdown/body.css',                     links,                           'color',           'var(--prose-role-link)'],
+    ['styles/markdown/callouts.css',                 '.callout-kind',                 'color',           'var(--callout-ink)'],
+    ['styles/markdown/callouts.css',                 '.callout-mark',                 'color',           'var(--callout-ink)'],
+    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.danger',  '--callout-ink',   'var(--prose-role-danger-ink)'],
+    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.warning', '--callout-ink',   'var(--prose-role-warning-ink)'],
+    ['styles/markdown/callouts.css',                 code,                            'color',           'var(--vp-code-color)'],
+    ['styles/tokens.css',                            ':root',                         '--vp-code-color', 'var(--vp-c-text-1)']
+  ])('%s sets %s %s to %s', (file, selector, prop, value) => {
+    expect(support.declared(new URL(`../../theme/${file}`, import.meta.url), selector)[prop]).toBe(value)
+  })
 })

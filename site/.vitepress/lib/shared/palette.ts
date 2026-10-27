@@ -72,9 +72,10 @@ export const SECTIONS: Record<Exclude<SectionSlug, 'rules'>, string> = {
   sandbox      : PALETTE.whiskey
 }
 
-// Returns the lightest `oklchMix` of `hue` toward black, or toward white on a
-// dark ground, that reads at `ratio` against `ground`, which is `hue` itself
-// wherever the hue already reads at that ratio.
+// Returns the `oklchMix` of `hue` nearest the hue that reads at `ratio`
+// against `ground`, mixing toward black on a light ground and toward white on
+// a dark one, which is `hue` itself wherever the hue already reads at that
+// ratio.
 export function shadeReading(ground: string, hue: string, ratio: number): string {
   const toward = wcagLuminance(ground) > 0.5 ? 'black' : 'white'
   const shades = Array.from({ length: 101 }, (_, share) => share ? oklchMix(hue, toward, share) : hue)
