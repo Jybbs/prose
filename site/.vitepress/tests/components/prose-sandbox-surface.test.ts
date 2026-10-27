@@ -468,6 +468,8 @@ describe('ProseSandboxSurface', () => {
   })
 
   surfaceTest('drops a disabled rule\'s squiggle while keeping the code', async ({ mounted }) => {
+    document.documentElement.style.setProperty('--prose-rule-draw-ms', '300')
+    onTestFinished(() => { document.documentElement.style.removeProperty('--prose-rule-draw-ms') })
     const { sandbox, wrapper } = await mounted({
       diagnostics : [FINDING],
       formatted   : 'x = 1'
