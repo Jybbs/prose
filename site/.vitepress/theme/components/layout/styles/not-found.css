@@ -43,11 +43,6 @@
   margin-right              : var(--prose-space-8);
 }
 
-.not-found-fix {
-  font-style : italic;
-  color      : var(--prose-palette-ube);
-}
-
 .not-found-body {
   margin      : 0;
   max-width   : var(--prose-width-48ch);

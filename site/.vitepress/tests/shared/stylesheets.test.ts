@@ -10,6 +10,7 @@ import {
 } from '@csstools/css-parser-algorithms'
 import {
   isTokenComma,
+  isTokenDelim,
   isTokenDimension,
   isTokenHash,
   isTokenIdent,
@@ -27,7 +28,7 @@ import { siteSheets } from '../support'
 
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'
-import type { Declaration, Root }            from 'postcss'
+import type { Declaration, Root, Rule }      from 'postcss'
 
 // Holds the absolute and font-relative length units CSS Values 4 defines,
 // leaving out the viewport and container units, which measure a share of the
@@ -48,6 +49,11 @@ const SYSTEM_FONTS   = new Set([
   'caption', 'icon', 'menu', 'message-box', 'small-caption', 'status-bar'
 ])
 const WIDE_KEYWORDS  = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
+
+// Holds the inline elements that set words apart in running text, beside the
+// values that keep one of them in a text color.
+const INLINE_TEXT = new Set(['b', 'em', 'i', 'mark', 'strong'])
+const TEXT_COLOR  = /^(?:var\(--vp-c-text-[123]\)|inherit|currentcolor)$/i
 
 const SITE   = siteDir(import.meta.url)
 const TOKENS = '.vitepress/theme/styles/tokens.css'
@@ -241,9 +247,73 @@ function referenced(node: FunctionNode): TokenIdent | undefined {
   return isTokenIdent(token) ? token : undefined
 }
 
+// Returns the element each compound of `selector` opens on, from the outermost
+// to the subject, writing `*` for a compound that opens on a class, an
+// attribute, or a pseudo-class. A function such as `:is()` parses as one
+// value, so its commas and spaces start no compound.
+function elements(selector: string): string[] {
+  const names = [] as string[]
+  let opens   = true
+  for (const node of parseListOfComponentValues(tokenize({ css: selector }))) {
+    const token = isTokenNode(node) ? node.value : undefined
+    if (isWhitespaceNode(node) || (isTokenDelim(token) && '>+~'.includes(token[4].value))) {
+      opens = true
+    } else if (opens) {
+      names.push(isTokenIdent(token) ? token[4].value.toLowerCase() : '*')
+      opens = false
+    }
+  }
+  return names
+}
+
+// Lists each selector that sets an `em`, `i`, `strong`, `b`, or `mark` outside a
+// link in a color other than a text color, by the line its declaration sits on.
+function inlineHues(root: Root): { line: number, selector: string }[] {
+  const found = [] as { line: number, selector: string }[]
+  root.walkDecls('color', decl => {
+    if (TEXT_COLOR.test(decl.value) || decl.parent?.type !== 'rule') return
+    for (const selector of (decl.parent as Rule).selectors) {
+      const names = elements(selector)
+      if (INLINE_TEXT.has(names.at(-1)!) && !names.includes('a')) {
+        found.push({ line: decl.source!.start!.line, selector })
+      }
+    }
+  })
+  return found
+}
+
 describe('the site stylesheets', () => {
   it.each(STYLESHEETS)('$file writes every value through a declared token', ({ root }) => {
     expect(VOCABULARY.strays(root)).toStrictEqual([])
+  })
+
+  it.each(STYLESHEETS)(
+    '$file sets each em, i, strong, b, and mark outside a link in a text color',
+    ({ root }) => {
+      expect(inlineHues(root)).toStrictEqual([])
+    }
+  )
+})
+
+describe('inlineHues', () => {
+  it.each([
+    '.landing-cta-lede em',
+    '.landing-section h2 strong',
+    '.pq-row > p > b',
+    ':is(.tip, .info) mark'
+  ])('reports %s set in a hue', selector => {
+    expect(inlineHues(parse(`${selector} { color: var(--vp-c-brand-1); }`)))
+      .toStrictEqual([{ line: 1, selector }])
+  })
+
+  it('passes a text color and an inline element inside a link', () => {
+    const css = [
+      '.rule-card-caption em { color: var(--vp-c-text-1); }',
+      '.landing-section p em { color: inherit; }',
+      '.pq-row > p a strong { color: var(--prose-role-link); }',
+      '.vp-doc a.body-link em { color: var(--prose-role-link); }'
+    ].join('\n')
+    expect(inlineHues(parse(css))).toStrictEqual([])
   })
 })
 
