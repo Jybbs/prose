@@ -20,11 +20,15 @@ on:
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/**
+      - Cargo.lock
+      - Cargo.toml
       - LICENSE
       - crate/Cargo.toml
-      - crate/src/cli/args/mod.rs
-      - crate/src/cli/exit_status.rs
+      - crate/pyproject.toml
+      - crate/src/**
+      - crate/tests/fixtures/**
       - site/**
+      - wasm/**
 
   push:
     branches:
@@ -38,8 +42,14 @@ on:
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/**
+      - Cargo.lock
+      - Cargo.toml
       - crate/Cargo.toml
+      - crate/pyproject.toml
+      - crate/src/**
+      - crate/tests/fixtures/**
       - site/**
+      - wasm/**
 
   workflow_dispatch:
 
