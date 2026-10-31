@@ -29,9 +29,13 @@ impl ExitStatus {
     /// Returns the line the help matrix prints for this status.
     fn describe(self) -> &'static str {
         match self {
-            Self::Clean => "Clean: no findings, no rewrite pending",
+            Self::Clean => {
+                "Clean: no findings, no rewrite pending, or a stdin run wrote the formatted source"
+            }
             Self::FormatChange => "Format would change: at least one rewrite is pending",
-            Self::LintViolation => "Lint violation: at least one lint finding was reported",
+            Self::LintViolation => {
+                "Lint violation: at least one lint finding was reported, unless a stdin run wrote the formatted source"
+            }
             Self::ParseError => "Parse error: input is not valid Python for the target version",
             Self::ConfigError => {
                 "Config error: the config, the arguments, a path, or a rewrite failed validation"

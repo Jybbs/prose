@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/fold_leaves_replacement_field_padding/input.py
+---
+ok = alpha == beta and f"{gamma  == delta}" != ""

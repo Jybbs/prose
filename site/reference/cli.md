@@ -23,14 +23,14 @@ Rewrites Python files to the *Prose* style.
 | `--diff` | bool | off | Print a unified diff to stdout instead of writing the files |
 | `--no-cache` | bool | off | Bypass the per-user [**cache**](/reference/cache) for this run |
 | `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | The diagnostic format, each one's record layout given under [**Output Formats**](/reference/output-formats). `--diff` needs `text` |
-| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count, dropping the anchor, the color, and the `--diff` heading. An [**unstable-output notice**](#unstable-output) still prints |
-| `--stdin` | bool | off | Read source from stdin and write the rewritten source to stdout |
+| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count, dropping the anchor, the color, and the `--diff` heading. A stdin run drops the summary instead. An [**unstable-output notice**](#unstable-output) still prints |
+| `--stdin` | bool | off | Read source from stdin and write the formatted source to stdout, or the patch under `--diff` and the records under a structured `--output-format` |
 | `--stdin-filename` | path | unset | Treat stdin as this path, whose extension selects the source type. A `.ipynb` name reads stdin as a notebook |
 | `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured set |
 | `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, removing them from whichever set would otherwise run |
 | `PATH...` | one or more paths, or `-` | required without `--stdin` | Files or directories to format, or `-` to read source from stdin |
 
-Exit codes follow the [**Exit Codes**](/reference/exit-codes) reference, where `1` means a `--diff` run found a pending rewrite, since a written rewrite exits `0`.
+Exit codes follow the [**Exit Codes**](/reference/exit-codes) reference, where `1` means a rewrite is pending rather than written, as under `--diff`, and a stdin run that writes the formatted source exits `0` whatever lint it found.
 
 ```bash
 prose format src/
@@ -203,6 +203,8 @@ Each outcome opens on its own anchor:
 ANSI color uses the project palette, with **Ube** on the anchor, **Celadon** on a clean count, and **Apricot** on a finding or change count. Each span prints in 24-bit color when the terminal advertises truecolor *(through `COLORTERM`)* and in ANSI 8-color otherwise.
 
 `--quiet` / `-q` reduces the line to its bare count *(`5 diagnostics in 2 files.`)*, the form a CI log captures cleanly. A non-TTY stderr keeps the anchor but drops the color, so a redirected run stays readable without escape sequences. `--color never` drops the color and keeps the anchor. Under `--output-format json`, `sarif`, or `github`, the machine-readable output on stdout is unaffected by the summary.
+
+A stdin run prints the summary only when stderr is a terminal and `--quiet` is off, because an editor that filters a buffer through the command, such as Vim through `formatprg`, reads stderr into the buffer beside stdout. Its errors and any [**unstable-output notice**](#unstable-output) still print.
 
 `format --diff` opens each file's diff with a 🧵 `<path>` line on an interactive stdout. On a pipe or a redirect it prints the plain `--- / +++` header instead, so the output stays a diff `patch` and `delta` can read.
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Join Leaves the Padding Inside a Replacement Field"
+
+description = '''
+`ok = (` holds a chain whose `==` opens its own row and whose f-string carries a comparison padded inside its replacement field. **The join closes the break ahead of `==` to one space and leaves the replacement field as written**, since its text is part of the string.
+'''

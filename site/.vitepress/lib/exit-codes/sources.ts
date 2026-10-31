@@ -18,6 +18,10 @@ export const SOURCES: readonly ExitCodeSource[] = [
     detail : [
       'Returned by both `prose check` and `prose format` when the input already conforms, '
       + 'and by `prose format` once its rewrite is written.',
+      'A stdin `prose format` that writes the formatted source returns it whatever lint the '
+      + 'source holds, since an editor piping a buffer through the command keeps the buffer '
+      + 'unformatted on any other code. `prose check -` and the '
+      + '[**language server**](/reference/cli#prose-server) still report that lint.',
       '`prose format` also returns it for a rewrite a second run would change, as '
       + '[**Unstable Output**](/reference/cli#unstable-output) sets out.',
       'A CI gate passes with no further work.'
@@ -27,14 +31,16 @@ export const SOURCES: readonly ExitCodeSource[] = [
     code   : 1,
     detail : [
       '`prose check` and `prose format --diff` return this when one or more rules '
-      + 'would write an edit.',
+      + 'would write an edit, as does a stdin `prose format` under a structured '
+      + '`--output-format`, which prints the records and leaves the rewrite unwritten.',
       'Every rewriting rule can produce it.'
     ]
   },
   {
     code   : 2,
     detail : [
-      'Returned by both `prose check` and `prose format`.'
+      'Returned by both `prose check` and `prose format`, except a stdin `prose format` that '
+      + 'writes the formatted source, which returns `0`.'
     ]
   },
   {
@@ -58,6 +64,8 @@ export const SOURCES: readonly ExitCodeSource[] = [
       + 'error printed to stderr.',
       'A malformed flag stops the whole run, whereas a broken ancestor config fails only '
       + 'the files it governs and the rest proceed.',
+      'A stdin run whose `--stdin-filename` names a file under a config that fails to load '
+      + 'returns it too, as the path run over that file does.',
       'A rewrite that fails to parse or to compile returns it too, with the file left '
       + 'unwritten.',
       'A rewrite a second run would change returns it too under `prose check --validate`.'

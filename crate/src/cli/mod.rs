@@ -73,13 +73,17 @@ pub fn run() -> ExitCode {
     }
     let raw_stdout = io::stdout().lock();
     let stdout_tty = raw_stdout.is_terminal();
+    let stderr_tty = io::stderr().is_terminal();
     let (mut stdout, color) = stream_for(cli.color, raw_stdout);
     let (stderr, stderr_color) = stream_for(cli.color, io::stderr());
+    let run_args = cli.run_args();
+    let quiet = run_args.is_some_and(|args| args.quiet);
     let present = Presentation {
         color,
-        quiet: cli.run_args().is_some_and(|args| args.quiet),
+        quiet,
         stderr_color,
         stdout_tty,
+        summary: run_args.is_none_or(|args| !args.stdin) || (stderr_tty && !quiet),
     };
     let verbose = cli.verbose;
     let result = match cli.command {

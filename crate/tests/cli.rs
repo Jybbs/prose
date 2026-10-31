@@ -1380,6 +1380,16 @@ fn emitters_render_shrinking_literals_without_aborting(
 }
 
 #[test]
+fn format_dash_exits_clean_with_lint_and_prints_no_summary_off_a_terminal() {
+    let canonical = "import os\n\nos.getcwd()\n";
+
+    run_stdin(canonical, &["format", "-"])
+        .success()
+        .stdout(canonical)
+        .stderr("");
+}
+
+#[test]
 fn format_dash_keeps_escape_bytes_in_piped_stdout() {
     run_stdin(ESCAPE_IN_LITERAL, &["format", "-"])
         .success()
@@ -1610,6 +1620,11 @@ fn format_stdin_diff_keeps_escape_bytes_in_a_plain_patch() {
 }
 
 #[test]
+fn format_stdin_json_exits_format_change_for_a_pending_rewrite() {
+    run_stdin(UNALIGNED, &["format", "--output-format", "json", "-"]).code(1);
+}
+
+#[test]
 fn format_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
     let (mut cmd, _cache_dir) = prose_isolated();
@@ -1620,6 +1635,21 @@ fn format_stdin_resolves_config_from_the_cwd() {
         .assert()
         .success()
         .stdout(UNALIGNED);
+}
+
+#[test]
+fn format_stdin_under_a_broken_named_config_exits_config_error() {
+    let project = TempDir::new().expect("tempdir");
+    write_pyproject(project.path(), "[this is not valid TOML");
+    let (mut cmd, _cache_dir) = prose_isolated();
+
+    cmd.args(["format", "--stdin-filename"])
+        .arg(project.path().join("x.py"))
+        .arg("-")
+        .write_stdin(UNALIGNED)
+        .assert()
+        .code(4)
+        .stdout("");
 }
 
 #[test]

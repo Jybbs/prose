@@ -36,7 +36,7 @@ A Python file the parser cannot recover returns `SourceError::Parse(...)` from `
 - `text() -> &str` returns the original source text. Every other reader's offsets index into this string.
 - `ast() -> &ModModule` returns the parsed AST root. The wrapping *Source* owns the parse, so the AST borrow stays valid for the value's lifetime.
 - `tokens() -> &Tokens` returns the token stream, for a rule whose question is about comments or trivia rather than the AST.
-- `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-stranded-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in. This reader is `pub(crate)`.
+- `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[shed-backslash-continuations]] reads it for the gap a continuation sits in. This reader is `pub(crate)`.
 - `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[space-statements]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a removed base list reaches back to. This reader is `pub(crate)`.
 - `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built on the first read.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for reading through trivia.

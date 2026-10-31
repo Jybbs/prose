@@ -50,11 +50,12 @@ The `sarif` output format writes findings to a file that a second step uploads t
 ```yaml
 - run: prose check --output-format sarif . > prose.sarif
 - uses: github/codeql-action/upload-sarif@v3
+  if: ${{ !cancelled() }}
   with:
     sarif_file: prose.sarif
 ```
 
-Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule.
+Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
 
 ## Persisting the Cache
 
@@ -81,7 +82,7 @@ A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the 
 - run: prose check .
 ```
 
-Each tool exits with its own code from its own step, so a non-zero exit from either fails the job and the failing step names the tool that reported the finding. By default a step runs only once every step before it has succeeded, so where both would fail only the first shows. Setting `if: always()` on the `prose check` step runs it regardless, and both results then appear in one run.
+Each tool exits with its own code from its own step, so a non-zero exit from either fails the job and the failing step names the tool that reported the finding. By default a step runs only once every step before it has succeeded, so where both would fail only the first shows. Setting `if: ${{ !cancelled() }}` on the `prose check` step runs it whatever the steps before it returned, and both results then appear in one run.
 
 The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off in Ruff's linter and why `ruff format` runs ahead of `prose format` wherever both write.
 

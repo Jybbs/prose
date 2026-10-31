@@ -20,7 +20,7 @@ The cache lives per user, at a path that depends on the platform:
 | macOS | `~/Library/Caches/prose` |
 | Windows | `%LOCALAPPDATA%\prose` |
 
-Each entry is one file named by the 64-character lowercase hex form of its key, stored in `postcard` for small size and fast deserialization, inside a generation subdirectory named by a digest of the *Prose* version and the private entry-format version. One `ls` a level down shows the layout. Grouping entries by generation lets a version bump delete its predecessor's entries in one step rather than evicting them one at a time, and the older directory is kept for an hour before that deletion in case a run of the older build is still reading it.
+Each entry is one file named by the 64-character lowercase hex form of its key, stored in `postcard` for small size and fast deserialization, inside a generation subdirectory named by a digest of the *Prose* version and the private entry-format version. One `ls` a level down shows the layout, and the [**LRU Eviction**](/architecture/cache#lru-eviction) section of the `Cache` Type page covers when an older generation is deleted.
 
 `PROSE_CACHE_DIR` overrides the platform default and is used exactly as given, with no subdirectory appended, so a CI runner or a test harness can pin the cache to a known path whatever the runner's home directory looks like. The platform default comes from the [`dirs`](https://docs.rs/dirs) crate, which reads `XDG_CACHE_HOME` on Linux.
 

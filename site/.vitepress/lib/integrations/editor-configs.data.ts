@@ -43,10 +43,15 @@ const SOURCES: readonly EditorConfigSource[] = [
   },
   {
     caption  : 'auto-format',
-    code     : `[[language]]
-name        = "python"
-auto-format = true
-formatter   = { command = "prose", args = ["format", "-"] }`,
+    code     : `[language-server.prose]
+command = "prose"
+args    = ["server"]
+
+[[language]]
+name             = "python"
+auto-format      = true
+formatter        = { command = "prose", args = ["format", "-"] }
+language-servers = ["prose", "ty", "ruff", "jedi", "pylsp"]`,
     language : 'toml',
     name     : 'Helix',
     slug     : 'helix',

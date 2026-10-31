@@ -9,6 +9,9 @@ use super::{
     *,
 };
 
+/// Formats the buffer `input` holds, writing the formatted source to
+/// stdout for a plain text run, the patch under `--diff`, and the records
+/// under a structured output format.
 pub(super) fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     input: Result<String, FileOutcome>,
     common: &RunArgs,
@@ -19,62 +22,81 @@ pub(super) fn format_stdin<O: RawStream + AsLockedWrite, E: Write>(
     stderr: &mut E,
 ) -> anyhow::Result<ExitStatus> {
     let filename = common.stdin_filename.as_deref();
-    let format = common.output_format;
-    let diff = matches!(pass, Pass::Preview);
     let (outcome, original) = match input {
-        Ok(text) => {
-            let resolved = stdin_resolved(setup, filename, &text);
-            (process_stdin(text.clone(), filename, &resolved, pass), text)
-        }
+        Ok(text) => (process_stdin(text.clone(), filename, setup, pass), text),
         Err(outcome) => (outcome, String::new()),
     };
     let outcomes = std::slice::from_ref(&outcome);
     let summary = emitter_summary(outcomes);
+    // Only a plain text run writes its rewrite out, as the buffer it
+    // prints in place of stdin.
+    let written = matches!(pass, Pass::Rewrite);
     if let FileOutcome::Done {
         notebook_index,
         rewrite,
         ..
     } = &outcome
     {
-        if diff {
-            if let Rewrite::Changed(kind) = rewrite {
-                write_rewrite_diff(
-                    &mut writer.into_inner(),
-                    &stdin_name(filename),
-                    &original,
-                    kind,
-                    notebook_index.as_deref(),
-                    Heading::from(present),
-                )?;
+        match (pass, rewrite) {
+            (Pass::Preview, Rewrite::Changed(kind)) => write_rewrite_diff(
+                &mut writer.into_inner(),
+                &stdin_name(filename),
+                &original,
+                kind,
+                notebook_index.as_deref(),
+                Heading::from(present),
+            )?,
+            (Pass::Preview, _) => {}
+            (Pass::Rewrite, _) => {
+                let to_write: &[u8] = match rewrite {
+                    Rewrite::Changed(kind) => kind.written().as_bytes(),
+                    // A passed-over or unchanged source echoes stdin verbatim.
+                    Rewrite::PassedOver | Rewrite::Skipped | Rewrite::Unchanged => {
+                        original.as_bytes()
+                    }
+                };
+                writer
+                    .into_inner()
+                    .write_all(to_write)
+                    .context("writing stdout")?;
             }
-        } else if format.is_text() {
-            let to_write: &[u8] = match rewrite {
-                Rewrite::Changed(kind) => kind.written().as_bytes(),
-                // A passed-over or unchanged source echoes stdin verbatim.
-                Rewrite::PassedOver | Rewrite::Skipped | Rewrite::Unchanged => original.as_bytes(),
-            };
-            writer
-                .into_inner()
-                .write_all(to_write)
-                .context("writing stdout")?;
-        } else {
-            emit_to_stdout(outcomes, format, present, writer, &summary)?;
+            (Pass::Both | Pass::Diagnose { .. }, _) => {
+                emit_to_stdout(outcomes, common.output_format, present, writer, &summary)?;
+            }
         }
     }
-    Ok(close_run(outcomes, &summary, setup, present, pass, stderr))
+    let status = close_run(outcomes, &summary, setup, present, pass, written, stderr);
+    // A plain run whose stdout holds the formatted buffer exits clean
+    // whatever lint it found.
+    Ok(if written && matches!(outcome, FileOutcome::Done { .. }) {
+        ExitStatus::Clean
+    } else {
+        status
+    })
 }
 
+/// Processes stdin's `text` under the config of the file `filename`
+/// names, with its ancestors and overrides, or under the working
+/// directory's for an unnamed buffer. A named file whose config fails
+/// to load fails at the config-error status, as its path run does.
 pub(super) fn process_stdin(
     text: String,
     filename: Option<&Path>,
-    resolved: &Resolved,
+    setup: &RunSetup,
     pass: Pass,
 ) -> FileOutcome {
+    let resolved = filename.map_or_else(
+        || Some(Arc::clone(&setup.cwd)),
+        |path| setup.resolver.resolve(path, text.as_bytes()),
+    );
+    let Some(resolved) = resolved else {
+        return FileOutcome::Failed(ExitStatus::ConfigError);
+    };
     process_source(
         text,
         stdin_name(filename),
         stdin_source_type(filename),
-        resolved,
+        &resolved,
         pass,
         Marker::Eager,
     )
@@ -85,19 +107,6 @@ pub(super) fn process_stdin(
 pub(super) fn read_stdin<R: Read>(stdin: R) -> Result<String, FileOutcome> {
     io::read_to_string(stdin)
         .map_err(|e| failed(ExitStatus::ConfigError, format_args!("reading stdin: {e}")))
-}
-
-/// The resolution governing a stdin run: the config of the file
-/// `filename` names, with its ancestors and overrides, or the working
-/// directory's for an unnamed buffer or one whose config fails to load.
-pub(super) fn stdin_resolved(
-    setup: &RunSetup,
-    filename: Option<&Path>,
-    text: &str,
-) -> Arc<Resolved> {
-    filename
-        .and_then(|path| setup.resolver.resolve(path, text.as_bytes()))
-        .unwrap_or_else(|| Arc::clone(&setup.cwd))
 }
 
 /// The name a stdin buffer reports under, the path `filename` names

@@ -20,12 +20,16 @@ const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magen
 /// and diffs written there, whereas `stderr_color` is stderr's own and
 /// gates the summary line, which is the one thing written to that
 /// stream. `quiet` reduces the anchor emoji and color to a bare count
-/// line, and a non-TTY stdout leaves `--diff` headers plain.
+/// line, and a non-TTY stdout leaves `--diff` headers plain. `summary`
+/// is false for a stdin run whose stderr is not a terminal or that
+/// passed `--quiet`, which drops the summary line and leaves stderr to
+/// errors and notices.
 pub(super) struct Presentation {
     pub(super) color: bool,
     pub(super) quiet: bool,
     pub(super) stderr_color: bool,
     pub(super) stdout_tty: bool,
+    pub(super) summary: bool,
 }
 
 impl Presentation {
@@ -48,6 +52,7 @@ impl Presentation {
             quiet: false,
             stderr_color: false,
             stdout_tty: false,
+            summary: true,
         }
     }
 
@@ -175,6 +180,7 @@ mod tests {
             quiet: false,
             stderr_color: true,
             stdout_tty: true,
+            summary: true,
         }
     }
 
@@ -193,6 +199,7 @@ mod tests {
             quiet,
             stderr_color: true,
             stdout_tty,
+            summary: true,
         };
 
         assert_eq!(present.decorate_diff(), expected);
@@ -275,6 +282,7 @@ mod tests {
             quiet: false,
             stderr_color,
             stdout_tty: true,
+            summary: true,
         };
 
         let line = rendered(&present, &Summary::Clean);

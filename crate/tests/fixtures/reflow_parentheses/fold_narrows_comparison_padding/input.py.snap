@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/fold_narrows_comparison_padding/input.py
+---
+ok = alpha_value_number_one == f(1) and bbb <= f(2222222222)

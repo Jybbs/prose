@@ -4,7 +4,7 @@ description: "The rules that report a finding without rewriting the source."
 
 # Lint Rules
 
-Lint rules report a finding without rewriting the source. They run under both `prose check` and `prose format`, and any lint finding sets exit code `2`.
+Lint rules report a finding without rewriting the source. They run under both `prose check` and `prose format`, and any lint finding sets exit code `2`, apart from a stdin `prose format` that writes the formatted source, which exits `0`.
 
 <RuleCardList family="lint" />
 

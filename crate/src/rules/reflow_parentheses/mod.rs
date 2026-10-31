@@ -165,7 +165,7 @@ impl Shedder<'_> {
     /// holds where none does, whereas a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
-            let Candidate { inner, pair, .. } = *candidate;
+            let pair = candidate.pair;
             self.breaks.get_mut().clear();
             self.folds.retain(|fold| fold.contains_range(pair));
             let collapsing = !self.folds.is_empty();
@@ -197,7 +197,7 @@ impl Shedder<'_> {
                 insert_edit(&mut self.edits, removal);
             }
             if folding {
-                self.push_fold_edits(inner);
+                self.push_fold_edits(candidate);
                 self.folds.push(pair);
             }
         }

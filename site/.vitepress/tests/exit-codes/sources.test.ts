@@ -4,9 +4,9 @@ import { repoRoot }                                     from '../../lib/shared/p
 const HELP = `Usage: prose [OPTIONS] <COMMAND>
 
 Exit codes:
-  0    Clean: no findings, no rewrite pending
+  0    Clean: no findings, no rewrite pending, or a stdin run wrote the formatted source
   1    Format would change: at least one rewrite is pending
-  2    Lint violation: at least one lint finding was reported
+  2    Lint violation: at least one lint finding was reported, unless a stdin run wrote the formatted source
   3    Parse error: input is not valid Python for the target version
   4    Config error: the config, the arguments, a path, or a rewrite failed validation
 `
@@ -38,7 +38,8 @@ describe('exitCodesFrom', () => {
   })
 
   it('throws where the matrix prints no row for a code', () => {
-    expect(() => exitCodesFrom(HELP.replace(/^ {2}4 .*$/m, ''))).toThrow(/no exit-code row for 4/)
+    const help = `  4    Config error: a row above the matrix\n${HELP.replace(/^ {2}4 .*$/m, '')}`
+    expect(() => exitCodesFrom(help)).toThrow(/no exit-code row for 4/)
   })
 })
 
