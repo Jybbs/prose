@@ -2,8 +2,8 @@
   --underline-accent : var(--prose-palette-celadon);
 
   cursor                : help;
-  text-decoration       : underline dotted var(--underline-accent) 1px;
-  text-underline-offset : 3px;
+  text-decoration       : underline dotted var(--underline-accent) var(--prose-border-1);
+  text-underline-offset : var(--prose-space-3);
 }
 
 a.glossary-anchor {
@@ -22,11 +22,11 @@ a.glossary-anchor {
 .v-popper--theme-glossary { --popper-accent : var(--prose-palette-celadon); }
 
 .v-popper--theme-glossary .v-popper__inner {
-  max-width     : 22rem;
-  min-width     : 14rem;
-  padding       : 12px 16px;
-  border        : 2px solid var(--popper-border);
-  border-top    : 3px solid var(--popper-accent);
+  max-width     : var(--prose-width-22rem);
+  min-width     : var(--prose-width-14rem);
+  padding       : var(--prose-space-12) var(--prose-space-16);
+  border        : var(--prose-border-2) solid var(--popper-border);
+  border-top    : var(--prose-border-3) solid var(--popper-accent);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
@@ -49,8 +49,8 @@ a.glossary-anchor {
 }
 
 .glossary-tooltip-divider {
-  margin-block       : 6px;
-  border-block-start : 1px solid var(--vp-c-divider);
+  margin-block       : var(--prose-space-6);
+  border-block-start : var(--prose-border-1) solid var(--vp-c-divider);
   height             : 0;
 }
 
@@ -60,15 +60,15 @@ a.glossary-anchor {
 }
 
 .glossary-tooltip-body code {
-  font-size : 0.95em;
+  font-size : var(--prose-text-0-95em);
   color     : var(--vp-c-text-1);
 }
 
 .glossary-tooltip-link {
   display         : block;
-  margin          : 12px -16px -12px;
-  padding         : 6px 16px;
-  border-radius   : 0 0 calc(var(--prose-radius) - 2px) calc(var(--prose-radius) - 2px);
+  margin          : var(--prose-space-12) calc(var(--prose-space-16) * -1) calc(var(--prose-space-12) * -1);
+  padding         : var(--prose-space-6) var(--prose-space-16);
+  border-radius   : 0 0 calc(var(--prose-radius) - var(--prose-border-2)) calc(var(--prose-radius) - var(--prose-border-2));
   background      : var(--popper-border);
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-label-size);
@@ -81,5 +81,5 @@ a.glossary-anchor {
 }
 
 .glossary-tooltip-link:hover {
-  background : color-mix(in srgb, var(--popper-accent) 75%, var(--vp-c-divider));
+  background : color-mix(in srgb, var(--popper-accent) var(--prose-tint-75), var(--vp-c-divider));
 }

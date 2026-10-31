@@ -3,17 +3,17 @@
 
   display               : grid;
   grid-template-columns : repeat(5, minmax(0, 1fr));
-  margin                : 24px 0 0;
+  margin                : var(--prose-space-24) 0 0;
   background            : var(--vp-c-bg-soft);
 }
 
 .built-on-card {
   display              : grid;
-  grid-template-rows   : 64px 28px 18px;
+  grid-template-rows   : var(--prose-size-64) var(--prose-size-28) var(--prose-size-18);
   align-content        : start;
   justify-items        : center;
-  row-gap              : 8px;
-  padding              : 22px 14px 22px;
+  row-gap              : var(--prose-space-8);
+  padding              : var(--prose-space-22) var(--prose-space-14);
   text-align           : center;
   text-decoration-line : none;
   color                : var(--vp-c-text-1);
@@ -21,23 +21,23 @@
 }
 
 .built-on-card + .built-on-card {
-  border-left : 1px solid var(--vp-c-divider);
+  border-left : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .built-on-card:hover {
-  background : color-mix(in srgb, var(--stack-accent) 5%, transparent);
+  background : color-mix(in srgb, var(--stack-accent) var(--prose-tint-faint), transparent);
 }
 
 .built-on-medallion {
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
-  width           : 56px;
-  height          : 56px;
-  border          : 1px solid color-mix(in srgb, var(--stack-accent) 32%, var(--vp-c-divider));
+  width           : var(--prose-size-56);
+  height          : var(--prose-size-56);
+  border          : var(--prose-border-1) solid color-mix(in srgb, var(--stack-accent) var(--prose-tint-strong), var(--vp-c-divider));
   border-radius   : 50%;
-  background      : color-mix(in srgb, var(--stack-accent) 5%, var(--vp-c-bg));
-  color           : color-mix(in srgb, var(--stack-accent) 68%, var(--vp-c-text-1));
+  background      : color-mix(in srgb, var(--stack-accent) var(--prose-tint-faint), var(--vp-c-bg));
+  color           : color-mix(in srgb, var(--stack-accent) var(--prose-tint-68), var(--vp-c-text-1));
   transition      :
     background   var(--prose-transition-card),
     border-color var(--prose-transition-card),
@@ -45,29 +45,29 @@
 }
 
 .built-on-logo {
-  width  : 28px;
-  height : 28px;
+  width  : var(--prose-size-28);
+  height : var(--prose-size-28);
   color  : inherit;
 }
 
 .built-on-card:hover .built-on-medallion {
-  background   : color-mix(in srgb, var(--stack-accent) 9%, var(--vp-c-bg));
-  border-color : color-mix(in srgb, var(--stack-accent) 60%, var(--vp-c-divider));
-  color        : color-mix(in srgb, var(--stack-accent) 82%, var(--vp-c-text-1));
+  background   : color-mix(in srgb, var(--stack-accent) var(--prose-tint-wash), var(--vp-c-bg));
+  border-color : color-mix(in srgb, var(--stack-accent) var(--prose-tint-60), var(--vp-c-divider));
+  color        : color-mix(in srgb, var(--stack-accent) var(--prose-tint-82), var(--vp-c-text-1));
 }
 
 .built-on-name {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 1.15rem;
+  font-size   : var(--prose-text-1-15rem);
   line-height : 1;
   color       : var(--vp-c-text-1);
 }
 
 .built-on-role {
   line-height : 1;
-  color       : color-mix(in srgb, var(--stack-accent) 56%, var(--vp-c-text-3));
+  color       : color-mix(in srgb, var(--stack-accent) var(--prose-tint-56), var(--vp-c-text-3));
 }
 
 @media (--prose-bp-medium) {
@@ -78,7 +78,7 @@
     border-left : none;
   }
   .built-on-card:nth-child(n + 4) {
-    border-top : 1px solid var(--vp-c-divider);
+    border-top : var(--prose-border-1) solid var(--vp-c-divider);
   }
 }
 
@@ -88,6 +88,6 @@
   }
   .built-on-card + .built-on-card {
     border-left : none;
-    border-top  : 1px solid var(--vp-c-divider);
+    border-top  : var(--prose-border-1) solid var(--vp-c-divider);
   }
 }

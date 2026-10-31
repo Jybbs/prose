@@ -1,25 +1,25 @@
 .pq-rows {
-  margin: 2rem 0;
+  margin: var(--prose-space-2rem) 0;
 }
 
 .pq-row {
   display               : grid;
-  grid-template-columns : minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-columns : minmax(0, 1fr) minmax(var(--prose-width-220), var(--prose-width-280));
   align-items           : center;
-  gap                   : 1.5rem;
-  margin                : 1.25rem 0;
-  padding               : 1rem 0;
-  border-top            : 1px solid var(--vp-c-divider);
+  gap                   : var(--prose-space-1-5rem);
+  margin                : var(--prose-space-1-25rem) 0;
+  padding               : var(--prose-space-1rem) 0;
+  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .pq-rows .pq-row:last-child {
-  border-bottom: 1px solid var(--vp-c-divider);
+  border-bottom: var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .pq-row > p {
   margin      : 0;
   font-family : var(--prose-font-display);
-  font-size   : 1.05rem;
+  font-size   : var(--prose-text-1-05rem);
   line-height : 1.5;
   color       : var(--vp-c-text-1);
 }
@@ -37,9 +37,9 @@
 
 .pq-row .pq-aside {
   margin      : 0;
-  padding     : 0.85rem 1rem;
+  padding     : var(--prose-space-0-85rem) var(--prose-space-1rem);
   background  : var(--vp-c-bg-soft);
-  border-left : 3px solid var(--prose-palette-ube);
+  border-left : var(--prose-border-3) solid var(--prose-palette-ube);
 }
 
 .pq-row .pq-aside code {

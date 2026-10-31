@@ -19,12 +19,14 @@ export function expectSlugIndex(
   expect([...index(dir).keys()]).toStrictEqual(list(dir).map(entry => entry.slug))
 }
 
-// Parses every stylesheet under the theme, each beside its path within it.
-export function themeSheets(): { file: string, root: Root }[] {
-  const theme = new URL('../theme/', import.meta.url)
-  return fs.globSync('**/*.css', { cwd: theme }).map(file => ({
+// Parses every stylesheet under the theme and the prototypes in path order,
+// each beside its path within the site.
+export function siteSheets(): { file: string, root: Root }[] {
+  const site  = new URL('../../', import.meta.url)
+  const files = fs.globSync(['.vitepress/theme/**/*.css', 'prototypes/**/*.css'], { cwd: site })
+  return files.toSorted().map(file => ({
     file : file,
-    root : parseCss(fs.readFileSync(new URL(file, theme), 'utf8'))
+    root : parseCss(fs.readFileSync(new URL(file, site), 'utf8'))
   }))
 }
 

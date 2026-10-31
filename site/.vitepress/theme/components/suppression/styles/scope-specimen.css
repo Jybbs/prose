@@ -1,22 +1,22 @@
 .scope-specimen {
   display               : grid;
-  grid-template-columns : minmax(0, 1fr) minmax(180px, 220px);
-  gap                   : 24px;
-  margin                : 1.5rem 0;
+  grid-template-columns : minmax(0, 1fr) minmax(var(--prose-width-180), var(--prose-width-220));
+  gap                   : var(--prose-space-24);
+  margin                : var(--prose-space-1-5rem) 0;
   background            : var(--prose-panel-wash);
-  padding               : 22px 24px;
+  padding               : var(--prose-space-22) var(--prose-space-24);
 }
 
 .vp-doc .scope-specimen-source,
 .scope-specimen-source {
   margin        : 0;
-  padding       : 14px 8px;
-  border        : 1px solid var(--vp-c-divider);
+  padding       : var(--prose-space-14) var(--prose-space-8);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   overflow-x    : auto;
   font-family   : var(--vp-font-family-mono);
-  font-size     : 0.8rem;
+  font-size     : var(--prose-text-0-8rem);
   line-height   : 1.55;
 }
 
@@ -29,7 +29,7 @@
 
 .scope-specimen-line {
   display               : grid;
-  grid-template-columns : 28px 14px 1fr;
+  grid-template-columns : var(--prose-size-28) var(--prose-size-14) 1fr;
   align-items           : center;
   gap                   : 0;
   white-space           : pre;
@@ -37,49 +37,46 @@
 
 .scope-specimen-gutter {
   font-family   : var(--vp-font-family-mono);
-  font-size     : 0.7rem;
+  font-size     : var(--prose-text-xxs);
   color         : var(--vp-c-text-3);
   text-align    : right;
-  padding-right : 8px;
+  padding-right : var(--prose-space-8);
   user-select   : none;
 }
 
 .scope-specimen-bracket {
   position : relative;
-  width    : 14px;
+  width    : var(--prose-size-14);
   height   : 100%;
 }
 
 .scope-specimen-line[data-scope] .scope-specimen-bracket::before {
   content    : '';
   position   : absolute;
-  left       : 3px;
-  width      : 3px;
-  background : color-mix(in srgb, var(--scope-tint) 70%, var(--vp-c-divider));
+  left       : var(--prose-space-3);
+  width      : var(--prose-size-3);
+  background : color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
   top        : 0;
   bottom     : 0;
 }
 
-.scope-specimen-line[data-bracket="open"] .scope-specimen-bracket::after {
-  content       : '';
-  position      : absolute;
-  left          : 1px;
-  top           : 0;
-  width         : 8px;
-  height        : 3px;
-  background    : color-mix(in srgb, var(--scope-tint) 70%, var(--vp-c-divider));
-  border-radius : 1px;
-}
-
+.scope-specimen-line[data-bracket="open"] .scope-specimen-bracket::after,
 .scope-specimen-line[data-bracket="close"] .scope-specimen-bracket::after {
   content       : '';
   position      : absolute;
-  left          : 1px;
-  bottom        : 0;
-  width         : 8px;
-  height        : 3px;
-  background    : color-mix(in srgb, var(--scope-tint) 70%, var(--vp-c-divider));
-  border-radius : 1px;
+  left          : var(--prose-space-1);
+  width         : var(--prose-size-8);
+  height        : var(--prose-size-3);
+  background    : color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
+  border-radius : var(--prose-radius-1);
+}
+
+.scope-specimen-line[data-bracket="open"] .scope-specimen-bracket::after {
+  top: 0;
+}
+
+.scope-specimen-line[data-bracket="close"] .scope-specimen-bracket::after {
+  bottom: 0;
 }
 
 .scope-specimen-line[data-bracket="solo"] .scope-specimen-bracket::before {
@@ -90,13 +87,13 @@
 .scope-specimen-line[data-bracket="solo"] .scope-specimen-bracket::after {
   content       : '';
   position      : absolute;
-  left          : 0.5px;
+  left          : var(--prose-space-0-5);
   top           : 50%;
   transform     : translate(0, -50%);
-  width         : 8px;
-  height        : 8px;
+  width         : var(--prose-size-8);
+  height        : var(--prose-size-8);
   border-radius : 50%;
-  background    : color-mix(in srgb, var(--scope-tint) 80%, var(--vp-c-bg));
+  background    : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
 }
 
 .scope-specimen-code {
@@ -107,7 +104,7 @@
 .scope-specimen-line[data-bracket="open"] .scope-specimen-code,
 .scope-specimen-line[data-bracket="close"] .scope-specimen-code,
 .scope-specimen-line[data-bracket="solo"] .scope-specimen-code {
-  color : color-mix(in srgb, var(--scope-tint) 75%, var(--vp-c-text-1));
+  color : color-mix(in srgb, var(--scope-tint) var(--prose-tint-75), var(--vp-c-text-1));
 }
 
 .vp-doc .scope-specimen-legend,
@@ -117,32 +114,32 @@
   margin         : 0;
   display        : flex;
   flex-direction : column;
-  gap            : 12px;
+  gap            : var(--prose-space-12);
   align-self     : start;
 }
 
 .scope-specimen-legend-row {
   display        : flex;
   flex-direction : column;
-  gap            : 4px;
-  padding        : 6px 10px 8px;
-  border         : 1px solid color-mix(in srgb, var(--scope-tint) 25%, var(--vp-c-divider));
-  border-left    : 3px solid color-mix(in srgb, var(--scope-tint) 70%, var(--vp-c-divider));
+  gap            : var(--prose-space-4);
+  padding        : var(--prose-space-6) var(--prose-space-10) var(--prose-space-8);
+  border         : var(--prose-border-1) solid color-mix(in srgb, var(--scope-tint) var(--prose-tint-25), var(--vp-c-divider));
+  border-left    : var(--prose-border-3) solid color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
   border-radius  : var(--prose-radius-sm);
-  background     : color-mix(in srgb, var(--scope-tint) 6%, var(--vp-c-bg));
+  background     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-6), var(--vp-c-bg));
 }
 
 .scope-specimen-legend-marker {
   display     : flex;
   align-items : center;
-  gap         : 8px;
+  gap         : var(--prose-space-8);
 }
 
 .scope-specimen-legend-pip {
-  width      : 18px;
-  height     : 18px;
-  background : color-mix(in srgb, var(--scope-tint) 85%, var(--vp-c-bg));
-  font-size  : 0.74rem;
+  width      : var(--prose-size-18);
+  height     : var(--prose-size-18);
+  background : color-mix(in srgb, var(--scope-tint) var(--prose-tint-85), var(--vp-c-bg));
+  font-size  : var(--prose-text-0-74rem);
 }
 
 .scope-specimen-legend-name {
@@ -150,7 +147,7 @@
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : color-mix(in srgb, var(--scope-tint) 78%, var(--vp-c-text-2));
+  color          : color-mix(in srgb, var(--scope-tint) var(--prose-tint-78), var(--vp-c-text-2));
 }
 
 .vp-doc .scope-specimen-legend-directives,
@@ -160,7 +157,7 @@
   margin       : 0;
   display      : flex;
   flex-wrap    : wrap;
-  gap          : 6px;
+  gap          : var(--prose-space-6);
 }
 
 .vp-doc .scope-specimen-legend-directive,
@@ -172,20 +169,20 @@
 .vp-doc .scope-specimen-legend-directive code,
 .scope-specimen-legend-directive code {
   font-family        : var(--vp-font-family-mono);
-  font-size          : 0.65rem;
-  padding            : 2px 6px;
+  font-size          : var(--prose-text-0-65rem);
+  padding            : var(--prose-space-2) var(--prose-space-6);
   border-radius      : var(--prose-radius-sm);
-  color              : color-mix(in srgb, var(--scope-tint) 88%, var(--vp-c-text-1));
-  background-color   : color-mix(in srgb, var(--scope-tint) 20%, var(--vp-c-bg));
+  color              : color-mix(in srgb, var(--scope-tint) var(--prose-tint-88), var(--vp-c-text-1));
+  background-color   : color-mix(in srgb, var(--scope-tint) var(--prose-tint-20), var(--vp-c-bg));
   background-image   : linear-gradient(var(--underline-accent, var(--scope-tint)), var(--underline-accent, var(--scope-tint)));
   background-repeat  : no-repeat;
   background-position: left bottom;
-  background-size    : 0% 1px;
+  background-size    : 0% var(--prose-size-1);
   transition         : background-size var(--prose-transition-slow);
 }
 
 .scope-specimen-legend-directive a:hover code {
-  background-size : 100% 1px;
+  background-size : 100% var(--prose-size-1);
 }
 
 @media (--prose-bp-tablet) {

@@ -3,27 +3,27 @@
 
   display        : flex;
   flex-direction : column;
-  margin         : 24px 0 0;
+  margin         : var(--prose-space-24) 0 0;
   background     : var(--vp-c-bg-soft);
 }
 
 .landing-workflow-section {
   position              : relative;
   display               : grid;
-  grid-template-columns : 72px 1fr;
-  gap                   : 24px;
-  padding               : 14px 28px;
-  border-bottom         : 1px dashed color-mix(in srgb, var(--workflow-accent) 24%, var(--vp-c-divider));
+  grid-template-columns : var(--prose-size-72) 1fr;
+  gap                   : var(--prose-space-24);
+  padding               : var(--prose-space-14) var(--prose-space-28);
+  border-bottom         : var(--prose-border-1) dashed color-mix(in srgb, var(--workflow-accent) var(--prose-tint-24), var(--vp-c-divider));
 }
 
 .landing-workflow-section::before {
   content    : "";
   position   : absolute;
-  top        : 14px;
-  bottom     : 14px;
-  left       : calc(28px + 72px);
-  width      : 1px;
-  background : color-mix(in srgb, var(--workflow-accent) 28%, var(--vp-c-divider));
+  top        : var(--prose-space-14);
+  bottom     : var(--prose-space-14);
+  left       : calc(var(--prose-space-28) + var(--prose-size-72));
+  width      : var(--prose-size-1);
+  background : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-28), var(--vp-c-divider));
 }
 
 .landing-workflow-section-last {
@@ -32,9 +32,9 @@
 
 .landing-workflow-gutter {
   position           : sticky;
-  top                : 96px;
+  top                : var(--prose-space-96);
   align-self         : start;
-  padding-inline-end : 14px;
+  padding-inline-end : var(--prose-space-14);
   text-align         : right;
 }
 
@@ -43,24 +43,24 @@
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 1.8rem;
+  font-size   : var(--prose-text-1-8rem);
   line-height : 1;
-  color       : color-mix(in srgb, var(--workflow-accent) 70%, var(--vp-c-text-1));
+  color       : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-70), var(--vp-c-text-1));
 }
 
 @media (--prose-bp-card-stack) {
   .landing-workflow-section {
-    grid-template-columns : 64px 1fr;
-    gap                   : 18px;
-    padding               : 22px 22px 24px;
+    grid-template-columns : var(--prose-size-64) 1fr;
+    gap                   : var(--prose-space-18);
+    padding               : var(--prose-space-22) var(--prose-space-22) var(--prose-space-24);
   }
   .landing-workflow-section::before {
-    top    : 22px;
-    bottom : 24px;
-    left   : calc(22px + 64px);
+    top    : var(--prose-space-22);
+    bottom : var(--prose-space-24);
+    left   : calc(var(--prose-space-22) + var(--prose-size-64));
   }
   .landing-workflow-roman {
-    font-size : 1.6rem;
+    font-size : var(--prose-text-1-6rem);
   }
   .landing-workflow-gutter {
     position : static;

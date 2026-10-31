@@ -5,37 +5,37 @@
 .rules-plate-key {
   display        : flex;
   flex-wrap      : wrap;
-  gap            : 8px;
-  margin-top     : 24px;
-  padding-bottom : 18px;
-  border-bottom  : 1px solid var(--vp-c-divider);
+  gap            : var(--prose-space-8);
+  margin-top     : var(--prose-space-24);
+  padding-bottom : var(--prose-space-18);
+  border-bottom  : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .rules-plate-letter {
   display               : grid;
-  grid-template-columns : 3rem minmax(0, 1fr);
-  gap                   : 0 14px;
-  padding               : 12px 0;
-  border-top            : 1px solid var(--vp-c-divider);
+  grid-template-columns : var(--prose-size-3rem) minmax(0, 1fr);
+  gap                   : 0 var(--prose-space-14);
+  padding               : var(--prose-space-12) 0;
+  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
 .rules-plate-key + .rules-plate-letter {
-  margin-top : 18px;
+  margin-top : var(--prose-space-18);
 }
 
 .rules-plate-cap {
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : 2.1rem;
+  font-size   : var(--prose-text-2-1rem);
   line-height : 1;
   color       : var(--vp-c-text-3);
 }
 
 .vp-doc .rules-plate-slugs,
 .rules-plate-slugs {
-  columns    : 2 11rem;
-  column-gap : 24px;
+  columns    : 2 var(--prose-width-11rem);
+  column-gap : var(--prose-space-24);
   margin     : 0;
   padding    : 0;
   list-style : none;
@@ -45,9 +45,9 @@
 .rules-plate-slugs > li {
   display      : flex;
   align-items  : center;
-  gap          : 8px;
+  gap          : var(--prose-space-8);
   margin       : 0;
-  padding      : 3px 0;
+  padding      : var(--prose-space-3) 0;
   break-inside : avoid;
 }
 
@@ -55,11 +55,11 @@
 a.rules-plate-slug {
   color                 : var(--vp-c-text-1);
   font-family           : var(--vp-font-family-mono);
-  font-size             : 0.8rem;
+  font-size             : var(--prose-text-0-8rem);
   font-weight           : 400;
   line-height           : 1.5;
   text-decoration       : underline transparent;
-  text-underline-offset : 3px;
+  text-underline-offset : var(--prose-space-3);
   transition            : text-decoration-color var(--prose-transition);
 }
 

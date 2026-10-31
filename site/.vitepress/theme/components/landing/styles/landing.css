@@ -1,9 +1,9 @@
 .VPPage .vp-doc {
   max-width : none;
-  padding   : 0 24px 80px;
+  padding   : 0 var(--prose-space-24) var(--prose-space-80);
 }
 
 .landing-page {
-  max-width : 1120px;
+  max-width : var(--prose-width-1120);
   margin    : 0 auto;
 }

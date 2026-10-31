@@ -4,12 +4,12 @@
   flex-direction       : column;
   align-items          : center;
   justify-content      : center;
-  gap                  : 2px;
-  width                : 132px;
-  height               : 132px;
+  gap                  : var(--prose-space-2);
+  width                : var(--prose-size-132);
+  height               : var(--prose-size-132);
   border-radius        : 50%;
-  background           : color-mix(in srgb, var(--stamp-accent) 12%, var(--panel-bg));
-  border               : 2px dashed color-mix(in srgb, var(--stamp-accent) 65%, var(--panel-edge));
+  background           : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-12), var(--panel-bg));
+  border               : var(--prose-border-2) dashed color-mix(in srgb, var(--stamp-accent) var(--prose-tint-65), var(--panel-edge));
   transform            : rotate(-6deg);
   text-align           : center;
   text-decoration-line : none;
@@ -23,28 +23,28 @@
 
 .landing-cta-stamp-edge {
   position       : absolute;
-  inset          : 8px;
-  border         : 1px solid color-mix(in srgb, var(--stamp-accent) 40%, var(--panel-edge));
+  inset          : var(--prose-space-8);
+  border         : var(--prose-border-1) solid color-mix(in srgb, var(--stamp-accent) var(--prose-tint-40), var(--panel-edge));
   border-radius  : 50%;
   pointer-events : none;
 }
 
 .landing-cta-stamp-month {
-  font-size      : 0.7rem;
+  font-size      : var(--prose-text-xxs);
   letter-spacing : var(--prose-display-tracking-wide);
-  color          : color-mix(in srgb, var(--stamp-accent) 55%, var(--vp-c-text-3));
+  color          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--vp-c-text-3));
 }
 
 .landing-cta-stamp-version {
   font-family : var(--prose-font-display);
   font-style  : italic;
-  font-size   : 1.3rem;
+  font-size   : var(--prose-text-1-3rem);
   line-height : 1;
   color       : var(--stamp-ink);
 }
 
 .landing-cta-stamp-year {
-  font-size      : 0.74rem;
-  letter-spacing : 0.16em;
-  color          : color-mix(in srgb, var(--stamp-accent) 50%, var(--vp-c-text-3));
+  font-size      : var(--prose-text-0-74rem);
+  letter-spacing : var(--prose-tracking-0-16em);
+  color          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-50), var(--vp-c-text-3));
 }

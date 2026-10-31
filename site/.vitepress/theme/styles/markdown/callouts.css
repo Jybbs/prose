@@ -1,8 +1,8 @@
 .vp-doc .custom-block {
   position      : relative;
-  margin        : 1.5rem 0;
-  padding       : 16px 18px 16px 22px;
-  border        : 1px solid var(--vp-c-divider);
+  margin        : var(--prose-space-1-5rem) 0;
+  padding       : var(--prose-space-16) var(--prose-space-18) var(--prose-space-16) var(--prose-space-22);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg-soft);
   overflow      : hidden;
@@ -13,7 +13,7 @@
   position : absolute;
   top      : 0;
   left     : 0;
-  width    : 3px;
+  width    : var(--prose-size-3);
   height   : 100%;
 }
 

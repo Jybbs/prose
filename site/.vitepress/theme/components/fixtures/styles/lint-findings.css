@@ -13,11 +13,11 @@
   content          : "";
   position         : absolute;
   inset-inline     : 0;
-  bottom           : -3px;
-  height           : 4px;
-  background       : color-mix(in srgb, var(--family-color) 55%, transparent);
-  -webkit-mask     : var(--lint-wave) left center / 8px 4px repeat-x;
-  mask             : var(--lint-wave) left center / 8px 4px repeat-x;
+  bottom           : calc(var(--prose-space-3) * -1);
+  height           : var(--prose-size-4);
+  background       : color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
+  -webkit-mask     : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
+  mask             : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
   transform        : scaleX(1);
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
@@ -39,11 +39,11 @@
 /* A span reaching a whole row underlines nothing in particular, so the wave
    gives way to a wash over exactly the rows the finding names. */
 .lint-flag-line::after {
-  inset-block         : -1px;
+  inset-block         : calc(var(--prose-space-1) * -1);
   z-index             : -1;
   height              : auto;
-  border-inline-start : 2px solid var(--family-color);
-  background          : color-mix(in srgb, var(--family-color) 12%, transparent);
+  border-inline-start : var(--prose-border-2) solid var(--family-color);
+  background          : color-mix(in srgb, var(--family-color) var(--prose-tint-12), transparent);
   -webkit-mask        : none;
   mask                : none;
 }
