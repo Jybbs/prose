@@ -19,7 +19,7 @@ use render::{join_edits, join_text, stripped_edit, wrap_edits};
 use crate::{
     config::Config,
     primitives::{
-        comparison::padded_operator_gaps,
+        comparison::narrowing_edits,
         edit::{apply_inline_edits, narrowed_replacement},
         inline::rows_within,
         range::blocks_span,
@@ -51,11 +51,11 @@ impl ShedBackslashContinuations {
 
     /// The fix for one run of unbracketed gaps, the join where the
     /// merged line fits the budget, and otherwise the parenthesized
-    /// break wherever an expression spans the run. `padded` lists the
-    /// comparison padding across the source that a join narrows.
-    fn shed_run(&self, source: &Source, run: &[Gap], padded: &[TextRange]) -> Shed {
+    /// break wherever an expression spans the run. `narrowing` lists the
+    /// [`narrowing_edits`] of every comparison in the source.
+    fn shed_run(&self, source: &Source, run: &[Gap], narrowing: &[Edit]) -> Shed {
         let span = blocks_span(run);
-        let joined = join_edits(source, run, padded);
+        let joined = join_edits(source, run, narrowing);
         if rows_within(source, span, &joined, self.code_line_length) {
             return Shed::Joined(joined);
         }
@@ -71,9 +71,9 @@ impl Rule for ShedBackslashContinuations {
         if gaps.is_empty() {
             return Vec::new();
         }
-        let padded = filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
+        let narrowing = filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
             expr.as_compare_expr()
-                .map(|compare| padded_operator_gaps(source, compare, &[]))
+                .map(|compare| narrowing_edits(source, compare, &[]))
         })
         .concat();
         let mut groups = Vec::new();
@@ -83,7 +83,7 @@ impl Rule for ShedBackslashContinuations {
                 [gap] if gap.bracketed => {
                     groups.extend(stripped_edit(source, gap.range).map(|edit| vec![edit]));
                 }
-                _ => match self.shed_run(source, run, &padded) {
+                _ => match self.shed_run(source, run, &narrowing) {
                     Shed::Joined(edits) => groups.push(edits),
                     Shed::Wrapped { node, stripped } => {
                         match wraps.iter_mut().find(|(wrapped, _)| *wrapped == node) {

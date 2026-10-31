@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/break_row_narrows_comparison_padding/input.py
+---
+reflow-parentheses@8..55

@@ -1,6 +1,5 @@
 //! Turns a shed decision into the edits joining or wrapping its run.
 
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
 use ruff_text_size::{Ranged, TextRange};
@@ -8,18 +7,21 @@ use ruff_text_size::{Ranged, TextRange};
 use super::*;
 
 /// Replaces each gap in `run` with its join text, folding the physical
-/// lines the run continues onto one, and narrows each of `padded` inside
-/// the [`spanning_expression`] to one space, ascending by start.
-pub(super) fn join_edits(source: &Source, run: &[Gap], padded: &[TextRange]) -> Vec<Edit> {
+/// lines the run continues onto one, and keeps each of `narrowing` that
+/// falls inside the [`spanning_expression`], ascending by start.
+pub(super) fn join_edits(source: &Source, run: &[Gap], narrowing: &[Edit]) -> Vec<Edit> {
     let spanned = spanning_expression(source, blocks_span(run));
-    let narrowed = padded
+    let narrowed = narrowing
         .iter()
-        .filter(|gap| spanned.is_some_and(|spanned| spanned.contains_range(**gap)))
-        .map(|&gap| Edit::range_replacement(" ".to_owned(), gap));
-    run.iter()
+        .filter(|edit| spanned.is_some_and(|spanned| spanned.contains_range(edit.range())))
+        .cloned();
+    let mut edits: Vec<Edit> = run
+        .iter()
         .filter_map(|gap| narrowed_replacement(source, gap.range, gap.join.to_owned()))
-        .merge_by(narrowed, |join, gap| join.start() <= gap.start())
-        .collect()
+        .chain(narrowed)
+        .collect();
+    edits.sort_by_key(Ranged::start);
+    edits
 }
 
 /// The text a join leaves between `token` and `next`, empty where the

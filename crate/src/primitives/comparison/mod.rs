@@ -33,14 +33,10 @@ pub(crate) const fn opening_token_kind(op: CmpOp) -> TokenKind {
     }
 }
 
-/// The gaps ahead of `compare`'s operators that a join onto one row
-/// narrows to one space, each a run of two or more spaces opening
-/// mid-row that no edit in `held` overlaps.
-pub(crate) fn padded_operator_gaps(
-    source: &Source,
-    compare: &ExprCompare,
-    held: &[Edit],
-) -> Vec<TextRange> {
+/// The edits a join onto one row makes ahead of `compare`'s operators,
+/// each narrowing to one space a run of two or more spaces that opens
+/// mid-row and that no edit in `held` overlaps.
+pub(crate) fn narrowing_edits(source: &Source, compare: &ExprCompare, held: &[Edit]) -> Vec<Edit> {
     compare
         .iter()
         .filter_map(|(left, &op, right)| {
@@ -53,27 +49,26 @@ pub(crate) fn padded_operator_gaps(
             let covered = held
                 .iter()
                 .any(|edit| edit.range().intersect(gap).is_some_and(|r| !r.is_empty()));
-            (mid_row && gap.len() > TextSize::of(' ') && !covered).then_some(gap)
+            (mid_row && gap.len() > TextSize::of(' ') && !covered)
+                .then(|| Edit::range_replacement(" ".to_owned(), gap))
         })
         .collect()
 }
 
-/// The [`padded_operator_gaps`] of every comparison inside `expr`, in
-/// source order, leaving a replacement field's interior unread, and none
+/// The [`narrowing_edits`] of every comparison inside `expr`, ascending
+/// by start, leaving a replacement field's interior unread, and none
 /// where `expr` sits on one row.
-pub(crate) fn padded_operator_gaps_within(
-    source: &Source,
-    expr: &Expr,
-    held: &[Edit],
-) -> Vec<TextRange> {
+pub(crate) fn narrowing_edits_within(source: &Source, expr: &Expr, held: &[Edit]) -> Vec<Edit> {
     if !source.contains_line_break(expr.range()) {
         return Vec::new();
     }
-    filter_map_within_expr(expr, Interpolations::Skip, |expr| {
+    let mut edits = filter_map_within_expr(expr, Interpolations::Skip, |expr| {
         expr.as_compare_expr()
-            .map(|compare| padded_operator_gaps(source, compare, held))
+            .map(|compare| narrowing_edits(source, compare, held))
     })
-    .concat()
+    .concat();
+    edits.sort_by_key(Ranged::start);
+    edits
 }
 
 #[cfg(test)]

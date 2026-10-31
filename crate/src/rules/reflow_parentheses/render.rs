@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{
     primitives::{
+        comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         fracture::outermost,
         inline::{display_width, folded_line_form, settled_width, spans_rows},
@@ -102,7 +103,8 @@ impl Shedder<'_> {
 
     /// The text breaking `candidate`'s pair across rows, `None` where a
     /// break does not own the pair's shape. The interior holds one row of
-    /// its own where its joined form, settled under the padding table,
+    /// its own where its joined form, narrowed through its
+    /// [`narrowing_edits_within`] and settled under the padding table,
     /// fits a row one indent step in, unless `candidate` stacks, and takes
     /// one row per operand otherwise, each operand joining its own rows
     /// where [`Self::operand_folds`] holds. Every row renders through the
@@ -131,7 +133,12 @@ impl Shedder<'_> {
         let chain = operands(self.source, candidate.expr, &sheds_pair)?;
         let indent = self.statement_indent(pair);
         let item = item_indent(indent);
-        let joined = apply_inline_edits(self.source, inner, &nested);
+        let narrowing = narrowing_edits_within(self.source, candidate.expr, self.padding);
+        let joined = apply_inline_edits(
+            self.source,
+            inner,
+            &outermost([&nested[..], &narrowing].concat()),
+        );
         let text = match folded_line_form(self.source, candidate.expr, &joined).filter(|row| {
             !candidate.stacks
                 && item + settled_width(self.source, self.padding, inner, display_width(row))
