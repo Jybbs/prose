@@ -15,23 +15,11 @@ tagline: name binding index
 
 ## Public Surface
 
-The *BindingAnalysis* type itself is `pub` and re-exported at the crate root as `prose::BindingAnalysis`, so a downstream consumer can reach one through [**`Source::binding_analysis`**](/architecture/source). The reader methods on the type are `pub(crate)` today, so code inside the *Prose* crate can call them and a downstream Rust caller cannot.
-
-A downstream consumer can:
-
-- Pass a [[source]] into [**`Pipeline::run`**](/architecture/pipeline) and read the diagnostics binding-aware rules like [[inlinable-bindings]] emit.
-- Reach the *BindingAnalysis* value through `source.binding_analysis()`.
-
-A downstream consumer cannot:
-
-- Call `assignment_count`, `assignment_value_range`, `binding_kinds`, `binding_name`, `bindings_in_scope`, `binds_name`, `first_unconditional_write`, `first_write_offset`, `is_bound_before`, `is_defined_before`, `is_deleted`, `is_written_globally`, `module_attribute_count`, `module_binding_kinds`, `module_function_reads`, `module_mutated`, `module_names_read_within`, `module_reads_as_data`, `module_reassigned`, `module_reassigned_without`, `module_usage_count`, `module_used_bare`, `read_offsets`, `scope_binds`, or `unpack_target` on the returned reference. Every reader is `pub(crate)`.
-- Implement a custom rule that reads the binding table. The `Rule` trait is `pub(crate)`.
-
-The methods open toward `1.0`, when every reader becomes `pub` and the `Rule` trait opens so a downstream consumer can implement a project-specific binding-aware rule.
+The *BindingAnalysis* type itself is `pub` and re-exported at the crate root as `prose::BindingAnalysis`, and a downstream consumer reaches one through [**`Source::binding_analysis`**](/architecture/source). The reader methods the Internal Surface lists are `pub(crate)`, so a downstream consumer sees the table's answers only in the diagnostics binding-aware rules such as [[inlinable-bindings]] emit from [**`Pipeline::run`**](/architecture/pipeline).
 
 ## Internal Surface
 
-For code inside the *Prose* crate (*and for a reader curious about the API that widens at `1.0`*), the table records per binding:
+For code inside the *Prose* crate, the table records per binding:
 
 - `assignment_count(binding: BindingId) -> usize` counts every write site, the introducing assignment included.
 - `assignment_value_range(offset: TextSize) -> Option<TextRange>` returns the source range of the value bound at a direct `name = value` or `name: T = value` write, or `None` for a tuple or list target. [[inlinable-bindings]] reads it to name the inline candidate.
@@ -59,19 +47,17 @@ For code inside the *Prose* crate (*and for a reader curious about the API that 
 - `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[shed-super-args]] reads to leave a call as written when its first argument names a local rather than the enclosing class.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[inlinable-bindings]] reads to either name a subscript rewrite or withhold the finding.
 
-`BindingId`, `BindingKind`, and `UnpackKind` are `pub(crate)` today, whereas `ScopeId`, `ScopeKind`, `Binding`, and `Scope` are private to the module. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Suggested` and `Unresolved`, the dispositions `unpack_target` reports for a multi-name unpack target.
+`BindingId`, `BindingKind`, and `UnpackKind` are `pub(crate)`, whereas `ScopeId`, `ScopeKind`, `Binding`, and `Scope` are private to the module. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Suggested` and `Unresolved`, the dispositions `unpack_target` reports for a multi-name unpack target.
 
 ## Build Pattern
 
 `BindingAnalysis::new(module: &ModModule)` runs the resolution pass on the first read of `binding_analysis()`, so a run whose rules never read it never pays for the traversal. The pass reads the AST in source order, tracks every introduction and shadow per lexical scope, and records writes and reads by offset. The enclosing [[source]] owns the result and hands it to a consuming rule as `&BindingAnalysis`.
 
-Across a reparse the table travels with the *Source* rather than being rebuilt, every offset it records moved through the `SourceMap` of the applied edits, so the offsets a rule reads always match the text it runs against. After a rule whose edits change a binding, or an edit that replaced a token the table names, the next read rebuilds the table against the new text. Inside one rule's `apply` the table is immutable.
+Across a reparse the table either travels with the new *Source* or is rebuilt on the next read, as the [[source]] page's [**Mutation**](/architecture/source#mutation) section sets out, so the offsets a rule reads always match the text it runs against. Inside one rule's `apply` the table is immutable.
 
 ## Re-Using This Primitive
 
-[[inlinable-bindings]] is the canonical consumer, counting writes and reads per binding to find candidates for inlining. A rule with a binding question of its own *(an unused import, a shadowed name, a reference ahead of its definition, a dead store)* reads the same table without traversing the module again. The traversal runs once per source and again only after a rule whose edits change a binding, which is what keeps a new binding-aware rule cheap.
-
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page, and a downstream consumer that depends on the crate reaches the table only through the diagnostics binding-aware rules emit, not through direct method calls. At `1.0` the readers open so a downstream rule can query the table itself.
+[[inlinable-bindings]] is the canonical consumer, counting writes and reads per binding to find candidates for inlining. A rule with a binding question of its own *(an unused import, a shadowed name, a reference ahead of its definition, a dead store)* reads the same table without traversing the module again.
 
 <template #related>
 
@@ -80,8 +66,6 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 - [[edit]] is the output type binding-aware rules emit, with each edit's range named against an offset the analysis records.
 - [[pipeline]] drives the rule run that reads the analysis.
 - [[rule-id]] is the handle each rule registers under in the pipeline's ordering.
-
-For the underlying rules catalog, the [**Rules**](/rules/) page lists every shipped rule beside its family, the binding-aware rules that read this table included.
 
 </template>
 

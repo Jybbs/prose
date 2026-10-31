@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/operand_row_measures_a_forecast_rewrite/input.py
+---
+ok = (
+    first_value_here_long_enough
+    or f"{alpha}" and bb
+)

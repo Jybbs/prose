@@ -23,16 +23,4 @@ Removing the arguments pulls every token after them leftward. Where the author a
 
 The rule runs ahead of [[reflow-calls]], so the bare `super()` is the text every later width measurement reads, and a call the rewrite brings within its budget settles in the same pass.
 
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-super-args]` directive, which covers every line a wrapped statement spans.
-
-</template>
-
 </RuleLayout>

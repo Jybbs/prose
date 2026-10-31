@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/break_row_measures_a_forecast_rewrite/input.py
+---
+prefer-fstring@11..34
+reflow-parentheses@5..47

@@ -1,8 +1,8 @@
 ---
-description: "The path from a fresh install to a `prose check` step gating CI, one page per step."
+description: "The path from a fresh install to a formatted project, one page per step."
 ---
 
-The Guide's chapters follow the path from a fresh install to a `prose check` step gating CI, one page per step. This section tells that story against a working project, whereas the [**Reference**](/reference/) section lists every flag and key.
+The Guide's chapters follow the path from a fresh install to a formatted project, one page per step. This section tells that story against a working project, whereas the [**Reference**](/reference/) section lists every flag and key.
 
 ## Pick Your Run Shape
 
@@ -12,7 +12,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 <div class="pq-row">
 
-**Gate CI on pending rewrites.** The command exits non-zero when any file would change, and the [**Quick Start**](/guide/quick-start) walks the full setup. The [**Exit Codes**](/reference/exit-codes) reference lists what each exit code means for a CI gate.
+**Gate CI on pending rewrites.** The command exits non-zero when any file would change, and the [**GitHub Actions**](/integrations/github-actions) page walks the full setup. The [**Exit Codes**](/reference/exit-codes) reference lists what each exit code means for a CI gate.
 
 <aside class="pq-aside"><code>prose check .</code></aside>
 
@@ -36,7 +36,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 <div class="pq-row">
 
-**Read source from stdin and write to stdout.** The form an editor's save hook uses, with the [**Editor**](/integrations/editor) page covering both the language server and the save-hook setup.
+**Read source from stdin and write to stdout.** The form for an unsaved editor buffer, with the [**Editor**](/integrations/editor) page covering both the language server and the save-hook setup.
 
 <aside class="pq-aside"><code>prose format -</code></aside>
 

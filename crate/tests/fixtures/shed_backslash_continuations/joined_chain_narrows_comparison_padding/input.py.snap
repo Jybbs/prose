@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/joined_chain_narrows_comparison_padding/input.py
+---
+ready = loaded_count == 1 and errors == 0

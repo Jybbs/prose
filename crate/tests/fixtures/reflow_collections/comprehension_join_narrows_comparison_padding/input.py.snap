@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/comprehension_join_narrows_comparison_padding/input.py
+---
+def kept(rows, skipped):
+    return [row for row in rows if row.name is not None and row.id not in skipped]

@@ -18,7 +18,7 @@ The rule aligns three kinds of run:
 
 Every aligned row reads as `name = value`, with the name padded out to the column and one space after the operator. A keyword alone on its line with no column to share still takes one space on each side of its `=`, whereas a keyword that shares its line with another argument keeps the tight `name=value` form PEP 8 gives a call-site keyword.
 
-A positional argument, a `**` unpacking, an interior comment, or a keyword sharing a line with another argument ends the run, whereas a multi-line value or default joins its run and then closes it, leaving the entries after it to align as a separate group. A blank line, a comment line, or a statement of another kind ends a run of assignments, so each contiguous run aligns on its own. Once a group aligns, [[strip-stranded-padding]] removes the padding of any one-member group, and a lone binding then reads as plain code.
+A positional argument, a `**` unpacking, an interior comment, or a keyword sharing a line with another argument ends the run, whereas a multi-line value or default joins its run and then closes it, leaving the entries after it to align as a separate group. A blank line, a comment line, or a statement of another kind ends a run of assignments, so each contiguous run aligns on its own. A run of one takes no padding, and the rule removes any its source carries, so a lone binding reads as plain code.
 
 When the padding or the one-space buffer shifts a value whose rows continue past its opening row, those rows move by the same number of columns, provided the shallowest of them sits past the start of the statement or keyword. A shallowest row one indent step in from the opening row's indent moves this way only where a token of the value starts at its column on the opening row, as the second part of a string run written beneath the first does. A call argument or a string part written beneath the value's first row therefore stays beneath it, whereas a value hanging its rows one indent step in keeps every row where it was written. Where the rows do not all move, each row sitting on the column of a token the value writes on its opening row still moves, along with the rows written beneath or hanging from a row that moves, so a call closing at the statement's own indent moves the arguments written beneath its first and leaves its `)` where it was written. Each row that moves counts toward `code-line-length` at the column it moves to.
 
@@ -28,7 +28,7 @@ Where padding an assignment or a `type` statement out to the column would carry 
 
 <RuleConfigTable />
 
-`max-shift` limits how much padding one row may take. The rule reads each run in source order and extends a column while the gap between the widest and narrowest names stays within the limit, starting a new column at the first row that would exceed it. Setting `max-shift` to `false` removes the limit, so a run of any width aligns on one column, and `0` forbids padding altogether, so every `=` sits one space after its name. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+Under `max-shift = 0`, every `=` sits one space after its name.
 
 </template>
 

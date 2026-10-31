@@ -10,19 +10,17 @@ layout  : doc
 
 `reflow-imports` splits a from-import that overflows `import-line-length` into a run of `from ... import ...` statements. Each statement repeats the module prefix and packs as many alphabetized names as fit before the next line opens, so the imported names start at the same column after `import` on every line and a deep module path never pushes them rightward. A `lazy` import splits the same way, each statement it writes opening on `lazy`.
 
-Two further facets change what one import line carries, one splitting a comma-joined `import` (*the form pycodestyle flags as `E401`*) into a statement per module and one merging a module's repeated `from` statements onto a single line. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
+The rule runs after [[group-imports]] and before [[alphabetize-siblings]], so each module [`split-multi-module`](#split-multi-module) moves onto a line of its own is placed in its import group in the same pass, and the member list [`merge-members`](#merge-members) writes follows the order [[alphabetize-siblings]] would leave it. Setting `alphabetize-siblings = false` keeps a merged list's members in the order written.
 
-The rule runs after [[group-imports]] and before [[alphabetize-siblings]], so each module it splits onto its own line is placed in its import group in the same pass, and the merged member list is written in the order [[alphabetize-siblings]] would leave it. Setting `alphabetize-siblings = false` keeps the authored member order across both moves.
+The rule acts on single-line imports that open their own line. A `from ... import *`, a from-import already within budget, a `;`-joined statement, and a parenthesized multi-line import stay as written, and a lone name whose own line still overflows keeps its place rather than splitting further. A backslash-continued import arrives here already rejoined, since [[shed-backslash-continuations]] removes the escape well ahead of it, so every move the rule makes reads the single line that rejoin produced.
 
-The rule acts on single-line imports that open their own line. A `from ... import *`, a from-import already within budget, a `;`-joined statement, and a parenthesized multi-line import stay as written, and a lone name whose own line still overflows keeps its place rather than splitting further. A backslash-continued import arrives here already rejoined, since [[shed-backslash-continuations]] removes the escape well ahead of it, so every move the rule makes reads the single line that rejoin produced. A comment anywhere on the lines a merge would fold together blocks the merge, since folding those statements together would leave the comment describing nothing, and a notebook's cell boundary blocks a merge the same way. Under a class header carrying `# prose: keep`, a merge gathers only consecutive statements of one module, since a merge across another statement moves a member above it.
-
-Pair with [[align-imports]] to align the `import` keyword across the resulting run. The rule forecasts the block as the rules that run between it and [[align-imports]] will lay it out, with each merged member list folded into its lead statement and each run sorted and placed as [[alphabetize-siblings]] and [[band-constants]] leave it. A comment [[band-constants]] moves above a roster the rule splits leads the roster's first row, so every row of it seats in the run beneath the comment. Every row it writes therefore sits at the column [[align-imports]] settles that run to, and a second pass changes nothing.
+Pair with [[align-imports]] to align the `import` keyword across the resulting run. The rule forecasts the block as the rules that run between it and [[align-imports]] will lay it out, with each merged member list folded into its lead statement and each run sorted and placed as [[alphabetize-siblings]] and [[band-constants]] leave it. A comment [[band-constants]] moves above a roster the rule splits leads the roster's first row, so every row of it sits in the run beneath the comment. Every row it writes therefore sits at the column [[align-imports]] settles that run to, and a second pass changes nothing.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-The wrap budget comes from the top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default <ConfigDefault facet="import-line-length" />)*, which governs the import wrap independently of `code-line-length`. An import is a list of names [[alphabetize-siblings]] already sorts, so it stays scannable at a width where dense expression code would not, which is why it gets more horizontal room before a wrap pays off. Setting `import-line-length` to `false` drops the dedicated budget, so the import wrap falls back to `code-line-length`.
+The top-level [`import-line-length`](/reference/configuration#top-level-keys) key *(default <ConfigDefault facet="import-line-length" />)* sets the import wrap's budget apart from `code-line-length`. Its default runs wider, because an import is a list of names [[alphabetize-siblings]] already sorts and stays scannable at a width where dense expression code would not.
 
 </template>
 
@@ -32,11 +30,11 @@ Each move sits behind its own facet, so a project can switch one off without tou
 
 ### `merge-members`
 
-`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once, in the order [[alphabetize-siblings]] gives them. Each folded statement's line is removed together with the blank lines on whichever side of it holds fewer, or with those above it where it closes the file, as [[prune-inert-imports]] removes an import. Folded statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. A `lazy from` statement folds only with another `lazy from` statement of its module, so a merge never changes when a member loads. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
+`merge-members` folds the repeated `from pkg import ...` statements of one module onto a single line naming each member once. Each folded statement's line is removed with its blank lines the way [[prune-inert-imports]] removes an import. A `lazy from` statement folds only with another `lazy from` statement of its module, so a merge never changes when a member loads. A comment anywhere on the lines a merge would fold together blocks the merge, since folding those statements together would leave the comment describing nothing, and a notebook's cell boundary blocks a merge the same way. Under a class header carrying `# prose: keep`, a merge gathers only consecutive statements of one module, since a merge across another statement moves a member above it. Setting it to `false` keeps each statement as written, so a module named by three imports keeps its three lines.
 
 ### `split-multi-module`
 
-`split-multi-module` breaks a comma-joined `import a, b` into one `import` statement per module, and `false` keeps the comma-joined line as written.
+`split-multi-module` breaks a comma-joined `import a, b` (*the form pycodestyle flags as `E401`*) into one `import` statement per module, and `false` keeps the comma-joined line as written. A `from pkg import a, b` line is never broken at its commas, because those commas separate members of one module rather than modules.
 
 </template>
 

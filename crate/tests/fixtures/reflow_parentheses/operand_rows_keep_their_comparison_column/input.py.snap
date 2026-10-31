@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/operand_rows_keep_their_comparison_column/input.py
+---
+ready = (
+    loaded_count_value_here == 1
+    and errors              == 0
+)

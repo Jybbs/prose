@@ -14,16 +14,4 @@ The two forms are removed the same way because both leave a base list with nothi
 
 A base named `object` is only the builtin where the module has not rebound that name ahead of the class, so a module opening `object = LegacyBase` keeps every header written against it. A comment inside the span that would go keeps the header as written too, since removing the span would remove the comment, and that covers a comment beside an `object` base and one inside an otherwise-empty pair alike.
 
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-redundant-base]` directive, which covers every line a wrapped class header spans.
-
-</template>
-
 </RuleLayout>

@@ -57,36 +57,46 @@ pub(super) fn emitter_summary(outcomes: &[FileOutcome]) -> EmitterSummary {
     summary
 }
 
+/// Resolves a run's exit status, where `written` reports whether the run
+/// wrote its rewrite out, which clears a pending rewrite from the status.
 pub(super) fn finish<E: Write>(
     outcomes: &[FileOutcome],
     cache_enabled: bool,
     verbose: bool,
-    pass: Pass,
+    written: bool,
     stderr: &mut E,
 ) -> ExitStatus {
     if verbose {
         report_verbose(outcomes, cache_enabled, stderr);
     }
-    status_from_outcomes(outcomes, pass.write_back())
+    status_from_outcomes(outcomes, written)
 }
 
 /// Writes a run's stderr tail: one bug notice per unsettled rewrite,
-/// then the rewrite or diagnostics outcome, then the surviving-lint
+/// then the rewrite or diagnostics outcome and the surviving-lint
 /// disclosure in a format mode whose diagnostics never reached stdout,
-/// then the unsettled-file count.
+/// both left out where `present` drops the summary, then the
+/// unsettled-file count. `written` reports whether the run wrote its
+/// rewrite out.
 pub(super) fn render_summary<E: Write>(
     stderr: &mut E,
     present: &Presentation,
     outcomes: &[FileOutcome],
     summary: &EmitterSummary,
     pass: Pass,
+    written: bool,
 ) {
     render_reports(stderr, present, outcomes);
-    let lines = summarize(outcomes, summary, pass.mode())
+    let outcome = present
+        .summary
+        .then(|| {
+            summarize(outcomes, summary, pass.mode(written))
+                .into_iter()
+                .chain(lint_remainder(summary, pass))
+        })
         .into_iter()
-        .chain(lint_remainder(summary, pass))
-        .chain(unstable_remainder(outcomes));
-    for line in lines {
+        .flatten();
+    for line in outcome.chain(unstable_remainder(outcomes)) {
         let _ = output::report(stderr, present, &line);
     }
 }
@@ -364,6 +374,37 @@ mod tests {
                 assert_matches!(got, Some(Summary::LintRemainder { total: t }) if t == total)
             }
         }
+    }
+
+    #[rstest]
+    #[case::summary_shown(true, true)]
+    #[case::summary_dropped(false, false)]
+    fn render_summary_keeps_the_unstable_count_where_the_summary_drops(
+        #[case] shown: bool,
+        #[case] clean_line: bool,
+    ) {
+        let outcomes = [unsettled_outcome()];
+        let present = Presentation {
+            summary: shown,
+            ..Presentation::windowed()
+        };
+        let mut buf = Vec::new();
+
+        render_summary(
+            &mut buf,
+            &present,
+            &outcomes,
+            &emitter_summary(&outcomes),
+            Pass::Rewrite,
+            true,
+        );
+
+        let out = String::from_utf8(buf).expect("utf-8");
+        assert_eq!(out.contains("All clean."), clean_line, "stderr was {out:?}");
+        assert!(
+            out.contains("1 file would change on a second run."),
+            "stderr was {out:?}"
+        );
     }
 
     #[test]

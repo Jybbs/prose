@@ -8,9 +8,7 @@ layout  : doc
 
 <RuleLayout rule="wrap_docstrings">
 
-`wrap-docstrings` wraps the prose inside a docstring to its budget, reading two kinds of text inside one triple-quoted region. The description prose between the opening `"""` and the first section heading wraps as paragraphs at `docstring-line-length`. Every Title-case-headed section below it reads as a code-shaped table, its running text taking the budget `docstring-structured-policy` selects (*`code-line-length`, 88 by default*) so it measures with the code around it, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the column the description starts on.
-
-The rule reads `docstring-line-length` for the description budget, `code-line-length` for the structured budget, and `docstring-structured-policy` where a project prefers one narrower line across the whole docstring.
+`wrap-docstrings` wraps the prose inside a docstring, reading two kinds of text inside one triple-quoted region. The description prose between the opening `"""` and the first section heading wraps as paragraphs at `docstring-line-length`, a comfortable line for sustained reading. Every Title-case-headed section below it reads as a code-shaped table, its running text taking `code-line-length` so it measures with the code around it, unless `docstring-structured-policy` puts it under `docstring-line-length`. A section's `name: description` entries wrap to `docstring-line-length` either way, with a hanging indent at the column the description starts on.
 
 A structured block (*a fenced or indented code block, a table, a doctest, a field header*) passes through unwrapped, because its layout carries meaning. An interpreted-text role closes its name on a backtick rather than on whitespace, so a line opening with `:class:` or `:math:` reads as prose and wraps with its paragraph.
 
@@ -22,21 +20,13 @@ A backslash written as a literal character, one followed by a space rather than 
 
 <Fixture rule="wrap_docstrings" case="odd_backslash_run_holds_its_row_open" />
 
-An entry's head line and every line below it that opens no entry of its own read as one paragraph, rewrapped from the description column the settled head leaves, so padding that moves the `:` reflows the whole description rather than stranding the continuation lines. A line whose own form marks it as structure is exempt, so a doctest, a list item, or a bracketed literal under an entry keeps its layout.
+An entry's head line and every line below it that opens no entry of its own read as one paragraph, rewrapped from the description column the settled head leaves, so the padding [[align-colons]] adds before the `:` reflows the whole description rather than stranding the continuation lines. A line whose own form marks it as structure is exempt, so a doctest, a list item, or a bracketed literal under an entry keeps its layout.
 
-The sibling rules [[frame-docstrings]] and [[expand-docstrings]] settle the quoting and the framing before this rule measures anything, and the wrap runs after [[align-colons]] so an entry's budget reflects the column its key was padded to. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
-
-<template #configuration>
-
-<RuleConfigTable />
-
-The description and structured budgets come from the top-level [**Configuration**](/reference/configuration#top-level-keys) keys, where `docstring-line-length` (*default <ConfigDefault facet="docstring-line-length" />*), `code-line-length` (*default <ConfigDefault facet="code-line-length" />*), and `docstring-structured-policy` (*defaulting to <ConfigDefault facet="docstring-structured-policy" />*) set the column targets.
-
-</template>
+The sibling rules [[frame-docstrings]] and [[expand-docstrings]] settle the quoting and the framing before this rule measures anything.
 
 <template #related-after>
 
-For the budget semantics, the [**Docstring Budgets**](/reference/configuration#docstring-budgets) section of the Configuration chapter covers how the description and structured budgets interact.
+The [**Docstring Budgets**](/reference/configuration#docstring-budgets) section of the configuration reference gives each budget's key and default.
 
 </template>
 

@@ -14,11 +14,11 @@ Each directive covers exceptions at one scope, and the colored brackets in the g
 
 ## Choosing a Directive
 
-The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Every directive but `# prose: keep` is recorded in the file's [[suppression-map]], which each rule checks before writing an edit or reporting a finding, whereas `# prose: keep` is read off the construct it marks.
+The subsections below go from the broadest scope to the narrowest, because a narrower scope leaves the rest of the file under the defaults. Every directive but `# prose: keep` is recorded in the file's [[suppression-map]], which the pipeline reads to drop a suppressed edit or finding, whereas `# prose: keep` is read off the construct it marks.
 
 ### Disabling a Whole File
 
-`# prose: off` on its own comment line near the top of a file turns every rule off for that file. It fits generated files, vendored snapshots, and bridging code where nearly every line has a reason to stay as written. Reach for it only when block markers would pile up, because the file-level directive also exempts the file from every rule a later release adds. The [**File-Level Suppression**](/reference/suppression-directives#file-level-suppression) reference covers where the directive has to sit.
+`# prose: off` on its own comment line near the top of a file turns every rule off for that file. It fits generated files, vendored snapshots, and bridging code where nearly every line has a reason to stay as written. Reach for it only when block markers would pile up. The [**File-Level Suppression**](/reference/suppression-directives#file-level-suppression) reference covers where the directive has to sit.
 
 ### Bracketing a Block
 
@@ -40,7 +40,7 @@ A region holds out lint findings as well as rewrites, so it suits a stretch of c
 A line-level directive fits one statement, and its family follows from what the exception holds out, because a rewrite and a lint each need their own escape:
 
 - A statement whose layout is deliberate (*a hand-padded dict, a one-off argument list laid out to read a certain way*) takes a `skip`. `# fmt: skip` at its end keeps the statement as written under every rewriting rule, whereas `# prose: skip[<rule>]` keeps it from the rules it names and leaves every other rewrite free to run
-- A lint finding whose suggested change does not apply (*a constant the project reassigns on purpose, a binding whose name explains a value the inlined expression would leave unnamed*) takes an `ignore`. `# prose: ignore[<rule>]` at the end of the line silences the lint rules it names there
+- A lint finding whose suggested change does not apply (*a constant the project reassigns on purpose, a binding whose name explains a value the inlined expression would leave unnamed*) takes an `ignore`. `# prose: ignore[<rule>]` at the end of the line silences the lints it names there
 
 A statement that needs both its layout kept and its lint silenced carries one of each, since a `skip` reaches no lint and an `ignore` no rewrite. [[inert-directives]] reports a `skip` or `ignore` that holds nothing out, so a directive written in the wrong family, or left behind once the code it covered changed, shows up under `prose check`. The [**Line Markers**](/reference/suppression-directives#line-markers) reference gives every form, the lines a directive covers on a wrapped statement, and what a skip does to an alignment group and to the line a layout rule would have split.
 
@@ -58,13 +58,6 @@ stages = {  # prose: keep
 ```
 
 On a `class` line, the marker holds the statements of the class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*.
-
-```python
-class StationSchema(DataFrameModel):  # prose: keep
-    station  : Index[str] = Column(check_name=True)
-    name     : str        = Column()
-    latitude : float      = Column()
-```
 
 Where a whole project reads its dicts in order, the `sort-dict-keys` facet of [[alphabetize-siblings]] turns the sort off everywhere, and `sort-dunder-lists` does the same for every `__all__` and `__slots__` list, each leaving the directive for the exceptions that remain. The [**Construct Order Preservation**](/reference/suppression-directives#construct-order-preservation) reference lists every order the marker holds and everything inside the construct that still sorts.
 

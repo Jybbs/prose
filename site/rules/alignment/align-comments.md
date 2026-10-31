@@ -12,9 +12,7 @@ layout  : doc
 
 The rule reads the trailing comments in source order and extends a run while each next comment sits on the line directly below the last. A line with no trailing comment, a blank line, and an own-line comment each end the run, and a run whose rows sit at differing indents gets no column at all, since a shared column would sit where neither row's code ends. The shared column sits two spaces past the widest row in the run, the gap [[normalize-comment-spacing]] sets, which keeps every aligned row at or above the PEP 8 minimum.
 
-<Fixture rule="align_comments" case="run_shares_one_comment_column" />
-
-A row that reaches no shared column takes the two-space minimum instead, which is how a hand-set gap lining up with nothing settles. That covers a lone trailing comment, since a run of one has no column to share, and it covers a row that leaves its run. Two limits split a row out of a run, the `max-shift` limit every alignment rule carries and the `code-line-length` budget, where a row whose aligned line would cross the budget stays where it sits rather than creating an overflow for [[line-overflow]] to report.
+A row that reaches no shared column takes the two-space minimum instead, which is how a hand-set gap lining up with nothing settles. That covers a lone trailing comment, since a run of one has no column to share, and it covers a row that leaves its run. Two limits split a row out of a run, the rule's `max-shift` limit and the `code-line-length` budget, where a row whose aligned line would cross the budget stays where it sits rather than creating an overflow for [[line-overflow]] to report.
 
 <Fixture rule="align_comments" case="bracket_rows_share_a_column" />
 
@@ -24,13 +22,13 @@ The column resolves to two spaces past the widest row whether that moves a comme
 
 <Fixture rule="align_comments" case="long_line_holds_the_run_apart" />
 
-A `# prose: skip` on a row keeps it out of the column math without ending the run, so the rows above and below it reach across it and align together. The directive is itself a trailing comment, which is what lets one annotation both name the exception and carry it.
+A `# prose: skip` on a row is itself that row's trailing comment, so the row stays in the run while the column math leaves it out, and the rows above and below it align together.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-`max-shift` limits how much padding one comment may take to reach the shared column. The rule reads each run in source order and extends a column while the gap between the widest and narrowest rows stays within the limit, starting a new column at the first row that would exceed it. Setting `max-shift` to `false` removes the limit, so a run of any width aligns on one column, and `0` forbids padding altogether, leaving every trailing comment at the two-space minimum. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+Under `max-shift = 0`, every trailing comment sits at the two-space minimum.
 
 </template>
 

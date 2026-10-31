@@ -22,6 +22,8 @@ on:
       - .mise/tasks/**
       - LICENSE
       - crate/Cargo.toml
+      - crate/src/cli/args/mod.rs
+      - crate/src/cli/exit_status.rs
       - site/**
 
   push:

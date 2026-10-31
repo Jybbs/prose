@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Join Keeps the Padding on the Rows It Leaves Standing"
+
+description = '''
+`) and cc \` continues a chain whose first operand is a pair holding two rows that [[align-comparisons]] padded so both `==` share a column, under a `code-line-length` of `50`. **The backslash is removed and the join leaves those two rows as written**, since the chain still spans them and the padding still lines up.
+'''

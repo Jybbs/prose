@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Row Opening on Its Operator Counts Its Indent as One Space"
+
+description = '''
+`ok = (` holds a chain whose `==` opens its own row, under a `code-line-length` of `34`. **The join measures the indent ahead of `==` as the one space the fold closes it to**, so the joined row reaches `35` columns, past the budget, and the chain stays inside the pair on one row of its own.
+'''

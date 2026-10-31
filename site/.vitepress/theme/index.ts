@@ -2,8 +2,7 @@ import type { Theme }     from 'vitepress'
 import DefaultTheme       from 'vitepress/theme'
 import type { Component } from 'vue'
 
-import FloatingVue            from 'floating-vue'
-import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
+import FloatingVue from 'floating-vue'
 
 import './styles/popper-vendor.css'
 import '@shikijs/magic-move/style.css'
@@ -60,7 +59,6 @@ export default {
     useFamilyDataset()
   },
   enhanceApp({ app }) {
-    enhanceAppWithTabs(app)
     for (const [file, component] of Object.entries(components)) {
       app.component(stripSuffix(file.split('/').pop()!, '.vue'), component)
     }

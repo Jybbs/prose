@@ -1,5 +1,5 @@
 ---
-consumedBy: [alphabetize-siblings]
+consumedBy: [alphabetize-siblings, band-constants, group-imports, reflow-collections, reflow-imports, stack-adjacent-strings]
 consumes: [edit, source]
 layer: orchestration
 stability: internal
@@ -16,9 +16,7 @@ The `orderer` module reorders sibling AST nodes by a classifier closure while ke
 
 ## Public Surface
 
-The `orderer` module lives at `crate/src/primitives/orderer/` and is `pub(crate)`. What a downstream caller sees is the rewrite [[alphabetize-siblings]] emits, with the reordered text carried in the `Edit` the rule produces.
-
-The API settles at `1.0`, where a downstream can register its own ordering rule against the same entry points.
+The `orderer` module lives at `crate/src/primitives/orderer/` and is `pub(crate)`.
 
 ## Internal Surface
 
@@ -44,7 +42,7 @@ The sub-slice variant for a partitioned reorder, where part of the slice stays f
 
 Splices the reordered children into a final string the rule emits as a single `Edit`. `blocks` is the source extent of each item *(from `block_range`)*, `rendered` is each item's text, `order` is the new arrangement, and `gap_override` lets a caller substitute the gap between adjacent items in the **new** order *(the override's index parameter is the post-sort slot, not the source slot)*. Call this directly when a rule has already permuted and rendered through some other path.
 
-### `assemble_separated(value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
+### `assemble_separated(source, value_ends, blocks, block_texts, order, divider_slots, source_last_has_comma)`
 
 The comma-aware counterpart to `assemble_blocks` for one-member-per-line groups. It splits each block into code, separator comma, and trailing comment at `value_ends`, then re-emits the comma after the value and before the comment per slot, so the comment stays with its member. Every slot but the last carries a comma, the new last slot matches `source_last_has_comma`, and a blank line follows every slot in `divider_slots`. [[alphabetize-siblings]]'s dict and leaf reorders share it. The `pub(crate)` signature in the crate takes `source` as its first argument ahead of `value_ends`.
 
@@ -64,19 +62,19 @@ Reads back the rows an assembly writes, pairing each slot of `order` with whethe
 
 `block_range(source, items, i, outer)` answers the *"what slice does item `i` occupy"* question for arbitrary `Ranged` types, including the comment-only lines directly above the item and the rest of its last line. `outer` bounds the lower edge of the leading-comment scan to a parent extent *(the previous item's end, or `outer.start()` for the first item)*, and inside a notebook that edge is raised to the item's own cell start whenever that sits later, so an attached comment never reaches back across a cell boundary. The forward scan reaches the next item's start or, for the last item, its own line end. At module scope a caller passes `TextRange::up_to(source.text().text_len())`, and at nested scope the caller computes the enclosing scope's extent. `blocks_span(blocks)` returns the union of every item's block range, which sizes the outer `Edit` that replaces the reordered region. That helper is generic over `Ranged` and lives beside the parenthesis-aware ranges in `crate/src/primitives/range/`, since [[group-imports]], [[alphabetize-siblings]], [[unsorted-positionals]], and [[shed-backslash-continuations]] all cover a run of items the same way.
 
-## How Comment Attachment Works
+## Comment Attachment
 
 `block_range` extends each item's source extent upward to include every comment-only line directly above it *(with no intervening blank line)* and downward to the end of its last line. A comment directly above a function definition moves with that function, because the comment is part of the function's *"block"*. A blank line acts as a divider, leaving comments above the blank line attached to whatever sits above them rather than to the next item.
 
 A statement body takes its blocks through `member_blocks` instead, which binds a comment run to the statement below it across a blank line unless the run anchors in place or sits at a shallower indent. Each block also reaches down over the own-line comments indented deeper than its statement, so a note closing a function body moves with that function. A comment neither statement binds stays in the gap between their blocks, where it divides the body into sections that no reorder crosses.
 
-A member's trailing inline comment moves with it too. For a comma-separated group reordered through `reorder_separated`, the separating comma is re-emitted per slot so the comment stays on its member's line rather than staying behind in the slot the member vacated. A comment reached only over a closing `}`, `)`, or `]` belongs to the whole group rather than the last member, so it stays in source position.
+A member's trailing inline comment moves with it too, through `reorder_separated` for a comma-separated group. A comment reached only over a closing `}`, `)`, or `]` belongs to the whole group rather than the last member, so it stays in source position.
 
 The text between adjacent items *(blank lines, sectioning comments)* stays in source position by default. A caller that needs a custom gap per slot passes a `gap_override` closure that returns `Some(text)` for slot `i` to substitute the gap after that slot.
 
 ## Build Pattern
 
-A rule hands `reorder_text` its items, a `classify` closure, and a `render` closure, and the helper computes each item's block and rendered text itself. `reorder_text` sorts, assembles, and short-circuits to `Cow::Borrowed(source.slice(span))` when no permutation is needed and every render is borrowed, so a no-op rule pays no allocation.
+A rule hands `reorder_text` its items, a `classify` closure, and a `render` closure, and the helper computes each item's block and rendered text itself.
 
 Calling `permute_full` and `assemble_blocks` directly is the manual path, for a rule that inspects the new order before assembling or renders against a partially permuted slice:
 

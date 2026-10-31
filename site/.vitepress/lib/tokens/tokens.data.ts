@@ -1,6 +1,6 @@
 import { defineLoader } from 'vitepress'
 
-import { SOURCES as EXIT_CODES }     from '../exit-codes/sources'
+import { exitCodes }                 from '../exit-codes/sources'
 import { inlineNodes }               from '../markdown/inline-nodes'
 import { getRenderer }               from '../markdown/renderer'
 import { proseBinaryPath, repoRoot } from '../shared/paths'
@@ -20,7 +20,7 @@ export default defineLoader({
     const all: Record<sources.Domain, readonly sources.TokenSource[]> = {
       ...sources.SOURCES,
       'config-key' : configKeySources(proseSchema(root)),
-      'exit-code'  : EXIT_CODES.map(s => ({
+      'exit-code'  : exitCodes(root).map(s => ({
         key   : String(s.code),
         href  : '/reference/exit-codes',
         blurb : s.summary

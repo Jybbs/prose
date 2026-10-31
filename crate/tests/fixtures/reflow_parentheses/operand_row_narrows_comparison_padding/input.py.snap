@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/operand_row_narrows_comparison_padding/input.py
+---
+ok = (
+    first_value_here_long_enough
+    or alpha_value == 1 and bb == 2
+)

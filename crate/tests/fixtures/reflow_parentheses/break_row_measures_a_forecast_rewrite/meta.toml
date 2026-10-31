@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Broken Pair Measures Its Row Through a Forecast Rewrite"
+
+description = '''
+`ok = (` holds a chain whose `.format` call [[prefer-fstring]] rewrites to an f-string, under a `code-line-length` of `26`. The joined row reaches `27` columns, past the budget, so the pair breaks. **The interior row measures `34` columns as written and `26` once rewritten, and the rule measures it rewritten**, so the chain holds one row of its own inside the pair.
+'''

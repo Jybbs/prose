@@ -47,7 +47,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : '`--ignore` removes the named rules from a single run. The flag repeats, and '
                + 'combined with `--select` it subtracts from the selected set.',
     families   : ['cli'],
-    href       : '/guide/quick-start#subset-the-active-rules'
+    href       : '/reference/cli#precedence'
   },
 
   '--no-cache': {
@@ -61,14 +61,12 @@ export const glossary: Record<string, GlossaryEntry> = {
     definition : '`--select` restricts one run to the named rules. The flag repeats, and '
                + '`--ignore` then subtracts from that set.',
     families   : ['cli'],
-    href       : '/guide/quick-start#subset-the-active-rules'
+    href       : '/reference/cli#precedence'
   },
 
   '--verbose': {
     definition : '`--verbose` prints a one-line count of cache hits and misses to stderr at '
-               + 'the end of each `prose check` or `prose format` run, printing '
-               + '`cache: bypassed` when the cache is off through `--no-cache` or '
-               + '`[cache] enabled = false`.',
+               + 'the end of each `prose check` or `prose format` run.',
     families   : ['cli'],
     href       : '/reference/cache#hit-miss-telemetry'
   },
@@ -77,7 +75,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['abstract syntax tree'],
     definition : 'An AST is the tree `ruff_python_parser` builds from a file\'s text. *Prose* '
                + 'keeps it inside `Source` and rebuilds it between batches of rules, so each '
-               + 'rule reads the tree as the rules before it left the text.',
+               + 'rule reads the tree as every earlier batch left the text.',
     families   : ['engine'],
     href       : '/architecture/source'
   },
@@ -93,18 +91,18 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'BLAKE3': {
-    definition : 'BLAKE3 is the hash function the cache keys on. The key digests the file\'s '
-               + 'bytes, path, and source type together with the run\'s configuration, rule '
-               + 'selection, and *Prose* version, so a change to any of them produces a new key.',
+    definition : 'BLAKE3 is the hash function that derives each cache key, digesting the '
+               + 'file\'s bytes, path, and source type together with the run\'s configuration, '
+               + 'rule selection, *Prose* version, and diagnostic anchor, so a change to any '
+               + 'of them produces a new key.',
     families   : ['engine', 'cli'],
-    href       : '/reference/cache#key-shape'
+    href       : '/architecture/cache#key-shape'
   },
 
   'Diagnostic': {
     aliases    : ['diagnostic', 'diagnostics', 'lint diagnostic'],
-    definition : 'A `Diagnostic` is the report a rule emits for one finding. It carries a '
-               + 'severity, `Format` for a change `prose format` writes and `Lint` for a '
-               + 'finding no rule rewrites.',
+    definition : 'A `Diagnostic` is the report a rule emits for one finding, carrying the '
+               + 'severity that marks it a rewrite or a lint.',
     families   : ['engine', 'lint']
   },
 
@@ -218,33 +216,32 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'already in the batch, and before a rule whose edits overlap one already '
                + 'batched.',
     families   : ['engine'],
-    href       : '/reference/pipeline-order#independent-rules-share-a-parse'
+    href       : '/architecture/pipeline#independent-rules-share-a-parse'
   },
 
   'blank line': {
     aliases    : ['blank-line', 'blank lines', 'blank-lines'],
     definition : 'A blank line is an empty line between two statements. `space-statements` '
                + 'sets the count between module-level definitions, class members, and import '
-               + 'groups, keeps a descriptive comment block flush against the statement below '
-               + 'it, and keeps one blank line below a banner comment block.',
+               + 'groups and keeps a descriptive comment block flush against the statement '
+               + 'below it.',
     rule       : 'space-statements'
   },
 
   'cache': {
     aliases    : ['Cache', 'cached', 'caching'],
     definition : 'The cache is the on-disk store of results *Prose* keeps per user, so a '
-               + 'repeat `prose check` or `prose format` run skips a file whose bytes, path, '
-               + 'configuration, and rule selection have not changed under the same *Prose* '
-               + 'version. It is keyed by BLAKE3, held under the `[cache] max-size-mib` and '
-               + '`max-entries` caps by LRU eviction, bypassed for one run with '
-               + '`--no-cache`, and emptied with `prose cache clean`.',
+               + 'repeat `prose check` or `prose format` run skips a file whose BLAKE3 key has '
+               + 'not changed. It is held under the `[cache] max-size-mib` and `max-entries` '
+               + 'caps by LRU eviction, bypassed for one run with `--no-cache`, and emptied '
+               + 'with `prose cache clean`.',
     families   : ['engine', 'cli'],
     href       : '/reference/cache'
   },
 
   'code-line-length': {
     definition : '`code-line-length` is the top-level config key setting the line budget for '
-               + 'code. It defaults to **88**.',
+               + 'code.',
     families   : ['cli', 'formatting'],
     href       : '/reference/configuration#top-level-keys'
   },
@@ -273,11 +270,12 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'count trigger': {
     aliases    : ['count-based trigger', 'count gate'],
-    definition : 'A count trigger explodes a construct once its entry count exceeds a cap, '
-               + 'whatever the width. `reflow-signatures` counts parameters against '
-               + '`max-params` and `reflow-collections` counts dict entries against '
-               + '`max-dict-entries`, and `false` turns either cap off. The count takes the '
-               + 'place of the magic trailing comma Black and Ruff read.',
+    definition : 'A count trigger breaks a construct open once its entry count exceeds a '
+               + 'cap, whatever the width. `reflow-calls` explodes a call past `max-args` '
+               + 'where every argument can be written as a keyword, `reflow-signatures` '
+               + 'expands a signature past `max-params`, `reflow-collections` expands a dict '
+               + 'past `max-dict-entries`, and `stack-method-chains` breaks a chain past '
+               + '`max-links`. Setting any of these caps to `false` turns its trigger off.',
     rule       : 'reflow-collections'
   },
 
@@ -316,7 +314,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'docstring-line-length': {
     definition : '`docstring-line-length` is the top-level config key setting the line budget '
-               + 'for prose inside a docstring. It defaults to **76**.',
+               + 'for prose inside a docstring.',
     families   : ['cli', 'docs'],
     href       : '/reference/configuration#top-level-keys'
   },
@@ -354,11 +352,13 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'explode': {
     aliases    : ['exploded', 'explodes', 'exploding'],
-    definition : 'To explode a call, signature, collection, or `from` import is to rewrite it '
-               + 'with one entry per line, the opening bracket ending the first line and the '
-               + 'closing bracket on a line of its own. The layout rules explode a construct '
-               + 'that outgrows the line budget or exceeds its count cap, and join one back '
-               + 'onto a single line where it fits.',
+    definition : 'To explode a call is to rewrite it with one argument per line, the opening '
+               + 'bracket ending the first line and the closing bracket on a line of its own. '
+               + 'A signature expands to the same form with one parameter per line, whereas a '
+               + 'collection expands across rows, packing atomic entries up to `max-atomics` '
+               + 'to a row. The layout rules break a construct open once it outgrows the line '
+               + 'budget or exceeds its count cap, and join one back onto a single line where '
+               + 'it fits.',
     families   : ['layout']
   },
 
@@ -417,18 +417,18 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['generations'],
     definition : 'A generation is the cache subdirectory one build writes, named by a digest of '
                + 'the *Prose* version and the private entry-format version. A build reads only '
-               + 'its own generation, deletes an older one it finds, and keeps its own ledger '
-               + 'of the bytes its write-back runs produced.',
+               + 'its own generation, deletes any other generation left untouched for an hour, '
+               + 'and keeps its own ledger of the bytes its write-back runs produced.',
     families   : ['engine', 'cli'],
     href       : '/reference/cache#location'
   },
 
   'gitignore': {
     aliases    : ['.gitignore'],
-    definition : '`.gitignore` is Git\'s exclusion file. The walker reads every `.gitignore` '
-               + 'and `.ignore` on the way down a tree plus the user\'s global ignore file, so '
-               + 'vendored dependencies and build output stay out of a run without further '
-               + 'configuration.',
+    definition : '`.gitignore` is Git\'s exclusion file. The walker reads every `.ignore` on '
+               + 'the way down a tree, and inside a Git repository every `.gitignore` and the '
+               + 'user\'s global ignore file as well, so vendored dependencies and build '
+               + 'output stay out of a run without further configuration.',
     families   : ['engine'],
     href       : '/architecture/walker#ignore-semantics'
   },
@@ -454,7 +454,7 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'import-line-length': {
     definition : '`import-line-length` is the top-level config key setting the line budget '
-               + 'for a `from` import, which `reflow-imports` reads. It defaults to **120**, '
+               + 'for an import statement, which `reflow-imports` and `line-overflow` read, '
                + 'and `false` makes it follow `code-line-length`.',
     families   : ['cli', 'layout'],
     href       : '/reference/configuration#top-level-keys'
@@ -468,7 +468,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'rule-by-rule result on every file both rules edit, and a reading of the later '
                + 'rule finds nothing it measures among what the earlier rule rewrites.',
     families   : ['engine'],
-    href       : '/reference/pipeline-order#independent-rules-share-a-parse'
+    href       : '/architecture/pipeline#independent-rules-share-a-parse'
   },
 
   'kebab-case': {
@@ -486,12 +486,10 @@ export const glossary: Record<string, GlossaryEntry> = {
     ],
     definition : 'A leading comment block is a run of own-line `#` comments directly above a '
                + 'statement. `space-statements` keeps a descriptive block flush against the '
-               + 'statement below it and keeps one blank line below a banner block *(one '
-               + 'whose line is a rule of `=`, `-`, `*`, `_`, `#`, `~`, `─`, `━`, or `═`)*, '
+               + 'statement below it and keeps one blank line below a divider such as a banner, '
                + 'measuring the blank lines above from the topmost comment either way. A '
-               + 'block that opens the file has no blank line above it and at most one '
-               + 'below, kept where the author left one and dropped otherwise. When '
-               + '`alphabetize-siblings` moves a statement, the orderer\'s `block_range` '
+               + 'block that opens the file has no blank line above it and at most one below. '
+               + 'When `alphabetize-siblings` moves a statement, the orderer\'s `block_range` '
                + 'moves the block with it.',
     families   : ['ordering'],
     rule       : 'space-statements'
@@ -511,7 +509,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['budget', 'budgets'],
     definition : 'The line budget is the width a rule fits a line within, read from '
                + '`code-line-length` for code, `docstring-line-length` for docstring prose, '
-               + 'and `import-line-length` for a `from` import. A layout rule explodes a '
+               + 'and `import-line-length` for an import statement. A layout rule breaks open a '
                + 'construct that outgrows its budget, and `line-overflow` reports a line no '
                + 'rule can bring within it.',
     families   : ['layout', 'cli'],
@@ -539,12 +537,13 @@ export const glossary: Record<string, GlossaryEntry> = {
   },
 
   'max-shift': {
-    definition : '`max-shift` is the config key on each alignment rule limiting how much '
-               + 'padding one row may take. It defaults to **16**. A positive `N` caps the '
-               + 'gap between the widest and narrowest rows of a run, `0` forbids any '
-               + 'padding, and `false` lifts the cap so a run of any width aligns on one '
-               + 'column.',
-    families   : ['alignment', 'cli'],
+    definition : '`max-shift` is the config key limiting how much padding one row may take, '
+               + 'carried by every alignment rule but `strip-stranded-padding`. A positive `N` '
+               + 'caps the gap between the widest and narrowest rows of a run, `0` forbids any '
+               + 'padding, and `false` removes the cap so a run of any width aligns on one '
+               + 'column. `stack-method-chains` carries a key of the same name, capping how '
+               + 'far past the broken chain\'s indent a hanging link\'s dot column may sit.',
+    families   : ['alignment', 'cli', 'layout'],
     href       : '/reference/configuration#per-rule-facets'
   },
 
@@ -611,7 +610,7 @@ export const glossary: Record<string, GlossaryEntry> = {
                + 'band around it. A `# prose: keep` marker pins a dict literal, a dunder list, '
                + 'or every statement of a class body. A reference that must resolve at '
                + 'evaluation time pins a definition below the sibling it names, and a '
-               + '`# noqa: E402` pins an import on its line.',
+               + 'trailing `# noqa`, bare or naming `E402`, pins a statement on its line.',
     families   : ['ordering']
   },
 
@@ -630,7 +629,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['re-exports', 'reexport', 'reexports'],
     definition : 'A re-export is a name a module imports so that another module can import it '
                + 'from there. `prune-inert-imports` recognizes one by a name `__all__` lists, the '
-               + '`x as x` alias form, a trailing `noqa`, or a name taken out of a private '
+               + '`x as x` alias form, a trailing `noqa`, a name taken out of a private '
                + 'module, or a file-level unused-import pragma, and it reports rather than '
                + 'removes an unreferenced import where the file reads as a compatibility shim.',
     families   : ['formatting'],
@@ -640,11 +639,10 @@ export const glossary: Record<string, GlossaryEntry> = {
   'reparse': {
     aliases    : ['reparses', 'reparsing'],
     definition : 'A reparse is the step the `Pipeline` runs between batches of independent '
-               + 'rules, rebuilding the `Source` from their output. It re-parses only the '
-               + 'statements those rules edited where it can and the whole file where it '
-               + 'cannot. Each rule then reads a tree built from the text the rules before it '
-               + 'wrote, so no rule sees a half-applied change, and the binding table carries '
-               + 'into the new `Source` when every rule in the batch changed no binding.',
+               + 'rules, rebuilding the `Source` from their output by reparsing only the '
+               + 'statements their edits reached where it can and the whole file where it '
+               + 'cannot. Each batch then reads a tree built from the text the batches before it '
+               + 'wrote, so no rule reads a half-applied change.',
     families   : ['engine'],
     href       : '/architecture/pipeline'
   },
@@ -660,17 +658,14 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'ruff_python_parser': {
     definition : '`ruff_python_parser` is the Astral parser crate that builds the tree inside '
-               + 'each `Source`. The reparse between batches rebuilds that tree from the text '
-               + 'the earlier rules wrote.',
+               + 'each `Source`.',
     families   : ['engine']
   },
 
   'run': {
-    definition : 'A run is a stretch of consecutive lines a rule reads as one unit, such as '
-               + 'the assignments an alignment rule pads to one column or the constants '
-               + '`band-constants` gathers. A blank line, a comment line, or a line of '
-               + 'another kind ends it. The word also names one execution of *Prose*, as in '
-               + '*a `prose format` run*, in its ordinary sense.',
+    definition : 'A run is a stretch of consecutive lines a rule reads as one unit, such as the '
+               + 'assignments an alignment rule pads to one column. The word also names one '
+               + 'execution of *Prose*, as in *a `prose format` run*, in its ordinary sense.',
     families   : ['alignment', 'engine'],
     href       : '/architecture/aligner'
   },
@@ -696,9 +691,9 @@ export const glossary: Record<string, GlossaryEntry> = {
 
   'span trigger': {
     aliases    : ['span-based trigger', 'row-span trigger'],
-    definition : 'A span trigger explodes a construct that still spans several lines after '
-               + 'every bracket inside it that could close has closed, whatever its entry '
-               + 'count or joined width. `reflow-calls` reads arguments this way and '
+    definition : 'A span trigger breaks open a construct that still spans several lines '
+               + 'after every bracket inside it that could close has closed, whatever its '
+               + 'entry count or joined width. `reflow-calls` reads arguments this way and '
                + '`reflow-signatures` reads parameters, so a construct the author wrote '
                + 'across lines takes the one-per-line form a long one takes. An entry aligned '
                + 'under its own opening bracket is left alone, because that alignment would '
@@ -719,7 +714,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['--stdin', 'stdin'],
     definition : 'Stdin mode reads one file from standard input and writes to standard '
                + 'output, skipping the file walker altogether, so an editor or a script can '
-               + 'run *Prose* without touching the disk.',
+               + 'run *Prose* on a buffer it has not saved.',
     families   : ['cli']
   },
 
@@ -789,12 +784,8 @@ export const glossary: Record<string, GlossaryEntry> = {
   'unstable output': {
     aliases    : ['unstable rewrite', 'unsettled rewrite'],
     definition : 'Unstable output is a rewrite a second run would change again, a defect in '
-               + '*Prose* rather than in the file. `prose format` re-applies its enabled '
-               + 'rules to each file it rewrote and reports any file that still changes, '
-               + 'naming the smallest rule subset that reproduces it and the command that '
-               + 'replays it. The rewrite is still written and the exit code ignores the '
-               + 'notice, whereas `prose check --validate` fails on the same finding, and '
-               + '`report-unstable-output = false` turns the notice off.',
+               + '*Prose* rather than in the file, which `prose format` reports on stderr '
+               + 'without changing the exit code.',
     families   : ['engine'],
     href       : '/reference/cli#unstable-output'
   },

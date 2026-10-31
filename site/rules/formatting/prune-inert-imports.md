@@ -8,9 +8,7 @@ layout  : doc
 
 <RuleLayout rule="prune_inert_imports">
 
-`prune-inert-imports` removes an import that binds a name nothing references, under `drop-unreferenced`, and a second import that rebinds a name an earlier import already bound, under `drop-duplicates`. Both facets read the binding table [[inlinable-bindings]] reads, and where removing an import could change what another module imports from this one, `drop-unreferenced` reports the binding rather than removing it.
-
-<Fixture rule="prune_inert_imports" case="repeat_and_unread_member_both_go" />
+`prune-inert-imports` removes an import that binds a name nothing references and a second import that rebinds a name an earlier import already bound. Both moves read the binding table [[inlinable-bindings]] reads, and where removing an import could change what another module imports from this one, the rule reports the binding rather than removing it.
 
 The reference count runs per bound name, so one member drops off a shared `from` import while its siblings stay.
 
@@ -18,7 +16,7 @@ The reference count runs per bound name, so one member drops off a shared `from`
 
 A removed statement takes the blank lines on one side along with its own line, whichever side holds fewer, so the statements around it keep the spacing the source wrote beside the import. Statements separated only by blank lines are removed as one block, together with the blank lines between them and those on whichever side of the block holds fewer. An import opening the file takes the blank lines below it, and one closing the file takes those above it.
 
-## What Holds Its Line
+## Imports That Hold Their Line
 
 Whether a name is re-exported is a fact about *other* files, and *Prose* formats one file at a time, so it never sees the sibling doing `from shim import name`. Two shapes in the file itself say that removing an import could break such a sibling, and in both the rule reports the binding rather than removing it.
 
@@ -46,7 +44,7 @@ An import carrying a re-export marker holds its line under both facets, so a rep
 4. A name taken from a module whose own name marks it private (*`from _ssl import OPENSSL_VERSION`*), which is how a public module re-exports its implementation, or a name that is itself private in the module it comes from (*`from subprocess import _args_from_interpreter_flags`*), which another module may read through this one the way `multiprocessing` calls `util._args_from_interpreter_flags()`. A public name bound under a private alias (*`from quopri import decodestring as _qdecode`*) is a local binding rather than a re-export and drops like any other. A dunder module such as `__future__` is excluded, because its names carry compiler meaning rather than a public API, and a dunder name such as `__version__` does not read as private.
 5. A file-level pragma opening its own line at column zero and naming the unused-import behavior, being `# ruff: noqa: F401`, `# flake8: noqa: F401`, or `# pyright: reportUnusedImport=false`, which holds every unreferenced import in the module at once. Each is what the tool naming it already reads as *"the unused imports here are deliberate"*, so *Prose* reads it the same way rather than defining a spelling of its own, matching each head exactly as its own tool matches it. The spacing around a `:` or an `=` is free everywhere, `flake8` reads its own name in any casing whereas `ruff` and `pyright` read only the lower-case spelling, the `noqa` word is read in any casing, and a pyright rule counts anywhere in its comma-separated list. Pyright sets a rule to report nothing on either `false` or `none` and reads both in any casing, whereas a severity such as `error` or `warning` leaves the rule reporting, so a pragma carrying one of those holds no import. An indented pragma sits inside a block rather than over the file, so it holds nothing. A head naming no code (*a bare `# ruff: noqa`*) is not read either, because it silences every rule its tool carries and so says nothing about re-exports in particular.
 
-Two of those markers are written in a comment rather than in code, which is where the wider ecosystem records a re-export no static read can see. [[band-constants]] reads a `noqa` naming `E402` as pinning an import to the row its author gave it. Those readings are the whole set, so neither a `noqa` nor a file-level pragma exempts anything from any other rewrite or lint in *Prose*.
+Two of those markers are written in a comment rather than in code, which is where the wider ecosystem records a re-export no static read can see.
 
 <Fixture rule="prune_inert_imports" case="self_alias_marks_a_reexport" />
 
@@ -85,7 +83,7 @@ An own-line comment directly above an import keeps the whole statement, because 
 
 `from __future__ import annotations` is removed wherever either condition below holds:
 
-1. `target-version` is 3.14 or higher, where PEP 749 defers evaluation until something reads the annotations, and every annotated name resolves.
+1. [`target-version`](/reference/configuration#top-level-keys) is 3.14 or higher, where PEP 749 defers evaluation until something reads the annotations, and every annotated name resolves.
 2. No annotation runs at module scope, and every annotated name resolves.
 
 An annotated name resolves where it is a builtin the module never writes, or where an unconditional module-scope write binds it before the annotation. A builtin the module rebinds anywhere else counts as unresolved, because the annotation reads the builtin once the directive is gone and the rebinding once the directive has stored a string.
@@ -114,31 +112,6 @@ Every other `__future__` feature stays, because `division` and its siblings chan
 
 <Fixture rule="prune_inert_imports" case="division_directive_out_of_scope" />
 
-::: tabs key:prose-target-version
-== Python 3.10
-The version-gated branch does not run, so the directive goes only where the module carries no annotation, or where no annotation runs at module scope and every annotated name is a builtin the module never writes or has an earlier module-scope binding.
-
-== Python 3.11
-The branch does not run, the same as on 3.10.
-
-== Python 3.12
-The branch does not run, the same as on 3.10.
-
-== Python 3.13
-The branch does not run, the same as on 3.10.
-
-== Python 3.14
-The version-gated branch runs, so an annotation may sit at module scope, while every annotated name still has to be a builtin the module never writes or be bound by an unconditional module-scope write ahead of the annotation.
-:::
-
-<template #configuration>
-
-<RuleConfigTable />
-
-The `target-version` field from the top-level [**Configuration**](/reference/configuration#top-level-keys) gates the `__future__` branch per project.
-
-</template>
-
 <template #facets>
 
 Each facet removes one kind of inert import on its own, so switching one off leaves the other running.
@@ -150,12 +123,6 @@ Each facet removes one kind of inert import on its own, so switching one off lea
 ### `drop-unreferenced`
 
 `drop-unreferenced` removes an import binding a name nothing references, holding the line where a re-export marker or a read the count misses claims that name, and reporting rather than removing where the file reads as a compatibility shim or a package `__init__.py`. Setting it to `false` keeps every unreferenced import and reports none.
-
-</template>
-
-<template #related-after>
-
-For the gate semantics, [**`target-version`**](/reference/configuration#top-level-keys) in the Configuration chapter covers how the field is read across version-gated rules.
 
 </template>
 

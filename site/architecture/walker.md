@@ -18,25 +18,19 @@ The `walker` module finds the files the `check` and `format` subcommands run on.
 
 The `walker` module lives at `crate/src/walker.rs`, and its `walk` function is `pub(crate)`, so this page documents the CLI behavior `walk` produces rather than a type a downstream caller can call. What a downstream caller sees is the set of files `prose check` and `prose format` operate on, settled before any [[source]] is built or any [[pipeline]] runs.
 
-A downstream consumer reaches the walker through the CLI's path-mode arguments. Stdin mode bypasses the walker entirely, whether invoked through `--stdin` or the `-` positional alias, because the input stream is a single source written straight to stdout.
-
-At `1.0` the discovery hooks open so a downstream can put its own path source in front of the pipeline.
+Stdin mode bypasses the walker entirely, whether invoked through `--stdin` or the `-` positional alias, because the input stream is a single source, whose rewrite or diagnostics go straight to stdout.
 
 ## Ignore Semantics
 
-The walker honors the `.gitignore` at every level of the walked tree alongside the repo-root `.gitignore`, the project-local `.ignore` files the [**`ignore`**](https://docs.rs/ignore/) crate recognizes, and the user's global gitignore *(typically `~/.config/git/ignore`)*. Hidden files and directories are skipped by default, which is the `ignore` crate's own default.
+The walker honors the `.gitignore` at every level of the walked tree alongside the repo-root `.gitignore`, the project-local `.ignore` files the [**`ignore`**](https://docs.rs/ignore/) crate recognizes, and the user's global gitignore *(typically `~/.config/git/ignore`)*. The crate reads the `.gitignore` files and the global gitignore only inside a Git repository, whereas it reads an `.ignore` file anywhere. Hidden files and directories are skipped by default, which is the `ignore` crate's own default.
 
 ::: warning No Built-In Skip List
-There is no built-in skip list, so a directory like `node_modules`, `__pycache__`, `.venv`, or `target` is visited unless a `.gitignore` covers it or its name starts with a dot, and a fresh tree with no `.gitignore` is visited in full from the path roots. In practice the project's `.gitignore` already covers these, so `prose format .` at a repo root visits close to the Python files `git ls-files` would list.
-
-`.prose-ignore` is **not** recognized as a separate ignore file. *Prose* reads `.gitignore` and `.ignore` for project-local exclusions, because a tool-specific ignore file would split the ignore rules across the toolchain.
+There is no built-in skip list, so a directory like `node_modules`, `__pycache__`, `.venv`, or `target` is visited unless an ignore file the walk honors covers it or its name starts with a dot, and a tree with no such file is visited in full from the path roots.
 :::
 
-## How Multi-Root Walks Compose
+## Multi-Root Walks
 
 The walker accepts a slice of input paths and hands it to `ignore::Walk::from_iter`, which adds every path to one `WalkBuilder` through `WalkBuilder::add` and builds a single walk over that root set. Two paths under the same gitignore-controlled tree share the ignore stack, because a `.gitignore` at the common ancestor applies to both. A file reachable from two roots is yielded once, since the walker records each path it has yielded and skips a repeat.
-
-An empty path list yields an empty iterator, because the CLI requires at least one path outside stdin mode.
 
 ## Python File Detection
 
@@ -68,13 +62,13 @@ Setting `RAYON_NUM_THREADS=1` forces single-threaded execution, which is the rig
 
 ## Re-Using This Primitive
 
-The CLI's path-mode entry point is the walker's consumer. A downstream Rust consumer integrating *Prose* through `Pipeline::run` usually has its own file discovery and builds a [[source]] from each path directly, bypassing the walker. The walker's gitignore semantics often differ from the consumer's own conventions, since a linter wired into a build system already has its list of files and a language server reads the editor's open buffers rather than the disk. The cleanest bypass is to feed the pipeline one [[source]] per path from whatever discovery the host application already runs.
+The CLI's path-mode entry point is the walker's consumer. A downstream Rust consumer integrating *Prose* through `Pipeline::run` usually has its own file discovery and builds a [[source]] from each path directly, bypassing the walker. The walker's gitignore semantics often differ from the consumer's own conventions, since a linter wired into a build system already has its list of files and a language server reads the editor's open buffers rather than the disk.
 
 <template #related>
 
 - [[source]] is the value each yielded path is read into.
 - [[pipeline]] runs against each constructed *Source*.
-- The [**Quick Start**](/guide/quick-start#which-files-get-walked) chapter covers the walk semantics from a user's perspective.
+- The [**Quick Start**](/guide/quick-start#files-a-walk-reaches) chapter covers the walk semantics from a user's perspective.
 
 </template>
 

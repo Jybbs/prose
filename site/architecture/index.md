@@ -12,13 +12,13 @@ The graph below traces how a source flows through the primitives, each node one 
 
 ### Public Primitives
 
-Reachable from a downstream Rust consumer today:
+Reachable from a downstream Rust consumer:
 
 <PrimitiveSurface stability="public" />
 
 ### Crate-Internal Primitives
 
-`pub(crate)` today and opening toward `1.0`, when consumer-implemented rules become reachable:
+Reachable only from inside the *Prose* crate, so a downstream caller meets one only through the rewrites, diagnostics, and CLI behavior built on it:
 
 <PrimitiveSurface stability="internal" />
 
