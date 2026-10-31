@@ -81,7 +81,7 @@ describe('configDecorations', () => {
     expect(configDecorations([notice('no-such-key')], toml)).toStrictEqual([{
       end        : { character: 11, line: 0 },
       properties : {
-        class          : 'lint-flag underline-draw',
+        class          : 'lint-flag',
         'data-message' : notice('no-such-key'),
         'data-rule'    : 'config-key'
       },

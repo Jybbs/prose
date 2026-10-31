@@ -9,12 +9,12 @@
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : color-mix(in srgb, var(--band-accent) var(--prose-tint-75), var(--vp-c-text-2));
+  color          : var(--vp-c-text-2);
   flex-shrink    : 0;
 }
 
 .band-rule {
   flex-grow  : 1;
   height     : var(--prose-size-1);
-  background : color-mix(in srgb, var(--band-accent) var(--prose-tint-30), var(--vp-c-divider));
+  background : var(--vp-c-divider);
 }

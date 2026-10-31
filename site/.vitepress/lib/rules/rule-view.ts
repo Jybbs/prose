@@ -5,13 +5,14 @@ import { data as ruleFixtures }           from './rule-fixtures.data'
 import type { RenderedRule }              from './rules.data'
 import { COMPOSITION_RULE, embedsInline } from '../fixtures/entry'
 import { lookup }                         from '../shared/lookup'
+import type { RuleFamily }                from '../shared/registries'
 import { ruleSlug }                       from '../shared/rule-slug'
 
 // One rule's place in a composition case, the index counting from one in
 // pipeline order and both other fields resolving to null for an unregistered
 // slug.
 export interface RuleSegment {
-  family : string | null
+  family : RuleFamily | null
   index  : number
   rule   : RenderedRule | null
   slug   : string

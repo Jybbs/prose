@@ -1,7 +1,6 @@
 .lint-flag {
-  --lint-color       : var(--prose-role-squiggle);
-  --lint-wave        : url('../../../../assets/lint-wave.svg');
-  --underline-accent : var(--lint-color);
+  --lint-color : var(--prose-shade-apricot-code-35);
+  --lint-wave  : url('../../../../assets/lint-wave.svg');
 
   cursor   : help;
   position : relative;
@@ -28,7 +27,27 @@
   transform : scaleX(0);
 }
 
-.lint-flag:hover::after {
+/* Draws a straight line in from the left through the wave's center under the
+   pointer or the focus, as the wave fades, so the two share one offset and
+   one thickness. */
+.lint-flag:not(.lint-flag-line)::before {
+  content          : "";
+  position         : absolute;
+  inset-inline     : 0;
+  bottom           : calc(var(--prose-space-3) * -1);
+  height           : var(--prose-size-4);
+  background       : linear-gradient(var(--lint-color), var(--lint-color)) left center / 100% var(--prose-space-1-5) no-repeat;
+  transform        : scaleX(0);
+  transform-origin : left;
+  transition       : transform var(--prose-transition-slow);
+  pointer-events   : none;
+}
+
+.lint-flag:not(.lint-flag-line):is(:hover, :focus-visible)::before {
+  transform : scaleX(1);
+}
+
+.lint-flag:not(.lint-flag-line):is(:hover, :focus-visible)::after {
   opacity : 0;
 }
 
@@ -37,24 +56,25 @@
 }
 
 /* A span reaching a whole row underlines nothing in particular, so the wave
-   gives way to a wash over exactly the rows the finding names. */
+   gives way to a bar in the code's left padding, the full height of each row
+   the finding names. */
 .lint-flag-line::after {
-  inset-block         : calc(var(--prose-space-1) * -1);
-  z-index             : -1;
-  height              : auto;
-  border-inline-start : var(--prose-border-2) solid var(--lint-color);
-  background          : color-mix(in srgb, var(--lint-color) var(--prose-tint-12), transparent);
-  -webkit-mask        : none;
-  mask                : none;
-}
-
-.lint-flag-line:hover::after {
-  opacity : 1;
+  inset-inline  : calc((var(--prose-space-8) + var(--prose-size-3)) * -1) auto;
+  inset-block   : calc((100% - var(--vp-code-line-height) * var(--prose-size-1em)) / 2);
+  width         : var(--prose-size-3);
+  height        : auto;
+  border-radius : var(--prose-radius-1);
+  -webkit-mask  : none;
+  mask          : none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .lint-undrawn .lint-flag::after,
   .lint-flag.lint-undrawn::after {
     transform : scaleX(1);
+  }
+
+  .lint-flag::before {
+    transition : none;
   }
 }

@@ -12,16 +12,16 @@ import { counted }         from '../../../lib/shared/numerals'
 const deckLocked   = useStorage('prose-sandbox-pinned', false)
 const deckOpen     = useStorage('prose-sandbox-deck-open', true)
 const editing      = ref(false)
-const guide        = ref<number | null>(null)
+const guide        = ref<{ hue: string, value: number } | null>(null)
 const refreshArmed = refAutoReset(false, 4000)
 const sandbox      = useProseSandbox({ cases: pool.cases, schema })
 
-function onDragging(key: string): void {
-  guide.value = key ? sandbox.lengthValue(key) : null
+function onDragging(key: string, hue: string): void {
+  guide.value = key ? { hue, value: sandbox.lengthValue(key) } : null
 }
 
 function onPreview(_key: string, value: number): void {
-  if (guide.value !== null) guide.value = value
+  if (guide.value) guide.value = { ...guide.value, value }
 }
 
 const { copied: linkCopied, copy: copyLink } = useClipboard()
@@ -98,7 +98,8 @@ onMounted(sandbox.start)
         <ProseSandboxSurface
           v-model:editing="editing"
           :sandbox="sandbox"
-          :guide="guide"
+          :guide="guide?.value ?? null"
+          :guide-hue="guide?.hue"
         />
         <CopyButton v-show="!editing" label="Copy the formatted Python" :source="sandbox.formatted.value" />
         <button

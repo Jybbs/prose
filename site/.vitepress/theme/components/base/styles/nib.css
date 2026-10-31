@@ -6,10 +6,12 @@
 }
 
 .nib-badge {
+  --nib-platform : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-ink), var(--vp-c-text-1));
+
   display    : inline-block;
   flex       : none;
   overflow   : visible;
-  color      : color-mix(in srgb, var(--family-color) var(--prose-tint-ink), var(--vp-c-text-1));
+  color      : var(--family-nib, var(--nib-platform));
   transition : color var(--prose-transition-slow);
 }
 
@@ -30,10 +32,10 @@
   vertical-align : calc(var(--prose-space-0-15em) * -1 - var(--prose-space-2));
 }
 
-.nib-chip:not([data-family]) {
-  --family-color : var(--vp-c-brand-1);
-}
-
 .nib-chip .nib-badge {
   display : block;
+}
+
+:is(.nib-chip, .nib-ground, .rule-chip, .rule-link) .nib-badge {
+  color : var(--family-nib-chip, var(--nib-platform));
 }

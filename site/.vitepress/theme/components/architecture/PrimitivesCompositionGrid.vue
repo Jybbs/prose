@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+
+import { PORT_WORDS, type Port }              from '../../../lib/architecture/ports'
+import { useGlideWash }                       from '../../../lib/composables/use-glide-wash'
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 import { primitiveRoute }                     from '../../../lib/shared/routes'
 
@@ -17,7 +21,7 @@ interface Band {
 const props = defineProps<{
   bands   : readonly Band[]
   focused : PrimitiveSlug | null
-  related : ReadonlySet<string>
+  ports   : ReadonlyMap<string, Port>
 }>()
 
 const emit = defineEmits<{
@@ -28,13 +32,19 @@ const emit = defineEmits<{
 function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' {
   if (props.focused === null) return 'idle'
   if (slug === props.focused) return 'active'
-  if (props.related.has(slug)) return 'related'
+  if (props.ports.has(slug)) return 'related'
   return 'mute'
 }
+
+const grid = useTemplateRef<HTMLElement>('grid')
+const wash = useTemplateRef<HTMLElement>('wash')
+
+useGlideWash(grid, wash, '.primitives-composition-tile-active', () => props.focused)
 </script>
 
 <template>
-  <div class="primitives-composition-grid">
+  <div ref="grid" class="primitives-composition-grid">
+    <span ref="wash" class="primitives-composition-wash" aria-hidden="true"></span>
     <section
       v-for="band in bands"
       :key="band.key"
@@ -70,6 +80,15 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
           >
             <span class="primitives-composition-tile-name">{{ entry.name }}</span>
           </a>
+          <Transition name="primitives-composition-port">
+            <span
+              v-if="tileState(entry.slug) === 'related'"
+              :key="ports.get(entry.slug)"
+              class="primitives-composition-port"
+              :data-dir="ports.get(entry.slug)"
+              aria-hidden="true"
+            >{{ PORT_WORDS[ports.get(entry.slug)!] }}</span>
+          </Transition>
         </li>
       </ul>
     </section>

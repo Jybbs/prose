@@ -1,20 +1,23 @@
-:root { --family-color: var(--vp-c-text-1); }
+[data-scope="file"] {
+  --scope-ink  : var(--prose-shade-ube-wash-45);
+  --scope-mark : var(--prose-shade-ube-wash-35);
+  --scope-tint : var(--prose-palette-ube);
+}
 
-[data-family="alignment"]  { --family-color: var(--raised-alignment,  var(--vp-c-text-1)); }
-[data-family="docs"]       { --family-color: var(--raised-docs,       var(--vp-c-text-1)); }
-[data-family="formatting"] { --family-color: var(--raised-formatting, var(--vp-c-text-1)); }
-[data-family="layout"]     { --family-color: var(--raised-layout,     var(--vp-c-text-1)); }
-[data-family="lint"]       { --family-color: var(--raised-lint,       var(--vp-c-text-1)); }
-[data-family="ordering"]   { --family-color: var(--raised-ordering,   var(--vp-c-text-1)); }
+[data-scope="block"] {
+  --scope-ink  : var(--prose-shade-chambray-wash-45);
+  --scope-mark : var(--prose-shade-chambray-wash-35);
+  --scope-tint : var(--prose-palette-chambray);
+}
 
-[data-raised="alignment"]  { --raised-alignment  : var(--prose-family-alignment);  }
-[data-raised="docs"]       { --raised-docs       : var(--prose-family-docs);       }
-[data-raised="formatting"] { --raised-formatting : var(--prose-family-formatting); }
-[data-raised="layout"]     { --raised-layout     : var(--prose-family-layout);     }
-[data-raised="lint"]       { --raised-lint       : var(--prose-family-lint);       }
-[data-raised="ordering"]   { --raised-ordering   : var(--prose-family-ordering);   }
+[data-scope="line"] {
+  --scope-ink  : var(--prose-shade-whiskey-wash-45);
+  --scope-mark : var(--prose-shade-whiskey-wash-35);
+  --scope-tint : var(--prose-palette-whiskey);
+}
 
-[data-scope="file"]      { --scope-tint: var(--prose-palette-ube);      }
-[data-scope="block"]     { --scope-tint: var(--prose-palette-chambray); }
-[data-scope="line"]      { --scope-tint: var(--prose-palette-whiskey);  }
-[data-scope="construct"] { --scope-tint: var(--prose-palette-celadon);  }
+[data-scope="construct"] {
+  --scope-ink  : var(--prose-shade-celadon-wash-45);
+  --scope-mark : var(--prose-shade-celadon-wash-35);
+  --scope-tint : var(--prose-palette-celadon);
+}

@@ -7,8 +7,8 @@
 .v-popper--theme-rule-card.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
-  grid-column   : 1 / -1;
   min-height    : 0;
+  margin        : calc(var(--prose-space-12) * -1) calc(var(--prose-space-16) * -1) 0;
   padding       : var(--prose-space-8) var(--prose-space-16);
 }
 
@@ -41,15 +41,15 @@
 }
 
 .lint-chip-suggest {
-  background : color-mix(in srgb, var(--family-color) var(--prose-tint-12), transparent);
-  color      : var(--family-color);
+  background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-12), transparent);
+  color      : var(--vp-c-text-1);
 }
 
 /* Nothing is struck through on an insert, so the added text carries the
    accent and the anchor beside it stays plain. */
 .lint-inserted {
-  background      : color-mix(in srgb, var(--family-color) var(--prose-tint-18), transparent);
-  color           : var(--family-color);
+  background      : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-18), transparent);
+  color           : var(--vp-c-text-1);
   text-decoration : none;
 }
 

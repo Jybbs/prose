@@ -9,6 +9,7 @@ import * as typingDemo        from '../../lib/landing/typing-demo'
 import { markdownH1 }         from '../../lib/markdown/h1'
 import { discoverRuleSlugs }  from '../../lib/rules/discovery'
 import { matterPages }        from '../../lib/shared/content-page'
+import { paletteCss }         from '../../lib/shared/palette'
 import * as paths             from '../../lib/shared/paths'
 import * as registries        from '../../lib/shared/registries'
 import * as ruleSchema        from '../../lib/shared/rule-schema'
@@ -50,24 +51,29 @@ const facetedPages = discovered.flatMap(rule => {
 })
 
 describe('family registry and stylesheet parity', () => {
-  it('every rule family has a [data-family] accent and a [data-raised] hue, with no orphans', () => {
-    const ruleFamilies = [...registries.FAMILY_ORDER].sort()
-    expect(accentKeys('family')).toStrictEqual(ruleFamilies)
-    expect(accentKeys('raised')).toStrictEqual(ruleFamilies)
+  it('every glossary family has a [data-family] accent, with no orphans', () => {
+    const keys = new Set<string>()
+    parse(paletteCss()).walkRules(rule => {
+      for (const m of rule.selector.matchAll(/^\[data-family="([a-z]+)"\]/gm)) keys.add(m[1]!)
+    })
+    expect([...keys].sort()).toStrictEqual(glossaryFamilies)
   })
 
-  it('draws each rule family in ink until a [data-raised] container names it', () => {
+  it('gives each family its hue beside a nib and an edge shade for every ground', () => {
     const values = new Map<string, string>()
-    parse(styles('accents.css')).walkDecls(decl => {
-      const selector = (decl.parent as { selector: string }).selector
-      values.set(`${selector} ${decl.prop}`, decl.value.replaceAll(/\s+/g, ' '))
+    parse(paletteCss()).walkDecls(decl => {
+      const selector = (decl.parent as { selectors: string[] }).selectors[0]
+      values.set(`${selector} ${decl.prop}`, decl.value)
     })
-    expect(values.get(':root --family-color')).toBe('var(--vp-c-text-1)')
-    for (const family of registries.FAMILY_ORDER) {
-      expect.soft(values.get(`[data-family="${family}"] --family-color`))
-        .toBe(`var(--raised-${family}, var(--vp-c-text-1))`)
-      expect.soft(values.get(`[data-raised="${family}"] --raised-${family}`))
-        .toBe(`var(--prose-family-${family})`)
+    for (const family of glossaryFamilies) {
+      const at = `[data-family="${family}"]`
+      expect.soft(values.get(`${at} --family-color`)).toBe(`var(--prose-family-${family})`)
+      for (const [kind, ratio] of [['edge', 34], ['nib', 45]] as const) {
+        for (const ground of ['', '-card', '-chip', '-soft']) {
+          expect.soft(values.get(`${at} --family-${kind}${ground}`))
+            .toBe(`var(--prose-shade-${family}-${ground.slice(1) || 'page'}-${ratio})`)
+        }
+      }
     }
   })
 

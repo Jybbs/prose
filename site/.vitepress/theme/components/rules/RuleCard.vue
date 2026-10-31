@@ -51,8 +51,10 @@ if (!props.clickable) {
   <article ref="article" class="rule-card" :data-family="rule.family">
     <a v-if="clickable" class="rule-card-cover" :href="rule.href" :aria-label="rule.name" />
     <div v-if="$slots.header" class="rule-card-header"><slot name="header" /></div>
-    <span class="rule-card-mark nib-ground">
-      <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="18" />
+    <span class="rule-card-mark nib-tag">
+      <NibBadge :emblem="familyEmblem(rule.family)" :size="14" />
+      <span class="middle-dot" aria-hidden="true">·</span>
+      <span class="kicker">{{ rule.familyLabel }}</span>
     </span>
     <div class="rule-card-body">
       <h3 class="rule-card-slug" :title="rule.slug">

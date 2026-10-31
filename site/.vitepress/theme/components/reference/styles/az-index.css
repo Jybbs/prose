@@ -1,6 +1,22 @@
 
+[data-domain="cli-flag"]      { --domain-color: var(--prose-palette-ube);      }
+[data-domain="config-key"]    { --domain-color: var(--prose-palette-celadon);  }
+[data-domain="exit-code"]     { --domain-color: var(--prose-palette-chambray); }
+[data-domain="output-format"] { --domain-color: var(--prose-palette-whiskey);  }
+[data-domain="subcommand"]    { --domain-color: var(--prose-palette-eureka);   }
+[data-domain="suppression"]   { --domain-color: var(--prose-palette-apricot);  }
+
+:root {
+  --az-index-band : var(--prose-tint-18);
+}
+
+.dark {
+  --az-index-band : var(--prose-tint-22);
+}
+
 .az-index-stage {
-  margin : var(--prose-space-1-5rem) 0;
+  position : relative;
+  margin   : var(--prose-space-1-5rem) 0;
 }
 
 .az-index-tabs {
@@ -35,7 +51,7 @@
   left       : 0;
   right      : 0;
   height     : var(--prose-size-2);
-  background : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-65), transparent);
+  background : color-mix(in srgb, var(--domain-color, var(--vp-c-text-3)) var(--prose-tint-65), transparent);
   transition : background var(--prose-transition),
                height var(--prose-transition);
 }
@@ -45,7 +61,7 @@
 }
 
 .az-index-tab:hover::after {
-  background : color-mix(in srgb, var(--vp-c-text-2) var(--prose-tint-80), transparent);
+  background : color-mix(in srgb, var(--domain-color, var(--vp-c-text-2)) var(--prose-tint-80), transparent);
 }
 
 .az-index-tab.is-active {
@@ -54,39 +70,25 @@
 
 .az-index-tab.is-active::after {
   height     : var(--prose-size-6);
-  background : var(--vp-c-text-1);
+  background : var(--domain-color, var(--vp-c-text-1));
 }
 
 
 .az-index-float-keys-wrap {
   min-height : var(--prose-size-180);
-  transition : opacity var(--prose-transition);
 }
 
-.az-index-float-keys-wrap[data-dim="true"] {
+.az-index-section-head,
+a.az-index-key-btn {
+  transition :
+    opacity    var(--prose-transition),
+    background var(--prose-transition),
+    color      var(--prose-transition);
+}
+
+.az-index-float-keys-wrap[data-dim="true"] :is(.az-index-section-head, a.az-index-key-btn:not([aria-current="true"])) {
   opacity : 0.55;
 }
-
-.az-index-key .v-popper {
-  display : block;
-}
-
-.v-popper--theme-az-index .v-popper__inner {
-  width         : var(--prose-width-300);
-  background    : transparent;
-  border        : none;
-  border-radius : 0;
-  box-shadow    : none;
-}
-
-.v-popper--theme-az-index .v-popper__arrow-container {
-  display : none;
-}
-
-.v-popper--theme-az-index .az-index-detail {
-  box-shadow : var(--prose-shadow-tooltip);
-}
-
 
 .az-index-section + .az-index-section {
   margin-top : var(--prose-space-22);
@@ -111,7 +113,7 @@
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-meta-tracking);
   text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  color          : var(--vp-c-text-2);
 }
 
 .vp-doc .az-index-keys,
@@ -143,8 +145,6 @@ a.az-index-key-btn {
   text-decoration-line : none;
   white-space          : normal;
   overflow-wrap        : anywhere;
-  transition           : background var(--prose-transition),
-                         color var(--prose-transition);
 }
 
 .vp-doc a.az-index-key-btn:hover,
@@ -158,77 +158,183 @@ a.az-index-key-btn:focus-visible {
 
 .vp-doc a.az-index-key-btn[aria-current="true"],
 a.az-index-key-btn[aria-current="true"] {
-  background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-20), transparent);
+  background : color-mix(in srgb, var(--domain-color) var(--az-index-band), transparent);
   color      : var(--vp-c-text-1);
 }
 
+.az-index-stage:has(.az-index-detail[data-side="right"]) a.az-index-key-btn[aria-current="true"] {
+  border-top-right-radius    : 0;
+  border-bottom-right-radius : 0;
+}
 
+.az-index-stage:has(.az-index-detail[data-side="left"]) a.az-index-key-btn[aria-current="true"] {
+  border-top-left-radius    : 0;
+  border-bottom-left-radius : 0;
+}
+
+.az-index-stage:has(.az-index-detail[data-side="bottom"]) a.az-index-key-btn[aria-current="true"] {
+  border-bottom-left-radius  : 0;
+  border-bottom-right-radius : 0;
+}
+
+
+/* Draws the one card every key opens, hung from its key by a band in the
+   key's domain wash that runs on across the gap, so the card never repeats
+   the key. It travels between keys on the card-morph timing, which
+   `data-snap` drops for a place that should not travel. */
 .az-index-detail {
-  display       : flex;
-  flex-direction: column;
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-sm);
-  overflow      : hidden;
+  position       : absolute;
+  top            : 0;
+  left           : 0;
+  z-index        : 10;
+  display        : flex;
+  flex-direction : column;
+  width          : var(--prose-width-300);
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius);
+  background     : var(--vp-c-bg);
+  box-shadow     : var(--prose-shadow-tooltip);
+  transition     : transform var(--prose-transition-morph), border-radius var(--prose-transition-morph);
+}
+
+.az-index-detail[data-snap] {
+  transition : none;
+}
+
+.az-index-detail[data-side="bottom"] {
+  width                   : var(--key-w);
+  border-top-left-radius  : 0;
+  border-top-right-radius : 0;
+}
+
+.az-index-detail[data-side="right"] {
+  border-top-left-radius : 0;
+}
+
+.az-index-detail[data-side="left"] {
+  border-top-right-radius : 0;
 }
 
 .az-index-detail-banner {
-  padding       : var(--prose-space-4) var(--prose-space-12);
-  background    : var(--vp-c-bg-alt);
-  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
-  text-align    : right;
+  position                   : relative;
+  display                    : flex;
+  align-items                : center;
+  box-sizing                 : border-box;
+  height                     : var(--key-h);
+  margin                     : calc(var(--prose-border-1) * -1) calc(var(--prose-border-1) * -1) 0;
+  padding                    : 0 var(--prose-space-12);
+  border-radius              : inherit;
+  border-bottom-left-radius  : 0;
+  border-bottom-right-radius : 0;
+  background                 : color-mix(in srgb, var(--domain-color) var(--az-index-band), var(--vp-c-bg));
+}
+
+.az-index-detail-banner::before {
+  content    : "";
+  position   : absolute;
+  background : inherit;
+}
+
+[data-side="right"] > .az-index-detail-banner::before {
+  inset : 0 100% 0 auto;
+  width : var(--gap);
+}
+
+[data-side="left"] > .az-index-detail-banner::before {
+  inset : 0 auto 0 100%;
+  width : var(--gap);
+}
+
+[data-side="bottom"] > .az-index-detail-banner::before {
+  inset  : auto 0 100%;
+  height : var(--gap);
 }
 
 .az-index-detail-kicker {
   font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-0-58rem);
-  letter-spacing : var(--prose-display-tracking-wide);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : var(--vp-c-text-2);
+  color          : var(--vp-c-text-1);
 }
 
 .az-index-detail-body {
-  display          : flex;
-  flex-direction   : column;
-  align-items      : flex-start;
-  gap              : var(--prose-space-7);
-  padding          : var(--prose-space-10) var(--prose-space-12);
-  background-color : var(--prose-panel-wash);
+  flex    : 1 0 auto;
+  padding : var(--prose-space-10) var(--prose-space-16) calc(var(--prose-space-12) + var(--cover));
 }
 
-.az-index-detail-key {
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-1-15rem);
-  line-height   : 1.1;
-  color         : var(--vp-c-text-1);
-  background    : transparent;
-  padding       : 0;
-  overflow-wrap : anywhere;
-}
-
+.vp-doc .az-index-detail-blurb,
 .az-index-detail-blurb {
   margin      : 0;
   font-family : var(--vp-font-family-base);
   font-size   : var(--prose-text-sm);
-  line-height : 1.45;
+  line-height : 1.5;
   color       : var(--vp-c-text-1);
+}
+
+/* Names the destination in words, its page's title and the heading or rule
+   its link points at, with a dotted leader running from the end of the
+   words' last line to Read More. */
+.az-index-detail-foot {
+  display     : flex;
+  align-items : last baseline;
+  gap         : var(--prose-space-8);
+  padding     : var(--prose-space-7) var(--prose-space-16) var(--prose-space-8);
+  border-top  : var(--prose-border-1) solid var(--vp-c-divider);
+}
+
+.az-index-detail-dest {
+  flex        : 1;
+  min-width   : 0;
+  overflow    : clip;
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-xs);
+  line-height : 1.4;
+  color       : var(--vp-c-text-2);
+}
+
+.vp-doc .az-index-detail-code,
+.az-index-detail-code {
+  padding    : 0;
+  background : none;
+  font-size  : var(--prose-text-0-92em);
+  color      : inherit;
+}
+
+.az-index-detail-tail {
+  white-space : nowrap;
+}
+
+.az-index-detail-leader {
+  display        : inline-block;
+  width          : 100%;
+  margin         : 0 calc(var(--prose-size-12) - 100%) 0 var(--prose-space-8);
+  border-bottom  : var(--prose-border-1) dotted var(--vp-c-text-3);
+  vertical-align : baseline;
 }
 
 .vp-doc a.az-index-detail-href,
 a.az-index-detail-href {
-  margin-top           : 0;
-  font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-text-0-58rem);
-  letter-spacing       : var(--prose-meta-tracking);
-  color                : var(--vp-c-text-2);
-  text-decoration-line : none;
-  overflow-wrap        : anywhere;
-  transition           : color var(--prose-transition);
+  flex            : none;
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  letter-spacing  : var(--prose-meta-tracking);
+  text-transform  : uppercase;
+  white-space     : nowrap;
+  color           : var(--vp-c-text-1);
+  text-decoration : none;
 }
 
-.vp-doc a.az-index-detail-href:hover,
-a.az-index-detail-href:hover {
-  color                : var(--vp-c-text-1);
-  text-decoration-line : none;
+.az-index-detail-href .nib-stroke {
+  padding-bottom : var(--prose-space-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .az-index-detail,
+  .az-index-section-head,
+  a.az-index-key-btn {
+    transition : none;
+  }
 }
 
 @media (--prose-bp-tablet) {

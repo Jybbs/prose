@@ -5,6 +5,31 @@
   margin         : var(--prose-space-1-5rem) 0;
 }
 
+.per-rule-facets-section[data-family="generic"] {
+  --family-edge : var(--vp-c-text-3);
+}
+
+/* Draws the 2px line down an open group, in its family's shade. */
+.per-rule-facets-section {
+  position : relative;
+}
+
+.per-rule-facets-section::before {
+  content          : "";
+  position         : absolute;
+  inset            : 0 auto 0 0;
+  width            : var(--prose-border-2);
+  background       : var(--family-edge);
+  transform        : scaleY(0);
+  transform-origin : top;
+  transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized);
+  pointer-events   : none;
+}
+
+.per-rule-facets-section:has(> .per-rule-facets-head[aria-expanded="true"])::before {
+  transform : scaleY(1);
+}
+
 .per-rule-facets-head {
   display     : flex;
   align-items : center;
@@ -12,15 +37,15 @@
   width       : 100%;
   padding     : var(--prose-space-7) 0 var(--prose-space-7) var(--prose-space-14);
   border      : none;
-  border-left : var(--prose-border-2) solid var(--family-color);
+  border-left : var(--prose-border-2) solid transparent;
   background  : transparent;
   text-align  : left;
   cursor      : pointer;
-  transition  : opacity var(--prose-transition);
 }
 
-.per-rule-facets-head:hover {
-  opacity : 0.72;
+.per-rule-facets-head:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : var(--prose-space-2);
 }
 
 .per-rule-facets-chevron {
@@ -29,8 +54,12 @@
   height        : 0;
   border-top    : var(--prose-border-4) solid transparent;
   border-bottom : var(--prose-border-4) solid transparent;
-  border-left   : var(--prose-border-5) solid var(--family-color);
-  transition    : transform var(--prose-transition);
+  border-left   : var(--prose-border-5) solid var(--vp-c-text-2);
+  transition    : transform var(--prose-transition), border-color var(--prose-transition);
+}
+
+.per-rule-facets-head:is(:hover, :focus-visible) .per-rule-facets-chevron {
+  border-left-color : var(--vp-c-text-1);
 }
 
 .per-rule-facets-head[aria-expanded='true'] .per-rule-facets-chevron {
@@ -38,8 +67,9 @@
 }
 
 .vp-doc .per-rule-facets-label {
-  margin : 0;
-  color  : color-mix(in srgb, var(--family-color) var(--prose-tint-76), var(--vp-c-text-1));
+  margin      : 0;
+  color       : var(--vp-c-text-2);
+  font-weight : 600;
 }
 
 .per-rule-facets-label .nib-badge {
@@ -48,7 +78,8 @@
 }
 
 .per-rule-facets-count {
-  color : var(--vp-c-text-3);
+  color       : var(--vp-c-text-2);
+  font-weight : 400;
 }
 
 .per-rule-facets-count::before {
@@ -62,7 +93,7 @@
 
 .per-rule-facets-rule {
   padding-left : var(--prose-space-14);
-  border-left  : var(--prose-border-2) solid var(--family-color);
+  border-left  : var(--prose-border-2) solid transparent;
 }
 
 .per-rule-facets-rule + .per-rule-facets-rule {
@@ -82,10 +113,11 @@
   display       : inline-block;
   padding       : var(--prose-space-3) var(--prose-space-10);
   border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
-  background    : var(--family-color);
+  background    : var(--prose-chip-ground);
+  box-shadow    : inset 0 0 0 var(--prose-border-1) var(--vp-c-divider);
   font-family   : var(--vp-font-family-mono);
   font-size     : var(--prose-text-0-85em);
-  color         : var(--vp-c-bg);
+  color         : var(--vp-c-text-1);
 }
 
 .vp-doc .per-rule-facets-rule-head a.rule-link {
@@ -131,14 +163,8 @@
   color       : var(--vp-c-text-1);
 }
 
-/* Overrides the heading sheet, which hangs a permalink in the left margin the rail fills. */
 .vp-doc :is(.per-rule-facets-rule-head, .per-rule-facets-term) .header-anchor {
-  --vp-header-anchor-symbol : '§';
-
-  position    : static;
-  align-self  : center;
-  margin-left : var(--prose-space-0-3em);
-  font-size   : var(--prose-text-sm);
+  align-self : center;
 }
 
 :is(.per-rule-facets-rule-head, .per-rule-facets-term):is(:hover, :focus-within) .header-anchor {
@@ -168,11 +194,12 @@
   display     : inline-flex;
   align-items : baseline;
   gap         : var(--prose-space-0-4em);
-  background  : color-mix(in srgb, var(--family-color) var(--prose-tint-medium), transparent);
+  background  : var(--prose-chip-ground);
 }
 
 .per-rule-facets-default-label {
   letter-spacing : var(--prose-label-tracking);
+  color          : var(--vp-c-text-2);
 }
 
 .per-rule-facets-default-value {
@@ -192,5 +219,11 @@
 @media (--prose-bp-mobile) {
   .vp-doc .per-rule-facets-meaning {
     padding-left : 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .per-rule-facets-section::before {
+    transition : none;
   }
 }

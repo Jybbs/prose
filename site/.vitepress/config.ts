@@ -21,8 +21,10 @@ import { glossaryPlugin }                             from './lib/glossary/plugi
 import { readPlatforms }                              from './lib/guide/platforms'
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
 import { calloutPlugin }                              from './lib/markdown/callout-plugin'
+import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
+import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
@@ -81,6 +83,8 @@ export default defineConfig({
       md.use(calloutPlugin)
       md.use(emblemPlugin(emblems))
       md.use(bodyLinkPlugin)
+      md.use(proseMarkPlugin)
+      md.use(codeOperatorPlugin)
     },
     lineNumbers : false,
     theme       : constants.SHIKI_THEMES

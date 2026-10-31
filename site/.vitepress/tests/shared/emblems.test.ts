@@ -78,48 +78,35 @@ describe('MOTIFS', () => {
 })
 
 describe('the badge ink', () => {
-  const ink     = share('--prose-tint-ink')
   const ground  = (colors: Scheme) => mix(colors.text, colors.bg, share('--prose-tint-faint'))
   const schemes = Object.entries(SCHEMES)
-  const raised  = schemes.flatMap(([name, colors]) =>
-    registries.FAMILY_ORDER.map(family => [name, family, colors] as const))
-
-  it.each(schemes)('clears 3:1 at rest on the neutral ground in the %s scheme', (_scheme, colors) => {
-    expect(wcagContrast(colors.text, ground(colors))).toBeGreaterThanOrEqual(3)
-  })
+  const NIB_INK = /^var\(--(?:family-(?:nib|edge)(?:-card|-chip|-soft)?|prose-shade-text-3-[a-z]+-31|vp-c-text-2)\)$/
 
   it.each(schemes)('clears 3:1 for a platform on the neutral ground in the %s scheme', (_, colors) => {
-    expect(wcagContrast(mix(colors.brand, colors.text, ink), ground(colors))).toBeGreaterThanOrEqual(3)
+    expect(wcagContrast(mix(colors.brand, colors.text, share('--prose-tint-ink')), ground(colors))).toBeGreaterThanOrEqual(3)
   })
 
-  it.each(raised)(
-    'clears 3:1 raised on the page in the %s scheme for %s',
-    (_scheme, family, colors) => {
-      expect(wcagContrast(mix(palette.FAMILIES[family], colors.text, ink), colors.bg))
-        .toBeGreaterThanOrEqual(3)
-    }
-  )
-
-  it('applies the ink and the ground these cases measure', () => {
-    const nib = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
-    expect(support.declared(nib, '.nib-badge').color)
-      .toBe('color-mix(in srgb, var(--family-color) var(--prose-tint-ink), var(--vp-c-text-1))')
-    const grounds = '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link'
-    expect(support.declared(nib, grounds)['background-color'])
-      .toBe('var(--prose-chip-ground)')
+  it('draws a badge in its family\'s nib, a platform badge in the brand ink', () => {
+    const nib      = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
+    expect(support.declared(nib, '.nib-badge')['--nib-platform'])
+      .toBe('color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-ink), var(--vp-c-text-1))')
+    expect(support.declared(nib, '.nib-badge').color).toBe('var(--family-nib, var(--nib-platform))')
+    expect(support.declared(nib, ':is(.nib-chip, .nib-ground, .rule-chip, .rule-link) .nib-badge').color)
+      .toBe('var(--family-nib-chip, var(--nib-platform))')
     expect(tokens['--prose-chip-ground'])
       .toBe('color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg))')
   })
 
-  it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
-    const recolored = support.siteSheets().filter(({ root }) => {
-      let sets = false
+  it('recolors a badge only in a family shade for its ground or a quiet gray', () => {
+    const strays = support.siteSheets().flatMap(({ file, root }) => {
+      const found = [] as string[]
       root.walkRules(rule => {
-        if (rule.selector.includes('.nib-badge')) rule.walkDecls('color', () => { sets = true })
+        if (!rule.selector.includes('.nib-badge') || file.endsWith('base/styles/nib.css')) return
+        rule.walkDecls('color', decl => { if (!NIB_INK.test(decl.value)) found.push(`${file} ${rule.selector} ${decl.value}`) })
       })
-      return sets
+      return found
     })
-    expect(recolored.map(sheet => sheet.file)).toStrictEqual(['.vitepress/theme/components/base/styles/nib.css'])
+    expect(strays).toStrictEqual([])
   })
 
   it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', () => {
@@ -131,9 +118,9 @@ describe('the badge ink', () => {
     expect(painted).toStrictEqual([])
   })
 
-  it.each(schemes)('keeps each raised family an ink of its own in the %s scheme', (_scheme, colors) => {
-    const inks = registries.FAMILY_ORDER.map(family => mix(palette.FAMILIES[family], colors.text, ink))
-    const gaps = inks.flatMap((a, i) => inks.slice(i + 1).map(b => differenceCiede2000()(a, b)))
+  it.each(['dark', 'light'] as const)('keeps each family\'s nib a shade of its own in the %s scheme', mode => {
+    const nibs = registries.FAMILY_ORDER.map(family => palette.SCHEME_SHADES[mode][`${family}-page-45`]!)
+    const gaps = nibs.flatMap((a, i) => nibs.slice(i + 1).map(b => differenceCiede2000()(a, b)))
     expect(Math.min(...gaps)).toBeGreaterThan(5)
   })
 })

@@ -59,4 +59,4 @@ Lint rules *(the entries above with the 🧶 badge)* never rewrite, so they do n
 
 The data on this page comes from running `prose rules --output-format json` at build time, so the order shown is always the order the binary runs. The [[pipeline]] primitive page covers the `Pipeline::with_defaults`, `Pipeline::with_filters`, and `Pipeline::for_rule` constructors that pick subsets out of this list.
 
-Click a rule's chip above for its canonical case and the behavior around it.
+Click a rule's row above for its canonical case and the behavior around it.

@@ -41,6 +41,15 @@ describe('useRaisedFamily', () => {
     expect(raise.pinned.value).toBeNull()
   })
 
+  it('releases the pin through release, leaving the pointer and the focus', () => {
+    const raise = mountSetup(useRaisedFamily)
+    raise.on('lint').onClick()
+    raise.on('docs').onFocusin(focusing(true))
+    raise.release()
+    expect(raise.pinned.value).toBeNull()
+    expect(raise.shown.value).toBe('docs')
+  })
+
   it('releases the pin and the focus on Escape, leaving the pointer', () => {
     const raise = mountSetup(useRaisedFamily)
     raise.on('lint').onClick()

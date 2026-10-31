@@ -1,6 +1,7 @@
-import type { InlineNode } from '../markdown/inline-nodes'
-import { DIRECTIVES }      from '../suppression/directives'
-import { directiveHref }   from '../suppression/scopes'
+import type { InlineNode }  from '../markdown/inline-nodes'
+import { DIRECTIVES }       from '../suppression/directives'
+import { directiveHref }    from '../suppression/scopes'
+import type { Destination } from './destinations'
 
 export type Domain =
   | 'cli-flag'
@@ -17,11 +18,12 @@ export interface TokenSource {
 }
 
 export interface Token {
-  blurbNodes : InlineNode[]
-  domain     : Domain
-  href       : string
-  key        : string
-  sort       : string
+  blurbNodes  : InlineNode[]
+  destination : Destination
+  domain      : Domain
+  href        : string
+  key         : string
+  sort        : string
 }
 
 export const DOMAIN_LABELS: Record<Domain, string> = {

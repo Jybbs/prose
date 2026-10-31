@@ -1,40 +1,129 @@
 .rules-plate {
+  position  : relative;
   isolation : isolate;
 }
 
 .rules-plate-key {
   display        : flex;
   flex-wrap      : wrap;
-  gap            : var(--prose-space-12) var(--prose-space-28);
+  gap            : var(--prose-space-6) var(--prose-space-4);
   margin-top     : var(--prose-space-24);
   padding-bottom : var(--prose-space-20);
   border-bottom  : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
-.rules-plate-key .family-chip {
-  padding    : var(--prose-space-2) 0;
-  border     : 0;
-  background : none;
-  cursor     : pointer;
-  transition : color var(--prose-transition-slow);
+.rules-plate-split {
+  display     : inline-flex;
+  align-items : stretch;
 }
 
-.rules-plate-key .family-chip > span {
-  text-decoration       : underline var(--prose-border-1) var(--vp-c-divider);
-  text-underline-offset : var(--prose-space-0-45em);
-  transition            : text-decoration-color var(--prose-transition);
+.vp-doc .rules-plate-key .family-chip {
+  gap         : var(--prose-space-6);
+  padding     : var(--prose-space-6) var(--prose-space-4) var(--prose-space-6) var(--prose-space-8);
+  white-space : nowrap;
+  cursor      : pointer;
 }
 
-.rules-plate-key .family-chip[aria-pressed="true"] > span {
-  text-decoration-color : var(--vp-c-text-1);
+.rules-plate-key .family-chip:hover {
+  border-color : var(--vp-c-text-2);
 }
 
-.rules-plate[data-raised] .rules-plate-key .family-chip {
-  color : var(--vp-c-text-2);
+.rules-plate-key .family-chip:focus-visible,
+.vp-doc .rules-plate-all:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : var(--prose-space-2);
 }
 
-.rules-plate[data-raised] .rules-plate-key .family-chip.is-raised {
+.rules-plate-key .family-chip[aria-pressed="true"] {
+  box-shadow  : inset 0 var(--prose-border-2) 0 var(--family-edge-chip);
+  font-weight : 600;
+}
+
+.vp-doc a.rules-plate-go {
+  display         : inline-flex;
+  align-items     : center;
+  padding         : 0 var(--prose-space-6);
+  border          : var(--prose-border-1) solid var(--vp-c-divider);
+  border-left     : 0;
+  background      : var(--prose-chip-ground);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-label-size);
+  color           : var(--vp-c-text-2);
+  text-decoration : none;
+  transition      : color var(--prose-transition);
+}
+
+.vp-doc a.rules-plate-go:is(:hover, :focus-visible) {
   color : var(--vp-c-text-1);
+}
+
+/* Draws one segment per family as wide as its share of the list, the family
+   under the pointer or the focus raising its segment. */
+.rules-plate-census-row {
+  display     : flex;
+  align-items : center;
+  gap         : var(--prose-space-10);
+  margin      : var(--prose-space-14) 0 var(--prose-space-18);
+}
+
+.rules-plate-census {
+  display     : flex;
+  flex        : 0 1 calc(100% / 3);
+  align-items : flex-end;
+  gap         : var(--prose-space-2);
+  min-width   : var(--prose-size-64);
+  height      : var(--prose-size-6);
+}
+
+.rules-plate-census > span {
+  height           : var(--prose-size-3);
+  background       : var(--family-edge);
+  transform-origin : bottom;
+  transition       : transform var(--prose-transition-slow);
+}
+
+.rules-plate-census > span.is-raised {
+  transform : scaleY(2);
+}
+
+.vp-doc .rules-plate-census-cap {
+  font-family          : var(--vp-font-family-mono);
+  font-size            : var(--prose-text-xs);
+  font-variant-numeric : tabular-nums;
+  color                : var(--vp-c-text-2);
+  white-space          : nowrap;
+}
+
+.vp-doc .rules-plate-all {
+  padding       : 0 var(--prose-space-6);
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--prose-chip-ground);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-xs);
+  line-height   : var(--prose-leading-24);
+  color         : var(--vp-c-text-2);
+  white-space   : nowrap;
+  cursor        : pointer;
+  transition    : border-color var(--prose-transition), color var(--prose-transition);
+}
+
+.vp-doc .rules-plate-all:hover {
+  border-color : var(--vp-c-text-2);
+  color        : var(--vp-c-text-1);
+}
+
+.vp-doc .rules-plate-all.is-idle {
+  visibility : hidden;
+}
+
+.rules-plate-live {
+  position    : absolute;
+  width       : var(--prose-size-1);
+  height      : var(--prose-size-1);
+  overflow    : hidden;
+  clip-path   : inset(50%);
+  white-space : nowrap;
 }
 
 .rules-plate-letter {
@@ -45,8 +134,19 @@
   border-top            : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
-.rules-plate-key + .rules-plate-letter {
-  margin-top : var(--prose-space-18);
+.rules-plate .rules-plate-letter.is-out {
+  display : none;
+}
+
+.rules-plate-letter.is-ghost {
+  position       : absolute;
+  margin         : 0;
+  pointer-events : none;
+}
+
+.rules-plate-gathered .rules-plate-cap .nib-badge {
+  display : block;
+  color   : var(--family-edge);
 }
 
 .rules-plate-cap {
@@ -80,34 +180,28 @@
 
 .vp-doc a.rules-plate-slug,
 a.rules-plate-slug {
-  color                 : var(--vp-c-text-1);
-  font-family           : var(--vp-font-family-mono);
-  font-size             : var(--prose-text-0-8rem);
-  font-weight           : 400;
-  line-height           : 1.5;
-  text-decoration       : underline transparent;
-  text-underline-offset : var(--prose-space-3);
-  transition            :
-    color                 var(--prose-transition-slow),
-    text-decoration-color var(--prose-transition);
+  padding-bottom  : var(--prose-space-1);
+  color           : var(--vp-c-text-1);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-text-0-8rem);
+  font-weight     : 400;
+  line-height     : 1.5;
+  text-decoration : none;
 }
 
-.vp-doc a.rules-plate-slug:hover,
-a.rules-plate-slug:hover {
-  text-decoration-color : currentColor;
-}
-
-.vp-doc .rules-plate[data-raised] a.rules-plate-slug {
-  color : var(--vp-c-text-2);
-}
-
-.vp-doc .rules-plate[data-raised] .is-raised a.rules-plate-slug {
-  color       : var(--vp-c-text-1);
-  font-weight : 500;
+.vp-doc a.rules-plate-slug:focus-visible {
+  outline        : var(--prose-border-2) solid var(--prose-role-link);
+  outline-offset : var(--prose-space-2);
 }
 
 .rules-plate-slugs > li:hover,
 .rules-plate-slugs > li:focus-within {
   position : relative;
   z-index  : 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-plate-census > span {
+    transition : none;
+  }
 }

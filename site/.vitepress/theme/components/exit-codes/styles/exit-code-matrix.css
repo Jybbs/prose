@@ -1,8 +1,23 @@
+[data-outcome="success"] {
+  --outcome-ink  : var(--prose-shade-celadon-page-45);
+  --outcome-mark : var(--prose-shade-celadon-page-35);
+}
+
+[data-outcome="findings"] {
+  --outcome-ink  : var(--prose-shade-eureka-page-45);
+  --outcome-mark : var(--prose-shade-eureka-page-35);
+}
+
+[data-outcome="error"] {
+  --outcome-ink  : var(--prose-shade-apricot-page-45);
+  --outcome-mark : var(--prose-shade-apricot-page-35);
+}
+
 .exit-codes-spread {
   display               : grid;
   grid-template-columns : var(--prose-width-280) 1fr;
   gap                   : var(--prose-space-24);
-  align-items           : start;
+  align-items           : center;
   margin                : var(--prose-space-1-5rem) 0;
 }
 
@@ -26,18 +41,28 @@
   cursor                : pointer;
   color                 : var(--vp-c-text-2);
   transition            :
-    background var(--prose-transition),
+    box-shadow var(--prose-transition),
     color      var(--prose-transition);
 }
 
 .exit-code-index-row:hover,
 .exit-code-index-row.active {
-  background : color-mix(in srgb, var(--vp-c-text-1) var(--exit-code-wash, var(--prose-tint-6)), transparent);
+  box-shadow : inset var(--prose-border-2) 0 0 var(--prose-role-link);
   color      : var(--vp-c-text-1);
 }
 
-.exit-code-index-row.active {
-  --exit-code-wash : var(--prose-tint-12);
+.exit-code-index-row:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : calc(var(--prose-space-1) * -1);
+}
+
+.exit-codes-index .band-head {
+  padding : var(--prose-space-8) var(--prose-space-12) 0;
+}
+
+.exit-codes-index .band-rule {
+  height     : var(--prose-size-2);
+  background : var(--outcome-mark);
 }
 
 .exit-code-index-num {
@@ -45,6 +70,11 @@
   font-variant-numeric : tabular-nums lining-nums;
   font-size            : var(--prose-text-1rem);
   text-align           : right;
+  transition           : color var(--prose-transition);
+}
+
+.exit-code-index-row:is(:hover, .active) .exit-code-index-num {
+  color : var(--outcome-ink);
 }
 
 .exit-code-index-label {
@@ -60,7 +90,6 @@
 
 .exit-code-entry {
   padding-inline-start : var(--prose-space-18);
-  border-left          : var(--prose-border-2) solid var(--vp-c-divider);
 }
 
 .exit-code-entry-head {
@@ -76,7 +105,7 @@
   font-size            : var(--prose-text-2-6rem);
   font-weight          : 500;
   line-height          : 1;
-  color                : var(--vp-c-text-1);
+  color                : var(--outcome-ink);
 }
 
 .exit-code-entry-label {
@@ -88,51 +117,53 @@
 }
 
 .exit-code-entry-summary {
-  margin      : 0 0 var(--prose-space-16);
+  margin      : 0 0 var(--prose-space-14);
   max-width   : var(--prose-width-60ch);
   font-family : var(--vp-font-family-base);
   font-size   : var(--prose-text-md);
   line-height : 1.55;
-  color       : var(--vp-c-text-2);
+  color       : var(--vp-c-text-1);
 }
 
-.vp-doc .exit-code-entry-details,
-.exit-code-entry-details {
-  list-style : none;
-  margin     : 0;
-  padding    : 0;
+/* Lists the code's facts as ruled rows of a label beside its text. */
+.vp-doc .exit-code-entry-facts {
+  display               : grid;
+  grid-template-columns : max-content minmax(0, 1fr);
+  max-width             : var(--prose-width-60ch);
+  margin                : 0;
+  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
-.vp-doc .exit-code-entry-details > li,
-.exit-code-entry-details > li {
-  position             : relative;
-  margin               : var(--prose-space-8) 0;
-  padding-inline-start : var(--prose-space-18);
-  list-style   : none;
-  font-family  : var(--vp-font-family-base);
-  font-size    : var(--prose-text-0-84rem);
-  line-height  : 1.55;
-  color        : var(--vp-c-text-2);
+.vp-doc .exit-code-entry-facts :is(dt, dd) {
+  margin        : 0;
+  padding       : var(--prose-space-8) 0;
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
-.exit-code-entry-details > li::before {
-  content   : "◆";
-  position  : absolute;
-  left      : 0;
-  top       : var(--prose-space-0-45em);
-  font-size : var(--prose-text-0-6em);
-  color     : var(--vp-c-text-3);
+.vp-doc .exit-code-entry-facts dt {
+  padding-right  : var(--prose-space-16);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  font-weight    : 400;
+  letter-spacing : var(--prose-kicker-tracking);
+  line-height    : var(--prose-leading-24);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-2);
 }
 
-.exit-code-entry-details > li::marker {
-  content : "";
+.vp-doc .exit-code-entry-facts dd {
+  font-family : var(--vp-font-family-base);
+  font-size   : var(--prose-text-0-84rem);
+  line-height : 1.55;
+  color       : var(--vp-c-text-1);
 }
 
 .exit-code-entry-summary :where(code),
-.exit-code-entry-details :where(code) {
+.exit-code-entry-facts :where(code) {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--vp-code-font-size);
   color       : var(--vp-c-text-1);
+  white-space : nowrap;
 }
 
 @media (--prose-bp-tablet) {
@@ -148,5 +179,12 @@
   }
   .exit-code-entry {
     padding-inline-start : var(--prose-space-16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exit-code-index-row,
+  .exit-code-index-num {
+    transition : none;
   }
 }

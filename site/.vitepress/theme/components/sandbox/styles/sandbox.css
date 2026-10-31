@@ -52,8 +52,8 @@
 }
 
 .sandbox-refresh[data-armed] {
-  border-color : var(--prose-role-warning-rule);
-  color        : var(--prose-role-warning-ink);
+  border-color : var(--prose-shade-eureka-page-35);
+  color        : var(--prose-shade-eureka-page-45);
   opacity      : 1;
 }
 
@@ -66,7 +66,7 @@
   align-items    : center;
   height         : var(--prose-size-28);
   padding        : 0 var(--prose-space-10);
-  border         : var(--prose-border-1) solid var(--prose-role-warning-rule);
+  border         : var(--prose-border-1) solid var(--prose-shade-eureka-page-35);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
   box-shadow     : var(--prose-shadow-tooltip);
@@ -210,14 +210,9 @@
 }
 
 /* An unrecognized key is not a lint finding, so the wave takes the warning hue
-   rather than the squiggle's. Its row takes the wash a whole-line finding
-   takes on the formatted panel. */
+   rather than the lint's. */
 .sandbox-toml .lint-flag {
   --lint-color : var(--vp-c-warning-1);
-}
-
-.sandbox-toml-display .line:has(.lint-flag) {
-  background : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-10), transparent);
 }
 
 /* The count sits in the strip the message list used to hold. That keeps the
@@ -229,11 +224,14 @@
   margin         : 0;
   padding        : var(--prose-space-7) var(--prose-space-14);
   border-top     : var(--prose-border-1) solid var(--vp-c-divider);
-  background     : color-mix(in srgb, var(--vp-c-warning-1) var(--prose-tint-10), transparent);
-  color          : var(--vp-c-warning-1);
+  color          : var(--vp-c-text-2);
   font-family    : var(--vp-font-family-mono);
   font-size      : var(--prose-text-xs);
   letter-spacing : var(--prose-tracking-0-02em);
+}
+
+.config-notice-strip > span[aria-hidden] {
+  color : var(--vp-c-warning-1);
 }
 
 .config-notice-popover .config-notice-card {

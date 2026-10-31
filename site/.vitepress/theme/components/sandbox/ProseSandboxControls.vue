@@ -2,6 +2,7 @@
 import { onKeyStroke }   from '@vueuse/core'
 import { computed, ref } from 'vue'
 
+import NibBadge     from '../base/NibBadge.vue'
 import RuleCard     from '../rules/RuleCard.vue'
 import SandboxPlate from './SandboxPlate.vue'
 import SandboxRuler from './SandboxRuler.vue'
@@ -9,6 +10,7 @@ import SandboxRuler from './SandboxRuler.vue'
 import * as chipPanel        from '../../../lib/composables/use-chip-panel'
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as rules }     from '../../../lib/rules/rules.data'
+import { familyEmblem }      from '../../../lib/shared/emblems'
 
 const props = defineProps<{
   sandbox : ProseSandbox
@@ -83,6 +85,7 @@ function hover(rule: chipPanel.RuleControl): void {
         @focusin="hover(rule)"
       >
         <button type="button" class="sandbox-tags-toggle" @click="toggle(rule)">
+          <NibBadge v-if="rule.family" :emblem="familyEmblem(rule.family)" :size="12" />
           <span class="sandbox-tags-slug">{{ rule.slug }}</span>
         </button>
         <button

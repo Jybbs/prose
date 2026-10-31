@@ -10,15 +10,7 @@
 .vp-doc a.family-chip,
 a.rule-chip {
   text-decoration : none;
-  transition      :
-    border-color      var(--prose-transition),
-    border-left-width var(--prose-transition),
-    padding-left      var(--prose-transition);
-}
-
-.family-chip,
-.rule-chip {
-  border-left: var(--prose-border-2) solid var(--vp-c-divider);
+  transition      : border-color var(--prose-transition);
 }
 
 .family-chip,
@@ -36,13 +28,7 @@ a.rule-chip {
 
 a.family-chip:hover,
 a.rule-chip:hover {
-  border-color      : var(--vp-c-text-3);
-  border-left-width : var(--prose-border-3);
-  padding-left      : var(--prose-space-7);
-}
-
-a.family-chip:hover {
-  padding-left : var(--prose-space-9);
+  border-color : var(--vp-c-text-2);
 }
 
 a.rule-chip {

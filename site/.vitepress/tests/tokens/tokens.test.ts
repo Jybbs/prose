@@ -4,7 +4,7 @@ import * as sources                        from '../../lib/tokens/sources'
 import { SCHEMA }                          from '../schema'
 
 const token = (domain: sources.Domain, key: string): sources.Token =>
-  ({ blurbNodes: [], domain, href: '', key, sort: key })
+  ({ blurbNodes: [], destination: { code: false, part: null, title: '' }, domain, href: '', key, sort: key })
 
 describe('stripPrefix', () => {
   it.each([

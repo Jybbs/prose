@@ -31,6 +31,7 @@ import './styles/band-header.css'
 import './styles/code-chip.css'
 import './styles/glyph.css'
 import './styles/leaders.css'
+import './styles/nib-stroke.css'
 import './styles/panel.css'
 import './styles/pips.css'
 import './styles/popper-base.css'
@@ -62,16 +63,6 @@ export default {
     }
     app.use(FloatingVue, {
       themes: {
-        'az-index': {
-          $extend        : 'dropdown',
-          delay          : { hide: 220, show: 0 },
-          distance       : 14,
-          handleResize   : false,
-          instantMove    : true,
-          placement      : 'right-start',
-          popperTriggers : ['hover'],
-          triggers       : ['hover', 'focus']
-        },
         glossary: {
           $extend         : 'tooltip',
           'arrow-padding' : 8,

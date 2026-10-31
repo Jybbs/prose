@@ -1,5 +1,6 @@
 import * as anchors         from '../reference/anchors'
 import * as ruleSchema      from '../shared/rule-schema'
+import type { Anchored }    from './destinations'
 import type { TokenSource } from './sources'
 
 const CONFIG_PAGE    = '/reference/configuration'
@@ -52,6 +53,18 @@ function facetHref(key: string, owners: Set<string>): string {
   if (hoisted !== undefined) return `${CONFIG_PAGE}#${hoisted}`
   if (owners.size === 1)     return `${CONFIG_PAGE}#${anchors.facetAnchor([...owners][0], key)}`
   return CATALOGUE_HREF
+}
+
+// Names the rule or the shared scope each facet's anchor in the catalogue sits
+// under, keyed by the link to that anchor, since the catalogue anchors its
+// facets in a component rather than in headings.
+export function facetDestinations(schema: ruleSchema.SchemaDocument): Map<string, Anchored> {
+  const ruled = Object.entries(ruleSchema.ruleDefsOf(schema)).flatMap(([slug, def]) =>
+    ruleSchema.facetKeys(def.default).map(key =>
+      [`${CONFIG_PAGE}#${anchors.facetAnchor(slug, key)}`, { code: true, text: slug }] as const))
+  const hoisted = Object.entries(anchors.HOISTED_SCOPES).map(([key, scope]) =>
+    [`${CONFIG_PAGE}#${anchors.facetAnchor(scope, key)}`, { code: false, text: scope }] as const)
+  return new Map<string, Anchored>([...ruled, ...hoisted])
 }
 
 export function configKeySources(schema: ruleSchema.SchemaDocument): TokenSource[] {

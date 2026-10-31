@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { portsOf }            from '../../../lib/architecture/ports'
 import { data as primitives } from '../../../lib/architecture/primitives-composition.data'
 
 import { pickOr }                   from '../../../lib/shared/pick-or'
@@ -25,14 +26,7 @@ const bands = computed(() => [
 const focusedEntry = computed(() =>
   focused.value === null ? null : pickOr(primitives.bySlug, focused.value, null))
 
-const related = computed<Set<string>>(() => {
-  const s = new Set<string>()
-  const f = focusedEntry.value
-  if (!f) return s
-  for (const dep   of f.consumes  ) s.add(dep  )
-  for (const child of f.consumedBy) s.add(child)
-  return s
-})
+const ports = computed(() => portsOf(focusedEntry.value))
 
 function setFocus(slug: PrimitiveSlug) {
   focused.value = slug
@@ -48,7 +42,7 @@ function clearFocus() {
     <PrimitivesCompositionGrid
       :bands   = "bands"
       :focused = "focused"
-      :related = "related"
+      :ports   = "ports"
       @focus   = "setFocus"
       @blur    = "clearFocus"
     />

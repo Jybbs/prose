@@ -1,18 +1,20 @@
 import MarkdownIt                                        from 'markdown-it'
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { glossaryPlugin }          from '../../lib/glossary/plugin'
-import { bodyLinkPlugin }          from '../../lib/markdown/body-link-plugin'
-import { calloutPlugin }           from '../../lib/markdown/callout-plugin'
-import { emblemPlugin }            from '../../lib/markdown/emblem-plugin'
-import { inertEnv, plainTermsEnv } from '../../lib/markdown/inert-env'
-import { renderPlainInlineHtml }   from '../../lib/markdown/renderer'
-import { sectionHeadingPlugin }    from '../../lib/markdown/section-heading-plugin'
-import type { DiscoveredRule }     from '../../lib/rules/discovery'
-import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
-import { emblemsOf }               from '../../lib/shared/emblems'
-import { siteDir }                 from '../../lib/shared/paths'
-import { SECTIONS }                from '../../lib/shared/registries'
+import { glossaryPlugin }                from '../../lib/glossary/plugin'
+import { bodyLinkPlugin }                from '../../lib/markdown/body-link-plugin'
+import { calloutPlugin }                 from '../../lib/markdown/callout-plugin'
+import { codeOperatorPlugin, codeParts } from '../../lib/markdown/code-operators'
+import { emblemPlugin }                  from '../../lib/markdown/emblem-plugin'
+import { inertEnv, plainTermsEnv }       from '../../lib/markdown/inert-env'
+import { proseMarkPlugin }               from '../../lib/markdown/prose-mark-plugin'
+import { renderPlainInlineHtml }         from '../../lib/markdown/renderer'
+import { sectionHeadingPlugin }          from '../../lib/markdown/section-heading-plugin'
+import type { DiscoveredRule }           from '../../lib/rules/discovery'
+import { ruleLinkPlugin }                from '../../lib/rules/link-plugin'
+import { emblemsOf }                     from '../../lib/shared/emblems'
+import { siteDir }                       from '../../lib/shared/paths'
+import { SECTIONS }                      from '../../lib/shared/registries'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
   const md = new MarkdownIt()
@@ -38,6 +40,7 @@ describe('calloutPlugin', () => {
       `<div class="${kind} custom-block"><p class="custom-block-title">`
       + `<span class="callout-mark" aria-hidden="true">${mark}</span>`
       + `<span class="callout-kind">${label}</span>`
+      + '<span class="middle-dot" aria-hidden="true">·</span>'
       + '<span class="callout-title">Holds <code>x</code></span></p>')
   })
 
@@ -45,6 +48,60 @@ describe('calloutPlugin', () => {
     await expect(callout('::: tip\nBody.\n:::'))
       .resolves.toContain('<span class="callout-kind">Tip</span></p>')
   })
+})
+
+describe('codeParts', () => {
+  it('splits a span into its operators and the runs between them', () => {
+    expect(codeParts('x := y')).toStrictEqual([
+      { op: false, text: 'x ' },
+      { op: true,  text: ':=' },
+      { op: false, text: ' y' }
+    ])
+  })
+
+  it('returns one plain run for an empty span', () => {
+    expect(codeParts('')).toStrictEqual([{ op: false, text: '' }])
+  })
+})
+
+describe('codeOperatorPlugin', () => {
+  const code = (src: string): string => render(md => md.use(codeOperatorPlugin), src)
+
+  it.each([
+    ['`x = 1`',   '<code>x <span class="code-op">=</span> 1</code>'],
+    ['`=`',       '<code><span class="code-op">=</span></code>'],
+    ['`a == b`',  '<code>a <span class="code-op">==</span> b</code>'],
+    ['`x += 1`',  '<code>x <span class="code-op">+=</span> 1</code>'],
+    ['`# note`',  '<code><span class="code-op">#</span> note</code>']
+  ])('sets each operator in %s in a code-op span', (src, html) => {
+    expect(code(src)).toContain(html)
+  })
+
+  it.each(['`name=value`', '`a[1:2]`', '`https://prose.fyi`', '`<rule>`'])(
+    'leaves %s plain, its operators standing between no spaces',
+    src => { expect(code(src)).not.toContain('code-op') }
+  )
+
+  it('leaves a code span inside a link plain', () => {
+    expect(code('[`x = 1`](/a) and `y = 2`'))
+      .toContain('<a href="/a"><code>x = 1</code></a> and <code>y <span class="code-op">=</span> 2</code>')
+  })
+
+  it('escapes the code it splits', () => {
+    expect(code('`a < b & c`')).toContain('<code>a <span class="code-op">&lt;</span> b &amp; c</code>')
+  })
+})
+
+describe('proseMarkPlugin', () => {
+  it('wraps a standalone Prose in a prose-mark span', () => {
+    expect(render(md => md.use(proseMarkPlugin), 'Prose formats code'))
+      .toContain('<span class="prose-mark">Prose</span>')
+  })
+
+  it.each(['the prose a reader skims', 'the Prose-mark class and Prose_mark name'])(
+    'leaves the common noun and every compound in %s plain',
+    src => { expect(render(md => md.use(proseMarkPlugin), src)).not.toContain('prose-mark') }
+  )
 })
 
 describe('sectionHeadingPlugin', () => {

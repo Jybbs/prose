@@ -51,9 +51,9 @@ const SYSTEM_FONTS   = new Set([
 const WIDE_KEYWORDS  = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
 
 // Holds the inline elements that set words apart in running text, beside the
-// values that keep one of them in a text color.
+// values that keep one of them in a text color or the aside ink.
 const INLINE_TEXT = new Set(['b', 'em', 'i', 'mark', 'strong'])
-const TEXT_COLOR  = /^(?:var\(--vp-c-text-[123]\)|inherit|currentcolor)$/i
+const TEXT_COLOR  = /^(?:var\(--(?:vp-c-text-[123]|prose-role-aside)\)|inherit|currentcolor)$/i
 
 const SITE   = siteDir(import.meta.url)
 const TOKENS = '.vitepress/theme/styles/tokens.css'
@@ -267,7 +267,8 @@ function elements(selector: string): string[] {
 }
 
 // Lists each selector that sets an `em`, `i`, `strong`, `b`, or `mark` outside a
-// link in a color other than a text color, by the line its declaration sits on.
+// link in a color other than a text color or the aside ink, by the line its
+// declaration sits on.
 function inlineHues(root: Root): { line: number, selector: string }[] {
   const found = [] as { line: number, selector: string }[]
   root.walkDecls('color', decl => {
@@ -288,7 +289,7 @@ describe('the site stylesheets', () => {
   })
 
   it.each(STYLESHEETS)(
-    '$file sets each em, i, strong, b, and mark outside a link in a text color',
+    '$file sets each em, i, strong, b, and mark outside a link in a text color or the aside ink',
     ({ root }) => {
       expect(inlineHues(root)).toStrictEqual([])
     }
@@ -306,9 +307,10 @@ describe('inlineHues', () => {
       .toStrictEqual([{ line: 1, selector }])
   })
 
-  it('passes a text color and an inline element inside a link', () => {
+  it('passes a text color, the aside ink, and an inline element inside a link', () => {
     const css = [
       '.rule-card-caption em { color: var(--vp-c-text-1); }',
+      '.vp-doc p em { color: var(--prose-role-aside); }',
       '.landing-section p em { color: inherit; }',
       '.pq-row > p a strong { color: var(--prose-role-link); }',
       '.vp-doc a.body-link em { color: var(--prose-role-link); }'

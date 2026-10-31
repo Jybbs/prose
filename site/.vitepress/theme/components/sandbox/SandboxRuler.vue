@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  dragging  : [key: string],
+  dragging  : [key: string, hue: string],
   preview   : [key: string, value: number],
   setLength : [key: string, value: number]
 }>()
@@ -22,6 +22,8 @@ const MIN  = rulerScale.LENGTH_MIN
 const SPAN = MAX - MIN
 
 const DRAG_SLOP = 3
+const HUES      = ['ube', 'dexter', 'whiskey'] as const
+const LANE_SLOP = 6
 const MARKS     = [MIN, 80, 130, MAX] as const
 
 interface DragState {
@@ -63,6 +65,17 @@ const tierByKey = computed(() => rulerScale.packTiers(
   chipWidths
 ))
 
+// Joins each knob's default to its value, a tether that would overlap another
+// dropping to the next lane.
+const tethers = computed(() => rulerScale.packLanes(
+  new Map(props.lengths.map(knob => {
+    const [at, home] = [shownValue(knob), knob.default].map(rulerScale.pctOfLength) as [number, number]
+    return [knob.key, { from: Math.min(at, home), to: Math.max(at, home) }]
+  })),
+  trackWidth.value,
+  LANE_SLOP
+))
+
 // The head reserves rows only for tiers in use, so it stays one row tall
 // until chips actually crowd.
 const rows = computed(() => {
@@ -94,7 +107,7 @@ function dragEnd(event: PointerEvent): void {
   if (held) emit('setLength', held.key, held.value)
   preview.value = null
   drag.value    = null
-  emit('dragging', '')
+  emit('dragging', '', '')
 }
 
 function dragMove(knob: LengthKnob, event: PointerEvent): void {
@@ -107,14 +120,14 @@ function dragMove(knob: LengthKnob, event: PointerEvent): void {
   emit('preview', knob.key, value)
 }
 
-function dragStart(knob: LengthKnob, event: PointerEvent): void {
+function dragStart(hue: string, knob: LengthKnob, event: PointerEvent): void {
   if (editing.value === knob.key || event.button !== 0 || !trackEl.value) return
   event.preventDefault()
   const stop = event.currentTarget as HTMLElement
   const rect = trackEl.value.getBoundingClientRect()
   const unit = rect.width / SPAN
   stop.setPointerCapture(event.pointerId)
-  emit('dragging', knob.key)
+  emit('dragging', knob.key, hue)
   drag.value = {
     key       : knob.key,
     live      : false,
@@ -123,6 +136,12 @@ function dragStart(knob: LengthKnob, event: PointerEvent): void {
     pointerId : event.pointerId,
     startX    : event.clientX
   }
+}
+
+// Gives each knob its hue by its place, so a knob, its default, its tether,
+// and the guide it holds share one.
+function hueOf(index: number): string {
+  return HUES[index % HUES.length]!
 }
 
 function focusInput(el: unknown): void {
@@ -143,6 +162,10 @@ function stopStyle(knob: LengthKnob): CSSProperties {
   }
 }
 
+function tetherStyle(knob: LengthKnob): CSSProperties & { '--lane': number } {
+  const { from, lane, to } = tethers.value.get(knob.key)!
+  return { '--lane': lane, 'left': `${from}%`, 'width': `${to - from}%` }
+}
 
 function tierOf(key: string): number {
   return tierByKey.value.get(key) ?? 0
@@ -154,11 +177,20 @@ function tierOf(key: string): number {
     <div ref="trackEl" class="sandbox-ruler" role="group" aria-label="Line lengths" :style="{ '--rows': rows }">
       <div class="sandbox-ruler-track" aria-hidden="true" />
       <span
-        v-for="knob in lengths"
+        v-for="(knob, index) in lengths"
+        :key="`tether-${knob.key}`"
+        class="sandbox-ruler-tether"
+        aria-hidden="true"
+        :data-hue="hueOf(index)"
+        :style="tetherStyle(knob)"
+      />
+      <span
+        v-for="(knob, index) in lengths"
         :key="`default-${knob.key}`"
         class="sandbox-ruler-default"
         aria-hidden="true"
-        :style="{ left: `${rulerScale.pctOfLength(knob.default)}%` }"
+        :data-hue="hueOf(index)"
+        :style="{ '--lane': tetherStyle(knob)['--lane'], 'left': `${rulerScale.pctOfLength(knob.default)}%` }"
       />
       <span
         v-for="mark in MARKS"
@@ -168,18 +200,20 @@ function tierOf(key: string): number {
         :style="{ left: `${rulerScale.pctOfLength(mark)}%` }"
       >{{ mark }}</span>
       <div
-        v-for="knob in lengths"
+        v-for="(knob, index) in lengths"
         :key="knob.key"
         class="sandbox-ruler-stop"
         :style="stopStyle(knob)"
+        :data-changed="shownValue(knob) !== knob.default || null"
         :data-dragging="drag?.key === knob.key || null"
+        :data-hue="hueOf(index)"
         :role="editing === knob.key ? undefined : 'slider'"
         :tabindex="editing === knob.key ? undefined : 0"
         :aria-label="`${knob.label} line length`"
         :aria-valuemin="MIN"
         :aria-valuemax="MAX"
         :aria-valuenow="shownValue(knob)"
-        @pointerdown="dragStart(knob, $event)"
+        @pointerdown="dragStart(hueOf(index), knob, $event)"
         @pointermove="dragMove(knob, $event)"
         @pointerup="dragEnd"
         @pointercancel="dragEnd"

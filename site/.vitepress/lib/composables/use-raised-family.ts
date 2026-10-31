@@ -14,15 +14,16 @@ interface Listeners {
 }
 
 interface RaisedFamily {
-  on     : (family: GlossaryFamily) => Listeners
-  pinned : Readonly<Ref<Held>>
-  shown  : ComputedRef<Held>
+  on      : (family: GlossaryFamily) => Listeners
+  pinned  : Readonly<Ref<Held>>
+  release : () => void
+  shown   : ComputedRef<Held>
 }
 
 // Holds the family a reader points at, focuses from the keyboard, or pins with
 // a click, the pointer outranking the focus and the focus the pin. A second
-// click on the pinned family or the Escape key releases the pin, and `on`
-// returns the listeners an element naming a family binds.
+// click on the pinned family, the Escape key, or `release` releases the pin,
+// and `on` returns the listeners an element naming a family binds.
 export function useRaisedFamily(): RaisedFamily {
   const focused = shallowRef<Held>(null)
   const pinned  = shallowRef<Held>(null)
@@ -40,9 +41,10 @@ export function useRaisedFamily(): RaisedFamily {
   })
 
   return {
-    pinned : pinned,
-    shown  : computed(() => pointed.value ?? focused.value ?? pinned.value),
-    on     : family => ({
+    pinned  : pinned,
+    release : () => { pinned.value = null },
+    shown   : computed(() => pointed.value ?? focused.value ?? pinned.value),
+    on      : family => ({
       onClick      : () => { pinned.value = pinned.value === family ? null : family },
       onFocusin    : event => focus(event, family),
       onFocusout   : () => { focused.value = null },

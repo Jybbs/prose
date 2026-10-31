@@ -4,18 +4,13 @@ import FamilyChip  from '../rules/FamilyChip.vue'
 
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 import { BODY_LINK_CLASS }  from '../../../lib/shared/constants'
-import { railPaint }        from '../../../lib/shared/family-rail'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 const { active, activeIndex, filtered, step } = useGlossaryFolio()
 </script>
 
 <template>
-  <div
-    class="glossary-folio-stage"
-    :data-family="active?.primaryFamily"
-    :style="active ? { '--rail-paint': railPaint(active.families) } : undefined"
-  >
+  <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
     <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio kicker">

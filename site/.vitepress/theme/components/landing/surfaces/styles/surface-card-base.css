@@ -1,15 +1,3 @@
-@property --spotlight-x {
-  syntax        : '<percentage>';
-  initial-value : 50%;
-  inherits      : false;
-}
-
-@property --spotlight-y {
-  syntax        : '<percentage>';
-  initial-value : 50%;
-  inherits      : false;
-}
-
 .surface-card {
   position        : relative;
   isolation       : isolate;
@@ -20,10 +8,7 @@
   padding         : var(--prose-space-28);
   background      : var(--vp-c-bg-soft);
   color           : var(--vp-c-text-1);
-  transition      :
-    border-color var(--prose-transition-slow),
-    transform    var(--prose-transition-slow),
-    box-shadow   var(--prose-transition-slow);
+  transition      : border-color var(--prose-transition-slow);
 }
 
 .surface-card > *:not(.surface-card-cover-link, .surface-card-icon) {
@@ -55,44 +40,9 @@
   pointer-events : auto;
 }
 
-.surface-card::after {
-  content        : "";
-  position       : absolute;
-  inset          : 0;
-  background     : radial-gradient(
-    var(--prose-size-420) circle at var(--spotlight-x) var(--spotlight-y),
-    color-mix(in oklab, var(--family-color) var(--prose-tint-medium), transparent) 0%,
-    transparent 60%
-  );
-  pointer-events : none;
-  z-index        : 0;
-  border-radius  : var(--prose-radius);
-}
-
-.surface-card::before {
-  content       : "";
-  position      : absolute;
-  top           : 0;
-  left          : 0;
-  right         : 0;
-  height        : var(--prose-size-3);
-  background    : linear-gradient(90deg, transparent, var(--family-color), transparent);
-  opacity       : 0;
-  transition    : opacity var(--prose-transition-slow);
-  border-radius : var(--prose-radius) var(--prose-radius) 0 0;
-  z-index       : 2;
-}
-
-.surface-card[data-active="true"]::before,
-.surface-card:focus-within::before {
-  opacity : 1;
-}
-
 .surface-card[data-active="true"],
 .surface-card:focus-within {
-  border-color : var(--family-color);
-  transform    : translateY(calc(var(--prose-space-2) * -1));
-  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
+  border-color : var(--family-edge-soft);
 }
 
 .surface-card-number {
@@ -111,9 +61,11 @@
   justify-content : center;
   width           : var(--prose-size-56);
   height          : var(--prose-size-56);
-  border          : var(--prose-border-1) solid color-mix(in srgb, var(--family-color) var(--prose-tint-35), var(--vp-c-divider));
-  border-radius   : 50%;
   z-index         : 2;
+}
+
+.surface-card-icon .nib-badge {
+  color : var(--family-nib-soft);
 }
 
 .surface-card-label {
@@ -139,4 +91,10 @@
 .surface-card-blurb :where(code) {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-0-9em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface-card {
+    transition : none;
+  }
 }

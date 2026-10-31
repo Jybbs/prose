@@ -1,7 +1,36 @@
 .primitives-composition-grid {
+  position       : relative;
+  isolation      : isolate;
   display        : flex;
   flex-direction : column;
   gap            : var(--prose-space-8);
+}
+
+/* Glides one wash of the focused tile's layer hue behind it, cross-fading the
+   hue as it crosses a band. */
+.primitives-composition-wash {
+  position       : absolute;
+  top            : 0;
+  left           : 0;
+  z-index        : 1;
+  border-radius  : var(--prose-radius-sm);
+  background     : color-mix(in srgb, var(--layer-hue) var(--prose-tint-22), transparent);
+  opacity        : 0;
+  pointer-events : none;
+  transition     :
+    transform        var(--prose-transition-morph),
+    width            var(--prose-transition-morph),
+    height           var(--prose-transition-morph),
+    background-color var(--prose-transition-morph),
+    opacity          var(--prose-transition-slow);
+}
+
+.primitives-composition-wash[data-on] {
+  opacity : 1;
+}
+
+.primitives-composition-wash[data-snap] {
+  transition : none;
 }
 
 .primitives-composition-band {
@@ -12,19 +41,17 @@
 }
 
 .primitives-composition-band-head {
-  --band-accent : var(--layer-accent);
-
-  padding : var(--prose-space-2) var(--prose-space-4) var(--prose-space-4);
+  position : relative;
+  z-index  : 2;
+  padding  : var(--prose-space-2) var(--prose-space-4) var(--prose-space-4);
 }
+
 
 .primitives-composition-band-badge {
   display         : inline-flex;
   align-items     : center;
   justify-content : center;
   width           : var(--prose-size-26);
-  height          : var(--prose-size-26);
-  border-radius   : 50%;
-  background      : var(--layer-accent);
   flex-shrink     : 0;
 }
 
@@ -32,9 +59,9 @@
   font-family : var(--prose-font-display);
   font-style  : italic;
   font-weight : 500;
-  font-size   : var(--prose-text-0-92rem);
+  font-size   : var(--prose-text-1-5rem);
   line-height : 1;
-  color       : var(--vp-c-bg);
+  color       : var(--layer-ink);
   user-select : none;
 }
 
@@ -51,13 +78,14 @@
 
 .vp-doc .primitives-composition-tile,
 .primitives-composition-tile {
+  position      : relative;
   margin        : 0;
   padding       : 0;
   list-style    : none;
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--layer-accent) var(--prose-tint-7), var(--vp-c-bg));
+  background    : var(--vp-c-bg-soft);
   transition    : background 180ms var(--prose-ease-emphasized),
-                 opacity    180ms var(--prose-ease-emphasized);
+                  opacity    180ms var(--prose-ease-emphasized);
 }
 
 .vp-doc .primitives-composition-tile::before,
@@ -77,6 +105,18 @@
   color                : var(--vp-c-text-1);
 }
 
+.vp-doc .primitives-composition-tile-link,
+.primitives-composition-tile-link {
+  position : relative;
+  z-index  : 2;
+}
+
+.vp-doc .primitives-composition-tile-link:focus-visible,
+.primitives-composition-tile-link:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : calc(var(--prose-space-1) * -1);
+}
+
 .primitives-composition-tile-name {
   font-family : var(--prose-font-display);
   font-size   : var(--prose-text-xs);
@@ -86,26 +126,18 @@
 
 .vp-doc .primitives-composition-tile-active,
 .primitives-composition-tile-active {
-  background     : var(--layer-accent);
-  outline        : var(--prose-border-2) solid color-mix(in srgb, var(--layer-accent) var(--prose-tint-55), var(--vp-c-text-1));
-  outline-offset : var(--prose-space-1);
-  position       : relative;
-  z-index        : 1;
-}
-
-.vp-doc .primitives-composition-tile-active .primitives-composition-tile-link,
-.vp-doc .primitives-composition-tile-active .primitives-composition-tile-name,
-.primitives-composition-tile-active .primitives-composition-tile-link,
-.primitives-composition-tile-active .primitives-composition-tile-name {
-  color : var(--vp-c-bg);
-}
-
-.vp-doc .primitives-composition-tile-related,
-.primitives-composition-tile-related {
-  background : color-mix(in srgb, var(--layer-accent) var(--prose-tint-28), var(--vp-c-bg));
+  background : transparent;
 }
 
 .vp-doc .primitives-composition-tile-mute,
 .primitives-composition-tile-mute {
-  opacity : 0.35;
+  opacity : 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primitives-composition-wash,
+  .vp-doc .primitives-composition-tile,
+  .primitives-composition-tile {
+    transition : none;
+  }
 }

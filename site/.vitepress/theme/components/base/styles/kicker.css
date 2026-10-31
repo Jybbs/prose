@@ -17,3 +17,22 @@
   content             : " —";
   margin-inline-start : var(--prose-space-4);
 }
+
+/* Sets a family's nibs, a middle dot, and a kicker on one line, as a card or
+   a tooltip heads itself. */
+.nib-tag {
+  display     : flex;
+  flex        : none;
+  align-items : center;
+  gap         : var(--prose-space-6);
+  line-height : 1;
+}
+
+.nib-tag .kicker {
+  line-height : 1;
+  color       : var(--vp-c-text-2);
+}
+
+.middle-dot {
+  color : var(--vp-c-text-3);
+}
