@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Broken Pair Measures an Operand Row Through a Forecast Rewrite"
+
+description = '''
+`ok = (` holds an `or` chain whose second operand is an `and` chain holding a `.format` call [[prefer-fstring]] rewrites to an f-string, under a `code-line-length` of `30`. The pair breaks one operand per row. **The `and` chain's joined row measures `32` columns as written and `24` once rewritten, and the rule measures it rewritten**, so the chain joins onto the `or` row.
+'''

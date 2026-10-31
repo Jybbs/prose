@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Fold Measures the Padding a Forecast Rewrite Covers as Written"
+
+description = '''
+`ok = (` holds a chain whose `.format` call [[prefer-fstring]] rewrites to an f-string, under a `code-line-length` of `26`. The padding ahead of `==` lands inside the replacement field, so **the fold measures its joined row with that padding in place, at `27` columns**, past the budget. The chain then holds one row of its own inside the pair, measured at its rewritten width of `26`.
+'''

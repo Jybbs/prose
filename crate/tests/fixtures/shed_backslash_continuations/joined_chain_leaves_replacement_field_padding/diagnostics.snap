@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 49
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/joined_chain_leaves_replacement_field_padding/input.py
+---
+shed-backslash-continuations@22..28

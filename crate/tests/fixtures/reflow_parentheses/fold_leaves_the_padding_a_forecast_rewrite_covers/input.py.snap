@@ -1,8 +1,7 @@
 ---
 source: crate/tests/integration.rs
+assertion_line: 64
 expression: snapshot
 input_file: crate/tests/fixtures/reflow_parentheses/fold_leaves_the_padding_a_forecast_rewrite_covers/input.py
 ---
-ok = (
-    f"{alpha  == 1}" and b
-)
+ok = f"{alpha  == 1}" and b

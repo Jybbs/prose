@@ -55,12 +55,19 @@ impl Shedder<'_> {
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
-    /// that joins onto one row, read through `nested`. An operand joins
+    /// that joins onto one row, read through `nested`, together with each
+    /// of `narrowing` inside an operand that spans rows. An operand joins
     /// where no break inside it sits within a bracket it opens and this
-    /// pass leaves standing, and where its joined form, settled under the
-    /// padding table, fits behind its operator one indent step past
-    /// `indent`.
-    fn operand_folds(&self, chain: &[Operand], nested: &[Edit], indent: usize) -> Vec<Edit> {
+    /// pass leaves standing, and where its joined form, narrowed and
+    /// settled under the padding table, fits behind its operator one
+    /// indent step past `indent`.
+    fn operand_folds(
+        &self,
+        chain: &[Operand],
+        nested: &[Edit],
+        narrowing: &[Edit],
+        indent: usize,
+    ) -> Vec<Edit> {
         let item = item_indent(indent);
         let shed = covered_by(nested);
         chain
@@ -69,7 +76,10 @@ impl Shedder<'_> {
                 break_depths(self.source, operand.range, &shed).all(|depth| depth == 0)
             })
             .flat_map(|operand| {
-                let folds = fold_edits(self.source, operand.range);
+                let mut folds = fold_edits(self.source, operand.range);
+                if self.source.contains_line_break(operand.range) {
+                    folds.extend(starting_within(narrowing, operand.range, Ranged::start).cloned());
+                }
                 let row = apply_inline_edits(
                     self.source,
                     operand.range,
@@ -146,7 +156,7 @@ impl Shedder<'_> {
         }) {
             Some(row) => wrapped(self.source, &row, indent),
             None => {
-                let folds = self.operand_folds(&chain, &nested, indent);
+                let folds = self.operand_folds(&chain, &nested, &narrowing, indent);
                 broken(
                     self.source,
                     &chain,

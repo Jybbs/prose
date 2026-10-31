@@ -1,11 +1,13 @@
 //! Sheds a backslash line continuation. A continuation a bracket
 //! already spans drops the backslash and keeps its break, one outside
 //! every bracket rejoins onto a single line where the joined line fits
-//! the budget, narrowing the padding ahead of each comparison operator
-//! in the expression it spans to one space, and otherwise the outermost expression spanning
-//! the break takes a parenthesis pair to carry the split, two runs
-//! spanned by one expression taking one pair between them. A backslash
-//! the lexer folded into a continued indentation is left alone.
+//! the budget, and otherwise the outermost expression spanning the
+//! break takes a parenthesis pair to carry the split, two runs spanned
+//! by one expression taking one pair between them. A join narrows to
+//! one space the padding ahead of each comparison operator in an
+//! expression it puts on one row, leaving a replacement field and an
+//! f-string `prefer-fstring` forecasts as written. A backslash the
+//! lexer folded into a continued indentation is left alone.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
@@ -27,13 +29,14 @@ use crate::{
         tokens::{is_closer, is_opener},
         walk::{Interpolations, filter_map_over_exprs},
     },
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, prefer_fstring::PreferFstring},
     source::Source,
 };
 
 #[derive(Debug)]
 pub(crate) struct ShedBackslashContinuations {
     code_line_length: usize,
+    fstrings: PreferFstring,
 }
 
 impl ShedBackslashContinuations {
@@ -46,13 +49,15 @@ impl ShedBackslashContinuations {
     pub(crate) fn from_config(config: &Config) -> Self {
         Self {
             code_line_length: config.code_width(),
+            fstrings: config.fstrings(),
         }
     }
 
     /// The fix for one run of unbracketed gaps, the join where the
     /// merged line fits the budget, and otherwise the parenthesized
     /// break wherever an expression spans the run. `narrowing` lists the
-    /// [`narrowing_edits`] of every comparison in the source.
+    /// [`narrowing_edits`] of every comparison in the source outside the
+    /// f-string rewrites `prefer-fstring` forecasts.
     fn shed_run(&self, source: &Source, run: &[Gap], narrowing: &[Edit]) -> Shed {
         let span = blocks_span(run);
         let joined = join_edits(source, run, narrowing);
@@ -71,9 +76,10 @@ impl Rule for ShedBackslashContinuations {
         if gaps.is_empty() {
             return Vec::new();
         }
+        let rewrites = source.fstring_rewrites(self.fstrings);
         let narrowing = filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
             expr.as_compare_expr()
-                .map(|compare| narrowing_edits(source, compare, &[]))
+                .map(|compare| narrowing_edits(source, compare, &rewrites))
         })
         .concat();
         let mut groups = Vec::new();

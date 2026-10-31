@@ -2,15 +2,19 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::*;
 
 /// Replaces each gap in `run` with its join text, folding the physical
 /// lines the run continues onto one, and keeps each of `narrowing` that
-/// falls inside the [`spanning_expression`], ascending by start.
+/// falls inside the [`spanning_expression`] where that expression lies
+/// within the rows the run joins, ascending by start.
 pub(super) fn join_edits(source: &Source, run: &[Gap], narrowing: &[Edit]) -> Vec<Edit> {
-    let spanned = spanning_expression(source, blocks_span(run));
+    let rows = source.text().lines_range(blocks_span(run));
+    let spanned = spanning_expression(source, blocks_span(run))
+        .filter(|spanned| rows.contains_range(*spanned));
     let narrowed = narrowing
         .iter()
         .filter(|edit| spanned.is_some_and(|spanned| spanned.contains_range(edit.range())))

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Joined Chain Leaves the Padding Inside a Replacement Field"
+
+description = '''
+`ok = f"{alpha  == 1}" \` continues a chain whose comparison sits inside an f-string replacement field. **The backslash is removed and the join leaves the padding ahead of `==` as written**, since its text is part of the string.
+'''

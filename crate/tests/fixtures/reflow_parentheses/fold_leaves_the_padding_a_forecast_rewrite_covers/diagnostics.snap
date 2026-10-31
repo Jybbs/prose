@@ -1,7 +1,10 @@
 ---
 source: crate/tests/integration.rs
+assertion_line: 49
 expression: render(diagnostics)
 input_file: crate/tests/fixtures/reflow_parentheses/fold_leaves_the_padding_a_forecast_rewrite_covers/input.py
 ---
 prefer-fstring@11..35
-reflow-parentheses@5..47
+reflow-parentheses@35..40
+reflow-parentheses@45..47
+reflow-parentheses@5..11

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Broken Pair Keeps the Column on the Operand Rows It Leaves Standing"
+
+description = '''
+`ready = (` holds a chain that [[align-comparisons]] padded so both `==` share a column, under a `code-line-length` of `40`. The interior reaches `48` columns on one row of its own, so the pair stays broken one operand per row. **Each operand already sits on a row of its own, so the padding still lines up and stays as written.**
+'''

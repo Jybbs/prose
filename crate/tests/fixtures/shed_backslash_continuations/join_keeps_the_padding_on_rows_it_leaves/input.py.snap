@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 64
+expression: snapshot
+input_file: crate/tests/fixtures/shed_backslash_continuations/join_keeps_the_padding_on_rows_it_leaves/input.py
+---
+ok = (
+    alpha_value_long_name == 1
+    and bb                == 2
+) and cc and dd
