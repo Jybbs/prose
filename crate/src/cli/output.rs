@@ -59,6 +59,12 @@ impl Presentation {
     pub(super) fn decorate_diff(&self) -> bool {
         self.stdout_tty && !self.quiet
     }
+
+    /// True where a run prints its closing summary, which a stdin run
+    /// does only to a terminal stderr with `--quiet` off.
+    pub(super) fn shows_summary(stdin: bool, stderr_tty: bool, quiet: bool) -> bool {
+        !stdin || (stderr_tty && !quiet)
+    }
 }
 
 /// One run's outcome, resolved to a single anchored summary line.
@@ -203,6 +209,27 @@ mod tests {
         };
 
         assert_eq!(present.decorate_diff(), expected);
+    }
+
+    #[rstest]
+    #[case::path_run(false, false, false, true)]
+    #[case::path_run_quiet(false, false, true, true)]
+    #[case::path_run_on_a_terminal(false, true, false, true)]
+    #[case::path_run_quiet_on_a_terminal(false, true, true, true)]
+    #[case::stdin_run(true, false, false, false)]
+    #[case::stdin_run_quiet(true, false, true, false)]
+    #[case::stdin_run_on_a_terminal(true, true, false, true)]
+    #[case::stdin_run_quiet_on_a_terminal(true, true, true, false)]
+    fn shows_summary_holds_a_stdin_run_to_a_terminal_without_quiet(
+        #[case] stdin: bool,
+        #[case] stderr_tty: bool,
+        #[case] quiet: bool,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(
+            Presentation::shows_summary(stdin, stderr_tty, quiet),
+            expected
+        );
     }
 
     #[rstest]

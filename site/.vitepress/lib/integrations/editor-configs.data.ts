@@ -27,7 +27,7 @@ const SOURCES: readonly EditorConfigSource[] = [
   {
     caption  : 'after-save-hook',
     code     : `(defun prose-format-on-save ()
-  (when (derived-mode-p 'python-mode)
+  (when (derived-mode-p 'python-base-mode)
     (call-process "prose" nil nil nil
                   "format" buffer-file-name)
     (revert-buffer :ignore-auto

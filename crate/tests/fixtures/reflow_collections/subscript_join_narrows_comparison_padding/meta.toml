@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Subscript Join Measures Its Row Narrowed"
+
+description = '''
+`table[` holds a chain that [[align-comparisons]] padded so both `==` share a column, under a `code-line-length` of `48`. **The join leaves one space ahead of each `==`**, and the joined row reaches `51` columns as written and `47` once narrowed. The rule measures it narrowed, so the subscript rejoins.
+'''

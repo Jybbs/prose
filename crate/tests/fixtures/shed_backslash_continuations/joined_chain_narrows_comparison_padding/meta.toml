@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Joined Chain Narrows the Padding Ahead of Each Comparison"
+
+description = '''
+`ready = loaded_count == 1 \` continues a chain whose `==` operators the author padded into one column. **The backslash is removed and the join leaves one space ahead of each `==`**, since on one row that padding would line up with nothing.
+'''

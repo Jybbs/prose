@@ -1,10 +1,11 @@
 //! Sheds a backslash line continuation. A continuation a bracket
 //! already spans drops the backslash and keeps its break, one outside
 //! every bracket rejoins onto a single line where the joined line fits
-//! the budget, and otherwise the outermost expression spanning the
-//! break takes a parenthesis pair to carry the split, two runs spanned
-//! by one expression taking one pair between them. A backslash the
-//! lexer folded into a continued indentation is left alone.
+//! the budget, narrowing the padding ahead of each comparison operator
+//! in the expression it spans to one space, and otherwise the outermost expression spanning
+//! the break takes a parenthesis pair to carry the split, two runs
+//! spanned by one expression taking one pair between them. A backslash
+//! the lexer folded into a continued indentation is left alone.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::TextRange;
@@ -18,11 +19,13 @@ use render::{join_edits, join_text, stripped_edit, wrap_edits};
 use crate::{
     config::Config,
     primitives::{
+        comparison::padded_operator_gaps,
         edit::{apply_inline_edits, narrowed_replacement},
         inline::rows_within,
         range::blocks_span,
         splice::splice_preserves_tree,
         tokens::{is_closer, is_opener},
+        walk::{Interpolations, filter_map_over_exprs},
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -48,10 +51,11 @@ impl ShedBackslashContinuations {
 
     /// The fix for one run of unbracketed gaps, the join where the
     /// merged line fits the budget, and otherwise the parenthesized
-    /// break wherever an expression spans the run.
-    fn shed_run(&self, source: &Source, run: &[Gap]) -> Shed {
+    /// break wherever an expression spans the run. `padded` lists the
+    /// comparison padding across the source that a join narrows.
+    fn shed_run(&self, source: &Source, run: &[Gap], padded: &[TextRange]) -> Shed {
         let span = blocks_span(run);
-        let joined = join_edits(source, run);
+        let joined = join_edits(source, run, padded);
         if rows_within(source, span, &joined, self.code_line_length) {
             return Shed::Joined(joined);
         }
@@ -64,6 +68,14 @@ impl ShedBackslashContinuations {
 impl Rule for ShedBackslashContinuations {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let gaps = continuation_gaps(source);
+        if gaps.is_empty() {
+            return Vec::new();
+        }
+        let padded = filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
+            expr.as_compare_expr()
+                .map(|compare| padded_operator_gaps(source, compare, &[]))
+        })
+        .concat();
         let mut groups = Vec::new();
         let mut wraps: Vec<(TextRange, Vec<Edit>)> = Vec::new();
         for run in gaps.chunk_by(|earlier, later| shares_a_run(source, earlier, later)) {
@@ -71,7 +83,7 @@ impl Rule for ShedBackslashContinuations {
                 [gap] if gap.bracketed => {
                     groups.extend(stripped_edit(source, gap.range).map(|edit| vec![edit]));
                 }
-                _ => match self.shed_run(source, run) {
+                _ => match self.shed_run(source, run, &padded) {
                     Shed::Joined(edits) => groups.push(edits),
                     Shed::Wrapped { node, stripped } => {
                         match wraps.iter_mut().find(|(wrapped, _)| *wrapped == node) {

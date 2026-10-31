@@ -23,7 +23,7 @@ A bare `false` turns a rule off as the shorthand for `enabled = false`, an inlin
 
 ## The Config Search Order
 
-*Prose* searches upward from each input file's own directory toward the filesystem root, so a file follows its own project's config even when one run names files from several projects, and stdin input searches from the working directory, since it has no path of its own. The search settles on the nearest directory holding any of these, ranked in this order within a directory:
+*Prose* searches upward from each input file's own directory toward the filesystem root, so a file follows its own project's config even when one run names files from several projects, and stdin input searches from the directory of the file `--stdin-filename` names, or from the working directory when it names none. The search settles on the nearest directory holding any of these, ranked in this order within a directory:
 
 1. `prose.toml`
 2. `.config/prose.toml`

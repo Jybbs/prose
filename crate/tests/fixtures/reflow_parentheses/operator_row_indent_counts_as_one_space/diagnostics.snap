@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/operator_row_indent_counts_as_one_space/input.py
+---
+reflow-parentheses@5..47

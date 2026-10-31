@@ -17,7 +17,7 @@ use crate::{
     primitives::{
         edit::{apply_inline_edits, insert_edit},
         fracture::outermost,
-        inline::{display_width, folded_line_form, spans_rows},
+        inline::{display_width, folded_line_form, settled_width, spans_rows},
         layout::{Separator, explode_parens, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
@@ -56,8 +56,9 @@ impl Shedder<'_> {
     /// The edits closing the soft breaks inside each operand of `chain`
     /// that joins onto one row, read through `nested`. An operand joins
     /// where no break inside it sits within a bracket it opens and this
-    /// pass leaves standing, and where its joined form fits behind its
-    /// operator one indent step past `indent`.
+    /// pass leaves standing, and where its joined form, settled under the
+    /// padding table, fits behind its operator one indent step past
+    /// `indent`.
     fn operand_folds(&self, chain: &[Operand], nested: &[Edit], indent: usize) -> Vec<Edit> {
         let item = item_indent(indent);
         let shed = covered_by(nested);
@@ -74,7 +75,13 @@ impl Shedder<'_> {
                     &outermost([nested, &folds].concat()),
                 );
                 let lead = operand.lead.map_or(0, |operator| operator.len() + 1);
-                let fits = item + lead + display_width(&row) <= self.code_line_length;
+                let width = settled_width(
+                    self.source,
+                    self.padding,
+                    operand.range,
+                    display_width(&row),
+                );
+                let fits = item + lead + width <= self.code_line_length;
                 (fits && !spans_rows(&row)).then_some(folds)
             })
             .flatten()
@@ -95,11 +102,11 @@ impl Shedder<'_> {
 
     /// The text breaking `candidate`'s pair across rows, `None` where a
     /// break does not own the pair's shape. The interior holds one row of
-    /// its own where its joined form fits a row one indent step in, unless
-    /// `candidate` stacks, and takes one row per operand otherwise, each
-    /// operand joining its own rows where [`Self::operand_folds`] holds.
-    /// Every row renders through the pairs `candidate` encloses that this
-    /// pass sheds.
+    /// its own where its joined form, settled under the padding table,
+    /// fits a row one indent step in, unless `candidate` stacks, and takes
+    /// one row per operand otherwise, each operand joining its own rows
+    /// where [`Self::operand_folds`] holds. Every row renders through the
+    /// pairs `candidate` encloses that this pass sheds.
     pub(super) fn broken_form(
         &self,
         candidate: &Candidate,
@@ -125,9 +132,11 @@ impl Shedder<'_> {
         let indent = self.statement_indent(pair);
         let item = item_indent(indent);
         let joined = apply_inline_edits(self.source, inner, &nested);
-        let text = match folded_line_form(self.source, candidate.expr, &joined)
-            .filter(|row| !candidate.stacks && item + display_width(row) <= self.code_line_length)
-        {
+        let text = match folded_line_form(self.source, candidate.expr, &joined).filter(|row| {
+            !candidate.stacks
+                && item + settled_width(self.source, self.padding, inner, display_width(row))
+                    <= self.code_line_length
+        }) {
             Some(row) => wrapped(self.source, &row, indent),
             None => {
                 let folds = self.operand_folds(&chain, &nested, indent);

@@ -4,7 +4,7 @@ description: "Covers what each exit code means, which is the contract a CI gate 
 
 # Exit Codes
 
-Every `prose check` and `prose format` run exits with one of the codes below, which is the contract a CI gate reads. When two outcomes apply to one run, the higher code wins, except that a stdin `prose format` writing the formatted source exits `0` whatever lint it found.
+Every `prose check` and `prose format` run exits with one of the codes below, which is the contract a CI gate reads. When two outcomes apply to one run, the higher code wins.
 
 ::: info Per-File Failures Stay Local
 A parse failure in one file produces exit code `3` for that file, and every other file in the tree is still formatted or checked.

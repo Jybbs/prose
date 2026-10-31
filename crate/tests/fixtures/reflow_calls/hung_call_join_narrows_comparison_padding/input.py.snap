@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_calls/hung_call_join_narrows_comparison_padding/input.py
+---
+check(width_in_pixels == 1 and depth == 2)

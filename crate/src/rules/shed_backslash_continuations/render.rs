@@ -1,5 +1,6 @@
 //! Turns a shed decision into the edits joining or wrapping its run.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
 use ruff_text_size::{Ranged, TextRange};
@@ -7,10 +8,17 @@ use ruff_text_size::{Ranged, TextRange};
 use super::*;
 
 /// Replaces each gap in `run` with its join text, folding the physical
-/// lines the run continues onto one.
-pub(super) fn join_edits(source: &Source, run: &[Gap]) -> Vec<Edit> {
+/// lines the run continues onto one, and narrows each of `padded` inside
+/// the [`spanning_expression`] to one space, ascending by start.
+pub(super) fn join_edits(source: &Source, run: &[Gap], padded: &[TextRange]) -> Vec<Edit> {
+    let spanned = spanning_expression(source, blocks_span(run));
+    let narrowed = padded
+        .iter()
+        .filter(|gap| spanned.is_some_and(|spanned| spanned.contains_range(**gap)))
+        .map(|&gap| Edit::range_replacement(" ".to_owned(), gap));
     run.iter()
         .filter_map(|gap| narrowed_replacement(source, gap.range, gap.join.to_owned()))
+        .merge_by(narrowed, |join, gap| join.start() <= gap.start())
         .collect()
 }
 
@@ -43,18 +51,24 @@ pub(super) fn wrap_edits(
     span: TextRange,
     run: &[Gap],
 ) -> Option<(TextRange, Vec<Edit>)> {
-    let root = AnyNodeRef::from(source.ast());
-    let wrapped = covering_node(root, span)
-        .find_last(AnyNodeRef::is_expression)
-        .ok()?
-        .node()
-        .range();
+    let wrapped = spanning_expression(source, span)?;
     let edits: Vec<Edit> = run
         .iter()
         .filter_map(|gap| stripped_edit(source, gap.range))
         .collect();
     let candidate = format!("({})", apply_inline_edits(source, wrapped, &edits));
     splice_preserves_tree(source, wrapped, &candidate).then_some((wrapped, edits))
+}
+
+/// The range of the outermost expression spanning `span`, `None` where
+/// no expression spans it.
+fn spanning_expression(source: &Source, span: TextRange) -> Option<TextRange> {
+    let root = AnyNodeRef::from(source.ast());
+    let node = covering_node(root, span)
+        .find_last(AnyNodeRef::is_expression)
+        .ok()?
+        .node();
+    Some(node.range())
 }
 
 #[cfg(test)]
@@ -87,7 +101,7 @@ mod tests {
     fn join_edits_fold_the_run_onto_one_line(#[case] src: &str, #[case] expected: &str) {
         let source = parse(src);
         let gaps = continuation_gaps(&source);
-        let edits = join_edits(&source, &gaps);
+        let edits = join_edits(&source, &gaps, &[]);
         assert_eq!(spliced_rows(&source, blocks_span(&gaps), &edits), expected);
     }
 

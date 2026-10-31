@@ -49,13 +49,13 @@ The `sarif` output format writes findings to a file that a second step uploads t
 
 ```yaml
 - run: prose check --output-format sarif . > prose.sarif
-- uses: github/codeql-action/upload-sarif@v3
+- uses: github/codeql-action/upload-sarif@v4
   if: ${{ !cancelled() }}
   with:
     sarif_file: prose.sarif
 ```
 
-Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
+Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload needs the job's `permissions` to grant `security-events: write`. The step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
 
 ## Persisting the Cache
 

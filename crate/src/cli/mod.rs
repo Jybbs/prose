@@ -83,7 +83,11 @@ pub fn run() -> ExitCode {
         quiet,
         stderr_color,
         stdout_tty,
-        summary: run_args.is_none_or(|args| !args.stdin) || (stderr_tty && !quiet),
+        summary: Presentation::shows_summary(
+            run_args.is_some_and(|args| args.stdin),
+            stderr_tty,
+            quiet,
+        ),
     };
     let verbose = cli.verbose;
     let result = match cli.command {

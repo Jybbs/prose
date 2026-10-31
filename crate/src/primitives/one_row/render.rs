@@ -2,12 +2,14 @@
 
 use std::borrow::Cow;
 
+use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, Comprehension, Expr, ExprDict, visitor::Visitor as AstVisitor};
 use ruff_text_size::TextRange;
 
 use super::{Column, Settings, walk::Joiner};
 use crate::{
     primitives::{
+        comparison::padded_operator_gaps_within,
         edit::apply_inline_edits,
         fracture::outermost,
         inline::{folded_line_form, spans_rows},
@@ -54,14 +56,26 @@ impl<'a> Writer<'a> {
     }
 
     /// The one-row form of a leaf, meaning an expression the dispatch in
-    /// [`Self::write`] does not itself rebuild. An operator tree over
-    /// atoms soft-wrapped across rows folds its break, and every other
+    /// [`Self::write`] does not itself rebuild. A leaf written on one row
+    /// stays as written. An operator tree over atoms soft-wrapped across
+    /// rows folds its break, each of its [`padded_operator_gaps_within`]
+    /// outside a forecast rewrite narrowed to one space, and every other
     /// leaf reaches one row by closing each bracketed construct beneath
     /// it, whether that is a call's argument list or a literal the
     /// author fractured. A break no close reaches leaves `None`.
     fn leaf_form(&self, expr: &Expr, range: TextRange) -> Option<Cow<'a, str>> {
-        if let Some(folded) = folded_line_form(self.source, expr, self.source.slice(range)) {
-            return Some(folded);
+        let slice = self.source.slice(range);
+        if !spans_rows(slice) {
+            return Some(Cow::Borrowed(slice));
+        }
+        let narrowing: Vec<Edit> =
+            padded_operator_gaps_within(self.source, expr, self.settings.rewrites)
+                .into_iter()
+                .map(|gap| Edit::range_replacement(" ".to_owned(), gap))
+                .collect();
+        let narrowed = apply_inline_edits(self.source, range, &narrowing);
+        if let Some(folded) = folded_line_form(self.source, expr, &narrowed) {
+            return Some(Cow::Owned(folded.into_owned()));
         }
         let mut joiner = Joiner {
             edits: Vec::new(),

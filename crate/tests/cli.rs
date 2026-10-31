@@ -1625,6 +1625,20 @@ fn format_stdin_json_exits_format_change_for_a_pending_rewrite() {
 }
 
 #[test]
+fn format_stdin_refuses_syntax_the_target_rejects() {
+    let project = tempdir().expect("tempdir");
+    write_pyproject(project.path(), "[tool.prose]\ntarget-version = \"3.14\"\n");
+    let (mut cmd, _cache_dir) = prose_isolated();
+
+    cmd.args(["format", "-"])
+        .write_stdin("lazy import os\n")
+        .current_dir(project.path())
+        .assert()
+        .code(3)
+        .stdout("");
+}
+
+#[test]
 fn format_stdin_resolves_config_from_the_cwd() {
     let project = suppressed_project();
     let (mut cmd, _cache_dir) = prose_isolated();

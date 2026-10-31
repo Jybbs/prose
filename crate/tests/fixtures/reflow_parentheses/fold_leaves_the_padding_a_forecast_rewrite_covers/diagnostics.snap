@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/fold_leaves_the_padding_a_forecast_rewrite_covers/input.py
+---
+prefer-fstring@11..35
+reflow-parentheses@5..47

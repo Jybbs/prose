@@ -15,8 +15,7 @@ use super::{
 };
 use crate::{
     primitives::{
-        aligner::line_gap_before,
-        comparison::opening_token_kind,
+        comparison::padded_operator_gaps_within,
         edit::{apply_inline_edits, insert_edit},
         inline::{
             display_width, run_closes_to_a_space, settled_head_column, settled_width,
@@ -25,7 +24,6 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
-        walk::{Interpolations, filter_map_within_expr},
     },
     source::Source,
 };
@@ -68,12 +66,12 @@ impl Shedder<'_> {
     /// spaces its own flush sides keep and narrowed by the columns the
     /// padding table takes off it, the columns each nested candidate
     /// sheds alongside it, and the columns a fold takes off its
-    /// [`Self::narrowed_gaps`]. `None` for an interior no fold joins.
+    /// [`padded_operator_gaps_within`]. `None` for an interior no fold
+    /// joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
-        let narrowed: usize = if candidate.sheds && self.source.contains_line_break(candidate.pair)
-        {
-            self.narrowed_gaps(candidate)
+        let narrowed: usize = if candidate.sheds {
+            padded_operator_gaps_within(self.source, candidate.expr, self.padding)
                 .iter()
                 .map(|gap| gap.len().to_usize() - 1)
                 .sum()
@@ -89,35 +87,6 @@ impl Shedder<'_> {
             ) - shed_columns(candidate.inner, candidates)
                 - narrowed,
         )
-    }
-
-    /// The gaps a fold of `candidate` narrows to one space, each the run of
-    /// two or more spaces opening mid-row ahead of a comparison operator
-    /// inside it that the padding table leaves standing. A replacement
-    /// field's interior stays unread.
-    fn narrowed_gaps(&self, candidate: &Candidate) -> Vec<TextRange> {
-        filter_map_within_expr(candidate.expr, Interpolations::Skip, |expr| {
-            let compare = expr.as_compare_expr()?;
-            Some(
-                compare
-                    .iter()
-                    .filter_map(|(left, &op, right)| {
-                        let at = self.source.first_token_offset_in_range(
-                            TextRange::new(left.end(), right.start()),
-                            |token| token.kind() == opening_token_kind(op),
-                        )?;
-                        let gap = line_gap_before(self.source, at);
-                        let mid_row = self.source.text().line_start(at) < gap.start();
-                        let stranded = self
-                            .padding
-                            .iter()
-                            .any(|edit| edit.range().intersect(gap).is_some_and(|r| !r.is_empty()));
-                        (mid_row && gap.len() > TextSize::of(' ') && !stranded).then_some(gap)
-                    })
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .concat()
     }
 
     /// The column `offset` reaches once the edits emitted so far apply
@@ -193,10 +162,9 @@ impl Shedder<'_> {
 
     /// Emits the [`fold_edits`] closing each line-spanning whitespace run
     /// inside `candidate`'s interior, then the edits narrowing each of its
-    /// [`Self::narrowed_gaps`] to one space.
+    /// [`padded_operator_gaps_within`] to one space.
     pub(super) fn push_fold_edits(&mut self, candidate: &Candidate) {
-        let narrowed = self
-            .narrowed_gaps(candidate)
+        let narrowed = padded_operator_gaps_within(self.source, candidate.expr, self.padding)
             .into_iter()
             .map(|gap| Edit::range_replacement(" ".to_owned(), gap));
         for edit in fold_edits(self.source, candidate.inner)

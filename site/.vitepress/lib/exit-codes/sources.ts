@@ -19,8 +19,8 @@ export const SOURCES: readonly ExitCodeSource[] = [
       'Returned by both `prose check` and `prose format` when the input already conforms, '
       + 'and by `prose format` once its rewrite is written.',
       'A stdin `prose format` that writes the formatted source returns it whatever lint the '
-      + 'source holds, since an editor piping a buffer through the command keeps the buffer '
-      + 'unformatted on any other code. `prose check -` and the '
+      + 'source holds, since an editor such as Helix keeps a buffer it pipes through the '
+      + 'command unformatted on any other code. `prose check -` and the '
       + '[**language server**](/reference/cli#prose-server) still report that lint.',
       '`prose format` also returns it for a rewrite a second run would change, as '
       + '[**Unstable Output**](/reference/cli#unstable-output) sets out.',
@@ -39,8 +39,7 @@ export const SOURCES: readonly ExitCodeSource[] = [
   {
     code   : 2,
     detail : [
-      'Returned by both `prose check` and `prose format`, except a stdin `prose format` that '
-      + 'writes the formatted source, which returns `0`.'
+      'Returned by both `prose check` and `prose format`.'
     ]
   },
   {
