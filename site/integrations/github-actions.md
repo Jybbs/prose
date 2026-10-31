@@ -82,7 +82,7 @@ A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the 
 - run: prose check .
 ```
 
-Each tool exits with its own code from its own step, so a non-zero exit from either fails the job and the failing step names the tool that reported the finding. By default a step runs only once every step before it has succeeded, so where both would fail only the first shows. Setting `if: ${{ !cancelled() }}` on the `prose check` step runs it whatever the steps before it returned, and both results then appear in one run.
+Each tool exits with its own code from its own step, so a non-zero exit from either fails the job and the failing step names the tool that reported the finding. By default a step runs only once every step before it has succeeded, so where both would fail only the first shows. The upload step under [**SARIF Upload**](#sarif-upload) carries an `if:` condition that runs it whatever the steps before it returned, and the same condition on the `prose check` step lets both results appear in one run.
 
 The [**Ruff**](/integrations/ruff) integration page covers the `pycodestyle` codes to turn off in Ruff's linter and why `ruff format` runs ahead of `prose format` wherever both write.
 
