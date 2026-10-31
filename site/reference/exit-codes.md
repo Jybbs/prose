@@ -14,21 +14,10 @@ A parse failure in one file produces exit code `3` for that file, and every othe
 
 ## CI Gating
 
-The usual CI job is one `prose check` step that fails on any non-zero exit. A project that wants to gate rewrites and lints separately can branch on `2` independently of `1`, because a lint finding never auto-fixes and so never resolves on its own.
-
-```yaml
-- run: uv tool install prose-formatter
-- run: prose check .
-```
-
-The [**GitHub Actions**](/integrations/github-actions) integration page covers the annotation and SARIF formats that show findings inline beside the gate.
-
-## Composition With Ruff
-
-When a job [**runs Ruff's linter too**](/integrations/ruff#in-ci), each tool exits with its own code from its own step, and a non-zero exit from either fails the gate with no extra wiring. The codes do not combine, so the failing step tells the developer which tool reported the finding. Under the default step order the job stops at the first non-zero step, so when both would fail, only the first shows. `if: always()` on the *Prose* step runs it regardless, so both results appear in one run.
+A gate that treats rewrites and lints apart can branch on `2` independently of `1`, because a lint finding never auto-fixes and so never resolves on its own. The [**GitHub Actions**](/integrations/github-actions) integration page covers the CI job, its Ruff step, and the formats that show findings beside the gate.
 
 ## Help Output
 
-`prose check --help` and `prose format --help` print the same table below the option list, so the codes are readable from the terminal.
+`prose --help` prints the same table below its option list, so the codes are readable from the terminal.
 
 The [**CLI Reference**](/reference/cli) lists the flags that produce each code.

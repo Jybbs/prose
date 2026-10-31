@@ -63,7 +63,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "sort-docstring-entries": {
           "default": true,
-          "description": "Sorts the `name: description` entries of a Title-case-headed\ndocstring section, parameter entries in the signature's order as\nthe rule leaves it and every other entry alphabetical below them.\n`false` keeps the entries in the order written while everything\nelse still sorts.",
+          "description": "Sorts the `name: description` entries of a Title-case-headed\ndocstring section, parameter entries in the signature's order as\nthe rule leaves it and every other entry alphabetical below them.\nIn the docstring of a class whose fields hold their order, an\nentry naming a field takes that field's position and every other\nentry keeps its written slot. `false` keeps the entries in the\norder written while everything else still sorts.",
           "type": "boolean"
         },
         "sort-dunder-lists": {
@@ -83,7 +83,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "group-subcategories": {
           "default": true,
-          "description": "Clusters each band by subcategory, the type aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
+          "description": "Clusters each band by subcategory, the aliases first, then\nthe `SCREAMING_CASE` constants, then the remaining module state,\nbefore sorting by name within each. `false` sorts by tier and\nname alone.",
           "type": "boolean"
         },
         "max-tiers": {
@@ -134,14 +134,14 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "max-entries": {
           "default": 10000,
-          "description": "The entry count LRU eviction reduces the cache directory to.",
+          "description": "The entry count past which LRU eviction runs.",
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
         },
         "max-size-mib": {
           "default": 100,
-          "description": "The size in MiB LRU eviction reduces the cache directory to.",
+          "description": "The size in MiB past which LRU eviction runs.",
           "format": "uint32",
           "minimum": 0,
           "type": "integer"
@@ -230,7 +230,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
       "properties": {
         "allow-pattern": {
           "default": "",
-          "description": "Constant names exempted from the lint, a glob matched against\nthe whole name, such as old-style bare aliases.",
+          "description": "Constant names exempted from the lint, a glob matched against\nthe whole name.",
           "type": "string"
         },
         "enabled": {
@@ -299,7 +299,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "unify-prefixes": {
           "default": true,
-          "description": "Lowercases a string prefix and drops the no-op `u`. `false`\nkeeps the prefix cased and ordered as written.",
+          "description": "Lowercases a string prefix, orders its letters raw-first, and\ndrops the no-op `u`. `false` keeps the prefix cased and ordered\nas written.",
           "type": "boolean"
         },
         "unify-quotes": {
@@ -340,7 +340,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "drop-unreferenced": {
           "default": true,
-          "description": "Drops an import binding a name nothing references, unless the\nbinding is marked for re-export or read by a `del` or a quoted\nannotation. A package `__init__.py`, and a module that writes no\n`__all__` and binds no name of its own, each report an\nunreferenced binding rather than dropping it. `false` keeps\nevery unreferenced import and reports none.",
+          "description": "Drops an import binding a name nothing references, unless the\nbinding is marked for re-export or read by a `del` or a quoted\ntype expression. A package `__init__.py`, and a module that\nwrites no `__all__` and binds no name of its own, each report an\nunreferenced binding rather than dropping it. `false` keeps\nevery unreferenced import and reports none.",
           "type": "boolean"
         },
         "enabled": {
@@ -422,7 +422,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-args": {
           "$ref": "#/$defs/InlineBudget",
           "default": 3,
-          "description": "Explodes a call whose every argument can be written as a keyword\nto one `name=value` per line once its argument count exceeds the\ncap. `false` turns the count trigger off and leaves only the\n`code-line-length` budget."
+          "description": "Explodes a call whose every argument can be written as a keyword\nto one `name=value` per line once its argument count exceeds the\ncap. `false` turns the count trigger off, leaving the width and\nspan triggers."
         }
       },
       "type": "object"
@@ -436,7 +436,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "explode": {
           "default": true,
-          "description": "Explodes a collection that overflows the line budget or exceeds its\nentry cap to one entry per line. `false` turns every explosion off,\nleaving the count cap with no effect.",
+          "description": "Expands a collection across rows once it overflows the line budget\nor exceeds its entry cap. `false` turns every expansion off,\nleaving the count cap with no effect.",
           "type": "boolean"
         },
         "keep-multiline-literals": {
@@ -492,7 +492,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-params": {
           "$ref": "#/$defs/InlineBudget",
           "default": 4,
-          "description": "Explodes a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` turns the count trigger off and\nleaves only the `code-line-length` budget."
+          "description": "Expands a signature to one parameter per line once its parameter\ncount exceeds the cap. `false` turns the count trigger off,\nleaving the width and span triggers."
         }
       },
       "type": "object"
@@ -1121,7 +1121,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         "max-shift": {
           "$ref": "#/$defs/MaxShift",
           "default": 16,
-          "description": "How far past the broken chain's indent a hanging link's dot column\nmay sit. A receiver wider than that takes the full split instead,\nstanding alone with every link flush beneath it. `0` always takes\nthe full split, and `false` lifts the cap so every chain hangs."
+          "description": "How far past the broken chain's indent a hanging link's dot column\nmay sit. A receiver wider than that takes the full split instead,\nstanding alone with every link flush beneath it. `0` always takes\nthe full split, and `false` removes the limit so every chain hangs."
         }
       },
       "type": "object"

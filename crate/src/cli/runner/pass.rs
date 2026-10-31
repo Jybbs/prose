@@ -21,7 +21,7 @@ pub(super) enum Pass {
     Both,
     /// `check`: the as-written diagnostics, no rewrite. `validate` adds
     /// the opt-in guard that rejects a rule whose output fails to
-    /// re-parse or to compile.
+    /// re-parse, to compile, or to settle.
     Diagnose { validate: bool },
     /// `format --diff`: the rewrite alone, rendered as a patch and left
     /// uncommitted.
@@ -45,8 +45,8 @@ impl Pass {
         }
     }
 
-    /// Which buffer this pass's diagnostics resolve against, keying its
-    /// entries apart from a pass that reads the other one.
+    /// Returns which buffer this pass's diagnostics resolve against,
+    /// keying its cache entries apart from a pass that reads the other one.
     pub(super) fn anchor(self) -> Anchor {
         match self {
             Self::Both | Self::Diagnose { .. } => Anchor::AsWritten,
@@ -57,7 +57,7 @@ impl Pass {
     /// True where the pass reads and writes the run's cache.
     pub(super) fn caches(self) -> bool {
         // A `--validate` check alone bypasses the cache, so it always
-        // re-confirms the rewrite parses.
+        // re-confirms the rewrite parses, compiles, and settles.
         !matches!(self, Self::Diagnose { validate: true })
     }
 
@@ -67,7 +67,7 @@ impl Pass {
         matches!(self, Self::Preview | Self::Rewrite)
     }
 
-    /// Which closing summary this pass's outcomes resolve into.
+    /// Returns which closing summary this pass's outcomes resolve into.
     pub(super) fn mode(self) -> Mode {
         match self {
             Self::Both | Self::Rewrite => Mode::Reformat,
@@ -76,7 +76,7 @@ impl Pass {
         }
     }
 
-    /// The name of the subcommand this pass runs under.
+    /// Returns the name of the subcommand this pass runs under.
     pub(super) fn subcommand(self) -> &'static str {
         match self {
             Self::Both | Self::Preview | Self::Rewrite => "format",

@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Repeat Is Removed Where the Binding It Repeats Is Reported"
 
 description = '''

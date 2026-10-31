@@ -18,16 +18,4 @@ What removing the backslash leaves behind depends on where it sits:
 
 A rejoined line that would overflow the budget takes parentheses instead, wrapping the outermost expression the break falls inside and keeping the break where the author put it. Two breaks inside one expression share one pair rather than taking one each. A trailing comment moves onto the rejoined line, and its width counts toward the budget the rejoined line is measured against. Where no expression spans the break, as in an `import` list or an `assert` message, the statement rejoins regardless and [[line-overflow]] reports what no layout can bring within the budget. The one case left untouched is a backslash the lexer folds into a block's indentation, because that backslash sets the indent and no rejoin could keep it.
 
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[shed-backslash-continuations]` directive, which covers every line a continued statement spans.
-
-</template>
-
 </RuleLayout>

@@ -16,16 +16,14 @@ The `docstring` module visits every PEP 257 docstring in a module and hands each
 
 ## Public Surface
 
-The `docstring` module lives at `crate/src/primitives/docstring/` and is `pub(crate)`. What a downstream caller sees is the rewrites the docstring rules emit through the diagnostic stream.
-
-At `1.0` the visiting helpers become `pub`, so a downstream crate can write a docstring rule of its own against them.
+The `docstring` module lives at `crate/src/primitives/docstring/` and is `pub(crate)`.
 
 ## The PEP 257 Definition
 
 A docstring is **the first body statement of a module, class, or function**, when that statement is a single string literal expression. The walker matches that form exactly:
 
-1. The first statement must be an `ExprStmt` *(an expression statement, not an assignment or a call)*
-2. The expression must be a `StringLiteral` *(not a concatenated `JoinedStr` or an f-string)*
+1. The first statement must be an `ExprStmt` *(an expression statement rather than an assignment)*
+2. The expression must be a `StringLiteral` *(not a bytes literal, an f-string, or a t-string)*
 3. The string must be a single-part literal *(an implicitly concatenated multi-part literal is skipped)*
 4. The literal must open its own line for its body to be read, so the body helpers below return `None` for `def f(): """doc"""` *(the walker still visits that literal, and a rule that rewrites bodies skips it)*
 
@@ -65,7 +63,7 @@ Alongside the visiting helpers, a further set of `pub(crate)` helpers returns th
 5. `indent_prefix(source, lit) -> &str` returns the whitespace before the docstring on its first line, which a rule that rewraps the body reads to re-indent the result.
 6. `documented_definitions(source) -> Vec<(&Stmt, &StringLiteral)>` returns every class and function definition whose body opens on a docstring, paired with that literal, in source order. The module docstring is absent, since a module has no definition, so this is the list a rule reads when it compares a docstring against the code beneath it.
 
-[[colon-targets]] finds docstrings through `walk_docstrings` and their entry runs through the `entry_runs` iterator described below, reading each entry's recorded `:` offset when it builds members for colon alignment. The two primitives stay separate because they answer different questions. The `docstring` module returns the entry names, the `:` separating each from its description, and the byte range a reorder would move, whereas `colon_targets` turns those into the members the aligner's padding math reads. Two views of the same source, each built for its consumer.
+[[colon-targets]] finds docstrings through `walk_docstrings` and their entry runs through the `entry_runs` iterator described below, reading each entry's recorded `:` offset when it builds members for colon alignment. The two primitives stay separate because they answer different questions. The `docstring` module returns the entry names, the `:` separating each from its description, and the byte range a reorder would move, whereas `colon_targets` turns those into the members the aligner's padding math reads.
 
 ## Section-Parsing Surface
 
@@ -115,27 +113,21 @@ pub(crate) struct SectionEntry<'a> {
 
 ## Composing With `alphabetize-siblings`
 
-[[alphabetize-siblings]] reads the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule reads `entry_carrying_sections` and reorders the entries within each section, passing the result through the shared `reorder_text` from [[orderer]], so the no-op case allocates nothing. An entry naming a parameter of the documented signature takes that parameter's position as the rule leaves the signature (*source order for the positional run, sorted for the keyword-only block*), and every other entry sinks below the mirrored ones, alphabetized by name. Module and class docstrings carry no signature, so their sections alphabetize throughout. Each section emits one [[edit]] when its entries are out of order, with the edit's range covering the section's entries and leaving the heading and the trailing blank line as written.
+[[alphabetize-siblings]] reads the entry iterator when its `sort-docstring-entries` facet is on, which is the default. For each docstring, the rule reads `entry_carrying_sections` and reorders the entries within each section, passing the result through the shared `reorder_text` from [[orderer]], so the no-op case allocates nothing. Each section takes the order the rule page sets out under [`sort-docstring-entries`](/rules/ordering/alphabetize-siblings#sort-docstring-entries) and emits one [[edit]] when its entries are out of order, with the edit's range covering the section's entries and leaving the heading and the trailing blank line as written.
 
 Section headings, blank lines between entries, and verbatim continuations *(indented code blocks, fenced blocks, list items)* stay attached to their entries through the move, because each `SectionEntry`'s range already covers its continuations, so the reorder is a straight permutation of byte slices.
 
-The facet itself lives in the `[rules]` table, carried by `alphabetize-siblings` as `sort-docstring-entries` and defaulting to `true`. Setting `alphabetize-siblings = { sort-docstring-entries = false }` keeps the AST-level sorts running and turns off the docstring-entry reorder, for a project that orders its entries to follow a narrative rather than the signature.
-
 ## Composing With `align-colons`
 
-[[align-colons]] reads `entry_runs` through [[colon-targets]], which builds a `:` row for every entry and a `(` row for every entry written in the `name (type)` form, and the rule pads both columns in one pass. The rule's `align-docstring-entries` facet defaults to `true`, as `sort-docstring-entries` does on [[alphabetize-siblings]]. Setting it to `false` resolves both columns as `max-shift = 0` would while the dict, annotation, and parameter contexts keep aligning, and the [[align-colons]] page covers when a project turns the facet off.
+[[align-colons]] reads `entry_runs` through [[colon-targets]], which builds a `:` row for every entry and a `(` row for every entry written in the `name (type)` form, and the rule pads both columns in one pass unless its `align-docstring-entries` facet is off.
 
 ## Composing With `wrap-docstrings`
 
-[[wrap-docstrings]] reads the walker and the body helper together. For each docstring, the rule extracts the body, splits it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part to its budget *(`docstring-line-length` for description prose, `code-line-length` for structured sections, or one budget for both when `docstring-structured-policy = "docstring-line-length"`)*. The rule emits one [[edit]] per docstring body that needs rewrapping.
+[[wrap-docstrings]] reads the walker and the body helper together. For each docstring, the rule extracts the body, splits it into description prose and structured sections *(`Args:`, `Returns:`, `Raises:`)*, and rewraps each part to the budget the rule page gives it. The rule emits one [[edit]] per docstring body that needs rewrapping.
 
 ## Composing With `restated-types`
 
-[[restated-types]] reads `documented_definitions` and the entry iterator together. For each definition carrying a docstring, the rule reads every entry-bearing section, resolves the parameter-documenting headings against that definition's parameters and `Attributes:` against its class body's annotated fields, and reports each entry whose `type_group` names a type the code already declares. The report points at the type group alone rather than at the whole entry, and the rule emits no [[edit]], since choosing between two disagreeing types needs a reader.
-
-## Composing the Multi-Line and Single-Line Rules
-
-[[frame-docstrings]] requotes each docstring to the `"""` frame whatever quotes the source used, and puts a multi-line opener and closer on their own lines. [[expand-docstrings]] rewrites a docstring that fits on one line into the canonical multi-line form. Both rules read the literal's source position and emit edits that move the quotes without touching the body text.
+[[restated-types]] reads `documented_definitions` and the entry iterator together, resolving each entry-bearing section against the definition whose body its docstring opens and reporting the `type_group` of each entry whose member the code already annotates. The rule emits no [[edit]], since choosing between two disagreeing types needs a reader.
 
 ## Build Pattern
 

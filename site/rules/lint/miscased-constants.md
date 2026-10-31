@@ -8,7 +8,7 @@ layout  : doc
 
 <RuleLayout rule="miscased_constants">
 
-`miscased-constants` reports a module-level assignment that binds a fixed value under a name PEP 8 would write in `SCREAMING_CASE`, and suggests that form as a display-only rename, so a public global written as `max_retries` stops reading as mutable state where nothing writes it again. It is the other half of the pair [[reassigned-constants]] opens, one rule per side of the casing contract, and it reports without rewriting, because renaming a module constant breaks every importer outside the file.
+`miscased-constants` reports a module-level assignment that binds a fixed value under a name PEP 8 would write in `SCREAMING_CASE`, so a public global written as `max_retries` stops reading as mutable state where nothing writes it again. It suggests that form as a display-only rename, because renaming a module constant breaks every importer outside the file, and it is the other half of the pair [[reassigned-constants]] opens, one rule per side of the casing contract.
 
 A name draws the report when it is longer than one character, has no leading underscore, is not already `SCREAMING_CASE`, and binds a value the module never reassigns. Several kinds of binding stay quiet:
 
@@ -19,7 +19,7 @@ A name draws the report when it is longer than one character, has no leading und
 5. A single-character name reads as a matrix or a scalar by mathematical convention.
 6. A lambda binds a callable.
 7. A binding inside an `if TYPE_CHECKING:` block is declared for the type checker alone.
-8. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, as with a write holding anything other than string literals, a target unpacking into `__all__`, or a write inside a compound statement such as an `if`, a `try`, or a `def`. An attribute read off `__all__` anywhere in the module (*`__all__.append(name)`*), a write or a deletion through a subscript of it, and a statement other than an assignment binding the name, an import among them, each quiet every name the same way.
+8. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, in each case [[prune-inert-imports]] lists under [**Imports That Hold Their Line**](/rules/formatting/prune-inert-imports#imports-that-hold-their-line).
 
 A notebook is skipped whole, because a cell's top-level assignments are working variables.
 
@@ -31,13 +31,7 @@ A subscript can be a constant or an alias, as `SETTINGS["db"]` and `Literal["rea
 
 <RuleConfigTable />
 
-The `allow-pattern` glob is empty by default and exempts nothing beyond the structural carve-outs above. A project that keeps a name out of `SCREAMING_CASE` on purpose sets the pattern to spare that name, which is a different job from never renaming a type alias, and only the second happens without configuration.
-
-</template>
-
-<template #related-after>
-
-For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[miscased-constants]` directive.
+The empty default exempts nothing beyond the structural carve-outs above. A project that keeps a name out of `SCREAMING_CASE` on purpose sets `allow-pattern` to spare it, a different job from the type-alias exemption, which holds without configuration.
 
 </template>
 

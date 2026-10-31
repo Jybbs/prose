@@ -1,4 +1,5 @@
-//! Exit-code matrix. Higher discriminants shadow lower ones via `Ord::max`.
+//! Defines the exit-code matrix, where a higher discriminant shadows a
+//! lower one through `Ord::max`.
 
 use std::{fmt::Write, process::ExitCode};
 
@@ -25,7 +26,20 @@ impl ExitStatus {
         Self::ConfigError,
     ];
 
-    /// The `prose --help` matrix, one row per status.
+    /// Returns the line the help matrix prints for this status.
+    fn describe(self) -> &'static str {
+        match self {
+            Self::Clean => "Clean: no findings, no rewrite pending",
+            Self::FormatChange => "Format would change: at least one rewrite is pending",
+            Self::LintViolation => "Lint violation: at least one lint finding was reported",
+            Self::ParseError => "Parse error: input is not valid Python for the target version",
+            Self::ConfigError => {
+                "Config error: the config, the arguments, a path, or a rewrite failed validation"
+            }
+        }
+    }
+
+    /// Builds the `prose --help` matrix, one row per status.
     pub(crate) fn matrix() -> String {
         Self::ALL
             .into_iter()
@@ -34,19 +48,6 @@ impl ExitStatus {
                     .expect("writes to a string");
                 rows
             })
-    }
-
-    /// The line the help matrix prints for this status.
-    fn describe(self) -> &'static str {
-        match self {
-            Self::Clean => "Clean: no diagnostics, no rewrites pending",
-            Self::FormatChange => "Format would change: at least one Severity::Format diagnostic",
-            Self::LintViolation => "Lint violation: at least one Severity::Lint diagnostic",
-            Self::ParseError => "Parse error: input is not valid Python for the target version",
-            Self::ConfigError => {
-                "Config error: pyproject.toml, --select / --ignore, or arg validation"
-            }
-        }
     }
 }
 
@@ -97,11 +98,6 @@ mod tests {
     }
 
     #[test]
-    fn ord_matches_matrix() {
-        assert!(ExitStatus::ALL.is_sorted());
-    }
-
-    #[test]
     fn matrix_lists_every_status_against_its_code() {
         let matrix = ExitStatus::matrix();
         let rows: Vec<&str> = matrix.lines().skip(1).collect();
@@ -110,5 +106,10 @@ mod tests {
         for (status, row) in ExitStatus::ALL.into_iter().zip(rows) {
             assert_eq!(row, format!("  {}    {}", status as u8, status.describe()));
         }
+    }
+
+    #[test]
+    fn ord_matches_matrix() {
+        assert!(ExitStatus::ALL.is_sorted());
     }
 }

@@ -12,7 +12,7 @@ layout  : doc
 
 Two triggers open the break, one reading the link count and one the width. The count trigger fires on a chain carrying more links than `max-links`, so a chain that fits the width still breaks once it carries enough stages to read as a pipeline. The width trigger fires where the joined single-line form crosses `code-line-length` from the column it sits at, which reaches a two-link chain the count cap leaves alone. A chain inside an argument of a call is measured from the column it moves to when [[reflow-calls]] explodes that call, counting whatever follows it on that row, so a chain that fits there stays joined rather than stacking inside a parenthesis pair the source never had. A link is a `.name(...)` call, so a long dotted prefix ahead of a single call carries one link and stays where it sits, and a `.name` access that is not itself called shares the row of the link below it.
 
-The head keeps the receiver together with its first call, because a bare receiver alone on a line carries no information, and each link below hangs at the receiver's own width past the head's indent. Where that width would put the dot column further out than `max-shift` allows, the chain takes the full split instead, standing the receiver alone and running every link flush beneath it at one indent. The cap is the same `max-shift` the alignment rules read.
+The head keeps the receiver together with its first call, because a bare receiver alone on a line carries no information, and each link below hangs at the receiver's own width past the head's indent. Where that width would put the dot column further out than `max-shift` allows, the chain takes the full split instead, standing the receiver alone and running every link flush beneath it at one indent. The cap is the rule's own `max-shift` facet, set apart from the facet of that name the alignment rules carry.
 
 The break only ever opens a chain and never rejoins one, so a chain already hung at its dots keeps that layout even where its joined form would fit, because a count trigger paired with a fit test would alternate forever, the count breaking the chain and the fit test rejoining it on the next pass.
 
@@ -20,16 +20,8 @@ The chain reuses a parenthesis pair the source already carries and settles in th
 
 A chain spanning a comment keeps its source layout, because breaking it would move the links away from the row the comment describes. A link whose break never closes keeps the chain as written, which covers an argument list already written one argument per line, one past `max-args`, and a multi-line string.
 
-A chain inside an f-string or t-string replacement field is left as written whatever its width, because a line break inside one is PEP 701 syntax that fails to parse before Python 3.12, so an over-wide interpolation is left for [[line-overflow]] to report. A chain inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts where it lands stays joined in the same way outside a collection [[reflow-collections]] expands and a signature [[reflow-signatures]] lays out one parameter per line, since the conversion places it in a replacement field.
+A chain inside an f-string or t-string replacement field is left as written whatever its width. A chain inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts where it lands stays joined in the same way outside a collection [[reflow-collections]] expands and a signature [[reflow-signatures]] lays out one parameter per line, since the conversion places it in a replacement field.
 
 <Fixture rule="composition" case="chain_inside_a_converting_template_keeps_its_row" />
-
-<template #configuration>
-
-<RuleConfigTable />
-
-A three-link chain breaks at the default cap of <ConfigDefault rule="stack-method-chains" facet="max-links" /> even where it fits the line. Setting `max-links = false` leaves `code-line-length` as the only trigger, and setting `max-shift = 0` takes the full split for every chain.
-
-</template>
 
 </RuleLayout>

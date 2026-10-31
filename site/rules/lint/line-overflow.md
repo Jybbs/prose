@@ -8,9 +8,9 @@ layout  : doc
 
 <RuleLayout rule="line_overflow">
 
-`line-overflow` reports each line still over its `*-line-length` cap once no layout rule can shorten it, so an unsatisfiable cap shows up as a finding in `prose check` and as a flagged line in the sandbox rather than as a setting that did nothing. The caps are hard limits that every layout rule fits within, so a call, collection, signature, or import that crosses its cap explodes to one entry per line, and an alignment run lays out an over-budget member first and aligns it within the cap after. When no legal layout meets the cap (*a deep indent, a long identifier, a single-name import already at its narrowest, a cap set below what the statement needs*), the narrowest layout stays and this rule names the line.
+`line-overflow` reports each line still over its `*-line-length` cap once no layout rule can shorten it, so an unsatisfiable cap shows up as a finding in `prose check` and as a flagged line in the sandbox rather than as a setting that did nothing. The caps are hard limits every layout rule fits within, as the [**Lengths**](/reference/configuration#lengths) section of the configuration reference sets out. When no legal layout meets the cap (*a deep indent, a long identifier, a single-name import already at its narrowest, a cap set below what the statement needs*), the narrowest layout stays and this rule names the line.
 
-A line inside an import statement is measured against `import-line-length` and every other line against `code-line-length`, its trailing whitespace left out of the width. A row of docstring prose is measured instead against the budget `wrap-docstrings` wraps it to (*`docstring-line-length` for description prose and section entries, the budget `docstring-structured-policy` selects for other section prose*). A row a layout rule will split is left to that rule, so `line-overflow` reports only what the layout rules leave over the cap. The constructs a layout rule splits are:
+A line inside an import statement is measured against `import-line-length` and every other line against `code-line-length`, its trailing whitespace left out of the width. A row of docstring prose is measured instead against the budget [[wrap-docstrings]] wraps it to. A row a layout rule will split is left to that rule, so `line-overflow` reports only what the layout rules leave over the cap. The constructs a layout rule splits are:
 
 - A call carrying arguments
 - A collection `reflow-collections` can expand (*a dict of one or more entries, or a bracketed list, set, or tuple of two or more*)
@@ -26,9 +26,9 @@ Written on one row, a construct leaves that whole row to its rule. Written acros
 - Its code fits the cap while an ordinary trailing comment runs past it, because a layout rule measures a row only up to its trailing comment
 - A `# prose: skip` holds the rule that would split it, which then leaves the line as written
 - The configuration turns that rule off, sets `explode = false` on `reflow-collections`, or sets `split-multi-module = false` on `reflow-imports` for an `import a, b`, and `--select line-overflow` turns every other rule off the same way
-- The construct sits inside an f-string or t-string replacement field, which no rule reaches
+- The construct sits inside an f-string or t-string replacement field, which no layout rule splits
 
-A line whose code fits once the run of tool pragmas (*`# type:`, `# noqa`*) and `# prose:` directives ending its trailing comment is set aside is not reported at all, since a pragma governs the line it sits on and cannot move off it. An ordinary note ahead of that run still counts toward the width. The lint never rewrites, so the diagnostic is reported and the source stays as written.
+A line whose code fits once the run of tool pragmas (*`# type:`, `# noqa`*) and `# prose:` directives ending its trailing comment is set aside is not reported at all, since a pragma governs the line it sits on and cannot move off it. An ordinary note ahead of that run still counts toward the width.
 
 An overflow that sits inside one string literal with interior whitespace has a reshape even though no rule performs it, because the whitespace gives a legal place to break and adjacent literals inside parentheses join at compile time into the identical value. `line-overflow` carries that parenthesized form as a display-only suggestion, so `prose check` renders the layout and `prose format` never writes it. It stays a suggestion because the break points would become source, where a word inserted near the front reflows every line beneath it and the diff then claims the whole literal changed.
 
@@ -50,13 +50,7 @@ A literal with no interior whitespace has nowhere legal to break, so a URL, a ha
 
 <RuleConfigTable />
 
-`suggest-string-splits` gates the suggested form alone, not the report. With it off, an over-budget line whose literal could take a break is still reported, and the report omits the *"with no legal reshape"* ending, because a reshape exists there whether or not the finding spells it out.
-
-</template>
-
-<template #related-after>
-
-For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[line-overflow]` directive. The [**Lengths**](/reference/configuration#lengths) section of the configuration reference states the hard-limit contract on the caps that this rule completes.
+With `suggest-string-splits` off, a line whose literal could take a break carries no ending rather than *"with no legal reshape"*, because a reshape exists there whether or not the finding spells it out.
 
 </template>
 

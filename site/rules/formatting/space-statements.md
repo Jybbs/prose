@@ -14,29 +14,25 @@ A module-level `def` or `class` takes two blank lines before it and two after, w
 
 1. A method inside a class body, and the first member below a class header or its docstring.
 2. A module-level statement after `if __name__ == "__main__":`.
-3. The boundary between adjacent bare-import and `from`-import groups.
+3. The boundary between two adjacent [[group-imports]] sections, written only while that rule runs.
 4. The first statement below the import block.
+5. Inside a function body, a statement opening a compound block (*`for`, `if`, `match`, `try`, `while`, `with`*) directly after the function's header or after a nested `def`.
 
-Inside a function body the rule leaves the blank lines alone, since the in-body rhythm stays a per-author choice.
+Every other gap inside a function body stays as written, since the in-body rhythm stays a per-author choice.
 
 An own-line comment block that reads as a description of the statement below it binds tight against that statement, with no blank line between them whether or not the author left one, so the reordering rules move the comment with the statement it heads. A block that anchors in place instead of binding keeps one blank line below it, so it reads as a divider, and the canonical gap above is measured from the topmost comment in the block either way. A comment indented deeper than the statement below it closes the body above instead, so the canonical gap opens below that comment rather than above it.
 
-A block counts as a divider where any of its lines carries one of these:
-
-- A decorative rule of `=`, `-`, `*`, `_`, `#`, `~`, `─`, `━`, or `═`.
-- A Markdown-style heading opening with two or more `#`.
-- A suppression directive.
-- A tool pragma.
+A block counts as a divider where any of its lines carries a banner, a `##` heading, a suppression directive, or a tool pragma, the line-level kinds of [**section marker**](/rules/ordering/), whereas a comment at a shallower indent binds like any other.
 
 A block opening the file is spaced differently, in that the blank lines above it are removed entirely and the blank lines below it are capped at one. That one blank line is present where the block is a divider or where the author already left one and absent otherwise, so a module leading with a license header keeps the spacing it was written with and a module leading with a banner gains one blank line.
 
-On the import block this rule reads an order [[group-imports]] and [[alphabetize-siblings]] have already settled, writes the blank-line separators between groups, and leaves [[align-imports]] to align the `import` keyword afterward. The [**Pipeline Order**](/reference/pipeline-order) reference lists where each sits.
+On the import block this rule reads an order [[group-imports]] and [[alphabetize-siblings]] have already settled, writes the blank-line separators between groups, and leaves [[align-imports]] to align the `import` keyword afterward.
 
 <template #configuration>
 
 <RuleConfigTable />
 
-The canonical blank-line counts are fixed to PEP 8's `2`-between-top-level and `1`-between-methods cadence, so the rule carries `enabled` as its only facet. A project on a different cadence disables the rule and keeps its editor's blank-line conventions.
+The blank-line counts are fixed to PEP 8's cadence, so a project on a different cadence turns the rule off and keeps its editor's blank-line conventions.
 
 </template>
 

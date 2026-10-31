@@ -32,16 +32,4 @@ Both directions measure a row as the later rules leave it, at the column [[strip
 
 Both directions are written in one pass, so a pair nested inside another redundant pair is removed in the same run and each pair tests its own join against the text the earlier removals produce. A break writes its operands through those same removals, leaving the rows it opens carrying the text the rule leaves rather than the text it was handed.
 
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[reflow-parentheses]` directive, which keeps every line a wrapped statement spans as written.
-
-</template>
-
 </RuleLayout>

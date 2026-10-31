@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Repeat of an Unread Name Removes Both Lines"
 
 description = '''

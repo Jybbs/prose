@@ -15,7 +15,7 @@ Every rule reads the source file through one shared value. *Source* owns the ori
 
 ## Public Surface
 
-`Source` is fully public today, so a downstream Rust consumer can construct one, read the AST, and query offsets without reaching inside the crate.
+`Source` is fully public, so a downstream Rust consumer can construct one, read the AST, and query offsets without reaching inside the crate.
 
 ### Construction
 
@@ -36,9 +36,9 @@ A Python file the parser cannot recover returns `SourceError::Parse(...)` from `
 - `text() -> &str` returns the original source text. Every other reader's offsets index into this string.
 - `ast() -> &ModModule` returns the parsed AST root. The wrapping *Source* owns the parse, so the AST borrow stays valid for the value's lifetime.
 - `tokens() -> &Tokens` returns the token stream, for a rule whose question is about comments or trivia rather than the AST.
-- `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-stranded-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in. This reader is `pub(crate)` today, so it stays inside the crate.
-- `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[space-statements]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a removed base list reaches back to. This reader is `pub(crate)` today, so it stays inside the crate.
-- `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built on the first read and carried across a reparse whenever the rule between leaves every binding in place.
+- `token_gaps() -> impl Iterator<Item = (&Token, &Token, TextRange)>` yields each adjacent token pair with the range between them, the trivia the lexer skipped. [[strip-stranded-padding]] reads it for the padding inside a bracket and [[shed-backslash-continuations]] for the gap a continuation sits in. This reader is `pub(crate)`.
+- `prev_token_end(offset: TextSize) -> TextSize` returns the end of the token before an offset, scanning backward over whitespace and comments. [[space-statements]] reads it for where a header's signature closes and [[shed-redundant-base]] for the position a removed base list reaches back to. This reader is `pub(crate)`.
+- `binding_analysis() -> &BindingAnalysis` returns the per-source [[binding-analysis]] table, built on the first read.
 - `comment_ranges() -> &CommentRanges` returns the comment-range table for reading through trivia.
 
 ### Offset and Line Helpers
@@ -53,11 +53,11 @@ Methods answering the common *"where does this offset sit?"* and *"what does the
 
 ### Mutation
 
-Between rules the pipeline rebuilds the *Source* over the text a rule's edits mutated, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already has and moving every range past the edits by the delta they describe. Across the standard library the statements a batch edits cover about a quarter of the bytes their modules carry, and a third of the rebuilds decline the splice and pay for a whole-file parse on top of that.
+Between batches the pipeline rebuilds the *Source* over the text a batch's edits mutated, taking the narrowest rebuild those edits allow. `splice_of` finds the innermost statement covering each edit and reparses only those windows, splicing the fresh statements and tokens into the tree and token stream the value already has and moving every range past the edits by the delta they describe. Across the standard library the statements a batch edits cover about a quarter of the bytes their modules carry, and a third of the rebuilds decline the splice and pay for a whole-file parse on top of that.
 
-`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` is the whole-file path beneath it, returning a fresh *Source* over the mutated text and carrying a notebook's cell boundaries forward across the rule. A splice hands the work down to it wherever it declines, which covers an edit no single statement contains, a window whose new text does not parse or reparses as more than the one statement filling it, a window whose closing indent moved, an edit writing text no window reads, and every notebook. Both are `pub(crate)`, keeping reparsing inside the crate, and both yield a value equal to a parse of the same text, an equality a debug build asserts after every splice.
+`reparse_carrying(text: String, cell_offsets: CellOffsets) -> Result<Self, ParseError>` is the whole-file path beneath it, returning a fresh *Source* over the mutated text and carrying a notebook's cell boundaries forward across the batch. A splice hands the work down to it wherever it declines, which covers an edit no single statement contains, a window whose new text does not parse or reparses as more than the one statement filling it, a window whose closing indent moved, an edit writing text no window reads, and every notebook. Both are `pub(crate)`, keeping reparsing inside the crate, and both yield a value equal to a parse of the same text, an equality a debug build asserts after every splice.
 
-Through `inherit`, either path then hands the new *Source* the binding table the previous one built, every offset moved through the `SourceMap` of the applied edits. A rule declares whether its edits leave every binding in place, and one that does hands the table over. Where an edit replaced one of the table's offsets, the table is left for the next read to rebuild instead, as are the layout forecasts behind every rule.
+Through `inherit`, either path then hands the new *Source* the binding table the previous one built, every offset moved through the `SourceMap` of the applied edits. A rule declares whether its edits leave every binding in place, and a batch whose every rule does hands the table over. Where an edit replaced one of the table's offsets, the table is left for the next read to rebuild instead, as are the layout forecasts behind every rule.
 
 ### Errors
 
@@ -71,7 +71,7 @@ Every variant derives a `#[from]` conversion, so `?` propagation converts the un
 
 ## Internal Surface
 
-`suppression_map() -> &SuppressionMap` is `pub(crate)` today, so the in-process *SuppressionMap* type is reachable only from within the crate. `deleting(ranges: &[TextRange]) -> Option<(Self, SourceMap)>` is `pub(crate)` as well, returning a copy reparsed with the ranges deleted beside the map from the source's offsets to the copy's, which the [[inert-directives]] audit runs a rule against to see whether removing one skip directive changes the rule's edits. A consumer that needs suppression state goes through [**`Pipeline::run`**](/architecture/pipeline), which already filters emitted edits and diagnostics. The trait `Rule` that concrete rules implement is `pub(crate)` for the same reason, and both stabilize toward `1.0` so downstream consumers can register their own rule types against a stable trait.
+`suppression_map() -> &SuppressionMap` is `pub(crate)`, so the in-process *SuppressionMap* type is reachable only from within the crate. `deleting(ranges: &[TextRange]) -> Option<(Self, SourceMap)>` is `pub(crate)` as well, returning a copy reparsed with the ranges deleted beside the map from the source's offsets to the copy's, which the [[inert-directives]] audit runs a rule against to see whether removing one skip directive changes the rule's edits.
 
 ## Re-Using This Primitive
 
@@ -88,7 +88,7 @@ println!("{statements} top-level statements");
 
 A consumer that runs the full rule loop instead builds a [[pipeline]] from a `Config`, hands it the *Source*, and reads the returned text plus diagnostics. The [[pipeline]] primitive page covers the `with_defaults`, `with_filters`, and `for_rule` constructors that build every kind of consumer pipeline.
 
-A downstream Rust crate depends on *Prose* the same way it depends on the `ruff_*` workspace, through a Git dependency pinned to a release tag:
+A downstream Rust crate depends on *Prose* through a Git dependency pinned to a release tag:
 
 ```toml-vue
 [dependencies]
@@ -101,12 +101,10 @@ The Python wheel ships the binary rather than the library, so a Python consumer 
 
 <template #related>
 
-- [[pipeline]] runs the rule loop against a *Source*, reparses between rules, and returns the final text and diagnostics.
-- [[binding-analysis]] builds against a *Source* on its first read, carries across a reparse where the rule between keeps every binding, and answers binding questions about every name in every scope.
+- [[pipeline]] runs the rule loop against a *Source*, reparses between batches, and returns the final text and diagnostics.
+- [[binding-analysis]] builds against a *Source* on its first read and answers binding questions about every name in every scope.
 - [[suppression-map]] is built during *Source* construction and read by the pipeline at the edit-emission boundary.
 - [[rule-id]] is the handle each rule registers under, which the pipeline's deterministic ordering reads.
-
-For the rule catalog that runs against the *Source*, the [**Rules**](/rules/) page lists every shipped rule beside its family.
 
 </template>
 

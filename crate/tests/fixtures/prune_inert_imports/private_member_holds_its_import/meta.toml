@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "An Unread Private Member Keeps Its Import"
 
 description = '''

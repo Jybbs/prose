@@ -1,5 +1,5 @@
 ---
-consumedBy: [pipeline]
+consumedBy: [alphabetize-siblings, band-constants, inert-directives, line-overflow, modernize-annotations, pipeline, reflow-imports]
 consumes: [rule-id, source]
 layer: analysis
 stability: internal
@@ -15,16 +15,9 @@ tagline: directive index
 
 ## Public Surface
 
-The *SuppressionMap* type itself is `pub(crate)` today, so neither the type nor its methods are reachable from a downstream Rust consumer. The suppression behavior is reachable through [**`Pipeline::run`**](/architecture/pipeline), which filters emitted edits and lint diagnostics against the map.
+The *SuppressionMap* type itself is `pub(crate)`, so neither the type nor its methods are reachable from a downstream Rust consumer. The suppression behavior is reachable through [**`Pipeline::run`**](/architecture/pipeline), which filters emitted edits and lint diagnostics against the map.
 
-A downstream consumer works with suppression through the directives in the source files:
-
-- A source file declares its directives inline (*`# fmt: off`, `# fmt: skip`, `# prose: skip[<rule>]`, `# prose: ignore[<rule>]`*).
-- The [[pipeline]] reads the directives during `run`.
-- Diagnostics and edits a directive covers are dropped from the returned vectors, with no notice.
-- [[inert-directives]] reports a `skip` or `ignore` directive that holds nothing out of the run.
-
-The type opens toward `1.0`, when the lookup methods become public so downstream tooling can inspect suppression spans (*IDE highlighting of suppressed ranges, lint-coverage reports, suppression audits*).
+A downstream consumer works with suppression through the directives a source file declares inline (*`# fmt: off`, `# fmt: skip`, `# prose: skip[<rule>]`, `# prose: ignore[<rule>]`*), and `run` drops the diagnostics and edits a directive covers from the returned vectors with no notice, whereas [[inert-directives]] reports a `skip` or `ignore` directive that holds nothing out of the run.
 
 ## Internal Surface
 
@@ -45,8 +38,6 @@ For code inside the *Prose* crate, the map exposes a constructor and a set of pr
 
 Each directive the map records is a `Directive`, holding the comment that carries it and the rules its chunks name, beside every bracketed id among them that names no registered rule, as written. Its `skip_removal(source_text: &str) -> Vec<TextRange>` returns the ranges whose deletion removes the directive's skip chunks, taking the whole comment and the whitespace before it where the comment holds nothing else, so the [[inert-directives]] audit runs a rule over a copy of the source with that one directive gone.
 
-The [[source]] accessor `suppression_map(&self) -> &SuppressionMap` is also `pub(crate)`. Every entry point above opens at `1.0`.
-
 ### Directive Recognition
 
 The directives that feed the map share a grammar the [**Suppression Directives**](/reference/suppression-directives) reference covers, and the forms the map records are these:
@@ -56,15 +47,11 @@ The directives that feed the map share a grammar the [**Suppression Directives**
 3. `# yapf: disable` and `# yapf: enable` are recognized as aliases for `# fmt: off` and `# fmt: on`, so a project's existing yapf markers keep working. Other yapf directives are not recognized.
 4. `# fmt: skip` at the end of a line exempts that one logical line from rewrites, scoped to that statement, and leaves its lint diagnostics to report. `# prose: skip` is the equivalent alias, and either one on a comment carrying a `# prose: skip[<rule>]` widens it to every rule.
 5. `# prose: skip[<rule>, <rule>, …]` exempts the same logical line `# fmt: skip` covers from the rewrites of the listed rules alone, with whitespace inside the brackets tolerated and two bracketed directives on one line unioning their rule sets. An unknown rule slug suppresses nothing and stays on the directive as written, where [[inert-directives]] reports it.
-6. `# prose: ignore[<rule>, <rule>, …]` exempts the listed lint rules on the directive's line, with the same bracket-whitespace tolerance and union behavior. A bare `# prose: ignore` covers every lint rule on the line.
+6. `# prose: ignore[<rule>, <rule>, …]` exempts the listed lints on the directive's line, with the same bracket-whitespace tolerance and union behavior. A bare `# prose: ignore` covers every lint on the line.
 
 ## Re-Using This Primitive
 
-The [[pipeline]] is the canonical consumer, applying the filter at the point edits are emitted, so a new rule emits its edits unconditionally and the pipeline drops the suppressed groups. A rule whose fix group would otherwise span an exempt row reads `suppresses` itself before grouping, the way the alignment rules exclude a skip-exempt row through the aligner's `is_held` before a column is resolved. [[alphabetize-siblings]], [[band-constants]], and [[modernize-annotations]] read it the same way, and [[inert-directives]] reads the directives themselves, judging each against the run. The map is built once per source and handed to every reader by reference.
-
-A consumer reusing the suppression directives in a different formatter would build the same map and apply the same filter at its own edit-emission point, taking the whole directive set *(format spans, statement-level format markers, per-rule format directives, and per-line lint directives)* without re-implementing the scan.
-
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. A downstream consumer reaches the map only through `Pipeline::run` dropping suppressed diagnostics, not through direct method calls, and the user-facing directives are covered in full by the [**Suppression Directives**](/reference/suppression-directives) reference.
+The [[pipeline]] is the canonical consumer, applying the filter at the point edits are emitted, so a new rule emits its edits unconditionally and the pipeline drops the suppressed groups. A rule whose fix group would otherwise span an exempt row reads `suppresses` itself before grouping, the way the alignment rules exclude a skip-exempt row through the aligner's `is_held` before a column is resolved. [[alphabetize-siblings]], [[band-constants]], and [[modernize-annotations]] read it the same way, and [[inert-directives]] reads the directives themselves, judging each against the run. [[line-overflow]] reads it to report a row whose split a skip withholds from its layout rule, and [[reflow-imports]] reads `pins` for the statements a reorder by [[alphabetize-siblings]] leaves in place as it forecasts that sort. The map is built once per source and handed to every reader by reference.
 
 <template #related>
 
@@ -72,8 +59,6 @@ The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives
 - [[source]] builds the map during construction and exposes it through `suppression_map()`.
 - [[pipeline]] reads the map at the point edits are emitted, dropping suppressed entries before they reach the caller.
 - [[rule-id]] is the handle the bracketed directives name inside the `# prose: skip[<slug>]` and `# prose: ignore[<slug>]` syntax.
-
-For the rule catalog whose diagnostics this map filters, the [**Rules**](/rules/) page lists every shipped rule beside its family.
 
 </template>
 

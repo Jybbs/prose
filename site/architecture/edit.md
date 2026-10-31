@@ -11,14 +11,14 @@ tagline: rewrite unit
 
 <PrimitiveLayout primitive="edit">
 
-*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between rules, and the rewritten source feeds the next rule. *Prose* uses the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what Ruff and other Astral-stack consumers use.
+*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between batches, and the rewritten source feeds the next batch. *Prose* uses the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what Ruff and other Astral-stack consumers use.
 
 
 ## Public Surface
 
 `Edit` comes from `ruff_diagnostics` with no re-export, and the `Diagnostic` type a rule emits through the pipeline carries its edits inside the `Option<Fix>` of its `fix` field. The `text`, `json`, and `sarif` [**output formats**](/reference/output-formats) print those edits, whereas a `github` annotation carries only the message and its position. A downstream consumer reading the `json` output sees each edit's location, original text, and replacement in the `fix.edits[]` array.
 
-The edit helpers *(`apply_edits_mapped`, `apply_inline_edits`, `narrowed_replacement`)* live at `crate/src/primitives/edit/` and are `pub(crate)`. The helpers become `pub` at `1.0` alongside the `Rule` trait, so a downstream rule can splice edits into source the same way the bundled rules do.
+The edit helpers *(`apply_edits_mapped`, `apply_inline_edits`, `narrowed_replacement`)* live at `crate/src/primitives/edit/` and are `pub(crate)`.
 
 ## The Shape
 
@@ -37,7 +37,7 @@ The helpers at `crate/src/primitives/edit/` cover the common needs.
 
 ### `apply_edits_mapped(text, edits) -> Option<(String, SourceMap)>`
 
-Splices a sorted edit list into a source string and pairs the resulting string with a `SourceMap` carrying one start-and-end marker per applied edit, each pairing an original offset with the offset the new text puts it at. Linear in source length regardless of edit count, since the function reads the list once. This is the [[pipeline]]'s transform between rules, because those markers are the deltas [[source]] reads to reparse only the statements a rule edited and to move every range past them. The settle check also runs edits through it to test whether a rule would still rewrite a buffer a run has already settled. When the sorted edits overlap it returns `None` rather than splicing them, so the caller keeps its source unchanged and the overlapping group degrades to a skipped reformat on that span.
+Splices a sorted edit list into a source string and pairs the resulting string with a `SourceMap` carrying one start-and-end marker per applied edit, each pairing an original offset with the offset the new text puts it at. Linear in source length regardless of edit count, since the function reads the list once. This is the [[pipeline]]'s transform between batches, because those markers are the deltas [[source]] reads to reparse only the statements a batch edited and to move every range past them. The settle check also runs edits through it to test whether a rule would still rewrite a buffer a run has already settled. When the sorted edits overlap it returns `None` rather than splicing them, so the caller keeps its source unchanged and the overlapping group degrades to a skipped reformat on that span.
 
 ### `apply_inline_edits(source, range, edits) -> Cow<'src, str>`
 
@@ -49,7 +49,7 @@ Trims a candidate replacement to its minimal divergent range against the source.
 
 ## Conflict Discipline
 
-The [[pipeline]] applies each rule's edits in sequence, reparsing between rules so the next rule reads a settled AST. Two rules emitting edits to overlapping ranges within the same pass would conflict, but the pipeline structure prevents this, because each rule sees the rewritten source from the previous rules and the second rule's edits apply to the first rule's output rather than to the original.
+The [[pipeline]] closes a batch before a rule whose edits overlap one already in it, so that rule computes its edits against the reparsed output rather than against the original, and no two rules' edits conflict. The [**Execution**](/architecture/pipeline#execution) section of that page sets out the batching.
 
 Within one rule, the applicator guards against overlapping edits in every build. When a rule's sorted edits overlap, `apply_edits_mapped` declines with `None` and `apply_inline_edits` returns the borrowed source slice, so the pipeline leaves that span unformatted and the run continues rather than aborting or corrupting the output. The guard is a floor rather than a license, in that a rule emitting overlapping edits is still a rule-authoring bug whose affected construct silently goes unformatted, so test every new rule against fixture sources that exercise its edge cases and keep each rule's edits non-overlapping by construction.
 
@@ -65,7 +65,7 @@ Every rule uses `Edit` to express a rewrite, and the primitives beneath the rule
 
 <template #related>
 
-- [[pipeline]] is the consumer that applies edit lists between rules.
+- [[pipeline]] is the consumer that applies edit lists between batches.
 - [[aligner]], [[orderer]], and [[docstring]] all produce `Edit` lists.
 - [[binding-analysis]] answers the offset-and-scope questions binding-aware rules read before building their edits.
 - [[suppression-map]] filters edits at the emission boundary before the pipeline applies them.

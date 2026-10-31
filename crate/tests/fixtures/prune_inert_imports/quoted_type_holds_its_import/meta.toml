@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "A Quoted Type Keeps the Import It Names"
 
 description = '''

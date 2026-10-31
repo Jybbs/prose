@@ -1,5 +1,5 @@
 [docs]
-previewable = true
+previewable = false
 title       = "An Empty `__all__` Still Drops an Unread Import"
 
 description = '''

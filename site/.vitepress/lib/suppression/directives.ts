@@ -13,7 +13,7 @@ export interface DirectiveSource {
 
 export const DIRECTIVES: readonly DirectiveSource[] = [
   {
-    blurb   : 'File-level suppression, so every rule skips the file.',
+    blurb   : 'Opens a region every rule skips, through a `# prose: on` or the end of the file.',
     effect  : 'Opens a region every rewrite and every lint skips, running from its own line to '
             + 'a `# prose: on` or the end of the file. On a comment line of its own near the '
             + 'top, it exempts the whole file.',
@@ -94,7 +94,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
     scope   : 'line'
   },
   {
-    blurb   : 'Exempt the line from the listed rewrite rules only.',
+    blurb   : 'Exempt the line from the listed rewriting rules only.',
     effect  : 'Only the rewrites of the listed rules skip that logical line. Two bracketed directives '
             + 'on one line combine their rule slugs.',
     example : 'foo = 1  # prose: skip[align-equals, strip-trailing-commas]',
@@ -104,7 +104,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Silence every lint on the line.',
-    effect  : 'Every lint rule skips the line. Add `[<rule>, ...]` to narrow it to the named '
+    effect  : 'Every lint skips the line. Add `[<rule>, ...]` to narrow it to the named '
             + 'rules.',
     example : 'helper = build_helper()  # prose: ignore',
     form    : '# prose: ignore',
@@ -113,7 +113,7 @@ export const DIRECTIVES: readonly DirectiveSource[] = [
   },
   {
     blurb   : 'Silence the listed lints on the line.',
-    effect  : 'Only the listed lint rules skip the line. Two bracketed directives on one line '
+    effect  : 'Only the listed lints skip the line. Two bracketed directives on one line '
             + 'combine their rule slugs.',
     example : 'TIMEOUT = 30  # prose: ignore[reassigned-constants, inlinable-bindings]',
     form    : '# prose: ignore[<rule>, ...]',

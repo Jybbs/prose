@@ -42,11 +42,11 @@ const SOURCES: readonly EditorConfigSource[] = [
     target   : 'init.el'
   },
   {
-    caption  : 'editor.formatter',
-    code     : `[[editor.formatter]]
-languages = ["python"]
-command   = "prose"
-args      = ["format", "-"]`,
+    caption  : 'auto-format',
+    code     : `[[language]]
+name        = "python"
+auto-format = true
+formatter   = { command = "prose", args = ["format", "-"] }`,
     language : 'toml',
     name     : 'Helix',
     slug     : 'helix',
@@ -74,16 +74,18 @@ Working directory : $ProjectFileDir$`,
   },
   {
     caption  : 'SublimeOnSaveBuild',
-    code     : `# Install: SublimeOnSaveBuild
-{
+    code     : `{
   "build_systems": [{
     "name"        : "prose",
     "shell_cmd"   : "prose format \\"$file\\"",
     "selector"    : "source.python",
     "working_dir" : "$file_path"
-  }]
+  }],
+  "settings": {
+    "filename_filter": "\\\\.py$"
+  }
 }`,
-    language : 'python',
+    language : 'json',
     name     : 'Sublime Text',
     slug     : 'sublime',
     target   : '<Project>.sublime-project'

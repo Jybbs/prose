@@ -10,7 +10,7 @@ layout  : doc
 
 `strip-stranded-padding` removes the padding before the `:` in every `:`-alignment group that has a single member, so a one-key dict, a one-parameter signature, or a one-field dataclass reads as **plain code** rather than a one-row table. An alignment group with **two or more members** gives the eye a column to drop down, whereas a group with **exactly one member** has no sibling for its padding to line up with, so the padding adds width and nothing else.
 
-The rule reads the `:` contexts [[align-colons]] covers (*dict literals, annotated assignments at any scope, function-signature annotations, Google-style docstring sections*) plus the single-statement `match`-arm context [[align-match-case]] covers. A group of two or more members whose colons sit on separate lines and whose rows start at one shared indent passes through this rule unchanged, since the colon-alignment rules own it. A run whose rows start at differing indents resolves no shared column, so its padding is stripped here the way a single member's is. The `=` alignment of [[align-equals]] and the `import`-keyword alignment of [[align-imports]] handle their own one-member groups and need no stripping here.
+The rule reads the `:` contexts [[align-colons]] covers (*dict literals, annotated assignments at any scope, function-signature annotations, Google-style docstring sections*) plus the single-statement `match`-arm context [[align-match-case]] covers. A group of two or more members whose colons sit on separate lines and whose rows start at one shared indent passes through this rule unchanged, since the colon-alignment rules pad it. A run whose rows start at differing indents resolves no shared column, so its padding is stripped here the way a single member's is. The `=` alignment of [[align-equals]] strips its own one-member groups, whereas a lone import keeps whatever padding its source writes before `import` or `as`.
 
 Past the gap before the `:`, the rule settles the gap after a colon to one space wherever that colon introduces a value, so a stray `x:   int` becomes `x: int` and `x:int` gains its missing space. Either change moves the value, and the rows continuing it past its opening row move with it the way they do under [[align-colons]], so a string part written beneath the value's first row stays beneath it. Where the space a value gains would carry one of those rows past `code-line-length`, every row continuing that value stays where it was written. A `match`-arm body keeps the spacing [[align-match-case]] writes, and a docstring entry's description stays as written.
 
@@ -20,7 +20,7 @@ Past the gap before the `:`, the rule settles the gap after a colon to one space
 
 <RuleConfigTable />
 
-`strip-stranded-padding` is the cleanup pass for the alignment rules above it, so its only facet is `enabled`. Turning it off leaves a one-member alignment group as a one-row table *(a one-key dict carrying the same padding a multi-key dict would)*, which is rarely the layout a project chooses.
+The rule is the cleanup pass for the alignment rules, so turning it off leaves a one-member `:` group as a one-row table *(a one-key dict carrying the same padding a multi-key dict would)*, which is rarely the layout a project chooses.
 
 </template>
 
