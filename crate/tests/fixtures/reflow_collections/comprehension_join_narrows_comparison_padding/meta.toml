@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Comprehension Join Narrows the Padding Ahead of Each Comparison"
+
+description = '''
+The comprehension's `if` holds a chain that [[align-comparisons]] padded so `is` and `not` share a column. **The join leaves one space ahead of each comparison operator**, since on one row that padding would line up with nothing.
+'''

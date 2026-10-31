@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Join Leaves the Padding a Forecast Rewrite Covers"
+
+description = '''
+`rows = [` holds a chain whose `.format` call [[prefer-fstring]] rewrites to an f-string. **The list joins onto one row and leaves the padding ahead of `==` as written**, since that padding lands inside the replacement field.
+'''

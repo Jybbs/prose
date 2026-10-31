@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 49
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_collections/join_leaves_the_padding_a_forecast_rewrite_covers/input.py
+---
+prefer-fstring@13..37
+reflow-collections@8..50

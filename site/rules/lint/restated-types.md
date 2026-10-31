@@ -14,18 +14,4 @@ An entry resolves against the definition whose body its docstring opens. A param
 
 No report is made where the docstring is the only place a type is written. A parameter with no annotation leaves the docstring type as the sole copy, which is the gap [[signature-annotations]] reports in the code instead. An entry naming no member of the set its section documents resolves against nothing, so a `Returns:` or `Raises:` entry that shares a parameter's name stays silent. A module docstring documents no signature and no class body, so every entry inside it stays unresolved.
 
-Nothing here is rewritten, because deciding which of two disagreeing types is correct takes a reader rather than a formatter.
-
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[restated-types]` directive.
-
-</template>
-
 </RuleLayout>

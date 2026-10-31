@@ -4,8 +4,8 @@ description: "The rules that reshape PEP 257 docstrings, their bodies and their 
 
 # Docs Rules
 
-The docs rules rewrite the PEP 257 docstrings the [[docstring]] walker finds, reshaping the body, the quote placement, or both. Description prose between the opening `"""` and the first section heading wraps to `docstring-line-length` *(default 76)*, whereas every Title-case-headed section after it wraps to `code-line-length` *(default 88)*, and both take one budget when `docstring-structured-policy = "docstring-line-length"`.
+The docs rules rewrite the PEP 257 docstrings the [[docstring]] walker finds, reshaping the body, the quote placement, or both. The walker skips an f-string, a t-string, and a bytes literal, none of which Python takes as a docstring, as well as an implicitly concatenated string, which Python does take, so no docs rule rewrites any of them.
 
 <RuleCardList family="docs" />
 
-The [**Configuration**](/reference/configuration#docstring-budgets) reference covers the two docstring budgets and the `docstring-structured-policy` key. The [[docstring]] primitive page covers the walker that finds every docstring in source order.
+The [**Configuration**](/reference/configuration#docstring-budgets) reference covers the two docstring budgets [[wrap-docstrings]] wraps to and the `docstring-structured-policy` key.

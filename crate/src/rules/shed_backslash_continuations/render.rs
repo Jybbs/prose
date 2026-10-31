@@ -2,16 +2,30 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{AnyNodeRef, find_node::covering_node, token::TokenKind};
+use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
 use super::*;
 
 /// Replaces each gap in `run` with its join text, folding the physical
-/// lines the run continues onto one.
-pub(super) fn join_edits(source: &Source, run: &[Gap]) -> Vec<Edit> {
-    run.iter()
+/// lines the run continues onto one, and keeps each of `narrowing` that
+/// falls inside the [`spanning_expression`] where that expression lies
+/// within the rows the run joins, ascending by start.
+pub(super) fn join_edits(source: &Source, run: &[Gap], narrowing: &[Edit]) -> Vec<Edit> {
+    let rows = source.text().lines_range(blocks_span(run));
+    let spanned = spanning_expression(source, blocks_span(run))
+        .filter(|spanned| rows.contains_range(*spanned));
+    let narrowed = narrowing
+        .iter()
+        .filter(|edit| spanned.is_some_and(|spanned| spanned.contains_range(edit.range())))
+        .cloned();
+    let mut edits: Vec<Edit> = run
+        .iter()
         .filter_map(|gap| narrowed_replacement(source, gap.range, gap.join.to_owned()))
-        .collect()
+        .chain(narrowed)
+        .collect();
+    edits.sort_by_key(Ranged::start);
+    edits
 }
 
 /// The text a join leaves between `token` and `next`, empty where the
@@ -43,18 +57,24 @@ pub(super) fn wrap_edits(
     span: TextRange,
     run: &[Gap],
 ) -> Option<(TextRange, Vec<Edit>)> {
-    let root = AnyNodeRef::from(source.ast());
-    let wrapped = covering_node(root, span)
-        .find_last(AnyNodeRef::is_expression)
-        .ok()?
-        .node()
-        .range();
+    let wrapped = spanning_expression(source, span)?;
     let edits: Vec<Edit> = run
         .iter()
         .filter_map(|gap| stripped_edit(source, gap.range))
         .collect();
     let candidate = format!("({})", apply_inline_edits(source, wrapped, &edits));
     splice_preserves_tree(source, wrapped, &candidate).then_some((wrapped, edits))
+}
+
+/// The range of the outermost expression spanning `span`, `None` where
+/// no expression spans it.
+fn spanning_expression(source: &Source, span: TextRange) -> Option<TextRange> {
+    let root = AnyNodeRef::from(source.ast());
+    let node = covering_node(root, span)
+        .find_last(AnyNodeRef::is_expression)
+        .ok()?
+        .node();
+    Some(node.range())
 }
 
 #[cfg(test)]
@@ -87,7 +107,7 @@ mod tests {
     fn join_edits_fold_the_run_onto_one_line(#[case] src: &str, #[case] expected: &str) {
         let source = parse(src);
         let gaps = continuation_gaps(&source);
-        let edits = join_edits(&source, &gaps);
+        let edits = join_edits(&source, &gaps, &[]);
         assert_eq!(spliced_rows(&source, blocks_span(&gaps), &edits), expected);
     }
 

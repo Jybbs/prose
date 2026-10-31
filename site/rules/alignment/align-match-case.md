@@ -17,7 +17,7 @@ The rule acts only on runs of single-statement arms at the same indentation, and
 - A comment follows its `:` on the `case` line
 - Its one-line form, padded out to the run's column, would cross `code-line-length`
 
-The arm's `:` then sits flush against its pattern, and the arms on each side of it align as runs of their own. An arm already folded onto its `case` line ends the run the same way once its padded line would cross the budget, and a body on one row moves onto the next line. An own-line comment between two arms passes through, and the arms on both sides of it still share one column. A nested `match` aligns as a group of its own. Pair the rule with [[strip-stranded-padding]], which strips the padding on a one-arm `match`, and with [[align-colons]], which aligns the separators inside a dict a case body returns.
+The arm's `:` then sits flush against its pattern, and the arms on each side of it align as runs of their own. An arm already folded onto its `case` line ends the run the same way once its padded line would cross the budget, and a body on one row moves onto the next line. An own-line comment between two arms passes through, and the arms on both sides of it still share one column. A nested `match` aligns as a group of its own. Pair the rule with [[align-colons]], which aligns the separators inside a dict a case body returns.
 
 An arm already folded onto its `case` line whose body spans rows only inside a bracket that ends that line, with its closing bracket opening the last row at the `case` indent, still reads as a row of the table. It takes the run's column as the run's last member and ends the run there, so the arms below it align as a run of their own. The rule measures that arm's `case` line only through the opening bracket, and where the padded line would cross `code-line-length` the `:` sits flush against its pattern with the body left on the `case` line, since moving the body to a row of its own would leave the closing bracket outdented from it.
 
@@ -25,7 +25,7 @@ An arm already folded onto its `case` line whose body spans rows only inside a b
 
 <RuleConfigTable />
 
-`max-shift` limits how much padding one `:` may take. The rule reads each run of arms in source order and extends a column while the gap between the widest and narrowest patterns stays within the limit, starting a new column at the first arm that would exceed it. Setting `max-shift` to `false` removes the limit, so a run of any width aligns on one column, and `0` forbids padding altogether, so every `:` sits flush against its pattern. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+Under `max-shift = 0`, every `:` sits flush against its pattern.
 
 </template>
 

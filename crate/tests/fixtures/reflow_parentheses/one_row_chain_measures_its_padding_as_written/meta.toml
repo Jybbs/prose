@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Chain on One Row Measures Its Padding as Written"
+
+description = '''
+`ok = (` holds a chain on one row whose `==` the author padded, under a `code-line-length` of `22`. **A chain written on one row keeps its padding, whether the pair around it spans rows or not**, so the rule measures it at `23` columns without the pair, past the budget, and the chain holds one row of its own inside the pair.
+'''

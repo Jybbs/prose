@@ -1,0 +1,5 @@
+code-line-length = 30
+target-version = "3.10"
+
+[harness]
+rules = ["prefer-fstring"]

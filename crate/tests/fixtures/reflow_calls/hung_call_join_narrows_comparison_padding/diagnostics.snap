@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_calls/hung_call_join_narrows_comparison_padding/input.py
+---
+reflow-calls@26..48

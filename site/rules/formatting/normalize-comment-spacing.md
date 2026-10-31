@@ -24,8 +24,6 @@ The space goes after the whole hash run rather than shortening it, so a `##` or 
 
 Two spaces is the minimum gap before a trailing comment rather than the target, so a wider gap stays as written and a comment column the author laid out is still there for [[align-comments]] to read. The gap is counted in characters, so a lone tab falls short and is replaced with two spaces.
 
-<Fixture rule="normalize_comment_spacing" case="hash_run_gains_one_space" />
-
 <Fixture rule="normalize_comment_spacing" case="columnar_block_keeps_its_indents" />
 
 <Fixture rule="normalize_comment_spacing" case="heading_run_keeps_its_hashes" />
@@ -34,7 +32,7 @@ Two spaces is the minimum gap before a trailing comment rather than the target, 
 
 <RuleConfigTable />
 
-The one-space opener and the two-space minimum are both fixed, so the rule carries `enabled` as its only facet. A comment that has to keep its own spacing takes an inline [**Suppression**](/guide/suppression) directive rather than a project-level key, since the exception is per-comment rather than per-project.
+The one-space opener and the two-space minimum are both fixed, so a comment whose spacing has to stay as written takes a `# prose: skip[align-comments, normalize-comment-spacing]` on its line.
 
 </template>
 

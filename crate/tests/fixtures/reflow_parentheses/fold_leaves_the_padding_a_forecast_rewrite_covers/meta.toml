@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Fold Leaves the Padding a Forecast Rewrite Covers"
+
+description = '''
+`ok = (` holds a chain whose `.format` call [[prefer-fstring]] rewrites to an f-string. **The pair folds onto its row and the join leaves the padding ahead of `==` as written**, since that padding lands inside the replacement field.
+'''

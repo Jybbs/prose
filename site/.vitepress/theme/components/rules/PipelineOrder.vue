@@ -12,7 +12,7 @@ import NibBadge       from '../base/NibBadge.vue'
   <section class="pipeline-order panel" aria-label="Pipeline order">
     <header class="pipeline-order-masthead">
       <span class="kicker pipeline-order-edition">
-        {{ pipeline.rules.length }} passes &middot; <code>src/rules/registry.rs</code>
+        {{ pipeline.rules.length }} rules &middot; <code>crate/src/rules/registry.rs</code>
       </span>
     </header>
     <ol class="pipeline-order-columns">

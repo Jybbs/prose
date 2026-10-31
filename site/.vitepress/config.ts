@@ -5,7 +5,6 @@ import postcssGlobalData                          from '@csstools/postcss-global
 import postcssCustomMedia                         from 'postcss-custom-media'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
-import { tabsMarkdownPlugin }                     from 'vitepress-plugin-tabs'
 
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery'
 import { canonicalUrl }                               from './lib/config/canonical-url'
@@ -76,7 +75,6 @@ export default defineConfig({
     codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate))],
     config: md => {
       md.use(groupIconMdPlugin)
-      md.use(tabsMarkdownPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
       md.use(sectionHeadingPlugin)

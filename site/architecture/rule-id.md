@@ -15,7 +15,7 @@ tagline: canonical rule slug
 
 ## Public Surface
 
-`RuleId` is fully public today, so a downstream Rust consumer constructs *RuleId* values, parses them from CLI or config input, prints them, and uses them as `HashMap` keys without restriction.
+`RuleId` is fully public, so a downstream Rust consumer constructs *RuleId* values, parses them from CLI or config input, prints them, and uses them as `HashMap` keys without restriction.
 
 ### Construction
 
@@ -44,8 +44,6 @@ Each concrete rule lives under `prose::rules`, a `pub` module. The registry macr
 - The per-rule `PRESERVES_TREE` declaration, which the corpus sweep holds each rule to and `prose rules --output-format json` reports as `preserves_tree`.
 - The per-rule message strings diagnostic emission reads.
 
-`Pipeline::known_ids() -> &'static [RuleId]` is the public entry point that exposes the canonical-order list to downstream consumers.
-
 ## Re-Using This Primitive
 
 A downstream Rust consumer that builds a custom pipeline imports *RuleId*, parses user input into the type, and hands the resulting slices to `Pipeline::with_filters`:
@@ -62,17 +60,13 @@ let select: Vec<RuleId> = ["align-equals", "align-colons"]
 let pipeline = Pipeline::with_filters(&config, &select, &[]);
 ```
 
-The `From<&'static str>` path exists only under `#[cfg(test)]`, so every runtime parse goes through `FromStr`, which checks the registered-slug list and stops a typo at the parse boundary.
-
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page.
-
 <template #related>
 
 - [[pipeline]] iterates rules by *RuleId* in the registry's pinned order, and exposes `known_ids()` for a consumer that needs the full list.
 - [[source]] carries diagnostics that reference rules by *RuleId*, so the structured output formats (JSON, SARIF, GitHub annotations) all report by slug.
 - [[suppression-map]] parses *RuleId* values out of `# prose: ignore[<slug>]` directives.
 
-For the CLI flags that take *RuleId* lists, the [**Quick Start**](/guide/quick-start#subset-the-active-rules) chapter covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules**](/rules/) page lists every registered slug beside its family.
+For the CLI flags that take *RuleId* lists, the [**Precedence**](/reference/cli#precedence) section of the CLI reference covers the `--select` / `--ignore` arguments. For the rule catalog itself, the [**Rules**](/rules/) page lists every registered slug beside its family.
 
 </template>
 

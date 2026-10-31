@@ -32,7 +32,7 @@ description = "Rules that rewrite a token, a line, or a spelling once a statemen
 
 [labels."🧺 layout"]
 color       = "5069ad"
-description = "Rules that explode a bracketed construct to one entry per line once it outgrows its line"
+description = "Rules that explode a bracketed construct across rows once it outgrows its line"
 
 [labels."🧶 lint"]
 color       = "e8876f"

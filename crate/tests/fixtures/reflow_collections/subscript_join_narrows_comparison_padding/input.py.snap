@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_collections/subscript_join_narrows_comparison_padding/input.py
+---
+chosen = table[column_index == 1 and kind == 2]

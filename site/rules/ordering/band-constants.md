@@ -15,7 +15,7 @@ layout  : doc
 | Leading | a constant whose value reads only imports, builtins, literals, or other leading constants |
 | Trailing | a constant that names a function or class defined later in the module |
 
-The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`. A constant that reads another band member climbs one evaluation tier, and each tier opens its own blank-separated sub-band, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]].
+The rule moves a constant into its band, and each band sorts by `(tier, subcategory, name)`. A constant that reads another band member climbs one evaluation tier, and the tiers open blank-separated sub-bands up to the [`max-tiers`](#max-tiers) cap, so derived values read apart from the primitives they build on. A tier with a single constant sits tight below the tier above and aligns with it through [[align-equals]].
 
 A band carries its own order, whereas [[group-imports]] moves an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 
@@ -24,7 +24,7 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 - A reassigned name.
 - A value naming an unresolved reference.
 - A line under a suppression directive or a `# prose: keep` marker.
-- An import a trailing `noqa` comment marks, either bare or naming `E402`, the code the wider ecosystem reports a late import under.
+- A statement a trailing `noqa` comment marks, either bare or naming `E402`, the code the wider ecosystem reports a late import under.
 - A row a `\` line join continues.
 - A `__lazy_modules__` assignment, which Python reads as it runs each import below it, so it keeps its line above the imports it names.
 - Every constant in a reference cycle.
@@ -45,7 +45,7 @@ A PEP 695 `type` statement reads as inert whatever its value holds, because Pyth
 
 A constant the analysis pins for a reassigned or unresolved name, a resolution hazard, or an effectful value still spaces as a member of the band beside it, so its pair with a banded constant sits tight, a tier boundary between them opens one blank line, and a heading standing a blank line above the pinned constant keeps one blank line above it. Every other pinned member keeps the gap the source wrote.
 
-An own-line comment above a member travels with it wherever the rule places it, and a comment on the line directly below a member documents that member instead and follows it rather than leading it. A banner (*`# --- Configuration ---`*), a suppression directive, a tool pragma (*`# noqa`*), and a comment at a shallower indent each keep their slot and divide the module into sections that each band on their own, so a band never crosses one. A comment indented deeper than the member below it closes the member above instead and moves with it, as a note at the continuation indent of an `__all__` list does. A notebook has the same reach as a module, with each cell boundary bounding the move.
+An own-line comment above a member travels with it wherever the rule places it. A comment on the line directly below a member, with a blank line between it and the next member, documents the member above instead, and moves with it as its trailing comment where each takes one line and the joined line fits `code-line-length`, or on the line above it otherwise. A [**section marker**](/rules/ordering/) keeps its slot and divides the module into sections that each band on their own, so a band never crosses one. A notebook has the same reach as a module, with each cell boundary bounding the move.
 
 The move and its spacing settle in one run, so the file reaches its final layout on the first format.
 

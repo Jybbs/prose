@@ -8,7 +8,7 @@ A directive exempts code from *Prose*'s rewrites or lints at the file, block, li
 
 A pragma from another tool *(`# pylint: disable`, `# type: ignore`, `# pyright: ignore`, and the rest of the Python tooling pragmas)* is invisible to *Prose* wherever it is not named below. The walker reads it as an ordinary comment and the rules ignore it, so it sits beside the directives further down with no further setup.
 
-The foreign comments a rule does read are the ones stating an intent no static read of the file reaches, and each suppresses nothing even so. [[prune-inert-imports]] reads a bare `# noqa`, or one naming `F401`, trailing an import as a marker that the statement re-exports what it binds, in the same way it reads an `__all__` entry and the PEP 484 `from x import y as y` form. It reads a file-level `# ruff: noqa: F401`, `# flake8: noqa: F401`, or `# pyright: reportUnusedImport=false` opening a line of its own at column zero the same way, holding every unreferenced import in the module rather than one statement's. Each head is matched as its own tool matches it, so the spacing is free, `flake8` is read in any casing whereas `ruff` and `pyright` are read only in lower case, a pyright rule reports nothing on either `false` or `none` in any casing while a severity such as `error` leaves it reporting, and an indented pragma sits inside a block and holds nothing. A head naming no code is not read, since silencing every rule a tool carries says nothing about re-exports in particular. A marker counts only where it opens a comment rather than where the word appears in prose. [[band-constants]] reads a `# noqa` naming `E402` as a marker that the import stays on the line its author gave it. Those are the whole of the set, and none of them exempts anything from a rewrite or a lint.
+The foreign comments a rule does read are the ones stating an intent no static read of the file reaches, and none of them exempts anything from a rewrite or a lint. [[prune-inert-imports]] reads a trailing `# noqa`, bare or naming `F401`, and the file-level pragmas of Ruff, flake8, and pyright as marking a re-export, and [[band-constants]] reads a trailing `# noqa`, bare or naming `E402`, as pinning the statement it trails to its line, each page giving the exact forms it matches.
 
 ## Directives
 
@@ -55,11 +55,11 @@ foo = 1  # prose: skip[align-equals]
 bar = 2  # prose: skip[align-equals, strip-trailing-commas]
 ```
 
-A bare `# fmt: skip` or `# prose: skip` exempts the logical line from every rewrite rule. A bracketed list names the rules, an unknown slug in the list holds nothing out, and two bracketed directives on one line combine their lists. [[inert-directives]] reports the unknown slug, along with a skip whose removal leaves every rule it names making the same edits.
+An unknown slug in the list holds nothing out, and [[inert-directives]] reports it.
 
 A skipped single-line statement inside an alignment group stays as written while the rows around it still align on one column, so the exempt row reads as a deliberate exception rather than breaking the group, whereas a skipped statement spanning several lines ends the run. A skip naming a layout rule (*`# prose: skip[reflow-calls]`, `# prose: skip[reflow-collections]`*) leaves the line that rule would have split running past its cap, and [[line-overflow]] reports that line unless a `# prose: ignore[line-overflow]` on it silences the report too.
 
-A skip reaches the rewrite rules only, so a lint finding on the statement still prints, its message closing on the `# prose: ignore[<rule>]` that silences it. That directive sits on the line the finding starts on, which for a wrapped statement is its first line rather than the line carrying the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
+A skip reaches the rewriting rules only, so a lint finding on the statement still prints, its message closing on the `# prose: ignore[<rule>]` that silences it. That directive sits on the line the finding starts on, which for a wrapped statement is its first line rather than the line carrying the skip. The block markers above differ, since a `# fmt: off` region suppresses rewrites and lint findings together.
 
 A skipped statement and every statement inside an exempt region hold their slots when a rule reorders the body around them. [[alphabetize-siblings]] sorts the classes and functions around a skipped statement past it and the imports above and below it as two separate runs. A region's `# prose: off` and `# prose: on` lines stay where they stand and divide the body, so the siblings on each side of a region sort as runs of their own. [[group-imports]] groups the imports on either side of a skipped statement or a region apart, and the rewrites inside a class or function holding an exempt line still reach every other line of it.
 
@@ -73,7 +73,7 @@ TIMEOUT = 30             # prose: ignore[reassigned-constants, inlinable-binding
 helper = build_helper()  # prose: ignore
 ```
 
-A bare `# prose: ignore` silences every lint rule on the line. A bracketed list names the rules. [[inert-directives]] reports an `ignore` that silences nothing, and a bare one that does silence findings beside the slugs it silences, so it can be narrowed to them.
+A bare `# prose: ignore` silences every lint on the line, and a bracketed list only the rules it names. [[inert-directives]] reports an `ignore` that silences nothing, and a bare one that silences findings, so it can be narrowed to the slugs it silences.
 
 ## Construct Order Preservation
 
@@ -105,9 +105,9 @@ class StationSchema(DataFrameModel):  # prose: keep
 At the level of the class body, the marker holds every order a rule would otherwise change:
 
 - [[alphabetize-siblings]] and [[group-imports]] leave the statements of the body in the order written, including those inside an `if`, a `try`, or a `with` at that level, since none of them opens a scope of its own
-- [[reflow-imports]] merges the members of one module only across consecutive statements, since a merge across another statement moves a member above it
+- [[reflow-imports]] merges the members of one module only across consecutive statements
 - The entries under each heading of the class docstring that name a field follow the order of the fields, and an entry naming no field keeps its written slot among them
-- [[unsorted-positionals]] passes over the field run, since the marker states that the order written is deliberate
+- [[unsorted-positionals]] passes over the field run
 
 Every expression and every nested scope inside the body still sorts, and so does the class itself among its siblings, because the marker holds the body rather than the class's place:
 
@@ -127,7 +127,7 @@ data = build()  # prose: ignore[reassigned-constants]  # prose: ignore[inlinable
 # fmt: on
 ```
 
-The line above carries the block marker pair *(opening and closing on the surrounding lines)* plus two bracketed line directives whose lists combine into `{reassigned-constants, inlinable-bindings}`. A bare `# prose: ignore` anywhere on the line would widen both to every rule.
+The line above carries the block marker pair *(opening and closing on the surrounding lines)* plus two bracketed line directives whose lists combine into `{reassigned-constants, inlinable-bindings}`.
 
 ::: warning Malformed Directives No-Op
 A malformed directive *(unclosed brackets, a misspelled keyword, trailing text after `ignore`)* is read as no directive, so it reports nothing and rewrites nothing.
@@ -135,7 +135,7 @@ A malformed directive *(unclosed brackets, a misspelled keyword, trailing text a
 
 ## File-Level Suppression
 
-`# prose: off` on a comment line of its own *(not at the end of a statement)* opens an exempt region at that line. With no `# prose: on` after it, the region runs to the end of the file, exempting every line below the marker from every rewrite, whereas inside a notebook it closes at the end of its own code cell rather than reaching the next. At the top of a file the directive therefore covers the whole file:
+`# prose: off` on a comment line of its own *(not at the end of a statement)* opens an exempt region at that line. With no `# prose: on` after it, the region runs to the end of the file, exempting every line below the marker from every rewriting rule and every lint, whereas inside a notebook it closes at the end of its own code cell rather than reaching the next. At the top of a file the directive therefore covers the whole file:
 
 ```python
 # prose: off
@@ -148,6 +148,6 @@ A `# prose: off` at the end of a statement *(such as `x = 1  # prose: off`)* is 
 
 ## Composition With `--select` / `--ignore`
 
-Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report, and [[inert-directives]] spares the directive rather than reporting it, since a run that selects the rule needs it.
+Line and block directives apply on top of the active rule set. `--select align-equals` narrows the run to one rule, and `# prose: skip[align-equals]` still exempts its line from that rule. `--ignore reassigned-constants` removes a rule from the run, so a line carrying `# prose: ignore[reassigned-constants]` changes nothing, since the rule was not going to report, and [[inert-directives]] spares the directive rather than reporting it.
 
-The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet, and the [**Suppression**](/guide/suppression) chapter covers when to reach for each directive.
+The [**Configuration**](/reference/configuration) reference covers the per-rule `enabled` facet.

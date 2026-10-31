@@ -12,7 +12,7 @@
 
 ## 🪻 About
 
-***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries and lists, alphabetizes methods and fields within their groups, applies a singleton rule for colon padding, and treats code like prose rather than minified text.
+***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries, calls, and signatures, alphabetizes methods and fields within their groups, removes padding that lines up with nothing, and treats code like prose rather than minified text.
 
 > [!NOTE]
 > ***Prose*** is still pre-1.0. The rule catalog and configuration facets continue to grow across release lines.
@@ -21,7 +21,7 @@
 
 ## 🗞️ Philosophy
 
-Code is read far more often than it is written. A reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and **shape**. When every `=` sits at a different column and every collection is compressed onto one line, that shape disappears, forcing the eye to slow down. ***Prose*** restores it, with aligned columns letting the eye skim, one-per-line collections making each entry a unit, and alphabetized groupings giving every reader the same landmarks.
+Code is read far more often than it is written, and a reader's eye moves down a page and across adjacent lines looking for parallels, patterns, and **shape**. The [landing page](https://prose.fyi/) sets out how ***Prose*** restores that shape.
 
 The trade-offs minimalist formatters were built to avoid (*wider diffs, more vertical scrolling, occasional re-alignment churn*) no longer dominate the equation. Agentic assistants do much of the typing, and every modern code host offers whitespace-ignoring diffs. What remains is the daily experience of reading code.
 
@@ -54,9 +54,9 @@ The full edition lives at [prose.fyi](https://prose.fyi/):
 
 - The [**interactive sandbox**](https://prose.fyi/sandbox/) formats Python live in the browser, so a reader can watch a snippet settle into shape without installing anything.
 - The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-facet configuration.
-- The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, every key, and the `[rules]` toggles.
+- The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, the top-level and `[imports]` keys, and the `[rules]` facets.
 - The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
-- The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract CI gates and pre-commit hooks compile against.
+- The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract a CI gate or a pre-commit hook reads.
 - [**Suppression directives**](https://prose.fyi/reference/suppression-directives) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
 - The [**Ruff integration**](https://prose.fyi/integrations/ruff) covers running *Prose* in a project that already runs Ruff.
 - [**Editor, pre-commit, and CI integrations**](https://prose.fyi/integrations/) wire *Prose* into the development loop.
@@ -79,4 +79,4 @@ Once mise's shell hook has put `.mise/bin` on the path, a bare `prose` inside th
 
 `mise tasks` lists every available task, and `mise ci` runs the full local sweep that mirrors GitHub Actions. The contributor guide at `.github/CONTRIBUTING.md` walks a change from setting up a clone and filing or picking up an issue, through the fixture case a fix is reviewed against and the commit, to the pull request and the checks that run on it.
 
-For the architecture, the [**architecture section**](https://prose.fyi/architecture/) walks the types and modules *Prose* is built from, setting the public `Source`, `Pipeline`, and `RuleId` beside the shared pieces every rule is composed from, and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) explains how each rule reads a settled AST between reparses.
+For the architecture, the [**architecture section**](https://prose.fyi/architecture/) walks the types and modules *Prose* is built from, setting the public `Source`, `Pipeline`, and `RuleId` beside the shared pieces every rule is composed from, and the [**pipeline order**](https://prose.fyi/reference/pipeline-order) sets out the fixed order the rules run in and why each rule sits where it does.

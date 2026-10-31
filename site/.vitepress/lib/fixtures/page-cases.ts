@@ -4,7 +4,15 @@ import { ruleSlug }                    from '../shared/rule-slug'
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g
 const TAG       = /<(CompositionCards|Fixture|FixtureConvergence|RuleLayout)\b([^>]*)>/g
 
-// Holds the data that `pageCaseIds` resolves its cases against, declared
+// Holds every fixture id a page can render beside the ids its `Fixture` and
+// `FixtureConvergence` tags embed inline, which the card lists on that page
+// leave out.
+export interface PageCases {
+  ids    : string[]
+  inline : string[]
+}
+
+// Holds the data that `readPageCases` resolves its cases against, declared
 // structurally so it names neither loader's own type.
 export interface PageFixtureSets {
   composition: {
@@ -36,10 +44,11 @@ function ruleLayoutIds(sets: PageFixtureSets, rule: string | undefined): string[
   ]
 }
 
-// Lists every fixture id a page can render, read from the component tags that
-// its markdown source carries.
-export function pageCaseIds(source: string, sets: PageFixtureSets): string[] {
-  const ids = new Set<string>()
+// Reads the fixture ids a page can render and the ones it embeds inline from
+// the component tags its markdown source carries.
+export function readPageCases(source: string, sets: PageFixtureSets): PageCases {
+  const ids    = new Set<string>()
+  const inline = new Set<string>()
   for (const [, tag, rawAttributes] of source.matchAll(TAG)) {
     const attributes = Object.fromEntries(
       rawAttributes.matchAll(ATTRIBUTE).map(([, name, value]) => [name, value])
@@ -53,9 +62,13 @@ export function pageCaseIds(source: string, sets: PageFixtureSets): string[] {
         break
       case 'Fixture':
       case 'FixtureConvergence':
-        if (attributes.rule && attributes.case) ids.add(fixtureId(attributes.rule, attributes.case))
+        if (attributes.rule && attributes.case) {
+          const id = fixtureId(attributes.rule, attributes.case)
+          ids.add(id)
+          inline.add(id)
+        }
         break
     }
   }
-  return [...ids]
+  return { ids: [...ids], inline: [...inline] }
 }

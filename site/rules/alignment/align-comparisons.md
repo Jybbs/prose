@@ -16,7 +16,7 @@ The rule reads each `BoolOp` whose operands are all `Expr::Compare`. The widest 
 
 <RuleConfigTable />
 
-`max-shift` limits how much padding one operator may take. The rule reads each run of comparisons in source order and extends a column while the gap between the widest and narrowest left operands stays within the limit, starting a new column at the first row that would exceed it. Setting `max-shift` to `false` removes the limit, so a run of any width aligns on one column, and `0` forbids padding altogether. The [**per-rule facets**](/reference/configuration#per-rule-facets) reference covers the full semantics.
+Under `max-shift = 0`, every operator sits one space after its left operand.
 
 </template>
 

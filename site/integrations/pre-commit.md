@@ -54,8 +54,8 @@ The [**Ruff pre-commit hook**](https://github.com/astral-sh/ruff-pre-commit) run
     - id: ruff-check
 ```
 
-The same repository's `ruff-format` hook stays out, since it would remove the padding the *Prose* hook writes on every commit. `rev:` pins a Ruff release, and the version shown is the one *Prose* builds against, so the two stay in step without a separate pin.
+The same repository's `ruff-format` hook stays out, for the reason [**Pairing With Ruff**](#pairing-with-ruff) gives. `rev:` pins a Ruff release, and the version shown is the one *Prose* builds against, so the two stay in step without a separate pin.
 
 ## Exit Codes
 
-The hook reads the same [**Exit Codes**](/reference/exit-codes) the CLI uses. A `format` hook exits `0` once its rewrites are written, yet pre-commit still fails it for modifying a file, as the Local Hook section describes. A lint finding exits `2` and fails a `format` hook and a `check` hook alike, whereas only a `check` hook fails on its exit code whenever a change is pending.
+Pre-commit reads the hook's exit code, one of the same [**Exit Codes**](/reference/exit-codes) the CLI documents. A lint finding exits `2` and fails a `format` hook and a `check` hook alike, whereas only a `check` hook fails on its exit code whenever a change is pending.

@@ -7,16 +7,15 @@ import FixturePairDoc  from '../fixtures/FixturePairDoc.vue'
 import FixtureToggle   from '../fixtures/FixtureToggle.vue'
 import RuleSegmentChip from './RuleSegmentChip.vue'
 
-import { useHashOpen }                    from '../../../lib/composables/use-hash-open'
-import { COMPOSITION_RULE, fixtureEntry } from '../../../lib/fixtures/entry'
-import type { FixtureEntry }              from '../../../lib/fixtures/entry'
-import type { CompositionCase }           from '../../../lib/rules/composition'
-import { data as composition }            from '../../../lib/rules/composition.data'
-import { casesForRule, type RuleSegment } from '../../../lib/rules/rule-view'
-import { data as rules }                  from '../../../lib/rules/rules.data'
-import type { SavedSession }              from '../../../lib/sandbox/session'
-import type { FixtureTab }                from '../../../lib/shared/fixture-tab'
-import InlineProse                        from '../base/InlineProse.vue'
+import { useHashOpen }                            from '../../../lib/composables/use-hash-open'
+import { COMPOSITION_RULE, fixtureEntry }         from '../../../lib/fixtures/entry'
+import type { FixtureEntry }                      from '../../../lib/fixtures/entry'
+import type { CompositionCase }                   from '../../../lib/rules/composition'
+import { pageCompositionCases, type RuleSegment } from '../../../lib/rules/rule-view'
+import { data as rules }                          from '../../../lib/rules/rules.data'
+import type { SavedSession }                      from '../../../lib/sandbox/session'
+import type { FixtureTab }                        from '../../../lib/shared/fixture-tab'
+import InlineProse                                from '../base/InlineProse.vue'
 
 interface CardRow extends FixtureEntry {
   case        : string
@@ -42,15 +41,12 @@ function toCardRow(entry: CompositionCase): CardRow {
   }
 }
 
-// A rule page renders the subset the rule participates in. Each card leaves
-// its folio empty so the `prose-fixture-folio` counter numbers it in place,
-// continuing the run the fixtures above it started.
-const cards = computed<readonly CardRow[]>(() => {
-  const participating = props.rule === undefined ? null : new Set(casesForRule(props.rule))
-  return composition.cases
-    .filter(entry => participating === null || participating.has(entry.case))
-    .map(toCardRow)
-})
+// A rule page renders the subset the rule participates in, and every page
+// leaves out the cases it embeds inline. Each card leaves its folio empty so
+// the `prose-fixture-folio` counter numbers it in place, continuing the run the
+// fixtures above it started.
+const cards = computed<readonly CardRow[]>(() =>
+  pageCompositionCases(frontmatter.value, props.rule).map(toCardRow))
 
 const activeCase = ref<string | null>(null)
 const activeTab  = ref<FixtureTab>('after')

@@ -36,7 +36,7 @@ The formatter fills in the `Unstable output` form from the run itself, and the n
 
 ## 🐞 Reporting an Unstable Rewrite
 
-Running *Prose* twice should leave the second run nothing to do, and that promise holds for whichever subset of rules a project enables rather than for the default set alone. A `prose format` run that rewrites a file therefore re-applies its enabled rules to the output it just wrote. Where any of them still edits, the run says so:
+Running *Prose* twice should leave the second run nothing to do, and that promise holds for whichever subset of rules a project enables rather than for the default set alone. A `prose format` run that rewrites a file therefore re-applies the rules that edited it to the output it just wrote, and where the cache is live and the run writes a module back to disk, the next `prose format` run that reads that output makes the check instead. Where a rule still edits that output, the run making the check says so:
 
 ```console
 $ prose format src/module.py
@@ -55,7 +55,7 @@ The invocation is the same one that confirms the fix. Running it again after upg
 
 Opening the link lands the form with the version, the reproducing slugs, the resolved `[tool.prose]` table, the source, and both passes already filled. A large file overflows what a URL carries, so a field that arrives blank is one to paste in from the run.
 
-Editors see the same notice, with `prose server` sending it once per document per session rather than on every save, and offering the pre-filled form as an action beside the message where the client advertises `window/showDocument`.
+An editor sees the notice through `prose server`, which sends it once per document per session rather than on every save and offers the pre-filled form as an action beside the message where the client advertises `window/showDocument`.
 
 Turning the notice off entirely is one key:
 
@@ -82,7 +82,7 @@ Setting the labels, the assignee, and the milestone takes triage access on the r
 | `🦉 engine` | Parser integration, the pipeline, `Source`, and the primitives under `crate/src/primitives/` |
 | `🪜 alignment` | Rules that pad the space before a shared token so consecutive rows read as columns |
 | `🪉 ordering` | Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it |
-| `🧺 layout` | Rules that explode a bracketed construct to one entry per line once it outgrows its line |
+| `🧺 layout` | Rules that explode a bracketed construct across rows once it outgrows its line |
 | `🪶 formatting` | Rules that rewrite a token, a line, or a spelling once a statement's layout is settled |
 | `🧶 lint` | Rules that report a finding without rewriting the source |
 | `🪄 cli` | Command-line interface, config loader, diff output |

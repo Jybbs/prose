@@ -16,15 +16,9 @@ layout  : doc
 
 A listed id naming a rule the run leaves out, through `--select`, `--ignore`, or the configuration, spares its directive, since a run that selects the rule may need it. A bare `skip` or `ignore` names no rule, so it is judged against the rules the run carries, and a run narrowed by `--select` to the lints reports every bare `skip`.
 
-A bare `# prose: ignore` silences every lint on its line, including any rule a later release adds, so the rule reports one that does silence findings too, naming the slugs it silences and the bracketed form that holds out the same findings. A report on an `ignore` stands outside that directive's reach, so a bare `ignore` never silences the report on itself, whereas a `# prose: ignore[inert-directives]` on a line carrying a `skip` silences the report on that skip and counts as holding it out.
+A bare `# prose: ignore` silences every lint on its line, so the rule reports one that does silence findings too, naming the slugs it silences and the bracketed form that holds out the same findings. A report on an `ignore` stands outside that directive's reach, so a bare `ignore` never silences the report on itself, whereas a `# prose: ignore[inert-directives]` on a line carrying a `skip` silences the report on that skip and counts as holding it out.
 
-A directive inside a `# fmt: off` region is not reported, since the region silences every lint on its lines. The lint never rewrites, so the diagnostic is reported and the source stays as written.
-
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
+A directive inside a `# fmt: off` region is not reported, since the region silences every lint on its lines.
 
 <template #related-after>
 

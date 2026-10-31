@@ -1,4 +1,4 @@
-import { pageCaseIds, type PageFixtureSets } from '../../lib/fixtures/page-cases'
+import { readPageCases, type PageFixtureSets } from '../../lib/fixtures/page-cases'
 
 const SETS: PageFixtureSets = {
   composition: {
@@ -12,9 +12,10 @@ const SETS: PageFixtureSets = {
   }
 }
 
-const ids = (source: string): string[] => pageCaseIds(source, SETS)
+const ids    = (source: string): string[] => readPageCases(source, SETS).ids
+const inline = (source: string): string[] => readPageCases(source, SETS).inline
 
-describe('pageCaseIds', () => {
+describe('readPageCases', () => {
   it('reads the rule and case a Fixture tag names', () => {
     expect(ids('<Fixture rule="align_comments" case="run_shares" />'))
       .toStrictEqual(['align_comments/run_shares'])
@@ -61,6 +62,37 @@ describe('pageCaseIds', () => {
 
   it('reports a case once where a page names it twice', () => {
     expect(ids('<Fixture rule="r" case="c" />\n<Fixture rule="r" case="c" />')).toStrictEqual(['r/c'])
+  })
+
+  it('lists as inline the cases a Fixture and a FixtureConvergence tag embed', () => {
+    const source = [
+      '<Fixture rule="composition" case="alpha_case" />',
+      '<FixtureConvergence rule="band_constants" case="stacked" />'
+    ].join('\n')
+    expect(inline(source)).toStrictEqual(['composition/alpha_case', 'band_constants/stacked'])
+  })
+
+  it.each([
+    ['a RuleLayout',       '<RuleLayout rule="align_equals">'],
+    ['a CompositionCards', '<CompositionCards />']
+  ])('lists none of the cases %s renders as inline', (_label, source) => {
+    expect(inline(source)).toStrictEqual([])
+  })
+
+  it('lists a case a page embeds inline among the ids its cards also reach', () => {
+    const source = [
+      '<RuleLayout rule="align_equals">',
+      '<Fixture rule="composition" case="alpha_case" />'
+    ].join('\n')
+    expect(readPageCases(source, SETS)).toStrictEqual({
+      inline : ['composition/alpha_case'],
+      ids    : [
+        'align_equals/basic_run',
+        'align_equals/nested',
+        'align_equals/deep',
+        'composition/alpha_case'
+      ]
+    })
   })
 
   it('collects every tag on a page in source order', () => {

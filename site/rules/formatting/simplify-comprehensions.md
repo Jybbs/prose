@@ -16,16 +16,4 @@ A comprehension whose element repeats its target unchanged spells a copy, so `[r
 
 `set`, `dict`, `list`, and `tuple` are builtins a module is free to rebind, and a rebound name no longer names the constructor. A module that binds any of the four to something of its own therefore keeps every call to that name exactly as written, while the other three still collapse.
 
-<template #configuration>
-
-<RuleConfigTable />
-
-</template>
-
-<template #related-after>
-
-For per-statement opt-outs, the [**Suppression**](/guide/suppression) chapter covers the `# prose: skip[simplify-comprehensions]` directive, which covers every line a wrapped call spans.
-
-</template>
-
 </RuleLayout>

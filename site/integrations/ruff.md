@@ -60,18 +60,11 @@ The two formatters also lay out some constructs differently, so a `ruff format` 
 
 ## Import Sorting
 
-Ruff's import-sorting rules (*the isort `I` category, run by `ruff check` rather than `ruff format`*) overlap with *Prose* differently from the formatter codes above. *Prose* orders imports itself, grouping each block into bare imports, then external `from` imports, then local-package imports, with one blank line between groups, which is not isort's layout. A project that runs `ruff check` should leave the `I` rules unselected so the two tools do not rewrite the same import block to different orders.
+Ruff's import-sorting rules (*the isort `I` category, run by `ruff check` rather than `ruff format`*) overlap with *Prose* differently from the formatter codes above. *Prose* orders imports itself through [[group-imports]], whose sections differ from isort's. A project that runs `ruff check` should leave the `I` rules unselected so the two tools do not rewrite the same import block to different orders.
 
 ## In CI
 
-`ruff format --check` reports every row *Prose* pads as a pending change, so a job checks the layout through `prose check` and runs Ruff's linter beside it, either non-zero exit failing the job. The <Tool slug="github" /> integration page covers the whole workflow, the annotation formats, and the SARIF upload:
-
-```yaml
-- run: uv tool install ruff
-- run: uv tool install prose-formatter
-- run: ruff check .
-- run: prose check .
-```
+A CI job checks the layout through `prose check` and runs `ruff check` beside it, the job the [**GitHub Actions**](/integrations/github-actions#pairing-with-ruff-in-ci) page sets out.
 
 ## In an Editor
 
