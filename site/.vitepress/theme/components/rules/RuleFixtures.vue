@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { useData }  from 'vitepress'
+import { computed } from 'vue'
+
 import FixtureCard from '../fixtures/FixtureCard.vue'
 
-import { fixturesForRule } from '../../../lib/rules/rule-view'
+import { pageExamples } from '../../../lib/rules/rule-view'
 
 const props = defineProps<{ rule: string }>()
 
-const examples = fixturesForRule(props.rule).examples
+const { frontmatter } = useData()
+
+const examples = computed(() => pageExamples(frontmatter.value, props.rule))
 </script>
 
 <template>

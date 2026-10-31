@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Mapping Key Binds Its Dict Entry by Name"
 
 description = '''

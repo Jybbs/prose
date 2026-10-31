@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Module Binding No Name of Its Own Reports Rather Than Removes"
 
 description = '''

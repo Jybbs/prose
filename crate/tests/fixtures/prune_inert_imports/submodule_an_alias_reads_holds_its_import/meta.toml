@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Submodule Read Through an Alias Keeps Its Import"
 
 description = '''

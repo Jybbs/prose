@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "An Attribute or Index Part Follows Its Value Inline"
 
 description = '''

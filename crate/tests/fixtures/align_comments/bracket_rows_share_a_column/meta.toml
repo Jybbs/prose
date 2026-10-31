@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "Collection Entries With Trailing Comments Share a Column"
 
 description = '''

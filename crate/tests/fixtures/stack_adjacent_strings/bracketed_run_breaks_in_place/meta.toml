@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Run Inside a Bracket Breaks in Place Without Added Parentheses"
 
 description = '''

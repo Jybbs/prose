@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Columnar Block Keeps Its Indents, a Lone Comment Does Not"
 
 description = '''

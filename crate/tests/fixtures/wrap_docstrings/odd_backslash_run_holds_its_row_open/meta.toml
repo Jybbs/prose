@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Literal Backslash Never Ends a Docstring Row"
 
 description = '''

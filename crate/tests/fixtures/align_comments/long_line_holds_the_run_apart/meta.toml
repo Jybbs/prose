@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Row Whose Aligned Line Would Overflow Stays Put"
 
 description = '''

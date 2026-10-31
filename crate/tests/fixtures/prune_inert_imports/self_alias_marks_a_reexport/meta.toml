@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A `from x import y as y` Alias Marks a Re-Export"
 
 description = '''

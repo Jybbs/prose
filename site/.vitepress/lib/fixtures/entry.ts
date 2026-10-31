@@ -22,6 +22,18 @@ export interface FixtureEntry extends FixtureFlags {
 
 export type FixtureMap = Record<string, FixtureEntry>
 
+// Reports whether a page embeds the case through a `Fixture` or
+// `FixtureConvergence` tag, reading the ids `transformPageData` records in its
+// frontmatter.
+export function embedsInline(
+  frontmatter : Record<string, unknown>,
+  rule        : string,
+  caseName    : string
+): boolean {
+  const inline = (frontmatter.inlineFixtures ?? []) as readonly string[]
+  return inline.includes(fixtureId(rule, caseName))
+}
+
 export function fixtureEntry(
   frontmatter : Record<string, unknown>,
   rule        : string,

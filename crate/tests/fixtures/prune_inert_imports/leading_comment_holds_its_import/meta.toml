@@ -1,5 +1,5 @@
 [docs]
-previewable = false
+previewable = true
 title       = "A Leading Comment Keeps the Import Below It"
 
 description = '''
