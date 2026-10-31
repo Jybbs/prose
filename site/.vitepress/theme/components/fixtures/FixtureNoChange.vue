@@ -5,11 +5,11 @@
 </script>
 
 <template>
-  <div class="fixture-nochange">
-    <div class="fixture-toggle fixture-nochange-ghost" aria-hidden="true">
-      <span class="fixture-toggle-pill" data-side="before">Before</span>
-      <span class="fixture-toggle-pill" data-side="after">After</span>
+  <div class="fixture-nochange relative inline-flex">
+    <div class="invisible inline-flex rounded-sm border-1 border-divider bg-bg p-2" aria-hidden="true">
+      <span class="fixture-toggle-pill toggle-pill" data-side="before">Before</span>
+      <span class="fixture-toggle-pill toggle-pill" data-side="after">After</span>
     </div>
-    <span class="fixture-nochange-label">No Change</span>
+    <span class="pointer-events-none absolute inset-0 flex items-center justify-center change-chip">No Change</span>
   </div>
 </template>

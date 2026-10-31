@@ -1,7 +1,0 @@
-.exit-code-entry-summary :where(code),
-.exit-code-entry-details :where(code),
-.glossary-tooltip-body code {
-  padding       : var(--prose-space-2) var(--prose-space-6);
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-8), transparent);
-}

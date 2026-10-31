@@ -18,11 +18,11 @@ const activeTab = ref<FixtureTab>('after')
 </script>
 
 <template>
-  <div class="fixture">
-    <div v-if="entry.descriptionNodes" class="fixture-lead">
+  <div class="fixture my-1-25rem">
+    <div v-if="entry.descriptionNodes" class="fixture-lead mb-1rem">
       <InlineProse :nodes="entry.descriptionNodes" />
     </div>
-    <header v-if="entry.hasToggle" class="fixture-bar">
+    <header v-if="entry.hasToggle" class="fixture-bar flex justify-end pb-8">
       <FixtureToggle v-model="activeTab" />
     </header>
     <FixturePairDoc

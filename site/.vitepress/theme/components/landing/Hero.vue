@@ -29,14 +29,14 @@ const stamps = computed(() => tileStamps(grid.value.cols, grid.value.rows))
 </script>
 
 <template>
-  <div ref="hero" class="landing-hero">
-    <div ref="layer" class="landing-hero-watermarks" :style="layerStyle" aria-hidden="true">
+  <div ref="hero" class="relative isolate flex items-center justify-center px-24 pt-88 pb-32">
+    <div ref="layer" class="landing-hero-watermarks pointer-events-none absolute -top-24 left-1/2 z-0 w-screen overflow-clip" :style="layerStyle" aria-hidden="true">
       <template v-for="(s, i) in stamps" :key="i">
         <img
           v-if="s.kind === 'big'"
           src="/logo.svg"
           alt=""
-          class="landing-hero-watermark landing-hero-watermark-big"
+          class="landing-hero-watermark absolute w-110 text-ube opacity-8 will-change-transform select-none card-stack:w-80"
           :style="{
             '--rotation' : `${s.rotate}deg`,
             left         : `${s.x}%`,
@@ -45,7 +45,7 @@ const stamps = computed(() => tileStamps(grid.value.cols, grid.value.rows))
         />
         <span
           v-else
-          class="landing-hero-watermark landing-hero-watermark-small"
+          class="landing-hero-watermark absolute font-display text-2-4rem leading-1 font-700 text-ube opacity-8 will-change-transform select-none card-stack:text-1-6rem"
           :style="{
             '--rotation' : `${s.rotate}deg`,
             left         : `${s.x}%`,
@@ -54,8 +54,8 @@ const stamps = computed(() => tileStamps(grid.value.cols, grid.value.rows))
         >{{ s.letter }}</span>
       </template>
     </div>
-    <h1 class="landing-hero-wordmark">
-      <img src="/title-with-tagline.svg" :alt="SITE_ALT" />
+    <h1 class="landing-hero-wordmark relative z-1">
+      <img src="/title-with-tagline.svg" :alt="SITE_ALT" class="w-full" />
     </h1>
   </div>
 </template>

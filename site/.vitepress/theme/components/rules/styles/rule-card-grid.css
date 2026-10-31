@@ -1,12 +1,3 @@
-.rule-card-grid,
-.related-rules-inline {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-6);
-  margin         : var(--prose-space-24) 0 0;
-  max-width      : var(--prose-width-960);
-}
-
 .vp-doc .rule-card,
 .rule-card {
   position              : relative;
@@ -29,44 +20,7 @@
 }
 
 .rule-card-cover {
-  z-index: 3;
-}
-
-.rule-card > *:not(.rule-card-cover) {
-  position       : relative;
-  z-index        : 2;
-  pointer-events : none;
-}
-
-.rule-card-mark {
-  display         : flex;
-  align-items     : center;
-  justify-content : center;
-  padding         : var(--prose-space-12) 0;
-  border-left     : var(--prose-border-2) solid var(--family-color);
-}
-
-.rule-card-body {
-  display       : grid;
-  gap           : var(--prose-space-6);
-  align-content : center;
-  min-width     : 0;
-  padding       : var(--prose-space-14) var(--prose-space-20) var(--prose-space-15);
-  background    : linear-gradient(90deg, color-mix(in srgb, var(--family-color) var(--prose-tint-wash), var(--vp-c-bg)), transparent);
-}
-
-.vp-doc .rule-card-slug,
-.rule-card-slug {
-  margin         : 0;
-  padding        : 0;
-  border         : none;
-  min-width      : 0;
-  font-family    : var(--vp-font-family-mono);
-  font-weight    : 600;
-  font-size      : var(--prose-text-0-92rem);
-  line-height    : 1.3;
-  letter-spacing : calc(var(--prose-tracking-0-01em) * -1);
-  color          : var(--vp-c-text-1);
+  z-index : 3;
 }
 
 .vp-doc .rule-card-caption,
@@ -90,7 +44,6 @@
   padding       : var(--prose-space-1) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-code-bg);
-  font-family   : var(--vp-font-family-mono);
   font-size     : var(--prose-text-0-86em);
   color         : var(--vp-code-color);
   white-space   : nowrap;
@@ -101,18 +54,4 @@
   .rule-card {
     grid-template-columns : var(--prose-size-2-6rem) minmax(0, 1fr);
   }
-
-  .rule-card-body {
-    padding-inline : var(--prose-space-14);
-  }
-}
-
-.rule-card-grid-empty {
-  color     : var(--vp-c-text-3);
-  font-size : var(--prose-text-sm);
-  margin    : var(--prose-space-24) 0 0;
-}
-
-.related-rules-inline {
-  margin-top : var(--prose-space-28);
 }

@@ -50,8 +50,8 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
         <span class="fixture-card-title" v-html="titleHtml" />
       </button>
       <div
-        class="fixture-card-actions"
-        :class="{ 'is-active': isOpen }"
+        class="inline-flex items-center transition-opacity"
+        :class="{ 'pointer-events-none invisible opacity-0': !isOpen }"
         @click.stop
       >
         <FixtureToggle v-if="entry.hasToggle" v-model="activeTab" />
@@ -60,7 +60,7 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
     </div>
     <div
       :id="`${id}-body`"
-      class="fixture-card-body"
+      class="fixture-card-body transition-grid-template-rows"
       role="region"
     >
       <div class="fixture-card-body-inner">

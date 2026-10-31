@@ -14,7 +14,7 @@ const rule     = lookup(rules.bySlug, props.slug, 'Inline rule link')
 
 <template>
   <a
-    class="rule-link"
+    class="rule-link ground"
     :data-family="rule.family"
     :data-rule="slug"
     :href="rule.href"

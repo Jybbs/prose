@@ -14,7 +14,7 @@ const href = computedAsync(
 <template>
   <a
     v-if="href"
-    class="panel-seat panel-corner sandbox-seed"
+    class="sandbox-seed panel-corner right-40 panel-seat size-28"
     :href="href"
     title="Open this case in the sandbox"
     aria-label="Open this case in the sandbox"

@@ -1,0 +1,53 @@
+@custom-variant armed (&[data-armed]);
+@custom-variant bracket-close (&[data-bracket="close"]);
+@custom-variant bracket-end (&:is([data-bracket="open"], [data-bracket="close"]));
+@custom-variant bracket-open (&[data-bracket="open"]);
+@custom-variant bracket-solo (&[data-bracket="solo"]);
+@custom-variant dragging (&[data-dragging]);
+@custom-variant editing (&[data-editing]);
+@custom-variant line-code (&[data-line-kind="code"]);
+@custom-variant line-comment (&[data-line-kind="comment"]);
+@custom-variant line-directive (&[data-line-kind="directive"]);
+@custom-variant off (&[data-on="false"]);
+@custom-variant role-action (&[data-role="action"]);
+
+@theme inline {
+  --color-apricot-75-text-1                               : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1));
+  --color-family-or-brand-1-55-divider                    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-55), var(--vp-c-divider));
+  --color-family-or-divider                               : var(--family-color, var(--vp-c-divider));
+  --color-family-or-text-1                                : var(--family-color, var(--vp-c-text-1));
+  --color-hue                                             : var(--hue);
+  --color-hue-70-text-3                                   : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
+  --color-part-or-text-2-75-text-2                        : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
+  --color-part-or-text-3-50-divider                       : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
+  --color-scope-10-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
+  --color-scope-25-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-25), var(--vp-c-divider));
+  --color-scope-6-bg                                      : color-mix(in srgb, var(--scope-tint) var(--prose-tint-6), var(--vp-c-bg));
+  --color-scope-60-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
+  --color-scope-70-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
+  --color-scope-75-text-1                                 : color-mix(in srgb, var(--scope-tint) var(--prose-tint-75), var(--vp-c-text-1));
+  --color-scope-78-text-2                                 : color-mix(in srgb, var(--scope-tint) var(--prose-tint-78), var(--vp-c-text-2));
+  --color-scope-80-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
+  --color-scope-85-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-85), var(--vp-c-bg));
+  --color-warning-55-divider                              : color-mix(in srgb, var(--prose-role-warning) var(--prose-tint-55), var(--vp-c-divider));
+
+  --grid-template-columns-14-1fr                          : var(--prose-size-14) 1fr;
+  --grid-template-columns-14-1fr-auto                     : var(--prose-size-14) 1fr auto;
+  --grid-template-columns-1fr-180-220                     : minmax(0, 1fr) minmax(var(--prose-width-180), var(--prose-width-220));
+  --grid-template-columns-28-14-1fr                       : var(--prose-size-28) var(--prose-size-14) 1fr;
+  --grid-template-columns-2fr-1fr                         : minmax(0, 2fr) minmax(0, 1fr);
+
+  --outline-offset-2                                      : var(--prose-space-2);
+
+  --transition-property-background-opacity-and-box-shadow : background, opacity, box-shadow;
+  --transition-property-border-color                      : border-color;
+  --transition-property-color-and-opacity                 : color, opacity;
+}
+
+@utility focus-ring {
+  outline : var(--prose-focus-ring);
+}
+
+@utility halo-family-or-brand-1-45 {
+  box-shadow : 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-45), transparent);
+}

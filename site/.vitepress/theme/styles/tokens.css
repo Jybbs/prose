@@ -24,8 +24,10 @@
   --prose-shadow-lift            : 0 12px 28px -10px;
   --prose-shadow-tooltip         : 0 8px 24px rgba(0, 0, 0, 0.28);
 
-  --prose-transition             : 0.15s ease;
-  --prose-transition-slow        : 0.2s ease;
+  --prose-duration               : 0.15s;
+  --prose-duration-slow          : 0.2s;
+  --prose-transition             : var(--prose-duration) ease;
+  --prose-transition-slow        : var(--prose-duration-slow) ease;
   --prose-transition-card        : var(--prose-transition-slow);
   --prose-rule-draw-ms           : 420;
 
@@ -140,7 +142,6 @@
   --prose-text-0-6em             : 0.6em;
   --prose-text-0-7em             : 0.7em;
   --prose-text-0-8em             : 0.8em;
-  --prose-text-0-84em            : 0.84em;
   --prose-text-0-85em            : 0.85em;
   --prose-text-0-86em            : 0.86em;
   --prose-text-0-88em            : 0.88em;
@@ -193,7 +194,6 @@
   --prose-space-54               : 54px;
   --prose-space-72               : 72px;
   --prose-space-76               : 76px;
-  --prose-space-80               : 80px;
   --prose-space-88               : 88px;
   --prose-space-96               : 96px;
   --prose-space-108              : 108px;
@@ -221,7 +221,6 @@
   --prose-space-0-18em           : 0.18em;
   --prose-space-0-2em            : 0.2em;
   --prose-space-0-3em            : 0.3em;
-  --prose-space-0-35em           : 0.35em;
   --prose-space-0-4em            : 0.4em;
   --prose-space-0-45em           : 0.45em;
   --prose-space-0-5em            : 0.5em;

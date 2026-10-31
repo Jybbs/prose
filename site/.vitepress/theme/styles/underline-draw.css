@@ -1,8 +1,4 @@
+/* Holds the underline's transition beneath the utilities, where the link rules override it. */
 .underline-draw {
-  background : linear-gradient(var(--underline-accent), var(--underline-accent)) no-repeat left bottom / 0% var(--prose-size-1);
   transition : background-size var(--prose-transition-slow);
-}
-
-.underline-draw:hover {
-  background-size : 100% var(--prose-size-1);
 }

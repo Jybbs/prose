@@ -1,29 +1,3 @@
-/* Mid-resize the new layout overflows the still-animating height, so the
-   morph pane clips instead of flashing a scrollbar. */
-.sandbox-surface .shiki-magic-move-container {
-  overflow : hidden;
-}
-
-.sandbox-surface-actions {
-  position : absolute;
-  right    : var(--prose-space-10);
-  bottom   : var(--prose-space-8);
-  z-index  : 4;
-  display  : flex;
-  gap      : var(--prose-space-4);
-}
-
-/* The corners reveal on hover, whereas these hold visible, the pane having no
-   other way out. */
-.sandbox-surface-action {
-  transition : color var(--prose-transition), border-color var(--prose-transition);
-}
-
-.sandbox-surface-apply:hover {
-  border-color : var(--vp-c-brand-1);
-  color        : var(--vp-c-brand-1);
-}
-
 .sandbox-surface-guide {
   position       : absolute;
   top            : var(--prose-space-1);

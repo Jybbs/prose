@@ -47,14 +47,13 @@ const trackStyle = computed(() => ({
     centered
     :heading="heading"
     kicker="The Surfaces"
-    variant="surfaces"
   >
     <template #heading-extra>
-      <a href="/rules/" class="landing-small-button">All rules</a>
+      <a href="/rules/" class="mt-18 inline-flex items-center rounded-sm border-1 border-divider bg-bg-soft px-12 py-4 font-mono text-kicker tracking-kicker text-text-2 uppercase transition-background-border-color-and-color hover:border-brand-1 hover:bg-bg hover:text-brand-1 focus-visible:border-brand-1 focus-visible:bg-bg focus-visible:text-brand-1">All rules</a>
     </template>
     <div
       ref="viewport"
-      class="surfaces-carousel"
+      class="surfaces-carousel relative mt-8 w-screen overflow-hidden pt-32 pb-8"
       :class="{ 'surfaces-carousel-static': fits }"
       aria-label="Rule family carousel"
       @pointermove="onPointerMove"
@@ -62,13 +61,15 @@ const trackStyle = computed(() => ({
     >
       <div
         ref="track"
-        class="surfaces-carousel-track"
+        class="surfaces-carousel-track flex items-stretch px-32 will-change-transform"
+        :class="fits ? 'w-full justify-center' : 'w-max'"
         :style="trackStyle"
       >
         <template v-for="copy in 2" :key="copy">
           <SurfaceCardBase
             v-for="card in surfaceCards"
             :key="`${copy}-${card.family}`"
+            :class="fits && copy === 2 ? 'hidden' : 'flex'"
             :body-nodes="card.bodyNodes"
             :duplicate="copy === 2"
             :family="card.family"

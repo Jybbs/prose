@@ -27,12 +27,12 @@ defineExpose({ focus: () => input.value?.focus() })
 </script>
 
 <template>
-  <div class="sandbox-code-editor">
-    <div ref="layer" class="code-panel-code sandbox-code-editor-layer" aria-hidden="true" v-html="highlighted" />
+  <div class="sandbox-code-editor relative flex grow flex-col">
+    <div ref="layer" class="sandbox-code-editor-layer code-panel-code whitespace-pre" aria-hidden="true" v-html="highlighted" />
     <textarea
       ref="input"
       v-model="model"
-      class="code-panel-code sandbox-code-editor-layer sandbox-code-editor-input"
+      class="sandbox-code-editor-layer absolute inset-0 code-panel-code resize-none rounded-base-inner border-none whitespace-pre text-transparent caret-text-1 focus-visible:-outline-offset-2"
       autocapitalize="off"
       autocomplete="off"
       autocorrect="off"

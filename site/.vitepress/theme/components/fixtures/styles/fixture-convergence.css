@@ -1,78 +1,7 @@
-.fixture-converge-track {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-10);
-  margin         : 0;
-  padding        : 0 0 0 var(--prose-space-1-5rem);
-  border-left    : var(--prose-border-1) solid var(--vp-c-divider);
-  list-style     : none;
-}
-
-.fixture-converge-step {
-  position : relative;
-  margin   : 0;
-}
-
 .fixture-converge-step::before {
-  position      : absolute;
-  top           : var(--prose-space-0-45rem);
-  left          : calc(var(--prose-space-1-5rem) * -1 - var(--prose-space-4));
-  width         : var(--prose-size-7);
-  height        : var(--prose-size-7);
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : 50%;
-  background    : var(--vp-c-bg);
-  content       : "";
-}
-
-.fixture-converge-step[data-badge="settled"]::before {
-  border-color : var(--prose-palette-celadon);
-  background   : var(--prose-palette-celadon);
-}
-
-.fixture-converge-mark {
-  display     : flex;
-  align-items : baseline;
-  gap         : var(--prose-space-10);
-  margin      : 0 0 var(--prose-space-6);
-}
-
-.fixture-converge-run {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
-  letter-spacing : var(--prose-label-tracking-loose);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-1);
-}
-
-.fixture-converge-badge {
-  padding        : var(--prose-space-2) var(--prose-space-8);
-  border         : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius  : var(--prose-radius-sm);
-  background     : var(--vp-c-bg-soft);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
-  letter-spacing : var(--prose-label-tracking-loose);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
-.fixture-converge-step[data-badge="settled"] .fixture-converge-badge {
-  border-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-40), transparent);
-  color        : var(--prose-palette-celadon);
-}
-
-.fixture-converge-state {
-  overflow   : hidden;
-  background : var(--vp-code-block-bg);
+  left : calc(var(--prose-space-1-5rem) * -1 - var(--prose-space-4));
 }
 
 .fixture-converge-state pre {
   margin : 0;
-}
-
-.fixture-converge-note {
-  margin    : 0;
-  font-size : var(--prose-text-meta);
-  color     : var(--vp-c-text-2);
 }

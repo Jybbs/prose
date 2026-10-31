@@ -2,25 +2,9 @@
   --family-color : var(--prose-palette-casper);
 }
 
-.per-rule-facets {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-6);
-  margin         : var(--prose-space-1-5rem) 0;
-}
-
 .per-rule-facets-head {
-  display     : flex;
-  align-items : center;
-  gap         : var(--prose-space-9);
-  width       : 100%;
-  padding     : var(--prose-space-7) 0 var(--prose-space-7) var(--prose-space-14);
   border      : none;
   border-left : var(--prose-border-2) solid var(--family-color);
-  background  : transparent;
-  text-align  : left;
-  cursor      : pointer;
-  transition  : opacity var(--prose-transition);
 }
 
 .per-rule-facets-head:hover {
@@ -28,22 +12,11 @@
 }
 
 .per-rule-facets-chevron {
-  flex          : none;
-  width         : 0;
-  height        : 0;
-  border-top    : var(--prose-border-4) solid transparent;
-  border-bottom : var(--prose-border-4) solid transparent;
-  border-left   : var(--prose-border-5) solid var(--family-color);
-  transition    : transform var(--prose-transition);
+  transition : transform var(--prose-transition);
 }
 
 .per-rule-facets-head[aria-expanded='true'] .per-rule-facets-chevron {
   transform : rotate(90deg);
-}
-
-.vp-doc .per-rule-facets-label {
-  margin : 0;
-  color  : color-mix(in srgb, var(--family-color) var(--prose-tint-76), var(--vp-c-text-1));
 }
 
 .per-rule-facets-label .nib-badge {
@@ -51,88 +24,13 @@
   vertical-align : calc(var(--prose-space-2) * -1);
 }
 
-.per-rule-facets-count {
-  color : var(--vp-c-text-3);
-}
-
-.per-rule-facets-count::before {
-  content : '·';
-  margin  : 0 var(--prose-space-0-5em);
-}
-
-.per-rule-facets-body {
-  padding : var(--prose-space-10) 0 var(--prose-space-2);
-}
-
-.per-rule-facets-rule {
-  padding-left : var(--prose-space-14);
-  border-left  : var(--prose-border-2) solid var(--family-color);
-}
-
-.per-rule-facets-rule + .per-rule-facets-rule {
-  margin-top : var(--prose-space-18);
-}
-
-.vp-doc .per-rule-facets-rule-head {
-  display : flex;
-  margin  : 0 0 var(--prose-space-10) calc(var(--prose-space-14) * -1);
-}
-
 .per-rule-facets-rule-head .v-popper--theme-rule-card {
   display : flex;
-}
-
-.per-rule-facets-scope {
-  display       : inline-block;
-  padding       : var(--prose-space-3) var(--prose-space-10);
-  border-radius : 0 var(--prose-radius-sm) var(--prose-radius-sm) 0;
-  background    : var(--family-color);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-0-85em);
-  color         : var(--vp-c-bg);
 }
 
 .vp-doc .per-rule-facets-rule-head a.rule-link {
   margin      : 0;
   border-left : none;
-}
-
-.per-rule-facets-list {
-  display        : flex;
-  flex-direction : column;
-  margin         : 0;
-  padding        : 0;
-}
-
-.per-rule-facets-entry {
-  padding : var(--prose-space-10) 0;
-}
-
-.per-rule-facets-entry:first-child {
-  padding-top : 0;
-}
-
-.per-rule-facets-entry:last-child {
-  padding-bottom : 0;
-}
-
-.per-rule-facets-entry + .per-rule-facets-entry {
-  border-top : var(--prose-border-1) solid var(--vp-c-divider);
-}
-
-.per-rule-facets-term {
-  display     : flex;
-  flex-wrap   : wrap;
-  align-items : center;
-  gap         : var(--prose-space-0-4rem) var(--prose-space-0-75rem);
-  margin      : 0;
-}
-
-.per-rule-facets-key {
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-md);
-  font-weight : 600;
-  color       : var(--vp-c-text-1);
 }
 
 /* Overrides the heading sheet, which hangs a permalink in the left margin the rail fills. */
@@ -147,54 +45,4 @@
 
 :is(.per-rule-facets-rule-head, .per-rule-facets-term):is(:hover, :focus-within) .header-anchor {
   opacity : 1;
-}
-
-.per-rule-facets-badges {
-  display     : inline-flex;
-  align-items : center;
-  gap         : var(--prose-space-0-4rem);
-  margin-left : auto;
-}
-
-.per-rule-facets-badges > span {
-  padding       : var(--prose-space-2) var(--prose-space-0-5em);
-  border-radius : var(--prose-radius-sm);
-  font-size     : var(--prose-text-xs);
-}
-
-.per-rule-facets-type {
-  background  : var(--vp-c-bg-soft);
-  font-family : var(--vp-font-family-mono);
-  color       : var(--vp-c-text-2);
-}
-
-.per-rule-facets-default {
-  display     : inline-flex;
-  align-items : baseline;
-  gap         : var(--prose-space-0-4em);
-  background  : color-mix(in srgb, var(--family-color) var(--prose-tint-medium), transparent);
-}
-
-.per-rule-facets-default-label {
-  letter-spacing : var(--prose-label-tracking);
-}
-
-.per-rule-facets-default-value {
-  font-family : var(--vp-font-family-mono);
-  color       : var(--vp-c-text-1);
-}
-
-.vp-doc .per-rule-facets-meaning {
-  max-width    : var(--prose-width-62ch);
-  margin       : var(--prose-space-6) 0 0;
-  padding-left : var(--prose-space-0-9rem);
-  font-size    : var(--prose-text-sm);
-  line-height  : 1.6;
-  color        : var(--vp-c-text-2);
-}
-
-@media (--prose-bp-mobile) {
-  .vp-doc .per-rule-facets-meaning {
-    padding-left : 0;
-  }
 }

@@ -14,7 +14,7 @@ describe('FamilyChip', () => {
     const chip = mount(FamilyChip, { props: { family: 'alignment' } })
     expect(chip.element.tagName).toBe('A')
     expect(chip.attributes()).toMatchObject({ 'data-family': 'alignment', href: '/rules/alignment/' })
-    expect(chip.classes().toSorted()).toStrictEqual(['family-chip', 'nib-ground'])
+    expect(chip.classes().toSorted()).toStrictEqual(['chip', 'family-chip', 'ground'])
     expect(chip.find('use').attributes('href')).toBe('#nib-ladder-small')
     expect(chip.text()).toBe('Alignment')
   })

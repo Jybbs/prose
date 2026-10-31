@@ -50,7 +50,7 @@ function onPointerMove(event: PointerEvent) {
 <template>
   <div
     ref="root"
-    class="surface-card panel"
+    class="surface-card relative isolate min-h-320 min-w-0 flex-col panel bg-bg-soft p-28 text-text-1 transition-border-color-transform-and-box-shadow duration-slow before:absolute before:inset-x-0 before:top-0 before:z-2 before:h-3 before:rounded-t-base before:opacity-0 before:transition-opacity before:duration-slow after:pointer-events-none after:absolute after:inset-0 after:z-0 after:rounded-base focus-within:border-family focus-within:before:opacity-100 chosen:border-family chosen:before:opacity-100"
     :aria-hidden="duplicate || undefined"
     :data-family="family"
     :data-active="active"
@@ -62,15 +62,15 @@ function onPointerMove(event: PointerEvent) {
     @pointerleave="onPointerLeave"
   >
     <a
-      class="surface-card-cover-link"
+      class="surface-card-cover-link absolute inset-0 z-0 overflow-hidden rounded-base whitespace-nowrap"
       :href="href"
       :aria-label="`See all ${meta.label.toLowerCase()} rules`"
       :tabindex="tabindex"
     />
-    <span class="surface-card-number">— {{ number }}</span>
-    <span class="surface-card-icon nib-ground"><NibBadge :emblem="familyEmblem(family)" :size="24.8" /></span>
-    <h3 class="surface-card-label">{{ meta.label }}</h3>
-    <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
-    <SurfaceRail :rules="rules" />
+    <span class="pointer-events-none relative z-1 font-mono text-label tracking-label text-text-3">— {{ number }}</span>
+    <span class="surface-card-icon pointer-events-none absolute top-22 right-22 z-2 medallion size-56 border-family-35-divider ground"><NibBadge :emblem="familyEmblem(family)" :size="24.8" /></span>
+    <h3 class="pointer-events-none relative z-1 mt-42 mb-12 border-none font-display text-2rem leading-1-05 font-500 text-balance">{{ meta.label }}</h3>
+    <p class="surface-card-blurb pointer-events-none relative z-1 text-md leading-1-6"><InlineProse :nodes="bodyNodes" /></p>
+    <SurfaceRail class="pointer-events-none z-1" :rules="rules" />
   </div>
 </template>

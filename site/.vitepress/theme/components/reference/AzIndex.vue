@@ -24,14 +24,16 @@ function clearFocus(token: sources.Token): void {
 </script>
 
 <template>
-  <div class="az-index-stage">
-    <nav class="az-index-tabs" role="tablist" aria-label="Domain tabs">
+  <div class="my-1-5rem">
+    <nav class="mb-18 flex flex-wrap items-end gap-x-10 gap-y-0" role="tablist" aria-label="Domain tabs">
       <button
         type="button"
         role="tab"
         :aria-selected="view === 'all'"
-        class="az-index-tab"
-        :class="{ 'is-active': view === 'all' }"
+        class="relative inline-flex items-center border-none px-3 pt-4 pb-10 font-mono text-0-56rem tracking-meta uppercase transition-color after:absolute after:inset-x-0 after:bottom-0 after:transition-background-and-height"
+        :class="view === 'all'
+          ? 'text-text-1 after:h-6 after:bg-text-1'
+          : 'text-text-2 after:h-2 after:bg-text-3/65 hover:text-text-1 hover:after:bg-text-2/80'"
         @click="view = 'all'"
       >All</button>
       <button
@@ -40,45 +42,51 @@ function clearFocus(token: sources.Token): void {
         type="button"
         role="tab"
         :aria-selected="view === d"
-        class="az-index-tab"
-        :class="{ 'is-active': view === d }"
+        class="relative inline-flex items-center border-none px-3 pt-4 pb-10 font-mono text-0-56rem tracking-meta uppercase transition-color after:absolute after:inset-x-0 after:bottom-0 after:transition-background-and-height"
+        :class="view === d
+          ? 'text-text-1 after:h-6 after:bg-domain'
+          : 'text-text-2 after:h-2 after:bg-domain/65 hover:text-text-1 hover:after:bg-domain/80'"
         :data-domain="d"
         @click="view = d"
       >{{ sources.DOMAIN_LABELS[d] }}</button>
     </nav>
 
-    <div class="az-index-float-keys-wrap" :data-dim="focus !== null">
+    <div class="min-h-180 transition-opacity dim:opacity-55" :data-dim="focus !== null">
       <section
         v-for="[domain, tokens] in visibleGroups"
         :key="domain"
-        class="az-index-section"
+        class="not-first:mt-22"
         :data-domain="domain"
       >
-        <header class="az-index-section-head">
-          <span class="kicker az-index-section-folio">{{ sources.DOMAIN_LABELS[domain] }}</span>
-          <span class="az-index-section-count">{{ tokens.length }} entries</span>
+        <header class="mb-8 flex items-baseline gap-12 border-b-1 border-b-divider pb-4">
+          <span class="kicker text-domain-75-text-2">{{ sources.DOMAIN_LABELS[domain] }}</span>
+          <span class="ml-auto font-mono text-meta tracking-meta text-text-3 uppercase">{{ tokens.length }} entries</span>
         </header>
-        <ul class="az-index-keys">
-          <li v-for="token in tokens" :key="token.key" class="az-index-key" :data-domain="domain">
+        <ul class="m-0 list-none columns-2 gap-x-28 pl-0 column-rule-divider tablet:columns-1">
+          <li v-for="token in tokens" :key="token.key" class="mt-0 mb-2 break-inside-avoid">
             <VDropdown
               theme="az-index"
+              class="block"
               @apply-show="focus = token"
               @apply-hide="clearFocus(token)"
             >
               <a
-                class="az-index-key-btn"
+                class="block w-full rounded-sm px-8 py-3 text-left font-mono text-xs wrap-anywhere whitespace-normal no-underline transition-background-and-color hover:outline-none focus-visible:outline-none"
+                :class="focus?.key === token.key
+                  ? 'bg-domain/20 text-domain-85-text-1'
+                  : 'text-text-1 hover:bg-domain/10 focus-visible:bg-domain/10'"
                 :href="token.href"
                 :aria-current="focus?.key === token.key ? 'true' : undefined"
               >{{ token.key }}</a>
               <template #popper>
-                <aside class="az-index-detail" :data-domain="token.domain">
-                  <header class="az-index-detail-banner">
-                    <span class="az-index-detail-kicker">{{ sources.DOMAIN_LABELS[token.domain] }}</span>
+                <aside class="flex flex-col overflow-hidden rounded-sm border-1 border-divider tooltip-shadow" :data-domain="token.domain">
+                  <header class="border-b-1 border-b-divider bg-bg-alt px-12 py-4 text-right">
+                    <span class="font-mono text-0-58rem tracking-display-wide text-domain-95-text-1 uppercase">{{ sources.DOMAIN_LABELS[token.domain] }}</span>
                   </header>
-                  <div class="az-index-detail-body">
-                    <code class="az-index-detail-key">{{ token.key }}</code>
-                    <p class="az-index-detail-blurb"><InlineProse :nodes="token.blurbNodes" /></p>
-                    <a class="az-index-detail-href" :href="token.href">&rarr; {{ token.href }}</a>
+                  <div class="az-index-detail-body flex flex-col items-start gap-7 bg-panel-wash px-12 py-10">
+                    <code class="text-1-15rem leading-1-1 wrap-anywhere text-text-1">{{ token.key }}</code>
+                    <p class="text-sm leading-1-45 text-text-1"><InlineProse :nodes="token.blurbNodes" /></p>
+                    <a class="font-mono text-0-58rem tracking-meta wrap-anywhere text-domain-70-text-2 transition-color hover:text-domain-95-text-1" :href="token.href">&rarr; {{ token.href }}</a>
                   </div>
                 </aside>
               </template>

@@ -1,7 +1,6 @@
 .icon-emblem {
   --emblem-ink : var(--vp-c-brand-1);
   --glyph-size : var(--prose-size-1em);
-  color        : var(--emblem-ink);
 }
 
 .icon-emblem[data-tone="duotone"] {
@@ -17,88 +16,8 @@
 .icon-emblem[data-form="fill"]                     { --emblem-paint: var(--emblem-ink); }
 .icon-emblem[data-form="fill"][data-tone="duotone"] { --emblem-paint: var(--emblem-hue); }
 
-.icon-emblem[data-terminal="nib"] {
-  stroke-linecap  : butt;
-  stroke-linejoin : miter;
-}
-
-.icon-emblem-paint {
-  fill   : var(--emblem-paint);
-  stroke : none;
-}
-
-.icon-emblem-outline {
-  stroke : var(--emblem-paint);
-}
-
-.icon-specimen {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-20);
-  margin         : var(--prose-space-24) 0 var(--prose-space-40);
-}
-
-.icon-specimen-axes {
-  display   : flex;
-  flex-wrap : wrap;
-  gap       : var(--prose-space-6) var(--prose-space-18);
-}
-
-.icon-specimen-axes div {
-  display : flex;
-  gap     : var(--prose-space-6);
-}
-
-.icon-specimen-axes dd {
-  margin : 0;
-  color  : var(--vp-c-text-1);
-}
-
-.icon-specimen-chips {
-  display   : flex;
-  flex-wrap : wrap;
-  gap       : var(--prose-space-8);
-}
-
 .icon-specimen-chips .icon-emblem {
   --glyph-size : var(--prose-text-md);
-}
-
-.vp-doc .icon-specimen-tiles {
-  display               : grid;
-  grid-template-columns : repeat(auto-fill, minmax(var(--prose-size-96), 1fr));
-  gap                   : var(--prose-space-14) var(--prose-space-8);
-  margin                : 0;
-  padding               : 0;
-  list-style            : none;
-}
-
-.vp-doc .icon-specimen-tiles li {
-  display        : flex;
-  flex-direction : column;
-  align-items    : center;
-  gap            : var(--prose-space-6);
-  margin         : 0;
-}
-
-.icon-specimen-tile {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : center;
-  width           : var(--prose-size-32);
-  height          : var(--prose-size-32);
-  border          : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius   : 50%;
-  font-size       : var(--prose-text-1-05rem);
-}
-
-.icon-specimen-card {
-  display         : flex;
-  flex-wrap       : wrap;
-  justify-content : center;
-  gap             : var(--prose-space-28);
-  padding         : var(--prose-space-28);
-  background      : var(--prose-panel-wash);
 }
 
 .icon-specimen-card .icon-emblem {

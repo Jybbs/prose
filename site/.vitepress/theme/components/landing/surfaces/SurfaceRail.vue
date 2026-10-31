@@ -153,16 +153,16 @@ const windowStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="surface-rail">
-    <div ref="rail" class="surface-rail-row" :data-bookends="pinned" :style="railStyle">
+  <div class="surface-rail relative mt-auto flex flex-col gap-10 pt-18 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-divider before:opacity-65">
+    <div ref="rail" class="surface-rail-row pointer-events-auto relative z-2 flex items-center" :data-bookends="pinned" :style="railStyle">
       <SurfacePip
         v-if="pinned"
         class="surface-rail-end"
         v-bind="pipBinding(0)"
         @select="select(0)"
       />
-      <div ref="window" class="surface-rail-window" :data-edge="edge" :style="windowStyle">
-        <div class="surface-rail-track">
+      <div ref="window" class="surface-rail-window relative min-w-0 flex-auto overflow-x-auto overflow-y-hidden edge-end:cursor-e-resize edge-start:cursor-w-resize" :data-edge="edge" :style="windowStyle">
+        <div class="surface-rail-track flex w-max items-center">
           <SurfacePip
             v-for="index in inner"
             :key="rules[index].slug"
@@ -175,7 +175,7 @@ const windowStyle = computed(() => ({
         v-for="chevron in chevrons"
         :key="chevron.side"
         type="button"
-        class="surface-rail-chevron"
+        class="surface-rail-chevron absolute top-1/2 z-3 grid w-18 cursor-pointer place-items-center font-mono text-15 leading-1 text-family focus-visible:outline-offset-1 disabled:pointer-events-none"
         :data-side="chevron.side"
         :disabled="chevron.at"
         :style="{ '--reach': chevron.reach }"
@@ -190,7 +190,7 @@ const windowStyle = computed(() => ({
         @select="select(rules.length - 1)"
       />
     </div>
-    <div class="surface-rail-name" aria-live="polite">
+    <div class="pointer-events-auto relative z-2 min-h-26" aria-live="polite">
       <SurfaceRailName :rule="activeRule" :swap="swap" />
     </div>
   </div>

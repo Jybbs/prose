@@ -41,14 +41,14 @@ function writeText(facet: Facet, raw: string): void {
     :data-family="rule.family || null"
     :aria-label="`Settings for ${rule.slug}`"
   >
-    <div class="sandbox-plate-specimen">
+    <div class="relative">
       <RuleCard v-if="card" :rule="card" :clickable="false" />
-      <div v-else class="sandbox-plate-stub">
-        <span class="sandbox-plate-stub-slug">{{ rule.slug }}</span>
+      <div v-else class="px-16 py-12">
+        <span class="font-mono text-kicker-sm tracking-kicker text-family-or-brand-1 uppercase">{{ rule.slug }}</span>
       </div>
       <button
         type="button"
-        class="panel-seat panel-seat-sm sandbox-plate-close"
+        class="sandbox-plate-close grid size-26 place-items-center rounded-sm border-1 hover:border-family-or-brand-1-55-divider hover:text-family-or-brand-1 focus-visible:outline-offset-1"
         aria-label="Close"
         @click="$emit('close')"
       >
@@ -58,16 +58,16 @@ function writeText(facet: Facet, raw: string): void {
         </svg>
       </button>
     </div>
-    <div class="sandbox-plate-divider" aria-hidden="true" />
+    <div class="sandbox-plate-divider after:absolute after:-top-1 after:left-0 after:h-2 after:w-30 after:bg-family-or-brand-1" aria-hidden="true" />
     <div class="sandbox-plate-rows">
-      <div v-for="facet in facets" :key="facet.key" class="sandbox-plate-row">
-        <span class="sandbox-plate-label">{{ facet.label }}</span>
-        <span class="sandbox-plate-hint" v-html="facet.hintHtml" />
+      <div v-for="facet in facets" :key="facet.key" class="col-span-full grid min-h-2-1rem grid-cols-subgrid items-center not-first:border-t-1 not-first:border-t-divider medium:gap-y-0-1rem medium:py-0-4rem">
+        <span class="font-mono text-xxs font-500 tracking-0-02em text-family-or-brand-1 uppercase medium:col-start-1 medium:row-start-1">{{ facet.label }}</span>
+        <span class="sandbox-plate-hint py-0-25rem text-xs leading-1-4 text-text-3 italic medium:col-start-1 medium:row-start-2 medium:py-0" v-html="facet.hintHtml" />
         <button
           v-if="facet.kind === 'bool'"
           type="button"
           role="switch"
-          class="sandbox-plate-control sandbox-plate-switch"
+          class="sandbox-plate-control sandbox-plate-switch relative h-22 w-40 rounded-pill border-none bg-text-3/40 transition-background focus-visible:outline-offset-1 aria-checked:bg-family-or-brand-1"
           :aria-checked="boolValue(facet)"
           :aria-label="facet.label"
           @click="sandbox.setFacet(rule.slug, facet, !boolValue(facet))"
@@ -77,7 +77,7 @@ function writeText(facet: Facet, raw: string): void {
         <input
           v-else-if="facet.kind === 'int'"
           type="number"
-          class="panel-number sandbox-plate-control sandbox-plate-number"
+          class="sandbox-plate-control sandbox-plate-number panel-number h-22 rounded-sm border-1 border-family-or-brand-1-55-divider bg-bg font-mono text-xs text-text-1 focus-visible:outline-offset-1"
           :value="numberValue(facet)"
           :aria-label="facet.label"
           @input="sandbox.setFacet(rule.slug, facet, Number(($event.target as HTMLInputElement).value))"
@@ -85,7 +85,7 @@ function writeText(facet: Facet, raw: string): void {
         <input
           v-else
           type="text"
-          class="sandbox-plate-control sandbox-plate-text"
+          class="sandbox-plate-control h-22 w-9rem rounded-sm border-1 border-family-or-brand-1-55-divider bg-bg px-0-4rem font-mono text-xs text-text-1 focus-visible:outline-offset-1"
           :value="textValue(facet)"
           :aria-label="facet.label"
           @change="writeText(facet, ($event.target as HTMLInputElement).value)"

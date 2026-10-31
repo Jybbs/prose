@@ -3,73 +3,10 @@
 .directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-70), var(--vp-c-text-1)); }
 .directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-70), var(--vp-c-text-1)); }
 
-.directive-anatomy {
-  background : var(--prose-panel-wash);
-}
-
-.directive-anatomy-index {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-20);
-  padding        : var(--prose-space-18) var(--prose-space-20) var(--prose-space-22);
-}
-
-.directive-anatomy-band {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-8);
-}
-
 .directive-anatomy-band-head {
   --band-accent : var(--scope-tint);
 
   padding : 0 var(--prose-space-2);
-}
-
-.directive-anatomy-band-badge {
-  width       : var(--prose-size-22);
-  height      : var(--prose-size-22);
-  flex-shrink : 0;
-  background  : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
-  font-size   : var(--prose-text-0-92rem);
-  line-height : 1;
-}
-
-.directive-anatomy-band-cells {
-  display   : flex;
-  flex-wrap : wrap;
-  gap       : var(--prose-space-6);
-}
-
-.directive-anatomy-thumb {
-  display       : inline-flex;
-  align-items   : center;
-  padding       : var(--prose-space-2) var(--prose-space-9) var(--prose-space-3);
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-3);
-  background    : var(--vp-c-bg);
-  cursor        : pointer;
-  transition    : border-color var(--prose-transition),
-                  background var(--prose-transition);
-}
-
-.directive-anatomy-thumb-form {
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-xxs);
-  line-height : 1.5;
-  background  : transparent;
-  padding     : 0;
-  border      : none;
-  color       : var(--vp-c-text-2);
-}
-
-.directive-anatomy-thumb[data-active="true"] {
-  border-color : color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
-  background   : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
-}
-
-.directive-anatomy-thumb[data-active="true"] .directive-anatomy-thumb-form {
-  color : var(--vp-c-text-1);
 }
 
 .directive-anatomy-plate {
@@ -86,14 +23,6 @@
   );
 }
 
-.directive-anatomy-specimen {
-  display     : flex;
-  flex-wrap   : wrap;
-  align-items : flex-start;
-  gap         : 0;
-  padding     : 0;
-}
-
 .directive-anatomy-part-col {
   display            : grid;
   grid-template-rows : auto var(--prose-size-28) auto;
@@ -107,69 +36,11 @@
   font-family : var(--vp-font-family-mono);
   font-size   : clamp(var(--prose-text-1-35rem), 2.3vw, var(--prose-text-2rem));
   line-height : 1.15;
-  background  : transparent;
-  padding     : 0;
   border      : none;
   color       : var(--part-color, var(--vp-c-text-1));
   white-space : pre;
 }
 
-.directive-anatomy-part-col[data-role="action"] .directive-anatomy-part { font-weight : 600; }
-
-.directive-anatomy-tick {
-  display    : block;
-  width      : var(--prose-size-1);
-  height     : var(--prose-size-24);
-  margin     : var(--prose-space-2) 0;
-  background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
-}
-
-.directive-anatomy-label {
-  font-family    : var(--prose-font-display);
-  font-style     : italic;
-  font-size      : var(--prose-text-0-92rem);
-  color          : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
-}
-
-.directive-anatomy-info {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-4);
-}
-
-.directive-anatomy-effect {
-  margin      : 0;
-  max-width   : var(--prose-width-72ch);
-  font-family : var(--vp-font-family-base);
-  font-style  : italic;
-  font-size   : var(--prose-text-0-98rem);
-  line-height : 1.55;
-  color       : var(--vp-c-text-2);
-}
-
 .directive-anatomy-effect code {
   font-style : normal;
 }
-
-.vp-doc .directive-anatomy-pre,
-.directive-anatomy-pre {
-  margin        : 0;
-  padding       : var(--prose-space-12) var(--prose-space-14);
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--prose-text-code);
-  line-height   : 1.55;
-  color         : var(--vp-c-text-2);
-  overflow-x    : auto;
-}
-
-.directive-anatomy-line {
-  display     : block;
-  white-space : pre;
-}
-
-.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1)); font-weight : 500; }
-.directive-anatomy-line[data-line-kind="comment"]   { color : var(--vp-c-text-3); }
-.directive-anatomy-line[data-line-kind="code"]      { color : var(--vp-c-text-1); }

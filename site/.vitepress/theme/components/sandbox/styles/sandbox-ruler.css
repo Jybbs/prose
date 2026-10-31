@@ -1,10 +1,3 @@
-.sandbox-ruler-head {
-  display     : flex;
-  flex-wrap   : wrap;
-  gap         : var(--prose-space-0-75rem) var(--prose-space-1-25rem);
-  align-items : center;
-}
-
 .sandbox-ruler {
   --sandbox-ruler-chip-h  : var(--prose-size-20);
   --sandbox-ruler-gap     : var(--prose-space-5);
@@ -86,12 +79,6 @@
   outline      : none;
 }
 
-.sandbox-ruler-stop:hover,
-.sandbox-ruler-stop:focus-within,
-.sandbox-ruler-stop[data-dragging] {
-  z-index : 2;
-}
-
 .sandbox-ruler-marker {
   position   : absolute;
   top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row) + var(--sandbox-ruler-chip-h) - var(--prose-space-2));
@@ -99,19 +86,6 @@
   left       : calc(var(--prose-size-10) / -2);
   width      : var(--prose-size-10);
   transition : top var(--prose-transition);
-}
-
-.sandbox-ruler-marker::before {
-  content    : '';
-  position   : absolute;
-  inset      : 0 var(--prose-space-4);
-  background : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
-  transition : background var(--prose-transition);
-}
-
-.sandbox-ruler-stop:hover .sandbox-ruler-marker::before,
-.sandbox-ruler-stop[data-dragging] .sandbox-ruler-marker::before {
-  background : var(--hue);
 }
 
 .sandbox-ruler-chip {
@@ -131,44 +105,4 @@
   white-space   : nowrap;
   transform     : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
   transition    : border-color var(--prose-transition), top var(--prose-transition);
-}
-
-.sandbox-ruler-stop:hover .sandbox-ruler-chip,
-.sandbox-ruler-stop[data-dragging] .sandbox-ruler-chip {
-  border-color : var(--hue);
-}
-
-.sandbox-ruler-stop:focus-visible .sandbox-ruler-chip {
-  outline        : var(--prose-focus-ring);
-  outline-offset : var(--prose-space-1);
-}
-
-.sandbox-ruler-chip-label {
-  color          : var(--vp-c-text-2);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
-  letter-spacing : var(--prose-tracking-0-05em);
-  text-transform : uppercase;
-}
-
-.sandbox-ruler-chip-value {
-  color                : var(--vp-c-text-1);
-  font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-text-0-68rem);
-  font-variant-numeric : tabular-nums;
-}
-
-.sandbox-ruler-chip-input {
-  width       : var(--prose-size-3-4rem);
-  padding     : 0 var(--prose-space-5);
-  color       : var(--vp-c-text-1);
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-0-68rem);
-  cursor      : text;
-  user-select : text;
-}
-
-.sandbox-ruler-chip-input:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : calc(var(--prose-space-1) * -1);
 }

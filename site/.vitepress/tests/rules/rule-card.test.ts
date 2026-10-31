@@ -14,7 +14,7 @@ const card = (clickable = true) => mount(RuleCard, {
 describe('RuleCard', () => {
   it('sets the family badge alone on the tint at the card\'s left, named for a screen reader', () => {
     const mark = card().get('.rule-card-mark')
-    expect(mark.classes()).toContain('nib-ground')
+    expect(mark.classes()).toContain('ground')
     expect(mark.get('use').attributes('href')).toBe('#nib-basket-small')
     expect(mark.get('svg').attributes()).toMatchObject({ 'aria-label': 'Layout', role: 'img' })
   })

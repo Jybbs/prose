@@ -2,10 +2,6 @@
   --layer-base          : var(--prose-palette-celadon);
   --layer-orchestration : var(--prose-palette-whiskey);
   --layer-analysis      : var(--prose-palette-ube);
-
-  margin     : var(--prose-space-1-5rem) 0;
-  padding    : var(--prose-space-12) var(--prose-space-14);
-  background : var(--vp-c-bg);
 }
 
 .primitives-composition [data-layer="base"]          { --layer-accent : var(--layer-base);          }

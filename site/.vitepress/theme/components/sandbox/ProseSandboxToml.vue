@@ -117,7 +117,7 @@ onMounted(() => settle(configToml.value))
 </script>
 
 <template>
-  <section class="code-panel sandbox-toml copy-host panel panel-clip" aria-label="prose.toml config">
+  <section class="sandbox-toml copy-host code-panel overflow-hidden panel transition-opacity in-editing:pointer-events-none in-editing:opacity-50" aria-label="prose.toml config">
     <header class="code-panel-label">prose.toml</header>
 
     <SandboxCodeEditor
@@ -129,15 +129,15 @@ onMounted(() => settle(configToml.value))
     />
     <pre
       v-show="!editing && typing"
-      class="code-panel-code code-typewriter shiki"
+      class="shiki code-panel-code code-typewriter"
       v-html="typingHtml"
     />
-    <div v-show="!editing && !typing" class="sandbox-toml-body">
-      <div v-if="located.length" class="sandbox-toml-gutter" aria-hidden="true">
+    <div v-show="!editing && !typing" class="flex min-h-0">
+      <div v-if="located.length" class="sandbox-toml-gutter shrink-0 py-18 pl-10 text-xs leading-1-6 select-none" aria-hidden="true">
         <span v-for="row in rows" :key="row" :data-flagged="flagged.has(row) ? '' : undefined" />
       </div>
       <div
-        class="code-panel-code code-panel-editable sandbox-toml-display"
+        class="sandbox-toml-display code-text grow cursor-text overflow-auto py-18 pr-22 pl-8"
         role="button"
         tabindex="0"
         @click="startEditing"
@@ -147,13 +147,13 @@ onMounted(() => settle(configToml.value))
         v-html="displayHtml"
       />
     </div>
-    <p v-if="located.length" class="config-notice-strip">
+    <p v-if="located.length" class="config-notice-strip flex items-center gap-6 border-t-1 border-t-divider bg-warning-1/10 px-14 py-7 font-mono text-xs tracking-0-02em text-warning-1">
       <span aria-hidden="true">▲</span>
       {{ located.length }} unknown {{ located.length === 1 ? 'key' : 'keys' }}
     </p>
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
-    <p v-if="configError" class="code-panel-error">{{ configError }}</p>
-    <p v-for="notice in stray" :key="notice" class="code-panel-warning">{{ notice }}</p>
+    <p v-if="configError" class="code-panel-error code-panel-notice text-danger-1">{{ configError }}</p>
+    <p v-for="notice in stray" :key="notice" class="code-panel-warning code-panel-notice text-warning-1">{{ notice }}</p>
     <ConfigFlagPopper ref="popper" :rules="rules" @apply="renameConfigKey" />
   </section>
 </template>

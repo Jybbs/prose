@@ -10,32 +10,10 @@
   inherits      : false;
 }
 
-.surface-card {
-  position        : relative;
-  isolation       : isolate;
-  display         : flex;
-  flex-direction  : column;
-  min-width       : 0;
-  min-height      : var(--prose-size-320);
-  padding         : var(--prose-space-28);
-  background      : var(--vp-c-bg-soft);
-  color           : var(--vp-c-text-1);
-  transition      :
-    border-color var(--prose-transition-slow),
-    transform    var(--prose-transition-slow),
-    box-shadow   var(--prose-transition-slow);
+.surface-card-cover-link {
+  text-indent : 100%;
 }
 
-.surface-card > *:not(.surface-card-cover-link, .surface-card-icon) {
-  position : relative;
-  z-index  : 1;
-}
-
-.surface-card > *:not(.surface-card-cover-link) {
-  pointer-events : none;
-}
-
-.surface-card-cover-link,
 .vp-doc .rule-card-cover,
 .rule-card-cover {
   position             : absolute;
@@ -48,92 +26,28 @@
   text-decoration-line : none;
 }
 
-.surface-card-blurb .glossary-anchor,
-.surface-rail > * {
+.surface-card-blurb .glossary-anchor {
   position       : relative;
   z-index        : 2;
   pointer-events : auto;
 }
 
 .surface-card::after {
-  content        : "";
-  position       : absolute;
-  inset          : 0;
-  background     : radial-gradient(
+  background : radial-gradient(
     var(--prose-size-420) circle at var(--spotlight-x) var(--spotlight-y),
     color-mix(in oklab, var(--family-color) var(--prose-tint-medium), transparent) 0%,
     transparent 60%
   );
-  pointer-events : none;
-  z-index        : 0;
-  border-radius  : var(--prose-radius);
 }
 
 .surface-card::before {
-  content       : "";
-  position      : absolute;
-  top           : 0;
-  left          : 0;
-  right         : 0;
-  height        : var(--prose-size-3);
-  background    : linear-gradient(90deg, transparent, var(--family-color), transparent);
-  opacity       : 0;
-  transition    : opacity var(--prose-transition-slow);
-  border-radius : var(--prose-radius) var(--prose-radius) 0 0;
-  z-index       : 2;
-}
-
-.surface-card[data-active="true"]::before,
-.surface-card:focus-within::before {
-  opacity : 1;
+  background : linear-gradient(90deg, transparent, var(--family-color), transparent);
 }
 
 .surface-card[data-active="true"],
 .surface-card:focus-within {
-  border-color : var(--family-color);
-  transform    : translateY(calc(var(--prose-space-2) * -1));
-  box-shadow   : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
-}
-
-.surface-card-number {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-label-size);
-  letter-spacing : var(--prose-label-tracking);
-  color          : var(--vp-c-text-3);
-}
-
-.surface-card-icon {
-  position        : absolute;
-  top             : var(--prose-space-22);
-  right           : var(--prose-space-22);
-  display         : flex;
-  align-items     : center;
-  justify-content : center;
-  width           : var(--prose-size-56);
-  height          : var(--prose-size-56);
-  border          : var(--prose-border-1) solid color-mix(in srgb, var(--family-color) var(--prose-tint-35), var(--vp-c-divider));
-  border-radius   : 50%;
-  z-index         : 2;
-}
-
-.surface-card-label {
-  margin      : var(--prose-space-42) 0 var(--prose-space-12);
-  padding     : 0;
-  border      : none;
-  font-family : var(--prose-font-display);
-  font-weight : 500;
-  font-size   : var(--prose-text-2rem);
-  line-height : 1.05;
-  color       : var(--vp-c-text-1);
-  text-wrap   : balance;
-}
-
-.surface-card-blurb {
-  margin      : 0;
-  font-family : var(--vp-font-family-base);
-  font-size   : var(--prose-text-md);
-  line-height : 1.6;
-  color       : var(--vp-c-text-2);
+  transform  : translateY(calc(var(--prose-space-2) * -1));
+  box-shadow : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
 }
 
 .surface-card-blurb :where(code) {

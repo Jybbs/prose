@@ -1,4 +1,5 @@
-import fs from 'node:fs'
+import fs   from 'node:fs'
+import path from 'node:path'
 
 import { differenceCiede2000, interpolate, wcagContrast } from 'culori'
 import { parse as parseCss }                              from 'postcss'
@@ -7,6 +8,8 @@ import * as emblems                                  from '../../lib/shared/embl
 import { FAMILIES, PALETTE }                         from '../../lib/shared/palette'
 import { GLOSSARY_FAMILY_META, type GlossaryFamily } from '../../lib/shared/registries'
 import { siteSheets }                                from '../support'
+import * as tailwind                                 from '../tailwind'
+import * as vocabulary                               from '../vocabulary'
 
 const FAMILIES_LISTED = Object.keys(GLOSSARY_FAMILY_META) as GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
@@ -21,8 +24,19 @@ function declared(file: string | URL, selector: string): Record<string, string> 
   return props
 }
 
-const VITEPRESS = new URL('../../../node_modules/vitepress/dist/client/theme-default/styles/vars.css', import.meta.url)
-const tokens    = declared(new URL('../../theme/styles/tokens.css', import.meta.url), ':root')
+// Reads each declaration the shapes include makes directly under `@utility name`.
+function shape(name: string): Record<string, string> {
+  const props: Record<string, string> = {}
+  parseCss(fs.readFileSync(SHAPES, 'utf8')).walkAtRules('utility', rule => {
+    if (rule.params !== name) return
+    rule.each(node => { if (node.type === 'decl') props[node.prop] = node.value })
+  })
+  return props
+}
+
+const SHAPES    = new URL('../../theme/styles/tailwind/shapes.css', import.meta.url)
+const VITEPRESS = path.join(vocabulary.SITE, vocabulary.VITEPRESS_THEME, 'styles/vars.css')
+const tokens    = declared(path.join(vocabulary.SITE, vocabulary.TOKENS), ':root')
 const share     = (token: string): number => parseFloat(tokens[token]) / 100
 
 interface Scheme {
@@ -96,15 +110,14 @@ describe('the badge ink', () => {
   })
 
   it('applies the ink and the ground these cases measure', () => {
-    const nib = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
     const hue = 'var(--family-color, var(--vp-c-brand-1))'
-    expect(declared(nib, '.nib-badge').color)
+    expect(shape('nib-badge').color)
       .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ink), var(--vp-c-text-1))`)
-    expect(declared(nib, '.nib-chip,\n.nib-ground,\n.rule-chip,\n.rule-link')['background-color'])
+    expect(shape('ground')['background-color'])
       .toBe(`color-mix(in srgb, ${hue} var(--prose-tint-ground), var(--vp-c-bg))`)
   })
 
-  it('takes its ink from nib.css alone, so no surface recolors a badge off its ground', () => {
+  it('takes its ink from the nib-badge shape alone, so no surface recolors a badge off its ground', () => {
     const recolored = siteSheets().filter(({ root }) => {
       let sets = false
       root.walkRules(rule => {
@@ -112,15 +125,19 @@ describe('the badge ink', () => {
       })
       return sets
     })
-    expect(recolored.map(sheet => sheet.file)).toStrictEqual(['.vitepress/theme/components/base/styles/nib.css'])
+    expect(recolored.map(sheet => sheet.file)).toStrictEqual([])
   })
 
-  it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', () => {
-    const css     = new URL('../../theme/components/rules/styles/pipeline-order.css', import.meta.url)
+  it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', async () => {
+    const design  = await tailwind.designSystem()
     const painted = [] as string[]
-    parseCss(fs.readFileSync(css, 'utf8')).walkRules(rule => {
+    parseCss(vocabulary.read('.vitepress/theme/components/rules/styles/pipeline-order.css')).walkRules(rule => {
       if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
     })
+    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.vue')
+    for (const [name] of template.matchAll(/[\w/-]*hover(?:\/[\w-]+)?:[\w/-]+/g)) {
+      if (/background/.test(design.candidatesToCss([name])[0] ?? '')) painted.push(name)
+    }
     expect(painted).toStrictEqual([])
   })
 

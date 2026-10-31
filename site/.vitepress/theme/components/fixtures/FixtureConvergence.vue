@@ -4,10 +4,10 @@ import { computed } from 'vue'
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import InlineProse         from '../base/InlineProse.vue'
 
-interface Run {
-  badge : 'changed' | 'settled'
-  html ?: string
-  label : string
+interface Step {
+  badge ?: 'changed' | 'settled'
+  html  ?: string
+  label  : string
 }
 
 const props = defineProps<{
@@ -17,46 +17,45 @@ const props = defineProps<{
 
 const entry = useFixtureEntry(props)
 
-// A fixture that rewrites its input settles on the run after the one that
-// changed it, whereas a fixed-point fixture is already settled on run one.
-const runs = computed<Run[]>(() => entry.value.changesSource
-  ? [
-      { badge: 'changed', html: entry.value.outputHtml, label: 'Run 1' },
-      { badge: 'settled', label: 'Run 2' }
-    ]
-  : [{ badge: 'settled', label: 'Run 1' }])
+// Lists the input as written ahead of each run over it. A fixture that
+// rewrites its input settles on the run after the one that changed it, whereas
+// a fixed-point fixture is already settled on run one.
+const steps = computed<Step[]>(() => {
+  const written: Step = { html: entry.value.inputHtml, label: 'As written' }
+  return entry.value.changesSource
+    ? [
+        written,
+        { badge: 'changed', html: entry.value.outputHtml, label: 'Run 1' },
+        { badge: 'settled', label: 'Run 2' }
+      ]
+    : [written, { badge: 'settled', label: 'Run 1' }]
+})
 </script>
 
 <template>
-  <section class="fixture fixture-converge">
-    <div v-if="entry.descriptionNodes" class="fixture-lead">
+  <section class="my-1-25rem">
+    <div v-if="entry.descriptionNodes" class="fixture-lead mb-1rem">
       <InlineProse :nodes="entry.descriptionNodes" />
     </div>
-    <ol class="fixture-converge-track">
-      <li class="fixture-converge-step">
-        <p class="fixture-converge-mark">
-          <span class="fixture-converge-run">As written</span>
-        </p>
-        <div class="fixture-converge-state panel panel-clip" v-html="entry.inputHtml" />
-      </li>
+    <ol class="flex flex-col gap-10 border-l-1 border-l-divider">
       <li
-        v-for="run in runs"
-        :key="run.label"
-        class="fixture-converge-step"
-        :data-badge="run.badge"
+        v-for="step in steps"
+        :key="step.label"
+        class="fixture-converge-step group relative before:absolute before:top-0-45rem before:size-7 before:rounded-half before:border-1 before:border-divider before:bg-bg settled:before:border-celadon settled:before:bg-celadon"
+        :data-badge="step.badge"
       >
-        <p class="fixture-converge-mark">
-          <span class="fixture-converge-run">{{ run.label }}</span>
-          <span class="fixture-converge-badge">
-            {{ run.badge === 'changed' ? 'Rewritten' : 'No change' }}
+        <p class="flex items-baseline gap-10">
+          <span class="font-mono text-meta tracking-label-loose text-text-1 uppercase">{{ step.label }}</span>
+          <span v-if="step.badge" class="change-chip px-8 py-2 group-settled:border-celadon/40 group-settled:text-celadon">
+            {{ step.badge === 'changed' ? 'Rewritten' : 'No change' }}
           </span>
         </p>
         <div
-          v-if="run.html"
-          class="fixture-converge-state panel panel-clip"
-          v-html="run.html"
+          v-if="step.html"
+          class="fixture-converge-state overflow-hidden panel bg-code-block"
+          v-html="step.html"
         />
-        <p v-else class="fixture-converge-note">
+        <p v-else class="fixture-converge-note text-meta text-text-2">
           This run reads the previous output and rewrites nothing, so the file has reached its
           fixed point and every later run leaves it exactly as it stands.
         </p>

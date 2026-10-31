@@ -1,16 +1,8 @@
 .landing-cta-scroll {
-  position            : relative;
-  flex                : 1;
-  min-height          : 0;
-  align-self          : stretch;
-  margin-inline-start : calc(var(--prose-space-10) * -1);
-  width               : calc(100% + var(--prose-space-10));
-  overflow-y          : auto;
-  overflow-x          : hidden;
-  scrollbar-gutter    : stable;
-  scrollbar-width     : thin;
-  scrollbar-color     : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge)) transparent;
-  direction           : rtl;
+  width            : calc(100% + var(--prose-space-10));
+  scrollbar-gutter : stable;
+  scrollbar-color  : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge)) transparent;
+  direction        : rtl;
 }
 .landing-cta-scroll::-webkit-scrollbar {
   width : var(--prose-size-6);
@@ -19,72 +11,7 @@
   background    : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge));
   border-radius : var(--prose-radius-3);
 }
-.landing-cta-scroll::-webkit-scrollbar-track {
-  background : transparent;
-}
 
 .landing-cta-scroll > * {
-  direction            : ltr;
-  padding-inline-start : var(--prose-space-14);
-}
-
-.landing-cta-ledger {
-  margin         : 0;
-  padding        : 0;
-  list-style     : none;
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-1);
-}
-
-.landing-cta-ledger-row a {
-  display               : grid;
-  grid-template-columns : auto minmax(var(--prose-size-12), 1fr) auto;
-  align-items           : baseline;
-  gap                   : var(--prose-space-6);
-  padding               : var(--prose-space-4) var(--prose-space-8);
-  border-radius         : var(--prose-radius-sm);
-  text-decoration-line  : none;
-  color                 : var(--vp-c-text-1);
-  font-family           : var(--vp-font-family-mono);
-  transition            : background var(--prose-transition), color var(--prose-transition);
-}
-.landing-cta-ledger-row a:hover {
-  background : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-medium), var(--vp-c-bg));
-  color      : var(--stamp-ink);
-}
-
-.landing-cta-ledger-version {
-  font-family : var(--prose-font-display);
-  font-style  : italic;
-  font-size   : var(--prose-text-0-98rem);
-  color       : var(--stamp-ink);
-}
-
-.landing-cta-ledger-leader {
-  margin : 0 var(--prose-space-2) var(--prose-space-0-4em);
-}
-
-.landing-cta-ledger-month {
-  font-size      : var(--prose-text-0-66rem);
-  letter-spacing : var(--prose-tracking-0-12em);
-  color          : var(--vp-c-text-3);
-}
-
-.landing-cta-group + .landing-cta-group {
-  margin-top : var(--prose-space-6);
-}
-
-.landing-cta-year {
-  position       : sticky;
-  top            : 0;
-  margin         : 0;
-  padding        : var(--prose-space-4) var(--prose-space-8) var(--prose-space-2);
-  background     : var(--panel-bg);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size-sm);
-  letter-spacing : var(--prose-display-tracking-wide);
-  text-transform : uppercase;
-  color          : var(--prose-palette-ube);
-  z-index        : 1;
+  direction : ltr;
 }

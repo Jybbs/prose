@@ -19,11 +19,11 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
 </script>
 
 <template>
-  <aside v-if="visible" class="glossary-folio-index" aria-label="Glossary index">
-    <div class="glossary-folio-search-header">
-      <span class="glossary-folio-meta">{{ filtered.length }} of {{ ordered.length }}</span>
-      <div class="glossary-folio-search panel">
-        <svg class="glossary-folio-search-glyph" viewBox="0 0 24 24" aria-hidden="true">
+  <aside v-if="visible" class="mt-20 flex flex-col gap-12" aria-label="Glossary index">
+    <div class="flex flex-col gap-4">
+      <span class="ml-auto font-mono text-meta tracking-meta whitespace-nowrap text-text-3 uppercase">{{ filtered.length }} of {{ ordered.length }}</span>
+      <div class="flex items-center gap-10 panel bg-bg-soft px-14 py-6 transition-border-color-and-background focus-within:border-ube-55-divider focus-within:halo-ube-20 hover:bg-bg hover:not-focus-within:border-ube-35-divider">
+        <svg class="size-14 shrink-0 text-text-2" viewBox="0 0 24 24" aria-hidden="true">
           <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
             <path d="m21 21l-4.34-4.34" />
             <circle cx="11" cy="11" r="8" />
@@ -32,29 +32,32 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
         <input
           v-model="query"
           type="search"
-          class="glossary-folio-input"
+          class="h-22 min-w-0 flex-1 border-none text-sm text-text-1 outline-none placeholder:text-text-3 placeholder:opacity-80"
           aria-label="Filter glossary"
         />
       </div>
     </div>
-    <div v-if="filtered.length === 0" class="glossary-folio-empty">
-      No entries match <code>{{ query }}</code>.
+    <div v-if="filtered.length === 0" class="px-4 py-12 text-sm text-text-3">
+      No entries match <code class="rounded-none bg-transparent p-0 text-text-2">{{ query }}</code>.
     </div>
-    <div v-else class="glossary-folio-list">
-      <div v-for="[initial, entries] in grouped" :key="initial" class="glossary-folio-block">
-        <p class="glossary-folio-letter">{{ initial }}</p>
-        <ul class="glossary-folio-rows">
-          <li v-for="entry in entries" :key="entry.slug">
+    <div v-else class="glossary-folio-list overflow-y-auto">
+      <div v-for="[initial, entries] in grouped" :key="initial" class="not-first:mt-14">
+        <p class="mt-0 mb-4 border-b-1 border-b-divider px-4 pb-4 font-mono text-meta font-500 tracking-label text-text-3 uppercase opacity-70">{{ initial }}</p>
+        <ul class="m-0 list-none p-0">
+          <li v-for="entry in entries" :key="entry.slug" class="mt-0">
             <button
               type="button"
-              class="glossary-folio-row"
-              :class="{ 'is-active': entry.slug === selected }"
+              class="group grid min-h-24 w-full grid-cols-3-1fr items-center gap-10 rounded-sm border-none px-8 py-3 text-left transition-background"
+              :class="entry.slug === selected ? 'bg-family/22' : 'hover:bg-family/10'"
               :data-family="entry.primaryFamily"
               :style="{ '--rail-paint': railPaint(entry.families) }"
               @click="selected = entry.slug"
             >
-              <span class="glossary-folio-row-rail" aria-hidden="true"></span>
-              <code class="glossary-folio-row-slug">{{ entry.slug }}</code>
+              <span class="glossary-folio-row-rail self-stretch rounded-2" aria-hidden="true"></span>
+              <code
+                class="glossary-folio-row-slug min-w-0 rounded-none bg-transparent p-0 font-base text-sm wrap-anywhere"
+                :class="entry.slug === selected ? 'font-600 text-text-1' : 'text-text-2 group-hover:text-text-1'"
+              >{{ entry.slug }}</code>
             </button>
           </li>
         </ul>

@@ -28,13 +28,13 @@ const items = computed((): Item[] => [
 </script>
 
 <template>
-  <footer class="build-metadata">
-    <span v-for="item in items" :key="item.label" class="build-metadata-item">
-      <span class="build-metadata-value">
+  <footer class="mx-auto mt-24 flex max-w-1120 flex-wrap justify-center gap-x-52 gap-y-16 border-t-1 border-t-divider px-18 pt-18 pb-14 font-mono tracking-folio">
+    <span v-for="item in items" :key="item.label" class="flex flex-col items-center gap-1">
+      <span class="text-md leading-1 text-text-1">
         <code v-if="item.code">{{ item.value }}</code>
         <template v-else>{{ item.value }}</template>
       </span>
-      <span class="build-metadata-label">{{ item.label }}</span>
+      <span class="text-meta tracking-0-12em text-text-3 uppercase">{{ item.label }}</span>
     </span>
   </footer>
 </template>

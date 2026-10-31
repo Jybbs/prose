@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ variant?: 'plain' | 'rule' }>()
+defineProps<{ variant?: 'plain' | 'rule' | 'wide' }>()
 </script>
 
 <template>

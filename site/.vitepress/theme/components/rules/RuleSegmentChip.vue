@@ -16,7 +16,7 @@ defineProps<{
       :title="segment.rule ? undefined : `${segment.slug} (${segment.family ?? 'undocumented'})`"
     >
       <span class="composition-cards-chip-label">
-        <span class="composition-cards-chip-slug">{{ segment.slug }}</span>
+        <span class="text-xxs tracking-0-04em uppercase">{{ segment.slug }}</span>
       </span>
     </a>
   </RuleTooltipPopper>

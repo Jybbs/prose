@@ -1,0 +1,92 @@
+@custom-variant dim (&[data-dim="true"]);
+@custom-variant settled (&[data-badge="settled"]);
+@custom-variant tint-apricot (&[data-tint="apricot"]);
+@custom-variant tint-celadon (&[data-tint="celadon"]);
+
+@theme inline {
+  --color-domain                              : var(--domain-color);
+  --color-domain-70-text-2                    : color-mix(in srgb, var(--domain-color) var(--prose-tint-70), var(--vp-c-text-2));
+  --color-domain-75-text-2                    : color-mix(in srgb, var(--domain-color) var(--prose-tint-75), var(--vp-c-text-2));
+  --color-domain-85-text-1                    : color-mix(in srgb, var(--domain-color) var(--prose-tint-85), var(--vp-c-text-1));
+  --color-domain-95-text-1                    : color-mix(in srgb, var(--domain-color) var(--prose-tint-95), var(--vp-c-text-1));
+  --color-family-76-text-1                    : color-mix(in srgb, var(--family-color) var(--prose-tint-76), var(--vp-c-text-1));
+  --color-ube-35-divider                      : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-35), var(--vp-c-divider));
+  --color-ube-55-divider                      : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-55), var(--vp-c-divider));
+
+  --flex-basis-1-4em                          : var(--prose-size-1-4em);
+
+  --grid-template-columns-3-1fr               : var(--prose-size-3) 1fr;
+
+  --transition-property-background-and-height : background, height;
+  --transition-property-color-and-box-shadow  : color, box-shadow;
+}
+
+@utility change-chip {
+  border           : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius    : var(--prose-radius-sm);
+  background-color : var(--vp-c-bg-soft);
+  font-family      : var(--vp-font-family-mono);
+  font-size        : var(--prose-text-meta);
+  letter-spacing   : var(--prose-label-tracking-loose);
+  text-transform   : uppercase;
+  color            : var(--vp-c-text-3);
+}
+
+@utility hairline-ube {
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 var(--prose-palette-ube);
+}
+
+@utility hairline-ube-38 {
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-38), transparent);
+}
+
+@utility halo-ube-20 {
+  box-shadow : 0 0 0 var(--prose-border-3) color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-20), transparent);
+}
+
+@utility step-button {
+  display         : inline-flex;
+  align-items     : center;
+  justify-content : center;
+  width           : var(--prose-size-24);
+  height          : var(--prose-size-24);
+  padding         : 0;
+  border          : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius   : var(--prose-radius-sm);
+  background      : var(--vp-c-bg);
+  font-family     : var(--vp-font-family-mono);
+  font-size       : var(--prose-text-1rem);
+  font-weight     : 400;
+  line-height     : 1;
+  color           : var(--vp-c-text-3);
+  cursor          : pointer;
+  transition      : border-color var(--prose-transition), color var(--prose-transition);
+
+  &:hover {
+    border-color : color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
+    color        : var(--vp-c-text-1);
+  }
+}
+
+@utility toggle-pill {
+  padding        : var(--prose-space-3) var(--prose-space-12);
+  border         : none;
+  border-radius  : calc(var(--prose-radius-sm) - var(--prose-border-1));
+  background     : transparent;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-label-tracking-loose);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-3);
+  cursor         : pointer;
+  transition     : background var(--prose-transition), color var(--prose-transition);
+
+  &:hover {
+    color : var(--vp-c-text-1);
+  }
+
+  &[aria-selected="true"] {
+    background : color-mix(in srgb, var(--side-color) var(--prose-tint-20), var(--vp-c-bg));
+    color      : var(--side-color);
+  }
+}

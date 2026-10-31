@@ -3,11 +3,18 @@ import { computed } from 'vue'
 
 import { externalAttrs } from '../../../lib/shared/links'
 
+type Variant = 'family-chip' | 'rule-chip'
+
+const VARIANT_CLASSES: Record<Variant, string> = {
+  'family-chip' : 'chip family-chip',
+  'rule-chip'   : 'chip rule-chip ground'
+}
+
 const props = defineProps<{
   family ?: string
   href   ?: string
   title  ?: string
-  variant : 'family-chip' | 'rule-chip' | 'star-count'
+  variant : Variant
 }>()
 
 const tag       = computed(() => (props.href ? 'a' : 'span'))
@@ -20,7 +27,7 @@ const linkAttrs = computed(() => externalAttrs(props.href))
     :href="href"
     :title="title"
     :data-family="family"
-    :class="variant"
+    :class="VARIANT_CLASSES[variant]"
     v-bind="linkAttrs"
   ><slot /></component>
 </template>

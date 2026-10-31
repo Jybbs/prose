@@ -1,9 +1,0 @@
-.folio {
-  flex-shrink          : 0;
-  font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-kicker-size);
-  letter-spacing       : var(--prose-folio-tracking);
-  text-transform       : uppercase;
-  color                : var(--vp-c-text-3);
-  font-variant-numeric : tabular-nums;
-}

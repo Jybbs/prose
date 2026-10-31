@@ -1,5 +1,5 @@
 /* Composition cards. Multi-rule worked examples rendered from the fixture
-   tree, over the shared .fixture-card chrome in fixture-card.css. Each row
+   tree, over the shared .fixture-card chrome in the shapes include. Each row
    carries a folio number, a top-to-bottom gradient rail through every rule's
    family color in pipeline order, and a rule indicator. The indicator is a
    filled family-colored block. Collapsed, the rules are tall skinny ticks on
@@ -9,73 +9,10 @@
    the card's growing edge then spreading leftward a beat later, the rule
    names fading in once the spread has landed. */
 
-.vp-doc .composition-cards-list,
 .composition-cards-list {
   --card-ease-morph : cubic-bezier(0.32, 0.72, 0, 1);
   --card-reveal     : 0.28s;
   --card-grow       : 0.4s;
-  list-style : none;
-  margin     : 0;
-  padding    : 0;
-}
-
-.composition-cards-list .fixture-card:hover {
-  --card-hover-ground : var(--vp-c-bg-soft);
-  border-color        : transparent;
-  background          :
-    linear-gradient(var(--card-hover-ground), var(--card-hover-ground)) padding-box,
-    var(--rail-paint) border-box;
-}
-
-.composition-cards-list .fixture-card.is-open:hover {
-  --card-hover-ground : var(--vp-c-bg);
-}
-
-.vp-doc .composition-cards-list > li,
-.composition-cards-list > li {
-  margin     : 0;
-  list-style : none;
-}
-
-/* VitePress styles the nested `ol`/`li` inside the card with padding,
-   margin, and color that outrank bare classes. Re-assert the box at
-   `.vp-doc` specificity. Any nested-list rule below that restates a margin,
-   width, or a chip's grid must also carry `.vp-doc` specificity. */
-
-.vp-doc .composition-cards-list .composition-cards-ticks,
-.vp-doc .composition-cards-list .composition-cards-bar {
-  margin     : 0;
-  padding    : 0;
-  list-style : none;
-}
-
-.vp-doc .composition-cards-list .composition-cards-ticks > li,
-.vp-doc .composition-cards-list .composition-cards-bar > li {
-  margin               : 0;
-  padding-inline-start : 0;
-  list-style           : none;
-}
-
-/* The whole card expands on click, so it reads as one target. The ticks,
-   the toggle, and the open body stop propagation in the template, so they
-   keep their own behavior. The body grows over a slow beat, carrying the bar
-   downward with its lower edge. */
-
-.composition-cards-list .fixture-card {
-  cursor : pointer;
-}
-
-.composition-cards-list .fixture-card-body {
-  transition : grid-template-rows var(--card-grow) var(--card-ease-morph);
-}
-
-/* A revealing tick must never wrap the headline to a second line, so the
-   title truncates rather than growing the row's height. */
-
-.composition-cards-list .fixture-card-title {
-  white-space   : nowrap;
-  overflow      : hidden;
-  text-overflow : ellipsis;
 }
 
 /* The filled block, shared by the ticks and the bar. Collapsed it sits on a
@@ -115,34 +52,9 @@
   transition  : opacity var(--card-reveal) var(--card-ease-morph);
 }
 
-.composition-cards-chip-slug {
-  font-size      : var(--prose-text-xxs);
-  letter-spacing : var(--prose-tracking-0-04em);
-  text-transform : uppercase;
-}
-
 /* Collapsed: tall skinny ticks, right-aligned in the headline's actions
    cell. The cluster packs to the right, so a hovered tick unfurls leftward
    and the trailing ticks slide away, the row height holding at the tick's. */
-
-.composition-cards-tick-cell {
-  display         : inline-flex;
-  align-items     : center;
-  justify-content : flex-end;
-  min-height      : var(--prose-size-22);
-}
-
-.composition-cards-ticks {
-  display         : flex;
-  align-items     : center;
-  justify-content : flex-end;
-  gap             : var(--prose-space-3);
-}
-
-.composition-cards-tick-item {
-  display     : inline-flex;
-  align-items : center;
-}
 
 .composition-cards-ticks .composition-cards-chip {
   min-width     : var(--prose-size-2);
@@ -160,35 +72,11 @@
   opacity : 1;
 }
 
-.composition-cards-toggle-slot {
-  display     : inline-flex;
-  align-items : center;
-}
-
 /* Expanded: the segmented bar lives at the bottom of the body, so it
    descends with the card's growing edge (step one). It starts as a compact
    right-aligned cluster and, after the body has grown, spreads leftward to
    full width (step two). The spread's delay sequences it after the descent,
    and the labels fade in once the spread has landed. */
-
-.vp-doc .composition-cards-list .composition-cards-bar {
-  display    : flex;
-  flex-wrap  : nowrap;
-  gap        : var(--prose-space-3);
-  width      : var(--prose-size-60);
-  margin     : var(--prose-space-12) 0 0 auto;
-  transition : width 0.36s var(--card-ease-morph) var(--card-grow);
-}
-
-.vp-doc .composition-cards-list .composition-cards-bar.is-open {
-  width : 100%;
-}
-
-.composition-cards-bar-cell {
-  flex      : 1 1 auto;
-  display   : block;
-  min-width : 0;
-}
 
 .vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip {
   grid-template-columns : 1fr;

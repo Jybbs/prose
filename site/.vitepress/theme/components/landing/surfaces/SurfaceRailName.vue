@@ -13,14 +13,14 @@ const tabindex = useHiddenTabindex()
 <template>
   <RuleTooltipPopper v-if="rule" :rule="rule">
     <a
-      class="rule-chip surface-rail-chip"
+      class="surface-rail-chip chip rule-chip ground"
       :href="rule.href"
       :data-family="rule.family"
       :tabindex="tabindex"
     >
       <NibBadge :emblem="familyEmblem(rule.family)" :size="14" />
       <Transition :name="swap" mode="out-in">
-        <span :key="rule.slug" class="rule-chip-slug">{{ rule.slug }}</span>
+        <span :key="rule.slug" class="font-mono">{{ rule.slug }}</span>
       </Transition>
     </a>
   </RuleTooltipPopper>

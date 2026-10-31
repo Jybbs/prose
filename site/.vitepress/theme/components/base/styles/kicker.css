@@ -1,25 +1,16 @@
+@reference "../../../styles/tailwind.css";
+
+/* Holds the kicker's color beneath the utilities, where `.landing-section p` overrides it. */
 .kicker,
+.vp-doc .custom-block-title {
+  color : var(--vp-c-text-3);
+}
+
 .vp-doc .custom-block-title,
 .vp-doc th {
-  margin         : 0;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-}
-
-.kicker[data-variant="rule"]::before {
-  content           : "— ";
-  margin-inline-end : var(--prose-space-4);
-}
-
-.kicker[data-variant="rule"]::after {
-  content             : " —";
-  margin-inline-start : var(--prose-space-4);
+  @apply kicker;
 }
 
 .vp-doc .custom-block-title {
-  margin-bottom : var(--prose-space-8);
-  font-weight   : 700;
+  font-weight : 700;
 }

@@ -23,3 +23,7 @@
 :where(.v-popper--theme-glossary, .v-popper--theme-rule-card) .v-popper__arrow-inner {
   border-color : var(--vp-c-bg);
 }
+
+:where(.v-popper--theme-az-index, .v-popper--theme-run-summary-select) .v-popper__arrow-container {
+  display : none;
+}

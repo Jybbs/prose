@@ -17,7 +17,7 @@ const tabindex = useHiddenTabindex()
 
 <template>
   <a
-    class="surface-pip"
+    class="surface-pip group/pip relative grid place-items-center focus-visible:rounded-pill focus-visible:outline-offset-1"
     :class="{ active }"
     :style="{ '--d': distance }"
     :href="rule.href"
@@ -25,5 +25,14 @@ const tabindex = useHiddenTabindex()
     :tabindex="tabindex"
     @focus="emit('select')"
     @mouseenter="emit('select')"
-  ><span class="surface-pip-mark" aria-hidden="true" /><span class="folio surface-pip-folio">{{ formatFolio(index + 1) }}</span></a>
+  ><span
+    class="surface-pip-mark relative z-1 rounded-pill"
+    :class="active ? 'bg-family-22-bg-soft' : 'bg-family/45 group-hover/pip:bg-family-22-bg-soft'"
+    aria-hidden="true"
+  /><span
+    class="surface-pip-folio absolute inset-0 z-2 grid shrink-0 place-items-center pt-1 font-mono text-meta leading-1 tracking-folio uppercase tabular-nums"
+    :class="active
+      ? 'translate-y-0 text-family opacity-100'
+      : 'translate-y-3 text-text-3 opacity-0 group-hover/pip:translate-y-0 group-hover/pip:text-family group-hover/pip:opacity-100'"
+  >{{ formatFolio(index + 1) }}</span></a>
 </template>

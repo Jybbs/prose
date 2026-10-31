@@ -1,0 +1,60 @@
+@custom-variant suppress-dot (&[data-suppress-dot]);
+
+@theme inline {
+  --background-image-family-wash-fade          : linear-gradient(90deg, color-mix(in srgb, var(--family-color) var(--prose-tint-wash), var(--vp-c-bg)), transparent);
+
+  --color-divider-70-layer-accent              : color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-70), var(--layer-accent));
+  --color-exit-code-accent                     : var(--exit-code-accent);
+  --color-family-or-text-1-80-text-1           : color-mix(in srgb, var(--family-color, var(--vp-c-text-1)) var(--prose-tint-80), var(--vp-c-text-1));
+  --color-layer-accent                         : var(--layer-accent);
+  --color-layer-accent-28-bg                   : color-mix(in srgb, var(--layer-accent) var(--prose-tint-28), var(--vp-c-bg));
+  --color-layer-accent-55-text-1               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-55), var(--vp-c-text-1));
+  --color-layer-accent-7-bg                    : color-mix(in srgb, var(--layer-accent) var(--prose-tint-7), var(--vp-c-bg));
+  --color-layer-accent-70-text-1               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-1));
+  --color-layer-accent-70-text-2               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-2));
+  --color-side                                 : var(--side-color);
+  --color-side-12-code-block                   : color-mix(in srgb, var(--side-color) var(--prose-tint-12), var(--vp-code-block-bg));
+  --color-side-40-divider                      : color-mix(in srgb, var(--side-color) var(--prose-tint-40), var(--vp-c-divider));
+
+  --columns-2-11rem                            : 2 var(--prose-width-11rem);
+
+  --content-diamond                            : "◆";
+
+  --ease-morph                                 : var(--card-ease-morph);
+
+  --grid-template-columns-24-auto-1fr-10       : var(--prose-size-24) auto 1fr var(--prose-size-10);
+  --grid-template-columns-280-1fr              : var(--prose-width-280) 1fr;
+  --grid-template-columns-3rem-minmax-1fr      : var(--prose-size-3rem) minmax(0, 1fr);
+  --grid-template-columns-78-minmax-1fr        : var(--prose-size-78) minmax(0, 1fr);
+
+  --inset-full-plus-8                          : calc(100% + var(--prose-space-8));
+
+  --text-underline-offset-3                    : var(--prose-space-3);
+
+  --transition-delay-grow                      : var(--card-grow);
+  --transition-duration-grow                   : var(--card-grow);
+
+  --transition-property-background-and-opacity : background, opacity;
+  --transition-property-text-decoration-color  : text-decoration-color;
+  --transition-property-width                  : width;
+}
+
+@utility halo-layer-accent-25-bg {
+  box-shadow : 0 0 0 var(--prose-border-2) color-mix(in srgb, var(--layer-accent) var(--prose-tint-25), var(--vp-c-bg));
+}
+
+@utility items-grid-start {
+  align-items : start;
+}
+
+@utility rail-border-on-bg {
+  background : linear-gradient(var(--vp-c-bg), var(--vp-c-bg)) padding-box, var(--rail-paint) border-box;
+}
+
+@utility rail-border-on-bg-soft {
+  background : linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)) padding-box, var(--rail-paint) border-box;
+}
+
+@utility transform-center {
+  transform : translate(-50%, -50%);
+}
