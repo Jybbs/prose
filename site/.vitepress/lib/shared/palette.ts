@@ -43,10 +43,10 @@ export const PALETTE = {
 }
 
 // Holds the grounds each scheme draws on, the page being VitePress's
-// `--vp-c-bg`, the soft ground its `--vp-c-bg-soft` as `tokens.css` sets it,
-// and the code block the `--vp-code-block-bg` that `tokens.css` sets, Grams
-// Hair in the light scheme and the `github-dark` theme's editor background in
-// the dark.
+// `--vp-c-bg`, the soft ground its `--vp-c-bg-soft`, which `tokens.css` sets in
+// the dark, and the code block the `--vp-code-block-bg` that `tokens.css` sets,
+// Grams Hair in the light scheme and the `github-dark` theme's editor background
+// in the dark.
 export const GROUNDS = {
   code : { dark: '#24292e', light: HUES['grams-hair'] },
   page : { dark: '#1b1b1f', light: '#ffffff' },

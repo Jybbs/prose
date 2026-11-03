@@ -1,4 +1,4 @@
-// Builds the element ids the per-rule facet catalogue anchors its rule groups
+// Builds the element ids the per-rule facet catalog anchors its rule groups
 // and facets to, each facet sitting under its own rule's anchor so two rules
 // declaring one key resolve to separate targets.
 
@@ -19,7 +19,7 @@ export function facetAnchor(rule: string, key: string): string {
 }
 
 // Returns the anchor a hoisted facet reads under, and `undefined` for a facet
-// the catalogue lists beneath a rule of its own.
+// the catalog lists beneath a rule of its own.
 export function hoistedFacetAnchor(key: string): string | undefined {
   const scope = HOISTED_SCOPES[key]
   return scope === undefined ? undefined : facetAnchor(scope, key)

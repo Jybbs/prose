@@ -31,9 +31,9 @@ export function ruleDrawMs(): number {
   return Number(declared)
 }
 
-// Writes `place` onto `el` with its transition dropped for that one frame
+// Writes `place` onto `el` with its transition dropped for that one write
 // where `snap` is set, through `data-snap`, so the element appears in place
-// rather than travelling there.
+// rather than traveling there.
 export function snapInPlace(el: HTMLElement, snap: boolean, place: () => void): void {
   if (snap) el.dataset.snap = ''
   place()

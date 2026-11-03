@@ -26,11 +26,13 @@ describe('CopyButton', () => {
     const button = wrapper.get('button.copy')
     expect(button.attributes('title')).toBe('Copy prose.toml')
     expect(button.attributes('aria-label')).toBe('Copy prose.toml')
+    expect(button.find('.copy-tick').exists()).toBe(false)
 
     await button.trigger('click')
     await flushPromises()
     expect(copySpy).toHaveBeenCalledWith('code-line-length = 40')
     expect(button.classes()).toContain('copied')
     expect(button.attributes('title')).toBe('Copied')
+    expect(button.find('.copy-tick').exists()).toBe(true)
   })
 })

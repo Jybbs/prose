@@ -16,7 +16,7 @@ const props = defineProps<{
   sandbox : ProseSandbox
 }>()
 
-defineEmits<{ dragging: [key: string], preview: [key: string, value: number] }>()
+defineEmits<{ dragging: [key: string, hue: string], preview: [key: string, value: number] }>()
 
 const {
   enabledFacet, isOn, lengthValue, openFacets, openSlug, ruleData,
@@ -55,7 +55,7 @@ function hover(rule: chipPanel.RuleControl): void {
       :lengths="visibleLengths"
       :value-of="lengthValue"
       @set-length="setLength"
-      @dragging="key => $emit('dragging', key)"
+      @dragging="(key, hue) => $emit('dragging', key, hue)"
       @preview="(key, value) => $emit('preview', key, value)"
     />
 

@@ -5,10 +5,11 @@ export interface CodePart {
   text : string
 }
 
-// Matches each operator the alignment rules pad where it stands between
-// spaces or at either end of a code span, so `x = 1`, `#`, and `a == b` match
-// while `name=value`, `a[1:2]`, and a URL do not.
-const OPERATOR = /(^|\s)(==|!=|<=|>=|:=|\*\*=|\/\/=|>>=|<<=|[-+*/%@&|^]=|=|<|>|:|#)(?=\s|$)/g
+// Matches each operator the alignment rules pad, its word operators included,
+// where it stands between spaces or at either end of a code span, so `x = 1`,
+// `#`, `a == b`, and `x is not None` match while `name=value`, `a[1:2]`, a URL,
+// and the `in` of a `for` clause do not.
+const OPERATOR = /(^|\s)(is not|not in|is|(?<!\bfor\b.*)in|==|!=|<=|>=|\*\*=|\/\/=|>>=|<<=|[-+*/%@&|^]=|=|<|>|:|#)(?=\s|$)/g
 
 // Splits a code span's text into its operators and the runs between them.
 export function codeParts(text: string): CodePart[] {

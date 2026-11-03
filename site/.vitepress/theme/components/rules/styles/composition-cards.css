@@ -43,10 +43,10 @@
   list-style           : none;
 }
 
-/* The whole card expands on click, so it reads as one target. The ticks,
-   the toggle, and the open body stop propagation in the template, so they
-   keep their own behavior. The body grows over a slow beat, carrying the bar
-   downward with its lower edge. */
+/* The whole card expands on click, so it reads as one target. The deck, the
+   toggle, and the open body stop propagation in the template, so they keep
+   their own behavior. The body grows over a slow beat, and `deckTravel` moves
+   the deck down with its lower edge. */
 
 .composition-cards-list .fixture-card {
   cursor : pointer;
@@ -54,6 +54,10 @@
 
 .composition-cards-list .fixture-card-body {
   transition : grid-template-rows var(--card-grow) var(--card-ease-morph);
+}
+
+.composition-cards-list .fixture-card-rule {
+  background : var(--vp-c-text-3);
 }
 
 .composition-cards-list .fixture-card-title {

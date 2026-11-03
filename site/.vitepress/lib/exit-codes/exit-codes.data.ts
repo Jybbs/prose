@@ -32,7 +32,7 @@ export default defineLoader({
     const entries = sources.exitCodes(root).map(source => {
       if (source.code !== sources.LINT_CODE) return source
       const [returned, gate, next, note] = source.facts
-      return { ...source, facts: [`${returned} The shipped lints can produce it: ${roster}.`, gate, next, note] as const }
+      return { ...source, facts: [returned, gate, next, `${note} ${roster}.`] as const }
     })
     return inlineNodeField(md, entries, 'facts').map(({ factsNodes, ...entry }) => ({
       ...entry,

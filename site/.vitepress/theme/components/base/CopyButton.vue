@@ -18,7 +18,7 @@ const { copied, copy } = useClipboard({ copiedDuring: props.copiedDuring })
     <svg class="glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <rect x="8" y="2" width="8" height="4" rx="1" />
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <path v-if="copied" d="m9 14 2 2 4-4" />
+      <path v-if="copied" class="copy-tick" d="m9 14 2 2 4-4" />
     </svg>
   </button>
 </template>

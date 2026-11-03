@@ -141,6 +141,7 @@
 }
 
 .sandbox-ruler-stop:hover .sandbox-ruler-marker::before,
+.sandbox-ruler-stop:focus-visible .sandbox-ruler-marker::before,
 .sandbox-ruler-stop[data-dragging] .sandbox-ruler-marker::before {
   background : var(--vp-c-text-1);
 }

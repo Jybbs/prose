@@ -8,7 +8,7 @@ import { snapInPlace } from '../shared/paint'
 // sizing it to that element and copying its `data-layer`, each time `active`
 // changes. The wash glides between places through its own transition, and it
 // appears in place, through a `data-snap` that drops the transition for one
-// frame, on its first placement and whenever the grid's width changes.
+// write, on its first placement and whenever the grid's width changes.
 export function useGlideWash(
   grid     : Readonly<Ref<HTMLElement | null>>,
   wash     : Readonly<Ref<HTMLElement | null>>,

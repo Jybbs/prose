@@ -94,7 +94,7 @@ describe('MagicMoveRenderer', () => {
     const el = container.children[1] as HTMLElement
     el.style.color = '#999'
 
-    // A stash match skips the write, so the out-of-band colour survives.
+    // A stash match skips the write, so the out-of-band color survives.
     renderer.replace(step(token('a', 'x', { color: '#111' })))
     expect(el.style.color).toBe('#999')
   })

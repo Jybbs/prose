@@ -69,7 +69,7 @@ export function coverOf(rows: readonly Box[], x: number, y: number, width: numbe
 }
 
 // Shows one card for every key of a list inside `stage`, the card hanging
-// from the key a reader points at or focuses and travelling between keys on
+// from the key a reader points at or focuses and traveling between keys on
 // its own transition, which `data-snap` drops for the card's first place and
 // for a place after a change of width. `rows` names the elements whose rows
 // the card lengthens to cover, and leaving a key or the card hides it after

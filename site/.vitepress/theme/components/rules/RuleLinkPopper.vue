@@ -31,7 +31,18 @@ function linkFrom(event: Event): HTMLElement | null {
   return node instanceof Element ? node.closest<HTMLElement>('a.rule-link[data-rule]') : null
 }
 
+// Reports whether an event landed on the open card, which keeps the card open
+// the way its link does.
+function onCard(event: Event): boolean {
+  const node = event.target
+  return node instanceof Element && node.closest('.rule-card-popper') !== null
+}
+
 function show(event: Event): void {
+  if (onCard(event)) {
+    clearTimeout(timer)
+    return
+  }
   const link = linkFrom(event)
   if (!link) return
   const found = rules.bySlug[link.dataset.rule ?? '']
@@ -45,7 +56,7 @@ function show(event: Event): void {
 }
 
 function hide(event: Event): void {
-  if (!linkFrom(event)) return
+  if (!linkFrom(event) && !onCard(event)) return
   clearTimeout(timer)
   timer = setTimeout(() => { rule.value = null }, delay.hide)
 }

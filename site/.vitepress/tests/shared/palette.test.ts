@@ -150,7 +150,7 @@ describe('SCHEME_ROLES', () => {
     (scheme, ratio) => {
       const page  = palette.GROUNDS.page[scheme]
       const aside = wcagContrast(palette.SCHEME_ROLES[scheme].aside!, page)
-      expect(aside).toBeCloseTo(ratio, 0)
+      expect(aside).toBeCloseTo(ratio, 1)
       expect(aside).toBeLessThan(wcagContrast(palette.VITEPRESS['text-1'][scheme], page))
     }
   )

@@ -74,7 +74,7 @@
 
 .int-card .int-body code {
   font-family   : var(--vp-font-family-mono);
-  background    : var(--vp-c-bg);
+  background    : var(--vp-code-bg);
   padding       : var(--prose-space-1) var(--prose-space-5);
   border-radius : var(--prose-radius-sm);
   font-size     : var(--prose-text-xs);

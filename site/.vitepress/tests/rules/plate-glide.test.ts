@@ -43,6 +43,21 @@ describe('glide', () => {
     expect((bare[0] as Keyframe[])[1]).toStrictEqual({ offset: 0.35, opacity: 0.45 })
   })
 
+  domTest('cancels the moves of the press before it', async () => {
+    const plate  = plateOf({ a: ['align'] })
+    const cancel = vi.fn<() => void>()
+    vi.spyOn(Element.prototype, 'animate').mockReturnValue({ cancel, finished: Promise.resolve() } as unknown as Animation)
+    const shift = (top: number) => () => {
+      stand(plate, { a: top, align: top + 10 })
+      return Promise.resolve()
+    }
+    stand(plate, { a: 0, align: 10 })
+    await glide(plate, shift(40), TIMING)
+    expect(cancel).not.toHaveBeenCalled()
+    await glide(plate, shift(0), TIMING)
+    expect(cancel).toHaveBeenCalled()
+  })
+
   domTest('leaves a fading copy where a letter the change hides stood', async () => {
     const plate = plateOf({ a: ['align'], b: ['bare'] })
     stand(plate, { a: 0, align: 10, b: 40, bare: 50 })

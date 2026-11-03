@@ -53,8 +53,7 @@ export const SOURCES: readonly ExitCodeSource[] = [
       + 'records and leaves the rewrite unwritten.',
       'Fails.',
       'Run `prose format` and commit the rewrite.',
-      'Every rewriting rule can produce it, and `prose format` returns `0` once it writes the '
-      + 'rewrite.'
+      'Every rewriting rule can produce it.'
     ]
   },
   {
@@ -64,7 +63,7 @@ export const SOURCES: readonly ExitCodeSource[] = [
       'Both `prose check` and `prose format`.',
       'Fails.',
       'Fix each finding, or silence it with `# prose: ignore[<rule>]`.',
-      'A lint finding never fixes itself, so a gate can branch on `2` apart from `1`.'
+      'The shipped lints can produce it:'
     ]
   },
   {

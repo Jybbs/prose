@@ -175,7 +175,6 @@
   margin       : 0;
   padding      : var(--prose-space-3) 0;
   break-inside : avoid;
-  cursor       : pointer;
 }
 
 .vp-doc a.rules-plate-slug,

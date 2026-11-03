@@ -52,9 +52,9 @@ describe('calloutPlugin', () => {
 
 describe('codeParts', () => {
   it('splits a span into its operators and the runs between them', () => {
-    expect(codeParts('x := y')).toStrictEqual([
+    expect(codeParts('x == y')).toStrictEqual([
       { op: false, text: 'x ' },
-      { op: true,  text: ':=' },
+      { op: true,  text: '==' },
       { op: false, text: ' y' }
     ])
   })
@@ -68,19 +68,26 @@ describe('codeOperatorPlugin', () => {
   const code = (src: string): string => render(md => md.use(codeOperatorPlugin), src)
 
   it.each([
-    ['`x = 1`',   '<code>x <span class="code-op">=</span> 1</code>'],
-    ['`=`',       '<code><span class="code-op">=</span></code>'],
-    ['`a == b`',  '<code>a <span class="code-op">==</span> b</code>'],
-    ['`x += 1`',  '<code>x <span class="code-op">+=</span> 1</code>'],
-    ['`# note`',  '<code><span class="code-op">#</span> note</code>']
+    ['`x = 1`',         '<code>x <span class="code-op">=</span> 1</code>'],
+    ['`=`',             '<code><span class="code-op">=</span></code>'],
+    ['`a == b`',        '<code>a <span class="code-op">==</span> b</code>'],
+    ['`x += 1`',        '<code>x <span class="code-op">+=</span> 1</code>'],
+    ['`# note`',        '<code><span class="code-op">#</span> note</code>'],
+    ['`x : int`',       '<code>x <span class="code-op">:</span> int</code>'],
+    ['`is not`',        '<code><span class="code-op">is not</span></code>'],
+    ['`a not in b`',    '<code>a <span class="code-op">not in</span> b</code>'],
+    ['`x is not None`', '<code>x <span class="code-op">is not</span> None</code>'],
+    ['`a in b`',        '<code>a <span class="code-op">in</span> b</code>']
   ])('sets each operator in %s in a code-op span', (src, html) => {
     expect(code(src)).toContain(html)
   })
 
-  it.each(['`name=value`', '`a[1:2]`', '`https://prose.fyi`', '`<rule>`'])(
-    'leaves %s plain, its operators standing between no spaces',
-    src => { expect(code(src)).not.toContain('code-op') }
-  )
+  it.each([
+    '`name=value`', '`a[1:2]`', '`https://prose.fyi`', '`<rule>`', '`y := 1`',
+    '`[row for row in rows]`'
+  ])('leaves %s plain, since no alignment rule pads an operator between spaces in it', src => {
+    expect(code(src)).not.toContain('code-op')
+  })
 
   it('leaves a code span inside a link plain', () => {
     expect(code('[`x = 1`](/a) and `y = 2`'))

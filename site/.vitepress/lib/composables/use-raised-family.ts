@@ -29,8 +29,9 @@ export function useRaisedFamily(): RaisedFamily {
   const pinned  = shallowRef<Held>(null)
   const pointed = shallowRef<Held>(null)
 
-  // Counts only a focus the browser draws a ring for, since a click also
-  // focuses the key chip it unpins and would otherwise keep that family raised.
+  // Counts only a focus the browser draws a ring for, since a click in most
+  // browsers also focuses the key chip it unpins, which would keep that family
+  // raised.
   const focus = (event: FocusEvent, family: GlossaryFamily): void => {
     if ((event.target as Element).matches(':focus-visible')) focused.value = family
   }

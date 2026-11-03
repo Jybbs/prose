@@ -26,7 +26,7 @@ const point = (target: Element, type: string, x: number, y: number) => {
 describe('useNibStroke', () => {
   it('matches a link\'s words, a link\'s code, and a nib-stroke element', () => {
     document.body.innerHTML = '<a class="body-link">w</a><a class="body-link"><code>c</code></a><span class="nib-stroke">s</span>'
-    expect([...document.querySelectorAll(NIB_MARKS)].map(el => el.textContent)).toStrictEqual(['w', 'c', 's'])
+    expect([...document.querySelectorAll(NIB_MARKS)].map(el => el.tagName)).toStrictEqual(['A', 'CODE', 'SPAN'])
   })
 
   it('sets the stroke under the pointer along the line it rests on, half a stroke inside the line\'s ends', async () => {

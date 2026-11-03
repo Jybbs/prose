@@ -79,11 +79,11 @@ describe('configKeySources', () => {
     ['max-attributes',   '/reference/configuration#bare-imports-max-attributes'],
     ['max-dict-entries', '/reference/configuration#reflow-collections-max-dict-entries'],
     ['max-shift',        '/reference/configuration#alignment-rules-max-shift']
-  ])('sends %s to its own entry in the catalogue', (key, expected) => {
+  ])('sends %s to its own entry in the catalog', (key, expected) => {
     expect(hrefFor(key)).toBe(expected)
   })
 
-  it('sends a facet several rules declare to the catalogue itself', () => {
+  it('sends a facet several rules declare to the catalog itself', () => {
     expect(hrefFor('allow')).toBe('/reference/configuration#per-rule-facets')
   })
 })

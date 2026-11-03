@@ -38,6 +38,13 @@
   width   : 100%;
 }
 
+@media (--prose-bp-mobile) {
+  .vp-doc table {
+    display    : block;
+    overflow-x : auto;
+  }
+}
+
 .VPDoc .VPLastUpdated,
 .VPDoc .VPDocFooter .pager-link .desc {
   font-family    : var(--vp-font-family-mono);
@@ -182,8 +189,17 @@ div[class*='language-'] {
   color : var(--vp-c-text-1);
 }
 
-/* Draws the copied check in from the copy button's left edge over the
-   rule-draw time, as a pen ticks a box, from the second text color to Celadon. */
+/* Reads a copied CopyButton's glyph in Celadon with no background check beneath
+   it, the glyph turning over the rule-draw time. */
+.copy-host > button.copy.copied:has(> svg.glyph),
+.copy-host > button.copy:hover.copied:has(> svg.glyph) {
+  background-image : none;
+  color            : var(--prose-shade-celadon-page-45);
+  transition       : color calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized);
+}
+
+/* Draws the copied check in from its own left edge over the rule-draw time,
+   as a pen ticks a box, from the second text color to Celadon. */
 :is(.vp-doc, body) div[class*='language-'] > button.copy.copied,
 :is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied {
   background-image : none;
@@ -201,26 +217,27 @@ div[class*='language-'] {
   padding       : 0;
   border        : 0;
   border-radius : 0;
-  background    : var(--prose-shade-celadon-page-45);
+  color         : var(--prose-shade-celadon-page-45);
+  background    : currentcolor;
   transform     : none;
   -webkit-mask  : var(--vp-icon-copied) center / contain no-repeat;
   mask          : var(--vp-icon-copied) center / contain no-repeat;
   animation     : prose-copy-tick calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized) both;
 }
 
+.copy-host > button.copy > svg.glyph > .copy-tick {
+  animation : prose-copy-tick calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized) both;
+}
+
 @keyframes prose-copy-tick {
   from {
-    clip-path        : inset(0 100% 0 0);
-    background-color : var(--vp-c-text-2);
-  }
-
-  60% {
-    clip-path : inset(0);
+    clip-path : inset(0 100% 0 0);
+    color     : var(--vp-c-text-2);
   }
 
   to {
-    clip-path        : inset(0);
-    background-color : var(--prose-shade-celadon-page-45);
+    clip-path : inset(0);
+    color     : var(--prose-shade-celadon-page-45);
   }
 }
 
@@ -244,7 +261,13 @@ div[class*='language-'] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before {
+  :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,
+  .copy-host > button.copy > svg.glyph > .copy-tick {
     animation : none;
+  }
+
+  .copy-host > button.copy.copied:has(> svg.glyph),
+  .copy-host > button.copy:hover.copied:has(> svg.glyph) {
+    transition : none;
   }
 }
