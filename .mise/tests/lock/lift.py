@@ -1367,12 +1367,13 @@ def test_reports_read_the_newest_release_each_manager_prints(
         )
     )
     fp.register(
-        ["cargo", "update", "--dry-run", "--verbose", "--workspace"],
+        ["cargo", "update", "--dry-run", "--verbose"],
         stdout = (
             "     Locking 0 packages to highest Rust 1.99.0 compatible versions\n"
             "    Updating insta v1.48.0 -> v1.49.0\n"
             "   Unchanged toml v1.1.6+spec-1.1.0 (available: v1.1.8+spec-1.1.0)\n"
             "   Unchanged ruff_python_ast v0.0.5 (available: v0.0.17)\n"
+            "   Unchanged similar v3.2.0 (available: v3.2.1, requires Rust 1.100)\n"
         )
     )
     fp.register(["mise", "outdated", "--bump", "--json"], stdout=dumps(outdated))
@@ -1389,6 +1390,7 @@ def test_reports_read_the_newest_release_each_manager_prints(
         ("bun", "vite", "8.3.0")              : "8.3.4",
         ("cargo", "insta", "1.48.0")          : "1.49.0",
         ("cargo", "ruff-python-ast", "0.0.5") : "0.0.17",
+        ("cargo", "similar", "3.2.0")         : "3.2.1",
         ("cargo", "toml", "1.1.6")            : "1.1.8+spec-1.1.0",
         ("mise", "bun", "1.4.2")              : "1.4.3",
         ("mise", "github:sharkdp/hyperfine", "1.20.0"): "2.0.0",
