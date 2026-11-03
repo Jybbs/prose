@@ -1,4 +1,4 @@
-import MarkdownIt                                        from 'markdown-it'
+import markdownit, { type Env, type MarkdownIt }         from 'markdown-it'
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
 import { glossaryPlugin }                from '../../lib/glossary/plugin'
@@ -16,8 +16,8 @@ import { emblemsOf }                     from '../../lib/shared/emblems'
 import { siteDir }                       from '../../lib/shared/paths'
 import { SECTIONS }                      from '../../lib/shared/registries'
 
-const render = (configure: (md: MarkdownIt) => void, src: string, env: object = {}): string => {
-  const md = new MarkdownIt()
+const render = (configure: (md: MarkdownIt) => void, src: string, env: Env = {}): string => {
+  const md = markdownit()
   configure(md)
   return md.render(src, env)
 }
@@ -128,7 +128,7 @@ describe('proseMarkPlugin', () => {
 })
 
 describe('sectionHeadingPlugin', () => {
-  const heading = (src: string, env: object): string =>
+  const heading = (src: string, env: Env): string =>
     render(md => md.use(sectionHeadingPlugin), src, env)
 
   it.each(SECTIONS)('heads $slug/index.md with $label', ({ label, slug }) => {
@@ -226,7 +226,7 @@ describe('glossaryPlugin', () => {
   })
 
   it('renders flattened terms through the plain loader wrapper', () => {
-    const md = new MarkdownIt()
+    const md = markdownit()
     md.use(plugin)
     expect(renderPlainInlineHtml(md as unknown as MarkdownRenderer, 'an atom here'))
       .not.toContain('glossary-anchor')
@@ -242,7 +242,7 @@ describe('ruleLinkPlugin', () => {
     ['align-equals', { family: 'alignment', href: '/rules/alignment/align-equals' }]
   ])
   const plugin = ruleLinkPlugin(rules, new Map([['aligner', { name: 'Aligner' }]]))
-  const run    = (src: string, env: object = {}): string => render(md => md.use(plugin), src, env)
+  const run    = (src: string, env: Env = {}): string => render(md => md.use(plugin), src, env)
 
   it('renders a rule wiki-link as an InlineRuleLink', () => {
     expect(run('see [[align-equals]]')).toContain('<InlineRuleLink slug="align-equals" />')

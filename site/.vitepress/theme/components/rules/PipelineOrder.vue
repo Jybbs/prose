@@ -9,8 +9,9 @@ import { familyEmblem }     from '../../../lib/shared/emblems'
 import { formatFolio }      from '../../../lib/shared/numerals'
 import { FAMILY_META }      from '../../../lib/shared/registries'
 
-import MiddleEllipsis from '../base/MiddleEllipsis.vue'
-import NibBadge       from '../base/NibBadge.vue'
+import MiddleEllipsis    from '../base/MiddleEllipsis.vue'
+import NibBadge          from '../base/NibBadge.vue'
+import RuleTooltipPopper from './RuleTooltipPopper.vue'
 
 const families = pipeline.rules.map(rule => rule.family)
 

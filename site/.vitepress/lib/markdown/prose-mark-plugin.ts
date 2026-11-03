@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 import { replaceTextTokens } from './token-split'
 import { walkBodyInlines }   from './walk'

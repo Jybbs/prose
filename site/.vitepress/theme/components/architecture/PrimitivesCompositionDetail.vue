@@ -13,6 +13,7 @@ import type { PrimitiveSlug }                        from '../../../lib/shared/r
 import { primitiveRoute }                            from '../../../lib/shared/routes'
 import InlineProse                                   from '../base/InlineProse.vue'
 import NibBadge                                      from '../base/NibBadge.vue'
+import RuleTooltipPopper                             from '../rules/RuleTooltipPopper.vue'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null

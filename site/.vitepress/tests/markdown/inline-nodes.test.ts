@@ -1,4 +1,4 @@
-import MarkdownIt from 'markdown-it'
+import markdownit, { type MarkdownIt } from 'markdown-it'
 
 import { glossaryPlugin }          from '../../lib/glossary/plugin'
 import { blockNodes, inlineNodes } from '../../lib/markdown/inline-nodes'
@@ -13,7 +13,7 @@ const phrases    = new Map([['atom', 'atomic']])
 const primitives = new Map([['source', { name: 'Source' }]])
 
 function renderer(): MarkdownIt {
-  const md = new MarkdownIt()
+  const md = markdownit()
   md.use(ruleLinkPlugin(rules as never, primitives as never))
   md.use(glossaryPlugin(phrases, hrefs))
   return md
@@ -52,7 +52,7 @@ describe('inlineNodes', () => {
   })
 
   it('throws on a token it cannot map, so a new plugin fails the build', () => {
-    const md = new MarkdownIt({ html: true })
+    const md = markdownit({ html: true })
     expect(() => inlineNodes(md, 'text with <b>raw html</b>')).toThrow(/cannot map/)
   })
 

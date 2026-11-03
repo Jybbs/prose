@@ -7,7 +7,7 @@ import { highlight } from '../../../lib/shared/highlight'
 const props = defineProps<{ lang: 'python' | 'toml' }>()
 const model = defineModel<string>({ required: true })
 
-defineEmits<{ blur: [] }>()
+defineEmits<{ blur: [], keydown: [event: KeyboardEvent] }>()
 
 const layer = useTemplateRef<HTMLElement>('layer')
 const input = useTemplateRef<HTMLTextAreaElement>('input')
@@ -38,6 +38,7 @@ defineExpose({ focus: () => input.value?.focus() })
       autocorrect="off"
       spellcheck="false"
       @blur="$emit('blur')"
+      @keydown="$emit('keydown', $event)"
       @scroll="syncScroll"
     />
   </div>

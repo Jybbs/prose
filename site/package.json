@@ -36,6 +36,7 @@
     "@vitest/browser-playwright"          : "5.0.5",
     "@vitest/coverage-v8"                 : "5.0.5",
     "@vue/compiler-sfc"                   : "3.5.44",
+    "@vue/content-mapper"                 : "4.0.0-alpha.3",
     "@vue/test-utils"                     : "2.5.1",
     "@vue/tsconfig"                       : "0.9.1",
     "@vueuse/core"                        : "15.0.0",
@@ -47,7 +48,7 @@
     "happy-dom"                           : "21.0.4",
     "jsdom"                               : "30.1.3",
     "knip"                                : "6.41.0",
-    "markdown-it"                         : "14.3.3",
+    "markdown-it"                         : "15.0.3",
     "ohash"                               : "2.0.12",
     "oxlint"                              : "1.88.0",
     "playwright"                          : "1.64.1",
@@ -55,16 +56,15 @@
     "postcss-custom-media"                : "12.0.3",
     "rolldown"                            : "1.2.14",
     "romans"                              : "3.1.0",
-    "satori"                              : "0.33.5",
+    "satori"                              : "0.63.2",
     "smol-toml"                           : "1.9.1",
     "title-case"                          : "4.3.2",
-    "typescript"                          : "6.0.3",
+    "typescript"                          : "7.1.0-beta",
     "vite"                                : "8.3.4",
     "vitepress"                           : "2.0.0-alpha.20",
     "vitepress-plugin-group-icons"        : "1.8.1",
     "vitest"                              : "5.0.5",
-    "vue"                                 : "3.5.44",
-    "vue-tsc"                             : "3.3.13"
+    "vue"                                 : "3.5.44"
   },
   "patchedDependencies": {
     "@shikijs/magic-move@4.5.0": "patches/magic-move-frame-cost.patch"

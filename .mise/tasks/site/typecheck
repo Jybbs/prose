@@ -1,8 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "typecheck"
 #MISE depends     = ["site:bake"]
-#MISE description = "Type-check the docs-site TypeScript with `vue-tsc`"
+#MISE description = "Type-check the docs-site TypeScript and Vue files with `tsc`"
 #MISE dir         = "site"
 #MISE sources     = ["@group:site"]
 
-vue-tsc --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo
+tsc --runExternalCode --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo

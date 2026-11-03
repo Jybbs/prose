@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import NibBadge from '../base/NibBadge.vue'
+import NibBadge          from '../base/NibBadge.vue'
+import RuleTooltipPopper from './RuleTooltipPopper.vue'
 
 import type { RuleSegment } from '../../../lib/rules/rule-view'
 import { familyEmblem }     from '../../../lib/shared/emblems'

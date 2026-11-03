@@ -2,7 +2,8 @@ import type { Theme }     from 'vitepress'
 import DefaultTheme       from 'vitepress/theme'
 import type { Component } from 'vue'
 
-import FloatingVue from 'floating-vue'
+import FloatingVue                                        from 'floating-vue'
+import type { Dropdown, Tooltip, vClosePopper, vTooltip } from 'floating-vue'
 
 import './styles/popper-vendor.css'
 import '@shikijs/magic-move/style.css'
@@ -99,3 +100,16 @@ export default {
     })
   }
 } satisfies Theme
+
+// Declares the components and directives the `FloatingVue` plugin registers globally, for the
+// template type check.
+declare module 'vue' {
+  interface GlobalComponents {
+    VDropdown : typeof Dropdown
+    VTooltip  : typeof Tooltip
+  }
+  interface GlobalDirectives {
+    vClosePopper : typeof vClosePopper
+    vTooltip     : typeof vTooltip
+  }
+}

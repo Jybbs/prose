@@ -16,7 +16,7 @@ export default defineConfig({
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',
     '@fontsource/lora',
-    'oxlint',
-    'vue-tsc'
+    '@vue/content-mapper',
+    'oxlint'
   ]
 })

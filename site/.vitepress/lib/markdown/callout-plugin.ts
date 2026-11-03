@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 // Holds the word naming each callout kind beside the printer's mark hung in
 // its margin, a section mark for a tip, a pilcrow for an info, and a dagger
@@ -21,8 +21,8 @@ export function calloutPlugin(md: MarkdownIt): void {
       const token = tokens[idx]!
       const info  = token.info.trim().slice(kind.length).trim()
       const title = info && md.renderInline(info, {
-        frontmatter : env.frontmatter,
-        references  : env.references
+        frontmatter : env?.frontmatter,
+        references  : env?.references
       })
       token.attrJoin('class', `${kind} custom-block`)
       return `<div ${md.renderer.renderAttrs(token).trim()}><p class="custom-block-title">`

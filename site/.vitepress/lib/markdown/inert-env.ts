@@ -1,8 +1,10 @@
+import type { Env } from 'markdown-it'
+
 // The env contract between the loader render wrappers and the markdown
 // plugins. An inert render emits plain elements that survive `v-html`
 // injection in place of Vue component tags, which only compiled page
 // bodies can mount.
-export interface InertEnv {
+export type InertEnv = {
   inertHtml?  : boolean
   plainTerms? : boolean
 }
@@ -11,8 +13,8 @@ export function inertEnv(): InertEnv {
   return { inertHtml: true }
 }
 
-export function isInert(env: InertEnv): boolean {
-  return env.inertHtml === true
+export function isInert(env: Env | undefined): boolean {
+  return env?.inertHtml === true
 }
 
 // Caption renders live inside cover-linked cards and hover poppers, where a
@@ -22,6 +24,6 @@ export function plainTermsEnv(): InertEnv {
   return { inertHtml: true, plainTerms: true }
 }
 
-export function isPlainTerms(env: InertEnv): boolean {
-  return env.plainTerms === true
+export function isPlainTerms(env: Env | undefined): boolean {
+  return env?.plainTerms === true
 }

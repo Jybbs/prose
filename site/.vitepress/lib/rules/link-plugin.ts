@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 import type { DiscoveredPrimitive } from '../architecture/discovery'
 import { isInert }                  from '../markdown/inert-env'

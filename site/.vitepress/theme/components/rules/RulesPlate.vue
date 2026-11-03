@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 
-import NibBadge from '../base/NibBadge.vue'
+import NibBadge          from '../base/NibBadge.vue'
+import RuleTooltipPopper from './RuleTooltipPopper.vue'
 
 import { useRaisedFamily }       from '../../../lib/composables/use-raised-family'
 import { glide }                 from '../../../lib/rules/plate-glide'
