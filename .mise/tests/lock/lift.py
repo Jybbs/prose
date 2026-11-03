@@ -44,6 +44,7 @@ TREE     = {
         '[env]\n_.python.venv = { path = "crate/.venv" }\nPROBE = "on"\n\n[tools]\n'
         '"aqua:mitsuhiko/insta" = { version = "1.48.0", os = ["macos"] }\n'
         'maturin                = "1.15.0"\n'
+        'ruff                   = "0.15.22"\n'
         'rust                   = { version = "1.98.1", profile = "minimal" }\n'
     ),
 
@@ -930,6 +931,7 @@ def test_pins_reads_every_home(fp: FakeProcess, lift: ModuleType, tree: Path):
         ("pytest", "pytest", "uv", "9.1.1", None),
         ("pyyaml", "PyYAML", "uv", "6.0.3", ".mise/tasks/repo/audit.py"),
         ("ruff", "ruff", "", "0.15.22", "crate/Cargo.toml"),
+        ("ruff", "ruff", "mise", "0.15.22", ".mise/config.toml"),
         ("ruff", "ruff_python_ast", "cargo", "0.0.5", "Cargo.toml"),
         ("ruff", "ruff_text_size", "cargo", "0.0.5", "Cargo.toml"),
         ("rust", "rust", "", "1.98", ".github/README.md"),
@@ -1266,6 +1268,12 @@ def test_main_moves_nothing_where_every_lift_is_held(
         param({}, {}, None, id = "current"),
         param(
             {("cargo", "ruff-python-ast", "0.0.5"): "0.0.17"},
+            {"0.17.0": "ruff_python_ast@0.0.17"},
+            None,
+            id = "held-by-the-cutoff"
+        ),
+        param(
+            {("cargo", "ruff-python-ast", "0.0.5"): "0.0.17"},
             {"0.16.10": "other"},
             "no ruff release tags ruff_python_ast@0.0.17, the commit 0.0.17 came from",
             id = "untagged"
@@ -1280,14 +1288,17 @@ def test_ruff_takes_no_row_at_its_newest_crate_and_stops_on_an_untagged_one(
     tags        : dict[str, str]
 ):
     """
-    Pins that `ruff_*` crates at their newest release take no row, and that
-    a newest crate whose commit no ruff release tags stops the task rather
-    than writing a release into `[package.metadata.ruff]` that names another
+    Pins that `ruff_*` crates at their newest release take no row, that a
+    newest crate whose tag mise's `minimum_release_age` cutoff still holds
+    back from the `ruff` tool takes none until it clears, and that a newest
+    crate whose commit no ruff release tags stops the task rather than
+    writing a release into `[package.metadata.ruff]` that names another
     commit.
     """
     pins = [
         lift.Pin(None, "ruff", "ruff_python_ast", "cargo", "0.0.5"),
-        lift.Pin(None, "ruff", "ruff", "", "0.15.22")
+        lift.Pin(None, "ruff", "ruff", "", "0.15.22"),
+        lift.Pin(None, "ruff", "ruff", "mise", "0.15.22")
     ]
     monkeypatch.setattr(
         lift,
@@ -1405,15 +1416,21 @@ def test_ruff_names_the_release_its_newest_crate_was_published_from(
     released    : list[tuple]
 ):
     """
-    Pins that the `ruff` row moves its crates to their newest release
-    and `[package.metadata.ruff]` to the tag on the commit that crate was
-    published from, showing the release.
+    Pins that the `ruff` row moves its crates to their newest release, and
+    the `ruff` tool and `[package.metadata.ruff]` to the tag on the commit
+    that crate was published from, showing the release.
     """
     tags   = {"0.16.10": "other", "0.17.0": "ruff_python_ast@0.0.17"}
-    newest = lift.Reports({("cargo", "ruff-python-ast", "0.0.5"): "0.0.17"})
-    pins   = [
+    newest = lift.Reports(
+        {
+            ("cargo", "ruff-python-ast", "0.0.5") : "0.0.17",
+            ("mise", "ruff", "0.15.22")           : "0.17.0"
+        }
+    )
+    pins = [
         lift.Pin(None, "ruff", "ruff_python_ast", "cargo", "0.0.5"),
-        lift.Pin(None, "ruff", "ruff", "", "0.15.22")
+        lift.Pin(None, "ruff", "ruff", "", "0.15.22"),
+        lift.Pin(None, "ruff", "ruff", "mise", "0.15.22")
     ]
     monkeypatch.setattr(
         lift,

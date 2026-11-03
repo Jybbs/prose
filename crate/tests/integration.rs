@@ -8,7 +8,7 @@
 
 mod common;
 
-use std::{fmt::Write, path::Path};
+use std::{fmt::Write, path::Path, process::Command};
 
 use itertools::Itertools;
 use prose::{
@@ -16,7 +16,6 @@ use prose::{
     source::Source,
 };
 use ruff_python_ast::PySourceType;
-use ruff_python_formatter::{PyFormatOptions, format_module_source};
 use ruff_source_file::{LineEnding, UniversalNewlines};
 
 #[test]
@@ -217,26 +216,40 @@ fn pipeline_is_idempotent() {
     });
 }
 
+/// Copies every swept fixture into one scratch directory and formats the
+/// copies through the `ruff` release `.mise/config.toml` pins, then holds
+/// the pipeline stable over each result.
 #[test]
 fn prose_is_stable_after_ruff() {
+    let scratch = tempfile::tempdir().expect("tempdir");
+    let copy = |domain: &str, case: &str| scratch.path().join(format!("{domain}.{case}.py"));
+    let mut swept = Vec::new();
     insta::glob!("fixtures/**/input.py", |path| {
         let Some((domain, case, harness, pipeline)) = sweepable(path) else {
             return;
         };
-        if harness.skip_ruff_coexistence {
-            return;
+        if !harness.skip_ruff_coexistence {
+            fs_err::copy(path, copy(domain, case)).expect("copy fixture");
+            swept.push((domain.to_owned(), case.to_owned(), pipeline));
         }
+    });
 
-        let input = fs_err::read_to_string(path).unwrap_or_else(|e| panic!("read fixture: {e}"));
-        let post_ruff = format_module_source(&input, PyFormatOptions::default())
-            .unwrap_or_else(|e| {
-                panic!(
-                    "ruff format failed on `{domain}/{case}`: {e}\n\
-                     set `[harness] skip_ruff_coexistence = true` in the sidecar to opt this fixture out",
-                )
-            })
-            .into_code();
+    let ruff = Command::new("ruff")
+        .args(["format", "--isolated", "--no-cache"])
+        .arg(scratch.path())
+        .output()
+        .unwrap_or_else(|e| {
+            panic!("`ruff` runs from the toolset `.mise/config.toml` pins, as under `mise run rust:suite`: {e}")
+        });
+    assert!(
+        ruff.status.success(),
+        "ruff format failed:\n{}\n\
+         set `[harness] skip_ruff_coexistence = true` in the sidecar of the fixture each `<domain>.<case>.py` names to opt it out",
+        String::from_utf8_lossy(&ruff.stderr),
+    );
 
+    for (domain, case, pipeline) in swept {
+        let post_ruff = fs_err::read_to_string(copy(&domain, &case)).expect("read formatted copy");
         let format = |text: &str| {
             pipeline
                 .run(
@@ -249,7 +262,7 @@ fn prose_is_stable_after_ruff() {
         let one = format(&post_ruff);
         let two = format(one.text());
 
-        if matches!(domain, "composition" | "thematic") {
+        if matches!(domain.as_str(), "composition" | "thematic") {
             assert!(
                 one.text() != post_ruff,
                 "prose was a no-op on `{case}` after ruff, where a {domain} fixture must require transformation",
@@ -262,5 +275,5 @@ fn prose_is_stable_after_ruff() {
              --- diff between first and second prose pass ---\n{}",
             common::unified_diff(one.text(), two.text()),
         );
-    });
+    }
 }

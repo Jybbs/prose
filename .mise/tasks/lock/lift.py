@@ -13,11 +13,11 @@ cutoff holds back, beside the time the cutoff clears it.
 
 A pin is read from each home it is written in. Pins sharing a name, which
 covers every set `repo:audit` holds equal, take one row and move together,
-and so do the `ruff_*` crates with the release `[package.metadata.ruff]`
-names. The reports of mise, Cargo, uv, and bun give the newest release of
-the pins they cover, and a registry gives it for every other pin. A release
-the cutoff holds back stays out of mise's report, so no row or write takes
-one until it clears.
+and so do the `ruff_*` crates with the `ruff` tool and the release
+`[package.metadata.ruff]` names. The reports of mise, Cargo, uv, and bun
+give the newest release of the pins they cover, and a registry gives it for
+every other pin. A release the cutoff holds back stays out of mise's report,
+so no row or write takes one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
@@ -541,13 +541,15 @@ class Lift:
     def ruff(cls, pins: list[Pin], reports: Reports) -> "Lift | None":
         """
         Returns the row moving the `ruff_*` crates to their newest release
-        beside the ruff release `[package.metadata.ruff]` names, which is
-        the tag on the commit the newest crate was published from.
+        beside the `ruff` tool and the release `[package.metadata.ruff]`
+        names, both of which move to the tag on the commit the newest crate
+        was published from. A tag mise's `minimum_release_age` cutoff holds
+        back from the tool takes no row until it clears.
         """
-        crates  = [pin for pin in pins if pin.source]
+        crates  = [pin for pin in pins if pin.source == "cargo"]
         crate   = agreed(RUFF, crates)
         newest  = max((reports.newest(pin) for pin in crates), key=ordered)
-        current = agreed(RUFF, [pin for pin in pins if not pin.source])
+        current = agreed(RUFF, [pin for pin in pins if pin.source != "cargo"])
         if newest == crate:
             return None
 
@@ -557,7 +559,11 @@ class Lift:
             raise SystemExit(
                 f"no ruff release tags {commit}, the commit {newest} came from"
             )
-        tag = max(named, key=ordered)
+        tag   = max(named, key=ordered)
+        tools = (pin for pin in pins if pin.source == "mise")
+        if any(ordered(tag) > ordered(reports.newest(tool)) for tool in tools):
+            return None
+
         return cls(
             current   = current,
             name      = RUFF,
