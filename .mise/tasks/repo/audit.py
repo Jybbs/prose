@@ -332,19 +332,26 @@ def filtered(path: str, patterns: list[str]) -> bool:
     """
     Returns whether a GitHub `paths` filter made of `patterns` selects
     `path`, the last pattern to match it deciding. A `**` matches across `/`
-    and a `**/` matches zero or more whole directories, whereas `*` and `?`
-    never match `/`.
+    and a `**/` matches zero or more whole directories, whereas `*` never
+    matches `/`. A `?` takes the character before it zero or one times, a
+    `+` one or more times, and a `[]` matches one letter or digit it lists
+    or spans.
     """
     selected = False
     for pattern in patterns:
-        glob = (
-            escape(pattern.removeprefix("!"))
-            .replace(r"\*\*/", "\1")
-            .replace(r"\*\*", "\0")
-            .replace(r"\*", "[^/]*")
-            .replace(r"\?", "[^/]")
-            .replace("\1", "(?:.*/)?")
-            .replace("\0", ".*")
+        glob = sub(
+            r"\\\[((?:\\-|[0-9A-Za-z])+)\\\]",
+            lambda match: f"[{match[1]}]".replace(r"\-", "-"),
+            (
+                escape(pattern.removeprefix("!"))
+                .replace(r"\*\*/", "\1")
+                .replace(r"\*\*", "\0")
+                .replace(r"\*", "[^/]*")
+                .replace(r"\?", "?")
+                .replace(r"\+", "+")
+                .replace("\1", "(?:.*/)?")
+                .replace("\0", ".*")
+            )
         )
         if fullmatch(glob, path):
             selected = not pattern.startswith("!")
