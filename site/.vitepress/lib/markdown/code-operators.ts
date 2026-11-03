@@ -5,11 +5,16 @@ export interface CodePart {
   text : string
 }
 
-// Matches each operator the alignment rules pad, its word operators included,
-// where it stands between spaces or at either end of a code span, so `x = 1`,
-// `#`, `a == b`, and `x is not None` match while `name=value`, `a[1:2]`, a URL,
-// and the `in` of a `for` clause do not.
-const OPERATOR = /(^|\s)(is not|not in|is|(?<!\bfor\b.*)in|==|!=|<=|>=|\*\*=|\/\/=|>>=|<<=|[-+*/%@&|^]=|=|<|>|:|#)(?=\s|$)/g
+// Matches text that closes each quote it opens and holds no `#` outside a quote,
+// as the text before `in` does in `"a" in b` but not in `f"{a} in {b}"` or `# a, in b`.
+const CODE_PREFIX = /^(?:[^"'#]|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')*$/
+
+// Matches each operator the alignment rules pad, where it stands between spaces or
+// at either end of a code span, so `x = 1`, `#`, `a == b`, and `x is not None` match
+// while `name=value`, `a[1:2]`, a URL, and the `in` of a `for` clause do not. The
+// third group holds a word operator, which `codeParts` sets only where `CODE_PREFIX`
+// matches the text before it and the span does not end on a period.
+const OPERATOR = /(^|\s)((is not|not in|is|(?<!\bfor\b.*)in)|==|!=|<=|>=|\*\*=|\/\/=|>>=|<<=|[-+*/%@&|^]=|=|<|>|:|#)(?=\s|$)/g
 
 // Splits a code span's text into its operators and the runs between them.
 export function codeParts(text: string): CodePart[] {
@@ -17,6 +22,7 @@ export function codeParts(text: string): CodePart[] {
   let at      = 0
   for (const match of text.matchAll(OPERATOR)) {
     const start = match.index + match[1]!.length
+    if (match[3] && (text.endsWith('.') || !CODE_PREFIX.test(text.slice(0, start)))) continue
     if (start > at) parts.push({ op: false, text: text.slice(at, start) })
     parts.push({ op: true, text: match[2]! })
     at = start + match[2]!.length

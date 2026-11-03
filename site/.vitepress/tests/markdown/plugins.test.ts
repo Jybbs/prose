@@ -68,23 +68,39 @@ describe('codeOperatorPlugin', () => {
   const code = (src: string): string => render(md => md.use(codeOperatorPlugin), src)
 
   it.each([
-    ['`x = 1`',         '<code>x <span class="code-op">=</span> 1</code>'],
-    ['`=`',             '<code><span class="code-op">=</span></code>'],
-    ['`a == b`',        '<code>a <span class="code-op">==</span> b</code>'],
-    ['`x += 1`',        '<code>x <span class="code-op">+=</span> 1</code>'],
-    ['`# note`',        '<code><span class="code-op">#</span> note</code>'],
-    ['`x : int`',       '<code>x <span class="code-op">:</span> int</code>'],
-    ['`is not`',        '<code><span class="code-op">is not</span></code>'],
-    ['`a not in b`',    '<code>a <span class="code-op">not in</span> b</code>'],
-    ['`x is not None`', '<code>x <span class="code-op">is not</span> None</code>'],
-    ['`a in b`',        '<code>a <span class="code-op">in</span> b</code>']
+    ['`x = 1`',                                  '<code>x <span class="code-op">=</span> 1</code>'],
+    ['`=`',                                      '<code><span class="code-op">=</span></code>'],
+    ['`a == b`',                                 '<code>a <span class="code-op">==</span> b</code>'],
+    ['`x += 1`',                                 '<code>x <span class="code-op">+=</span> 1</code>'],
+    ['`# note`',                                 '<code><span class="code-op">#</span> note</code>'],
+    ['`x : int`',                                '<code>x <span class="code-op">:</span> int</code>'],
+    ['`is not`',                                 '<code><span class="code-op">is not</span></code>'],
+    ['`a not in b`',                             '<code>a <span class="code-op">not in</span> b</code>'],
+    ['`x is not None`',                          '<code>x <span class="code-op">is not</span> None</code>'],
+    ['`a in b`',                                 '<code>a <span class="code-op">in</span> b</code>'],
+    ['`"a" in b`',                               '<code>&quot;a&quot; <span class="code-op">in</span> b</code>'],
+    ['`\'a\' is b`',                             '<code>\'a\' <span class="code-op">is</span> b</code>'],
+    ['`"#" in b`',                               '<code>&quot;#&quot; <span class="code-op">in</span> b</code>'],
+    ['`"it\'s" in b`',                           '<code>&quot;it\'s&quot; <span class="code-op">in</span> b</code>'],
+    ['`"a\\"b" in c`',                           '<code>&quot;a\\&quot;b&quot; <span class="code-op">in</span> c</code>'],
+    ['`f"{a}" not in b`',                        '<code>f&quot;{a}&quot; <span class="code-op">not in</span> b</code>'],
+    ['`a in b for b in c`',                      '<code>a <span class="code-op">in</span> b for b in c</code>'],
+    ['`a in b # c in d`',                        '<code>a <span class="code-op">in</span> b <span class="code-op">#</span> c in d</code>'],
+    ['`# per-attempt ceiling, in milliseconds`', '<code><span class="code-op">#</span> per-attempt ceiling, in milliseconds</code>'],
+    ['`# a = b`',                                '<code><span class="code-op">#</span> a <span class="code-op">=</span> b</code>'],
+    ['`"a = b"`',                                '<code>&quot;a <span class="code-op">=</span> b&quot;</code>'],
+    ['`f"{ a = } in {b}"`',                      '<code>f&quot;{ a <span class="code-op">=</span> } in {b}&quot;</code>'],
+    ['`a == b in c.`',                           '<code>a <span class="code-op">==</span> b in c.</code>']
   ])('sets each operator in %s in a code-op span', (src, html) => {
     expect(code(src)).toContain(html)
   })
 
   it.each([
     '`name=value`', '`a[1:2]`', '`https://prose.fyi`', '`<rule>`', '`y := 1`',
-    '`[row for row in rows]`'
+    '`[row for row in rows]`', '`5 diagnostics in 2 files.`', '`x is not None.`',
+    '`"""Return whether the bag is empty."""`', '`f"{who} is {years}"`',
+    '`f"{record!r} in {column:>8}"`', '`" and is in element content."`', '`\'a in b\'`',
+    '`"a\\" in b"`'
   ])('leaves %s plain, since no alignment rule pads an operator between spaces in it', src => {
     expect(code(src)).not.toContain('code-op')
   })
