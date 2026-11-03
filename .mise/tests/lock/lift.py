@@ -258,6 +258,65 @@ def test_attempt_runs_ci_in_a_clone_carrying_the_checkout(
     ]
 
 
+def test_a_prerelease_pin_takes_the_newest_release_its_registry_lists(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch
+):
+    """
+    Pins that a docs-site pin standing on a prerelease moves to the newest
+    release its registry lists past the `latest` dist-tag `bun outdated`
+    reports, leaving out a nightly no PEP 440 version covers, while a pin on
+    a stable release keeps what the report gives.
+    """
+    versions = {
+        "1.6.4"          : {},
+        "2.0.0-alpha.20" : {},
+        "2.0.0-alpha.21" : {},
+        "3.0.0-dev.1.2"  : {}
+    }
+    monkeypatch.setattr(lift, "packument", lambda name: {"versions": versions})
+    reports = lift.Reports(
+        {
+            ("bun", "vite", "8.3.0")               : "8.3.4",
+            ("bun", "vitepress", "2.0.0-alpha.20") : "1.6.4"
+        }
+    )
+
+    assert reports.newest(
+        lift.Pin(None, "vitepress", "vitepress", "bun", "2.0.0-alpha.20")
+    ) == "2.0.0-alpha.21"
+    assert reports.newest(lift.Pin(None, "vite", "vite", "bun", "8.3.0")) == "8.3.4"
+
+
+@mark.parametrize(
+    ("age", "published", "cleared"),
+    [
+        param("24h", WHEN, WHEN + timedelta(hours=24), id = "hours"),
+        param("2w", WHEN, WHEN + timedelta(weeks=2), id = "weeks"),
+        param("90s", WHEN, WHEN + timedelta(seconds=90), id = "seconds"),
+        param("30m", WHEN, WHEN + timedelta(minutes=30), id = "minutes"),
+        param("6mo", WHEN, None, id = "months"),
+        param("1y", WHEN, None, id = "year"),
+        param("1h30m", WHEN, None, id = "compound"),
+        param("2024-06-01", WHEN, None, id = "date"),
+        param("24h", None, None, id = "unreported")
+    ]
+)
+def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
+    age       : str,
+    cleared   : datetime | None,
+    lift      : ModuleType,
+    published : datetime | None
+):
+    """
+    Pins that a cutoff counted in seconds, minutes, hours, days, or weeks
+    clears a release that long after it was published, and that a cutoff
+    given as a date, a span of months or years, or a compound span, or a
+    release reporting no time, has no clearing time.
+    """
+    assert lift.Release("1.99.1", published).cleared(age) == cleared
+
+
 def test_carry_copies_every_change_and_untracked_file(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch,
@@ -297,35 +356,6 @@ def test_carry_copies_every_change_and_untracked_file(
     assert not (clone / "ignored").exists()
 
 
-@mark.parametrize(
-    ("age", "published", "cleared"),
-    [
-        param("24h", WHEN, WHEN + timedelta(hours=24), id = "hours"),
-        param("2w", WHEN, WHEN + timedelta(weeks=2), id = "weeks"),
-        param("90s", WHEN, WHEN + timedelta(seconds=90), id = "seconds"),
-        param("30m", WHEN, WHEN + timedelta(minutes=30), id = "minutes"),
-        param("6mo", WHEN, None, id = "months"),
-        param("1y", WHEN, None, id = "year"),
-        param("1h30m", WHEN, None, id = "compound"),
-        param("2024-06-01", WHEN, None, id = "date"),
-        param("24h", None, None, id = "unreported")
-    ]
-)
-def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
-    age       : str,
-    cleared   : datetime | None,
-    lift      : ModuleType,
-    published : datetime | None
-):
-    """
-    Pins that a cutoff counted in seconds, minutes, hours, days, or weeks
-    clears a release that long after it was published, and that a cutoff
-    given as a date, a span of months or years, or a compound span, or a
-    release reporting no time, has no clearing time.
-    """
-    assert lift.Release("1.99.1", published).cleared(age) == cleared
-
-
 def test_clearing_matches_a_python_package_across_its_spellings(lift: ModuleType):
     """
     Pins that a pip alert on `PyYAML` clears for a pin written `pyyaml`,
@@ -350,49 +380,6 @@ def test_clearing_matches_a_python_package_across_its_spellings(lift: ModuleType
     )
 
     assert lifted.clearing([alert]).alerts == (3,)
-
-
-def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
-    """
-    Pins that a row carries an open alert on one of its packages whose first
-    patched version is the newest release or one before it, and none on
-    another package, on a patch the release falls short of, or with no patch
-    at all.
-    """
-    def alert(name: str, number: int, patched: str | None) -> dict:
-        """
-        Returns the fields of an npm alert `lock:lift` reads.
-        """
-        return {
-            "number"                 : number,
-            "dependency"             : {"package": {"ecosystem": "npm", "name": name}},
-            "security_vulnerability" : {
-                "first_patched_version": patched and {"identifier": patched}
-            }
-        }
-
-    pins = (pin(
-        lift    = lift,
-        name    = "vite",
-        source  = "bun",
-        written = "8.3.0"
-    ),)
-    lifted = row(
-        current = "8.3.0",
-        lift    = lift,
-        name    = "vite",
-        newest  = "8.3.4",
-        pins    = pins
-    )
-    alerts = [
-        alert("vite", 1, "8.3.2"),
-        alert("vite", 2, "9.0.0"),
-        alert("vue", 3, "1.0.0"),
-        alert("vite", 4, None),
-        alert("vite", 5, "8.3.4")
-    ]
-
-    assert lifted.clearing(alerts).alerts == (1, 5)
 
 
 @mark.parametrize(
@@ -474,6 +461,49 @@ def test_held_lists_each_stable_release_newer_than_the_report(
     assert fp.call_count(settings) == asked
 
 
+def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
+    """
+    Pins that a row carries an open alert on one of its packages whose first
+    patched version is the newest release or one before it, and none on
+    another package, on a patch the release falls short of, or with no patch
+    at all.
+    """
+    def alert(name: str, number: int, patched: str | None) -> dict:
+        """
+        Returns the fields of an npm alert `lock:lift` reads.
+        """
+        return {
+            "number"                 : number,
+            "dependency"             : {"package": {"ecosystem": "npm", "name": name}},
+            "security_vulnerability" : {
+                "first_patched_version": patched and {"identifier": patched}
+            }
+        }
+
+    pins = (pin(
+        lift    = lift,
+        name    = "vite",
+        source  = "bun",
+        written = "8.3.0"
+    ),)
+    lifted = row(
+        current = "8.3.0",
+        lift    = lift,
+        name    = "vite",
+        newest  = "8.3.4",
+        pins    = pins
+    )
+    alerts = [
+        alert("vite", 1, "8.3.2"),
+        alert("vite", 2, "9.0.0"),
+        alert("vue", 3, "1.0.0"),
+        alert("vite", 4, None),
+        alert("vite", 5, "8.3.4")
+    ]
+
+    assert lifted.clearing(alerts).alerts == (1, 5)
+
+
 def test_held_lists_nothing_at_the_newest_stable_release(
     fp   : FakeProcess,
     lift : ModuleType
@@ -545,25 +575,6 @@ def test_isolated_drops_what_the_checkout_set(
     assert environment["MISE_TRUSTED_CONFIG_PATHS"] == "/clone"
 
 
-def test_isolated_names_no_repository_gh_cannot_resolve(
-    fp          : FakeProcess,
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    tree        : Path
-):
-    """
-    Pins that a checkout whose remote `gh` cannot read passes no `GH_REPO`
-    on to the clone, leaving its own unset.
-    """
-    monkeypatch.delenv("GH_REPO", raising=False)
-    fp.register(
-        ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
-        returncode = 1
-    )
-
-    assert "GH_REPO" not in lift.isolated(Path("/clone"), tree)
-
-
 @mark.parametrize(
     ("current", "newest", "major"),
     [
@@ -591,6 +602,53 @@ def test_major_reads_the_left_most_non_zero_part(
         name    = "tool",
         newest  = newest
     ).major is major
+
+
+def test_isolated_names_no_repository_gh_cannot_resolve(
+    fp          : FakeProcess,
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    tree        : Path
+):
+    """
+    Pins that a checkout whose remote `gh` cannot read passes no `GH_REPO`
+    on to the clone, leaving its own unset.
+    """
+    monkeypatch.delenv("GH_REPO", raising=False)
+    fp.register(
+        ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
+        returncode = 1
+    )
+
+    assert "GH_REPO" not in lift.isolated(Path("/clone"), tree)
+
+
+@mark.parametrize(
+    "held",
+    [
+        param([], id = "none held"),
+        param([("rust", "1.99.1")], id = "held")
+    ]
+)
+def test_main_lists_the_held_releases_apart_from_the_lifts(
+    capsys      : CaptureFixture[str],
+    held        : list[tuple[str, str]],
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch
+):
+    """
+    Pins that the releases the cutoff holds back print in a table of their
+    own below the lifts, and that nothing follows the lifts where none is
+    held.
+    """
+    waiting = [lift.Held(WHEN, name, version) for name, version in held]
+    monkeypatch.setattr(lift, "table", lambda: ([], waiting))
+    monkeypatch.setattr("sys.argv", ["lift"])
+
+    lift.main()
+
+    tail = f"\n{lift.waiting(waiting)}\n" if waiting else ""
+    assert capsys.readouterr().out == f"{lift.rendered([])}\n{tail}"
 
 
 def test_main_exits_2_on_a_hold_the_table_omits(
@@ -628,34 +686,6 @@ def test_main_exits_2_on_a_hold_the_table_omits(
     assert (stopped.value.code, ran) == (2, [])
     assert "`vite`" in printed.out
     assert "--hold names pins the table omits: nope" in printed.err
-
-
-@mark.parametrize(
-    "held",
-    [
-        param([], id = "none held"),
-        param([("rust", "1.99.1")], id = "held")
-    ]
-)
-def test_main_lists_the_held_releases_apart_from_the_lifts(
-    capsys      : CaptureFixture[str],
-    held        : list[tuple[str, str]],
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch
-):
-    """
-    Pins that the releases the cutoff holds back print in a table of their
-    own below the lifts, and that nothing follows the lifts where none is
-    held.
-    """
-    waiting = [lift.Held(WHEN, name, version) for name, version in held]
-    monkeypatch.setattr(lift, "table", lambda: ([], waiting))
-    monkeypatch.setattr("sys.argv", ["lift"])
-
-    lift.main()
-
-    tail = f"\n{lift.waiting(waiting)}\n" if waiting else ""
-    assert capsys.readouterr().out == f"{lift.rendered([])}\n{tail}"
 
 
 def test_main_writes_the_lifts_the_passing_attempt_kept(
@@ -813,28 +843,6 @@ def test_of_stops_where_the_homes_of_a_row_disagree(lift: ModuleType):
     )
 
 
-def test_output_stops_with_everything_a_failing_command_printed(
-    fp   : FakeProcess,
-    lift : ModuleType
-):
-    """
-    Pins that a command exiting nonzero stops the task with the command, its
-    exit status, and everything it printed.
-    """
-    fp.register(
-        ["cargo", "update"],
-        returncode = 101,
-        stdout     = "error: no matching package\n"
-    )
-
-    with raises(SystemExit) as stopped:
-        lift.output("cargo", "update")
-
-    assert stopped.value.code == (
-        "cargo update exited 101:\nerror: no matching package\n"
-    )
-
-
 @mark.parametrize(
     ("text", "home", "old", "new", "written"),
     [
@@ -889,6 +897,28 @@ def test_rewrite_moves_the_pin_alone(
     assert lift.Home("file", **home).rewrite(new, old, text) == written
 
 
+def test_output_stops_with_everything_a_failing_command_printed(
+    fp   : FakeProcess,
+    lift : ModuleType
+):
+    """
+    Pins that a command exiting nonzero stops the task with the command, its
+    exit status, and everything it printed.
+    """
+    fp.register(
+        ["cargo", "update"],
+        returncode = 101,
+        stdout     = "error: no matching package\n"
+    )
+
+    with raises(SystemExit) as stopped:
+        lift.output("cargo", "update")
+
+    assert stopped.value.code == (
+        "cargo update exited 101:\nerror: no matching package\n"
+    )
+
+
 def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: MonkeyPatch):
     """
     Pins that a scoped npm package's `/` is escaped in the registry path
@@ -899,51 +929,6 @@ def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: Monke
     assert lift.packument(
         "@iconify-json/logos"
     ) == "https://registry.npmjs.org/@iconify-json%2Flogos"
-
-
-def test_pins_reads_every_home(fp: FakeProcess, lift: ModuleType, tree: Path):
-    """
-    Pins every pin read from a tree holding one home of each kind, naming
-    a mise tool without its backend and owner, a `ruff_*` crate under
-    `ruff`, an override no package declares as the npm registry's, the
-    build requirement as PyPI's, an unpinned group requirement at its locked
-    version, and an exact PEP 723 requirement, while the `min_version`
-    floor, a profile table, a local action, an inexact requirement, and the
-    Python badge stay out.
-    """
-    fp.register(SCRIPTS, stdout=".mise/tasks/repo/audit.py\n")
-
-    found = {
-        (
-            each.name, each.package, each.source, each.written,
-            each.home and each.home.path
-        )
-        for each in lift.pins()
-    }
-
-    assert found == {
-        ("actions/cache", "actions/cache", "action", OLD, ".github/workflows/ci.yml"),
-        ("insta", "aqua:mitsuhiko/insta", "mise", "1.48.0", ".mise/config.toml"),
-        ("insta", "insta", "cargo", "1.48.0", "crate/Cargo.toml"),
-        ("maturin", "maturin", "", "1.15.0", ".github/actions/wheel/action.yml"),
-        ("maturin", "maturin", "mise", "1.15.0", ".mise/config.toml"),
-        ("maturin", "maturin", "pypi", "1.15.0", "crate/pyproject.toml"),
-        ("pytest", "pytest", "uv", "9.1.1", None),
-        ("pyyaml", "PyYAML", "uv", "6.0.3", ".mise/tasks/repo/audit.py"),
-        ("ruff", "ruff", "", "0.15.22", "crate/Cargo.toml"),
-        ("ruff", "ruff", "mise", "0.15.22", ".mise/config.toml"),
-        ("ruff", "ruff_python_ast", "cargo", "0.0.5", "Cargo.toml"),
-        ("ruff", "ruff_text_size", "cargo", "0.0.5", "Cargo.toml"),
-        ("rust", "rust", "", "1.98", ".github/README.md"),
-        ("rust", "rust", "", "1.98.1", "Cargo.toml"),
-        ("rust", "rust", "mise", "1.98.1", ".mise/config.toml"),
-        ("serde", "serde", "cargo", "1.0.229", "Cargo.toml"),
-        ("shiki", "shiki", "npm", "4.4.3", "site/package.json"),
-        ("tomli", "tomli", "uv", "2.2.1", "crate/pyproject.toml"),
-        ("vite", "vite", "bun", "8.3.0", "site/package.json"),
-        ("wasm-bindgen", "wasm-bindgen", "cargo", "0.2.128", "crate/Cargo.toml"),
-        ("wrangler", "wrangler", "npm", "4.137.0", ".github/actions/wheel/action.yml")
-    }
 
 
 @mark.parametrize(
@@ -1015,6 +1000,51 @@ def test_tried_retries_with_each_major_lift_held_back_in_turn(
     assert logged == attempts
 
 
+def test_pins_reads_every_home(fp: FakeProcess, lift: ModuleType, tree: Path):
+    """
+    Pins every pin read from a tree holding one home of each kind, naming
+    a mise tool without its backend and owner, a `ruff_*` crate under
+    `ruff`, an override no package declares as the npm registry's, the
+    build requirement as PyPI's, an unpinned group requirement at its locked
+    version, and an exact PEP 723 requirement, while the `min_version`
+    floor, a profile table, a local action, an inexact requirement, and the
+    Python badge stay out.
+    """
+    fp.register(SCRIPTS, stdout=".mise/tasks/repo/audit.py\n")
+
+    found = {
+        (
+            each.name, each.package, each.source, each.written,
+            each.home and each.home.path
+        )
+        for each in lift.pins()
+    }
+
+    assert found == {
+        ("actions/cache", "actions/cache", "action", OLD, ".github/workflows/ci.yml"),
+        ("insta", "aqua:mitsuhiko/insta", "mise", "1.48.0", ".mise/config.toml"),
+        ("insta", "insta", "cargo", "1.48.0", "crate/Cargo.toml"),
+        ("maturin", "maturin", "", "1.15.0", ".github/actions/wheel/action.yml"),
+        ("maturin", "maturin", "mise", "1.15.0", ".mise/config.toml"),
+        ("maturin", "maturin", "pypi", "1.15.0", "crate/pyproject.toml"),
+        ("pytest", "pytest", "uv", "9.1.1", None),
+        ("pyyaml", "PyYAML", "uv", "6.0.3", ".mise/tasks/repo/audit.py"),
+        ("ruff", "ruff", "", "0.15.22", "crate/Cargo.toml"),
+        ("ruff", "ruff", "mise", "0.15.22", ".mise/config.toml"),
+        ("ruff", "ruff_python_ast", "cargo", "0.0.5", "Cargo.toml"),
+        ("ruff", "ruff_text_size", "cargo", "0.0.5", "Cargo.toml"),
+        ("rust", "rust", "", "1.98", ".github/README.md"),
+        ("rust", "rust", "", "1.98.1", "Cargo.toml"),
+        ("rust", "rust", "mise", "1.98.1", ".mise/config.toml"),
+        ("serde", "serde", "cargo", "1.0.229", "Cargo.toml"),
+        ("shiki", "shiki", "npm", "4.4.3", "site/package.json"),
+        ("tomli", "tomli", "uv", "2.2.1", "crate/pyproject.toml"),
+        ("vite", "vite", "bun", "8.3.0", "site/package.json"),
+        ("wasm-bindgen", "wasm-bindgen", "cargo", "0.2.128", "crate/Cargo.toml"),
+        ("wrangler", "wrangler", "npm", "4.137.0", ".github/actions/wheel/action.yml")
+    }
+
+
 def test_published_commit_reads_the_archive_cargo_uploaded(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch
@@ -1045,35 +1075,6 @@ def test_release_reads_the_latest_tag_and_time(fp: FakeProcess, lift: ModuleType
     )
 
     assert lift.release("owner/action") == lift.Release("v2.0.0", WHEN)
-
-
-def test_released_reads_the_time_mise_lists_for_a_tool(
-    fp   : FakeProcess,
-    lift : ModuleType
-):
-    """
-    Pins that a tool's release time is the `created_at` mise lists beside
-    that version with its `minimum_release_age` cutoff off, that a version
-    listed without one reports no time, and that one listing serves every
-    version read off the tool.
-    """
-    listed = [
-        {"created_at": "2026-10-01T00:00:00.0Z", "version": "1.99.0"},
-        {"version": "3.15.0"}
-    ]
-    remote = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
-    fp.register(remote, stdout=dumps(listed))
-
-    tool = pin(
-        lift    = lift,
-        name    = "rust",
-        source  = "mise",
-        written = "1.98.1"
-    )
-
-    assert tool.released("1.99.0") == lift.Release("1.99.0", WHEN)
-    assert tool.released("3.15.0") == lift.Release("3.15.0")
-    assert fp.call_count(remote) == 1
 
 
 @mark.parametrize(
@@ -1147,41 +1148,33 @@ def test_released_reads_the_release_from_its_registry(
     assert fetched == asked
 
 
-def test_rendered_pads_every_column_to_one_width(lift: ModuleType):
+def test_released_reads_the_time_mise_lists_for_a_tool(
+    fp   : FakeProcess,
+    lift : ModuleType
+):
     """
-    Pins the table's header, divider, and rows, each column padded to its
-    widest cell, and the sentence printed where nothing trails its newest
-    release.
+    Pins that a tool's release time is the `created_at` mise lists beside
+    that version with its `minimum_release_age` cutoff off, that a version
+    listed without one reports no time, and that one listing serves every
+    version read off the tool.
     """
-    lifted = [
-        row(
-            alerts    = (7, 9),
-            current   = "0.12.17",
-            lift      = lift,
-            name      = "uv",
-            newest    = "0.13.0",
-            published = datetime.now(UTC) - timedelta(days=4)
-        ),
-        row(
-            current   = "3.14.6",
-            lift      = lift,
-            name      = "python",
-            newest    = "3.15.0",
-            published = None
-        )
+    listed = [
+        {"created_at": "2026-10-01T00:00:00.0Z", "version": "1.99.0"},
+        {"version": "3.15.0"}
     ]
+    remote = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
+    fp.register(remote, stdout=dumps(listed))
 
-    assert lift.rendered(lifted).splitlines() == [
-        "| **Pin**  | **Current** | **Newest** | **Major** "
-        "| **Days Old** | **Alerts Cleared** |",
-        "|----------|-------------|------------|-----------"
-        "|--------------|--------------------|",
-        "| `uv`     | `0.12.17`   | `0.13.0`   | yes       "
-        "| 4            | #7, #9             |",
-        "| `python` | `3.14.6`    | `3.15.0`   | no        "
-        "|              |                    |"
-    ]
-    assert lift.rendered([]) == "Every pin stands at its newest release."
+    tool = pin(
+        lift    = lift,
+        name    = "rust",
+        source  = "mise",
+        written = "1.98.1"
+    )
+
+    assert tool.released("1.99.0") == lift.Release("1.99.0", WHEN)
+    assert tool.released("3.15.0") == lift.Release("3.15.0")
+    assert fp.call_count(remote) == 1
 
 
 @mark.parametrize(
@@ -1350,6 +1343,43 @@ def test_downloaded_names_the_task_and_undoes_a_gzip_encoding(
 
     assert lift.fetched("https://example.test/doc") == {}
     assert asked == [("https://example.test/doc", lift.AGENT, 120)]
+
+
+def test_rendered_pads_every_column_to_one_width(lift: ModuleType):
+    """
+    Pins the table's header, divider, and rows, each column padded to its
+    widest cell, and the sentence printed where nothing trails its newest
+    release.
+    """
+    lifted = [
+        row(
+            alerts    = (7, 9),
+            current   = "0.12.17",
+            lift      = lift,
+            name      = "uv",
+            newest    = "0.13.0",
+            published = datetime.now(UTC) - timedelta(days=4)
+        ),
+        row(
+            current   = "3.14.6",
+            lift      = lift,
+            name      = "python",
+            newest    = "3.15.0",
+            published = None
+        )
+    ]
+
+    assert lift.rendered(lifted).splitlines() == [
+        "| **Pin**  | **Current** | **Newest** | **Major** "
+        "| **Days Old** | **Alerts Cleared** |",
+        "|----------|-------------|------------|-----------"
+        "|--------------|--------------------|",
+        "| `uv`     | `0.12.17`   | `0.13.0`   | yes       "
+        "| 4            | #7, #9             |",
+        "| `python` | `3.14.6`    | `3.15.0`   | no        "
+        "|              |                    |"
+    ]
+    assert lift.rendered([]) == "Every pin stands at its newest release."
 
 
 def test_reports_read_the_newest_release_each_manager_prints(

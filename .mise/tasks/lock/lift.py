@@ -324,11 +324,17 @@ class Reports:
 
     def newest(self, pin: Pin) -> str:
         """
-        Returns the newest release the report covering `pin` gives, which is
-        its written version where the report omits it.
+        Returns the newest release the report covering `pin` gives, which
+        is its written version where the report omits it. A docs-site pin
+        standing on a prerelease takes the newest release its registry
+        lists, prereleases included, because `bun outdated` reads only the
+        `latest` dist-tag.
         """
         reported = (pin.source, canonicalize_name(pin.package), pin.written)
-        return self.releases.get(reported, pin.written)
+        newest   = self.releases.get(reported, pin.written)
+        if pin.source != "bun" or not ordered(pin.written).is_prerelease:
+            return newest
+        return max([newest, *packument(pin.package)["versions"]], key=ordered)
 
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
