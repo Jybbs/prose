@@ -337,7 +337,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | **Workflow** | **Fires on a Pull Request Touching** |
 |---|---|
 | `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
-| `🪻 Deploy` | The docs site, the scripts, tasks, and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, every Markdown file directly under `.github/`, `LICENSE`, or `crate/Cargo.toml` |
+| `🪻 Deploy` | The docs site, the crate's source, manifests, and fixtures, `prose_wasm`, the workspace manifest and lockfile, the wheel platform list, the scripts, tasks, and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, every Markdown file directly under `.github/`, or `LICENSE` |
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 
