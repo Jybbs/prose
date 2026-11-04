@@ -2,8 +2,8 @@
 Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
 it finds a filter leaving out across a task and the tasks it depends on, and
 the trigger it reports for each. Also pins the label `parity` reports a pin
-under once either side of its pair drifts, and the annotation `parity` stops
-on where a side holds no pin.
+under once either side of its pair drifts, and the annotation a helper of
+`parity` stops the audit on where it finds no pin.
 """
 
 from collections.abc   import Callable
@@ -111,13 +111,12 @@ PINS = {
     ),
 
     ".github/actions/restore-wasm/action.yml":
-        "key : ${{ hashFiles('wasm/**', 'Cargo.lock') }}\n",
+        "key : ${{ hashFiles('wasm/**', 'Cargo.toml') }}\n",
 
     ".github/workflows/ci.yml": (
         "steps:\n"
         "  - uses : actions/checkout@1111\n"
         "  - uses : &cache-save actions/cache/save@2222\n"
-        "  - uses : &cache-restore actions/cache/restore@4444\n"
     ),
 
     ".github/workflows/warm.yml": (
@@ -218,7 +217,7 @@ TASKS  = [
         "dir"     : "{root}",
         "name"    : "wasm:pack",
         "depends" : [],
-        "sources" : ["{root}/Cargo.lock", "{root}/wasm/**"]
+        "sources" : ["{root}/Cargo.toml", "{root}/wasm/**"]
     }
 ]
 TREE = {
@@ -557,9 +556,9 @@ def test_parity_pairs_each_have_a_drift_row(
     drifted : Callable[[str, str, str], None]
 ):
     """
-    Pins that the labels of the pairs `parity` compares are exactly the
-    keys of `DRIFTS`, so adding a pair to the audit fails this case until
-    `DRIFTS` holds a row for it.
+    Pins that the labels of the pairs `parity` compares over `PINS` are
+    exactly the keys of `DRIFTS`, so a pair the audit adds over `PINS` fails
+    this case until `DRIFTS` holds a row for it.
     """
     drifted("Cargo.toml", "crate", "crate")
 
@@ -613,8 +612,8 @@ def test_parity_pairs_each_have_a_drift_row(
         ),
         param(
             "lock:sync",
-            '"outputs"',
-            '"output"',
+            '"outputs": ["Cargo.lock"]',
+            '"outputs": {"auto": true}',
             "no outputs declaration in the lock:sync task",
             id = "task-key"
         ),
@@ -644,8 +643,8 @@ def test_parity_stops_on_a_side_holding_no_pin(
     stray    : str
 ):
     """
-    Pins that `parity` stops the audit on one annotation naming what is
-    missing, where it reads no pin from a side.
+    Pins that a helper of `parity` stops the audit on one annotation naming
+    what is missing, where the helper finds no pin in the value it reads.
     """
     drifted(home, pin, stray)
 
