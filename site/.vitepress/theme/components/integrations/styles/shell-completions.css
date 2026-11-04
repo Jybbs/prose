@@ -1,3 +1,7 @@
+.shell-card-modal-mark {
+  --mark-icon-size : var(--prose-size-14);
+}
+
 .shell-card-tab {
   right         : calc(var(--prose-size-132) * -1);
   top           : calc(var(--prose-space-23) + var(--idx) * var(--prose-space-44));

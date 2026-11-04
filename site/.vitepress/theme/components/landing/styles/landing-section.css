@@ -2,6 +2,10 @@
   font-variation-settings : 'opsz' 144;
 }
 
+.landing-section h2 strong {
+  font-weight : 600;
+}
+
 .landing-section p {
   color : var(--vp-c-text-2);
 }

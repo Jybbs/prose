@@ -8,7 +8,7 @@ interface Bundle {
 }
 
 // Holds the bytes of CSS and JavaScript the built site may ship.
-const BUNDLE_BUDGET: Bundle = { css: 314_368, js: 16_781_312 }
+const BUNDLE_BUDGET: Bundle = { css: 315_392, js: 16_781_312 }
 
 // Throws where the CSS or the JavaScript the build wrote under `outDir` measures
 // more bytes than the budget holds, naming each kind that grew past it.

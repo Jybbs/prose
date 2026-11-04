@@ -28,7 +28,7 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
               aria-hidden="true"
             ><Tool :slug="editor.slug" bare /></span>
             <span
-              class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap text-text-1 italic group-aria-selected:text-celadon-60-text-1"
+              class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap text-aside italic group-aria-selected:text-celadon-60-text-1"
             >{{ editor.name }}</span>
             <span class="leader-fill max-card-stack:hidden" aria-hidden="true"></span>
           </button>

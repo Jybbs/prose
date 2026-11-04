@@ -86,6 +86,7 @@
 
 /* Boxes a rule's nib on the chip ground, with its slug in a label track that
    stays at zero width until the case opens or a hovered box raises it. */
+.vp-doc a.composition-cards-chip,
 .composition-cards-chip {
   grid-template-columns : calc(var(--prose-size-20) - var(--prose-space-2)) 0fr;
   border                : var(--prose-border-1) solid var(--vp-c-divider);

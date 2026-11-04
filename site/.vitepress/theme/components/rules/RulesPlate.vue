@@ -133,7 +133,7 @@ function releaseAll(): void {
         >
           <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="14" />
           <RuleTooltipPopper :rule="rule">
-            <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :href="rule.href">{{ rule.slug }}</a>
+            <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline hover:text-brand-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :href="rule.href">{{ rule.slug }}</a>
           </RuleTooltipPopper>
         </li>
       </ul>

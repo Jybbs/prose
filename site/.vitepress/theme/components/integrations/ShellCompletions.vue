@@ -34,7 +34,7 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
       <article class="shell-card-modal flex min-h-260 flex-col overflow-hidden panel bg-bg max-card-stack:min-h-auto">
         <header class="flex items-center gap-12 px-18 py-14">
           <span
-            class="tool-ring size-26 border-celadon-60-divider"
+            class="shell-card-modal-mark tool-ring size-26 border-celadon-60-divider"
             aria-hidden="true"
           ><Tool :slug="active.slug" bare /></span>
           <span class="kicker">{{ active.caption }}</span>

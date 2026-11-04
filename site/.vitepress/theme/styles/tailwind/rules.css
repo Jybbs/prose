@@ -1,24 +1,25 @@
 @theme inline {
-  --color-layer-ink : var(--layer-ink);
-  --color-outcome-ink : var(--outcome-ink);
-  --color-outcome-mark : var(--outcome-mark);
-  --grid-template-columns-max-1fr : max-content minmax(0, 1fr);
-  --color-family-nib : var(--family-nib);
-
+  --color-family-nib                           : var(--family-nib);
+  --color-layer-ink                            : var(--layer-ink);
+  --color-outcome-ink                          : var(--outcome-ink);
+  --color-outcome-mark                         : var(--outcome-mark);
 
   --columns-2-11rem                            : 2 var(--prose-width-11rem);
 
   --content-diamond                            : "◆";
 
+  --ease-morph                                 : var(--prose-ease-morph);
+
+  --grid-template-columns-110-minmax-1fr       : var(--prose-size-110) minmax(0, 1fr);
   --grid-template-columns-24-auto-1fr          : var(--prose-size-24) auto 1fr;
   --grid-template-columns-280-1fr              : var(--prose-width-280) 1fr;
   --grid-template-columns-3rem-minmax-1fr      : var(--prose-size-3rem) minmax(0, 1fr);
-  --grid-template-columns-110-minmax-1fr : var(--prose-size-110) minmax(0, 1fr);
+  --grid-template-columns-max-1fr              : max-content minmax(0, 1fr);
 
   --text-underline-offset-3                    : var(--prose-space-3);
 
-  --ease-morph                                 : var(--prose-ease-morph);
   --transition-duration-grow                   : var(--prose-duration-morph);
+
   --transition-property-background-and-opacity : background, opacity;
   --transition-property-width                  : width;
 }

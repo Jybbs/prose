@@ -7,6 +7,7 @@
 
 .landing-cta-swap-enter-active,
 .landing-cta-swap-leave-active {
+  transition-property        : opacity, translate;
   transition-duration        : 240ms;
   transition-timing-function : cubic-bezier(0.22, 1, 0.36, 1);
 }

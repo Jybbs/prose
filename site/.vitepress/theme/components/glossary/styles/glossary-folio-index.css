@@ -1,5 +1,13 @@
+@reference "../../../styles/tailwind.css";
+
 .glossary-folio-index-narrow .glossary-folio-list {
   max-height : none;
+}
+
+@variant wide {
+  .glossary-folio-index-narrow {
+    display : none !important;
+  }
 }
 
 .glossary-folio-list {
@@ -29,6 +37,7 @@
 }
 
 .glossary-folio-row-deck.is-stacked::before {
+  content    : "";
   position   : absolute;
   inset      : calc(var(--prose-space-2) * -1) 0;
   left       : auto;

@@ -69,7 +69,7 @@ const words = computed(() => {
         <ul class="m-0 list-none columns-2 gap-x-28 pl-0 column-rule-divider max-tablet:columns-1">
           <li v-for="token in tokens" :key="token.key" class="mt-0 mb-2 break-inside-avoid" :data-domain="domain">
             <a
-              class="az-index-key-btn block w-full px-8 py-3 text-left font-mono text-xs wrap-anywhere whitespace-normal text-text-1 no-underline outline-none not-aria-current:hover:bg-text-1/10 not-aria-current:focus-visible:bg-text-1/10 aria-current:bg-domain-band"
+              class="az-index-key-btn block w-full px-8 py-3 text-left font-mono text-xs wrap-anywhere whitespace-normal text-text-1 no-underline outline-none not-aria-current:hover:bg-text-1/10 not-aria-current:hover:text-brand-2 not-aria-current:focus-visible:bg-text-1/10 aria-current:bg-domain-band"
               :href="token.href"
               :aria-current="shown?.item.key === token.key ? 'true' : undefined"
               @blur="hide"

@@ -15,7 +15,7 @@ defineProps<{
   <RuleTooltipPopper :rule="withTooltip ? segment.rule : null">
     <a
       :href="segment.rule?.href"
-      class="composition-cards-chip box-border grid h-20 items-center justify-items-start bg-chip-ground font-mono leading-1-2 text-text-1 no-underline"
+      class="composition-cards-chip box-border grid h-20 items-center justify-items-start bg-chip-ground font-mono leading-1-2 text-text-1 no-underline hover:text-brand-2"
       :data-family="segment.family"
       :title="segment.rule ? undefined : `${segment.slug} (${segment.family ?? 'undocumented'})`"
     >

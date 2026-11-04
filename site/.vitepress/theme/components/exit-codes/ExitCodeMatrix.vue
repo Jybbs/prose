@@ -36,7 +36,7 @@ const heads = (at: number) => at === 0 || codes[at - 1]!.outcome !== codes[at]!.
         <span class="exit-code-entry-numeral font-mono text-2-6rem leading-none font-500 text-outcome-ink lining-nums tabular-nums" aria-hidden="true">{{ selectedRow.code }}</span>
         <span class="exit-code-entry-label font-display text-1-5rem leading-none font-500 text-text-1">{{ selectedRow.label }}</span>
       </header>
-      <p class="exit-code-entry-summary mx-0 mt-0 mb-14 max-w-60ch font-base text-md leading-1-55 text-text-1">{{ selectedRow.summary }}</p>
+      <p class="exit-code-entry-summary max-w-60ch font-base text-md text-text-1">{{ selectedRow.summary }}</p>
       <dl class="exit-code-entry-facts m-0 grid max-w-60ch grid-cols-max-1fr border-t-1 border-t-divider">
         <template v-for="fact in selectedRow.facts" :key="fact.label">
           <dt class="m-0 border-b-1 border-b-divider py-8 pr-16 font-mono text-kicker leading-24 font-400 tracking-kicker text-text-2 uppercase">{{ fact.label }}</dt>

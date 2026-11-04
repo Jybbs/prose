@@ -1,11 +1,10 @@
 @theme inline {
-  --color-domain-band : color-mix(in srgb, var(--domain-color) var(--az-index-band), transparent);
-  --grid-template-columns-8-1fr-auto : var(--prose-size-8) minmax(0, 1fr) auto;
   --color-domain                              : var(--domain-color);
+  --color-domain-band                         : color-mix(in srgb, var(--domain-color) var(--az-index-band), transparent);
 
   --flex-basis-1-4em                          : var(--prose-size-1-4em);
 
-
+  --grid-template-columns-8-1fr-auto          : var(--prose-size-8) minmax(0, 1fr) auto;
 
   --transition-property-background-and-height : background, height;
   --transition-property-color-and-box-shadow  : color, box-shadow;
