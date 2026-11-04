@@ -2,8 +2,8 @@
 Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
 it finds a filter leaving out across a task and the tasks it depends on, and
 the trigger it reports for each. Also pins the label `parity` reports a pin
-under once either side of its pair drifts, and the annotation a helper of
-`parity` stops the audit on where it finds no pin.
+under once either side of its pair drifts, and the annotation a `fail` in a
+helper of `parity` stops the audit on.
 """
 
 from collections.abc   import Callable
@@ -196,6 +196,12 @@ TASKS  = [
         ]
     },
     {
+        "dir"     : "{root}",
+        "name"    : "rust:build",
+        "depends" : [],
+        "sources" : []
+    },
+    {
         "dir"     : "{root}/site",
         "name"    : "site:bake",
         "depends" : [],
@@ -204,7 +210,7 @@ TASKS  = [
     {
         "dir"     : "{root}/site",
         "name"    : "site:press",
-        "depends" : ["site:bake", ["wasm:pack", "--release"]],
+        "depends" : ["rust:build", "site:bake", ["wasm:pack", "--release"]],
         "sources" : ["{root}/site/**/*", "!{root}/site/dist/**/*"]
     },
     {
@@ -643,8 +649,8 @@ def test_parity_stops_on_a_side_holding_no_pin(
     stray    : str
 ):
     """
-    Pins that a helper of `parity` stops the audit on one annotation naming
-    what is missing, where the helper finds no pin in the value it reads.
+    Pins that a `fail` in a helper of `parity` stops the audit on one
+    annotation naming what is missing.
     """
     drifted(home, pin, stray)
 
