@@ -4,7 +4,7 @@ import type { Ref, ShallowRef }            from 'vue'
 
 import { millis, morphEase, reducesMotion, snapInPlace } from '../shared/paint'
 
-export type Side = 'bottom' | 'left' | 'right'
+type Side = 'bottom' | 'left' | 'right'
 
 // Holds where a card stands in viewport coordinates, the side of its key it
 // hangs from, and the gap its band crosses to reach the key.

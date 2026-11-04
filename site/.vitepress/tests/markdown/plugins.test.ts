@@ -44,6 +44,11 @@ describe('calloutPlugin', () => {
       + '<span class="callout-title">Holds <code>x</code></span></p>')
   })
 
+  it('resolves a reference link in a callout title', async () => {
+    await expect(callout('::: tip See [x][y]\nBody.\n:::\n\n[y]: /z'))
+      .resolves.toContain('<span class="callout-title">See <a href="/z.html">x</a></span>')
+  })
+
   it('leaves the title out of a callout the page gives none', async () => {
     await expect(callout('::: tip\nBody.\n:::'))
       .resolves.toContain('<span class="callout-kind">Tip</span></p>')

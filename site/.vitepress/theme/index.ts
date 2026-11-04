@@ -2,8 +2,8 @@ import type { Theme }     from 'vitepress'
 import DefaultTheme       from 'vitepress/theme'
 import type { Component } from 'vue'
 
-import FloatingVue                                        from 'floating-vue'
-import type { Dropdown, Tooltip, vClosePopper, vTooltip } from 'floating-vue'
+import FloatingVue                                              from 'floating-vue'
+import type { Dropdown, Menu, Tooltip, vClosePopper, vTooltip } from 'floating-vue'
 
 import './styles/popper-vendor.css'
 import '@shikijs/magic-move/style.css'
@@ -106,6 +106,7 @@ export default {
 declare module 'vue' {
   interface GlobalComponents {
     VDropdown : typeof Dropdown
+    VMenu     : typeof Menu
     VTooltip  : typeof Tooltip
   }
   interface GlobalDirectives {

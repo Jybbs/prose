@@ -90,7 +90,7 @@ smallvec            = { version = "1.16.4", features = ["serde"] }
 tempfile            = { version = "3.27.0", optional = true }
 textwrap            = { version = "0.16.4", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror           = "2.0.21"
-toml                = "1.1.8"
+toml                = "1.2.0"
 unicode-width       = "0.2.3"
 
 [dev-dependencies]

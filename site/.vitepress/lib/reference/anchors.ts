@@ -4,8 +4,8 @@
 
 import { slugify } from '@mdit-vue/shared'
 
-export const ALIGNMENT_SCOPE = 'alignment rules'
-export const EVERY_RULE      = 'every rule'
+const ALIGNMENT_SCOPE = 'alignment rules'
+const EVERY_RULE      = 'every rule'
 
 // The scope each facet the shared sub-tables hoist reads under, those two
 // reaching many rules where the rest reach one.

@@ -326,9 +326,9 @@ class Reports:
         """
         Returns the newest release the report covering `pin` gives, which
         is its written version where the report omits it. A docs-site pin
-        standing on a prerelease takes the newest release its registry
-        lists, prereleases included, because `bun outdated` reads only the
-        `latest` dist-tag.
+        standing on a prerelease takes the highest PEP 440 version its
+        registry lists, because `bun outdated` reads only the `latest`
+        dist-tag.
         """
         if pin.source == "bun" and ordered(pin.written).is_prerelease:
             return max(packument(pin.package)["versions"], key=ordered)

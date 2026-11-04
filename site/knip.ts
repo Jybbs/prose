@@ -10,13 +10,13 @@ export default defineConfig({
   entry              : ['**/*.md', '.vitepress/**/*.data.ts'],
   project            : ['.vitepress/**/*.{ts,vue,mjs}', 'prototypes/**/*.{ts,vue}', '**/*.md'],
   compilers          : { md: pageScript },
-  include            : ['cycles'],
+  ignoreIssues       : { '.vitepress/lib/shared/nib.ts': ['exports'] },
+  include            : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
   rules              : { cycles: 'error' },
   ignoreDependencies : [
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',
     '@fontsource/lora',
-    '@vue/content-mapper',
     'oxlint'
   ]
 })

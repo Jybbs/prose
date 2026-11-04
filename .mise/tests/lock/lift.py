@@ -258,15 +258,16 @@ def test_attempt_runs_ci_in_a_clone_carrying_the_checkout(
     ]
 
 
-def test_a_prerelease_pin_takes_the_newest_release_its_registry_lists(
+def test_a_prerelease_pin_takes_the_highest_version_its_registry_lists(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch
 ):
     """
-    Pins that a docs-site pin standing on a prerelease moves to the newest
-    release its registry lists past the `latest` dist-tag `bun outdated`
+    Pins that a docs-site pin on a prerelease moves to the highest PEP 440
+    version its registry lists past the `latest` dist-tag `bun outdated`
     reports, leaving out a nightly no PEP 440 version covers, while a pin on
-    a stable release keeps what the report gives.
+    a stable release keeps what the report gives and a Cargo prerelease pin
+    reads no npm registry.
     """
     versions = {
         "1.6.4"          : {},
@@ -286,6 +287,9 @@ def test_a_prerelease_pin_takes_the_newest_release_its_registry_lists(
         lift.Pin(None, "vitepress", "vitepress", "bun", "2.0.0-alpha.20")
     ) == "2.0.0-alpha.21"
     assert reports.newest(lift.Pin(None, "vite", "vite", "bun", "8.3.0")) == "8.3.4"
+    assert reports.newest(
+        lift.Pin(None, "smallvec", "smallvec", "cargo", "2.0.0-beta.4")
+    ) == "2.0.0-beta.4"
 
 
 @mark.parametrize(
@@ -1411,6 +1415,7 @@ def test_reports_read_the_newest_release_each_manager_prints(
         ["cargo", "update", "--dry-run", "--verbose"],
         stdout = (
             "     Locking 0 packages to highest Rust 1.99.0 compatible versions\n"
+            "    Updating clap v4.6.7 -> v4.6.8 (available: v5.0.0)\n"
             "    Updating insta v1.48.0 -> v1.49.0\n"
             "   Unchanged toml v1.1.6+spec-1.1.0 (available: v1.1.8+spec-1.1.0)\n"
             "   Unchanged ruff_python_ast v0.0.5 (available: v0.0.17)\n"
@@ -1429,6 +1434,7 @@ def test_reports_read_the_newest_release_each_manager_prints(
 
     assert lift.Reports.read(["a.py"]).releases == {
         ("bun", "vite", "8.3.0")              : "8.3.4",
+        ("cargo", "clap", "4.6.7")            : "5.0.0",
         ("cargo", "insta", "1.48.0")          : "1.49.0",
         ("cargo", "ruff-python-ast", "0.0.5") : "0.0.17",
         ("cargo", "similar", "3.2.0")         : "3.2.1",
@@ -1474,6 +1480,21 @@ def test_ruff_names_the_release_its_newest_crate_was_published_from(
     assert (lifted.current, lifted.newest) == ("0.15.22", "0.17.0")
     assert lifted.targets == {"0.0.5": "0.0.17", "0.15.22": "0.17.0"}
     assert released == [("ruff_python_ast", "0.0.17")]
+
+
+def test_ruff_stops_where_the_tool_and_the_release_disagree(lift: ModuleType):
+    """
+    Pins that the `ruff` tool and `[package.metadata.ruff]` standing at two
+    versions stop the task before the row reads a target for either.
+    """
+    pins = [
+        lift.Pin(None, "ruff", "ruff_python_ast", "cargo", "0.0.5"),
+        lift.Pin(None, "ruff", "ruff", "", "0.15.22"),
+        lift.Pin(None, "ruff", "ruff", "mise", "0.15.21")
+    ]
+
+    with raises(SystemExit, match="the homes of ruff disagree"):
+        lift.Lift.of("ruff", pins, lift.Reports({}))
 
 
 def test_shown_drops_build_metadata_and_cuts_to_its_parts(lift: ModuleType):

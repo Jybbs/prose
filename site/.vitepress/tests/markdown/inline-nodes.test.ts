@@ -64,6 +64,16 @@ describe('inlineNodes', () => {
     ])
   })
 
+  it('holds every attribute as a string, an ordered list start included', () => {
+    expect(inlineNodes(markdownit(), '[a](/b)')).toStrictEqual([{
+      kind     : 'el',
+      attrs    : { href: '/b' },
+      tag      : 'a',
+      children : [{ kind: 'text', text: 'a' }]
+    }])
+    expect(blockNodes(markdownit(), '3. x')[0]).toMatchObject({ attrs: { start: '3' }, tag: 'ol' })
+  })
+
   it('walks block prose, flattening each paragraph inline run into the tree', () => {
     expect(blockNodes(renderer(), 'A lead over an atom.')).toStrictEqual([{
       kind     : 'el',

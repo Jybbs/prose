@@ -8,7 +8,7 @@ const NOTICE = /^warning: unknown key `(?<path>[^`]+)` in \[tool\.prose\]$/u
 
 // A slug matching no rule, so the formatted panel's flag popper skips these
 // anchors when it looks one up.
-export const CONFIG_SLUG = 'config-key'
+const CONFIG_SLUG = 'config-key'
 
 // One assignment read off a `prose.toml` line, carrying the dotted path it binds
 // and the columns its key text occupies.

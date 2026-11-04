@@ -247,6 +247,16 @@ fn prose_is_stable_after_ruff() {
          set `[harness] skip_ruff_coexistence = true` in the sidecar of the fixture each `<domain>.<case>.py` names to opt it out",
         String::from_utf8_lossy(&ruff.stderr),
     );
+    let summary = String::from_utf8_lossy(&ruff.stdout);
+    let counted: usize = summary
+        .split(", ")
+        .filter_map(|part| part.split_whitespace().next()?.parse::<usize>().ok())
+        .sum();
+    assert_eq!(
+        counted,
+        swept.len(),
+        "ruff format reported {counted} of the swept copies:\n{summary}",
+    );
 
     for (domain, case, pipeline) in swept {
         let post_ruff = fs_err::read_to_string(copy(&domain, &case)).expect("read formatted copy");
