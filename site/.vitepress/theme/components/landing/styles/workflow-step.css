@@ -1,7 +1,7 @@
+@reference "../../../styles/tailwind.css";
+
 .landing-workflow-title {
-  letter-spacing : var(--prose-meta-tracking);
-  writing-mode   : vertical-rl;
-  transform      : rotate(180deg);
+  writing-mode : vertical-rl;
 }
 
 .landing-workflow-prose :is(code, em) {
@@ -11,10 +11,6 @@
   color       : var(--vp-c-text-1);
 }
 
-.landing-workflow-code {
-  align-self : start;
-}
-
 .landing-workflow-code > div[class*='language-'] {
   margin        : 0;
   border-radius : var(--prose-radius-sm);
@@ -22,10 +18,8 @@
   overflow      : hidden;
 }
 
-@media (--prose-bp-card-stack) {
+@variant max-card-stack {
   .landing-workflow-title {
-    writing-mode   : horizontal-tb;
-    transform      : none;
-    letter-spacing : 0;
+    writing-mode : horizontal-tb;
   }
 }

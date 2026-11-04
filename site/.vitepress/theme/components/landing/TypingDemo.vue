@@ -96,10 +96,10 @@ onUnmounted(machine.dispose)
 </script>
 
 <template>
-  <div ref="root" class="relative mx-auto grid max-w-1120 grid-cols-minmax-0-95fr-minmax-1-5fr gap-18 desktop:grid-cols-1fr">
+  <div ref="root" class="relative mx-auto grid max-w-1120 grid-cols-minmax-0-95fr-minmax-1-5fr gap-18 max-desktop:grid-cols-1fr">
     <section class="code-panel overflow-hidden panel" aria-label="prose config">
       <header class="code-panel-label">prose.toml</header>
-      <pre class="code-panel-code code-typewriter"><code><span class="text-text-3">{{ segments.before }}</span><span class="transition-color">{{ segments.editingLineBefore }}</span><span class="transition-color">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="transition-color">{{ segments.editingLineAfter }}</span><span class="text-text-3">{{ segments.after }}</span></code></pre>
+      <pre class="code-panel-code code-typewriter"><code><span class="text-text-3">{{ segments.before }}</span><span class="transition-colors">{{ segments.editingLineBefore }}</span><span class="transition-colors">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="transition-colors">{{ segments.editingLineAfter }}</span><span class="text-text-3">{{ segments.after }}</span></code></pre>
     </section>
     <section class="code-panel overflow-hidden panel" aria-label="Python source">
       <header class="code-panel-label">app.py</header>
@@ -112,9 +112,8 @@ onUnmounted(machine.dispose)
       />
     </section>
     <button
-      v-if="reducedMotion"
       type="button"
-      class="absolute top-12 right-12 rounded-sm border-1 border-divider bg-bg px-14 py-6 font-mono text-label tracking-label text-text-2 uppercase transition-border-color-and-color hover:border-brand-1 hover:text-brand-1"
+      class="absolute top-12 right-12 hidden rounded-sm border-1 border-divider bg-bg px-14 py-6 font-mono text-label tracking-label text-text-2 uppercase transition-colors hover:border-brand-1 hover:text-brand-1 motion-reduce:block"
       @click="machine.replay"
     >Replay</button>
   </div>

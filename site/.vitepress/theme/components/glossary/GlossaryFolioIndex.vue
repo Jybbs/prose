@@ -22,7 +22,7 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
   <aside v-if="visible" class="mt-20 flex flex-col gap-12" aria-label="Glossary index">
     <div class="flex flex-col gap-4">
       <span class="ml-auto font-mono text-meta tracking-meta whitespace-nowrap text-text-3 uppercase">{{ filtered.length }} of {{ ordered.length }}</span>
-      <div class="flex items-center gap-10 panel bg-bg-soft px-14 py-6 transition-border-color-and-background focus-within:border-ube-55-divider focus-within:halo-ube-20 hover:bg-bg hover:not-focus-within:border-ube-35-divider">
+      <div class="flex items-center gap-10 panel bg-bg-soft px-14 py-6 transition-colors focus-within:border-ube-55-divider focus-within:ring-3 focus-within:ring-ube/20 hover:bg-bg hover:not-focus-within:border-ube-35-divider">
         <svg class="size-14 shrink-0 text-text-2" viewBox="0 0 24 24" aria-hidden="true">
           <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
             <path d="m21 21l-4.34-4.34" />
@@ -47,16 +47,15 @@ const { filtered, grouped, ordered, query, selected } = useGlossaryFolio()
           <li v-for="entry in entries" :key="entry.slug" class="mt-0">
             <button
               type="button"
-              class="group grid min-h-24 w-full grid-cols-3-1fr items-center gap-10 rounded-sm border-none px-8 py-3 text-left transition-background"
-              :class="entry.slug === selected ? 'bg-family/22' : 'hover:bg-family/10'"
+              class="group grid min-h-24 w-full grid-cols-3-1fr items-center gap-10 rounded-sm border-none px-8 py-3 text-left transition-colors not-aria-current:hover:bg-family/10 aria-current:bg-family/22"
+              :aria-current="entry.slug === selected || undefined"
               :data-family="entry.primaryFamily"
               :style="{ '--rail-paint': railPaint(entry.families) }"
               @click="selected = entry.slug"
             >
               <span class="glossary-folio-row-rail self-stretch rounded-2" aria-hidden="true"></span>
               <code
-                class="glossary-folio-row-slug min-w-0 rounded-none bg-transparent p-0 font-base text-sm wrap-anywhere"
-                :class="entry.slug === selected ? 'font-600 text-text-1' : 'text-text-2 group-hover:text-text-1'"
+                class="min-w-0 rounded-none bg-transparent p-0 font-base text-sm wrap-anywhere text-text-2 transition-none group-hover:text-text-1 group-aria-current:font-600 group-aria-current:text-text-1"
               >{{ entry.slug }}</code>
             </button>
           </li>

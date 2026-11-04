@@ -43,7 +43,7 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
     >
       <header class="primitives-composition-band-head flex items-center gap-9 px-4 pt-2 pb-4">
         <span class="pip size-26 shrink-0 bg-layer-accent">
-          <span class="text-0-92rem leading-1 select-none" aria-hidden="true">{{ band.numeral }}</span>
+          <span class="text-0-92rem leading-none select-none" aria-hidden="true">{{ band.numeral }}</span>
         </span>
         <span class="band-name">{{ band.key }}</span>
         <span class="hairline" aria-hidden="true"></span>
@@ -52,18 +52,12 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
         <li
           v-for="entry in band.entries"
           :key="entry.slug"
-          class="m-0 rounded-sm transition-background-and-opacity duration-180 ease-emphasized marker:content-none"
-          :class="[
-            tileState(entry.slug) === 'active'
-              ? 'relative z-1 bg-layer-accent outline-2 outline-offset-1 outline-layer-accent-55-text-1'
-              : tileState(entry.slug) === 'related' ? 'bg-layer-accent-28-bg' : 'bg-layer-accent-7-bg',
-            { 'opacity-35': tileState(entry.slug) === 'mute' }
-          ]"
+          class="m-0 rounded-sm bg-layer-accent-7-bg transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:relative data-[state=active]:z-1 data-[state=active]:bg-layer-accent data-[state=active]:outline-2 data-[state=active]:outline-offset-1 data-[state=active]:outline-layer-accent-55-text-1 data-[state=mute]:opacity-35 data-[state=related]:bg-layer-accent-28-bg"
           :data-layer="entry.layer"
+          :data-state="tileState(entry.slug)"
         >
           <a
-            class="flex min-h-30 items-center justify-center px-7 py-5 text-center"
-            :class="tileState(entry.slug) === 'active' ? 'text-bg' : 'text-text-1 hover:text-brand-2'"
+            class="flex min-h-30 items-center justify-center px-7 py-5 text-center text-text-1 not-in-data-[state=active]:hover:text-brand-2 in-data-[state=active]:text-bg"
             :href="primitiveRoute(entry.slug)"
             @mouseenter="emit('focus', entry.slug)"
             @mouseleave="emit('blur')"
@@ -71,8 +65,7 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
             @blur="emit('blur')"
           >
             <span
-              class="font-display text-xs leading-1-15"
-              :class="tileState(entry.slug) === 'active' ? 'text-bg' : 'text-text-1'"
+              class="font-display text-xs leading-1-15 text-text-1 in-data-[state=active]:text-bg"
             >{{ entry.name }}</span>
           </a>
         </li>

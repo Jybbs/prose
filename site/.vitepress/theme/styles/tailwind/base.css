@@ -18,10 +18,6 @@
   --text-decoration-thickness-2    : var(--prose-border-2);
 }
 
-@utility border-l-none {
-  border-left-style : none;
-}
-
 @utility tool-ring {
   @apply medallion;
   flex             : none;

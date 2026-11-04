@@ -11,7 +11,7 @@ export function proseMarkPlugin(md: MarkdownIt): void {
     walkBodyInlines(state, (block, children) => {
       block.children = replaceTextTokens(children, state.Token, PATTERN, (match, child) => {
         const open    = new state.Token('span_open', 'span', 1)
-        open.attrSet('class', 'prose-mark')
+        open.attrSet('class', 'text-ube')
         open.level    = child.level
         const inner   = new state.Token('text', '', 0)
         inner.content = match[1]

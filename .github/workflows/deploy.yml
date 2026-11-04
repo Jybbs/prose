@@ -22,6 +22,7 @@ on:
       - .mise/tasks/**
       - LICENSE
       - crate/Cargo.toml
+      - crate/tests/fixtures/**
       - site/**
 
   push:

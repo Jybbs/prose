@@ -56,7 +56,7 @@ describe('inlineNodes', () => {
   it('walks the Prose mark into a balanced span rather than raw html', () => {
     expect(inlineNodes(renderer(), 'Prose')).toStrictEqual([{
       kind     : 'el',
-      attrs    : { class: 'prose-mark' },
+      attrs    : { class: 'text-ube' },
       tag      : 'span',
       children : [{ kind: 'text', text: 'Prose' }]
     }])

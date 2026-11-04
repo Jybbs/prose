@@ -117,7 +117,7 @@ onMounted(() => settle(configToml.value))
 </script>
 
 <template>
-  <section class="sandbox-toml copy-host code-panel overflow-hidden panel transition-opacity in-editing:pointer-events-none in-editing:opacity-50" aria-label="prose.toml config">
+  <section class="sandbox-toml copy-host code-panel overflow-hidden panel transition-opacity in-data-editing:pointer-events-none in-data-editing:opacity-50" aria-label="prose.toml config">
     <header class="code-panel-label">prose.toml</header>
 
     <SandboxCodeEditor

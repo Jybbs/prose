@@ -11,10 +11,6 @@
   border-bottom : var(--prose-border-2) double var(--vp-c-divider);
 }
 
-@utility border-r-none {
-  border-right-style : none;
-}
-
 @utility chip {
   display         : inline-flex;
   align-items     : center;
@@ -30,10 +26,6 @@
   }
 }
 
-@keyframes code-caret-blink {
-  50% { opacity: 0; }
-}
-
 @utility code-caret {
   display             : inline-block;
   width               : var(--prose-size-0-5em);
@@ -41,7 +33,7 @@
   margin-inline-start : var(--prose-space-1);
   vertical-align      : text-bottom;
   background          : var(--prose-palette-whiskey);
-  animation           : code-caret-blink 1s steps(2) infinite;
+  @apply animate-caret-blink;
 }
 
 @utility code-panel {
@@ -111,6 +103,7 @@
 
   &:is(a):hover {
     padding-left : var(--prose-space-9);
+    color        : var(--vp-c-brand-2);
   }
 }
 
@@ -145,7 +138,7 @@
     border-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-50), var(--vp-c-divider));
   }
 
-  &.is-open {
+  &[data-open] {
     background : var(--vp-c-bg);
   }
 }
@@ -154,7 +147,7 @@
   display            : grid;
   grid-template-rows : 0fr;
 
-  .fixture-card.is-open > & {
+  .fixture-card[data-open] > & {
     grid-template-rows : 1fr;
   }
 }
@@ -217,7 +210,7 @@
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;
 
-  .fixture-card.is-open & {
+  .fixture-card[data-open] & {
     transform : scaleX(1);
   }
 
@@ -431,10 +424,6 @@
   font-weight     : 500;
 }
 
-@utility prose-mark {
-  color : var(--prose-palette-ube);
-}
-
 @utility rule-chip {
   gap            : var(--prose-space-8);
   padding        : var(--prose-space-3) var(--prose-space-10) var(--prose-space-3) var(--prose-space-8);
@@ -446,10 +435,6 @@
   &:is(a):hover {
     padding-left : var(--prose-space-7);
   }
-}
-
-@utility tooltip-shadow {
-  box-shadow : var(--prose-shadow-tooltip);
 }
 
 @utility underline-draw {

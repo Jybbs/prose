@@ -1,8 +1,13 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
+import config                               from '../../config'
 import { checkBundleBudget, measureBundle } from '../../lib/config/bundle-budget'
 import { supportTest }                      from '../support'
+
+import type { buildOgCards } from '../../lib/og/render/build'
+
+vi.mock('../../lib/og/render/build', () => ({ buildOgCards: vi.fn<typeof buildOgCards>() }))
 
 const write = (dir: string, file: string, bytes: number) => {
   fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
@@ -46,5 +51,15 @@ describe('checkBundleBudget', () => {
     write(tmpDir, 'a.css', 10)
     write(tmpDir, 'a.js', 20)
     expect(() => checkBundleBudget(tmpDir, budget)).toThrow(message)
+  })
+})
+
+describe('the build end the config runs', () => {
+  supportTest('layers the icon sheet and throws on a bundle past its budget', async ({ tmpDir }) => {
+    write(tmpDir, 'assets/vp-icons.a1.css', 5)
+    write(tmpDir, 'assets/style.css', 300_000)
+    const site = { assetsDir: 'assets', outDir: tmpDir, pages: [], srcDir: tmpDir }
+    await expect(config.buildEnd!(site as never)).rejects.toThrow("the built site's css measures")
+    expect(fs.readFileSync(path.join(tmpDir, 'assets/vp-icons.a1.css'), 'utf8')).toMatch(/^@layer components \{/)
   })
 })

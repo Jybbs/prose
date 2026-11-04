@@ -1,14 +1,3 @@
-.sandbox-tags-banner {
-  display       : flex;
-  min-height    : var(--prose-size-5-5rem);
-  max-height    : min(45vh, var(--prose-size-30rem));
-  padding       : var(--prose-space-0-9rem) var(--prose-space-1-25rem);
-  overflow-y    : auto;
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
-}
-
 .sandbox-tags-banner .rule-card {
   width      : 100%;
   min-height : auto;

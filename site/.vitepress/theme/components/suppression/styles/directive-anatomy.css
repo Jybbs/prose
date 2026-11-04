@@ -5,40 +5,14 @@
 
 .directive-anatomy-band-head {
   --band-accent : var(--scope-tint);
-
-  padding : 0 var(--prose-space-2);
 }
 
 .directive-anatomy-plate {
-  padding               : var(--prose-space-18) var(--prose-space-32) var(--prose-space-22);
-  display               : grid;
-  grid-template-columns : 1fr;
-  gap                   : var(--prose-space-14);
-  position              : relative;
-  border-top            : var(--prose-border-2) solid color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
-  background-image      : radial-gradient(
+  background-image : radial-gradient(
     ellipse at 50% 100%,
     color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), transparent) 0%,
     transparent 70%
   );
-}
-
-.directive-anatomy-part-col {
-  display            : grid;
-  grid-template-rows : auto var(--prose-size-28) auto;
-  align-items        : start;
-  justify-items      : center;
-  text-align         : center;
-  padding            : 0 var(--prose-space-6);
-}
-
-.directive-anatomy-part {
-  font-family : var(--vp-font-family-mono);
-  font-size   : clamp(var(--prose-text-1-35rem), 2.3vw, var(--prose-text-2rem));
-  line-height : 1.15;
-  border      : none;
-  color       : var(--part-color, var(--vp-c-text-1));
-  white-space : pre;
 }
 
 .directive-anatomy-effect code {

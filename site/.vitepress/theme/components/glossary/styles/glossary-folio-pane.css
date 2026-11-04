@@ -5,32 +5,3 @@
 .glossary-folio-pane::before {
   background : var(--rail-paint, var(--family-color));
 }
-
-.vp-doc .glossary-folio-headword,
-.glossary-folio-headword {
-  border-top : none;
-}
-
-.glossary-folio-headword a::after,
-.glossary-folio-headword > span::after {
-  content    : '';
-  position   : absolute;
-  left       : 0;
-  right      : 0;
-  bottom     : calc(var(--prose-space-2) * -1);
-  height     : var(--prose-size-1);
-  background : color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
-  transform  : translateY(var(--prose-space-4));
-  opacity    : 0;
-  transition : transform var(--prose-transition), opacity var(--prose-transition);
-}
-
-.glossary-folio-headword a:hover::after,
-.glossary-folio-headword > span:hover::after {
-  transform : translateY(0);
-  opacity   : 1;
-}
-
-.glossary-folio-step > span {
-  transform : translateY(calc(var(--prose-space-0-5) * -1));
-}

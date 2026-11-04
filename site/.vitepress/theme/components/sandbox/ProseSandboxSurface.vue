@@ -274,13 +274,13 @@ onUnmounted(run.cancel)
 <template>
   <section
     ref="surface"
-    class="code-panel overflow-hidden panel transition-border-color in-editing:border-brand-1"
+    class="code-panel overflow-hidden panel transition-colors in-data-editing:border-brand-1"
     aria-label="Formatted Python"
     :style="{ minHeight: heldHeight }"
   >
     <span
       v-if="guide != null"
-      class="sandbox-surface-guide"
+      class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 border-l-2 border-dotted border-l-guide-or-ube/75 font-mono text-xs"
       aria-hidden="true"
       :style="{ '--guide-col': guide, '--guide-hue': guideHue || undefined }"
     />
@@ -297,7 +297,7 @@ onUnmounted(run.cancel)
     <div v-show="editing" class="absolute right-10 bottom-8 z-4 flex gap-4">
       <button
         type="button"
-        class="sandbox-surface-discard panel-seat size-28 transition-color-and-border-color"
+        class="sandbox-surface-discard panel-seat size-28 transition-colors"
         title="Discard the edit"
         aria-label="Discard the edit"
         @click="cancelEdit"
@@ -308,7 +308,7 @@ onUnmounted(run.cancel)
       </button>
       <button
         type="button"
-        class="sandbox-surface-apply panel-seat size-28 transition-color-and-border-color hover:border-brand-1 hover:text-brand-1"
+        class="sandbox-surface-apply panel-seat size-28 transition-colors hover:border-brand-1 hover:text-brand-1"
         title="Format this source"
         aria-label="Format this source"
         @click="applyEdit"

@@ -1,7 +1,0 @@
-.landing-cta-stamp {
-  transform  : rotate(-6deg);
-  transition : transform var(--prose-transition);
-}
-.landing-cta-stamp:hover {
-  transform : rotate(-3deg) scale(1.04);
-}

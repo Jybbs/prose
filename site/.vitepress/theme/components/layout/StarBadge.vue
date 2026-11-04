@@ -6,7 +6,7 @@ import { REPO_URL }      from '../../../lib/shared/constants'
 
 <template>
   <a
-    class="ms-6 inline-flex items-center gap-4 border-1 border-divider px-8 py-2 font-mono text-label leading-1 tracking-folio text-text-2"
+    class="ms-6 inline-flex items-center gap-4 border-1 border-divider px-8 py-2 font-mono text-label leading-none tracking-folio text-text-2"
     :href="REPO_URL"
     title="GitHub stars"
     v-bind="externalAttrs(REPO_URL)"

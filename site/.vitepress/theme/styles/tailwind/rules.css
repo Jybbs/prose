@@ -1,5 +1,3 @@
-@custom-variant suppress-dot (&[data-suppress-dot]);
-
 @theme inline {
   --background-image-family-wash-fade          : linear-gradient(90deg, color-mix(in srgb, var(--family-color) var(--prose-tint-wash), var(--vp-c-bg)), transparent);
 
@@ -20,31 +18,15 @@
 
   --content-diamond                            : "◆";
 
-  --ease-morph                                 : var(--card-ease-morph);
-
   --grid-template-columns-24-auto-1fr-10       : var(--prose-size-24) auto 1fr var(--prose-size-10);
   --grid-template-columns-280-1fr              : var(--prose-width-280) 1fr;
   --grid-template-columns-3rem-minmax-1fr      : var(--prose-size-3rem) minmax(0, 1fr);
   --grid-template-columns-78-minmax-1fr        : var(--prose-size-78) minmax(0, 1fr);
 
-  --inset-full-plus-8                          : calc(100% + var(--prose-space-8));
-
   --text-underline-offset-3                    : var(--prose-space-3);
 
-  --transition-delay-grow                      : var(--card-grow);
-  --transition-duration-grow                   : var(--card-grow);
-
   --transition-property-background-and-opacity : background, opacity;
-  --transition-property-text-decoration-color  : text-decoration-color;
   --transition-property-width                  : width;
-}
-
-@utility halo-layer-accent-25-bg {
-  box-shadow : 0 0 0 var(--prose-border-2) color-mix(in srgb, var(--layer-accent) var(--prose-tint-25), var(--vp-c-bg));
-}
-
-@utility items-grid-start {
-  align-items : start;
 }
 
 @utility rail-border-on-bg {
@@ -55,6 +37,8 @@
   background : linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)) padding-box, var(--rail-paint) border-box;
 }
 
-@utility transform-center {
-  transform : translate(-50%, -50%);
+@theme static {
+  --ease-morph               : cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-delay-grow    : var(--transition-duration-grow);
+  --transition-duration-grow : 0.4s;
 }

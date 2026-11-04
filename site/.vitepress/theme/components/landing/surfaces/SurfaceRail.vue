@@ -157,11 +157,11 @@ const windowStyle = computed(() => ({
     <div ref="rail" class="surface-rail-row pointer-events-auto relative z-2 flex items-center" :data-bookends="pinned" :style="railStyle">
       <SurfacePip
         v-if="pinned"
-        class="surface-rail-end"
+        class="surface-rail-end before:pointer-events-none before:absolute before:inset-0 before:z-0 before:m-auto before:rounded-pill before:border-1 before:border-family/30 before:transition-colors before:duration-240 before:ease-linear hover:before:border-family/64 data-active:before:border-family/64"
         v-bind="pipBinding(0)"
         @select="select(0)"
       />
-      <div ref="window" class="surface-rail-window relative min-w-0 flex-auto overflow-x-auto overflow-y-hidden edge-end:cursor-e-resize edge-start:cursor-w-resize" :data-edge="edge" :style="windowStyle">
+      <div ref="window" class="surface-rail-window relative min-w-0 flex-auto scrollbar-none overflow-x-auto overflow-y-hidden overscroll-x-contain transition-mask-image duration-260 ease-linear data-[edge=end]:cursor-e-resize data-[edge=start]:cursor-w-resize" :data-edge="edge" :style="windowStyle">
         <div class="surface-rail-track flex w-max items-center">
           <SurfacePip
             v-for="index in inner"
@@ -175,7 +175,7 @@ const windowStyle = computed(() => ({
         v-for="chevron in chevrons"
         :key="chevron.side"
         type="button"
-        class="surface-rail-chevron absolute top-1/2 z-3 grid w-18 cursor-pointer place-items-center font-mono text-15 leading-1 text-family focus-visible:outline-offset-1 disabled:pointer-events-none"
+        class="surface-rail-chevron absolute top-1/2 z-3 grid w-18 -translate-y-1/2 cursor-pointer place-items-center border-0 font-mono text-15 leading-none text-family hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-offset-1 active:scale-86 disabled:pointer-events-none disabled:opacity-0 data-[side=end]:hover:translate-x-3 data-[side=start]:hover:-translate-x-3"
         :data-side="chevron.side"
         :disabled="chevron.at"
         :style="{ '--reach': chevron.reach }"
@@ -185,7 +185,7 @@ const windowStyle = computed(() => ({
       >{{ chevron.glyph }}</button>
       <SurfacePip
         v-if="pinned"
-        class="surface-rail-end"
+        class="surface-rail-end before:pointer-events-none before:absolute before:inset-0 before:z-0 before:m-auto before:rounded-pill before:border-1 before:border-family/30 before:transition-colors before:duration-240 before:ease-linear hover:before:border-family/64 data-active:before:border-family/64"
         v-bind="pipBinding(rules.length - 1)"
         @select="select(rules.length - 1)"
       />

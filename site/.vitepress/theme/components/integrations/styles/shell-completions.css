@@ -1,7 +1,3 @@
-.shell-card {
-  padding-right : var(--prose-size-132);
-}
-
 .shell-card-modal-mark {
   --mark-icon-size : var(--prose-size-14);
 }

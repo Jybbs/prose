@@ -1,9 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import postcssGlobalData                          from '@csstools/postcss-global-data'
 import tailwindcss                                from '@tailwindcss/vite'
-import postcssCustomMedia                         from 'postcss-custom-media'
 import githubDark                                 from 'shiki/themes/github-dark.mjs'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
@@ -144,16 +142,6 @@ export default defineConfig({
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
-    css: {
-      postcss: {
-        plugins: [
-          postcssGlobalData({
-            files: [path.join(siteDirectory, '.vitepress/theme/styles/tokens.css')]
-          }),
-          postcssCustomMedia()
-        ]
-      }
-    },
     plugins: [{
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',
@@ -165,7 +153,7 @@ export default defineConfig({
     stylesheetLayer.stylesheetLayerPlugin(
       path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
     ),
-    tailwindcss({ optimize: false }),
+    tailwindcss(),
     groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),

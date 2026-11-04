@@ -140,7 +140,6 @@
   --tracking-meta                      : var(--prose-meta-tracking);
 
   --leading-0                          : 0;
-  --leading-1                          : 1;
   --leading-1-05                       : 1.05;
   --leading-1-08                       : 1.08;
   --leading-1-1                        : 1.1;
@@ -158,46 +157,8 @@
   --leading-24                         : var(--prose-leading-24);
   --leading-3rem                       : var(--prose-leading-3rem);
 
+  --spacing                            : var(--prose-space-1);
   --spacing-0                          : 0;
-  --spacing-0-5                        : var(--prose-space-0-5);
-  --spacing-1                          : var(--prose-space-1);
-  --spacing-2                          : var(--prose-space-2);
-  --spacing-2-5                        : var(--prose-space-2-5);
-  --spacing-3                          : var(--prose-space-3);
-  --spacing-4                          : var(--prose-space-4);
-  --spacing-5                          : var(--prose-space-5);
-  --spacing-6                          : var(--prose-space-6);
-  --spacing-7                          : var(--prose-space-7);
-  --spacing-8                          : var(--prose-space-8);
-  --spacing-9                          : var(--prose-space-9);
-  --spacing-10                         : var(--prose-space-10);
-  --spacing-11                         : var(--prose-space-11);
-  --spacing-12                         : var(--prose-space-12);
-  --spacing-13                         : var(--prose-space-13);
-  --spacing-14                         : var(--prose-space-14);
-  --spacing-15                         : var(--prose-space-15);
-  --spacing-16                         : var(--prose-space-16);
-  --spacing-17                         : var(--prose-space-17);
-  --spacing-18                         : var(--prose-space-18);
-  --spacing-20                         : var(--prose-space-20);
-  --spacing-22                         : var(--prose-space-22);
-  --spacing-23                         : var(--prose-space-23);
-  --spacing-24                         : var(--prose-space-24);
-  --spacing-28                         : var(--prose-space-28);
-  --spacing-32                         : var(--prose-space-32);
-  --spacing-34                         : var(--prose-space-34);
-  --spacing-36                         : var(--prose-space-36);
-  --spacing-40                         : var(--prose-space-40);
-  --spacing-42                         : var(--prose-space-42);
-  --spacing-44                         : var(--prose-space-44);
-  --spacing-48                         : var(--prose-space-48);
-  --spacing-52                         : var(--prose-space-52);
-  --spacing-54                         : var(--prose-space-54);
-  --spacing-72                         : var(--prose-space-72);
-  --spacing-76                         : var(--prose-space-76);
-  --spacing-88                         : var(--prose-space-88);
-  --spacing-96                         : var(--prose-space-96);
-  --spacing-108                        : var(--prose-space-108);
   --spacing-0-1rem                     : var(--prose-space-0-1rem);
   --spacing-0-25rem                    : var(--prose-space-0-25rem);
   --spacing-0-3rem                     : var(--prose-space-0-3rem);
@@ -227,45 +188,6 @@
   --spacing-1-1em                      : var(--prose-space-1-1em);
   --spacing-1ch                        : var(--prose-space-1ch);
 
-  --width-1                            : var(--prose-size-1);
-  --width-2                            : var(--prose-size-2);
-  --width-3                            : var(--prose-size-3);
-  --width-4                            : var(--prose-size-4);
-  --width-6                            : var(--prose-size-6);
-  --width-7                            : var(--prose-size-7);
-  --width-8                            : var(--prose-size-8);
-  --width-10                           : var(--prose-size-10);
-  --width-11                           : var(--prose-size-11);
-  --width-12                           : var(--prose-size-12);
-  --width-13                           : var(--prose-size-13);
-  --width-14                           : var(--prose-size-14);
-  --width-15                           : var(--prose-size-15);
-  --width-16                           : var(--prose-size-16);
-  --width-18                           : var(--prose-size-18);
-  --width-20                           : var(--prose-size-20);
-  --width-22                           : var(--prose-size-22);
-  --width-24                           : var(--prose-size-24);
-  --width-26                           : var(--prose-size-26);
-  --width-28                           : var(--prose-size-28);
-  --width-30                           : var(--prose-size-30);
-  --width-32                           : var(--prose-size-32);
-  --width-36                           : var(--prose-size-36);
-  --width-40                           : var(--prose-size-40);
-  --width-56                           : var(--prose-size-56);
-  --width-60                           : var(--prose-size-60);
-  --width-64                           : var(--prose-size-64);
-  --width-72                           : var(--prose-size-72);
-  --width-78                           : var(--prose-size-78);
-  --width-80                           : var(--prose-size-80);
-  --width-96                           : var(--prose-size-96);
-  --width-110                          : var(--prose-size-110);
-  --width-132                          : var(--prose-size-132);
-  --width-180                          : var(--prose-size-180);
-  --width-200                          : var(--prose-size-200);
-  --width-240                          : var(--prose-size-240);
-  --width-260                          : var(--prose-size-260);
-  --width-320                          : var(--prose-size-320);
-  --width-420                          : var(--prose-size-420);
   --width-2-1rem                       : var(--prose-size-2-1rem);
   --width-2-6rem                       : var(--prose-size-2-6rem);
   --width-3rem                         : var(--prose-size-3rem);
@@ -280,45 +202,6 @@
   --width-1-4em                        : var(--prose-size-1-4em);
   --width-1-5em                        : var(--prose-size-1-5em);
 
-  --height-1                           : var(--prose-size-1);
-  --height-2                           : var(--prose-size-2);
-  --height-3                           : var(--prose-size-3);
-  --height-4                           : var(--prose-size-4);
-  --height-6                           : var(--prose-size-6);
-  --height-7                           : var(--prose-size-7);
-  --height-8                           : var(--prose-size-8);
-  --height-10                          : var(--prose-size-10);
-  --height-11                          : var(--prose-size-11);
-  --height-12                          : var(--prose-size-12);
-  --height-13                          : var(--prose-size-13);
-  --height-14                          : var(--prose-size-14);
-  --height-15                          : var(--prose-size-15);
-  --height-16                          : var(--prose-size-16);
-  --height-18                          : var(--prose-size-18);
-  --height-20                          : var(--prose-size-20);
-  --height-22                          : var(--prose-size-22);
-  --height-24                          : var(--prose-size-24);
-  --height-26                          : var(--prose-size-26);
-  --height-28                          : var(--prose-size-28);
-  --height-30                          : var(--prose-size-30);
-  --height-32                          : var(--prose-size-32);
-  --height-36                          : var(--prose-size-36);
-  --height-40                          : var(--prose-size-40);
-  --height-56                          : var(--prose-size-56);
-  --height-60                          : var(--prose-size-60);
-  --height-64                          : var(--prose-size-64);
-  --height-72                          : var(--prose-size-72);
-  --height-78                          : var(--prose-size-78);
-  --height-80                          : var(--prose-size-80);
-  --height-96                          : var(--prose-size-96);
-  --height-110                         : var(--prose-size-110);
-  --height-132                         : var(--prose-size-132);
-  --height-180                         : var(--prose-size-180);
-  --height-200                         : var(--prose-size-200);
-  --height-240                         : var(--prose-size-240);
-  --height-260                         : var(--prose-size-260);
-  --height-320                         : var(--prose-size-320);
-  --height-420                         : var(--prose-size-420);
   --height-2-1rem                      : var(--prose-size-2-1rem);
   --height-2-6rem                      : var(--prose-size-2-6rem);
   --height-3rem                        : var(--prose-size-3rem);
@@ -333,45 +216,6 @@
   --height-1-4em                       : var(--prose-size-1-4em);
   --height-1-5em                       : var(--prose-size-1-5em);
 
-  --size-1                             : var(--prose-size-1);
-  --size-2                             : var(--prose-size-2);
-  --size-3                             : var(--prose-size-3);
-  --size-4                             : var(--prose-size-4);
-  --size-6                             : var(--prose-size-6);
-  --size-7                             : var(--prose-size-7);
-  --size-8                             : var(--prose-size-8);
-  --size-10                            : var(--prose-size-10);
-  --size-11                            : var(--prose-size-11);
-  --size-12                            : var(--prose-size-12);
-  --size-13                            : var(--prose-size-13);
-  --size-14                            : var(--prose-size-14);
-  --size-15                            : var(--prose-size-15);
-  --size-16                            : var(--prose-size-16);
-  --size-18                            : var(--prose-size-18);
-  --size-20                            : var(--prose-size-20);
-  --size-22                            : var(--prose-size-22);
-  --size-24                            : var(--prose-size-24);
-  --size-26                            : var(--prose-size-26);
-  --size-28                            : var(--prose-size-28);
-  --size-30                            : var(--prose-size-30);
-  --size-32                            : var(--prose-size-32);
-  --size-36                            : var(--prose-size-36);
-  --size-40                            : var(--prose-size-40);
-  --size-56                            : var(--prose-size-56);
-  --size-60                            : var(--prose-size-60);
-  --size-64                            : var(--prose-size-64);
-  --size-72                            : var(--prose-size-72);
-  --size-78                            : var(--prose-size-78);
-  --size-80                            : var(--prose-size-80);
-  --size-96                            : var(--prose-size-96);
-  --size-110                           : var(--prose-size-110);
-  --size-132                           : var(--prose-size-132);
-  --size-180                           : var(--prose-size-180);
-  --size-200                           : var(--prose-size-200);
-  --size-240                           : var(--prose-size-240);
-  --size-260                           : var(--prose-size-260);
-  --size-320                           : var(--prose-size-320);
-  --size-420                           : var(--prose-size-420);
   --size-2-1rem                        : var(--prose-size-2-1rem);
   --size-2-6rem                        : var(--prose-size-2-6rem);
   --size-3rem                          : var(--prose-size-3rem);
@@ -386,19 +230,6 @@
   --size-1-4em                         : var(--prose-size-1-4em);
   --size-1-5em                         : var(--prose-size-1-5em);
 
-  --container-180                      : var(--prose-width-180);
-  --container-196                      : var(--prose-width-196);
-  --container-220                      : var(--prose-width-220);
-  --container-232                      : var(--prose-width-232);
-  --container-260                      : var(--prose-width-260);
-  --container-280                      : var(--prose-width-280);
-  --container-300                      : var(--prose-width-300);
-  --container-360                      : var(--prose-width-360);
-  --container-600                      : var(--prose-width-600);
-  --container-640                      : var(--prose-width-640);
-  --container-720                      : var(--prose-width-720);
-  --container-960                      : var(--prose-width-960);
-  --container-1120                     : var(--prose-width-1120);
   --container-11rem                    : var(--prose-width-11rem);
   --container-14rem                    : var(--prose-width-14rem);
   --container-16rem                    : var(--prose-width-16rem);
@@ -412,6 +243,14 @@
   --container-62ch                     : var(--prose-width-62ch);
   --container-64ch                     : var(--prose-width-64ch);
   --container-72ch                     : var(--prose-width-72ch);
+
+  --breakpoint-tiny                    : 480px;
+  --breakpoint-mobile                  : 640px;
+  --breakpoint-card-stack              : 720px;
+  --breakpoint-tablet                  : 760px;
+  --breakpoint-medium                  : 820px;
+  --breakpoint-desktop                 : 960px;
+  --breakpoint-wide                    : 1280px;
 
   --radius-1                           : var(--prose-radius-1);
   --radius-2                           : var(--prose-radius-2);
@@ -435,47 +274,12 @@
   --outline-width-4                    : var(--prose-border-4);
   --outline-width-5                    : var(--prose-border-5);
 
-  --opacity-4                          : var(--prose-tint-4);
   --opacity-faint                      : var(--prose-tint-faint);
-  --opacity-6                          : var(--prose-tint-6);
-  --opacity-7                          : var(--prose-tint-7);
-  --opacity-8                          : var(--prose-tint-8);
   --opacity-wash                       : var(--prose-tint-wash);
-  --opacity-10                         : var(--prose-tint-10);
-  --opacity-12                         : var(--prose-tint-12);
   --opacity-medium                     : var(--prose-tint-medium);
   --opacity-ground                     : var(--prose-tint-ground);
-  --opacity-18                         : var(--prose-tint-18);
-  --opacity-20                         : var(--prose-tint-20);
-  --opacity-22                         : var(--prose-tint-22);
-  --opacity-24                         : var(--prose-tint-24);
-  --opacity-25                         : var(--prose-tint-25);
-  --opacity-28                         : var(--prose-tint-28);
-  --opacity-30                         : var(--prose-tint-30);
   --opacity-strong                     : var(--prose-tint-strong);
-  --opacity-35                         : var(--prose-tint-35);
-  --opacity-38                         : var(--prose-tint-38);
-  --opacity-40                         : var(--prose-tint-40);
-  --opacity-42                         : var(--prose-tint-42);
-  --opacity-45                         : var(--prose-tint-45);
-  --opacity-48                         : var(--prose-tint-48);
-  --opacity-50                         : var(--prose-tint-50);
-  --opacity-55                         : var(--prose-tint-55);
-  --opacity-56                         : var(--prose-tint-56);
   --opacity-ink                        : var(--prose-tint-ink);
-  --opacity-60                         : var(--prose-tint-60);
-  --opacity-64                         : var(--prose-tint-64);
-  --opacity-65                         : var(--prose-tint-65);
-  --opacity-68                         : var(--prose-tint-68);
-  --opacity-70                         : var(--prose-tint-70);
-  --opacity-75                         : var(--prose-tint-75);
-  --opacity-76                         : var(--prose-tint-76);
-  --opacity-78                         : var(--prose-tint-78);
-  --opacity-80                         : var(--prose-tint-80);
-  --opacity-82                         : var(--prose-tint-82);
-  --opacity-85                         : var(--prose-tint-85);
-  --opacity-88                         : var(--prose-tint-88);
-  --opacity-95                         : var(--prose-tint-95);
 
   --default-transition-duration        : var(--prose-duration);
   --default-transition-timing-function : ease;
@@ -484,23 +288,29 @@
 }
 
 @theme inline {
-  --color-code-block                                      : var(--vp-code-block-bg);
-  --color-family-or-brand-1                               : var(--family-color, var(--vp-c-brand-1));
+  --color-code-block                       : var(--vp-code-block-bg);
+  --color-family-or-brand-1                : var(--family-color, var(--vp-c-brand-1));
 
-  --content-middot                                        : "·";
+  --content-middot                         : "·";
 
-  --grid-template-columns-1fr                             : 1fr;
+  --grid-template-columns-1fr              : 1fr;
 
-  --outline-offset-1                                      : var(--prose-space-1);
+  --outline-offset-1                       : var(--prose-space-1);
 
-  --radius-base-inner                                     : calc(var(--prose-radius) - var(--prose-border-1));
-  --radius-half                                           : 50%;
+  --ring-width-1                           : var(--prose-border-1);
+  --ring-width-2                           : var(--prose-border-2);
+  --ring-width-3                           : var(--prose-border-3);
 
-  --transition-property-background                        : background;
-  --transition-property-background-and-color              : background, color;
-  --transition-property-background-border-color-and-color : background, border-color, color;
-  --transition-property-border-color-and-background       : border-color, background;
-  --transition-property-color                             : color;
-  --transition-property-color-and-border-color            : color, border-color;
-  --transition-property-grid-template-rows                : grid-template-rows;
+  --shadow-tooltip                         : var(--prose-shadow-tooltip);
+
+  --radius-base-inner                      : calc(var(--prose-radius) - var(--prose-border-1));
+  --radius-half                            : 50%;
+
+  --transition-property-grid-template-rows : grid-template-rows;
+
+  --animate-caret-blink                    : code-caret-blink 1s steps(2) infinite;
+
+  @keyframes code-caret-blink {
+    50% { opacity: 0; }
+  }
 }

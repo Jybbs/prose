@@ -72,7 +72,7 @@ describe('SurfaceRail', () => {
     const wrapper = await mountRail()
 
     expect(wrapper.get('.surface-rail-chip').text()).toContain('align-equals')
-    expect(wrapper.findAll('.surface-pip.active')).toHaveLength(0)
+    expect(wrapper.findAll('.surface-pip[data-active]')).toHaveLength(0)
   })
 
   domTest('leads the rule chip with its family\'s small badge', async ({ reducedMotion }) => {
@@ -110,11 +110,11 @@ describe('SurfaceRail', () => {
     const pips    = wrapper.findAll('.surface-pip')
 
     await pips[2].trigger('mouseenter')
-    expect(pips[2].classes()).toContain('active')
+    expect(pips[2].attributes('data-active')).toBe('true')
     expect(wrapper.get('.surface-rail-chip').text()).toContain('align-commas')
 
     await wrapper.trigger('mouseleave')
-    expect(wrapper.findAll('.surface-pip.active').map(p => p.text())).toStrictEqual(['03'])
+    expect(wrapper.findAll('.surface-pip[data-active]').map(p => p.text())).toStrictEqual(['03'])
   })
 
   domTest('counts each pip away from the circled one', async ({ reducedMotion }) => {

@@ -12,6 +12,7 @@ import type { Declaration, Root, Rule } from 'postcss'
 
 type Statement  = ReturnType<typeof babelParse>['program']['body'][number]
 type Expression = Extract<Statement, { type: 'ExpressionStatement' }>['expression']
+type Variant    = NonNullable<ReturnType<typeof DESIGN.parseVariant>>
 
 // Names one class an element can carry, beside the slot of its `class` and
 // `:class` bindings that writes it and the alternative within that slot, so
@@ -30,6 +31,8 @@ interface Element {
   line    : number
 }
 
+// Names the variants whose arbitrary value is the attribute value they match.
+const ATTRIBUTES = new Set(['aria', 'data'])
 // Matches each class a selector or a selector string names.
 const CLASS_NAME = /\.(-?[_a-zA-Z][\w-]*)/g
 // Matches the `group` and `peer` classes, optionally named, that mark an
@@ -43,6 +46,14 @@ const VOCAB      = vocabulary.siteVocabulary(
 const DESIGN     = await tailwind.designSystem()
 const TEMPLATES  = tailwind.sourceFiles().filter(file => file.endsWith('.vue'))
 const COMPONENTS = new Map(TEMPLATES.map(file => [path.basename(file, '.vue'), file]))
+// Names each breakpoint narrower than the widest the theme declares, each of
+// which a template reads through its `max-*` variant.
+const NARROW     = (() => {
+  const theme  = vocabulary.read('.vitepress/theme/styles/tailwind/theme.css')
+  const widths = [...theme.matchAll(/--breakpoint-([\w-]+)\s*:\s*(\d+)px/g)].map(([, name, px]) => ({ name, px: +px }))
+  const widest = Math.max(...widths.map(({ px }) => px))
+  return new Set(widths.filter(({ px }) => px < widest).map(({ name }) => name))
+})()
 
 // Names each class a stylesheet the site loads declares, its own sheets and the
 // VitePress default theme's alike.
@@ -50,8 +61,9 @@ const DECLARED = new Set(
   [...SHEETS.map(({ root }) => root), ...vocabulary.vitepressSheets()].flatMap(classesOf)
 )
 
-// Names each class a script or a test reads as a selector, which a template
-// keeps as a hook whether or not a stylesheet styles it.
+// Names each word that follows a `.` in a quoted string of a script or a test,
+// so every class a selector names passes as a hook, and so does a file
+// extension or a domain label such as `json` or `org`.
 const HOOKS = new Set(
   fs.globSync(['.vitepress/{lib,tests,theme}/**/*.{ts,vue}', 'prototypes/**/*.{ts,vue}'], { cwd: vocabulary.SITE })
     .flatMap(file => [...vocabulary.read(file).matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
@@ -156,11 +168,32 @@ function vitepressClasses(): string[] {
 
 const words = (text: string): string[] => text.split(/\s+/).filter(Boolean)
 
+// Reports whether a variant writes an arbitrary value, leaving out the attribute
+// value a `data-*` or `aria-*` variant matches.
+function arbitraryVariant(variant: Variant): boolean {
+  switch (variant.kind) {
+    case 'arbitrary':  return true
+    case 'compound':   return arbitraryVariant(variant.variant)
+    case 'functional': return variant.value?.kind === 'arbitrary' && !ATTRIBUTES.has(variant.root)
+    default:           return false
+  }
+}
+
+// Reports whether a variant, or the variant a compound one wraps, applies above
+// a breakpoint narrower than the widest.
+function minWidthOfNarrow(variant: Variant): boolean {
+  return variant.kind === 'compound' ? minWidthOfNarrow(variant.variant)
+    : variant.kind === 'static' && NARROW.has(variant.root)
+}
+
 // Reports why a class fails, meaning an arbitrary value or variant, a value no
-// token declares, or a name neither a utility nor a stylesheet declares, and
-// returns nothing for a class that passes. The `@property` rules Tailwind
-// registers beside a utility hold its own initial values rather than the
-// utility's, so the check reads the utility's rules alone.
+// token declares, a min-width variant of a breakpoint narrower than the widest,
+// or a name neither a utility nor a stylesheet declares, and returns nothing for
+// a class that passes. The `@property` rules Tailwind registers beside a utility
+// hold its own initial values rather than the utility's, so the check reads the
+// utility's rules alone. It passes the share a numeric modifier writes, and the
+// lengths a static utility writes, since the stylesheet gate reads each
+// `@utility` the site declares.
 function problemOf(name: string): string | undefined {
   if (MARKER.test(name)) return undefined
   const [candidate] = DESIGN.parseCandidate(name)
@@ -168,14 +201,18 @@ function problemOf(name: string): string | undefined {
   const arbitrary = candidate.kind === 'arbitrary'
     || ('value' in candidate && candidate.value?.kind === 'arbitrary')
     || ('modifier' in candidate && candidate.modifier?.kind === 'arbitrary')
-    || candidate.variants.some(variant =>
-      variant.kind === 'arbitrary' || ('value' in variant && variant.value?.kind === 'arbitrary'))
+    || candidate.variants.some(arbitraryVariant)
   if (arbitrary) return 'arbitrary value'
+  if (candidate.variants.some(minWidthOfNarrow)) {
+    return 'min-width variant of a narrow breakpoint'
+  }
   const css = DESIGN.candidatesToCss([name])[0]
   if (!css) return 'unknown class'
   const root = parse(css)
   root.walkAtRules('property', rule => { rule.remove() })
-  const strays = VOCAB.strays(root)
+  const share  = 'modifier' in candidate && candidate.modifier ? `${candidate.modifier.value}%` : undefined
+  const strays = VOCAB.strays(root).filter(({ kind, value }) =>
+    !(kind === 'share' && value === share) && !(kind === 'length' && candidate.kind === 'static'))
   return strays.length > 0 ? `writes ${strays.map(({ value }) => value).join(', ')}` : undefined
 }
 
@@ -238,14 +275,32 @@ describe('the classes a template writes', () => {
     expect(problems).toStrictEqual([])
   })
 
+  it('generates no utility from an arbitrary value or a stray literal', () => {
+    const blocked  = tailwind.blockedCandidates()
+    const problems = [...new Set(tailwind.scannedCandidates())]
+      .filter(name => !blocked.has(name) && DESIGN.candidatesToCss([name])[0])
+      .flatMap(name => {
+        const problem = problemOf(name)
+        return problem ? [`${name}, ${problem}`] : []
+      })
+    expect(problems).toStrictEqual([])
+  })
+
   it.each([
-    { name: 'p-[13px]',         problem: 'arbitrary value' },
-    { name: '[&>*]:p-14',       problem: 'arbitrary value' },
-    { name: 'bg-ube/[0.3]',     problem: 'arbitrary value' },
-    { name: 'outline-offset-7', problem: 'writes 7px' },
-    { name: 'no-such-class',    problem: 'unknown class' },
-    { name: 'p-14',             problem: undefined },
-    { name: 'group/link',       problem: undefined }
+    { name: 'p-[13px]',             problem: 'arbitrary value' },
+    { name: '[&>*]:p-14',           problem: 'arbitrary value' },
+    { name: 'bg-ube/[0.3]',         problem: 'arbitrary value' },
+    { name: 'outline-offset-7',     problem: 'writes 7px' },
+    { name: 'no-such-class',        problem: 'unknown class' },
+    { name: 'mobile:p-14',          problem: 'min-width variant of a narrow breakpoint' },
+    { name: 'not-tablet:p-14',      problem: 'min-width variant of a narrow breakpoint' },
+    { name: 'p-14',                 problem: undefined },
+    { name: 'max-mobile:p-14',      problem: undefined },
+    { name: 'wide:p-14',            problem: undefined },
+    { name: 'bg-ube/55',            problem: undefined },
+    { name: 'sr-only',              problem: undefined },
+    { name: 'data-[edge=end]:p-14', problem: undefined },
+    { name: 'group/link',           problem: undefined }
   ])('reports $name as $problem', ({ name, problem }) => {
     expect(problemOf(name)).toBe(problem)
   })
@@ -280,6 +335,12 @@ describe('the classes a template writes', () => {
     expect(conflictsOf({ classes, line: 1 })).toStrictEqual(conflicts)
   })
 
+  it('marks the root classes of a child component as inherited', () => {
+    const inherited = elementsOf('.vitepress/theme/components/layout/NotFound.vue')
+      .flatMap(({ classes }) => classes.filter(written => written.inherited))
+    expect(inherited).toStrictEqual([{ alt: 0, inherited: true, name: 'kicker', slot: 0 }])
+  })
+
   it('reads the root classes of a component that renders one root element', () => {
     expect(rootClassesOf('Kicker')).toStrictEqual(['kicker'])
     expect(rootClassesOf('Chip')).toStrictEqual([])
@@ -289,20 +350,23 @@ describe('the classes a template writes', () => {
 describe('the Tailwind theme', () => {
   const theme = vocabulary.read('.vitepress/theme/styles/tailwind/theme.css')
 
-  it('builds a utility value from every length and share token', () => {
+  it('builds a utility value from every token the multiplier and the bare modifier leave', () => {
     const tokens = [...vocabulary.read(vocabulary.TOKENS).matchAll(
       /^\s*(--prose-(?:border|leading|radius|size|space|text|tint|tracking|width)(?:-[\w-]+)?)\s*:/gm
     )].map(([, token]) => token)
+      .filter(token => !/^--prose-(?:(?:size|space|width)-\d+(?:-5)?|tint-\d+)$/.test(token))
     expect(tokens.filter(token => !theme.includes(`var(${token})`))).toStrictEqual([])
   })
 
-  it('declares a variant for every breakpoint tokens.css declares', () => {
-    const variants = new Set([...vocabulary.read(tailwind.ENTRY).matchAll(
-      /@custom-variant ([\w-]+) \(@media \(--prose-bp-\1\)\)/g
-    )].map(([, name]) => name))
-    const breakpoints = [...vocabulary.read(vocabulary.TOKENS).matchAll(/@custom-media --prose-bp-([\w-]+)/g)]
-      .map(([, name]) => name)
-    expect(breakpoints.filter(name => !variants.has(name))).toStrictEqual([])
+  it('writes each multiple of the spacing token through the multiplier', () => {
+    expect(DESIGN.candidatesToCss(['w-28', 'p-0.5'])).toStrictEqual([
+      '.w-28 {\n  width: calc(var(--prose-space-1) * 28);\n}\n',
+      '.p-0\\.5 {\n  padding: calc(var(--prose-space-1) * 0.5);\n}\n'
+    ])
+  })
+
+  it('applies dark under the VitePress class', () => {
+    expect(DESIGN.candidatesToCss(['dark:text-ube'])[0]).toContain('.dark')
   })
 
   it('generates no utility named for a class a VitePress template writes or binds', () => {

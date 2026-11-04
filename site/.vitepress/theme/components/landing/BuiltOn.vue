@@ -31,15 +31,15 @@ const entries = credits.map(({ role, slug }) => ({
     kicker="The Lineage"
     heading="Standing on <em>giants</em>."
   >
-    <div class="built-on-grid mt-24 grid grid-cols-5 overflow-hidden panel bg-bg-soft medium:grid-cols-3 tiny:grid-cols-1fr">
+    <div class="built-on-grid mt-24 grid grid-cols-5 overflow-hidden panel bg-bg-soft max-medium:grid-cols-3 max-tiny:grid-cols-1fr">
       <a
         v-for="entry in entries"
         :key="entry.slug"
-        class="built-on-card group/card grid grid-rows-64-28-18 justify-items-center gap-y-8 px-14 py-22 text-center text-text-1 transition-background duration-slow hover:bg-stack-accent/faint"
+        class="built-on-card group/card grid grid-rows-64-28-18 content-start justify-items-center gap-y-8 px-14 py-22 text-center text-text-1 transition-colors duration-slow hover:bg-stack-accent/faint max-tiny:not-first:border-t-1 max-tiny:not-first:border-l-0 max-tiny:not-first:border-t-divider"
         :href="entry.tool.href"
         v-bind="externalAttrs(entry.tool.href)"
       >
-        <span class="built-on-medallion medallion size-56 border-stack-accent-strong-divider bg-stack-accent-faint-bg text-stack-accent-68-text-1 group-hover/card:border-stack-accent-60-divider group-hover/card:bg-stack-accent-wash-bg group-hover/card:text-stack-accent-82-text-1">
+        <span class="medallion size-56 border-stack-accent-strong-divider bg-stack-accent-faint-bg text-stack-accent-68-text-1 transition-colors duration-slow group-hover/card:border-stack-accent-60-divider group-hover/card:bg-stack-accent-wash-bg group-hover/card:text-stack-accent-82-text-1">
           <svg
             class="size-28"
             :viewBox="entry.tool.icon.viewBox"
@@ -47,8 +47,8 @@ const entries = credits.map(({ role, slug }) => ({
             v-html="entry.tool.icon.body"
           />
         </span>
-        <span class="font-display text-1-15rem leading-1 font-500 italic">{{ entry.tool.name }}</span>
-        <span class="kicker leading-1 text-stack-accent-56-text-3">{{ entry.role }}</span>
+        <span class="font-display text-1-15rem leading-none font-500 italic">{{ entry.tool.name }}</span>
+        <span class="kicker leading-none text-stack-accent-56-text-3">{{ entry.role }}</span>
       </a>
     </div>
   </LandingSection>

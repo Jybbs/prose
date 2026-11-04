@@ -1,8 +1,3 @@
 .landing-definition-num {
   vertical-align : var(--prose-space-0-18em);
 }
-
-.landing-definition-rule {
-  border     : 0;
-  border-top : var(--prose-border-1) solid var(--vp-c-divider);
-}

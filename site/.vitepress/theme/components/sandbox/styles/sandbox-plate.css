@@ -1,65 +1,10 @@
-@keyframes sandbox-plate-draw {
-  to {
-    transform : scaleX(1);
-  }
-}
-
-@keyframes sandbox-plate-settle {
-  from {
-    opacity   : 0;
-    translate : 0 calc(var(--prose-space-4) * -1);
-  }
-}
-
-.sandbox-plate {
-  --sandbox-plate-accent    : var(--family-color, var(--vp-c-brand-1));
-  --sandbox-plate-control-h : var(--prose-size-22);
-  --sandbox-plate-switch-w  : var(--prose-size-40);
-
-  width         : 100%;
-  min-width     : 0;
-  border        : var(--prose-border-1) solid color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-40), var(--vp-c-divider));
-  border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--sandbox-plate-accent) var(--prose-tint-4), var(--prose-panel-wash-card));
-}
-
 .sandbox-plate .rule-card {
   border     : none;
   background : transparent;
 }
 
-/* The close seat's right edge sits on the 16px inset the rows below share, so
-   it reads as the head of the right-aligned control rail. */
 .sandbox-plate-close {
-  position     : absolute;
-  top          : 50%;
-  right        : var(--prose-space-16);
-  border-color : var(--vp-c-divider);
-  background   : var(--vp-c-bg);
-  color        : var(--vp-c-text-3);
-  transform    : translateY(-50%);
-  animation    : sandbox-plate-settle var(--prose-transition-slow);
-  transition   : color var(--prose-transition), border-color var(--prose-transition);
-}
-
-.sandbox-plate-divider {
-  position         : relative;
-  height           : var(--prose-size-1);
-  margin           : 0 var(--prose-space-16);
-  background       : var(--vp-c-divider);
-  transform        : scaleX(0);
-  transform-origin : left;
-  animation        : sandbox-plate-draw calc(var(--prose-rule-draw-ms) * 1ms) ease forwards;
-}
-
-/* The 16px inset matches the card's own padding, so the label column opens at
-   the badge's left edge and the table spans the full card measure. */
-.sandbox-plate-rows {
-  display               : grid;
-  grid-template-columns : max-content minmax(0, 1fr) max-content;
-  column-gap            : var(--prose-space-1-1rem);
-  padding               : 0 var(--prose-space-16) var(--prose-space-8);
-  animation             : sandbox-plate-settle var(--prose-transition-slow);
+  transform : translateY(-50%);
 }
 
 .sandbox-plate-hint code {
@@ -67,44 +12,6 @@
   white-space : nowrap;
 }
 
-.sandbox-plate-control {
-  justify-self : end;
-}
-
-.sandbox-plate-switch-knob {
-  position      : absolute;
-  top           : var(--prose-space-3);
-  left          : var(--prose-space-3);
-  width         : var(--prose-size-16);
-  height        : var(--prose-size-16);
-  border-radius : 50%;
-  background    : var(--vp-c-bg);
-  transition    : transform var(--prose-transition);
-}
-
-.sandbox-plate-switch[aria-checked='true'] .sandbox-plate-switch-knob {
-  transform : translateX(var(--prose-space-18));
-}
-
 .sandbox-plate-number {
-  width                : var(--sandbox-plate-switch-w);
-  font-variant-numeric : tabular-nums;
-  line-height          : calc(var(--sandbox-plate-control-h) - var(--prose-border-2));
-}
-
-@media (--prose-bp-medium) {
-  .sandbox-plate-rows {
-    grid-template-columns : minmax(0, 1fr) max-content;
-  }
-
-  .sandbox-plate-control {
-    grid-column : 2;
-    grid-row    : 1 / span 2;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sandbox-plate-divider {
-    transform : scaleX(1);
-  }
+  line-height : calc(var(--prose-size-22) - var(--prose-border-2));
 }

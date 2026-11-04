@@ -1,34 +1,3 @@
 .surfaces-carousel {
-  --surfaces-card-width : var(--prose-width-360);
-  --surfaces-gap        : var(--prose-space-18);
-  margin-inline         : calc(50% - 50vw);
-  -webkit-mask-image    : linear-gradient(90deg, transparent 0%, var(--vp-c-black) 5%, var(--vp-c-black) 95%, transparent 100%);
-          mask-image    : linear-gradient(90deg, transparent 0%, var(--vp-c-black) 5%, var(--vp-c-black) 95%, transparent 100%);
-}
-
-.surfaces-carousel-track {
-  gap : var(--surfaces-gap);
-}
-
-.surfaces-carousel-track > .surface-card {
-  flex : 0 0 var(--surfaces-card-width);
-}
-
-.surfaces-carousel-static {
-  -webkit-mask-image : none;
-          mask-image : none;
-}
-
-@media (--prose-bp-desktop) {
-  .surfaces-carousel {
-    --surfaces-card-width : var(--prose-width-300);
-    --surfaces-gap        : var(--prose-space-14);
-  }
-}
-
-@media (--prose-bp-mobile) {
-  .surfaces-carousel {
-    --surfaces-card-width : var(--prose-width-260);
-    --surfaces-gap        : var(--prose-space-12);
-  }
+  margin-inline : calc(50% - 50vw);
 }

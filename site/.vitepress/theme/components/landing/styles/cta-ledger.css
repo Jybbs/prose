@@ -1,8 +1,6 @@
 .landing-cta-scroll {
-  width            : calc(100% + var(--prose-space-10));
-  scrollbar-gutter : stable;
-  scrollbar-color  : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge)) transparent;
-  direction        : rtl;
+  width     : calc(100% + var(--prose-space-10));
+  direction : rtl;
 }
 .landing-cta-scroll::-webkit-scrollbar {
   width : var(--prose-size-6);

@@ -80,8 +80,8 @@ useHashOpen(fragment => {
       v-for="row in cards"
       :key="row.case"
       :id="row.case"
-      class="fixture-card cursor-pointer hover:border-transparent"
-      :class="activeCase === row.case ? 'is-open hover:rail-border-on-bg' : 'hover:rail-border-on-bg-soft'"
+      class="fixture-card cursor-pointer hover:border-transparent not-data-open:hover:rail-border-on-bg-soft data-open:hover:rail-border-on-bg"
+      :data-open="activeCase === row.case || undefined"
       :data-family="row.dominantFamily"
       :data-edits="row.changesSource"
       :style="{ '--rail-paint': row.railPaint, '--headline-paint': row.headlinePaint }"
@@ -139,8 +139,8 @@ useHashOpen(fragment => {
               :sandbox-seed="row.sandboxSeed"
             />
             <ol
-              class="composition-cards-bar mt-12 mb-0 ml-auto flex list-none gap-3 p-0 transition-width delay-grow duration-360 ease-morph"
-              :class="activeCase === row.case ? 'is-open w-full' : 'w-60'"
+              class="composition-cards-bar mt-12 mb-0 ml-auto flex list-none gap-3 p-0 transition-width delay-grow duration-360 ease-morph w-60 data-open:w-full"
+              :data-open="activeCase === row.case || undefined"
               :aria-label="`${row.segments.length} rules in pipeline order`"
             >
               <li

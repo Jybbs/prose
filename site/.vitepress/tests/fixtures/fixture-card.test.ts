@@ -56,9 +56,9 @@ describe('FixtureCard', () => {
 
   it('opens the body only once the summary row is clicked', async () => {
     const w = card()
-    expect(w.get('.fixture-card').classes()).not.toContain('is-open')
+    expect(w.get('.fixture-card').attributes('data-open')).toBeUndefined()
     await w.get('.fixture-card-summary-row').trigger('click')
-    expect(w.get('.fixture-card').classes()).toContain('is-open')
+    expect(w.get('.fixture-card').attributes('data-open')).toBe('true')
   })
 
   // `FixtureNoChange` reserves the toggle's footprint with an inert clone, so the

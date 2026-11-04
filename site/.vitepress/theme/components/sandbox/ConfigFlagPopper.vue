@@ -101,7 +101,7 @@ defineExpose({ hide, show })
             v-for="facet in facets"
             :key="facet.key"
             type="button"
-            class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-border-color-and-background hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
+            class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
             @click="apply(facet.key)"
           >
             <span class="text-center text-meta text-warning-1" aria-hidden="true">✓</span>

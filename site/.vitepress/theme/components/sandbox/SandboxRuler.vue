@@ -177,7 +177,7 @@ function tierOf(key: string): number {
       <div
         v-for="(knob, index) in lengths"
         :key="knob.key"
-        class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 dragging:z-2"
+        class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
         :style="stopStyle(index, knob)"
         :data-dragging="drag?.key === knob.key || null"
         :role="editing === knob.key ? undefined : 'slider'"
@@ -192,11 +192,11 @@ function tierOf(key: string): number {
         @pointercancel="dragEnd"
         @keydown="keyStep(knob, $event)"
       >
-        <span class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:bg-hue-70-text-3 before:transition-background group-hover:before:bg-hue group-dragging:before:bg-hue" aria-hidden="true" />
+        <span class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:bg-hue-70-text-3 before:transition-colors group-hover:before:bg-hue group-data-dragging:before:bg-hue" aria-hidden="true" />
         <span
           v-if="editing !== knob.key"
           ref="chip"
-          class="sandbox-ruler-chip group-hover:border-hue group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-dragging:border-hue"
+          class="sandbox-ruler-chip group-hover:border-hue group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-data-dragging:border-hue"
           :data-key="knob.key"
           @dblclick="beginEdit(knob)"
         >
@@ -208,7 +208,7 @@ function tierOf(key: string): number {
           :ref="focusInput"
           v-model="draft"
           type="number"
-          class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text group-hover:border-hue group-dragging:border-hue focus-visible:-outline-offset-1"
+          class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text group-hover:border-hue group-data-dragging:border-hue focus-visible:-outline-offset-1"
           :min="MIN"
           :max="MAX"
           :aria-label="`${knob.label} line length`"

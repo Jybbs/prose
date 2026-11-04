@@ -33,8 +33,8 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
 <template>
   <section
     :id="id"
-    class="fixture-card"
-    :class="{ 'is-open': isOpen }"
+    class="fixture-card group/fixture"
+    :data-open="isOpen || undefined"
     :data-family="family"
     :data-edits="entry.changesSource"
     :data-lint="entry.hasFindings"
@@ -50,8 +50,7 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
         <span class="fixture-card-title" v-html="titleHtml" />
       </button>
       <div
-        class="inline-flex items-center transition-opacity"
-        :class="{ 'pointer-events-none invisible opacity-0': !isOpen }"
+        class="pointer-events-none invisible inline-flex items-center opacity-0 transition-opacity group-data-open/fixture:pointer-events-auto group-data-open/fixture:visible group-data-open/fixture:opacity-100"
         @click.stop
       >
         <FixtureToggle v-if="entry.hasToggle" v-model="activeTab" />

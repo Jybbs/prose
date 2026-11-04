@@ -1,15 +1,13 @@
+@reference "../../../styles/tailwind.css";
+
 .glossary-folio-index-narrow .glossary-folio-list {
   max-height : none;
 }
 
-@media (--prose-bp-wide) {
+@variant wide {
   .glossary-folio-index-narrow {
     display : none !important;
   }
-}
-
-.vp-doc .glossary-folio-row-slug {
-  transition : none;
 }
 
 .glossary-folio-list {

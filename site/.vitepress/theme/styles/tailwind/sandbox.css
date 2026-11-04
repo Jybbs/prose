@@ -1,23 +1,14 @@
-@custom-variant armed (&[data-armed]);
-@custom-variant bracket-close (&[data-bracket="close"]);
-@custom-variant bracket-end (&:is([data-bracket="open"], [data-bracket="close"]));
-@custom-variant bracket-open (&[data-bracket="open"]);
-@custom-variant bracket-solo (&[data-bracket="solo"]);
-@custom-variant dragging (&[data-dragging]);
-@custom-variant editing (&[data-editing]);
-@custom-variant line-code (&[data-line-kind="code"]);
-@custom-variant line-comment (&[data-line-kind="comment"]);
-@custom-variant line-directive (&[data-line-kind="directive"]);
-@custom-variant off (&[data-on="false"]);
-@custom-variant role-action (&[data-role="action"]);
-
 @theme inline {
   --color-apricot-75-text-1                               : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1));
+  --color-family-or-brand-1-4-panel-wash-card             : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-4), var(--prose-panel-wash-card));
+  --color-family-or-brand-1-40-divider                    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-40), var(--vp-c-divider));
   --color-family-or-brand-1-55-divider                    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-55), var(--vp-c-divider));
   --color-family-or-divider                               : var(--family-color, var(--vp-c-divider));
   --color-family-or-text-1                                : var(--family-color, var(--vp-c-text-1));
+  --color-guide-or-ube                                    : var(--guide-hue, var(--prose-palette-ube));
   --color-hue                                             : var(--hue);
   --color-hue-70-text-3                                   : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
+  --color-part-or-text-1                                  : var(--part-color, var(--vp-c-text-1));
   --color-part-or-text-2-75-text-2                        : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
   --color-part-or-text-3-50-divider                       : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
   --color-scope-10-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
@@ -34,20 +25,38 @@
   --grid-template-columns-14-1fr                          : var(--prose-size-14) 1fr;
   --grid-template-columns-14-1fr-auto                     : var(--prose-size-14) 1fr auto;
   --grid-template-columns-1fr-180-220                     : minmax(0, 1fr) minmax(var(--prose-width-180), var(--prose-width-220));
+  --grid-template-columns-1fr-max                         : minmax(0, 1fr) max-content;
   --grid-template-columns-28-14-1fr                       : var(--prose-size-28) var(--prose-size-14) 1fr;
   --grid-template-columns-2fr-1fr                         : minmax(0, 2fr) minmax(0, 1fr);
+  --grid-template-columns-max-1fr-max                     : max-content minmax(0, 1fr) max-content;
+
+  --grid-template-rows-auto-28-auto                       : auto var(--prose-size-28) auto;
+
+  --inset-nav                                             : var(--vp-nav-height);
+
+  --max-height-tags-banner                                : min(45vh, var(--prose-size-30rem));
 
   --outline-offset-2                                      : var(--prose-space-2);
 
+  --text-anatomy-part                                     : clamp(var(--prose-text-1-35rem), 2.3vw, var(--prose-text-2rem));
+
   --transition-property-background-opacity-and-box-shadow : background, opacity, box-shadow;
-  --transition-property-border-color                      : border-color;
   --transition-property-color-and-opacity                 : color, opacity;
+
+  --width-sandbox                                         : min(var(--prose-width-94rem), calc(100vw - var(--prose-space-3rem)));
+
+  --animate-plate-draw                                    : plate-draw calc(var(--prose-rule-draw-ms) * 1ms) ease forwards;
+  --animate-plate-settle                                  : plate-settle var(--prose-transition-slow);
+
+  @keyframes plate-draw {
+    to { scale: 1; }
+  }
+
+  @keyframes plate-settle {
+    from { opacity: 0; translate: 0 calc(var(--prose-space-4) * -1); }
+  }
 }
 
 @utility focus-ring {
   outline : var(--prose-focus-ring);
-}
-
-@utility halo-family-or-brand-1-45 {
-  box-shadow : 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-45), transparent);
 }

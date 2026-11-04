@@ -59,16 +59,16 @@ const legend = scopeBands(entries)
 </script>
 
 <template>
-  <div class="my-1-5rem grid grid-cols-1fr-180-220 gap-24 panel bg-panel-wash px-24 py-22 tablet:grid-cols-1fr">
+  <div class="my-1-5rem grid grid-cols-1fr-180-220 gap-24 panel bg-panel-wash px-24 py-22 max-tablet:grid-cols-1fr">
     <pre class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-8 py-14 text-0-8rem leading-1-55"><code class="block"><span
       v-for="(line, idx) in lines"
       :key="idx"
       class="scope-specimen-line group grid grid-cols-28-14-1fr items-center gap-0"
       :data-scope="line.scope"
       :data-bracket="line.bracket"
-    ><span class="pr-8 text-right text-xxs text-text-3 select-none" aria-hidden="true">{{ String(idx + 1).padStart(2, ' ') }}</span><span class="scope-specimen-bracket relative h-full w-14 before:absolute before:inset-y-0 before:left-3 before:w-3 before:bg-scope-70-divider group-bracket-solo:before:inset-y-3/10 group-bracket-close:after:bottom-0 group-bracket-end:after:absolute group-bracket-end:after:left-1 group-bracket-end:after:h-3 group-bracket-end:after:w-8 group-bracket-end:after:rounded-1 group-bracket-end:after:bg-scope-70-divider group-bracket-open:after:top-0" aria-hidden="true"></span><span class="text-text-1 group-bracket-end:text-scope-75-text-1 group-bracket-solo:text-scope-75-text-1">{{ line.text || ' ' }}</span></span></code></pre>
+    ><span class="pr-8 text-right text-xxs text-text-3 select-none" aria-hidden="true">{{ String(idx + 1).padStart(2, ' ') }}</span><span class="relative h-full w-14 before:absolute before:inset-y-0 before:left-3 before:w-3 before:bg-scope-70-divider group-data-[bracket=solo]:before:inset-y-3/10 group-data-[bracket=close]:after:absolute group-data-[bracket=close]:after:bottom-0 group-data-[bracket=close]:after:left-1 group-data-[bracket=close]:after:h-3 group-data-[bracket=close]:after:w-8 group-data-[bracket=close]:after:rounded-1 group-data-[bracket=close]:after:bg-scope-70-divider group-data-[bracket=open]:after:absolute group-data-[bracket=open]:after:top-0 group-data-[bracket=open]:after:left-1 group-data-[bracket=open]:after:h-3 group-data-[bracket=open]:after:w-8 group-data-[bracket=open]:after:rounded-1 group-data-[bracket=open]:after:bg-scope-70-divider group-data-[bracket=solo]:after:absolute group-data-[bracket=solo]:after:top-1/2 group-data-[bracket=solo]:after:left-0.5 group-data-[bracket=solo]:after:size-8 group-data-[bracket=solo]:after:-translate-y-1/2 group-data-[bracket=solo]:after:rounded-half group-data-[bracket=solo]:after:bg-scope-80-bg" aria-hidden="true"></span><span class="text-text-1 group-data-[bracket=open]:text-scope-75-text-1 group-data-[bracket=close]:text-scope-75-text-1 group-data-[bracket=solo]:text-scope-75-text-1">{{ line.text || ' ' }}</span></span></code></pre>
 
-    <ul class="scope-specimen-legend">
+    <ul class="m-0 flex list-none flex-col gap-12 self-start pl-0">
       <li
         v-for="band in legend"
         :key="band.scope"

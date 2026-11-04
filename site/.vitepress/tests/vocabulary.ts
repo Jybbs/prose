@@ -26,7 +26,7 @@ import { siteDir }    from '../lib/shared/paths'
 
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'
-import type { Declaration, Root }            from 'postcss'
+import type { AtRule, Declaration, Root }    from 'postcss'
 
 // Holds the absolute and font-relative length units CSS Values 4 defines,
 // leaving out the viewport and container units, which measure a share of the
@@ -60,25 +60,24 @@ interface Stray {
   value : string
 }
 
-// Holds the custom media and properties the token sheets declare, beside the
-// custom properties the stylesheets pass to `color-mix()` or read as a font
-// family.
+// Holds the custom properties the token sheets declare and the breakpoints the
+// Tailwind theme declares, beside the custom properties the stylesheets pass to
+// `color-mix()` or read as a font family.
 class Vocabulary {
   constructor(
-    readonly faces      : Set<string>,
-    readonly media      : Set<string>,
-    readonly mixed      : Set<string>,
-    readonly properties : Set<string>
+    readonly breakpoints : Set<string>,
+    readonly faces       : Set<string>,
+    readonly mixed       : Set<string>,
+    readonly properties  : Set<string>
   ) {}
 
-  // Reads each custom property and custom media the `declaring` sheets declare,
-  // and each custom property the `reading` sheets pass to `color-mix()` or read
-  // as a font family.
+  // Reads each custom property the `declaring` sheets declare, each breakpoint
+  // the `@theme` blocks of the `reading` sheets declare, and each custom property
+  // the `reading` sheets pass to `color-mix()` or read as a font family.
   static read(declaring: Root[], reading: Root[]): Vocabulary {
-    const vocabulary = new Vocabulary(facedBy(reading), new Set(), mixedBy(reading), new Set())
+    const vocabulary = new Vocabulary(breakpointsOf(reading), facedBy(reading), mixedBy(reading), new Set())
     for (const root of declaring) {
       root.walkDecls(/^--/, decl => { vocabulary.properties.add(decl.prop) })
-      root.walkAtRules('custom-media', rule => { vocabulary.media.add(rule.params.split(/\s/)[0]) })
     }
     return vocabulary
   }
@@ -89,6 +88,7 @@ class Vocabulary {
   // nothing declares.
   private declarationStrays(decl: Declaration): Stray[] {
     const found: Stray[] = []
+    if (breakpoint(decl)) return found
     if (decl.prop.startsWith('--prose-')) {
       found.push({ kind: 'token', line: decl.source!.start!.line, value: decl.prop })
     }
@@ -135,21 +135,20 @@ class Vocabulary {
     return found
   }
 
-  // Lists each media or container query that writes a dimension, and each media
-  // query naming a custom media nothing declares, beside each custom media a
-  // stylesheet declares for itself.
+  // Lists each container query that writes a dimension, each media query that
+  // writes a dimension no breakpoint declares or names a custom media, and each
+  // custom media a stylesheet declares.
   private mediaStrays(root: Root): Stray[] {
     const found: Stray[] = []
     root.walkAtRules('custom-media', rule => {
       found.push({ kind: 'media', line: rule.source!.start!.line, value: rule.params.split(/\s/)[0] })
     })
     root.walkAtRules(/^(container|media)$/, rule => {
+      const media = rule.name === 'media'
       for (const token of tokenize({ css: rule.params })) {
-        const custom = rule.name === 'media'
-          && isTokenIdent(token) && token[4].value.startsWith('--')
-        if (isTokenDimension(token) || (custom && !this.media.has(token[4].value))) {
-          found.push({ kind: 'media', line: rule.source!.start!.line, value: token[1] })
-        }
+        const dimension = isTokenDimension(token) && !(media && this.breakpoints.has(token[1]))
+        const custom    = media && isTokenIdent(token) && token[4].value.startsWith('--')
+        if (dimension || custom) found.push({ kind: 'media', line: rule.source!.start!.line, value: token[1] })
       }
     })
     return found
@@ -158,7 +157,7 @@ class Vocabulary {
   // Returns this vocabulary with the custom properties the `roots` pass to
   // `color-mix()` or read as a font family in place of its own.
   reading(roots: Root[]): Vocabulary {
-    return new Vocabulary(facedBy(roots), this.media, mixedBy(roots), this.properties)
+    return new Vocabulary(this.breakpoints, facedBy(roots), mixedBy(roots), this.properties)
   }
 
   // Lists each value a stylesheet writes in place of a token, by the line it
@@ -171,6 +170,22 @@ class Vocabulary {
 }
 
 export const read = (file: string): string => fs.readFileSync(path.join(SITE, file), 'utf8')
+
+// Reports whether a declaration declares a Tailwind breakpoint, which the theme
+// writes as a literal since a breakpoint variant reads no `var()`.
+function breakpoint(decl: Declaration): boolean {
+  return decl.prop.startsWith('--breakpoint-') && decl.parent?.type === 'atrule'
+    && (decl.parent as AtRule).name === 'theme'
+}
+
+// Names the value of each breakpoint the `@theme` blocks of the sheets declare.
+function breakpointsOf(roots: Root[]): Set<string> {
+  const values = new Set<string>()
+  for (const root of roots) {
+    root.walkDecls(/^--breakpoint-/, decl => { if (breakpoint(decl)) values.add(decl.value) })
+  }
+  return values
+}
 
 // Names each custom property the sheets read as a font family, directly or
 // through another custom property that a family list reads.

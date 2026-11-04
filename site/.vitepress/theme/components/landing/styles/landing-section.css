@@ -1,7 +1,4 @@
 .landing-section h2 {
-  border-bottom           : none;
-  font-size               : clamp(var(--prose-text-2rem), 3.6vw, var(--prose-text-2-8rem));
-  letter-spacing          : 0;
   font-variation-settings : 'opsz' 144;
 }
 

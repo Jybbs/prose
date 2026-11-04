@@ -102,13 +102,13 @@ describe('CompositionCards', () => {
     window.location.hash = '#gamma_case'
     const wrapper = render()
     await nextTick()
-    expect(wrapper.get('#gamma_case').classes()).toContain('is-open')
+    expect(wrapper.get('#gamma_case').attributes('data-open')).toBe('true')
   })
 
   it('opens no card for a fragment naming none of them', async () => {
     window.location.hash = '#not_a_case'
     const wrapper = render()
     await nextTick()
-    expect(wrapper.findAll('.fixture-card.is-open')).toHaveLength(0)
+    expect(wrapper.findAll('.fixture-card[data-open]')).toHaveLength(0)
   })
 })

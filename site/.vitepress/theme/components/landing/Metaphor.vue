@@ -12,7 +12,7 @@ import LandingSection from './LandingSection.vue'
     <aside class="relative mt-36 panel bg-bg-soft px-40 pt-32 pb-36">
       <p class="kicker mb-16">— a definition —</p>
       <header class="mb-22 flex items-baseline gap-10">
-        <h3 class="border-none font-display text-2-2rem leading-1 font-500 text-balance text-ube">prose</h3>
+        <h3 class="border-none font-display text-2-2rem leading-none font-500 text-balance text-ube">prose</h3>
         <span class="font-mono text-sm text-text-3">/prōz/</span>
         <span class="mx-6 leader flex-1 opacity-50" aria-hidden="true" />
         <span class="font-display text-1rem text-text-3 italic">n.</span>
@@ -27,7 +27,7 @@ import LandingSection from './LandingSection.vue'
           <span class="text-md leading-1-55 text-text-2 italic">an opinionated formatter that lays Python out so a reader can read it.</span>
         </li>
       </ol>
-      <hr class="landing-definition-rule my-22" aria-hidden="true" />
+      <hr class="my-22 border-0 border-t-1 border-t-divider" aria-hidden="true" />
       <div>
         <p class="mb-14 text-1rem leading-1-65 last:mb-0">
           Code is read far more often than it is written. A reader's eye moves
@@ -37,7 +37,7 @@ import LandingSection from './LandingSection.vue'
           disappears, forcing the eye to slow down.
         </p>
         <p class="mb-14 text-1rem leading-1-65 last:mb-0">
-          <em><span class="prose-mark">Prose</span></em> restores it. Aligned columns let the eye skim,
+          <em><span class="text-ube">Prose</span></em> restores it. Aligned columns let the eye skim,
           one-per-line collections make each entry a unit, and alphabetized
           groupings give every reader the same landmarks.
         </p>

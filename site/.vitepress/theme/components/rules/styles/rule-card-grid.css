@@ -1,3 +1,5 @@
+@reference "../../../styles/tailwind.css";
+
 .vp-doc .rule-card,
 .rule-card {
   position              : relative;
@@ -49,7 +51,7 @@
   white-space   : nowrap;
 }
 
-@media (--prose-bp-mobile) {
+@variant max-mobile {
   .vp-doc .rule-card,
   .rule-card {
     grid-template-columns : var(--prose-size-2-6rem) minmax(0, 1fr);

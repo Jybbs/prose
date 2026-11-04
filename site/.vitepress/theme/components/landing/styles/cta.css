@@ -5,31 +5,15 @@
   --panel-edge   : var(--vp-c-divider);
 }
 
-.landing-cta-toggle:hover {
-  transform : scale(1.06);
-}
-
 .landing-cta-swap-enter-active,
 .landing-cta-swap-leave-active {
-  transition-property        : opacity, transform;
+  transition-property        : opacity, translate;
   transition-duration        : 240ms;
   transition-timing-function : cubic-bezier(0.22, 1, 0.36, 1);
-}
-.landing-cta-swap-enter-from,
-.landing-cta-swap-leave-to {
-  opacity   : 0;
-  transform : translateY(var(--prose-space-8));
 }
 
 .landing-cta-cmd > button.copy {
   top       : 50%;
   right     : var(--prose-space-6);
   transform : translateY(-50%);
-}
-
-.landing-cta-arrow {
-  transition : transform var(--prose-transition);
-}
-.landing-cta-primary:hover .landing-cta-arrow {
-  transform : translateX(var(--prose-space-3));
 }

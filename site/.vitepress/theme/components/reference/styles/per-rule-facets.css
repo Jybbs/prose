@@ -2,23 +2,6 @@
   --family-color : var(--prose-palette-casper);
 }
 
-.per-rule-facets-head {
-  border      : none;
-  border-left : var(--prose-border-2) solid var(--family-color);
-}
-
-.per-rule-facets-head:hover {
-  opacity : 0.72;
-}
-
-.per-rule-facets-chevron {
-  transition : transform var(--prose-transition);
-}
-
-.per-rule-facets-head[aria-expanded='true'] .per-rule-facets-chevron {
-  transform : rotate(90deg);
-}
-
 .per-rule-facets-label .nib-badge {
   margin-right   : var(--prose-space-3);
   vertical-align : calc(var(--prose-space-2) * -1);

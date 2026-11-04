@@ -44,9 +44,8 @@
   background : linear-gradient(90deg, transparent, var(--family-color), transparent);
 }
 
-.surface-card[data-active="true"],
+.surface-card[data-active],
 .surface-card:focus-within {
-  transform  : translateY(calc(var(--prose-space-2) * -1));
   box-shadow : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
 }
 

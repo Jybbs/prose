@@ -84,7 +84,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
   <div ref="cardRef" class="mt-14 flex flex-col gap-14 rounded-sm border-1 border-t-3 border-divider border-t-layer-accent bg-bg px-22 py-18" :data-layer="focusedEntry?.layer ?? 'empty'" aria-live="polite">
     <template v-if="focusedEntry">
       <div class="flex items-center gap-14 border-b-1 border-b-divider-70-layer-accent pb-12 text-left">
-        <span class="pip size-32 shrink-0 bg-layer-accent text-1-05rem leading-1 halo-layer-accent-25-bg" aria-hidden="true">{{ PRIMITIVE_LAYER_NUMERALS[focusedEntry.layer] }}</span>
+        <span class="pip size-32 shrink-0 bg-layer-accent text-1-05rem leading-none ring-2 ring-layer-accent/25" aria-hidden="true">{{ PRIMITIVE_LAYER_NUMERALS[focusedEntry.layer] }}</span>
         <div class="flex min-w-0 flex-1 flex-col gap-3">
           <span class="font-display text-1rem leading-1-1 text-text-1">{{ focusedEntry.name }}</span>
           <span class="primitives-composition-card-summary font-mono text-0-68rem leading-1-5 text-text-2"><InlineProse :nodes="focusedEntry.summaryNodes" /></span>
@@ -94,9 +94,9 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
         <div v-if="rel.items.length > 0" class="grid grid-cols-78-minmax-1fr items-center gap-x-10">
           <span class="text-left font-mono text-0-54rem tracking-kicker whitespace-nowrap text-layer-accent-70-text-2 uppercase">{{ rel.label }}</span>
           <span class="primitives-composition-card-rel-mentions flex min-h-24 flex-wrap items-center gap-x-16 gap-y-5 font-mono text-0-68rem text-text-2">
-            <span v-for="m in rel.items" :key="`${rel.keyPrefix}-${m.slug}`" class="primitives-composition-card-mention-item relative inline-flex items-center not-last:after:pointer-events-none not-last:after:absolute not-last:after:top-1/2 not-last:after:left-full-plus-8 not-last:after:transform-center not-last:after:text-text-3 not-last:after:content-middot suppress-dot:after:hidden">
-              <a v-if="m.kind === 'primitive'" class="inline-flex items-center gap-5 border-b-1 border-b-layer-accent/40 text-layer-accent-70-text-1 transition-color-and-border-color duration-140 ease-emphasized hover:border-b-current" :data-layer="m.layer" :href="primitiveRoute(m.slug)">
-                <span class="pip size-18 bg-layer-accent text-xxs leading-1" aria-hidden="true">{{ m.numeral }}</span>
+            <span v-for="m in rel.items" :key="`${rel.keyPrefix}-${m.slug}`" class="primitives-composition-card-mention-item relative inline-flex items-center not-last:after:pointer-events-none not-last:after:absolute not-last:after:top-1/2 not-last:after:left-full not-last:after:ml-8 not-last:after:-translate-1/2 not-last:after:text-text-3 not-last:after:content-middot data-suppress-dot:after:hidden">
+              <a v-if="m.kind === 'primitive'" class="inline-flex items-center gap-5 border-b-1 border-b-layer-accent/40 text-layer-accent-70-text-1 transition-colors duration-140 ease-emphasized hover:border-b-current" :data-layer="m.layer" :href="primitiveRoute(m.slug)">
+                <span class="pip size-18 bg-layer-accent text-xxs leading-none" aria-hidden="true">{{ m.numeral }}</span>
                 <span class="inline-block">{{ m.slug }}</span>
               </a>
               <RuleTooltipPopper v-else-if="m.kind === 'rule'" :rule="m.rule">

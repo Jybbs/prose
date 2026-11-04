@@ -4,13 +4,6 @@
   inherits      : false;
 }
 
-.landing-hero-watermarks {
-  transform          : translateX(-50%);
-  min-height         : 280vh;
-  -webkit-mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
-          mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
-}
-
 .landing-hero-watermark {
   transform : translate(-50%, -50%) rotate(var(--rotation));
 }
@@ -24,8 +17,4 @@
   @keyframes watermark-align {
     to { --rotation: 0deg; }
   }
-}
-
-.landing-hero-wordmark {
-  width : min(var(--prose-width-640), 72vw);
 }

@@ -1,6 +1,3 @@
-@custom-variant edge-end   (&[data-edge="end"]);
-@custom-variant edge-start (&[data-edge="start"]);
-
 @theme inline {
   --color-family-22-bg-soft                                   : color-mix(in srgb, var(--family-color) var(--prose-tint-22), var(--vp-c-bg-soft));
   --color-family-35-divider                                   : color-mix(in srgb, var(--family-color) var(--prose-tint-35), var(--vp-c-divider));
@@ -25,6 +22,8 @@
   --color-stamp-accent-8-panel-bg                             : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-8), var(--panel-bg));
   --color-stamp-accent-medium-bg                              : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-medium), var(--vp-c-bg));
   --color-stamp-ink                                           : var(--stamp-ink);
+  --color-ube-60-panel-edge                                   : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge));
+  --color-workflow-accent-24-divider                          : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-24), var(--vp-c-divider));
   --color-workflow-accent-28-divider                          : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-28), var(--vp-c-divider));
   --color-workflow-accent-70-text-1                           : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-70), var(--vp-c-text-1));
 
@@ -38,7 +37,16 @@
 
   --grid-template-rows-64-28-18                               : var(--prose-size-64) var(--prose-size-28) var(--prose-size-18);
 
-  --transition-property-background-border-color-and-transform : background, border-color, transform;
-  --transition-property-border-color-and-color                : border-color, color;
-  --transition-property-border-color-transform-and-box-shadow : border-color, transform, box-shadow;
+  --min-height-watermarks                                     : 280vh;
+
+  --text-404                                                  : clamp(var(--prose-text-2-4rem), 5.4vw, var(--prose-text-3-4rem));
+  --text-landing-h2                                           : clamp(var(--prose-text-2rem), 3.6vw, var(--prose-text-2-8rem));
+
+  --tracking-0                                                : 0;
+
+  --transition-property-background-border-color-and-scale     : background, border-color, scale;
+  --transition-property-border-color-translate-and-box-shadow : border-color, translate, box-shadow;
+  --transition-property-mask-image                            : mask-image;
+
+  --width-wordmark                                            : min(var(--prose-width-640), 72vw);
 }

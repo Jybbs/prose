@@ -42,11 +42,11 @@ useHashOpen(fragment => {
     >
       <button
         type="button"
-        class="per-rule-facets-head flex w-full items-center gap-9 py-7 pl-14 text-left transition-opacity"
+        class="per-rule-facets-head group flex w-full items-center gap-9 border-0 border-l-2 border-l-family py-7 pl-14 text-left transition-opacity hover:opacity-72"
         :aria-expanded="open[family.family] ?? false"
         @click="toggle(family.family)"
       >
-        <span class="per-rule-facets-chevron size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent border-l-family" aria-hidden="true"></span>
+        <span class="size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent border-l-family transition-transform group-aria-expanded:rotate-90" aria-hidden="true"></span>
         <span class="per-rule-facets-label kicker text-family-76-text-1">
           <NibBadge v-if="family.family !== 'generic'" :emblem="familyEmblem(family.family)" :size="13.6" />
           {{ family.label }}
@@ -73,7 +73,7 @@ useHashOpen(fragment => {
                   </span>
                 </span>
               </dt>
-              <dd class="per-rule-facets-meaning mt-6 max-w-62ch pl-0-9rem text-sm leading-1-6 text-text-2 mobile:pl-0">
+              <dd class="per-rule-facets-meaning mt-6 max-w-62ch pl-0-9rem text-sm leading-1-6 text-text-2 max-mobile:pl-0">
                 <InlineProse :nodes="facet.meaningNodes" />
               </dd>
             </div>

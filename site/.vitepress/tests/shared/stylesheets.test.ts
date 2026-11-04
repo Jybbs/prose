@@ -89,7 +89,7 @@ describe('strays', () => {
     { css: '.a { --a: var(--b); --b: Georgia; font-family: var(--a); }',                        kind: 'typeface', value: 'Georgia' },
     { css: '@container (min-width: 400px) { .a { color: inherit; } }',                          kind: 'media',    value: '400px' },
     { css: '@custom-media --a (max-width: 999px);',                                             kind: 'media',    value: '--a' },
-    { css: '@media (min-width: 1280px) { .a { color: inherit; } }',                             kind: 'media',    value: '1280px' },
+    { css: '@media (min-width: 1300px) { .a { color: inherit; } }',                             kind: 'media',    value: '1300px' },
     { css: '@media (--prose-bp-huge) { .a { color: inherit; } }',                               kind: 'media',    value: '--prose-bp-huge' },
     { css: '.a { gap: var(--prose-space-19); }',                                                kind: 'token',    value: '--prose-space-19' },
     { css: '.a { --prose-panel-wash: var(--prose-tint-30); }',                                  kind: 'token',    value: '--prose-panel-wash' },
@@ -121,7 +121,8 @@ describe('strays', () => {
       '.d { font: caption; }',
       '@container card (inline-size > 0) { .a { color: inherit; } }',
       '@container --card (inline-size > 0) { .a { color: inherit; } }',
-      '@media (--prose-bp-wide) { .a { color: inherit; } }',
+      '@theme { --breakpoint-wide: 1280px; }',
+      '@media (width >= 1280px) { .a { color: inherit; } }',
       '@media (prefers-reduced-motion: reduce) { .a { color: inherit; } }'
     ].join('\n')
     expect(strayed(css)).toStrictEqual([])

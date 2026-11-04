@@ -1,34 +1,18 @@
+@reference "../../../styles/tailwind.css";
+
 .built-on-grid {
   --stack-accent : var(--prose-palette-ube);
-}
-
-.built-on-card {
-  align-content : start;
 }
 
 .built-on-card + .built-on-card {
   border-left : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
-.built-on-medallion {
-  transition :
-    background   var(--prose-transition-card),
-    border-color var(--prose-transition-card),
-    color        var(--prose-transition-card);
-}
-
-@media (--prose-bp-medium) {
+@variant max-medium {
   .built-on-card:nth-child(3n + 1) {
     border-left : none;
   }
   .built-on-card:nth-child(n + 4) {
     border-top : var(--prose-border-1) solid var(--vp-c-divider);
-  }
-}
-
-@media (--prose-bp-tiny) {
-  .built-on-card + .built-on-card {
-    border-left : none;
-    border-top  : var(--prose-border-1) solid var(--vp-c-divider);
   }
 }

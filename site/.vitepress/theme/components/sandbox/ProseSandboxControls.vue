@@ -61,7 +61,7 @@ function hover(rule: chipPanel.RuleControl): void {
       <button
         v-if="visible.length > 0"
         type="button"
-        class="panel-seat size-26 transition-color aria-pressed:text-text-3"
+        class="panel-seat size-26 transition-colors aria-pressed:text-text-3"
         :aria-pressed="allOff"
         :title="allOff ? 'Turn every rule on' : 'Turn every rule off'"
         :aria-label="allOff ? 'Turn every rule on' : 'Turn every rule off'"
@@ -75,15 +75,15 @@ function hover(rule: chipPanel.RuleControl): void {
       <div
         v-for="rule in visible"
         :key="rule.slug"
-        class="group relative inline-flex items-center rounded-sm bg-family-or-divider/medium transition-background-opacity-and-box-shadow off:bg-text-3/12 off:opacity-75 chosen:z-5 chosen:halo-family-or-brand-1-45"
+        class="group relative inline-flex items-center rounded-sm bg-family-or-divider/medium transition-background-opacity-and-box-shadow data-off:bg-text-3/12 data-off:opacity-75 data-active:z-5 data-active:ring-1 data-active:ring-family-or-brand-1/45"
         :data-family="rule.family || null"
-        :data-on="isOn(rule)"
-        :data-active="rule.slug === (openSlug || hoveredSlug)"
+        :data-off="!isOn(rule) || undefined"
+        :data-active="rule.slug === (openSlug || hoveredSlug) || undefined"
         @mouseover="hover(rule)"
         @focusin="hover(rule)"
       >
         <button type="button" class="inline-flex items-center border-none px-7 py-2" @click="toggle(rule)">
-          <span class="font-mono text-0-68rem tracking-0-05em text-family-or-text-1 uppercase group-off:text-text-3">{{ rule.slug }}</span>
+          <span class="font-mono text-0-68rem tracking-0-05em text-family-or-text-1 uppercase group-data-off:text-text-3">{{ rule.slug }}</span>
         </button>
         <button
           v-if="subFacets(rule).length > 0"
@@ -105,7 +105,7 @@ function hover(rule: chipPanel.RuleControl): void {
       </div>
     </div>
 
-    <aside class="sandbox-tags-banner">
+    <aside class="sandbox-tags-banner flex max-h-tags-banner min-h-5-5rem overflow-y-auto panel bg-bg-soft px-1-25rem py-0-9rem">
       <SandboxPlate
         v-if="openRule"
         :ref="setPanel"

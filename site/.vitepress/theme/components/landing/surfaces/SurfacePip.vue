@@ -18,7 +18,7 @@ const tabindex = useHiddenTabindex()
 <template>
   <a
     class="surface-pip group/pip relative grid place-items-center focus-visible:rounded-pill focus-visible:outline-offset-1"
-    :class="{ active }"
+    :data-active="active || undefined"
     :style="{ '--d': distance }"
     :href="rule.href"
     :aria-label="rule.slug"
@@ -26,13 +26,9 @@ const tabindex = useHiddenTabindex()
     @focus="emit('select')"
     @mouseenter="emit('select')"
   ><span
-    class="surface-pip-mark relative z-1 rounded-pill"
-    :class="active ? 'bg-family-22-bg-soft' : 'bg-family/45 group-hover/pip:bg-family-22-bg-soft'"
+    class="surface-pip-mark relative z-1 rounded-pill bg-family/45 group-hover/pip:bg-family-22-bg-soft group-data-active/pip:bg-family-22-bg-soft motion-reduce:delay-0"
     aria-hidden="true"
   /><span
-    class="surface-pip-folio absolute inset-0 z-2 grid shrink-0 place-items-center pt-1 font-mono text-meta leading-1 tracking-folio uppercase tabular-nums"
-    :class="active
-      ? 'translate-y-0 text-family opacity-100'
-      : 'translate-y-3 text-text-3 opacity-0 group-hover/pip:translate-y-0 group-hover/pip:text-family group-hover/pip:opacity-100'"
+    class="surface-pip-folio absolute inset-0 z-2 grid shrink-0 translate-y-3 place-items-center pt-1 font-mono text-meta leading-none tracking-folio text-text-3 uppercase tabular-nums opacity-0 group-hover/pip:translate-y-0 group-hover/pip:text-family group-hover/pip:opacity-100 group-data-active/pip:translate-y-0 group-data-active/pip:text-family group-data-active/pip:opacity-100 motion-reduce:delay-0"
   >{{ formatFolio(index + 1) }}</span></a>
 </template>

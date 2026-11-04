@@ -20,14 +20,14 @@ const render = (configure: (md: MarkdownIt) => void, src: string, env: object = 
 }
 
 describe('proseMarkPlugin', () => {
-  it('wraps a standalone Prose in a prose-mark span', () => {
+  it('wraps a standalone Prose in a text-ube span', () => {
     expect(render(md => md.use(proseMarkPlugin), 'Prose formats code'))
-      .toContain('<span class="prose-mark">Prose</span>')
+      .toContain('<span class="text-ube">Prose</span>')
   })
 
   it('keeps hyphenated and snake_case compounds literal', () => {
     expect(render(md => md.use(proseMarkPlugin), 'the prose-mark class and prose_mark name'))
-      .not.toContain('<span class="prose-mark">')
+      .not.toContain('<span class="text-ube">')
   })
 })
 

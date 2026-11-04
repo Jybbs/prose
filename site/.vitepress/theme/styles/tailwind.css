@@ -1,6 +1,5 @@
 @layer theme, base, components, utilities;
 
-@import "tailwindcss/theme.css" layer(theme);
 @import "./tailwind/theme.css";
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "./tailwind/base.css";
@@ -15,14 +14,5 @@
 @source "../../lib/**/*.ts";
 @source not inline("border container filter fixed inline lowercase resize static transform transition");
 
-@custom-variant chosen (&[data-active="true"]);
 @custom-variant dark (&:where(.dark, .dark *));
-@custom-variant hover (&:hover);
 
-@custom-variant desktop (@media (--prose-bp-desktop));
-@custom-variant medium (@media (--prose-bp-medium));
-@custom-variant tablet (@media (--prose-bp-tablet));
-@custom-variant card-stack (@media (--prose-bp-card-stack));
-@custom-variant mobile (@media (--prose-bp-mobile));
-@custom-variant tiny (@media (--prose-bp-tiny));
-@custom-variant wide (@media (--prose-bp-wide));

@@ -9,31 +9,28 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
 </script>
 
 <template>
-  <div class="my-1-5rem grid grid-cols-232-1fr overflow-hidden panel bg-bg card-stack:grid-cols-1fr">
-    <aside class="border-r-1 border-r-divider bg-bg-soft pt-14 pr-14 pb-18 pl-18 card-stack:border-b-1 card-stack:border-r-none card-stack:border-r-current card-stack:border-b-divider">
+  <div class="my-1-5rem grid grid-cols-232-1fr overflow-hidden panel bg-bg max-card-stack:grid-cols-1fr">
+    <aside class="border-r-1 border-r-divider bg-bg-soft pt-14 pr-14 pb-18 pl-18 max-card-stack:border-b-1 max-card-stack:border-r-0 max-card-stack:border-r-current max-card-stack:border-b-divider">
       <span class="kicker mb-14 block pb-13 border-b-double-divider">Editors &middot; {{ formatFolio(editors.length) }}</span>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0 card-stack:flex-row card-stack:flex-wrap card-stack:gap-4" role="tablist">
+      <ul class="m-0 flex list-none flex-col gap-2 p-0 max-card-stack:flex-row max-card-stack:flex-wrap max-card-stack:gap-4" role="tablist">
         <li v-for="(editor, i) in editors" :key="editor.slug" class="mt-0" role="presentation">
           <button
             type="button"
             role="tab"
-            class="editor-card-row flex w-full items-center gap-10 rounded-sm border-none p-8 text-left text-text-1 transition-background card-stack:flex-3/10"
-            :class="editor.slug === activeSlug ? 'bg-celadon/medium' : 'hover:bg-celadon/7'"
+            class="editor-card-row group flex w-full items-center gap-10 rounded-sm border-none p-8 text-left text-text-1 transition-colors not-aria-selected:hover:bg-celadon/7 aria-selected:bg-celadon/medium max-card-stack:flex-3/10"
             :aria-selected="editor.slug === activeSlug"
             @focus="activeSlug = editor.slug"
             @mouseenter="activeSlug = editor.slug"
           >
             <span class="folio">№ {{ formatFolio(i + 1) }}</span>
             <span
-              class="tool-ring size-22"
-              :class="editor.slug === activeSlug ? 'border-celadon-65-divider' : 'border-celadon-28-divider'"
+              class="tool-ring size-22 border-celadon-28-divider group-aria-selected:border-celadon-65-divider"
               aria-hidden="true"
             ><Tool :slug="editor.slug" bare /></span>
             <em
-              class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap"
-              :class="{ 'text-celadon-60-text-1': editor.slug === activeSlug }"
+              class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap group-aria-selected:text-celadon-60-text-1"
             >{{ editor.name }}</em>
-            <span class="leader-fill card-stack:hidden" aria-hidden="true"></span>
+            <span class="leader-fill max-card-stack:hidden" aria-hidden="true"></span>
           </button>
         </li>
       </ul>

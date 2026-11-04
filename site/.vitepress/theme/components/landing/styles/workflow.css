@@ -1,24 +1,14 @@
+@reference "../../../styles/tailwind.css";
+
 .landing-workflow {
   --workflow-accent : var(--prose-palette-celadon);
-}
-
-.landing-workflow-section {
-  border-bottom : var(--prose-border-1) dashed color-mix(in srgb, var(--workflow-accent) var(--prose-tint-24), var(--vp-c-divider));
 }
 
 .landing-workflow-section::before {
   left : calc(var(--prose-space-28) + var(--prose-size-72));
 }
 
-.landing-workflow-section:last-child {
-  border-bottom : none;
-}
-
-.landing-workflow-gutter {
-  align-self : start;
-}
-
-@media (--prose-bp-card-stack) {
+@variant max-card-stack {
   .landing-workflow-section::before {
     left : calc(var(--prose-space-22) + var(--prose-size-64));
   }

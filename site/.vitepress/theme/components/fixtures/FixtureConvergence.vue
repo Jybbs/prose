@@ -41,12 +41,12 @@ const steps = computed<Step[]>(() => {
       <li
         v-for="step in steps"
         :key="step.label"
-        class="fixture-converge-step group relative before:absolute before:top-0-45rem before:size-7 before:rounded-half before:border-1 before:border-divider before:bg-bg settled:before:border-celadon settled:before:bg-celadon"
+        class="fixture-converge-step group relative before:absolute before:top-0-45rem before:size-7 before:rounded-half before:border-1 before:border-divider before:bg-bg data-[badge=settled]:before:border-celadon data-[badge=settled]:before:bg-celadon"
         :data-badge="step.badge"
       >
         <p class="flex items-baseline gap-10">
           <span class="font-mono text-meta tracking-label-loose text-text-1 uppercase">{{ step.label }}</span>
-          <span v-if="step.badge" class="change-chip px-8 py-2 group-settled:border-celadon/40 group-settled:text-celadon">
+          <span v-if="step.badge" class="change-chip px-8 py-2 group-data-[badge=settled]:border-celadon/40 group-data-[badge=settled]:text-celadon">
             {{ step.badge === 'changed' ? 'Rewritten' : 'No change' }}
           </span>
         </p>

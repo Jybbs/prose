@@ -89,9 +89,9 @@ describe('InlineProse', () => {
     const w = render([{
       kind     : 'el',
       tag      : 'span',
-      attrs    : { class: 'prose-mark' },
+      attrs    : { class: 'text-ube' },
       children : [{ kind: 'text', text: 'Prose' }]
     }])
-    expect(w.html()).toContain('<span class="prose-mark">Prose</span>')
+    expect(w.html()).toContain('<span class="text-ube">Prose</span>')
   })
 })

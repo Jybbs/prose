@@ -50,10 +50,10 @@ function onPointerMove(event: PointerEvent) {
 <template>
   <div
     ref="root"
-    class="surface-card relative isolate min-h-320 min-w-0 flex-col panel bg-bg-soft p-28 text-text-1 transition-border-color-transform-and-box-shadow duration-slow before:absolute before:inset-x-0 before:top-0 before:z-2 before:h-3 before:rounded-t-base before:opacity-0 before:transition-opacity before:duration-slow after:pointer-events-none after:absolute after:inset-0 after:z-0 after:rounded-base focus-within:border-family focus-within:before:opacity-100 chosen:border-family chosen:before:opacity-100"
+    class="surface-card relative isolate min-h-320 min-w-0 flex-col panel bg-bg-soft p-28 text-text-1 transition-border-color-translate-and-box-shadow duration-slow before:absolute before:inset-x-0 before:top-0 before:z-2 before:h-3 before:rounded-t-base before:opacity-0 before:transition-opacity before:duration-slow after:pointer-events-none after:absolute after:inset-0 after:z-0 after:rounded-base focus-within:-translate-y-2 focus-within:border-family focus-within:before:opacity-100 data-active:-translate-y-2 data-active:border-family data-active:before:opacity-100"
     :aria-hidden="duplicate || undefined"
     :data-family="family"
-    :data-active="active"
+    :data-active="active || undefined"
     :style="{
       '--spotlight-x' : `${spotlightX}%`,
       '--spotlight-y' : `${spotlightY}%`
