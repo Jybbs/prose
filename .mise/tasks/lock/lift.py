@@ -330,11 +330,10 @@ class Reports:
         lists, prereleases included, because `bun outdated` reads only the
         `latest` dist-tag.
         """
+        if pin.source == "bun" and ordered(pin.written).is_prerelease:
+            return max(packument(pin.package)["versions"], key=ordered)
         reported = (pin.source, canonicalize_name(pin.package), pin.written)
-        newest   = self.releases.get(reported, pin.written)
-        if pin.source != "bun" or not ordered(pin.written).is_prerelease:
-            return newest
-        return max([newest, *packument(pin.package)["versions"]], key=ordered)
+        return self.releases.get(reported, pin.written)
 
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
