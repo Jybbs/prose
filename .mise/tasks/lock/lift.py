@@ -21,13 +21,16 @@ so no row or write takes one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
-attempt under `.cache/lift/`. Where that attempt fails, it retries with each
-major lift held back in turn and stops at the first that passes. `--write`
-writes each lift into its homes, locks and installs each tool a lifted mise
-pin names, moves each lifted package in its manager's lockfile, and runs
-`mise relock`, taking the holds of the attempt that passed when `--try` is
-given too. `--hold <pin>` leaves a pin where it stands, and a name the table
-omits exits 2 before any trial or write.
+attempt under `.cache/lift/`. Where that attempt fails, it tries again with
+every major lift held back, and a failure that remains ends the trial with
+a report that no major lift caused it. Where holding them back passes, it
+retries with each major lift held back in turn and stops at the first that
+passes, keeping every major lift held back where none does. `--write` writes
+each lift into its homes, locks and installs each tool a lifted mise pin
+names, moves each lifted package in its manager's lockfile, and runs `mise
+relock`, taking the holds of the attempt that passed when `--try` is given
+too. `--hold <pin>` leaves a pin where it stands, and a name the table omits
+exits 2 before any trial or write.
 """
 
 from argparse           import ArgumentParser
@@ -1048,6 +1051,18 @@ def tagged(repo: str) -> dict[str, str]:
     return {tag.removesuffix("^{}"): sha for tag, sha in refs}
 
 
+def passing(holds: set[str], logs: Path, named: str) -> bool:
+    """
+    Returns whether the attempt holding back `holds` passes, logging it to
+    a file under `logs` that takes its name from `named` and printing the
+    result beside that file's path.
+    """
+    log    = logs / (sub(r"[^\w.-]+", "-", named) + ".log")
+    passed = attempt(holds, log)
+    print(f"{'passed' if passed else 'failed'} {named}, logged at {log}")
+    return passed
+
+
 def waiting(held: list[Held]) -> str:
     """
     Returns the Markdown table listing each release in `held` beside when
@@ -1117,22 +1132,28 @@ def workflow_pins() -> Iterator[Pin]:
 
 def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     """
-    Returns the holds of the first attempt whose `mise ci` passes, trying
-    every lift but `holds` first and then holding back each major lift in
-    turn, and stops the task where no attempt passes.
+    Returns the holds a trial settles on, trying every lift but `holds`,
+    then every major lift held back, and stopping the task where that fails
+    too. Otherwise the first attempt holding back one major lift gives the
+    holds, or every major lift stays held back where none passes.
     """
-    logs    = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    retries = [lift.name for lift in lifts if lift.major and lift.name not in holds]
+    logs     = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    majors   = [lift.name for lift in lifts if lift.major and lift.name not in holds]
+    withheld = holds.union(majors)
     logs.mkdir(parents=True)
-    for held in [None, *retries]:
-        attempted = holds | {held} - {None}
-        named     = f"holding back {held}" if held else "with every lift"
-        log       = logs / (sub(r"[^\w.-]+", "-", named) + ".log")
-        passed    = attempt(attempted, log)
-        print(f"{'passed' if passed else 'failed'} {named}, logged at {log}")
-        if passed:
-            return attempted
-    raise SystemExit("no attempt passed, so nothing is written")
+
+    if passing(holds, logs, "with every lift"):
+        return holds
+    if len(majors) == 1 and passing(withheld, logs, f"holding back {majors[0]}"):
+        return withheld
+    if len(majors) < 2 or not passing(withheld, logs, "holding back every major lift"):
+        raise SystemExit("no major lift caused the failure, so nothing is written")
+
+    for major in majors:
+        if passing(held := holds | {major}, logs, f"holding back {major}"):
+            return held
+    print("no single hold passed, so every major lift stays held back")
+    return withheld
 
 
 def write(lifts: list[Lift]):
