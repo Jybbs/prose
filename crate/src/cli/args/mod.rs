@@ -7,12 +7,11 @@ mod rule_args;
 mod server_args;
 mod validation;
 
+use super::exit_status::ExitStatus;
 pub(crate) use rule_args::{
     CheckArgs, FormatArgs, OutputFormat, RuleFilter, RulesArgs, RulesFormat, RunArgs,
 };
 pub(crate) use server_args::{ServerArgs, Transport};
-
-use super::exit_status::ExitStatus;
 pub(crate) use validation::{
     normalize_stdin_dash, report_clap_error, validate_diff_format_combination,
     validate_stdin_filename,
@@ -23,7 +22,8 @@ pub(crate) enum CacheAction {
     /// Clear every cached entry and report the freed bytes.
     Clean,
 
-    /// Evict oldest entries until the configured size cap is met.
+    /// Evict the least recently used entries from a cache past its size
+    /// or entry cap.
     Compact,
 
     /// Print the cache directory, entry count, byte total, and mtimes.
@@ -53,8 +53,8 @@ pub(crate) struct Cli {
 }
 
 impl Cli {
-    /// The run flags behind a `check` or `format` invocation, `None`
-    /// for every subcommand that takes none.
+    /// Returns the run flags behind a `check` or `format` invocation,
+    /// `None` for every subcommand that takes none.
     pub(crate) fn run_args(&self) -> Option<&RunArgs> {
         match &self.command {
             Command::Check(args) => Some(&args.common),
@@ -76,7 +76,7 @@ pub(crate) enum Command {
         action: CacheAction,
     },
 
-    /// Check files for formatting violations without rewriting.
+    /// Report pending rewrites and lint findings without writing.
     Check(CheckArgs),
 
     /// Print a shell-completion script to stdout.
@@ -100,16 +100,13 @@ pub(crate) enum Command {
 
 #[cfg(test)]
 mod tests {
-    use std::assert_matches;
-    use std::path::PathBuf;
+    use std::{assert_matches, path::PathBuf};
 
     use clap::{CommandFactory, error::ErrorKind};
     use rstest::{fixture, rstest};
 
-    use super::validation::clap_error_status;
-    use super::*;
-    use crate::cli::exit_status::ExitStatus;
-    use crate::rules::RuleId;
+    use super::{validation::clap_error_status, *};
+    use crate::{cli::exit_status::ExitStatus, rules::RuleId};
 
     macro_rules! command_args {
         ($cli:expr, $variant:ident) => {{
@@ -303,15 +300,6 @@ mod tests {
     }
 
     #[test]
-    fn clap_error_status_routes_stdin_filename_without_stdin_to_config_error() {
-        let cli = Cli::try_parse_from(["prose", "check", "--stdin-filename", "nb.ipynb", "src"])
-            .expect("parses");
-        let err = validate_stdin_filename(&cli).expect("validation surfaces error");
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
-    }
-
-    #[test]
     fn clap_error_status_routes_help_on_missing_subcommand_to_clean() {
         let err = parse_err(&["prose"]);
         assert_eq!(
@@ -332,6 +320,15 @@ mod tests {
     fn clap_error_status_routes_invalid_value_to_config_error() {
         let err = parse_err(&["prose", "check", "--select", "not-a-rule"]);
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
+        assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
+    }
+
+    #[test]
+    fn clap_error_status_routes_stdin_filename_without_stdin_to_config_error() {
+        let cli = Cli::try_parse_from(["prose", "check", "--stdin-filename", "nb.ipynb", "src"])
+            .expect("parses");
+        let err = validate_stdin_filename(&cli).expect("validation surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
         assert_eq!(clap_error_status(err.kind()), ExitStatus::ConfigError);
     }
 

@@ -21,7 +21,7 @@ pub(super) enum Pass {
     Both,
     /// `check`: the as-written diagnostics, no rewrite. `validate` adds
     /// the opt-in guard that rejects a rule whose output fails to
-    /// re-parse or to compile.
+    /// re-parse, to compile, or to settle.
     Diagnose { validate: bool },
     /// `format --diff`: the rewrite alone, rendered as a patch and left
     /// uncommitted.
@@ -45,8 +45,8 @@ impl Pass {
         }
     }
 
-    /// Which buffer this pass's diagnostics resolve against, keying its
-    /// entries apart from a pass that reads the other one.
+    /// Returns which buffer this pass's diagnostics resolve against,
+    /// keying its cache entries apart from a pass that reads the other one.
     pub(super) fn anchor(self) -> Anchor {
         match self {
             Self::Both | Self::Diagnose { .. } => Anchor::AsWritten,
@@ -57,7 +57,7 @@ impl Pass {
     /// True where the pass reads and writes the run's cache.
     pub(super) fn caches(self) -> bool {
         // A `--validate` check alone bypasses the cache, so it always
-        // re-confirms the rewrite parses.
+        // re-confirms the rewrite parses, compiles, and settles.
         !matches!(self, Self::Diagnose { validate: true })
     }
 
@@ -67,16 +67,18 @@ impl Pass {
         matches!(self, Self::Preview | Self::Rewrite)
     }
 
-    /// Which closing summary this pass's outcomes resolve into.
-    pub(super) fn mode(self) -> Mode {
+    /// Returns which closing summary this pass's outcomes resolve into,
+    /// a format run reporting its rewrite as written where `written`
+    /// holds and as pending otherwise.
+    pub(super) fn mode(self, written: bool) -> Mode {
         match self {
-            Self::Both | Self::Rewrite => Mode::Reformat,
             Self::Diagnose { .. } => Mode::Check,
-            Self::Preview => Mode::Preview,
+            Self::Both | Self::Preview | Self::Rewrite if written => Mode::Reformat,
+            Self::Both | Self::Preview | Self::Rewrite => Mode::Preview,
         }
     }
 
-    /// The name of the subcommand this pass runs under.
+    /// Returns the name of the subcommand this pass runs under.
     pub(super) fn subcommand(self) -> &'static str {
         match self {
             Self::Both | Self::Preview | Self::Rewrite => "format",
@@ -84,8 +86,8 @@ impl Pass {
         }
     }
 
-    /// True where the pass commits its rewrite to the file. The exit
-    /// status reads this too, reporting a landed rewrite as clean.
+    /// True where the pass commits its rewrite to the file, which a path
+    /// run's exit status and closing summary read as written.
     pub(super) fn write_back(self) -> bool {
         matches!(self, Self::Both | Self::Rewrite)
     }
@@ -143,13 +145,18 @@ mod tests {
     }
 
     #[rstest]
-    #[case(Pass::Both, Mode::Reformat)]
-    #[case(Pass::Diagnose { validate: false }, Mode::Check)]
-    #[case(Pass::Preview, Mode::Preview)]
-    #[case(Pass::Rewrite, Mode::Reformat)]
-    fn resolves_its_closing_summary_mode(#[case] pass: Pass, #[case] expected: Mode) {
+    #[case(Pass::Both, true, Mode::Reformat)]
+    #[case(Pass::Both, false, Mode::Preview)]
+    #[case(Pass::Diagnose { validate: false }, false, Mode::Check)]
+    #[case(Pass::Preview, false, Mode::Preview)]
+    #[case(Pass::Rewrite, true, Mode::Reformat)]
+    fn resolves_its_closing_summary_mode(
+        #[case] pass: Pass,
+        #[case] written: bool,
+        #[case] expected: Mode,
+    ) {
         assert_eq!(
-            std::mem::discriminant(&pass.mode()),
+            std::mem::discriminant(&pass.mode(written)),
             std::mem::discriminant(&expected),
         );
     }

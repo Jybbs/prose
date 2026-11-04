@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Broken Pair Narrows the Padding on an Operand It Joins"
+
+description = '''
+`ok = (` holds an `or` chain whose second operand is an `and` chain that [[align-comparisons]] padded so both `==` share a column, under a `code-line-length` of `40`. The interior reaches `64` columns on one row of its own, so the pair breaks one operand per row. **The `and` chain joins onto the `or` row with one space ahead of each `==`**, since on one row that padding would line up with nothing.
+'''

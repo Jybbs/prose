@@ -39,6 +39,34 @@ export function packTiers(
   return tiers
 }
 
+// Holds one knob's tether along the rail, from the lower of its default and its
+// value to the higher, in percent, beside the lane it runs in.
+export interface Tether {
+  from : number
+  lane : number
+  to   : number
+}
+
+// Lays each tether in the lowest lane where it starts more than `slop` pixels
+// past the end of the tether before it, reading left to right, so a tether
+// that would overlap another drops to the next lane.
+export function packLanes(
+  spans      : ReadonlyMap<string, { from: number, to: number }>,
+  trackWidth : number,
+  slop       : number
+): Map<string, Tether> {
+  const track = trackWidth || TRACK_FALLBACK
+  const ends  = [] as number[]
+  const lanes = new Map<string, Tether>()
+  for (const [key, span] of [...spans].sort(([, a], [, b]) => a.from - b.from)) {
+    const free = ends.findIndex(end => (span.from - end) * track / 100 > slop)
+    const lane = free < 0 ? ends.length : free
+    ends[lane] = span.to
+    lanes.set(key, { ...span, lane })
+  }
+  return lanes
+}
+
 // Converts a line length to its percentage along the rail.
 export function pctOfLength(value: number): number {
   return ((clampLength(value) - LENGTH_MIN) / SPAN) * 100

@@ -33,7 +33,7 @@ const installCmd = `uv tool install ${PYPI_PACKAGE}`
     <div class="relative grid grid-cols-minmax-1fr-auto items-center gap-x-18 gap-y-4 px-22 py-18">
       <p class="col-start-1 col-end-3 kicker mb-4">Read on</p>
       <p class="col-start-1 col-end-3 mb-10 max-w-48ch font-display text-1-25rem leading-1-3 font-400 text-text-1">
-        Bring <em class="text-brand-1"><span class="text-ube">Prose</span></em> to your own pages and make the next save <em class="text-brand-1">legible</em>.
+        Bring <em>Prose</em> to your own pages and make the next save <em>legible</em>.
       </p>
       <div class="landing-cta-cmd copy-host relative col-1 inline-flex items-center gap-10 rounded-sm border-1 border-divider bg-bg py-8 pr-44 pl-14 font-mono text-code text-text-1" aria-label="Install command">
         <span class="text-text-3" aria-hidden="true">$</span>

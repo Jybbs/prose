@@ -1,95 +1,189 @@
+@reference "../../../styles/tailwind.css";
+
 /* Composition cards. Multi-rule worked examples rendered from the fixture
-   tree, over the shared .fixture-card chrome in the shapes include. Each row
-   carries a folio number, a top-to-bottom gradient rail through every rule's
-   family color in pipeline order, and a rule indicator. The indicator is a
-   filled family-colored block. Collapsed, the rules are tall skinny ticks on
-   the right of the headline, and hovering a tick unfurls it leftward into a
-   labeled rectangle in uppercase mono. Clicking the card drops the rules into
-   a full-width segmented bar below the before/after pair, descending with
-   the card's growing edge then spreading leftward a beat later, the rule
-   names fading in once the spread has landed. */
+   tree, over the shared .fixture-card chrome in the shapes include. Each case
+   stacks its rules in pipeline order as a deck of boxed nibs in the row's
+   slot, the first on top at the left and each next one tucked under it to
+   the right, showing a slice edged in its family's shade. Pointing at the
+   deck or focusing a rule in it spreads the boxes, a rule's slug showing
+   above its box. Opening the case moves the deck down with the card's growing
+   edge to the case's foot, where the boxes spread and widen to name their
+   rules, and closing the case moves it back up. */
 
 .composition-cards-list {
   --card-reveal : 0.28s;
 }
 
-/* The filled block, shared by the ticks and the bar. Collapsed it sits on a
-   0fr label track clipped by `min-width: 0` + `overflow: hidden`, so the
-   reveal animates `grid-template-columns` to the label's natural width with
-   no fake `max-width`. The label is uppercase mono in a darkened tone of the
-   block's own family color, with comfortable horizontal padding. */
-
-.vp-doc a.composition-cards-chip,
-.composition-cards-chip {
-  --card-ink            : color-mix(in oklch, var(--family-color, var(--vp-c-text-1)), var(--vp-c-black) var(--prose-tint-48));
-  display               : grid;
-  grid-template-columns : 0fr;
-  align-items           : center;
-  overflow              : hidden;
-  background            : var(--family-color, var(--vp-c-divider));
-  font-family           : var(--vp-font-family-mono);
-  line-height           : 1.2;
-  text-decoration       : none;
-  transition            : grid-template-columns var(--card-reveal) var(--ease-morph);
+.composition-cards-toggle-slot {
+  grid-column : 3;
+  grid-row    : 1;
 }
 
-.fixture-card[data-edits="false"] .composition-cards-chip {
-  --card-ink : var(--vp-c-text-2);
-  background : var(--vp-c-divider);
+.composition-cards-list .fixture-card-summary {
+  grid-row    : 1;
+  grid-column : 2;
 }
 
-.composition-cards-chip-label {
-  display     : inline-flex;
-  align-items : center;
-  min-width   : 0;
-  padding     : 0 var(--prose-space-9);
-  overflow    : hidden;
-  white-space : nowrap;
-  opacity     : 0;
-  color       : var(--card-ink);
-  transition  : opacity var(--card-reveal) var(--ease-morph);
+.composition-cards-slot {
+  width : var(--prose-size-32);
 }
 
-/* Collapsed: tall skinny ticks, right-aligned in the headline's actions
-   cell. The cluster packs to the right, so a hovered tick unfurls leftward
-   and the trailing ticks slide away, the row height holding at the tick's. */
-
-.composition-cards-ticks .composition-cards-chip {
-  min-width     : var(--prose-size-2);
-  height        : var(--prose-size-24);
-  border-radius : var(--prose-radius-1);
+.composition-cards-ticks {
+  position   : absolute;
+  z-index    : 2;
+  top        : var(--prose-space-11);
+  left       : var(--prose-space-12);
+  display    : flex;
+  flex-wrap  : nowrap;
+  gap        : 0;
+  transition : column-gap var(--prose-transition-slow);
 }
 
-.composition-cards-ticks .composition-cards-tick-item:hover .composition-cards-chip,
-.composition-cards-ticks .composition-cards-tick-item:focus-within .composition-cards-chip {
-  grid-template-columns : 1fr;
+.fixture-card[data-open] .composition-cards-ticks {
+  top              : calc(100% - var(--prose-space-12) - var(--deck-bar-h, var(--prose-size-20)));
+  right            : var(--prose-space-12);
+  flex-wrap        : wrap;
+  gap              : var(--prose-space-6);
+  transition-delay : var(--prose-duration-morph);
 }
 
-.composition-cards-ticks .composition-cards-tick-item:hover .composition-cards-chip-label,
-.composition-cards-ticks .composition-cards-tick-item:focus-within .composition-cards-chip-label {
+.composition-cards-tick-item {
+  position   : relative;
+  z-index    : calc(var(--deck-count) - var(--deck-at));
+  display    : flex;
+  transition : margin-left var(--prose-transition-slow);
+}
+
+.composition-cards-tick-item + .composition-cards-tick-item {
+  margin-left : calc(var(--prose-space-4) - var(--prose-size-20));
+}
+
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-tick-item + .composition-cards-tick-item {
+  margin-left : var(--prose-space-4);
+}
+
+.fixture-card[data-open] .composition-cards-tick-item + .composition-cards-tick-item {
+  margin-left      : 0;
+  transition-delay : var(--prose-duration-morph);
+}
+
+.fixture-card:not([data-open]) .composition-cards-ticks::before {
+  content        : "";
+  position       : absolute;
+  inset          : calc(var(--prose-space-2) * -1) auto;
+  left           : 0;
+  z-index        : 0;
+  width          : calc(var(--prose-size-20) + (var(--deck-count) - 1) * var(--prose-size-24) + var(--prose-space-12));
+  background     : linear-gradient(to right, var(--vp-c-bg-soft) calc(100% - var(--prose-space-12)), transparent);
+  opacity        : 0;
+  pointer-events : none;
+  transition     : opacity var(--prose-transition-slow);
+}
+
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within)::before {
   opacity : 1;
 }
 
-/* Expanded: the segmented bar lives at the bottom of the body, so it
-   descends with the card's growing edge (step one). It starts as a compact
-   right-aligned cluster and, after the body has grown, spreads leftward to
-   full width (step two). The spread's delay sequences it after the descent,
-   and the labels fade in once the spread has landed. */
-
-.vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip {
-  grid-template-columns : 1fr;
-  justify-items         : center;
-  width                 : 100%;
-  height                : var(--prose-size-24);
-  border-radius         : var(--prose-radius-2);
+/* Boxes a rule's nib on the chip ground, with its slug in a label track that
+   stays at zero width until the case opens or a hovered box raises it. */
+.composition-cards-chip {
+  grid-template-columns : calc(var(--prose-size-20) - var(--prose-space-2)) 0fr;
+  border                : var(--prose-border-1) solid var(--vp-c-divider);
+  transition            :
+    grid-template-columns var(--card-reveal) var(--prose-ease-morph),
+    border-color          var(--prose-transition),
+    box-shadow            var(--prose-transition-slow);
 }
 
-.vp-doc .composition-cards-list .composition-cards-bar .composition-cards-chip-label {
-  padding    : 0 var(--prose-space-10);
-  transition : opacity 0.18s var(--ease-morph);
+.composition-cards-chip > .nib-badge {
+  display      : block;
+  justify-self : center;
+  color        : var(--family-nib-chip);
 }
 
-.vp-doc .composition-cards-list .composition-cards-bar[data-open] .composition-cards-chip-label {
-  opacity          : 1;
-  transition-delay : calc(var(--transition-duration-grow) + 0.42s);
+.composition-cards-tick-item + .composition-cards-tick-item .composition-cards-chip {
+  border-right-color : var(--family-edge-chip);
+  box-shadow         : inset calc(var(--prose-space-2) * -1) 0 0 var(--family-edge-chip);
+}
+
+.fixture-card[data-edits="false"] .composition-cards-chip > .nib-badge {
+  color : var(--prose-shade-text-3-chip-31);
+}
+
+.fixture-card[data-edits="false"] .composition-cards-tick-item + .composition-cards-tick-item .composition-cards-chip {
+  border-right-color : var(--prose-shade-text-3-chip-31);
+  box-shadow         : inset calc(var(--prose-space-2) * -1) 0 0 var(--prose-shade-text-3-chip-31);
+}
+
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-chip,
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip {
+  border-right-color : var(--vp-c-divider);
+  box-shadow         : none;
+}
+
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip:hover {
+  border-color : var(--vp-c-text-2);
+}
+
+.composition-cards-chip-label {
+  position       : absolute;
+  bottom         : calc(100% + var(--prose-space-4));
+  left           : 0;
+  z-index        : 4;
+  display        : block;
+  min-width      : 0;
+  padding        : var(--prose-space-2) var(--prose-space-6);
+  border         : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius  : var(--prose-radius-sm);
+  background     : var(--vp-c-bg);
+  white-space    : nowrap;
+  opacity        : 0;
+  pointer-events : none;
+  transition     : opacity var(--prose-transition);
+}
+
+.fixture-card:not([data-open]) .composition-cards-tick-item:is(:hover, :focus-within) .composition-cards-chip-label {
+  opacity : 1;
+}
+
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip {
+  grid-template-columns : calc(var(--prose-size-20) - var(--prose-space-2)) 1fr;
+}
+
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip {
+  transition-delay : var(--prose-duration-morph);
+}
+
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-label {
+  position       : static;
+  overflow       : hidden;
+  padding        : 0;
+  border         : 0;
+  border-radius  : 0;
+  background     : none;
+  opacity        : 1;
+  pointer-events : auto;
+}
+
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-slug {
+  padding : 0 var(--prose-space-8) 0 var(--prose-space-2);
+}
+
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip-label {
+  transition : opacity var(--card-reveal) var(--prose-ease-morph) calc(var(--prose-duration-morph) + var(--card-reveal) / 2);
+}
+
+@variant max-mobile {
+  .composition-cards-slot {
+    width : calc(var(--prose-size-20) + (var(--deck-count) - 1) * var(--prose-space-4));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composition-cards-ticks,
+  .composition-cards-ticks *,
+  .composition-cards-ticks::before,
+  .fixture-card:not([data-open]) .composition-cards-ticks::before {
+    transition : none !important;
+  }
 }

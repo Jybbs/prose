@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{
     primitives::{
+        comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         inline::{
             display_width, run_closes_to_a_space, settled_head_column, settled_width,
@@ -63,18 +64,28 @@ impl Shedder<'_> {
 
     /// The columns `candidate`'s joined interior takes, widened by the
     /// spaces its own flush sides keep and narrowed by the columns the
-    /// padding table takes off it and the columns each nested candidate
-    /// sheds alongside it. `None` for an interior no
+    /// padding table takes off it, the columns each nested candidate
+    /// sheds alongside it, and the columns its fold's
+    /// [`narrowing_edits_within`] take off it. `None` for an interior no
     /// fold joins.
     fn joined_width(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<usize> {
         let bare = candidate.bare.as_ref()?;
+        let narrowed: usize = if candidate.sheds {
+            narrowing_edits_within(self.source, candidate.expr, self.padding)
+                .iter()
+                .map(|edit| edit.range().len().to_usize() - 1)
+                .sum()
+        } else {
+            0
+        };
         Some(
             settled_width(
                 self.source,
                 self.padding,
                 candidate.inner,
                 display_width(bare) + candidate.flush.spaces(),
-            ) - shed_columns(candidate.inner, candidates),
+            ) - shed_columns(candidate.inner, candidates)
+                - narrowed,
         )
     }
 
@@ -150,9 +161,14 @@ impl Shedder<'_> {
     }
 
     /// Emits the [`fold_edits`] closing each line-spanning whitespace run
-    /// inside `inner`.
-    pub(super) fn push_fold_edits(&mut self, inner: TextRange) {
-        for edit in fold_edits(self.source, inner) {
+    /// inside `candidate`'s interior, then its
+    /// [`narrowing_edits_within`].
+    pub(super) fn push_fold_edits(&mut self, candidate: &Candidate) {
+        let narrowed = narrowing_edits_within(self.source, candidate.expr, self.padding);
+        for edit in fold_edits(self.source, candidate.inner)
+            .into_iter()
+            .chain(narrowed)
+        {
             insert_edit(&mut self.edits, edit);
         }
     }

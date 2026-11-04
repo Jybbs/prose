@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 import type { Emblem }       from '../shared/emblems'
 import { nibBadgeHtml }      from '../shared/nib'

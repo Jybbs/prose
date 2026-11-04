@@ -2,14 +2,6 @@
   font-variation-settings : 'opsz' 144;
 }
 
-.landing-section h2 em {
-  color : var(--prose-palette-celadon);
-}
-
-.landing-section h2 strong {
-  color : var(--vp-c-brand-1);
-}
-
 .landing-section p {
   color : var(--vp-c-text-2);
 }

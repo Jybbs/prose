@@ -1,17 +1,33 @@
+@keyframes sandbox-plate-draw {
+  to {
+    transform : scaleX(1);
+  }
+}
+
+@keyframes sandbox-plate-settle {
+  from {
+    opacity   : 0;
+    translate : 0 calc(var(--prose-space-4) * -1);
+  }
+}
+
+.sandbox-plate {
+}
+
 .sandbox-plate .rule-card {
   border     : none;
   background : transparent;
 }
 
+/* The close seat's right edge sits on the 16px inset the rows below share, so
+   it reads as the head of the right-aligned control rail. */
 .sandbox-plate-close {
-  transform : translateY(-50%);
+  transform    : translateY(-50%);
 }
 
 .sandbox-plate-hint code {
-  font-style  : normal;
-  white-space : nowrap;
-}
-
-.sandbox-plate-number {
-  line-height : calc(var(--prose-size-22) - var(--prose-border-2));
+  background    : var(--vp-code-bg);
+  color         : var(--vp-code-color);
+  font-style    : normal;
+  white-space   : nowrap;
 }

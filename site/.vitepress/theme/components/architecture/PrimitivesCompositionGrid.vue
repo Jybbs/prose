@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+
+import { PORT_WORDS, type Port }              from '../../../lib/architecture/ports'
+import { useGlideWash }                       from '../../../lib/composables/use-glide-wash'
 import type { PrimitiveLayer, PrimitiveSlug } from '../../../lib/shared/registries'
 import { primitiveRoute }                     from '../../../lib/shared/routes'
 
@@ -17,7 +21,7 @@ interface Band {
 const props = defineProps<{
   bands   : readonly Band[]
   focused : PrimitiveSlug | null
-  related : ReadonlySet<string>
+  ports   : ReadonlyMap<string, Port>
 }>()
 
 const emit = defineEmits<{
@@ -28,22 +32,28 @@ const emit = defineEmits<{
 function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' {
   if (props.focused === null) return 'idle'
   if (slug === props.focused) return 'active'
-  if (props.related.has(slug)) return 'related'
+  if (props.ports.has(slug)) return 'related'
   return 'mute'
 }
+
+const grid = useTemplateRef<HTMLElement>('grid')
+const wash = useTemplateRef<HTMLElement>('wash')
+
+useGlideWash(grid, wash, '[data-state="active"]', () => props.focused)
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div ref="grid" class="relative isolate flex flex-col gap-8">
+    <span ref="wash" class="primitives-composition-wash pointer-events-none absolute top-0 left-0 z-1 rounded-sm opacity-0 data-on:opacity-100 data-snap:transition-none motion-reduce:transition-none" aria-hidden="true"></span>
     <section
       v-for="band in bands"
       :key="band.key"
       class="flex flex-col gap-5 py-4"
       :data-layer="band.key"
     >
-      <header class="primitives-composition-band-head flex items-center gap-9 px-4 pt-2 pb-4">
-        <span class="pip size-26 shrink-0 bg-layer-accent">
-          <span class="text-0-92rem leading-none select-none" aria-hidden="true">{{ band.numeral }}</span>
+      <header class="relative z-2 flex items-center gap-9 px-4 pt-2 pb-4">
+        <span class="inline-flex w-26 shrink-0 items-center justify-center">
+          <span class="font-display text-1-5rem leading-none font-500 text-layer-ink italic select-none" aria-hidden="true">{{ band.numeral }}</span>
         </span>
         <span class="band-name">{{ band.key }}</span>
         <span class="hairline" aria-hidden="true"></span>
@@ -52,22 +62,29 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
         <li
           v-for="entry in band.entries"
           :key="entry.slug"
-          class="m-0 rounded-sm bg-layer-accent-7-bg transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:relative data-[state=active]:z-1 data-[state=active]:bg-layer-accent data-[state=active]:outline-2 data-[state=active]:outline-offset-1 data-[state=active]:outline-layer-accent-55-text-1 data-[state=mute]:opacity-35 data-[state=related]:bg-layer-accent-28-bg"
+          class="relative m-0 rounded-sm bg-bg-soft transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:bg-transparent data-[state=mute]:opacity-50 motion-reduce:transition-none"
           :data-layer="entry.layer"
           :data-state="tileState(entry.slug)"
         >
           <a
-            class="flex min-h-30 items-center justify-center px-7 py-5 text-center text-text-1 not-in-data-[state=active]:hover:text-brand-2 in-data-[state=active]:text-bg"
+            class="relative z-2 flex min-h-30 items-center justify-center px-7 py-5 text-center text-text-1 focus-visible:focus-ring focus-visible:-outline-offset-1"
             :href="primitiveRoute(entry.slug)"
             @mouseenter="emit('focus', entry.slug)"
             @mouseleave="emit('blur')"
             @focus="emit('focus', entry.slug)"
             @blur="emit('blur')"
           >
-            <span
-              class="font-display text-xs leading-1-15 text-text-1 in-data-[state=active]:text-bg"
-            >{{ entry.name }}</span>
+            <span class="font-display text-xs leading-1-15 text-text-1">{{ entry.name }}</span>
           </a>
+          <Transition name="primitives-composition-port">
+            <span
+              v-if="tileState(entry.slug) === 'related'"
+              :key="ports.get(entry.slug)"
+              class="absolute -top-7 left-6 z-3 port-tab bg-layer-ink"
+              :data-dir="ports.get(entry.slug)"
+              aria-hidden="true"
+            >{{ PORT_WORDS[ports.get(entry.slug)!] }}</span>
+          </Transition>
         </li>
       </ul>
     </section>

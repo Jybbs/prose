@@ -19,6 +19,16 @@ describe('SandboxCodeEditor', () => {
     expect(wrapper.get('div.sandbox-code-editor-layer').element.scrollLeft).toBe(120)
   })
 
+  it('calls a parent keydown listener once for each key the textarea takes', async () => {
+    const onKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const wrapper   = mount(SandboxCodeEditor, {
+      attrs : { onKeydown },
+      props : { lang: 'python', modelValue: '' }
+    })
+    await wrapper.get('textarea').trigger('keydown', { key: 'Escape' })
+    expect(onKeydown).toHaveBeenCalledOnce()
+  })
+
   it('pads a trailing newline so the layer measures the textarea\'s height', async () => {
     const wrapper = mountEditor('x = 1\n')
     await flushPromises()

@@ -20,9 +20,10 @@ const INPUT_SNAPS: [(&str, &str); 3] = [
 
 /// The `[docs]` block every fixture case carries. `title` and
 /// `description` document the case, `previewable` gates whether it
-/// renders on the docs site, `canonical = true` marks the one lead
-/// example per rule page, and `sandbox = true` opts the case into the
-/// interactive sandbox's seed pool.
+/// joins the examples a rule page or the composition page lists,
+/// `canonical = true` marks the one lead example per rule page, and
+/// `sandbox = true` opts the case into the interactive sandbox's seed
+/// pool.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Docs {
@@ -41,14 +42,14 @@ struct Meta {
     docs: Docs,
 }
 
-/// The double-quoted value of the `name` attribute inside `tag`, `None`
-/// where `tag` carries no such attribute.
+/// Returns the double-quoted value of the `name` attribute inside `tag`,
+/// `None` where `tag` carries no such attribute.
 fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let (_, after) = tag.split_once(&format!(" {name}=\""))?;
     after.split_once('"').map(|(value, _)| value)
 }
 
-/// Each `.snap` in `case_dir` paired with the `input_file` its header
+/// Pairs each `.snap` in `case_dir` with the `input_file` its header
 /// names, skipping any snapshot carrying no such line.
 fn declared_inputs(case_dir: &Path) -> Vec<(String, String)> {
     entries(case_dir, |path| {
@@ -72,7 +73,7 @@ fn dir_name(path: &Path) -> String {
         .to_owned()
 }
 
-/// The entries of `dir` that `keep` admits, ascending by path.
+/// Lists the entries of `dir` that `keep` admits, ascending by path.
 fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
     fs_err::read_dir(dir)
         .expect("the fixture directory reads")
@@ -83,8 +84,8 @@ fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
         .collect()
 }
 
-/// The `(rule, case)` pair of every `<Fixture…>` tag in `text` that
-/// carries both attributes.
+/// Yields the `(rule, case)` pair of every `<Fixture…>` tag in `text`
+/// that carries both attributes.
 fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
     text.match_indices("<Fixture").filter_map(|(at, _)| {
         let (tag, _) = text[at..].split_once('>')?;
@@ -104,13 +105,13 @@ fn module_carries(module: &Path, needle: &str) -> bool {
         })
 }
 
-/// The source module of the rule at `slug`, a file or a directory.
+/// Returns the source module of the rule at `slug`, a file or a
+/// directory.
 fn rule_module(root: &Path, slug: &str) -> PathBuf {
     root.join(format!("src/rules/{}", slug.replace('-', "_")))
 }
 
-/// The docs-site page for `slug`, searched across every family
-/// directory.
+/// Finds the docs-site page for `slug` across every family directory.
 fn rule_page(rules: &Path, slug: &str) -> Option<PathBuf> {
     subdirs(rules)
         .into_iter()

@@ -11,7 +11,7 @@ import type { Root } from 'postcss'
 
 const REQUIRE = createRequire(import.meta.url)
 
-export const ENTRY = '.vitepress/theme/styles/tailwind.css'
+const ENTRY = '.vitepress/theme/styles/tailwind.css'
 
 type DesignSystem = Awaited<ReturnType<typeof __unstable__loadDesignSystem>>
 

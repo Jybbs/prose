@@ -5,14 +5,22 @@
   font-family: var(--prose-font-display);
 }
 
-.vp-doc h2,
-.vp-doc h3,
-.vp-doc h4 {
-  --vp-header-anchor-symbol: '§';
+/* Draws each heading's permalink as a small § after its last word, in the
+   second text color while the heading is hovered and in the link color under
+   its own pointer or focus. */
+.vp-doc :is(h1, h2, h3, h4, .per-rule-facets-rule-head, .per-rule-facets-term) .header-anchor {
+  --vp-header-anchor-symbol : '§';
+
+  position       : static;
+  margin-left    : var(--prose-space-0-3em);
+  font-family    : var(--prose-font-display);
+  font-size      : var(--prose-text-0-7em);
+  font-style     : italic;
+  font-weight    : 400;
+  vertical-align : var(--prose-space-0-12em);
+  color          : var(--vp-c-text-2);
 }
 
-.vp-doc .header-anchor {
-  font-family : var(--prose-font-display);
-  font-style  : italic;
-  color       : var(--prose-palette-celadon);
+.vp-doc :is(h1, h2, h3, h4, .per-rule-facets-rule-head, .per-rule-facets-term) .header-anchor:is(:hover, :focus-visible) {
+  color : var(--prose-role-link);
 }

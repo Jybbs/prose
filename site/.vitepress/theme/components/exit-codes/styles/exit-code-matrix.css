@@ -1,0 +1,42 @@
+[data-outcome="success"] {
+  --outcome-ink  : var(--prose-shade-celadon-page-45);
+  --outcome-mark : var(--prose-shade-celadon-page-35);
+}
+
+[data-outcome="findings"] {
+  --outcome-ink  : var(--prose-shade-eureka-page-45);
+  --outcome-mark : var(--prose-shade-eureka-page-35);
+}
+
+[data-outcome="error"] {
+  --outcome-ink  : var(--prose-shade-apricot-page-45);
+  --outcome-mark : var(--prose-shade-apricot-page-35);
+}
+
+.exit-code-index-row {
+  transition :
+    box-shadow var(--prose-transition),
+    color      var(--prose-transition);
+}
+
+.exit-code-index-row:hover,
+.exit-code-index-row[aria-current] {
+  box-shadow : inset var(--prose-border-2) 0 0 var(--prose-role-link);
+}
+
+.exit-code-entry-summary :where(code),
+.exit-code-entry-facts :where(code) {
+  padding       : var(--prose-space-2) var(--prose-space-6);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-bg);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--vp-code-font-size);
+  color         : var(--vp-c-text-1);
+  white-space   : nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exit-code-index-row {
+    transition : none;
+  }
+}

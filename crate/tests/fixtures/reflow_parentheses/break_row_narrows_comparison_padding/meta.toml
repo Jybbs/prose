@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Broken Pair Narrows the Padding on Its One Row"
+
+description = '''
+`ready = (` holds a chain that [[align-comparisons]] padded so both `==` share a column, under a `code-line-length` of `40`. The joined row reaches `41` columns, past the budget, so the pair breaks. **The interior joins onto one row of its own with one space ahead of each `==`**, since on one row that padding would line up with nothing.
+'''

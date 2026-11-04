@@ -4,11 +4,9 @@ description: "Covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml
 
 # Configuration
 
-*Prose* reads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, searching upward from each input file's directory to the nearest one. With no configuration, every rule runs at its default, so a project that writes no config gets the standard *Prose* layout. The whole key set is also available as a [JSON Schema](https://json-schema.org) through [`prose schema`](/reference/cli#prose-schema).
+*Prose* reads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, as [**The Config Search Order**](#the-config-search-order) sets out. With no configuration, every rule runs at its default, so a project that writes no config gets the standard *Prose* layout. The whole key set is also available as a [JSON Schema](https://json-schema.org) through [`prose schema`](/reference/cli#prose-schema).
 
 A `prose.toml` keeps its keys at the document root, which is the form this page shows throughout, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under `.config/`. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix, so every key below has a `[tool.prose.<…>]` equivalent for a project that keeps one manifest.
-
-The top-level keys hold the settings that reach several rules. `target-version` takes the bare `major.minor` form (*`"3.13"`, `"3.14"`*) that `mypy`'s `python_version` setting uses, and the rules whose rewrites depend on the runtime read it directly. The two docstring budgets (*`code-line-length` for Title-case-headed structured sections, `docstring-line-length` for description prose*) let a project keep code-shaped tables wide and description prose at a comfortable reading width, and `docstring-structured-policy` puts both under one budget for a project that prefers one width.
 
 To turn rules off or adjust them, write the `[rules]` table:
 
@@ -21,11 +19,11 @@ align-equals       = false
 reflow-collections = { max-atomics = 3 }
 ```
 
-A bare `false` turns a rule off, an inline table sets its facets and leaves the rule on, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may read better as a `[rules.<rule>]` sub-table (*`[tool.prose.rules.<rule>]` in the manifest*), which takes the same settings as the inline form.
+A bare `false` turns a rule off as the shorthand for `enabled = false`, an inline table sets its facets and leaves the rule on, and a rule you do not name stays on at its default. Under `pyproject.toml` the table reads `[tool.prose.rules]`, and a rule with several facets may read better as a `[rules.<rule>]` sub-table (*`[tool.prose.rules.<rule>]` in the manifest*), which takes the same settings as the inline form.
 
-## Where *Prose* Looks
+## The Config Search Order
 
-*Prose* searches upward from each input file's own directory toward the filesystem root, so a file follows its own project's config even when one run names files from several projects, and stdin input searches from the working directory, since it has no path of its own. The search settles on the nearest directory holding any of these, ranked in this order within a directory:
+*Prose* searches upward from each input file's own directory toward the filesystem root, so a file follows its own project's config even when one run names files from several projects, and stdin input searches from the directory of the file `--stdin-filename` names, or from the working directory when it names none. The search settles on the nearest directory holding any of these, ranked in this order within a directory:
 
 1. `prose.toml`
 2. `.config/prose.toml`
@@ -37,46 +35,33 @@ When more than one of these files share a directory, the higher-ranked one wins 
 
 ## Top-Level Keys
 
-The top-level keys hold settings that reach several rules. They sit at the document root in a `prose.toml` and under `[tool.prose]` in a `pyproject.toml`.
+The top-level keys hold settings that reach several rules.
 
 <ConfigKeys section="top" />
 
-`target-version` names the Python version the project runs on, in the bare `major.minor` form (*`"3.13"`, `"3.14"`*) that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]]. A file holding syntax the version does not support, such as a `lazy` import under `"3.14"`, or a semantic syntax error such as a `lazy` import inside a function, fails at exit code `3` naming the file, the position, and the version, unless formatting rewrites the error away. A file a `# prose: off` or `# fmt: off` at its head suppresses skips that check, and a `target-version` under [**Per-Pattern Overrides**](#per-pattern-overrides) holds the files a glob matches to a version of their own.
+`target-version` names the Python version the project runs on, in the bare `major.minor` form (*`"3.13"`, `"3.14"`*) that `mypy`'s `python_version` setting uses. Every rule whose rewrite depends on the runtime reads it, which covers [[band-constants]], [[modernize-annotations]], [[prefer-fstring]], and [[prune-inert-imports]]. A file holding syntax the version does not support, such as a `lazy` import under `"3.14"`, or a semantic syntax error such as a `lazy` import inside a function, fails at exit code `3` naming the file, the position, and the version, unless formatting rewrites the error away. A file a `# prose: off` or `# fmt: off` at its head suppresses skips that check, and a `target-version` under [**Per-Pattern Overrides**](#per-pattern-overrides) holds the files a glob matches to a version of their own.
 
 ::: info Version Gates Need Opt-In
 With no value set, every version-dependent rewrite is skipped rather than assuming a default, so the version-gated rules do nothing on a project that has not set a target, a name counts as a builtin only where Python 3.10 already defines it, and only syntax every Python version rejects fails a file.
 :::
 
-`report-unstable-output` governs what a `format` run does when a file it just rewrote is one a second run would change again. When on, the run prints an [**unstable-output notice**](/reference/cli#unstable-output) naming the rules that disagree and the command that reproduces the defect, while still writing the rewrite and still setting the exit code from that rewrite alone, since a layout defect belongs to *Prose* rather than to the source. When off, the rewrite is written with no notice, whereas [`prose check --validate`](/reference/cli#prose-check) keeps its settle check, because the key governs the notice rather than the check the flag turns on. The notice also reaches an editor through [`prose server`](/reference/cli#prose-server), once per document per session rather than on every save.
-
-The two checks differ in reach, in that a `format` run, and the editor message [`prose server`](/reference/cli#prose-server) sends, re-apply only the rules that edited on the first pass, whereas `prose check --validate` re-applies every enabled rule. A rule that was silent on the first pass and would still change the output therefore goes unreported by the notice and is caught instead by `prose check --validate`, by a later cached run that finds its own earlier output rewritten, and by the corpus sweeps that run over the standard library and its mutations.
+The [**Unstable Output**](/reference/cli#unstable-output) section of the CLI reference covers the notice `report-unstable-output` governs.
 
 ## Lengths
 
 The `*-line-length` caps are hard limits, and every rule that lays out code fits within them rather than reading the budget as a hint. `code-line-length` governs code lines, `import-line-length` governs import lines, and `docstring-line-length` governs docstring description prose and section entries, whereas the count keys (*`max-args`, `max-params`, `max-dict-entries`, `max-links`*) choose a layout only for lines that already fit under a cap.
 
-A construct with a legal multi-line layout takes it once its line crosses the cap, whatever its count says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, and a signature, collection, or `from` import does the same against its own budget. Where padding would carry a row past its cap, a layout rule lays out the row's import or value first so the row aligns within the cap. [[reflow-imports]] splits an import in an [[align-imports]] run, [[reflow-collections]] expands a collection value or, while [[reflow-calls]] runs, explodes a call value in an [[align-colons]] dict entry, and in an [[align-equals]] run of assignments [[reflow-collections]] expands a collection value and [[reflow-calls]] explodes a call value. The two value rules break a value open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded. Any row no layout rule brings under the cap leaves the run unpadded, the way a row over `max-shift` does. A `case` arm is the exception, in that [[align-match-case]] keeps an arm on two lines where its folded line would cross the cap, its `:` flush against the pattern, and aligns the arms on each side of it as runs of their own.
+A construct with a legal multi-line layout takes it once its line crosses the cap, whatever its count says, so a call over `code-line-length` explodes to one argument per line even at or under `max-args`, a signature expands to one parameter per line and a collection across rows, and a `from` import splits into a run of statements against `import-line-length`. Where padding would carry a row past its cap, a layout rule lays out the row's import or value first so the row aligns within the cap. [[reflow-imports]] splits an import in an [[align-imports]] run, and the [[align-colons]] and [[align-equals]] pages set out which value a layout rule breaks open in a dict entry or an assignment. Where no layout rule brings a row under the cap, the run splits before the first row whose joining would carry a row past it, and the rows from there align as a column of their own, the same cut `max-shift` makes. A `case` arm is the exception, since [[align-match-case]] leaves an arm unfolded with its `:` flush against the pattern where its folded line would cross the cap.
 
 Several alignment rules reach the same row, since [[align-colons]], [[align-equals]], and [[align-comments]] each place a column on a line carrying an annotation, a value, and a comment. Each rule measures the cap against the line it will write rather than the line as it stands, counting a trailing comment at its two-space gap and the space after an operator at the single space an aligned row carries, both of which a later rule sets. Each rule's fit decision is therefore unchanged by the rules that run after it, so the columns resolve in one pass rather than shifting across repeated runs.
 
-A trailing comment counts toward the cap like any other span on the line, since *Prose* places it through [[normalize-comment-spacing]] and [[align-comments]] rather than leaving it untouched. A row already past its cap before any padding therefore keeps its own gap and joins a shared column only where that column adds no width to it, which only the widest row of a run satisfies. Alignment never pushes an over-budget line further out, and [[line-overflow]] reports the remainder at the narrowest width the row can reach. A layout rule measures a row only up to its trailing comment, though, so a line whose code fits while its comment runs past the cap keeps its layout, and [[line-overflow]] reports it unless the part past the cap is a run of tool pragmas or `# prose:` directives ending the comment.
+A trailing comment counts toward the cap like any other span on the line, since *Prose* places it through [[normalize-comment-spacing]] and [[align-comments]] rather than leaving it untouched. A row already past its cap before any padding therefore keeps its own gap and joins a shared column only where that column adds no width to it, which only the widest row of a run satisfies. Alignment never pushes an over-budget line further out, and [[line-overflow]] reports the remainder at the narrowest width the row can reach. A layout rule measures a row only up to its trailing comment, though, so a line whose code fits while its comment runs past the cap keeps its layout, and the [[line-overflow]] page sets out when that line is reported.
 
-A cap no legal layout can meet (*a deep indent, a long identifier, a cap set below what a statement needs*) leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains, so an unsatisfiable cap shows up as a finding in `prose check` and a flagged line in the sandbox rather than as a setting that did nothing.
+A cap no legal layout can meet (*a deep indent, a long identifier, a cap set below what a statement needs*) leaves the narrowest legal layout in place, and [[line-overflow]] reports what remains.
 
 ## Cache
 
-The `[cache]` table tunes the per-user [**cache**](/reference/cache) *Prose* keeps for repeat runs (*`[tool.prose.cache]` in a `pyproject.toml`*). Every key defaults to its standard value, so a project that does not write the table gets the cache at its full size.
-
-<ConfigKeys section="cache" />
-
-The sample below raises both caps above their defaults, for a tree whose entries outgrow them:
-
-```toml
-[cache]
-enabled      = true
-max-entries  = 25000
-max-size-mib = 250
-```
+The `[cache]` table (*`[tool.prose.cache]` in a `pyproject.toml`*) tunes the per-user cache *Prose* keeps for repeat runs, and the [**Cache**](/reference/cache#configuration) reference lists its keys and their defaults.
 
 ## Imports
 
@@ -93,13 +78,9 @@ A list entry names a root package, so `myapp` matches `import myapp.db` and `fro
 
 ## Per-Rule Facets
 
-The `[rules]` table holds one entry per rule you change. A bare bool is the shorthand for `enabled` (*`alphabetize-siblings = false`*), an inline table sets a rule's facets (*`align-equals = { max-shift = 4 }`*), and a rule you do not name stays on at its defaults. The facets below are grouped by rule family and nested under the rule that reads each one, so the two `allow` facets stay distinct because they belong to different rules and take different inputs. The Generic group gathers the facets several rules share, since `enabled` reaches every rule and `max-shift` every alignment rule.
+The `[rules]` table holds one entry per rule you change, in the forms the top of this page shows. The facets below are grouped by rule family and nested under the rule that reads each one, so the two `allow` facets stay distinct because they belong to different rules and take different inputs. The Generic group gathers the facets several rules share, since `enabled` reaches every rule and `max-shift` every alignment rule but [[strip-stranded-padding]].
 
 <PerRuleFacets />
-
-## Rewrites and Lint Findings
-
-A diagnostic either carries a rewrite, which `prose format` writes and `prose check` reports as a pending edit, or reports a lint finding, whose fix is left to a person because it depends on a judgment *Prose* does not make. That split sets the `prose check` exit code, `1` for a pending rewrite and `2` for a lint finding, so a CI gate can tell the two apart. Configuration is the same for every rule, so `<rule> = false` turns any rule off and the facets above tune any rule.
 
 ## Key Naming
 
@@ -112,7 +93,7 @@ Every key follows one shape, so its name predicts its kind:
 
 ## Docstring Budgets
 
-A docstring holds two kinds of text inside one triple-quoted region. The description prose between the opening `"""` and the first section heading reads as paragraphs and wraps to `docstring-line-length` (*<ConfigDefault facet="docstring-line-length" /> by default*), a comfortable line for sustained reading. Each Title-case-headed section after it reads as a code-shaped table, whose prose lines take `code-line-length` (*<ConfigDefault facet="code-line-length" /> by default*) to match the surrounding code, whereas its `name: description` entries wrap to `docstring-line-length` with a hanging indent at the column the description starts on. `docstring-structured-policy` switches those prose lines to `docstring-line-length` for a project that prefers one narrower budget across the whole docstring. [[wrap-docstrings]] reads both budgets.
+Two budgets govern the text [[wrap-docstrings]] wraps inside a docstring. `docstring-line-length` (*<ConfigDefault facet="docstring-line-length" /> by default*) holds the description prose between the opening `"""` and the first section heading, along with every section's `name: description` entries. The prose lines of each Title-case-headed section take `code-line-length` (*<ConfigDefault facet="code-line-length" /> by default*), and `docstring-structured-policy` switches them to `docstring-line-length` for a project that prefers one narrower budget across the whole docstring.
 
 ## Per-Pattern Overrides
 
@@ -136,4 +117,4 @@ Globs are relative to the directory of the config that declares them, so `tests/
 
 ## Subset by Invocation
 
-`--select` and `--ignore` on the command line take precedence over the configured rule set for one run. The [**Quick Start**](/guide/quick-start#subset-the-active-rules) chapter covers the flags, the [**CLI Reference**](/reference/cli) the full flag list, and the [**Suppression**](/guide/suppression) chapter the per-line opt-outs.
+`--select` and `--ignore` on the command line take precedence over the configured rule set for one run, as the [**Precedence**](/reference/cli#precedence) section of the CLI reference covers.

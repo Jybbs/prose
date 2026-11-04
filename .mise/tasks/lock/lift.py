@@ -13,11 +13,11 @@ cutoff holds back, beside the time the cutoff clears it.
 
 A pin is read from each home it is written in. Pins sharing a name, which
 covers every set `repo:audit` holds equal, take one row and move together,
-and so do the `ruff_*` crates with the release `[package.metadata.ruff]`
-names. The reports of mise, Cargo, uv, and bun give the newest release of
-the pins they cover, and a registry gives it for every other pin. A release
-the cutoff holds back stays out of mise's report, so no row or write takes
-one until it clears.
+and so do the `ruff_*` crates with the `ruff` tool and the release
+`[package.metadata.ruff]` names. The reports of mise, Cargo, uv, and bun
+give the newest release of the pins they cover, and a registry gives it for
+every other pin. A release the cutoff holds back stays out of mise's report,
+so no row or write takes one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
@@ -63,7 +63,7 @@ from urllib.request import Request, urlopen
 
 AGE          = "24h"
 AGENT        = "prose lock:lift (https://github.com/Jybbs/prose)"
-CARGO_REPORT = ("cargo", "update", "--dry-run", "--verbose", "--workspace")
+CARGO_REPORT = ("cargo", "update", "--dry-run", "--verbose")
 CONFIG       = ".mise/config.toml"
 COVERED      = {"bun", "cargo", "mise", "uv"}
 CRATES       = "https://crates.io/api/v1/crates"
@@ -324,22 +324,26 @@ class Reports:
 
     def newest(self, pin: Pin) -> str:
         """
-        Returns the newest release the report covering `pin` gives, which is
-        its written version where the report omits it.
+        Returns the newest release the report covering `pin` gives, which
+        is its written version where the report omits it. A docs-site pin
+        standing on a prerelease takes the highest PEP 440 version its
+        registry lists, because `bun outdated` reads only the `latest`
+        dist-tag.
         """
+        if pin.source == "bun" and ordered(pin.written).is_prerelease:
+            return max(packument(pin.package)["versions"], key=ordered)
         reported = (pin.source, canonicalize_name(pin.package), pin.written)
         return self.releases.get(reported, pin.written)
 
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
         """
-        Returns the reports `bun outdated`, `cargo update --dry-run`,
+        Returns the reports that `bun outdated`, `cargo update --dry-run`,
         `mise outdated`, and `uv tree --outdated` print, the last over the
-        project and each of `scripts`, run side by side. Cargo's runs under
-        `--workspace`, which lists each locked crate beside its newest
-        release without resolving the graph again, so the report stays
-        readable while every release a dependency accepts is yanked, as
-        every `zip` 8 release `ruff_db` accepts is.
+        project and each of `scripts`, run side by side. Cargo's resolves
+        the whole lockfile, which refreshes the registry index, and
+        lists a crate whose newest release needs a newer Rust beside that
+        requirement.
         """
         with ThreadPoolExecutor() as pool:
             bun   = pool.submit(output, "bun", "outdated", cwd="site")
@@ -359,7 +363,7 @@ class Reports:
         )
         cargo_line = (
             r"(?m)^\s*(?:Updating|Unchanged) (\S+) v([^\s+]+)\S*"
-            r"(?: -> v(\S+))?(?: \(available: v(\S+)\))?$"
+            r"(?: -> v(\S+))?(?: \(available: v([^\s,)]+)[^)]*\))?$"
         )
         uv_line = r"(?m)^[\s│├└─]*(\S+) v(\S+)\b.*\(latest: v(\S+)\)$"
         found   = [
@@ -542,13 +546,15 @@ class Lift:
     def ruff(cls, pins: list[Pin], reports: Reports) -> "Lift | None":
         """
         Returns the row moving the `ruff_*` crates to their newest release
-        beside the ruff release `[package.metadata.ruff]` names, which is
-        the tag on the commit the newest crate was published from.
+        beside the `ruff` tool and the release `[package.metadata.ruff]`
+        names, both of which move to the tag on the commit the newest crate
+        was published from. A tag mise's `minimum_release_age` cutoff holds
+        back from the tool takes no row until it clears.
         """
-        crates  = [pin for pin in pins if pin.source]
+        crates  = [pin for pin in pins if pin.source == "cargo"]
         crate   = agreed(RUFF, crates)
         newest  = max((reports.newest(pin) for pin in crates), key=ordered)
-        current = agreed(RUFF, [pin for pin in pins if not pin.source])
+        current = agreed(RUFF, [pin for pin in pins if pin.source != "cargo"])
         if newest == crate:
             return None
 
@@ -558,7 +564,11 @@ class Lift:
             raise SystemExit(
                 f"no ruff release tags {commit}, the commit {newest} came from"
             )
-        tag = max(named, key=ordered)
+        tag   = max(named, key=ordered)
+        tools = (pin for pin in pins if pin.source == "mise")
+        if any(ordered(tag) > ordered(reports.newest(tool)) for tool in tools):
+            return None
+
         return cls(
             current   = current,
             name      = RUFF,

@@ -147,8 +147,8 @@ onMounted(() => settle(configToml.value))
         v-html="displayHtml"
       />
     </div>
-    <p v-if="located.length" class="config-notice-strip flex items-center gap-6 border-t-1 border-t-divider bg-warning-1/10 px-14 py-7 font-mono text-xs tracking-0-02em text-warning-1">
-      <span aria-hidden="true">▲</span>
+    <p v-if="located.length" class="config-notice-strip flex items-center gap-6 border-t-1 border-t-divider px-14 py-7 font-mono text-xs tracking-0-02em text-text-2">
+      <span class="text-warning-1" aria-hidden="true">▲</span>
       {{ located.length }} unknown {{ located.length === 1 ? 'key' : 'keys' }}
     </p>
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />

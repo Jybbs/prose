@@ -1,6 +1,11 @@
-import type MarkdownIt from 'markdown-it'
+import type { Env, MarkdownIt } from 'markdown-it'
 
 import { indexSectionOf } from '../shared/registries'
+
+interface PageEnv extends Env {
+  frontmatter? : { heading?: boolean }
+  relativePath : string
+}
 
 // Inserts a section index page's H1 ahead of the inline parse, which reads the
 // page's `SECTIONS` label as the heading's text, so the anchor and title
@@ -9,10 +14,11 @@ import { indexSectionOf } from '../shared/registries'
 // types its own H1 fails the build.
 export function sectionHeadingPlugin(md: MarkdownIt): void {
   md.core.ruler.after('block', 'section-heading', state => {
-    const section = indexSectionOf(state.env.relativePath)
-    if (section === undefined || state.env.frontmatter?.heading === false) return
+    const { frontmatter, relativePath } = state.env as PageEnv
+    const section = indexSectionOf(relativePath)
+    if (section === undefined || frontmatter?.heading === false) return
     if (state.tokens.some(token => token.type === 'heading_open' && token.tag === 'h1')) {
-      throw new Error(`${state.env.relativePath} types its own H1, which SECTIONS supplies`)
+      throw new Error(`${relativePath} types its own H1, which SECTIONS supplies`)
     }
     const open   = new state.Token('heading_open', 'h1', 1)
     const inline = new state.Token('inline', '', 0)

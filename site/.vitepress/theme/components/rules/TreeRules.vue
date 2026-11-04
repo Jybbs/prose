@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import { data as pipeline } from '../../../lib/rules/pipeline.data'
+import InlineRuleLink       from './InlineRuleLink.vue'
 
 const props = defineProps<{ tree: 'changed' | 'kept' }>()
 

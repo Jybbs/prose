@@ -4,7 +4,7 @@
   font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
-  color          : color-mix(in srgb, var(--band-accent) var(--prose-tint-75), var(--vp-c-text-2));
+  color          : var(--vp-c-text-2);
 }
 
 @utility border-b-double-divider {
@@ -15,14 +15,12 @@
   display         : inline-flex;
   align-items     : center;
   border          : var(--prose-border-1) solid var(--vp-c-divider);
-  border-left     : var(--prose-border-2) solid var(--family-color);
   border-radius   : 0;
   text-decoration : none;
-  transition      : border-color var(--prose-transition), border-left-width var(--prose-transition), padding-left var(--prose-transition);
+  transition      : border-color var(--prose-transition);
 
   &:is(a):hover {
-    border-color      : var(--family-color);
-    border-left-width : var(--prose-border-3);
+    border-color : var(--vp-c-text-2);
   }
 }
 
@@ -100,42 +98,18 @@
   line-height    : var(--prose-leading-24);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-
-  &:is(a):hover {
-    padding-left : var(--prose-space-9);
-    color        : var(--vp-c-brand-2);
-  }
 }
 
 @utility fixture-card {
   position      : relative;
   margin        : 0;
   border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-left   : none;
-  padding-left  : var(--prose-size-3);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg-soft);
   transition    : background var(--prose-transition), border-color var(--prose-transition);
 
-  &::after {
-    content        : "";
-    position       : absolute;
-    left           : 0;
-    top            : 0;
-    bottom         : 0;
-    width          : var(--prose-size-3);
-    background     : var(--rail-paint, var(--family-color, var(--vp-c-divider)));
-    border-radius  : var(--prose-radius-sm) 0 0 var(--prose-radius-sm);
-    pointer-events : none;
-    transition     : opacity var(--prose-transition);
-  }
-
-  &[data-edits="false"]:not([data-lint="true"])::after {
-    background : var(--vp-c-divider);
-  }
-
   &:hover {
-    border-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-50), var(--vp-c-divider));
+    border-color : var(--prose-shade-text-3-card-31);
   }
 
   &[data-open] {
@@ -173,20 +147,6 @@
   border-top  : var(--prose-border-1) solid var(--vp-c-divider);
   color       : var(--vp-c-text-2);
   font-size   : var(--prose-text-sm);
-
-  &::before {
-    content    : "";
-    position   : absolute;
-    top        : calc(var(--prose-space-1) * -1);
-    left       : 0;
-    width      : var(--prose-size-30);
-    height     : var(--prose-size-2);
-    background : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
-  }
-
-  .fixture-card[data-edits="false"]:not([data-lint="true"]) &::before {
-    background : var(--vp-c-divider);
-  }
 }
 
 @utility fixture-card-num {
@@ -205,7 +165,7 @@
 @utility fixture-card-rule {
   height           : var(--prose-size-2);
   margin           : 0 0 var(--prose-space-14);
-  background       : var(--headline-paint, var(--family-color, var(--prose-palette-chambray)));
+  background       : var(--family-edge-card);
   transform        : scaleX(0);
   transform-origin : left;
   transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;
@@ -214,8 +174,9 @@
     transform : scaleX(1);
   }
 
+  .composition-cards-list &,
   .fixture-card[data-edits="false"]:not([data-lint="true"]) & {
-    background : var(--vp-c-divider);
+    background : var(--vp-c-text-3);
   }
 }
 
@@ -225,7 +186,7 @@
   align-items           : baseline;
   column-gap            : var(--prose-space-10);
   width                 : 100%;
-  padding               : var(--prose-space-8) var(--prose-space-4) var(--prose-space-8) var(--prose-space-12);
+  padding               : var(--prose-space-8) var(--prose-space-4) var(--prose-space-8) 0;
   border                : none;
   background            : transparent;
   text-align            : left;
@@ -236,7 +197,7 @@
 
 @utility fixture-card-summary-row {
   display               : grid;
-  grid-template-columns : minmax(0, 1fr) auto;
+  grid-template-columns : auto minmax(0, 1fr) auto;
   align-items           : center;
   gap                   : var(--prose-space-12);
   padding               : var(--prose-space-4) var(--prose-space-12) var(--prose-space-4) var(--prose-space-4);
@@ -256,7 +217,7 @@
   color          : var(--vp-c-text-1);
 
   .fixture-card[data-edits="false"]:not([data-lint="true"]) & {
-    color : var(--vp-c-text-3);
+    color : var(--vp-c-text-2);
   }
 }
 
@@ -288,14 +249,10 @@
   }
 }
 
-@utility ground {
-  background-color : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ground), var(--vp-c-bg));
-}
-
 @utility hairline {
   flex-grow  : 1;
   height     : var(--prose-size-1);
-  background : color-mix(in srgb, var(--band-accent) var(--prose-tint-30), var(--vp-c-divider));
+  background : var(--vp-c-divider);
 }
 
 @utility kicker {
@@ -341,31 +298,6 @@
   border-width    : var(--prose-border-1);
   border-style    : solid;
   border-radius   : 50%;
-}
-
-@utility nib-badge {
-  display  : inline-block;
-  flex     : none;
-  overflow : visible;
-  color    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-ink), var(--vp-c-text-1));
-}
-
-@utility nib-chip {
-  display        : inline-block;
-  margin         : 0 var(--prose-space-0-08em);
-  padding        : var(--prose-space-2) var(--prose-space-4);
-  border-radius  : var(--prose-radius-sm);
-  box-shadow     : inset 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color) var(--prose-tint-strong), transparent);
-  line-height    : 0;
-  vertical-align : calc(var(--prose-space-0-15em) * -1 - var(--prose-space-2));
-
-  &:not([data-family]) {
-    --family-color : var(--vp-c-brand-1);
-  }
-
-  & .nib-badge {
-    display : block;
-  }
 }
 
 @utility panel {
@@ -431,10 +363,6 @@
   font-size      : var(--prose-text-xs);
   line-height    : 1.6;
   vertical-align : baseline;
-
-  &:is(a):hover {
-    padding-left : var(--prose-space-7);
-  }
 }
 
 @utility underline-draw {

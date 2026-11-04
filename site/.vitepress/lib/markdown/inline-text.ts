@@ -1,8 +1,8 @@
-import MarkdownIt from 'markdown-it'
+import markdownit from 'markdown-it'
 
 import { inlineNodes, type InlineNode } from './inline-nodes'
 
-const md = new MarkdownIt()
+const md = markdownit()
 
 // Parses inline Markdown with no plugin registered, so the nodes hold text,
 // code, and elements such as emphasis and links, and never a glossary, rule,

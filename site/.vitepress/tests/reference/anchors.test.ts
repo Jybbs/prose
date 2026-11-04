@@ -30,7 +30,7 @@ describe('hoistedFacetAnchor', () => {
     expect(hoistedFacetAnchor(key)).toBe(expected)
   })
 
-  it('declines a facet the catalogue lists under a rule of its own', () => {
+  it('declines a facet the catalog lists under a rule of its own', () => {
     expect(hoistedFacetAnchor('max-args')).toBeUndefined()
   })
 })

@@ -8,7 +8,7 @@ import { EMBLEMS } from './emblems'
 const axes = {
   form     : 'line',
   terminal : 'broad nib',
-  tone     : 'family ink on a family tint',
+  tone     : 'ink on a neutral tint',
   weight   : NIB.stroke.nib
 }
 </script>
@@ -25,7 +25,7 @@ const axes = {
       <Chip
         v-for="[emoji, emblem] in EMBLEMS"
         :key="emoji"
-        class="ground"
+        class="nib-ground"
         variant="family-chip"
         :family="emblem.family"
       >
@@ -35,7 +35,7 @@ const axes = {
     </div>
     <ul class="m-0 grid list-none grid-cols-fill-96 gap-x-8 gap-y-14 p-0">
       <li v-for="[emoji, emblem] in EMBLEMS" :key="emoji" class="m-0 flex flex-col items-center gap-6" :data-family="emblem.family">
-        <span class="icon-specimen-tile medallion size-32 border-divider ground text-1-05rem"><NibBadge :emblem="emblem" :size="16.8" /></span>
+        <span class="icon-specimen-tile medallion size-32 border-divider nib-ground text-1-05rem"><NibBadge :emblem="emblem" :size="16.8" /></span>
         <span class="kicker">{{ emblem.name }}</span>
       </li>
     </ul>

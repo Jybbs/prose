@@ -1,6 +1,7 @@
-import type { InlineNode } from '../markdown/inline-nodes'
-import { DIRECTIVES }      from '../suppression/directives'
-import { directiveHref }   from '../suppression/scopes'
+import type { InlineNode }  from '../markdown/inline-nodes'
+import { DIRECTIVES }       from '../suppression/directives'
+import { directiveHref }    from '../suppression/scopes'
+import type { Destination } from './destinations'
 
 export type Domain =
   | 'cli-flag'
@@ -17,11 +18,12 @@ export interface TokenSource {
 }
 
 export interface Token {
-  blurbNodes : InlineNode[]
-  domain     : Domain
-  href       : string
-  key        : string
-  sort       : string
+  blurbNodes  : InlineNode[]
+  destination : Destination
+  domain      : Domain
+  href        : string
+  key         : string
+  sort        : string
 }
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
@@ -46,7 +48,7 @@ export const SOURCES: Record<StaticDomain, readonly TokenSource[]> = {
     { key: '--select <slug>',  href: '/reference/cli#precedence',           blurb: 'Run only the listed rule.' },
     { key: '--stdin',          href: '/reference/cli#prose-format',         blurb: 'Read source from stdin and write the rewrite to stdout.' },
     { key: '--stdin-filename', href: '/reference/cli#prose-format',         blurb: 'Treat stdin as this filename, whose extension selects Python or a notebook.' },
-    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Confirm the would-be rewrite parses and settles, failing the run on either.' },
+    { key: '--validate',       href: '/reference/cli#prose-check',          blurb: 'Fail on a would-be rewrite that does not parse, compile, or settle.' },
     { key: '--verbose',        href: '/reference/cache#hit-miss-telemetry', blurb: 'Print one line of cache hit and miss counts to stderr at the end of the run.' }
   ],
   'output-format': [
@@ -57,9 +59,9 @@ export const SOURCES: Record<StaticDomain, readonly TokenSource[]> = {
   ],
   'subcommand': [
     { key: 'prose cache clean',   href: '/reference/cache#prose-cache-clean',   blurb: 'Delete every cache entry and print the bytes freed.' },
-    { key: 'prose cache compact', href: '/reference/cache#prose-cache-compact', blurb: 'Evict the oldest entries until the cache fits its configured caps.' },
+    { key: 'prose cache compact', href: '/reference/cache#prose-cache-compact', blurb: 'Evict the least recently used entries from a cache past its size or entry cap.' },
     { key: 'prose cache info',    href: '/reference/cache#prose-cache-info',    blurb: 'Print the cache path, entry count, byte total, and oldest and newest mtimes.' },
-    { key: 'prose check',         href: '/reference/cli#prose-check',           blurb: 'Report what would change without rewriting, exiting non-zero when a rewrite is pending.' },
+    { key: 'prose check',         href: '/reference/cli#prose-check',           blurb: 'Report pending rewrites and lint findings without writing, exiting non-zero on either.' },
     { key: 'prose completions',   href: '/reference/cli#prose-completions',     blurb: 'Print a shell-completion script for the named shell.' },
     { key: 'prose format',        href: '/reference/cli#prose-format',          blurb: 'Rewrite files in place.' },
     { key: 'prose rules',         href: '/reference/cli#prose-rules',           blurb: 'List every registered rule in pipeline order.' },

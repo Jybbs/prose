@@ -1,20 +1,34 @@
+@reference "./tailwind.css";
+
+/* Marks the current sidebar item with the logo's pen-nib P in the link color
+   at the head of a widened indent, its words in the text color as a hovered
+   item's read. */
+.VPSidebar .VPSidebarItem:is(.level-0, .level-1, .level-2, .level-3, .level-4, .level-5).is-link > .item > .link:hover .text {
+  color : var(--vp-c-text-1);
+}
+
 .VPSidebarItem.is-active > .item .link {
   position     : relative;
-  padding-left : var(--prose-space-14);
+  padding-left : var(--prose-space-22);
   background   : transparent;
-  font-weight  : 600;
-  color        : var(--vp-c-text-1);
+}
+
+.VPSidebar .VPSidebarItem:is(.level-0, .level-1, .level-2, .level-3, .level-4, .level-5).is-active > .item .link > .text {
+  font-weight : 600;
+  color       : var(--vp-c-text-1);
 }
 
 .VPSidebarItem.is-active > .item .link::before {
-  content       : "";
-  position      : absolute;
-  top           : var(--prose-space-6);
-  bottom        : var(--prose-space-6);
-  left          : 0;
-  width         : var(--prose-size-2);
-  border-radius : var(--prose-radius-2);
-  background    : var(--family-color, var(--vp-c-brand-1));
+  content      : "";
+  position     : absolute;
+  top          : 50%;
+  left         : 0;
+  width        : var(--prose-size-16);
+  height       : var(--prose-size-16);
+  background   : var(--prose-role-link);
+  transform    : translateY(-50%);
+  -webkit-mask : url('/logo.svg') center / contain no-repeat;
+  mask         : url('/logo.svg') center / contain no-repeat;
 }
 
 .VPDoc .VPDocFooter {
@@ -24,6 +38,13 @@
 .vp-doc table {
   display : table;
   width   : 100%;
+}
+
+@variant max-mobile {
+  .vp-doc table {
+    display    : block;
+    overflow-x : auto;
+  }
 }
 
 .VPDoc .VPLastUpdated,
@@ -170,30 +191,85 @@ div[class*='language-'] {
   color : var(--vp-c-text-1);
 }
 
+/* Reads a copied CopyButton's glyph in Celadon with no background check beneath
+   it, the glyph turning over the rule-draw time. */
+.copy-host > button.copy.copied:has(> svg.glyph),
+.copy-host > button.copy:hover.copied:has(> svg.glyph) {
+  background-image : none;
+  color            : var(--prose-shade-celadon-page-45);
+  transition       : color calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized);
+}
+
+/* Draws the copied check in from its own left edge over the rule-draw time,
+   as a pen ticks a box, from the second text color to Celadon. */
+:is(.vp-doc, body) div[class*='language-'] > button.copy.copied,
+:is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied {
+  background-image : none;
+}
+
 :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,
 :is(.vp-doc, body) div[class*='language-'] > button.copy:hover.copied::before {
-  content : none;
+  content       : "";
+  position      : absolute;
+  inset         : 0;
+  display       : block;
+  width         : var(--prose-size-14);
+  height        : var(--prose-size-14);
+  margin        : auto;
+  padding       : 0;
+  border        : 0;
+  border-radius : 0;
+  color         : var(--prose-shade-celadon-page-45);
+  background    : currentcolor;
+  transform     : none;
+  -webkit-mask  : var(--vp-icon-copied) center / contain no-repeat;
+  mask          : var(--vp-icon-copied) center / contain no-repeat;
+  animation     : prose-copy-tick calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized) both;
 }
 
-:is(.vp-doc, body) div[class*='language-']::after {
-  content          : "";
-  position         : absolute;
-  left             : var(--prose-space-12);
-  right            : var(--prose-space-12);
-  bottom           : var(--prose-space-8);
-  height           : var(--prose-size-1);
-  background       : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-85), var(--vp-c-text-1));
-  transform        : scaleX(0);
-  transform-origin : right center;
-  opacity          : 0;
-  pointer-events   : none;
-  z-index          : 2;
-  transition       :
-    transform 380ms var(--prose-ease-emphasized),
-    opacity   180ms var(--prose-ease-emphasized) 80ms;
+.copy-host > button.copy > svg.glyph > .copy-tick {
+  animation : prose-copy-tick calc(var(--prose-rule-draw-ms) * 1ms) var(--prose-ease-emphasized) both;
 }
 
-:is(.vp-doc, body) div[class*='language-']:has(> button.copy.copied)::after {
-  transform : scaleX(1);
-  opacity   : 1;
+@keyframes prose-copy-tick {
+  from {
+    clip-path : inset(0 100% 0 0);
+    color     : var(--vp-c-text-2);
+  }
+
+  to {
+    clip-path : inset(0);
+    color     : var(--prose-shade-celadon-page-45);
+  }
+}
+
+/* Reads a code block's scroll thumb in a gray on the code ground, and in the
+   link color while the pointer is over the block. */
+:is(.vp-doc, body) div[class*='language-'] pre {
+  scrollbar-width : auto;
+  scrollbar-color : var(--prose-shade-text-3-code-35) transparent;
+}
+
+:is(.vp-doc, body) div[class*='language-']:hover pre {
+  scrollbar-color : var(--prose-role-link) transparent;
+}
+
+:is(.vp-doc, body) div[class*='language-'] pre::-webkit-scrollbar-thumb {
+  background-color : var(--prose-shade-text-3-code-35);
+}
+
+:is(.vp-doc, body) div[class*='language-']:hover pre::-webkit-scrollbar-thumb {
+  background-color : var(--prose-role-link);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.vp-doc, body) div[class*='language-'] > button.copy.copied::before,
+  .copy-host > button.copy > svg.glyph > .copy-tick {
+    animation : none;
+  }
+
+  .copy-host > button.copy.copied:has(> svg.glyph),
+  .copy-host > button.copy:hover.copied:has(> svg.glyph) {
+    transition : none;
+  }
 }

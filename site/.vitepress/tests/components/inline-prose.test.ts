@@ -88,10 +88,10 @@ describe('InlineProse', () => {
   it('carries an element attribute through to the rendered tag', () => {
     const w = render([{
       kind     : 'el',
-      tag      : 'span',
-      attrs    : { class: 'text-ube' },
-      children : [{ kind: 'text', text: 'Prose' }]
+      tag      : 'a',
+      attrs    : { class: 'body-link', href: '/guide/' },
+      children : [{ kind: 'text', text: 'Guide' }]
     }])
-    expect(w.html()).toContain('<span class="text-ube">Prose</span>')
+    expect(w.get('a').attributes()).toMatchObject({ class: 'body-link', href: '/guide/' })
   })
 })

@@ -1,9 +1,10 @@
 import * as anchors         from '../reference/anchors'
 import * as ruleSchema      from '../shared/rule-schema'
+import type { Anchored }    from './destinations'
 import type { TokenSource } from './sources'
 
-const CONFIG_PAGE    = '/reference/configuration'
-const CATALOGUE_HREF = `${CONFIG_PAGE}#per-rule-facets`
+const CONFIG_PAGE  = '/reference/configuration'
+const CATALOG_HREF = `${CONFIG_PAGE}#per-rule-facets`
 
 const SECTION_HREF: Record<ruleSchema.ConfigSection, string> = {
   cache   : '/reference/cache#configuration',
@@ -45,13 +46,25 @@ export function firstSentence(text: string): string {
   return text
 }
 
-// Points a facet at its own entry in the catalogue, falling back to the
-// catalogue itself for one that several rules declare.
+// Points a facet at its own entry in the catalog, falling back to the
+// catalog itself for one that several rules declare.
 function facetHref(key: string, owners: Set<string>): string {
   const hoisted = anchors.hoistedFacetAnchor(key)
   if (hoisted !== undefined) return `${CONFIG_PAGE}#${hoisted}`
   if (owners.size === 1)     return `${CONFIG_PAGE}#${anchors.facetAnchor([...owners][0], key)}`
-  return CATALOGUE_HREF
+  return CATALOG_HREF
+}
+
+// Names the rule or the shared scope each facet's anchor in the catalog sits
+// under, keyed by the link to that anchor, since the catalog anchors its
+// facets in a component rather than in headings.
+export function facetDestinations(schema: ruleSchema.SchemaDocument): Map<string, Anchored> {
+  const ruled = Object.entries(ruleSchema.ruleDefsOf(schema)).flatMap(([slug, def]) =>
+    ruleSchema.facetKeys(def.default).map(key =>
+      [`${CONFIG_PAGE}#${anchors.facetAnchor(slug, key)}`, { code: true, text: slug }] as const))
+  const hoisted = Object.entries(anchors.HOISTED_SCOPES).map(([key, scope]) =>
+    [`${CONFIG_PAGE}#${anchors.facetAnchor(scope, key)}`, { code: false, text: scope }] as const)
+  return new Map<string, Anchored>([...ruled, ...hoisted])
 }
 
 export function configKeySources(schema: ruleSchema.SchemaDocument): TokenSource[] {

@@ -1,5 +1,5 @@
 .glossary-anchor {
-  --underline-accent : var(--prose-palette-celadon);
+  --underline-accent : var(--vp-c-text-2);
 
   cursor                : help;
   text-decoration       : underline dotted var(--underline-accent) var(--prose-border-1);
@@ -19,14 +19,16 @@ a.glossary-anchor {
   text-decoration-style : solid;
 }
 
-.v-popper--theme-glossary { --popper-accent : var(--prose-palette-celadon); }
+.v-popper--theme-glossary {
+  --popper-accent : var(--vp-c-divider);
+  --popper-border : var(--vp-c-divider);
+}
 
 .v-popper--theme-glossary .v-popper__inner {
   max-width     : var(--prose-width-22rem);
   min-width     : var(--prose-width-14rem);
   padding       : var(--prose-space-12) var(--prose-space-16);
-  border        : var(--prose-border-2) solid var(--popper-border);
-  border-top    : var(--prose-border-3) solid var(--popper-accent);
+  border        : var(--prose-border-1) solid var(--popper-border);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
@@ -39,10 +41,14 @@ a.glossary-anchor {
   transition : opacity 120ms ease-out, transform 120ms ease-out;
 }
 
+.glossary-tooltip-nib .nib-badge {
+  display : block;
+}
+
 .glossary-tooltip-body code {
   padding       : var(--prose-space-2) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-8), transparent);
+  background    : var(--vp-code-bg);
   font-size     : var(--prose-text-0-95em);
-  color         : var(--vp-c-text-1);
+  color         : var(--vp-code-color);
 }

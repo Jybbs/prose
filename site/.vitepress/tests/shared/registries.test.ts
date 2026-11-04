@@ -1,4 +1,4 @@
-import MarkdownIt from 'markdown-it'
+import markdownit from 'markdown-it'
 
 import * as head                from '../../lib/config/head'
 import { sectionHeadingPlugin } from '../../lib/markdown/section-heading-plugin'
@@ -16,7 +16,7 @@ describe('a relabeled section', () => {
   afterEach(() => { guide.label = label })
 
   it('heads its index page with the new label', () => {
-    expect(new MarkdownIt().use(sectionHeadingPlugin).render('Body.', { relativePath: 'guide/index.md' }))
+    expect(markdownit().use(sectionHeadingPlugin).render('Body.', { relativePath: 'guide/index.md' }))
       .toBe('<h1>Walkthrough</h1>\n<p>Body.</p>\n')
   })
 

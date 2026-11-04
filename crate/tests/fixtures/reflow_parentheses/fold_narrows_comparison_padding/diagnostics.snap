@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 49
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/fold_narrows_comparison_padding/input.py
+---
+reflow-parentheses@41..46
+reflow-parentheses@5..11
+reflow-parentheses@53..69
+reflow-parentheses@85..87

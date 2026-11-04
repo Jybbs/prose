@@ -153,6 +153,23 @@ pub(crate) fn filter_map_over_exprs<T>(
     collector.found
 }
 
+/// Every `Some` that `probe` returns over `expr` and each expression
+/// beneath it in source order. `interpolations` decides whether the walk
+/// reads the interior of an f-string or t-string replacement field.
+pub(crate) fn filter_map_within_expr<T>(
+    expr: &Expr,
+    interpolations: Interpolations,
+    probe: impl FnMut(&Expr) -> Option<T>,
+) -> Vec<T> {
+    let mut collector = ExprCollector {
+        found: Vec::new(),
+        interpolations,
+        probe,
+    };
+    collector.visit_expr(expr);
+    collector.found
+}
+
 /// Every `Some` that `probe` returns over `body`, descending through
 /// every compound body including nested `def` and `class` scopes.
 pub(crate) fn filter_map_over_stmts<'src, T>(

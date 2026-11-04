@@ -36,7 +36,7 @@ The formatter fills in the `Unstable output` form from the run itself, and the n
 
 ## 🐞 Reporting an Unstable Rewrite
 
-Running *Prose* twice should leave the second run nothing to do, and that promise holds for whichever subset of rules a project enables rather than for the default set alone. A `prose format` run that rewrites a file therefore re-applies its enabled rules to the output it just wrote. Where any of them still edits, the run says so:
+Running *Prose* twice should leave the second run nothing to do, and that promise holds for whichever subset of rules a project enables rather than for the default set alone. A `prose format` run that rewrites a file therefore re-applies the rules that edited it to the output it just wrote, and where the cache is live and the run writes a module back to disk, the next `prose format` run that reads that output makes the check instead. Where a rule still edits that output, the run making the check says so:
 
 ```console
 $ prose format src/module.py
@@ -55,7 +55,7 @@ The invocation is the same one that confirms the fix. Running it again after upg
 
 Opening the link lands the form with the version, the reproducing slugs, the resolved `[tool.prose]` table, the source, and both passes already filled. A large file overflows what a URL carries, so a field that arrives blank is one to paste in from the run.
 
-Editors see the same notice, with `prose server` sending it once per document per session rather than on every save, and offering the pre-filled form as an action beside the message where the client advertises `window/showDocument`.
+An editor sees the notice through `prose server`, which sends it once per document per session rather than on every save and offers the pre-filled form as an action beside the message where the client advertises `window/showDocument`.
 
 Turning the notice off entirely is one key:
 
@@ -82,7 +82,7 @@ Setting the labels, the assignee, and the milestone takes triage access on the r
 | `🦉 engine` | Parser integration, the pipeline, `Source`, and the primitives under `crate/src/primitives/` |
 | `🪜 alignment` | Rules that pad the space before a shared token so consecutive rows read as columns |
 | `🪉 ordering` | Rules that reorder sibling nodes by a fixed key while keeping each node's comments with it |
-| `🧺 layout` | Rules that explode a bracketed construct to one entry per line once it outgrows its line |
+| `🧺 layout` | Rules that explode a bracketed construct across rows once it outgrows its line |
 | `🪶 formatting` | Rules that rewrite a token, a line, or a spelling once a statement's layout is settled |
 | `🧶 lint` | Rules that report a finding without rewriting the source |
 | `🪄 cli` | Command-line interface, config loader, diff output |
@@ -247,20 +247,10 @@ Every tool, crate, package, and action the repository depends on is pinned to an
 These rules decide what a row of the table holds:
 
 - A lift is major where it changes the left-most non-zero part of the version, so a lift between two `0.x.y` releases is major when the minor part changes, a lift between two `0.0.z` releases when the patch part changes, and a lift between two calendar versions only when the year changes
-- Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the release `[package.metadata.ruff]` names
-- The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry
+- Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the `ruff` tool and the release `[package.metadata.ruff]` names
+- The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry. A docs-site pin standing on a prerelease takes the highest PEP 440 version its registry lists, since `bun outdated` reads only the `latest` dist-tag
 - A tool release younger than mise's [**`minimum_release_age`**](https://mise.jdx.dev/configuration/settings.html#minimum_release_age) cutoff takes no row, because mise leaves it out of its report until the cutoff clears it. A second table lists each such release beside the time it clears, and no write takes one before then
 - The `min_version` in `.mise/config.toml` names the oldest mise that reads the config rather than a release to lift to, so it takes no row
-
-### Held Back
-
-A major lift held back from a write is recorded below beside its reason, and each later run passes `--hold` for every pin the table names until the change that lift needs lands.
-
-| **Pin** | **Reason** |
-|---|---|
-| `markdown-it` | The next major release types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
-| `satori` | The newest release renders each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
-| `typescript` | `vue-tsc` loads `typescript/lib/tsc`, which the next major release no longer exports, so `site:typecheck` stops before it checks a file |
 
 ---
 
@@ -337,7 +327,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 | **Workflow** | **Fires on a Pull Request Touching** |
 |---|---|
 | `🪻 CI` | Any file other than Markdown, `LICENSE`, and the docs site, though the docs site's wasm tests still count |
-| `🪻 Deploy` | The docs site, the scripts, tasks, and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, every Markdown file directly under `.github/`, `LICENSE`, or `crate/Cargo.toml` |
+| `🪻 Deploy` | The docs site, the crate's source, manifests, and fixtures, `prose_wasm`, the workspace manifest and lockfile, the wheel platform list, the scripts, tasks, and libraries under `.mise/`, the tool pins and their lockfile, the composite actions, the issue templates, every Markdown file directly under `.github/`, or `LICENSE` |
 | `🪻 Corpus` | The crate's source, the corpus binaries, harnesses, and tasks, the workspace manifests and lockfile, the tool pins, or the composite actions |
 | `🪻 Release` | `crate/Cargo.toml`, `crate/pyproject.toml`, the tool pins, the composite actions and step-summary templates, or the tasks and libraries the release rows call |
 
@@ -360,7 +350,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
 | `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |
-| `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `vue-tsc` reports no type error in the docs site |
+| `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `tsc` reports no type error in the docs site |
 | `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
 | `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |

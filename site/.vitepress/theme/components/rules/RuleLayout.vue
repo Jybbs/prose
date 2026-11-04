@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useData }  from 'vitepress'
+import { computed } from 'vue'
+
 import CompositionCards from './CompositionCards.vue'
 import RuleCardList     from './RuleCardList.vue'
 import RuleConfigTable  from './RuleConfigTable.vue'
@@ -6,12 +9,14 @@ import RuleFixtures     from './RuleFixtures.vue'
 import DocHeading       from '../base/DocHeading.vue'
 import Fixture          from '../fixtures/Fixture.vue'
 
-import { casesForRule, fixturesForRule } from '../../../lib/rules/rule-view'
+import { fixturesForRule, pageCompositionCases } from '../../../lib/rules/rule-view'
 
 const props = defineProps<{ rule: string }>()
 
+const { frontmatter } = useData()
+
 const canonical = fixturesForRule(props.rule).canonical
-const composes  = casesForRule(props.rule).length > 0
+const composes  = computed(() => pageCompositionCases(frontmatter.value, props.rule).length > 0)
 </script>
 
 <template>

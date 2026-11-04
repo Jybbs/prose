@@ -1,19 +1,4 @@
-@property --spotlight-x {
-  syntax        : '<percentage>';
-  initial-value : 50%;
-  inherits      : false;
-}
-
-@property --spotlight-y {
-  syntax        : '<percentage>';
-  initial-value : 50%;
-  inherits      : false;
-}
-
-.surface-card-cover-link {
-  text-indent : 100%;
-}
-
+.surface-card-cover-link,
 .vp-doc .rule-card-cover,
 .rule-card-cover {
   position             : absolute;
@@ -32,21 +17,8 @@
   pointer-events : auto;
 }
 
-.surface-card::after {
-  background : radial-gradient(
-    var(--prose-size-420) circle at var(--spotlight-x) var(--spotlight-y),
-    color-mix(in oklab, var(--family-color) var(--prose-tint-medium), transparent) 0%,
-    transparent 60%
-  );
-}
-
-.surface-card::before {
-  background : linear-gradient(90deg, transparent, var(--family-color), transparent);
-}
-
-.surface-card[data-active],
-.surface-card:focus-within {
-  box-shadow : var(--prose-shadow-lift) color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
+.surface-card-icon .nib-badge {
+  color : var(--family-nib-soft);
 }
 
 .surface-card-blurb :where(code) {

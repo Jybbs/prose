@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/operator_row_indent_counts_as_one_space/input.py
+---
+ok = (
+    alpha_value == beta_value_long
+)

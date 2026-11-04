@@ -2,7 +2,10 @@
 import { refAutoReset, useClipboard, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref }               from 'vue'
 
-import CopyButton from '../base/CopyButton.vue'
+import CopyButton           from '../base/CopyButton.vue'
+import ProseSandboxControls from './ProseSandboxControls.vue'
+import ProseSandboxSurface  from './ProseSandboxSurface.vue'
+import ProseSandboxToml     from './ProseSandboxToml.vue'
 
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
@@ -105,7 +108,7 @@ onMounted(sandbox.start)
         <button
           v-show="!editing"
           type="button"
-          class="panel-corner right-40 panel-seat size-28 data-armed:border-warning data-armed:text-warning data-armed:opacity-100"
+          class="panel-corner right-40 panel-seat size-28 data-armed:border-eureka-page-35 data-armed:text-eureka-page-45 data-armed:opacity-100"
           :data-armed="refreshArmed || null"
           :title="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
           :aria-label="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
@@ -134,7 +137,7 @@ onMounted(sandbox.start)
             </template>
           </svg>
         </button>
-        <span v-if="refreshArmed" class="pointer-events-none absolute top-8 right-108 z-3 flex h-28 items-center rounded-sm border-1 border-warning-55-divider bg-bg px-10 font-mono text-xxs tracking-0-04em whitespace-nowrap text-text-1 shadow-tooltip" role="status">
+        <span v-if="refreshArmed" class="pointer-events-none absolute top-8 right-108 z-3 flex h-28 items-center rounded-sm border-1 border-eureka-page-35 bg-bg px-10 font-mono text-xxs tracking-0-04em whitespace-nowrap text-text-1 shadow-tooltip" role="status">
           Click again to proceed with a new example
         </span>
         <p class="sr-only" aria-live="polite">{{ announcement }}</p>

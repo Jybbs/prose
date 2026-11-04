@@ -20,34 +20,17 @@
   --color-ube-pale                     : var(--prose-palette-ube-pale);
   --color-whiskey                      : var(--prose-palette-whiskey);
   --color-woodsmoke                    : var(--prose-palette-woodsmoke);
-  --color-accent                       : var(--prose-role-accent);
-  --color-emphasis                     : var(--prose-role-emphasis);
-  --color-error                        : var(--prose-role-error);
-  --color-link-hover                   : var(--prose-role-link-hover);
-  --color-warning                      : var(--prose-role-warning);
-  --color-family-alignment             : var(--prose-family-alignment);
-  --color-family-cli                   : var(--prose-family-cli);
-  --color-family-docs                  : var(--prose-family-docs);
-  --color-family-engine                : var(--prose-family-engine);
-  --color-family-formatting            : var(--prose-family-formatting);
-  --color-family-layout                : var(--prose-family-layout);
-  --color-family-lint                  : var(--prose-family-lint);
-  --color-family-ordering              : var(--prose-family-ordering);
-  --color-section-architecture         : var(--prose-section-architecture);
-  --color-section-guide                : var(--prose-section-guide);
-  --color-section-integrations         : var(--prose-section-integrations);
-  --color-section-reference            : var(--prose-section-reference);
-  --color-section-sandbox              : var(--prose-section-sandbox);
+  --color-aside                        : var(--prose-role-aside);
+  --color-chip-ground                  : var(--prose-chip-ground);
+  --color-code-ground                  : var(--prose-role-code-ground);
+  --color-link                         : var(--prose-role-link);
   --color-bg                           : var(--vp-c-bg);
   --color-bg-alt                       : var(--vp-c-bg-alt);
   --color-bg-soft                      : var(--vp-c-bg-soft);
   --color-black                        : var(--vp-c-black);
   --color-brand-1                      : var(--vp-c-brand-1);
   --color-brand-2                      : var(--vp-c-brand-2);
-  --color-brand-3                      : var(--vp-c-brand-3);
-  --color-brand-soft                   : var(--vp-c-brand-soft);
   --color-danger-1                     : var(--vp-c-danger-1);
-  --color-default-soft                 : var(--vp-c-default-soft);
   --color-divider                      : var(--vp-c-divider);
   --color-text-1                       : var(--vp-c-text-1);
   --color-text-2                       : var(--vp-c-text-2);
@@ -93,7 +76,6 @@
   --text-1-2rem                        : var(--prose-text-1-2rem);
   --text-1-25rem                       : var(--prose-text-1-25rem);
   --text-1-3rem                        : var(--prose-text-1-3rem);
-  --text-1-35rem                       : var(--prose-text-1-35rem);
   --text-1-4rem                        : var(--prose-text-1-4rem);
   --text-1-5rem                        : var(--prose-text-1-5rem);
   --text-1-6rem                        : var(--prose-text-1-6rem);
@@ -104,15 +86,17 @@
   --text-2-2rem                        : var(--prose-text-2-2rem);
   --text-2-4rem                        : var(--prose-text-2-4rem);
   --text-2-6rem                        : var(--prose-text-2-6rem);
-  --text-2-8rem                        : var(--prose-text-2-8rem);
   --text-3-4rem                        : var(--prose-text-3-4rem);
-  --text-0-6em                         : var(--prose-text-0-6em);
+  --text-1-35rem                       : var(--prose-text-1-35rem);
+  --text-2-8rem                        : var(--prose-text-2-8rem);
   --text-0-7em                         : var(--prose-text-0-7em);
   --text-0-8em                         : var(--prose-text-0-8em);
+  --text-0-84em                        : var(--prose-text-0-84em);
   --text-0-85em                        : var(--prose-text-0-85em);
   --text-0-86em                        : var(--prose-text-0-86em);
   --text-0-88em                        : var(--prose-text-0-88em);
   --text-0-9em                         : var(--prose-text-0-9em);
+  --text-0-92em                        : var(--prose-text-0-92em);
   --text-0-95em                        : var(--prose-text-0-95em);
   --text-1em                           : var(--prose-text-1em);
   --text-15                            : var(--prose-text-15);
@@ -125,11 +109,9 @@
   --tracking-0-02em                    : var(--prose-tracking-0-02em);
   --tracking-0-04em                    : var(--prose-tracking-0-04em);
   --tracking-0-05em                    : var(--prose-tracking-0-05em);
-  --tracking-0-06em                    : var(--prose-tracking-0-06em);
   --tracking-0-08em                    : var(--prose-tracking-0-08em);
   --tracking-0-1em                     : var(--prose-tracking-0-1em);
   --tracking-0-12em                    : var(--prose-tracking-0-12em);
-  --tracking-0-14em                    : var(--prose-tracking-0-14em);
   --tracking-0-16em                    : var(--prose-tracking-0-16em);
   --tracking-0-18em                    : var(--prose-tracking-0-18em);
   --tracking-display-wide              : var(--prose-display-tracking-wide);
@@ -138,6 +120,8 @@
   --tracking-label                     : var(--prose-label-tracking);
   --tracking-label-loose               : var(--prose-label-tracking-loose);
   --tracking-meta                      : var(--prose-meta-tracking);
+  --tracking-0-06em                    : var(--prose-tracking-0-06em);
+  --tracking-0-14em                    : var(--prose-tracking-0-14em);
 
   --leading-0                          : 0;
   --leading-1-05                       : 1.05;
@@ -146,7 +130,6 @@
   --leading-1-15                       : 1.15;
   --leading-1-2                        : 1.2;
   --leading-1-3                        : 1.3;
-  --leading-1-35                       : 1.35;
   --leading-1-4                        : 1.4;
   --leading-1-45                       : 1.45;
   --leading-1-5                        : 1.5;
@@ -177,19 +160,19 @@
   --spacing-3rem                       : var(--prose-space-3rem);
   --spacing-0-08em                     : var(--prose-space-0-08em);
   --spacing-0-1em                      : var(--prose-space-0-1em);
+  --spacing-0-12em                     : var(--prose-space-0-12em);
   --spacing-0-15em                     : var(--prose-space-0-15em);
   --spacing-0-18em                     : var(--prose-space-0-18em);
   --spacing-0-2em                      : var(--prose-space-0-2em);
   --spacing-0-3em                      : var(--prose-space-0-3em);
   --spacing-0-4em                      : var(--prose-space-0-4em);
-  --spacing-0-45em                     : var(--prose-space-0-45em);
   --spacing-0-5em                      : var(--prose-space-0-5em);
+  --spacing-0-6em                      : var(--prose-space-0-6em);
   --spacing-0-65em                     : var(--prose-space-0-65em);
   --spacing-1-1em                      : var(--prose-space-1-1em);
   --spacing-1ch                        : var(--prose-space-1ch);
 
   --width-2-1rem                       : var(--prose-size-2-1rem);
-  --width-2-6rem                       : var(--prose-size-2-6rem);
   --width-3rem                         : var(--prose-size-3rem);
   --width-3-4rem                       : var(--prose-size-3-4rem);
   --width-5-5rem                       : var(--prose-size-5-5rem);
@@ -203,7 +186,6 @@
   --width-1-5em                        : var(--prose-size-1-5em);
 
   --height-2-1rem                      : var(--prose-size-2-1rem);
-  --height-2-6rem                      : var(--prose-size-2-6rem);
   --height-3rem                        : var(--prose-size-3rem);
   --height-3-4rem                      : var(--prose-size-3-4rem);
   --height-5-5rem                      : var(--prose-size-5-5rem);
@@ -217,7 +199,7 @@
   --height-1-5em                       : var(--prose-size-1-5em);
 
   --size-2-1rem                        : var(--prose-size-2-1rem);
-  --size-2-6rem                        : var(--prose-size-2-6rem);
+  --size-2-5em                         : var(--prose-size-2-5em);
   --size-3rem                          : var(--prose-size-3rem);
   --size-3-4rem                        : var(--prose-size-3-4rem);
   --size-5-5rem                        : var(--prose-size-5-5rem);
@@ -235,7 +217,6 @@
   --container-16rem                    : var(--prose-width-16rem);
   --container-22rem                    : var(--prose-width-22rem);
   --container-30rem                    : var(--prose-width-30rem);
-  --container-94rem                    : var(--prose-width-94rem);
   --container-18ch                     : var(--prose-width-18ch);
   --container-42ch                     : var(--prose-width-42ch);
   --container-48ch                     : var(--prose-width-48ch);
@@ -253,7 +234,6 @@
   --breakpoint-wide                    : 1280px;
 
   --radius-1                           : var(--prose-radius-1);
-  --radius-2                           : var(--prose-radius-2);
   --radius-3                           : var(--prose-radius-3);
   --radius-sm                          : var(--prose-radius-sm);
   --radius-6                           : var(--prose-radius-6);
@@ -289,7 +269,6 @@
 
 @theme inline {
   --color-code-block                       : var(--vp-code-block-bg);
-  --color-family-or-brand-1                : var(--family-color, var(--vp-c-brand-1));
 
   --content-middot                         : "·";
 
@@ -305,6 +284,7 @@
 
   --radius-base-inner                      : calc(var(--prose-radius) - var(--prose-border-1));
   --radius-half                            : 50%;
+  --container-94rem                        : var(--prose-width-94rem);
 
   --transition-property-grid-template-rows : grid-template-rows;
 

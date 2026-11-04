@@ -1,17 +1,19 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 import { replaceTextTokens } from './token-split'
 import { walkBodyInlines }   from './walk'
 import { wordBounded }       from './word-bounded'
 
-const PATTERN = wordBounded('[Pp]rose')
+const PATTERN = wordBounded('Prose')
 
+// Wraps each standalone capitalized Prose in body text in a `prose-mark` span,
+// leaving the common noun and every compound literal.
 export function proseMarkPlugin(md: MarkdownIt): void {
   md.core.ruler.after('inline', 'prose-mark', state => {
     walkBodyInlines(state, (block, children) => {
       block.children = replaceTextTokens(children, state.Token, PATTERN, (match, child) => {
         const open    = new state.Token('span_open', 'span', 1)
-        open.attrSet('class', 'text-ube')
+        open.attrSet('class', 'prose-mark')
         open.level    = child.level
         const inner   = new state.Token('text', '', 0)
         inner.content = match[1]

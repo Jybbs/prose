@@ -37,27 +37,27 @@ useHashOpen(fragment => {
     <section
       v-for="family in facetGroups"
       :key="family.family"
-      class="per-rule-facets-section"
+      class="per-rule-facets-section relative"
       :data-family="family.family"
     >
       <button
         type="button"
-        class="per-rule-facets-head group flex w-full items-center gap-9 border-0 border-l-2 border-l-family py-7 pl-14 text-left transition-opacity hover:opacity-72"
+        class="per-rule-facets-head group flex w-full items-center gap-9 border-0 border-l-2 py-7 pl-14 text-left border-l-transparent focus-visible:focus-ring focus-visible:outline-offset-2"
         :aria-expanded="open[family.family] ?? false"
         @click="toggle(family.family)"
       >
-        <span class="size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent border-l-family transition-transform group-aria-expanded:rotate-90" aria-hidden="true"></span>
-        <span class="per-rule-facets-label kicker text-family-76-text-1">
+        <span class="size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent group-aria-expanded:rotate-90 per-rule-facets-chevron border-l-text-2 group-hover:border-l-text-1 group-focus-visible:border-l-text-1" aria-hidden="true"></span>
+        <span class="per-rule-facets-label kicker text-text-2 font-600">
           <NibBadge v-if="family.family !== 'generic'" :emblem="familyEmblem(family.family)" :size="13.6" />
           {{ family.label }}
-          <span class="per-rule-facets-count text-text-3 before:mx-0-5em before:content-middot">{{ facetCount(family) }}</span>
+          <span class="per-rule-facets-count before:mx-0-5em before:content-middot text-text-2 font-400">{{ facetCount(family) }}</span>
         </span>
       </button>
       <div v-show="open[family.family]" class="pt-10 pb-2">
-        <div v-for="group in family.rules" :key="group.rule" class="border-l-2 border-l-family pl-14 not-first:mt-18">
+        <div v-for="group in family.rules" :key="group.rule" class="border-l-2 pl-14 not-first:mt-18 border-l-transparent">
           <p :id="group.anchor" class="per-rule-facets-rule-head mt-0 mb-10 -ml-14 flex">
             <InlineRuleLink v-if="family.family !== 'generic'" :slug="group.rule" />
-            <span v-else class="per-rule-facets-scope inline-block rounded-r-sm bg-family px-10 py-3 font-mono text-0-85em text-bg">{{ group.rule }}</span>
+            <span v-else class="per-rule-facets-scope inline-block rounded-r-sm px-10 py-3 font-mono text-0-85em bg-chip-ground text-text-1">{{ group.rule }}</span>
             <PermalinkAnchor :anchor="group.anchor" :label="group.rule" />
           </p>
           <dl class="flex flex-col">
@@ -67,8 +67,8 @@ useHashOpen(fragment => {
                 <PermalinkAnchor :anchor="facet.anchor" :label="facet.key" />
                 <span class="ml-auto inline-flex items-center gap-0-4rem">
                   <span class="per-rule-facets-type rounded-sm bg-bg-soft px-0-5em py-2 font-mono text-xs text-text-2">{{ facet.type }}</span>
-                  <span class="inline-flex items-baseline gap-0-4em rounded-sm bg-family/medium px-0-5em py-2 text-xs">
-                    <span class="font-mono text-kicker tracking-label text-text-3 uppercase">default</span>
+                  <span class="inline-flex items-baseline gap-0-4em rounded-sm px-0-5em py-2 text-xs bg-chip-ground">
+                    <span class="font-mono text-kicker tracking-label uppercase text-text-2">default</span>
                     <span class="per-rule-facets-default-value font-mono text-text-1">{{ facet.default }}</span>
                   </span>
                 </span>

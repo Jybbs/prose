@@ -7,8 +7,8 @@
 .v-popper--theme-rule-card.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
-  grid-column   : 1 / -1;
   min-height    : 0;
+  margin        : calc(var(--prose-space-12) * -1) calc(var(--prose-space-16) * -1) 0;
   padding       : var(--prose-space-8) var(--prose-space-16);
 }
 
@@ -20,6 +20,6 @@
 }
 
 .lint-message code {
-  color     : var(--family-color);
+  color     : var(--vp-code-color);
   font-size : var(--prose-text-0-86em);
 }

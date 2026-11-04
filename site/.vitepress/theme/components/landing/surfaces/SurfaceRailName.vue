@@ -13,7 +13,7 @@ const tabindex = useHiddenTabindex()
 <template>
   <RuleTooltipPopper v-if="rule" :rule="rule">
     <a
-      class="surface-rail-chip chip rule-chip ground"
+      class="surface-rail-chip chip rule-chip"
       :href="rule.href"
       :data-family="rule.family"
       :tabindex="tabindex"

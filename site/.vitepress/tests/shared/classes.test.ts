@@ -4,9 +4,9 @@ import path from 'node:path'
 import { babelParse, parse as parseSfc } from '@vue/compiler-sfc'
 import { parse }                         from 'postcss'
 
-import { siteSheets }  from '../support'
-import * as tailwind   from '../tailwind'
-import * as vocabulary from '../vocabulary'
+import { siteSheets, VITEPRESS_THEME } from '../support'
+import * as tailwind                   from '../tailwind'
+import * as vocabulary                 from '../vocabulary'
 
 import type { Declaration, Root, Rule } from 'postcss'
 
@@ -29,6 +29,8 @@ interface Written {
 interface Element {
   classes : Written[]
   line    : number
+  linked ?: boolean
+  tag    ?: string
 }
 
 // Names the variants whose arbitrary value is the attribute value they match.
@@ -84,7 +86,8 @@ function classesOf(root: Root): string[] {
 function elementsOf(file: string): Element[] {
   const ast = parseSfc(vocabulary.read(file)).descriptor.template?.ast
   const out = [] as Element[]
-  const visit = (node: { children?: unknown[], loc: { start: { line: number } }, props?: unknown[], tag?: string }) => {
+  const visit = (node: { children?: unknown[], loc: { start: { line: number } }, props?: unknown[], tag?: string }, within = false) => {
+    const linked  = within || node.tag === 'a'
     const classes = [] as Written[]
     let slot = 1
     for (const prop of (node.props ?? []) as Record<string, any>[]) {
@@ -97,9 +100,9 @@ function elementsOf(file: string): Element[] {
     }
     if (classes.length > 0) {
       const inherited = rootClassesOf(node.tag ?? '').map(name => ({ alt: 0, inherited: true, name, slot: 0 }))
-      out.push({ classes: [...classes, ...inherited], line: node.loc.start.line })
+      out.push({ classes: [...classes, ...inherited], line: node.loc.start.line, linked, tag: node.tag })
     }
-    for (const child of node.children ?? []) visit(child as typeof node)
+    for (const child of node.children ?? []) visit(child as typeof node, linked)
   }
   if (ast) visit(ast as never)
   return out
@@ -161,7 +164,7 @@ function bound(node: Expression, into: Written[], slot: number, alt = 0, shared?
 function vitepressClasses(): string[] {
   const keyed = (expression: string) => [...expression.matchAll(/([\w-]+)\s*:(?!:)|'([^']*)'/g)]
     .flatMap(([, key, text]) => (key ? [key] : words(text)))
-  return fs.globSync(`${vocabulary.VITEPRESS_THEME}/**/*.vue`, { cwd: vocabulary.SITE })
+  return fs.globSync(`${VITEPRESS_THEME}/**/*.vue`, { cwd: vocabulary.SITE })
     .flatMap(file => [...vocabulary.read(file).matchAll(/(?<!\w)(:?)class="([^"]+)"/g)])
     .flatMap(([, binding, names]) => (binding ? keyed(names) : words(names)))
 }
@@ -263,6 +266,19 @@ function conflictsOf({ classes }: Element): string[] {
   return found
 }
 
+// Lists each class setting an `em`, `i`, `strong`, `b`, or `mark` outside a link
+// in a color other than a text color or the aside ink.
+function inlineHuesOf({ classes, linked, tag }: Element): string[] {
+  if (linked || !vocabulary.INLINE_TEXT.has(tag ?? '')) return []
+  return classes.map(({ name }) => name).filter(name => {
+    let hue = false
+    parse(DESIGN.candidatesToCss([name])[0] ?? '').walkDecls('color', decl => {
+      hue ||= !vocabulary.TEXT_COLOR.test(decl.value)
+    })
+    return hue
+  })
+}
+
 describe('the classes a template writes', () => {
   it.each(TEMPLATES)('%s writes only declared, token-backed, unconflicted classes', file => {
     const problems = elementsOf(file).flatMap(element => [
@@ -273,6 +289,20 @@ describe('the classes a template writes', () => {
       ...conflictsOf(element).map(conflict => `${element.line}: ${conflict}`)
     ])
     expect(problems).toStrictEqual([])
+  })
+
+  it.each(TEMPLATES)('%s sets each em, i, strong, b, and mark outside a link in a text color or the aside ink', file => {
+    expect(elementsOf(file).flatMap(inlineHuesOf)).toStrictEqual([])
+  })
+
+  it.each([
+    { element: { tag: 'em' },                 hues: ['text-brand-1'] },
+    { element: { tag: 'strong' },             hues: ['text-brand-1'] },
+    { element: { linked: true, tag: 'em' },   hues: [] },
+    { element: { tag: 'span' },               hues: [] }
+  ])('reports a hue on $element.tag as $hues', ({ element, hues }) => {
+    const classes = [{ alt: 0, name: 'text-brand-1', slot: 0 }, { alt: 0, name: 'text-text-1', slot: 0 }]
+    expect(inlineHuesOf({ ...element, classes, line: 1 })).toStrictEqual(hues)
   })
 
   it('generates no utility from an arbitrary value or a stray literal', () => {

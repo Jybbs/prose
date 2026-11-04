@@ -27,9 +27,11 @@ them fails.
                restoring a cache, directly or through a composite in this
                repository, unless the `jdx/mise-action` step passes `cache` as
                `false` or forwards a `false` its composite's caller passed.
-    triggers   The `module.yml` push trigger covers every wasm source path
-               the module cache key hashes, and the `lock:sync` sources
-               cover every project config file declaring a tool.
+    triggers   Both `deploy.yml` triggers select every file the site build
+               declares as a source, the `module.yml` push trigger selects
+               every file the wasm module is built from, and the
+               `lock:sync` sources cover every project config file
+               declaring a tool.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
@@ -183,13 +185,7 @@ def checks() -> int:
         for name, task in listed.items()
         for alias in [name, *task["aliases"]]
     }
-    reaches = {
-        name: {
-            name,
-            *(each if isinstance(each, str) else each[0] for each in task["depends"])
-        }
-        for name, task in listed.items()
-    }
+    reaches = {name: {name, *dependencies(name)} for name in listed}
     carried = {flow["name"]: reported(flow) for _, flow in pull_request_workflows()}
 
     blank, unknown, absent, unlisted, strays, named = [set() for _ in range(6)]
@@ -244,6 +240,17 @@ def checks() -> int:
             )
         ]
     )
+
+
+def dependencies(task: str) -> list[str]:
+    """
+    Returns the name of every task `task` depends on, reducing an entry that
+    passes arguments to the name of the task it runs.
+    """
+    return [
+        each if isinstance(each, str) else each[0]
+        for each in tasks_listed()[task]["depends"]
+    ]
 
 
 def extract(message: str, pattern: str, text: str) -> str:
@@ -324,17 +331,27 @@ def filled(entry: dict, template: str) -> str:
 def filtered(path: str, patterns: list[str]) -> bool:
     """
     Returns whether a GitHub `paths` filter made of `patterns` selects
-    `path`, the last pattern to match it deciding, where `**` matches across
-    `/` and `*` and `?` do not.
+    `path`, the last pattern to match it deciding. A `**` matches across `/`
+    and a `**/` matches zero or more whole directories, whereas `*` never
+    matches `/`. A `?` takes the character before it zero or one times, a
+    `+` one or more times, and a `[]` matches one letter or digit it lists
+    or spans.
     """
     selected = False
     for pattern in patterns:
-        glob = (
-            escape(pattern.removeprefix("!"))
-            .replace(r"\*\*", "\0")
-            .replace(r"\*", "[^/]*")
-            .replace(r"\?", "[^/]")
-            .replace("\0", ".*")
+        glob = sub(
+            r"\\\[((?:\\-|[0-9A-Za-z])+)\\\]",
+            lambda match: f"[{match[1]}]".replace(r"\-", "-"),
+            (
+                escape(pattern.removeprefix("!"))
+                .replace(r"\*\*/", "\1")
+                .replace(r"\*\*", "\0")
+                .replace(r"\*", "[^/]*")
+                .replace(r"\?", "?")
+                .replace(r"\+", "+")
+                .replace("\1", "(?:.*/)?")
+                .replace("\0", ".*")
+            )
         )
         if fullmatch(glob, path):
             selected = not pattern.startswith("!")
@@ -595,7 +612,7 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     return [
         (f"Cargo.toml members ↔ {home}", owned, cargo_manifests(paths))
         for home, paths in [
-            (".github/workflows/warm.yml path filter", workflow_paths("warm")),
+            (".github/workflows/warm.yml path filter", workflow_paths("push", "warm")),
             ("lock:sync sources", task_paths("lock:sync", "sources"))
         ]
     ]
@@ -713,6 +730,11 @@ def parity() -> int:
             ".mise/config.toml maturin pin ↔ crate/pyproject.toml build requirement",
             pins["maturin"],
             build_requirement("maturin")
+        ),
+        (
+            ".mise/config.toml ruff pin ↔ crate/Cargo.toml ruff release",
+            pins["ruff"],
+            toml("crate/Cargo.toml")["package"]["metadata"]["ruff"]["release"]
         ),
         (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
@@ -1099,19 +1121,22 @@ def toml(path: str | Path) -> dict:
 
 def tracked(*paths: str) -> list[str]:
     """
-    Returns every file git tracks under `paths`, or every tracked file when
-    no path is given.
+    Returns every file git tracks that `paths` select as glob pathspecs, or
+    every tracked file when no path is given.
     """
-    return check_output(["git", "ls-files", "-z", *paths], text=True).split("\0")[:-1]
+    listing = ["git", "--glob-pathspecs", "ls-files", "-z", *paths]
+    return check_output(listing, text=True).split("\0")[:-1]
 
 
 def triggers() -> int:
     """
-    Reports every wasm source path the `module.yml` push trigger omits,
-    which leaves the cached module stale after a change to that path, and
-    every project config file declaring a tool that `lock:sync` omits from
-    its sources, which leaves `mise relock` skipping a pin change in that
-    file.
+    Reports every source the site build declares that a `deploy.yml` trigger
+    omits, which leaves a pull request changing that source running no
+    loader and a push changing it deploying nothing. It also reports every
+    wasm source the `module.yml` push trigger omits, which leaves the
+    cached module stale after a change to it, and every project config file
+    declaring a tool that `lock:sync` omits from its sources, which leaves
+    `mise relock` skipping a pin change in that file.
     """
     root     = Path.cwd().resolve()
     declared = {
@@ -1122,9 +1147,16 @@ def triggers() -> int:
     }
     return flagged(
         findings = [
-            (
-                set(hashed_paths("restore-wasm")) - set(workflow_paths("module")),
-                "module.yml push paths omit the wasm sources"
+            *(
+                (
+                    unfiltered(workflow_paths(event, workflow), task),
+                    f"{workflow}.yml {event} paths omit sources {task} reads"
+                )
+                for event, task, workflow in (
+                    ("pull_request", "site:press", "deploy"),
+                    ("push", "site:press", "deploy"),
+                    ("push", "wasm:pack", "module")
+                )
             ),
             (
                 declared - set(task_paths("lock:sync", "sources")),
@@ -1134,13 +1166,34 @@ def triggers() -> int:
     )
 
 
-def workflow_paths(name: str) -> list[str]:
+def unfiltered(paths: list[str], task: str) -> set[str]:
     """
-    Returns the paths the `name` workflow's push trigger filters on.
+    Returns every `sources` pattern of `task`, or of a task it depends on,
+    that selects a tracked file the path filter `paths` does not, leaving
+    out every file one of the task's own `!` patterns selects.
+    """
+    patterns = task_paths(task, "sources")
+    excluded = {
+        path
+        for pattern in patterns
+        if pattern.startswith("!")
+        for path in tracked(pattern[1:])
+    }
+    return {
+        pattern
+        for pattern in patterns
+        if not pattern.startswith("!")
+        if not all(filtered(path, paths) for path in set(tracked(pattern)) - excluded)
+    }.union(*(unfiltered(paths, name) for name in dependencies(task)))
+
+
+def workflow_paths(event: str, name: str) -> list[str]:
+    """
+    Returns the paths the `name` workflow's `event` trigger filters on.
     """
     flow = yaml(f".github/workflows/{name}.yml")
-    if (paths := flow["on"].get("push", {}).get("paths")) is None:
-        fail(f"no push paths filter in {name}.yml")
+    if (paths := (flow["on"].get(event) or {}).get("paths")) is None:
+        fail(f"no {event} paths filter in {name}.yml")
     return paths
 
 

@@ -24,6 +24,8 @@ import { parse }               from 'postcss'
 import { paletteCss } from '../lib/shared/palette'
 import { siteDir }    from '../lib/shared/paths'
 
+import { VITEPRESS_THEME } from './support'
+
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'
 import type { AtRule, Declaration, Root }    from 'postcss'
@@ -48,9 +50,12 @@ const SYSTEM_FONTS   = new Set([
 ])
 const WIDE_KEYWORDS  = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
 
-export const SITE            = siteDir(import.meta.url)
-export const TOKENS          = '.vitepress/theme/styles/tokens.css'
-export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
+// Holds the inline elements that set words apart in running text, beside the
+// values that keep one of them in a text color or the aside ink.
+export const INLINE_TEXT = new Set(['b', 'em', 'i', 'mark', 'strong'])
+export const TEXT_COLOR  = /^(?:var\(--(?:vp-c-text-[123]|prose-role-aside)\)|inherit|currentcolor)$/i
+export const SITE        = siteDir(import.meta.url)
+export const TOKENS      = '.vitepress/theme/styles/tokens.css'
 
 type Kind = 'color' | 'length' | 'media' | 'share' | 'token' | 'typeface'
 
@@ -244,15 +249,11 @@ function mixedBy(roots: Root[]): Set<string> {
 }
 
 // Builds the vocabulary the site's stylesheets read from, meaning what
-// `tokens.css`, the palette sheet, the VitePress default theme, and the page
-// head the config writes declare, beside the custom properties the `reading`
-// sheets pass to `color-mix()` or read as a font family.
+// `tokens.css`, the palette sheet, and the VitePress default theme declare,
+// beside the custom properties the `reading` sheets pass to `color-mix()` or
+// read as a font family.
 export function siteVocabulary(tokens: Root, reading: Root[]): Vocabulary {
-  const vocabulary = Vocabulary.read([tokens, parse(paletteCss()), ...vitepressSheets()], reading)
-  for (const [, prop] of read('.vitepress/config.ts').matchAll(/(--prose-[\w-]+):/g)) {
-    vocabulary.properties.add(prop)
-  }
-  return vocabulary
+  return Vocabulary.read([tokens, parse(paletteCss()), ...vitepressSheets()], reading)
 }
 
 // Parses each stylesheet the VitePress default theme ships.

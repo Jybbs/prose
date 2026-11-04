@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/one_row_chain_measures_its_padding_as_written/input.py
+---
+ok = (
+    alpha  == 1 and bb
+)

@@ -12,14 +12,15 @@ const card = (clickable = true) => mount(RuleCard, {
 })
 
 describe('RuleCard', () => {
-  it('sets the family badge alone on the tint at the card\'s left, named for a screen reader', () => {
+  it('heads the card at its right end with the family\'s nib, a middle dot, and its name', () => {
     const mark = card().get('.rule-card-mark')
-    expect(mark.classes()).toContain('ground')
     expect(mark.get('use').attributes('href')).toBe('#nib-basket-small')
-    expect(mark.get('svg').attributes()).toMatchObject({ 'aria-label': 'Layout', role: 'img' })
+    expect(mark.get('svg').attributes('aria-hidden')).toBe('true')
+    expect(mark.get('.middle-dot').text()).toBe('·')
+    expect(mark.get('.kicker').text()).toBe('Layout')
   })
 
-  it('stacks the slug over the caption beside the mark', () => {
+  it('sets the slug and the caption in the card\'s body', () => {
     const body = card().get('.rule-card-body')
     expect(body.get('.rule-card-slug').attributes('title')).toBe('reflow-calls')
     expect(body.get('.rule-card-caption').text()).toBe('What reflow-calls does.')

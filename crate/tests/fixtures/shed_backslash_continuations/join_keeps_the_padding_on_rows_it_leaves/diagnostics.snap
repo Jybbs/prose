@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+assertion_line: 49
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/join_keeps_the_padding_on_rows_it_leaves/input.py
+---
+shed-backslash-continuations@78..84

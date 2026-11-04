@@ -2,6 +2,7 @@
 import { onKeyStroke }   from '@vueuse/core'
 import { computed, ref } from 'vue'
 
+import NibBadge     from '../base/NibBadge.vue'
 import RuleCard     from '../rules/RuleCard.vue'
 import SandboxPlate from './SandboxPlate.vue'
 import SandboxRuler from './SandboxRuler.vue'
@@ -9,6 +10,7 @@ import SandboxRuler from './SandboxRuler.vue'
 import * as chipPanel        from '../../../lib/composables/use-chip-panel'
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as rules }     from '../../../lib/rules/rules.data'
+import { familyEmblem }      from '../../../lib/shared/emblems'
 
 const props = defineProps<{
   sandbox : ProseSandbox
@@ -75,20 +77,21 @@ function hover(rule: chipPanel.RuleControl): void {
       <div
         v-for="rule in visible"
         :key="rule.slug"
-        class="group relative inline-flex items-center rounded-sm bg-family-or-divider/medium transition-background-opacity-and-box-shadow data-off:bg-text-3/12 data-off:opacity-75 data-active:z-5 data-active:ring-1 data-active:ring-family-or-brand-1/45"
+        class="group relative inline-flex items-center rounded-sm data-active:z-5 sandbox-tags-tag bg-bg"
         :data-family="rule.family || null"
         :data-off="!isOn(rule) || undefined"
         :data-active="rule.slug === (openSlug || hoveredSlug) || undefined"
         @mouseover="hover(rule)"
         @focusin="hover(rule)"
       >
-        <button type="button" class="inline-flex items-center border-none px-7 py-2" @click="toggle(rule)">
-          <span class="font-mono text-0-68rem tracking-0-05em text-family-or-text-1 uppercase group-data-off:text-text-3">{{ rule.slug }}</span>
+        <button type="button" class="inline-flex items-center gap-5 border-none px-7 py-2" @click="toggle(rule)">
+          <NibBadge v-if="rule.family" :emblem="familyEmblem(rule.family)" :size="12" />
+          <span class="font-mono text-0-68rem tracking-0-05em text-text-1 uppercase group-data-off:text-text-2 group-data-off:line-through group-data-off:decoration-text-2">{{ rule.slug }}</span>
         </button>
         <button
           v-if="subFacets(rule).length > 0"
           type="button"
-          class="inline-flex items-center border-none py-2 pr-6 pl-3 text-text-3 transition-color-and-opacity not-disabled:hover:text-family-or-brand-1 disabled:cursor-default disabled:opacity-40 aria-expanded:text-family-or-brand-1"
+          class="inline-flex items-center border-none py-2 pr-6 pl-3 text-text-3 transition-color-and-opacity disabled:cursor-default disabled:opacity-40 not-disabled:hover:text-family-nib aria-expanded:text-family-nib"
           data-gear
           :disabled="!isOn(rule)"
           :aria-expanded="openSlug === rule.slug"

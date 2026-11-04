@@ -19,7 +19,7 @@ runs:
       uses : $/.github/actions/mise-floor
 
     - name : Install mise tools
-      uses : jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7
+      uses : jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       with:
         cache              : ${{ inputs.cache != 'false' }}
         cache_max_age_days : 0

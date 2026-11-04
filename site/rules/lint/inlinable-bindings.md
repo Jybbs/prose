@@ -21,26 +21,18 @@ Those regions exempt only the read that sits inside them, so a part of the same 
 
 Several kinds of binding never reach that cost test at all:
 
-- A binding matching the `allow-pattern` glob (*default `_*`, which exempts an intentionally-unused name*) stays quiet, as does a binding a later `del` names, because the inline would leave that `del` naming a value nothing bound.
+- A binding matching the `allow-pattern` glob (*default <ConfigDefault rule="inlinable-bindings" facet="allow-pattern" />, which exempts an intentionally-unused name*) stays quiet, as does a binding a later `del` names, because the inline would leave that `del` naming a value nothing bound.
 - An augmented assignment counts as both a write and a read, so a binding it targets reaches two uses.
 - A loop variable, a comprehension target, and a function parameter are bound implicitly and stay outside the rule's reach.
 - A walrus expression's own value counts as a use, so a walrus target reaches two uses wherever anything consumes it.
 - A function that declares `global` or `nonlocal` anywhere in its body is skipped whole.
 - A tuple-unpack target stays exempt when a sibling target reads more than once. Where every target reads once, the diagnostic names the subscript rewrite (*`batch[0]` for the first target of `x, y = batch`*) whenever the right-hand side is a plain name or attribute.
 
-The lint never rewrites, so the diagnostic is reported and the source stays as written.
-
 <template #configuration>
 
 <RuleConfigTable />
 
-The default `_*` exempts names starting with an underscore, the Python convention for an intentionally-unused binding. A project with stricter naming can tighten the glob, and an empty pattern exempts nothing rather than everything, the same reading [[miscased-constants]] gives its own empty default.
-
-</template>
-
-<template #related-after>
-
-For per-line opt-outs, the [**Suppression**](/guide/suppression#tagging-a-line) chapter covers the `# prose: ignore[inlinable-bindings]` directive.
+An empty pattern exempts nothing rather than everything, the same reading [[miscased-constants]] gives its own empty default.
 
 </template>
 

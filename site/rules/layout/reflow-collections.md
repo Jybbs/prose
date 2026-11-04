@@ -14,11 +14,9 @@ Inside the expanded form, a non-atomic entry (*a function call, a nested collect
 
 The rule runs the inverse move too, rejoining a construct broken somewhere other than an entry boundary, and the rejoin reaches a multi-line subscript, a collection used as a dict key, and a comprehension broken across its `for` and `if` clauses. A subscript and a comprehension only ever rejoin and never expand the way a literal does, so one too wide to fit, or one carrying a comment or a multi-line string, keeps its breaks. A construct that would overflow once joined keeps its break, as does one whose nested call is already written one argument per line, carries a comment, or passes `max-args`. A collection inside an f-string replacement field is left as written whatever its width, and a literal inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts on the row it lands on never expands, since the conversion places it in a replacement field.
 
-A literal the author already laid out as a bracketed column, its opening bracket ending a line and its closing bracket opening one, is the exception to the rejoin, because its breaks already sit at entry boundaries. `keep-multiline-literals`, on by default, keeps that column along with the `:` alignment [[align-colons]] pads, and holding one needs two or more entries. A construct enclosing a kept literal has no one-line form either, so it keeps its break as well, whereas any other break rejoins.
-
 A member the expansion keeps as written rather than laying out moves whole into the expanded form, its continuation rows shifted to the column the entries sit at, so a kept call or subscript reads under its siblings. A member whose rows align under its own opening bracket keeps the whole construct as written instead, and one running through a multi-line string keeps the string's own columns. A literal nested inside a member that moves whole, whether as a kept call's argument, an operand inside a generator, or the list a subscript indexes, still takes the layout it would take as an entry of its own, measured at the row where it lands.
 
-A dict expands once it has more than `max-dict-entries` entries whatever its width, and every collection enclosing it expands with it. A collection expands the same way when it holds a call that the count trigger of [[reflow-calls]] explodes, since that call leaves the collection no one-row form to keep.
+A dict the [`max-dict-entries`](#max-dict-entries) cap expands takes every collection enclosing it along, and a collection expands the same way when it holds a call that the count trigger of [[reflow-calls]] explodes, since that call leaves the collection no one-row form to keep.
 
 Every width the rule reads counts the separator closing an entry's row at the position [[alphabetize-siblings]] leaves it in, on the rejoin as well as the expansion. An entry the sort moves last sheds the comma it carries and one the sort moves up gains one before either is measured, so the layout the rule picks stays put once the sort is written. Each construct is then measured at the column it settles at:
 
@@ -26,9 +24,9 @@ Every width the rule reads counts the separator closing an entry's row at the po
 2. A member the expansion moves keeps the calls inside it measured at the columns its rows end up on, and a call the move pushes past the budget explodes in the same pass, provided [[reflow-calls]] runs and no skip holds the call for it.
 3. A literal following one the rule expands on the same line is measured where that expansion leaves it, on the closer's row at the statement's indent rather than under the continuation column the source wrote, and without the padding [[align-equals]] adds to or takes off the row the value opens.
 4. A dict value whose key the rule lays across rows is measured from the key's last row.
-5. A value inside an expanded dict is measured at the column [[align-colons]] shifts it to once the expanded rows align, so a collection value whose row would cross the budget at that column expands in the same pass and a call value explodes under the same condition as item 2. The value breaks open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded, than keeping every value on one row would, and not where [[alphabetize-siblings]] sorts the dict and breaking the value open would leave more than one entry spanning rows.
-6. The value of an assignment or a `type` statement is measured at the column [[align-equals]] pads its row to, so a collection value whose row would cross the budget at that column expands in the same pass, under the same comparison as item 5 and only where the padding stays within the `max-shift` of [[align-equals]].
-7. A literal's row is measured only through the opening bracket of a later literal on it that expands wherever the earlier one lands, so a literal is never charged for a sibling the same pass breaks open.
+5. A value inside an expanded dict is measured at the column [[align-colons]] shifts it to once the expanded rows align, so a collection value whose row would cross the budget at that column expands in the same pass and a call value explodes under the same condition as item 2. The value breaks open only on the terms [[align-colons]] sets for a dict entry, its limit on a dict [[alphabetize-siblings]] sorts included.
+6. The value of an assignment or a `type` statement is measured at the column [[align-equals]] pads its row to, so a collection value whose row would cross the budget at that column expands in the same pass on the terms [[align-equals]] sets for breaking a value open.
+7. A literal's row is measured only through the opening bracket of a later literal on it that expands wherever the earlier one lands, so a sibling the same pass breaks open never counts toward that literal's budget.
 
 <template #facets>
 
@@ -40,7 +38,7 @@ Each move sits behind its own facet, whereas the rejoin has none.
 
 ### `keep-multiline-literals`
 
-`keep-multiline-literals` keeps a literal the author wrote as a bracketed column of two or more entries, re-expanding it to the canonical layout rather than joining it back. Setting it to `false` joins one onto a single line wherever it fits the budget, and any other multi-line layout rejoins either way.
+`keep-multiline-literals` keeps a literal the author wrote as a bracketed column of two or more entries, its opening bracket ending a line and its closing bracket opening one, and re-expands it to the canonical layout rather than joining it back, since the column's breaks already sit at entry boundaries. The facet keeps the `:` alignment [[align-colons]] pads in that column as well. A construct enclosing a kept literal has no one-line form, so it keeps its break too. Setting it to `false` joins such a literal onto a single line wherever it fits the budget, and any other multi-line layout rejoins either way.
 
 ### `max-atomics`
 
@@ -48,7 +46,7 @@ Each move sits behind its own facet, whereas the rejoin has none.
 
 ### `max-dict-entries`
 
-`max-dict-entries` expands a dict once its entry count passes the cap, whatever its width, so a four-entry `dict` expands at the default <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line. The cap reads dicts alone, which is why a short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, whereas at `false` the width trigger becomes the only one a dict meets.
+`max-dict-entries` expands a dict once its entry count passes the cap, whatever its width, so a four-entry `dict` expands at the default <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line. The cap reads dicts alone, which is why a short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, whereas at `false` a dict expands only as any collection does, on its width or around a call [[reflow-calls]] explodes by count.
 
 ### `wrap-dict-entries`
 

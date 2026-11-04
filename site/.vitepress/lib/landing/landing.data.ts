@@ -29,8 +29,8 @@ declare const data: LandingData
 export { data }
 
 const SURFACE_BODIES: Record<RuleFamily, string> = {
-  alignment  : 'Equals signs, colons, the `import` keyword, and match arrows line up across '
-             + 'consecutive lines. The eye drops down the column.',
+  alignment  : 'Equals signs, colons, comparison operators, the `import` keyword, and trailing '
+             + 'comments line up across consecutive lines. The eye drops down the column.',
   docs       : 'Docstrings follow the same legibility discipline as code. Wrap to the docstring '
              + 'budget, put a one-line docstring\'s opener, body, and closer on lines of their '
              + 'own, and keep the quote style consistent throughout.',
@@ -38,9 +38,12 @@ const SURFACE_BODIES: Record<RuleFamily, string> = {
              + 'continuations and redundant `-> None` annotations fall away, and a stale '
              + '`__future__` import is removed once nothing needs it. The scaffolding clears '
              + 'after the shape is set.',
-  layout     : 'Calls, signatures, collections, and from-imports that outgrow the line budget '
-             + 'explode to one entry per line. Each argument, key, or name lands on its own '
-             + 'row, so the eye reads down the column and a later edit touches a single line.',
+  layout     : 'A call that outgrows the line budget explodes to one argument per row and a '
+             + 'signature expands to one parameter per row, so the eye reads down the column '
+             + 'and a later edit touches a single line. A collection expands across rows, a '
+             + 'dict holding one entry to a row and a run of numbers, strings, or names '
+             + 'packing several to a row, and an overlong from-import splits into '
+             + 'statements repeating its module.',
   lint       : 'Missing signature annotations, reassigned constants, step-narration comments, '
              + 'bare imports, and bindings whose value inlines for free are reported as '
              + 'findings. The formatter never rewrites these, because the fix belongs to the '

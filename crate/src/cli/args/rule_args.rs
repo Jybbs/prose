@@ -21,8 +21,8 @@ pub(crate) struct CheckArgs {
     )]
     pub(crate) paths: Vec<PathBuf>,
 
-    /// Confirm each file's would-be rewrite re-parses, surfacing an
-    /// unparseable rule output as a failure. Off by default.
+    /// Fail on a would-be rewrite that does not parse, compile, or
+    /// settle. Off by default.
     #[arg(long)]
     pub(crate) validate: bool,
 }

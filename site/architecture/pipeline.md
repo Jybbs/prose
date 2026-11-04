@@ -15,7 +15,7 @@ tagline: deterministic rule runner
 
 ## Public Surface
 
-`Pipeline` is fully public today, so a downstream Rust consumer builds one through the entry points below, runs it against a [[source]], and reads the returned text and diagnostics. `Pipeline` is `Send + Sync`, so one instance can be shared across `rayon` workers through `Arc`, and the same instance can drive many `run` calls in sequence, because `run` takes `&self` and consumes only the `Source` passed in.
+`Pipeline` is fully public, so a downstream Rust consumer builds one through the entry points below, runs it against a [[source]], and reads the returned text and diagnostics. `Pipeline` is `Send + Sync`, so one instance can be shared across `rayon` workers through `Arc`, and the same instance can drive many `run` calls in sequence, because `run` takes `&self` and consumes only the `Source` passed in.
 
 ### Constructors
 
@@ -45,7 +45,7 @@ tagline: deterministic rule runner
 
 ### Execution
 
-`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError>` reads through the registered rules in their canonical order. Each batch of consecutive rules the registry declares independent computes its edits against one buffer, and the pipeline splices them in a single pass and rebuilds the tree through [[source]], which reparses only the statements those edits reached where it can and the whole file where it cannot. The new *Source* feeds the next batch, carrying every table of the previous buffer that all of the batch's edits left standing. A rule the registry does not declare independent of every rule already in the batch, or whose edits overlap one already batched, opens the next batch against the reparsed buffer. When a batch of several rules produces a splice the reparse rejects, the pipeline replays them one at a time, so the error names the rule whose own edits fail. The final text, every diagnostic, and the set of rules whose edits landed return to the caller, so a settle check running afterward reads that set rather than deriving it from the diagnostics.
+`run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError>` reads through the registered rules in their canonical order. Each batch of consecutive rules the registry declares independent computes its edits against one buffer, and the pipeline splices them in a single pass and rebuilds the tree through [[source]], which reparses only the statements those edits reached where it can and the whole file where it cannot. The new *Source* feeds the next batch, carrying every table of the previous buffer that all of the batch's edits left standing. A rule the registry does not declare independent of every rule already in the batch, or whose edits overlap one already batched, opens the next batch against the reparsed buffer. When a batch of several rules produces a splice the reparse rejects, the pipeline replays them one at a time under the default sharing, so the error names the rule whose own edits fail. The final text, every diagnostic, and the set of rules whose edits landed return to the caller, so a settle check running afterward reads that set rather than deriving it from the diagnostics.
 
 Suppression is applied inside `run`, with every `# fmt: off` block, `# fmt: skip` marker, and `# prose: ignore[<rule>]` directive read at the point edits are emitted, so a suppressed fix group or lint diagnostic never reaches the returned vector. A fix group is dropped whole as soon as one of its edits falls under a directive, leaving a rule's co-dependent edits either all applied or all withheld. Once the lint diagnostics settle, a finding on a line a skip covers closes its message on the `# prose: ignore[<rule>]` that silences it, and each rule's audit reads what the `ignore` directives silenced, which is how [[inert-directives]] reports a directive that holds nothing out.
 
@@ -53,9 +53,9 @@ Suppression is applied inside `run`, with every `# fmt: off` block, `# fmt: skip
 
 `diagnose(&self, source: &Source) -> Vec<Diagnostic>` collects every enabled rule's findings against the unmodified source, applying no edits and never reparsing, so each range points into the source as written rather than into an intermediate rewrite. `prose check`, `prose server`, and a structured `format` report through `diagnose`, where a rendered diagnostic points at the file the author wrote, whereas `run` produces the rewritten text behind `prose format`'s diff, on-disk rewrite, and would-reformat summary. Both read the same [[suppression-map]] and rule set, and differ only in that `diagnose` reads every rule against the original where `run` reads each against the buffer its batch opened on.
 
-`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and returns empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. Every `prose format` run makes this pass over each file it rewrote, narrowed through `unsettled_among` to the rules that edited on the first pass, and raises the [**unstable-output notice**](/reference/cli#unstable-output) where it names any rule. `prose check --validate` and the corpus sweeps keep the full pass, and the sweep over each rule alone and each ordered rule pair is where a rule that depends on a later rule to finish its work shows up.
+`unsettled(&self, source: &Source) -> Vec<RuleId>` names every rule this pipeline carries whose edits would still rewrite `source`, and returns empty for a buffer that has settled. It reads the subset the pipeline was built with rather than the default set, so a `--select` run answers for that selection alone, and a file carrying a file-level `# prose: off` answers empty because no rule reaches it. A `prose format` run makes this pass over each file it rewrote, narrowed through `unsettled_among` to the rules that edited on the first pass, and raises the [**unstable-output notice**](/reference/cli#unstable-output) where it names any rule, whereas a run that writes a module back under a live cache leaves the check to the next `prose format` run that reads its output. `prose check --validate` and the corpus sweeps keep the full pass, and the sweep over each rule alone and each ordered rule pair is where a rule that depends on a later rule to finish its work shows up.
 
-`unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId>` makes that same pass over `fired` alone, the set `run` returns beside the rewritten text. A `format` run re-applies only the rules that edited on its first pass, so a rule that stayed silent is left to the full `unsettled` walk. The docs-site sandbox reads it through the wasm bindings to name what a second run would still change.
+`unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId>` makes that same pass over `fired` alone, the set `run` returns beside the rewritten text. The docs-site sandbox reads it through the wasm bindings to name what a second run would still change.
 
 `settle_report(&self, source: &Source) -> SettleReport` makes the same pass once and returns three things `unsettled` collapses into one. `editing` is the rules whose edits still rewrite `source`, in registration order, `unlanded` is the rules with a fix group that splices back to the same text or does not apply, and `witness` is the first editing rule paired with the text its edits produce, which a report shows as the rewrite. `unsettled` makes the same pass without producing the witness and returns `editing` alone. The corpus sweep reads `settle_report` over every file a run produced, so a rule that is stable and incomplete at once shows up beside a rule that keeps editing.
 
@@ -71,7 +71,7 @@ pub struct SettleReport {
 
 ```rust
 pub struct Diagnostic {
-    pub fix      : Option<Fix>,       // the fix and its edits, or `None` for lint-only findings
+    pub fix      : Option<Fix>,       // the fix and its edits, display-only on a lint, or `None`
     pub message  : String,            // human-readable explanation of the finding
     pub range    : TextRange,         // source span the finding points at
     pub rule     : RuleId,            // slug of the rule that emitted the finding
@@ -79,7 +79,7 @@ pub struct Diagnostic {
 }
 ```
 
-`Severity::Format` carries a `Some(fix)` payload the pipeline applies, whereas `Severity::Lint` carries `fix: None` and reports a finding the user resolves by hand. A consumer building a structured output format *(JSON, SARIF, GitHub annotations)* routes by `rule` to tie each finding to the slug that emitted it.
+`Severity::Format` carries a `Some(fix)` payload the pipeline applies, whereas `Severity::Lint` reports a finding the user resolves by hand, its `fix` either `None` or a display-only suggestion the pipeline never applies. A consumer building a structured output format *(JSON, SARIF, GitHub annotations)* routes by `rule` to tie each finding to the slug that emitted it.
 
 `PipelineError` is `pub` and carries one variant per failure the pipeline can report:
 
@@ -94,7 +94,7 @@ pub enum PipelineError {
 
 Every variant names the rule whose output failed:
 
-- A `Batch` error names every rule of a batch whose one-pass splice the reparse rejected. It appears only under `Sharing::Always`, whereas the default sharing replays the batch's rules one at a time and reports the responsible rule through one of the other three.
+- A `Batch` error names every rule of a batch whose one-pass splice the reparse rejected, which only `Sharing::Always` reports.
 - A `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook.
 - A `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies.
 - A `Reparse` error means a rule produced syntactically invalid Python.
@@ -103,11 +103,20 @@ The last three are rule-authoring bugs rather than conditions a consumer recover
 
 ## Determinism
 
-Rule order is fixed and the same on every run, so a given source and configuration always produce the same output. The registry pins the order in a single `register_rules!` macro invocation in `crate/src/rules/registry.rs`, and the pipeline runs rules in that order with no parallelism inside one *Source*. Parallelism across sources *(two files at once)* belongs to the path-mode CLI, which the walker drives above the pipeline rather than inside it.
+Rule order is fixed and the same on every run, so a given source and configuration always produce the same output, and the [**Pipeline Order**](/reference/pipeline-order) reference covers where the registry pins that order and why each rule sits where it does. The pipeline runs no two rules of one *Source* in parallel, whereas parallelism across sources *(two files at once)* belongs to the path-mode CLI, which the walker drives above the pipeline rather than inside it.
+
+## Independent Rules Share a Parse
+
+A run pays one parse per batch rather than one per editing rule, and which rules may share a batch is declared rather than assumed, in a shared-splice column each rule carries beside its dependency column in the registry. A pair joins that column on two kinds of evidence:
+
+1. The subset probe finding the two rules editing a standard-library file together, with the batched splice matching the rule-by-rule result on every such file at every line length.
+2. A reading of the later rule's `apply` that finds nothing it measures among what the earlier rule rewrites, meaning the text a column is computed from, the adjacency of the rows a run spans, a statement's position, a name binding, or a docstring's rows.
+
+A row's fit against the budget is left to the probe alone, so a rule that measures only that shares a splice with one rewriting the row's value side. The probe re-checks every declared pair on each `cargo test` over the fixture tree and on every corpus sweep. It runs the pair both ways, splicing both rules into one buffer and then running them one after the other, and fails where the two runs produce different text.
 
 ## Internal Surface
 
-`Pipeline::from_rules` is `pub(crate)`, so a downstream crate cannot register a hand-built rule list today. The `Rule` trait that concrete rules implement is also `pub(crate)`, and each rule declares through its `preserves_bindings` method whether its edits leave every binding standing, which controls whether the next *Source* inherits the binding table across the reparse, and a rule reading the run's own directives reports through its `audit` method once the lint diagnostics settle. Both open toward `1.0`, when a consumer will be able to compose a custom rule set and implement project-specific rules against a stable trait.
+`Pipeline::from_rules` is `pub(crate)`, so a downstream crate cannot register a hand-built rule list. The `Rule` trait that concrete rules implement is also `pub(crate)`. Each rule declares through its `preserves_bindings` method whether its edits leave every binding standing, which controls whether the next *Source* inherits the binding table across the reparse, and a rule reading the run's own directives reports through its `audit` method once the lint diagnostics settle.
 
 ## Re-Using This Primitive
 
@@ -127,16 +136,12 @@ println!("{}", formatted.text());
 
 For a single-rule isolation, `Pipeline::for_rule("align-equals", &config)` returns a pipeline that runs only `align-equals` against the source.
 
-The Cargo dependency line *(`prose = { git = "...", tag = "<version>" }`)* lives on the [[source]] page. The Python wheel exposes the CLI rather than the library, so a Python consumer reaches the same pipeline through the binary.
-
 <template #related>
 
-- [[source]] is the value the pipeline reads and returns, reparsed between batches of independent rules so each later rule reads a settled AST, with the binding table carried into the new value where every member of the batch keeps every binding.
+- [[source]] is the value the pipeline reads and returns, reparsed between batches of independent rules so each later rule reads a settled AST.
 - [[rule-id]] is the handle each rule registers under, which the pipeline's fixed ordering reads and `known_ids` returns.
 - [[suppression-map]] filters the pipeline's emitted edits and lint diagnostics, dropping suppressed entries before they reach the caller.
-- [[binding-analysis]] builds on first read, carries across a reparse where every rule in the batch keeps every binding, and feeds the rules that read it.
-
-For the rule catalog the pipeline runs, the [**Rules**](/rules/) page lists every shipped rule beside its family, and the [**Pipeline Order**](/reference/pipeline-order) reference renders the canonical run order with the rationale per rule.
+- [[binding-analysis]] builds on first read and feeds the rules that read it.
 
 </template>
 

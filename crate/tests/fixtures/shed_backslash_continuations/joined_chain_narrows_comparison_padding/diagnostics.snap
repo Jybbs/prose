@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/shed_backslash_continuations/joined_chain_narrows_comparison_padding/input.py
+---
+shed-backslash-continuations@26..49

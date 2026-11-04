@@ -1,0 +1,43 @@
+.rules-plate-key button[aria-pressed="true"] {
+  box-shadow : inset 0 var(--prose-border-2) 0 var(--family-edge-chip);
+}
+
+.rules-plate-census > span {
+  height           : var(--prose-size-3);
+  background       : var(--family-edge);
+  transform-origin : bottom;
+  transition       : transform var(--prose-transition-slow);
+}
+
+.rules-plate-census > span.is-raised {
+  transform : scaleY(2);
+}
+
+.rules-plate-all.is-idle {
+  visibility : hidden;
+}
+
+.rules-plate-letter {
+  display : grid;
+}
+
+.rules-plate-letter.is-out {
+  display : none;
+}
+
+.rules-plate-letter.is-ghost {
+  position       : absolute;
+  margin         : 0;
+  pointer-events : none;
+}
+
+.rules-plate-gathered .rules-plate-cap .nib-badge {
+  display : block;
+  color   : var(--family-edge);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rules-plate-census > span {
+    transition : none;
+  }
+}

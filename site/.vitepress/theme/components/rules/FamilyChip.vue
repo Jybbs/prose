@@ -22,7 +22,7 @@ const href   = computed(() => props.linked && family.value && family.value in re
 </script>
 
 <template>
-  <Chip v-if="emblem" class="ground" variant="family-chip" :family="emblem.family" :href="href">
+  <Chip v-if="emblem" class="nib-ground" variant="family-chip" :family="emblem.family" :href="href">
     <NibBadge :emblem="emblem" :size="15.2" />
     <span>{{ emblem.name }}</span>
   </Chip>

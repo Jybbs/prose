@@ -1,6 +1,6 @@
 @theme inline {
+  --color-family-edge-soft : var(--family-edge-soft);
   --color-family-22-bg-soft                                   : color-mix(in srgb, var(--family-color) var(--prose-tint-22), var(--vp-c-bg-soft));
-  --color-family-35-divider                                   : color-mix(in srgb, var(--family-color) var(--prose-tint-35), var(--vp-c-divider));
   --color-panel-bg                                            : var(--panel-bg);
   --color-panel-edge                                          : var(--panel-edge);
   --color-stack-accent                                        : var(--stack-accent);
@@ -45,7 +45,6 @@
   --tracking-0                                                : 0;
 
   --transition-property-background-border-color-and-scale     : background, border-color, scale;
-  --transition-property-border-color-translate-and-box-shadow : border-color, translate, box-shadow;
   --transition-property-mask-image                            : mask-image;
 
   --width-wordmark                                            : min(var(--prose-width-640), 72vw);

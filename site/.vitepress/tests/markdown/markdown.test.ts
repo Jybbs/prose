@@ -98,7 +98,7 @@ describe('lintDecorations', () => {
       {
         end        : { character: 3, line: 0 },
         properties : {
-          class            : 'lint-flag underline-draw',
+          class            : 'lint-flag',
           'data-message'   : 'first',
           'data-replaced'  : 'x',
           'data-rule'      : 'a',
@@ -108,7 +108,7 @@ describe('lintDecorations', () => {
       },
       {
         end        : { character: 5, line: 1 },
-        properties : { class: 'lint-flag underline-draw', 'data-message': 'second', 'data-rule': 'b' },
+        properties : { class: 'lint-flag', 'data-message': 'second', 'data-rule': 'b' },
         start      : { character: 2, line: 1 }
       }
     ])
@@ -123,14 +123,14 @@ describe('lintDecorations', () => {
   it('omits the edit attributes when the fix carries neither side', () => {
     const finding = { ...spanning(1, 4), fix: { applicability: 'safe', edits: [{ before: '', content: '' }] } }
     expect(decorations.lintDecorations([finding], 'x = 1')[0].properties)
-      .toStrictEqual({ class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' })
+      .toStrictEqual({ class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a' })
   })
 
   it.each([
     { code: 'x = 1', column: 1, endColumn: 6, expected: 'lint-flag lint-flag-line', name: 'a span reaching the whole line'        },
-    { code: 'x = 1', column: 3, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span opening past the first column'  },
-    { code: 'x = 1', column: 1, endColumn: 4, expected: 'lint-flag underline-draw', name: 'a span stopping short of the line end' },
-    { code: '',      column: 1, endColumn: 6, expected: 'lint-flag underline-draw', name: 'a span whose end row has no line'      }
+    { code: 'x = 1', column: 3, endColumn: 6, expected: 'lint-flag', name: 'a span opening past the first column'  },
+    { code: 'x = 1', column: 1, endColumn: 4, expected: 'lint-flag', name: 'a span stopping short of the line end' },
+    { code: '',      column: 1, endColumn: 6, expected: 'lint-flag', name: 'a span whose end row has no line'      }
   ])('classes $name', ({ code, column, endColumn, expected }) => {
     expect(classOf(code, column, endColumn)).toBe(expected)
   })
@@ -158,7 +158,7 @@ describe('lintDecorationTransformer', () => {
     preprocess('', options)
     expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
-      properties : { class: 'lint-flag underline-draw', 'data-message': 'm', 'data-rule': 'a' },
+      properties : { class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a' },
       start      : { character: 0, line: 0 }
     }])
   })

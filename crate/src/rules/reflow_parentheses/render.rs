@@ -15,9 +15,10 @@ use super::{
 };
 use crate::{
     primitives::{
+        comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         fracture::outermost,
-        inline::{display_width, folded_line_form, spans_rows},
+        inline::{display_width, folded_line_form, settled_width, spans_rows},
         layout::{Separator, explode_parens, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
@@ -54,11 +55,19 @@ impl Shedder<'_> {
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
-    /// that joins onto one row, read through `nested`. An operand joins
+    /// that joins onto one row, read through `nested`, together with each
+    /// of `narrowing` inside an operand that spans rows. An operand joins
     /// where no break inside it sits within a bracket it opens and this
-    /// pass leaves standing, and where its joined form fits behind its
-    /// operator one indent step past `indent`.
-    fn operand_folds(&self, chain: &[Operand], nested: &[Edit], indent: usize) -> Vec<Edit> {
+    /// pass leaves standing, and where its joined form, narrowed and
+    /// settled under the padding table, fits behind its operator one
+    /// indent step past `indent`.
+    fn operand_folds(
+        &self,
+        chain: &[Operand],
+        nested: &[Edit],
+        narrowing: &[Edit],
+        indent: usize,
+    ) -> Vec<Edit> {
         let item = item_indent(indent);
         let shed = covered_by(nested);
         chain
@@ -67,14 +76,23 @@ impl Shedder<'_> {
                 break_depths(self.source, operand.range, &shed).all(|depth| depth == 0)
             })
             .flat_map(|operand| {
-                let folds = fold_edits(self.source, operand.range);
+                let mut folds = fold_edits(self.source, operand.range);
+                if self.source.contains_line_break(operand.range) {
+                    folds.extend(starting_within(narrowing, operand.range, Ranged::start).cloned());
+                }
                 let row = apply_inline_edits(
                     self.source,
                     operand.range,
                     &outermost([nested, &folds].concat()),
                 );
                 let lead = operand.lead.map_or(0, |operator| operator.len() + 1);
-                let fits = item + lead + display_width(&row) <= self.code_line_length;
+                let width = settled_width(
+                    self.source,
+                    self.padding,
+                    operand.range,
+                    display_width(&row),
+                );
+                let fits = item + lead + width <= self.code_line_length;
                 (fits && !spans_rows(&row)).then_some(folds)
             })
             .flatten()
@@ -95,11 +113,12 @@ impl Shedder<'_> {
 
     /// The text breaking `candidate`'s pair across rows, `None` where a
     /// break does not own the pair's shape. The interior holds one row of
-    /// its own where its joined form fits a row one indent step in, unless
-    /// `candidate` stacks, and takes one row per operand otherwise, each
-    /// operand joining its own rows where [`Self::operand_folds`] holds.
-    /// Every row renders through the pairs `candidate` encloses that this
-    /// pass sheds.
+    /// its own where its joined form, narrowed through its
+    /// [`narrowing_edits_within`] and settled under the padding table,
+    /// fits a row one indent step in, unless `candidate` stacks, and takes
+    /// one row per operand otherwise, each operand joining its own rows
+    /// where [`Self::operand_folds`] holds. Every row renders through the
+    /// pairs `candidate` encloses that this pass sheds.
     pub(super) fn broken_form(
         &self,
         candidate: &Candidate,
@@ -124,13 +143,20 @@ impl Shedder<'_> {
         let chain = operands(self.source, candidate.expr, &sheds_pair)?;
         let indent = self.statement_indent(pair);
         let item = item_indent(indent);
-        let joined = apply_inline_edits(self.source, inner, &nested);
-        let text = match folded_line_form(self.source, candidate.expr, &joined)
-            .filter(|row| !candidate.stacks && item + display_width(row) <= self.code_line_length)
-        {
+        let narrowing = narrowing_edits_within(self.source, candidate.expr, self.padding);
+        let joined = apply_inline_edits(
+            self.source,
+            inner,
+            &outermost([&nested[..], &narrowing].concat()),
+        );
+        let text = match folded_line_form(self.source, candidate.expr, &joined).filter(|row| {
+            !candidate.stacks
+                && item + settled_width(self.source, self.padding, inner, display_width(row))
+                    <= self.code_line_length
+        }) {
             Some(row) => wrapped(self.source, &row, indent),
             None => {
-                let folds = self.operand_folds(&chain, &nested, indent);
+                let folds = self.operand_folds(&chain, &nested, &narrowing, indent);
                 broken(
                     self.source,
                     &chain,

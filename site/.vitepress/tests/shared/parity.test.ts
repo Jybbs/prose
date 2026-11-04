@@ -9,6 +9,7 @@ import * as typingDemo        from '../../lib/landing/typing-demo'
 import { markdownH1 }         from '../../lib/markdown/h1'
 import { discoverRuleSlugs }  from '../../lib/rules/discovery'
 import { matterPages }        from '../../lib/shared/content-page'
+import { paletteCss }         from '../../lib/shared/palette'
 import * as paths             from '../../lib/shared/paths'
 import * as registries        from '../../lib/shared/registries'
 import * as ruleSchema        from '../../lib/shared/rule-schema'
@@ -51,7 +52,29 @@ const facetedPages = discovered.flatMap(rule => {
 
 describe('family registry and stylesheet parity', () => {
   it('every glossary family has a [data-family] accent, with no orphans', () => {
-    expect(accentKeys('family')).toStrictEqual(glossaryFamilies)
+    const keys = new Set<string>()
+    parse(paletteCss()).walkRules(rule => {
+      for (const m of rule.selector.matchAll(/^\[data-family="([a-z]+)"\]/gm)) keys.add(m[1]!)
+    })
+    expect([...keys].sort()).toStrictEqual(glossaryFamilies)
+  })
+
+  it('gives each family its hue beside a nib and an edge shade for every ground', () => {
+    const values = new Map<string, string>()
+    parse(paletteCss()).walkDecls(decl => {
+      const selector = (decl.parent as { selectors: string[] }).selectors[0]
+      values.set(`${selector} ${decl.prop}`, decl.value)
+    })
+    for (const family of glossaryFamilies) {
+      const at = `[data-family="${family}"]`
+      expect.soft(values.get(`${at} --family-color`)).toBe(`var(--prose-family-${family})`)
+      for (const [kind, ratio] of [['edge', 34], ['nib', 45]] as const) {
+        for (const ground of ['', '-card', '-chip', '-soft']) {
+          expect.soft(values.get(`${at} --family-${kind}${ground}`))
+            .toBe(`var(--prose-shade-${family}-${ground.slice(1) || 'page'}-${ratio})`)
+        }
+      }
+    }
   })
 
   it('FAMILY_ORDER covers FAMILY_META, and GLOSSARY_FAMILY_META adds cli and engine', () => {

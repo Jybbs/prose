@@ -1,8 +1,8 @@
 .vp-doc .primitives-composition-card-summary code,
 .primitives-composition-card-summary code {
   font-size     : var(--prose-text-1em);
-  color         : var(--vp-c-brand-1);
-  background    : var(--vp-c-default-soft);
+  color         : var(--vp-code-color);
+  background    : var(--vp-code-bg);
   padding       : var(--prose-space-1) var(--prose-space-4);
   border-radius : var(--prose-radius-sm);
 }

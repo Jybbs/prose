@@ -1,26 +1,20 @@
 @theme inline {
-  --color-apricot-75-text-1                               : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1));
-  --color-family-or-brand-1-4-panel-wash-card             : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-4), var(--prose-panel-wash-card));
-  --color-family-or-brand-1-40-divider                    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-40), var(--vp-c-divider));
-  --color-family-or-brand-1-55-divider                    : color-mix(in srgb, var(--family-color, var(--vp-c-brand-1)) var(--prose-tint-55), var(--vp-c-divider));
-  --color-family-or-divider                               : var(--family-color, var(--vp-c-divider));
-  --color-family-or-text-1                                : var(--family-color, var(--vp-c-text-1));
-  --color-guide-or-ube                                    : var(--guide-hue, var(--prose-palette-ube));
-  --color-hue                                             : var(--hue);
-  --color-hue-70-text-3                                   : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
+  --color-eureka-page-35 : var(--prose-shade-eureka-page-35);
+  --color-eureka-page-45 : var(--prose-shade-eureka-page-45);
+  --color-text-1-4-panel-wash-card : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-4), var(--prose-panel-wash-card));
+  --color-text-1-40-divider : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-40), var(--vp-c-divider));
+  --color-text-1-55-divider : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-55), var(--vp-c-divider));
+  --color-scope-ink : var(--scope-ink);
+  --color-scope-mark : var(--scope-mark);
+  --color-knob-figure : var(--knob-figure);
   --color-part-or-text-1                                  : var(--part-color, var(--vp-c-text-1));
-  --color-part-or-text-2-75-text-2                        : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
-  --color-part-or-text-3-50-divider                       : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
-  --color-scope-10-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
   --color-scope-25-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-25), var(--vp-c-divider));
   --color-scope-6-bg                                      : color-mix(in srgb, var(--scope-tint) var(--prose-tint-6), var(--vp-c-bg));
-  --color-scope-60-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
   --color-scope-70-divider                                : color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
   --color-scope-75-text-1                                 : color-mix(in srgb, var(--scope-tint) var(--prose-tint-75), var(--vp-c-text-1));
   --color-scope-78-text-2                                 : color-mix(in srgb, var(--scope-tint) var(--prose-tint-78), var(--vp-c-text-2));
   --color-scope-80-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
   --color-scope-85-bg                                     : color-mix(in srgb, var(--scope-tint) var(--prose-tint-85), var(--vp-c-bg));
-  --color-warning-55-divider                              : color-mix(in srgb, var(--prose-role-warning) var(--prose-tint-55), var(--vp-c-divider));
 
   --grid-template-columns-14-1fr                          : var(--prose-size-14) 1fr;
   --grid-template-columns-14-1fr-auto                     : var(--prose-size-14) 1fr auto;
@@ -40,7 +34,6 @@
 
   --text-anatomy-part                                     : clamp(var(--prose-text-1-35rem), 2.3vw, var(--prose-text-2rem));
 
-  --transition-property-background-opacity-and-box-shadow : background, opacity, box-shadow;
   --transition-property-color-and-opacity                 : color, opacity;
 
   --width-sandbox                                         : min(var(--prose-width-94rem), calc(100vw - var(--prose-space-3rem)));
@@ -59,4 +52,20 @@
 
 @utility focus-ring {
   outline : var(--prose-focus-ring);
+}
+
+@utility anatomy-band-name {
+  @apply band-name transition-colors motion-reduce:transition-none;
+
+  .directive-anatomy-band:has(.directive-anatomy-thumb:is(:hover, :focus-visible)) & {
+    color : var(--scope-ink);
+  }
+}
+
+@utility anatomy-band-rule {
+  @apply hairline transition-colors motion-reduce:transition-none;
+
+  .directive-anatomy-band:has(.directive-anatomy-thumb:is(:hover, :focus-visible)) & {
+    background : var(--scope-mark);
+  }
 }

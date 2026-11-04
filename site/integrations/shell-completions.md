@@ -9,7 +9,7 @@ tagline: 'interactive shell'
 
 <ShellCompletions />
 
-## What Gets Completed
+## Completed Values
 
 Every flag, every enum-valued flag *(`--output-format text|json|github|sarif`, `--color always|auto|never`)*, and every rule slug *(every entry in [**Pipeline Order**](/reference/pipeline-order))* appears in the completion menu. `--select` and `--ignore` take comma-separated slugs, and the script completes the slug at the cursor.
 

@@ -3,7 +3,6 @@ import { mount }    from '@vue/test-utils'
 import { computed } from 'vue'
 
 import GlossaryFolioPane from '../../theme/components/glossary/GlossaryFolioPane.vue'
-import { railPaint }     from '../../lib/shared/family-rail'
 
 vi.mock('../../lib/composables/use-glossary-folio', () => ({
   useGlossaryFolio: () => {
@@ -29,9 +28,8 @@ vi.mock('../../lib/composables/route', () => ({ useCurrentRule: () => ({ value: 
 const pane = () => mount(GlossaryFolioPane)
 
 describe('GlossaryFolioPane', () => {
-  it('paints the pane\'s rail through every family the entry belongs to, in order', () => {
-    expect(pane().get('.glossary-folio-stage').attributes('style'))
-      .toContain(railPaint(['formatting', 'alignment', 'ordering']))
+  it('sets the pane\'s headword in the link style', () => {
+    expect(pane().get('.glossary-folio-headword a').classes()).toContain('body-link')
   })
 
   it('heads the entry with one unlinked family chip per family, in order', () => {

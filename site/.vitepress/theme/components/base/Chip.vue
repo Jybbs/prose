@@ -7,7 +7,7 @@ type Variant = 'family-chip' | 'rule-chip'
 
 const VARIANT_CLASSES: Record<Variant, string> = {
   'family-chip' : 'chip family-chip',
-  'rule-chip'   : 'chip rule-chip ground'
+  'rule-chip'   : 'chip rule-chip'
 }
 
 const props = defineProps<{

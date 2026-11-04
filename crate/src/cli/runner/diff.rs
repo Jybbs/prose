@@ -152,6 +152,7 @@ mod tests {
             quiet: false,
             stderr_color: color,
             stdout_tty: true,
+            summary: true,
         };
 
         assert_matches!(

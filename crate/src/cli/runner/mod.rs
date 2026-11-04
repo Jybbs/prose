@@ -1,6 +1,7 @@
 //! Pipeline orchestration: load source, run, emit diagnostics, classify outcome.
 
 use std::{
+    convert::identity,
     io::{BufWriter, Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
@@ -45,7 +46,7 @@ use pass::{Mode, Pass};
 use process::process_path;
 use report::{emitter_summary, finish, render_summary, unstable_status};
 use resolve::{ConfigResolver, Resolved};
-use stdin::{format_stdin, process_stdin, read_stdin, stdin_resolved};
+use stdin::{format_stdin, process_stdin, read_stdin};
 use stdout::{emit_to_stdout, render_text_block};
 use walk::{process_paths, stream_paths};
 use write::apply_rewrite;
@@ -130,10 +131,11 @@ struct RunSetup {
 }
 
 impl RunSetup {
-    /// Builds the run-level setup. The cwd's own config governs stdin
-    /// input and the cache settings, while each path input re-resolves
-    /// its own effective config through the resolver. The `anchor` the
-    /// run reads keys every prefix the resolver builds.
+    /// Builds the run-level setup. The cwd's own config governs an
+    /// unnamed stdin buffer and the cache settings, while each path input
+    /// and each named buffer re-resolves its own effective config through
+    /// the resolver. The `anchor` the run reads keys every prefix the
+    /// resolver builds.
     fn new(
         rules: &RuleFilter,
         no_cache: bool,
@@ -234,13 +236,8 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     let format = args.common.output_format;
     let (outcomes, emits) = if args.common.stdin {
         let filename = args.common.stdin_filename.as_deref();
-        let outcome = match read_stdin(stdin) {
-            Ok(text) => {
-                let resolved = stdin_resolved(&setup, filename, &text);
-                process_stdin(text, filename, &resolved, pass)
-            }
-            Err(outcome) => outcome,
-        };
+        let outcome = read_stdin(stdin)
+            .map_or_else(identity, |text| process_stdin(text, filename, &setup, pass));
         (vec![outcome], true)
     } else if format.is_text() {
         // Text carries no envelope around its per-file blocks, so each
@@ -262,8 +259,16 @@ pub(crate) fn check_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
     if emits {
         emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
-    let status = close_run(&outcomes, &summary, &setup, present, pass, &mut stderr)
-        .max(unstable_status(&outcomes));
+    let status = close_run(
+        &outcomes,
+        &summary,
+        &setup,
+        present,
+        pass,
+        pass.write_back(),
+        &mut stderr,
+    )
+    .max(unstable_status(&outcomes));
     Ok(status)
 }
 
@@ -320,17 +325,25 @@ pub(crate) fn format_with_io<R: Read, O: RawStream + AsLockedWrite, E: Write>(
 }
 
 /// Closes a run, rendering its summary onto `stderr` and resolving the
-/// status it exits with.
+/// status it exits with, where `written` reports whether the run wrote
+/// its rewrite out.
 fn close_run<E: Write>(
     outcomes: &[FileOutcome],
     summary: &EmitterSummary,
     setup: &RunSetup,
     present: &Presentation,
     pass: Pass,
+    written: bool,
     stderr: &mut E,
 ) -> ExitStatus {
-    let status = finish(outcomes, setup.cache.is_some(), setup.verbose, pass, stderr);
-    render_summary(stderr, present, outcomes, summary, pass);
+    let status = finish(
+        outcomes,
+        setup.cache.is_some(),
+        setup.verbose,
+        written,
+        stderr,
+    );
+    render_summary(stderr, present, outcomes, summary, pass, written);
     status
 }
 
@@ -359,6 +372,7 @@ fn format_paths_diff<O: Write, E: Write>(
         setup,
         present,
         Pass::Preview,
+        false,
         stderr,
     ))
 }
@@ -377,7 +391,15 @@ fn format_paths_rewrite<O: RawStream + AsLockedWrite, E: Write>(
     if !format.is_text() {
         emit_to_stdout(&outcomes, format, present, stdout, &summary)?;
     }
-    Ok(close_run(&outcomes, &summary, setup, present, pass, stderr))
+    Ok(close_run(
+        &outcomes,
+        &summary,
+        setup,
+        present,
+        pass,
+        pass.write_back(),
+        stderr,
+    ))
 }
 
 fn has_format_change(diagnostics: &[Diagnostic]) -> bool {
@@ -413,6 +435,10 @@ mod tests {
         source::Source,
         testing::{FailingWriter, write_pyproject},
     };
+
+    /// A canonical source a lint rule flags, the bare `import os` its
+    /// one attribute read reports.
+    const LINTED: &str = "import os\n\nos.getcwd()\n";
 
     /// The unaligned two-assignment source the runner tests reuse.
     /// `ALPHA` is SCREAMING_CASE and `B` a single character, so the lint
@@ -521,6 +547,15 @@ mod tests {
         .expect_err("writer failure propagates")
         .downcast_ref::<io::Error>()
         .map(io::Error::kind)
+    }
+
+    /// A directory holding a `pyproject.toml` that fails to parse,
+    /// beside the path of a module it would govern.
+    fn broken_project() -> (TempDir, PathBuf) {
+        let tmp = TempDir::new().expect("tempdir");
+        write_pyproject(tmp.path(), "[this is not valid TOML");
+        let file = tmp.path().join("a.py");
+        (tmp, file)
     }
 
     /// Runs `format` against `stdin` through a stripping stdout.
@@ -645,6 +680,17 @@ mod tests {
     }
 
     #[test]
+    fn check_stdin_under_a_broken_named_config_returns_config_error() {
+        let (_tmp, file) = broken_project();
+        let mut args = check_args(Vec::new(), true);
+        args.common.stdin_filename = Some(file);
+
+        let (status, _) = run_check_io(args, UNALIGNED.as_bytes());
+
+        assert_eq!(status, ExitStatus::ConfigError);
+    }
+
+    #[test]
     fn check_stdin_with_read_failure_returns_config_error() {
         let (status, _) = run_check_io(check_args(Vec::new(), true), ErrorReader);
 
@@ -762,6 +808,15 @@ mod tests {
     }
 
     #[test]
+    fn format_stdin_diff_returns_lint_violation_for_a_lint_finding() {
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, true), LINTED.as_bytes());
+
+        assert_eq!(status, ExitStatus::LintViolation);
+        assert!(stdout.is_empty());
+    }
+
+    #[test]
     fn format_stdin_diff_writes_unified_hunks() {
         let (status, stdout) =
             run_format_io(format_args(Vec::new(), true, true), UNALIGNED.as_bytes());
@@ -772,14 +827,14 @@ mod tests {
     }
 
     #[test]
-    fn format_stdin_emits_json_when_format_is_non_text() {
+    fn format_stdin_emits_json_and_reports_its_rewrite_pending() {
         let mut args = format_args(Vec::new(), true, false);
         args.common.output_format = OutputFormat::Json;
 
         let (status, stdout) = run_format_io(args, UNALIGNED.as_bytes());
 
-        assert_eq!(status, ExitStatus::Clean);
-        assert!(!stdout.is_empty());
+        assert_eq!(status, ExitStatus::FormatChange);
+        assert_eq!(json_summary(stdout)["files_changed"], 1);
     }
 
     #[test]
@@ -797,6 +852,27 @@ mod tests {
             run_format_broken_pipe(format_args(Vec::new(), true, false), UNALIGNED.as_bytes());
 
         assert_eq!(kind, Some(io::ErrorKind::BrokenPipe));
+    }
+
+    #[test]
+    fn format_stdin_returns_clean_once_it_writes_a_linted_source() {
+        let (status, stdout) =
+            run_format_io(format_args(Vec::new(), true, false), LINTED.as_bytes());
+
+        assert_eq!(status, ExitStatus::Clean);
+        assert_eq!(String::from_utf8(stdout).expect("utf-8"), LINTED);
+    }
+
+    #[test]
+    fn format_stdin_under_a_broken_named_config_returns_config_error() {
+        let (_tmp, file) = broken_project();
+        let mut args = format_args(Vec::new(), true, false);
+        args.common.stdin_filename = Some(file);
+
+        let (status, stdout) = run_format_io(args, UNALIGNED.as_bytes());
+
+        assert_eq!(status, ExitStatus::ConfigError);
+        assert!(stdout.is_empty());
     }
 
     #[test]

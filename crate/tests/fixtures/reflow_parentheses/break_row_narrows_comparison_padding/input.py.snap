@@ -1,0 +1,8 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/break_row_narrows_comparison_padding/input.py
+---
+ready = (
+    loaded_count == 1 and errors == 0
+)

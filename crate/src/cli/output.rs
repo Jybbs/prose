@@ -20,12 +20,16 @@ const UBE: (RgbColor, AnsiColor) = (RgbColor(0x8a, 0x80, 0xcb), AnsiColor::Magen
 /// and diffs written there, whereas `stderr_color` is stderr's own and
 /// gates the summary line, which is the one thing written to that
 /// stream. `quiet` reduces the anchor emoji and color to a bare count
-/// line, and a non-TTY stdout leaves `--diff` headers plain.
+/// line, and a non-TTY stdout leaves `--diff` headers plain. `summary`
+/// is false for a stdin run whose stderr is not a terminal or that
+/// passed `--quiet`, which drops the summary line and leaves stderr to
+/// errors and notices.
 pub(super) struct Presentation {
     pub(super) color: bool,
     pub(super) quiet: bool,
     pub(super) stderr_color: bool,
     pub(super) stdout_tty: bool,
+    pub(super) summary: bool,
 }
 
 impl Presentation {
@@ -48,11 +52,18 @@ impl Presentation {
             quiet: false,
             stderr_color: false,
             stdout_tty: false,
+            summary: true,
         }
     }
 
     pub(super) fn decorate_diff(&self) -> bool {
         self.stdout_tty && !self.quiet
+    }
+
+    /// True where a run prints its closing summary, which a stdin run
+    /// does only to a terminal stderr with `--quiet` off.
+    pub(super) fn shows_summary(stdin: bool, stderr_tty: bool, quiet: bool) -> bool {
+        !stdin || (stderr_tty && !quiet)
     }
 }
 
@@ -175,6 +186,7 @@ mod tests {
             quiet: false,
             stderr_color: true,
             stdout_tty: true,
+            summary: true,
         }
     }
 
@@ -193,9 +205,31 @@ mod tests {
             quiet,
             stderr_color: true,
             stdout_tty,
+            summary: true,
         };
 
         assert_eq!(present.decorate_diff(), expected);
+    }
+
+    #[rstest]
+    #[case::path_run(false, false, false, true)]
+    #[case::path_run_quiet(false, false, true, true)]
+    #[case::path_run_on_a_terminal(false, true, false, true)]
+    #[case::path_run_quiet_on_a_terminal(false, true, true, true)]
+    #[case::stdin_run(true, false, false, false)]
+    #[case::stdin_run_quiet(true, false, true, false)]
+    #[case::stdin_run_on_a_terminal(true, true, false, true)]
+    #[case::stdin_run_quiet_on_a_terminal(true, true, true, false)]
+    fn shows_summary_holds_a_stdin_run_to_a_terminal_without_quiet(
+        #[case] stdin: bool,
+        #[case] stderr_tty: bool,
+        #[case] quiet: bool,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(
+            Presentation::shows_summary(stdin, stderr_tty, quiet),
+            expected
+        );
     }
 
     #[rstest]
@@ -275,6 +309,7 @@ mod tests {
             quiet: false,
             stderr_color,
             stdout_tty: true,
+            summary: true,
         };
 
         let line = rendered(&present, &Summary::Clean);

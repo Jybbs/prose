@@ -30,17 +30,14 @@ const { frontmatter } = vi.hoisted(() => {
     inputHtml     : '',
     outputHtml    : ''
   }
-  return {
-    frontmatter: {
-      value: {
-        fixtures: {
-          'composition/alpha_case' : fixture,
-          'composition/beta_case'  : fixture,
-          'composition/gamma_case' : fixture
-        }
-      }
+  const value: Record<string, unknown> = {
+    fixtures: {
+      'composition/alpha_case' : fixture,
+      'composition/beta_case'  : fixture,
+      'composition/gamma_case' : fixture
     }
   }
+  return { frontmatter: { value } }
 })
 
 vi.mock('vitepress', async importOriginal => ({
@@ -68,7 +65,10 @@ const titles = (rule?: string): string[] =>
   render(rule).findAll('.fixture-card-title').map(node => node.text())
 
 describe('CompositionCards', () => {
-  afterEach(() => { window.location.hash = '' })
+  afterEach(() => {
+    window.location.hash = ''
+    delete frontmatter.value.inlineFixtures
+  })
 
   it('renders every previewable case where no rule narrows the set', () => {
     expect(titles()).toStrictEqual(['Alpha Case', 'Beta Case', 'Gamma c = 3 Case'])
@@ -85,6 +85,14 @@ describe('CompositionCards', () => {
   it('leaves each folio empty so the fixture counter numbers it in place', () => {
     const nums = render('wrap_docstrings').findAll('.fixture-card-num').map(node => node.text())
     expect(nums).toStrictEqual([''])
+  })
+
+  it('leaves out a case its page embeds inline, which another page still renders', () => {
+    frontmatter.value.inlineFixtures = ['composition/beta_case']
+    expect(titles('align_equals')).toStrictEqual(['Alpha Case'])
+    expect(titles()).toStrictEqual(['Alpha Case', 'Gamma c = 3 Case'])
+    delete frontmatter.value.inlineFixtures
+    expect(titles('align_equals')).toStrictEqual(['Alpha Case', 'Beta Case'])
   })
 
   it('renders an empty list for a rule no previewable case activates', () => {

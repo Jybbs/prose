@@ -1,6 +1,10 @@
 .fixture-lead :first-child { margin-top    : 0; }
 .fixture-lead :last-child  { margin-bottom : 0; }
 
+.fixture-toggle-pill[aria-selected="true"][data-side="after"] {
+  color : var(--prose-shade-celadon-page-65);
+}
+
 .vp-doc .fixture-pair-doc .fixture-pair-panel > div[class*='language-'] {
   margin        : 0;
   border-radius : 0;

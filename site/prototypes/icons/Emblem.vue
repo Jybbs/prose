@@ -38,7 +38,10 @@ const strokes = computed(() => {
     :data-form="house.form"
     :data-terminal="house.terminal"
     :data-tone="house.tone"
-    :style="{ strokeWidth: house.weight }"
+    :style="{
+      '--emblem-family' : emblem.family && `var(--prose-family-${emblem.family})`,
+      strokeWidth       : house.weight
+    }"
     :role="standalone ? 'img' : undefined"
     :aria-label="standalone ? emblem.motif.label : undefined"
     :aria-hidden="standalone ? undefined : 'true'"

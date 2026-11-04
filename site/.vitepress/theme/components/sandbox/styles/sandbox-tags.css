@@ -1,3 +1,16 @@
+.sandbox-tags-tag {
+  box-shadow    : inset 0 0 0 var(--prose-border-1) var(--vp-c-divider);
+  transition    : box-shadow var(--prose-transition);
+}
+
+.sandbox-tags-tag[data-active] {
+  box-shadow : inset 0 0 0 var(--prose-border-1) var(--vp-c-text-2);
+}
+
+.sandbox-tags-tag[data-off] .nib-badge {
+  color : var(--vp-c-text-2);
+}
+
 .sandbox-tags-banner .rule-card {
   width      : 100%;
   min-height : auto;

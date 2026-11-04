@@ -1,5 +1,5 @@
 ---
-consumedBy: [align-colons, strip-stranded-padding]
+consumedBy: [align-colons, align-match-case, reflow-collections, strip-stranded-padding]
 consumes: [aligner, docstring, source]
 layer: analysis
 stability: internal
@@ -16,9 +16,7 @@ The `colon_targets` module builds alignment members at every `:` context the ali
 
 ## Public Surface
 
-The `colon_targets` module lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. The consumers today are [[align-colons]] *(which aligns multi-item groups in every context)* and [[strip-stranded-padding]] *(which removes pre-colon padding from a group that has no column to align to)*. What a downstream caller sees is the rewrites both rules emit through the diagnostic stream.
-
-At `1.0` the trait becomes `pub`, so a downstream can implement a `:`-context rule of its own.
+The `colon_targets` module lives at `crate/src/primitives/colon_targets/` and is `pub(crate)`. The consumers are [[align-colons]] *(which aligns multi-item groups in every context but match arms)*, [[align-match-case]] *(one member per arm through `match_case`)*, [[reflow-collections]] *(a dict entry's slot through `dict_entry_slot`)*, and [[strip-stranded-padding]] *(which removes pre-colon padding from a group that has no column to align to)*.
 
 ## The Contexts
 
@@ -32,7 +30,7 @@ Each context resolves directly to an [[aligner]] `Member`, carrying its `width` 
 
 ## Internal Surface
 
-The receiver trait carries the per-context handlers, with `rule` and `handle` as the required methods, where `rule` names the consuming rule so the group builders can exclude its skip-suppressed rows from alignment, whereas `docstring_entries` and `match_arms` each carry a default a consuming rule overrides for context-specific handling:
+The receiver trait carries the per-context handlers, with `rule`, `stranding`, and `handle` as the required methods. `rule` names the consuming rule so the group builders can exclude its skip-suppressed rows from alignment, and `stranding` returns the [[strip-stranded-padding]] settings each member is built under, so its settled width reads past the delimiter padding that rule deletes. `docstring_entries` and `match_arms` each carry a default a consuming rule overrides for context-specific handling:
 
 ```rust
 pub(crate) trait ColonEmitter {
@@ -48,21 +46,23 @@ pub(crate) trait ColonEmitter {
 
     fn rule(&self) -> RuleId;
 
+    fn stranding(&self) -> Stranding;
+
     fn walk(&mut self, source: &Source) where Self: Sized { /* provided */ }
 }
 ```
 
-`handle` is the catch-all for annotated assignments, dict entries, and parameters. `docstring_entries` and `match_arms` are split out so a rule can handle either context on its own terms, and each defaults to `handle` for a rule that reads every context through the one callback. [[align-colons]] overrides `match_arms` to a no-op, since [[align-match-case]] owns the match-arm context, and overrides `docstring_entries` to settle the run's type-group column ahead of its `:` column, both without the length cap its other contexts take.
+`handle` is the catch-all for annotated assignments, dict entries, and parameters. `docstring_entries` and `match_arms` are split out so a rule can handle either context on its own terms, and each defaults to `handle` for a rule that reads every context through the one callback. [[align-colons]] overrides `match_arms` to a no-op, since [[align-match-case]] aligns the match-arm context, and overrides `docstring_entries` to settle the run's type-group column ahead of its `:` column, both without the length cap its other contexts take.
 
 `walk(source)` is the provided driver across `source`'s module body, recursing into nested classes, functions, matches, and expressions so a single call covers the whole tree. A consuming rule never overrides `walk`, because calling the provided method is enough to drive the receiver across every relevant context.
 
-`match_case(source, case) -> Option<aligner::Member>` is exposed `pub(crate)` alongside the trait for [[align-match-case]], which builds members one match arm at a time rather than through the receiver. A new rule whose grouping follows contiguous lines should use the trait, whereas a rule that emits one member per construct should call `match_case` directly.
+`match_case(source, case, stranding) -> Option<aligner::Member>` is exposed `pub(crate)` alongside the trait for [[align-match-case]], which builds members one match arm at a time rather than through the receiver. A new rule whose grouping follows contiguous lines should use the trait, whereas a rule that emits one member per construct should call `match_case` directly.
 
 ## Build Pattern
 
 A rule implementing `ColonEmitter` carries a single accumulator *(typically `Vec<Vec<aligner::Member>>` for grouped members)* and pushes into it from each handler. After `walk(source)` returns, the accumulator carries every group the rule handles, and the rule emits `Vec<Edit>` by calling [[aligner]]'s `emit_if_candidate` against each group.
 
-## How Grouping Works
+## Grouping per Context
 
 Each context defines its own grouping, because what counts as *"adjacent"* inside a dict literal differs from what counts as *"adjacent"* across class-body statements:
 
@@ -72,7 +72,7 @@ Each context defines its own grouping, because what counts as *"adjacent"* insid
 4. **Match arms** group one per `match` statement, with every arm's colon contributing a member. A pattern may span multiple lines, so the alignment column is per `match` rather than per line run.
 5. **Docstring entry runs** group one per Title-case-headed section and one per contiguous run of type-bearing heads outside them, with the structured-section parser called inline to find each run's entries, so one run's entries align without reaching across the break that ends it.
 
-Each group is handed to the receiver as one `&[aligner::Member]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring-args context borrows [[docstring]]'s `body_docstring` to find a body's leading docstring literal, then runs its own line scan for each entry's `:` position, because the two primitives return different things. [[docstring]] yields entry names with the byte range a reorder carries along, whereas the colon walker yields each line's colon anchor for the aligner's padding math.
+Each group is handed to the receiver as one `&[aligner::Member]` slice, so the consumer aligns within the group without seeing cross-group state. The docstring context reads each docstring and its entry runs through [[docstring]]'s `walk_docstrings` and `entry_runs`, and that page sets out why the two primitives stay separate.
 
 ## Re-Using This Primitive
 
@@ -81,9 +81,9 @@ A new `:`-context rule implements `ColonEmitter`, overrides the handlers for the
 <template #related>
 
 - [[aligner]] is the math the produced `Member` lists feed into.
-- [[align-colons]] aligns multi-item groups across every context.
+- [[align-colons]] aligns multi-item groups across every context but match arms.
 - [[strip-stranded-padding]] removes padding from singleton groups.
-- [[align-match-case]] owns the match-arm context exclusively.
+- [[align-match-case]] aligns the match-arm context.
 - The `=`-context sibling builds its members in `equal_targets`, described under [[aligner]].
 
 </template>

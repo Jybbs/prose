@@ -1,3 +1,4 @@
 .sandbox-surface-guide {
-  left : calc(var(--prose-space-22) + var(--guide-col) * var(--prose-space-1ch));
+  left        : calc(var(--prose-space-22) + var(--guide-col) * var(--prose-space-1ch));
+  border-left : var(--prose-border-2) dotted var(--knob-guide, var(--vp-c-text-2));
 }

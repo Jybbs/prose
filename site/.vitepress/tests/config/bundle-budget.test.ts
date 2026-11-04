@@ -57,7 +57,7 @@ describe('checkBundleBudget', () => {
 describe('the build end the config runs', () => {
   supportTest('layers the icon sheet and throws on a bundle past its budget', async ({ tmpDir }) => {
     write(tmpDir, 'assets/vp-icons.a1.css', 5)
-    write(tmpDir, 'assets/style.css', 300_000)
+    write(tmpDir, 'assets/style.css', 400_000)
     const site = { assetsDir: 'assets', outDir: tmpDir, pages: [], srcDir: tmpDir }
     await expect(config.buildEnd!(site as never)).rejects.toThrow("the built site's css measures")
     expect(fs.readFileSync(path.join(tmpDir, 'assets/vp-icons.a1.css'), 'utf8')).toMatch(/^@layer components \{/)

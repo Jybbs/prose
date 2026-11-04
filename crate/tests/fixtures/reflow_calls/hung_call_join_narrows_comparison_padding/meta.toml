@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Hung Call Join Narrows the Padding Ahead of Each Comparison"
+
+description = '''
+`check(` hangs a chain whose `==` operators the author padded into one column. **The join closes the argument list onto one row with one space ahead of each `==`**, since on one row that padding would line up with nothing.
+'''

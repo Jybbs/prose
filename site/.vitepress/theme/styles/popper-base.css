@@ -24,6 +24,6 @@
   border-color : var(--vp-c-bg);
 }
 
-:where(.v-popper--theme-az-index, .v-popper--theme-run-summary-select) .v-popper__arrow-container {
+:where(.v-popper--theme-run-summary-select) .v-popper__arrow-container {
   display : none;
 }

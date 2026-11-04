@@ -7,6 +7,12 @@ describe('bareInlineNodes', () => {
       { kind: 'code', text: 'align-equals' }
     ])
   })
+
+  it('leaves raw HTML and a bare URL as text under the default preset', () => {
+    expect(bareInlineNodes('<b>x</b> https://a.b')).toStrictEqual([
+      { kind: 'text', text: '<b>x</b> https://a.b' }
+    ])
+  })
 })
 
 describe('inlineText', () => {

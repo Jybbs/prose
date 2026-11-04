@@ -9,9 +9,11 @@ import FixtureToggle   from './FixtureToggle.vue'
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import { useHashOpen }     from '../../../lib/composables/use-hash-open'
 import { data as rules }   from '../../../lib/rules/rules.data'
+import { familyEmblem }    from '../../../lib/shared/emblems'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
 import { ruleSlug }        from '../../../lib/shared/rule-slug'
 import InlineProse         from '../base/InlineProse.vue'
+import NibBadge            from '../base/NibBadge.vue'
 
 const props = defineProps<{
   case      : string
@@ -39,7 +41,10 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
     :data-edits="entry.changesSource"
     :data-lint="entry.hasFindings"
   >
-    <div class="fixture-card-summary-row" @click="toggle()">
+    <div class="fixture-card-summary-row max-mobile:group-data-open/fixture:gap-y-0" @click="toggle()">
+      <span class="fixture-card-slot mt-7 mr-12 ml-8 flex size-20 items-center justify-center self-start max-mobile:mr-0" aria-hidden="true">
+        <NibBadge v-if="family" :emblem="familyEmblem(family)" :size="14" />
+      </span>
       <button
         type="button"
         class="fixture-card-summary"
@@ -50,7 +55,7 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
         <span class="fixture-card-title" v-html="titleHtml" />
       </button>
       <div
-        class="pointer-events-none invisible inline-flex items-center opacity-0 transition-opacity group-data-open/fixture:pointer-events-auto group-data-open/fixture:visible group-data-open/fixture:opacity-100"
+        class="fixture-card-actions"
         @click.stop
       >
         <FixtureToggle v-if="entry.hasToggle" v-model="activeTab" />

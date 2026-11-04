@@ -280,9 +280,10 @@ onUnmounted(run.cancel)
   >
     <span
       v-if="guide != null"
-      class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 border-l-2 border-dotted border-l-guide-or-ube/75 font-mono text-xs"
+      class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 font-mono text-xs"
       aria-hidden="true"
-      :style="{ '--guide-col': guide, '--guide-hue': guideHue || undefined }"
+      :data-hue="guideHue"
+      :style="{ '--guide-col': guide }"
     />
     <header v-show="!editing" class="code-panel-label">app.py</header>
     <SandboxCodeEditor

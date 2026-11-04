@@ -1,7 +1,10 @@
-.glossary-folio-stage:not([data-family]) {
-  --family-color : var(--prose-palette-ube);
+.glossary-folio-headword a {
+  position : relative;
+  display  : inline-block;
 }
 
-.glossary-folio-pane::before {
-  background : var(--rail-paint, var(--family-color));
+.glossary-folio-body code {
+  font-family : var(--vp-font-family-mono);
+  font-size   : var(--prose-text-0-84em);
+  color       : var(--vp-code-color);
 }

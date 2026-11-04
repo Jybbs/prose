@@ -17,7 +17,7 @@ import { platformEmblem } from '../../../lib/shared/emblems'
       <tr v-for="platform in data" :key="platform.target">
         <td><code>{{ platform.target }}</code></td>
         <td>
-          <span class="nib-chip ground"><NibBadge :emblem="platformEmblem(platform.name)" :size="14" /></span>
+          <span class="nib-chip"><NibBadge :emblem="platformEmblem(platform.name)" :size="14" /></span>
           {{ platform.label }}<em v-if="platform.manylinux"> (glibc, manylinux)</em>
         </td>
       </tr>

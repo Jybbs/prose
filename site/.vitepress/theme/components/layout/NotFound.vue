@@ -11,7 +11,7 @@ import Kicker from '../base/Kicker.vue'
     <h1 class="max-w-18ch border-none font-display text-404 leading-1-08 font-500 -tracking-0-01em text-text-1 italic">
       A page
       <span class="relative mr-8 text-text-3 not-italic line-through decoration-apricot/75 decoration-2">misplaced</span>
-      <span class="text-ube">mistyped</span>.
+      mistyped.
     </h1>
     <p class="max-w-48ch text-1rem leading-1-6 text-text-2">
       The URL didn't resolve to any surface we keep on file. Step back to the home page and try a different route through the catalog.

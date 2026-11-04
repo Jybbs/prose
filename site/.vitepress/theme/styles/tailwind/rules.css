@@ -1,44 +1,38 @@
 @theme inline {
-  --background-image-family-wash-fade          : linear-gradient(90deg, color-mix(in srgb, var(--family-color) var(--prose-tint-wash), var(--vp-c-bg)), transparent);
+  --color-layer-ink : var(--layer-ink);
+  --color-outcome-ink : var(--outcome-ink);
+  --color-outcome-mark : var(--outcome-mark);
+  --grid-template-columns-max-1fr : max-content minmax(0, 1fr);
+  --color-family-nib : var(--family-nib);
 
-  --color-divider-70-layer-accent              : color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-70), var(--layer-accent));
-  --color-exit-code-accent                     : var(--exit-code-accent);
-  --color-family-or-text-1-80-text-1           : color-mix(in srgb, var(--family-color, var(--vp-c-text-1)) var(--prose-tint-80), var(--vp-c-text-1));
-  --color-layer-accent                         : var(--layer-accent);
-  --color-layer-accent-28-bg                   : color-mix(in srgb, var(--layer-accent) var(--prose-tint-28), var(--vp-c-bg));
-  --color-layer-accent-55-text-1               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-55), var(--vp-c-text-1));
-  --color-layer-accent-7-bg                    : color-mix(in srgb, var(--layer-accent) var(--prose-tint-7), var(--vp-c-bg));
-  --color-layer-accent-70-text-1               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-1));
-  --color-layer-accent-70-text-2               : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-2));
-  --color-side                                 : var(--side-color);
-  --color-side-12-code-block                   : color-mix(in srgb, var(--side-color) var(--prose-tint-12), var(--vp-code-block-bg));
-  --color-side-40-divider                      : color-mix(in srgb, var(--side-color) var(--prose-tint-40), var(--vp-c-divider));
 
   --columns-2-11rem                            : 2 var(--prose-width-11rem);
 
   --content-diamond                            : "◆";
 
-  --grid-template-columns-24-auto-1fr-10       : var(--prose-size-24) auto 1fr var(--prose-size-10);
+  --grid-template-columns-24-auto-1fr          : var(--prose-size-24) auto 1fr;
   --grid-template-columns-280-1fr              : var(--prose-width-280) 1fr;
   --grid-template-columns-3rem-minmax-1fr      : var(--prose-size-3rem) minmax(0, 1fr);
-  --grid-template-columns-78-minmax-1fr        : var(--prose-size-78) minmax(0, 1fr);
+  --grid-template-columns-110-minmax-1fr : var(--prose-size-110) minmax(0, 1fr);
 
   --text-underline-offset-3                    : var(--prose-space-3);
 
+  --ease-morph                                 : var(--prose-ease-morph);
+  --transition-duration-grow                   : var(--prose-duration-morph);
   --transition-property-background-and-opacity : background, opacity;
   --transition-property-width                  : width;
 }
 
-@utility rail-border-on-bg {
-  background : linear-gradient(var(--vp-c-bg), var(--vp-c-bg)) padding-box, var(--rail-paint) border-box;
-}
-
-@utility rail-border-on-bg-soft {
-  background : linear-gradient(var(--vp-c-bg-soft), var(--vp-c-bg-soft)) padding-box, var(--rail-paint) border-box;
-}
-
-@theme static {
-  --ease-morph               : cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-delay-grow    : var(--transition-duration-grow);
-  --transition-duration-grow : 0.4s;
+@utility port-tab {
+  padding        : var(--prose-space-2) var(--prose-space-5);
+  border-radius  : var(--prose-radius-sm);
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  font-weight    : 700;
+  letter-spacing : var(--prose-kicker-tracking);
+  line-height    : 1;
+  text-transform : uppercase;
+  white-space    : nowrap;
+  color          : var(--vp-c-bg);
+  pointer-events : none;
 }

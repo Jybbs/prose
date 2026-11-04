@@ -1,3 +1,11 @@
-.primitives-composition-band-head {
-  --band-accent : var(--layer-accent);
+/* Glides one wash of the focused tile's layer hue behind it, cross-fading the
+   hue as it crosses a band. */
+.primitives-composition-wash {
+  background : color-mix(in srgb, var(--layer-hue) var(--prose-tint-22), transparent);
+  transition :
+    transform        var(--prose-transition-morph),
+    width            var(--prose-transition-morph),
+    height           var(--prose-transition-morph),
+    background-color var(--prose-transition-morph),
+    opacity          var(--prose-transition-slow);
 }

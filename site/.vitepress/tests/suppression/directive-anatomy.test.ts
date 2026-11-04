@@ -26,7 +26,7 @@ vi.mock('../../lib/suppression/directives.data', async () => {
       scope       : 'block'
     },
     {
-      effectNodes : [{ kind: 'text', text: 'Only the listed lint rules skip the line.' }],
+      effectNodes : [{ kind: 'text', text: 'Only the listed lints skip the line.' }],
       example     : 'x = 1  # prose: ignore[<rule>]',
       form        : '# prose: ignore[<rule>, ...]',
       id          : 'prose-ignore-rules',
