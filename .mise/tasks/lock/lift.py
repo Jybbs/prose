@@ -21,16 +21,18 @@ so no row or write takes one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
-attempt under `.cache/lift/`. Where that attempt fails, it tries again with
-every major lift held back, and a failure that remains ends the trial with
-a report that no major lift caused it. Where holding them back passes, it
-retries with each major lift held back in turn and stops at the first that
-passes, keeping every major lift held back where none does. `--write` writes
-each lift into its homes, locks and installs each tool a lifted mise pin
-names, moves each lifted package in its manager's lockfile, and runs `mise
-relock`, taking the holds of the attempt that passed when `--try` is given
-too. `--hold <pin>` leaves a pin where it stands, and a name the table omits
-exits 2 before any trial or write.
+attempt under `.cache/lift/`. Where that attempt fails and a major lift is
+left to hold back, it tries again with every major lift held back, which
+is one retry for a lone major lift. A failure that remains, or a first
+failure with no major lift left to hold back, ends the trial with a report
+that the failure remains with every major lift held back. Where holding
+back two or more major lifts passes, it retries with each one held back
+in turn and stops at the first that passes, keeping every major lift held
+back where none does. `--write` writes each lift into its homes, locks and
+installs each tool a lifted mise pin names, moves each lifted package in
+its manager's lockfile, and runs `mise relock`, taking the holds the trial
+settles on when `--try` is given too. `--hold <pin>` leaves a pin where it
+stands, and a name the table omits exits 2 before any trial or write.
 """
 
 from argparse           import ArgumentParser
@@ -1132,10 +1134,12 @@ def workflow_pins() -> Iterator[Pin]:
 
 def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     """
-    Returns the holds a trial settles on, trying every lift but `holds`,
-    then every major lift held back, and stopping the task where that fails
-    too. Otherwise the first attempt holding back one major lift gives the
-    holds, or every major lift stays held back where none passes.
+    Returns the holds a trial settles on, which are `holds` where the
+    attempt moving every other lift passes. An attempt holding back every
+    major lift follows, and the task stops where it fails or no major lift
+    is left to hold back. Otherwise the first attempt to pass holding back
+    one major lift gives the holds, or every major lift stays held back
+    where none does.
     """
     logs     = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     majors   = [lift.name for lift in lifts if lift.major and lift.name not in holds]
@@ -1147,7 +1151,9 @@ def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     if len(majors) == 1 and passing(withheld, logs, f"holding back {majors[0]}"):
         return withheld
     if len(majors) < 2 or not passing(withheld, logs, "holding back every major lift"):
-        raise SystemExit("no major lift caused the failure, so nothing is written")
+        raise SystemExit(
+            "the failure remains with every major lift held back, so nothing is written"
+        )
 
     for major in majors:
         if passing(held := holds | {major}, logs, f"holding back {major}"):

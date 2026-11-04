@@ -28,7 +28,7 @@ OLD      = "a" * 40
 PYPI     = "https://pypi.org/pypi/toml"
 REMOTE   = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
 SCRIPTS  = ["git", "grep", "-l", "-e", "^# /// script$", "--", ".mise"]
-STOPPED  = "no major lift caused the failure, so nothing is written"
+STOPPED  = "the failure remains with every major lift held back, so nothing is written"
 SYNC     = ["mise", "run", "--force", "lock:sync"]
 TOOLS    = [["mise", "lock"], ["mise", "install"]]
 UNTAGGED = "c" * 40
@@ -720,7 +720,7 @@ def test_main_exits_2_on_a_hold_the_table_omits(
             ["--write"],
             [],
             raises(SystemExit, match=STOPPED),
-            id = "no major lift caused it"
+            id = "failure remains"
         ),
         param(
             {"ruff"},
@@ -748,7 +748,7 @@ def test_main_writes_what_the_trial_settles_on(
 ):
     """
     Pins that `--try --write` writes every lift but a given hold and the
-    holds of the attempt that passed, and that nothing is written where the
+    holds the trial settles on, and that nothing is written where the
     failure remains with every major lift held back or where `--write` is
     not given.
     """
@@ -989,6 +989,7 @@ def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: Monke
     ("names", "breaking", "attempts", "settled"),
     [
         param(["ruff", "serde", "uv"], set(), [EVERY], {"uv"}, id = "whole"),
+        param(["ruff", "serde", "uv"], {"uv"}, [EVERY], {"uv"}, id = "given hold"),
         param(
             ["ruff", "serde", "typescript", "uv"],
             {"ruff"},
@@ -1012,7 +1013,7 @@ def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: Monke
         ),
         param(
             ["ruff", "serde", "uv"],
-            {"ruff"},
+            {"ruff", "uv"},
             [EVERY, "holding-back-ruff"],
             {"ruff", "uv"},
             id = "lone major"
@@ -1027,10 +1028,11 @@ def test_tried_finds_the_hold_a_major_lift_needs(
     settled  : set[str]
 ):
     """
-    Pins that where holding every major lift back passes, each major lift
-    is held back in turn, skipping a minor lift and a given hold. The first
-    attempt to pass gives the holds, every major lift stays held back where
-    none does, and a lone major lift takes a single attempt holding it back.
+    Pins that where holding every major lift back passes, each major lift is
+    held back in turn, skipping a minor lift and a given hold. The first of
+    those attempts to pass gives the holds, every major lift stays held back
+    where none does, and a lone major lift takes a single attempt holding it
+    back. Every attempt carries a given hold.
     """
     assert lift.tried({"uv"}, lifting(lift, names)) == settled
     assert [log.stem for log in logs] == attempts
@@ -1765,7 +1767,7 @@ def test_tried_prints_each_result_beside_a_log_of_its_own(
         param(["ruff", "serde"], {"ruff"}, [EVERY], id = "every major given")
     ]
 )
-def test_tried_stops_where_no_major_lift_caused_the_failure(
+def test_tried_stops_where_the_failure_remains_with_every_major_lift_held_back(
     attempts : list[str],
     holds    : set[str],
     lift     : ModuleType,
@@ -1773,14 +1775,14 @@ def test_tried_stops_where_no_major_lift_caused_the_failure(
     names    : list[str]
 ):
     """
-    Pins that a failure a minor lift causes stops the task after the one
-    attempt holding every major lift back, reporting that no major lift
-    caused it, and that no attempt repeats where the first already held
-    every major lift back.
+    Pins that a failure that remains with every major lift held back stops
+    the task after that one attempt and prints that report exactly, and that
+    no attempt repeats where the first already held every major lift back.
     """
-    with raises(SystemExit, match=STOPPED):
+    with raises(SystemExit) as stopped:
         lift.tried(holds, lifting(lift, names))
 
+    assert stopped.value.code == STOPPED
     assert [log.stem for log in logs] == attempts
 
 
