@@ -1,3 +1,5 @@
+@reference "./tailwind.css";
+
 /* Marks the current sidebar item with the logo's pen-nib P in the link color
    at the head of a widened indent, its words in the text color as a hovered
    item's read. */
@@ -38,7 +40,7 @@
   width   : 100%;
 }
 
-@media (--prose-bp-mobile) {
+@variant max-mobile {
   .vp-doc table {
     display    : block;
     overflow-x : auto;

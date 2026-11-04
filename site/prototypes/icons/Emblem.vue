@@ -31,7 +31,7 @@ const strokes = computed(() => {
 
 <template>
   <svg
-    class="glyph icon-emblem"
+    class="icon-emblem glyph text-emblem-ink"
     viewBox="0 0 24 24"
     fill="none"
     :data-family="emblem.family"
@@ -73,10 +73,10 @@ const strokes = computed(() => {
         />
       </mask>
     </defs>
-    <g v-if="painted" class="icon-emblem-paint" :mask="`url(#${id}-mask)`">
+    <g v-if="painted" class="icon-emblem-paint fill-emblem-paint stroke-none" :mask="`url(#${id}-mask)`">
       <path v-for="shape in emblem.motif.shapes" :key="shape" :d="shape" />
     </g>
-    <g v-if="!line" class="icon-emblem-outline">
+    <g v-if="!line" class="icon-emblem-outline stroke-emblem-paint">
       <path v-for="shape in emblem.motif.shapes" :key="shape" :d="shape" />
     </g>
     <path

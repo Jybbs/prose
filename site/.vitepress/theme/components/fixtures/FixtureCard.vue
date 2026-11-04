@@ -35,14 +35,14 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
 <template>
   <section
     :id="id"
-    class="fixture-card"
-    :class="{ 'is-open': isOpen }"
+    class="fixture-card group/fixture"
+    :data-open="isOpen || undefined"
     :data-family="family"
     :data-edits="entry.changesSource"
     :data-lint="entry.hasFindings"
   >
-    <div class="fixture-card-summary-row" @click="toggle()">
-      <span class="fixture-card-slot" aria-hidden="true">
+    <div class="fixture-card-summary-row max-mobile:group-data-open/fixture:gap-y-0" @click="toggle()">
+      <span class="fixture-card-slot mt-7 mr-12 ml-8 flex size-20 items-center justify-center self-start max-mobile:mr-0" aria-hidden="true">
         <NibBadge v-if="family" :emblem="familyEmblem(family)" :size="14" />
       </span>
       <button
@@ -56,7 +56,6 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
       </button>
       <div
         class="fixture-card-actions"
-        :class="{ 'is-active': isOpen }"
         @click.stop
       >
         <FixtureToggle v-if="entry.hasToggle" v-model="activeTab" />
@@ -65,7 +64,7 @@ useHashOpen(fragment => { if (fragment === id.value) isOpen.value = true })
     </div>
     <div
       :id="`${id}-body`"
-      class="fixture-card-body"
+      class="fixture-card-body transition-grid-template-rows"
       role="region"
     >
       <div class="fixture-card-body-inner">

@@ -15,13 +15,13 @@ defineProps<{
   <RuleTooltipPopper :rule="withTooltip ? segment.rule : null">
     <a
       :href="segment.rule?.href"
-      class="composition-cards-chip"
+      class="composition-cards-chip box-border grid h-20 items-center justify-items-start bg-chip-ground font-mono leading-1-2 text-text-1 no-underline hover:text-brand-2"
       :data-family="segment.family"
       :title="segment.rule ? undefined : `${segment.slug} (${segment.family ?? 'undocumented'})`"
     >
       <NibBadge v-if="segment.family" :emblem="familyEmblem(segment.family)" :size="13" />
       <span class="composition-cards-chip-label">
-        <span class="composition-cards-chip-slug">{{ segment.slug }}</span>
+        <span class="composition-cards-chip-slug text-xxs tracking-0-04em uppercase">{{ segment.slug }}</span>
       </span>
     </a>
   </RuleTooltipPopper>

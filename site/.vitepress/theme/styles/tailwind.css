@@ -1,0 +1,18 @@
+@layer theme, base, components, utilities;
+
+@import "./tailwind/theme.css";
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "./tailwind/base.css";
+@import "./tailwind/landing.css";
+@import "./tailwind/reference.css";
+@import "./tailwind/rules.css";
+@import "./tailwind/sandbox.css";
+@import "./tailwind/shapes.css";
+
+@source "../**/*.vue";
+@source "../../../prototypes/**/*.vue";
+@source "../../lib/**/*.ts";
+@source not inline("border container filter fixed inline lowercase resize ring static transform transition");
+
+@custom-variant dark (&:where(.dark, .dark *));
+

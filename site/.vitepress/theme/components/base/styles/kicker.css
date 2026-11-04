@@ -1,21 +1,15 @@
+@reference "../../../styles/tailwind.css";
+
+/* Holds the kicker's margin and color beneath the utilities, where `.landing-section p` and
+   `.nib-tag .kicker` override them. */
 .kicker,
 .vp-doc th {
-  margin         : 0;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  letter-spacing : var(--prose-kicker-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
+  margin : 0;
+  color  : var(--vp-c-text-3);
 }
 
-.kicker[data-variant="rule"]::before {
-  content           : "— ";
-  margin-inline-end : var(--prose-space-4);
-}
-
-.kicker[data-variant="rule"]::after {
-  content             : " —";
-  margin-inline-start : var(--prose-space-4);
+.vp-doc th {
+  @apply kicker;
 }
 
 /* Sets a family's nibs, a middle dot, and a kicker on one line, as a card or

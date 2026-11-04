@@ -49,8 +49,8 @@ describe('PipelineOrder', () => {
   it('keeps every pass up to a pointed one at rest and grays every later one', async () => {
     const w = order()
     await w.findAll('.pipeline-order-link')[1]!.trigger('pointerenter')
-    expect(w.findAll('.pipeline-order-entry').map(entry => entry.classes()))
-      .toStrictEqual([['pipeline-order-entry'], ['pipeline-order-entry', 'is-here'], ['pipeline-order-entry', 'is-later']])
+    expect(w.findAll('.pipeline-order-entry').map(entry => entry.classes().filter(name => name.startsWith('is-'))))
+      .toStrictEqual([[], ['is-here'], ['is-later']])
     expect(w.findAll('.pipeline-order-spine > li')[2]!.classes()).toContain('is-later')
     expect(census(w)).toStrictEqual([['layout', '1', false], ['ordering', '0', true]])
     expect(w.get('.pipeline-order-edition').text()).toMatch(/^pass 02 of 3/)

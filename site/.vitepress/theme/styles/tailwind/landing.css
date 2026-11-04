@@ -1,0 +1,51 @@
+@theme inline {
+  --min-height-watermarks                                 : 280vh;
+
+  --color-family-22-bg-soft                               : color-mix(in srgb, var(--family-color) var(--prose-tint-22), var(--vp-c-bg-soft));
+  --color-family-edge-soft                                : var(--family-edge-soft);
+  --color-panel-bg                                        : var(--panel-bg);
+  --color-panel-edge                                      : var(--panel-edge);
+  --color-stack-accent                                    : var(--stack-accent);
+  --color-stack-accent-56-text-3                          : color-mix(in srgb, var(--stack-accent) var(--prose-tint-56), var(--vp-c-text-3));
+  --color-stack-accent-60-divider                         : color-mix(in srgb, var(--stack-accent) var(--prose-tint-60), var(--vp-c-divider));
+  --color-stack-accent-68-text-1                          : color-mix(in srgb, var(--stack-accent) var(--prose-tint-68), var(--vp-c-text-1));
+  --color-stack-accent-82-text-1                          : color-mix(in srgb, var(--stack-accent) var(--prose-tint-82), var(--vp-c-text-1));
+  --color-stack-accent-faint-bg                           : color-mix(in srgb, var(--stack-accent) var(--prose-tint-faint), var(--vp-c-bg));
+  --color-stack-accent-strong-divider                     : color-mix(in srgb, var(--stack-accent) var(--prose-tint-strong), var(--vp-c-divider));
+  --color-stack-accent-wash-bg                            : color-mix(in srgb, var(--stack-accent) var(--prose-tint-wash), var(--vp-c-bg));
+  --color-stamp-accent-12-panel-bg                        : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-12), var(--panel-bg));
+  --color-stamp-accent-22-bg                              : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-22), var(--vp-c-bg));
+  --color-stamp-accent-30-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-30), var(--panel-edge));
+  --color-stamp-accent-40-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-40), var(--panel-edge));
+  --color-stamp-accent-50-text-3                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-50), var(--vp-c-text-3));
+  --color-stamp-accent-55-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--panel-edge));
+  --color-stamp-accent-55-text-3                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--vp-c-text-3));
+  --color-stamp-accent-65-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-65), var(--panel-edge));
+  --color-stamp-accent-8-panel-bg                         : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-8), var(--panel-bg));
+  --color-stamp-accent-medium-bg                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-medium), var(--vp-c-bg));
+  --color-stamp-ink                                       : var(--stamp-ink);
+  --color-ube-60-panel-edge                               : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge));
+  --color-workflow-accent-24-divider                      : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-24), var(--vp-c-divider));
+  --color-workflow-accent-28-divider                      : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-28), var(--vp-c-divider));
+  --color-workflow-accent-70-text-1                       : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-70), var(--vp-c-text-1));
+
+  --grid-template-columns-196-minmax-1fr                  : var(--prose-width-196) minmax(0, 1fr);
+  --grid-template-columns-64-1fr                          : var(--prose-size-64) 1fr;
+  --grid-template-columns-72-1fr                          : var(--prose-size-72) 1fr;
+  --grid-template-columns-auto-minmax-12-1fr-auto         : auto minmax(var(--prose-size-12), 1fr) auto;
+  --grid-template-columns-auto-minmax-1fr                 : auto minmax(0, 1fr);
+  --grid-template-columns-minmax-0-95fr-minmax-1-5fr      : minmax(0, 0.95fr) minmax(0, 1.5fr);
+  --grid-template-columns-minmax-1fr-auto                 : minmax(0, 1fr) auto;
+
+  --grid-template-rows-64-28-18                           : var(--prose-size-64) var(--prose-size-28) var(--prose-size-18);
+
+  --text-404                                              : clamp(var(--prose-text-2-4rem), 5.4vw, var(--prose-text-3-4rem));
+  --text-landing-h2                                       : clamp(var(--prose-text-2rem), 3.6vw, var(--prose-text-2-8rem));
+
+  --tracking-0                                            : 0;
+
+  --transition-property-background-border-color-and-scale : background, border-color, scale;
+  --transition-property-mask-image                        : mask-image;
+
+  --width-wordmark                                        : min(var(--prose-width-640), 72vw);
+}

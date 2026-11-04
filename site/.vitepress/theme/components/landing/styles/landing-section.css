@@ -1,19 +1,5 @@
-.landing-section {
-  margin-top : var(--prose-space-48);
-}
-
 .landing-section h2 {
-  margin                  : var(--prose-space-12) 0 0;
-  padding-bottom          : 0;
-  border-bottom           : none;
-  font-family             : var(--prose-font-display);
-  font-size               : clamp(var(--prose-text-2rem), 3.6vw, var(--prose-text-2-8rem));
-  font-weight             : 500;
-  line-height             : 1.1;
-  letter-spacing          : 0;
-  color                   : var(--vp-c-text-1);
   font-variation-settings : 'opsz' 144;
-  text-wrap               : balance;
 }
 
 .landing-section h2 strong {
@@ -22,29 +8,4 @@
 
 .landing-section p {
   color : var(--vp-c-text-2);
-}
-
-.landing-section-heading {
-  display       : flex;
-  align-items   : flex-end;
-  gap           : var(--prose-space-24);
-  margin-bottom : var(--prose-space-34);
-}
-
-.landing-section-heading.centered {
-  display       : block;
-  align-items   : center;
-  max-width     : var(--prose-width-720);
-  margin-inline : auto;
-  text-align    : center;
-}
-
-.landing-section-heading.centered a {
-  margin-top : var(--prose-space-18);
-}
-
-@media (--prose-bp-mobile) {
-  .landing-section {
-    margin-top : var(--prose-space-54);
-  }
 }

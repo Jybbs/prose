@@ -14,14 +14,14 @@ const axes = {
 </script>
 
 <template>
-  <figure class="icon-specimen">
-    <dl class="icon-specimen-axes kicker">
-      <div v-for="(value, axis) in axes" :key="axis">
+  <figure class="mt-24 mb-40 flex flex-col gap-20">
+    <dl class="icon-specimen-axes kicker flex flex-wrap gap-x-18 gap-y-6">
+      <div v-for="(value, axis) in axes" :key="axis" class="flex gap-6">
         <dt>{{ axis }}</dt>
-        <dd>{{ value }}</dd>
+        <dd class="text-text-1">{{ value }}</dd>
       </div>
     </dl>
-    <div class="icon-specimen-chips">
+    <div class="flex flex-wrap gap-8">
       <Chip
         v-for="[emoji, emblem] in EMBLEMS"
         :key="emoji"
@@ -33,13 +33,13 @@ const axes = {
         <span>{{ emblem.name }}</span>
       </Chip>
     </div>
-    <ul class="icon-specimen-tiles">
-      <li v-for="[emoji, emblem] in EMBLEMS" :key="emoji" :data-family="emblem.family">
-        <span class="icon-specimen-tile nib-ground"><NibBadge :emblem="emblem" :size="16.8" /></span>
+    <ul class="m-0 grid list-none grid-cols-fill-96 gap-x-8 gap-y-14 p-0">
+      <li v-for="[emoji, emblem] in EMBLEMS" :key="emoji" class="m-0 flex flex-col items-center gap-6" :data-family="emblem.family">
+        <span class="icon-specimen-tile medallion size-32 border-divider nib-ground text-1-05rem"><NibBadge :emblem="emblem" :size="16.8" /></span>
         <span class="kicker">{{ emblem.name }}</span>
       </li>
     </ul>
-    <div class="icon-specimen-card panel">
+    <div class="icon-specimen-card flex flex-wrap justify-center gap-28 panel bg-panel-wash p-28">
       <span v-for="[emoji, emblem] in EMBLEMS" :key="emoji" :data-family="emblem.family">
         <NibBadge :emblem="emblem" :label="emblem.motif.label" :size="96" />
       </span>

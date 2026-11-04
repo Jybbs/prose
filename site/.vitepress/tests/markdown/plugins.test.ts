@@ -170,7 +170,7 @@ describe('emblemPlugin', () => {
 
   it('sets an emoji in body text as its labeled badge in the running-text chip', () => {
     expect(render(md => md.use(plugin), 'the entries with the 🧶 badge')).toContain(
-      'the entries with the <span class="nib-chip" data-family="lint">'
+      'the entries with the <span class="nib-chip ground" data-family="lint">'
       + '<svg class="nib-badge" width="16" height="16" viewBox="0 0 24 24" role="img" aria-label="Yarn">'
       + '<use href="#nib-yarn-small"></use></svg></span> badge'
     )
@@ -178,7 +178,7 @@ describe('emblemPlugin', () => {
 
   it('gives a platform badge no family, so it takes Ube', () => {
     expect(render(md => md.use(plugin), 'built for 🐧'))
-      .toContain('<span class="nib-chip"><svg class="nib-badge"')
+      .toContain('<span class="nib-chip ground"><svg class="nib-badge"')
   })
 
   it.each([
@@ -264,7 +264,7 @@ describe('ruleLinkPlugin', () => {
 
   it('emits an inert rule chip with its family badge under the inertHtml env', () => {
     expect(run('see [[align-equals]]', { inertHtml: true })).toContain(
-      '<a class="rule-link" data-family="alignment" href="/rules/alignment/align-equals">'
+      '<a class="rule-link ground" data-family="alignment" href="/rules/alignment/align-equals">'
       + '<svg class="nib-badge" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">'
       + '<use href="#nib-ladder-small"></use></svg>align-equals</a>'
     )

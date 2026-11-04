@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-
 import { differenceCiede2000, interpolate, wcagContrast } from 'culori'
 import { parse as parseCss }                              from 'postcss'
 
@@ -7,6 +5,8 @@ import * as emblems    from '../../lib/shared/emblems'
 import * as palette    from '../../lib/shared/palette'
 import * as registries from '../../lib/shared/registries'
 import * as support    from '../support'
+import * as tailwind   from '../tailwind'
+import * as vocabulary from '../vocabulary'
 
 const FAMILIES_LISTED = Object.keys(registries.GLOSSARY_FAMILY_META) as registries.GlossaryFamily[]
 const SMALL_DRAWINGS  = ['Apple', 'Basket', 'Harp', 'Newspaper', 'Owl', 'Penguin', 'Wand']
@@ -109,12 +109,16 @@ describe('the badge ink', () => {
     expect(strays).toStrictEqual([])
   })
 
-  it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', () => {
-    const css     = new URL('../../theme/components/rules/styles/pipeline-order.css', import.meta.url)
+  it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', async () => {
+    const design  = await tailwind.designSystem()
     const painted = [] as string[]
-    parseCss(fs.readFileSync(css, 'utf8')).walkRules(rule => {
+    parseCss(vocabulary.read('.vitepress/theme/components/rules/styles/pipeline-order.css')).walkRules(rule => {
       if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
     })
+    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.vue')
+    for (const [name] of template.matchAll(/[\w/-]*hover(?:\/[\w-]+)?:[\w/-]+/g)) {
+      if (/background/.test(design.candidatesToCss([name])[0] ?? '')) painted.push(name)
+    }
     expect(painted).toStrictEqual([])
   })
 

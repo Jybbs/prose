@@ -5,10 +5,10 @@
 </script>
 
 <template>
-  <div class="fixture-nochange">
-    <div class="fixture-toggle fixture-nochange-ghost" aria-hidden="true">
-      <span class="fixture-toggle-pill" data-side="before">Before</span>
-      <span class="fixture-toggle-pill" data-side="after">After</span>
+  <div class="fixture-nochange relative inline-flex">
+    <div class="fixture-nochange-ghost" aria-hidden="true">
+      <span class="fixture-toggle-pill toggle-pill" data-side="before">Before</span>
+      <span class="fixture-toggle-pill toggle-pill" data-side="after">After</span>
     </div>
     <span class="fixture-nochange-label">No Change</span>
   </div>

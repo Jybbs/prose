@@ -13,178 +13,30 @@
   --outcome-mark : var(--prose-shade-apricot-page-35);
 }
 
-.exit-codes-spread {
-  display               : grid;
-  grid-template-columns : var(--prose-width-280) 1fr;
-  gap                   : var(--prose-space-24);
-  align-items           : center;
-  margin                : var(--prose-space-1-5rem) 0;
-}
-
-.exit-codes-index {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-4);
-  padding        : var(--prose-space-4) var(--prose-space-18) var(--prose-space-4) var(--prose-space-4);
-  border-right   : var(--prose-border-1) solid var(--vp-c-divider);
-}
-
 .exit-code-index-row {
-  display               : grid;
-  grid-template-columns : var(--prose-size-24) auto 1fr;
-  align-items           : baseline;
-  gap                   : var(--prose-space-14);
-  padding               : var(--prose-space-12);
-  border                : none;
-  background            : transparent;
-  text-align            : left;
-  cursor                : pointer;
-  color                 : var(--vp-c-text-2);
-  transition            :
+  transition :
     box-shadow var(--prose-transition),
     color      var(--prose-transition);
 }
 
 .exit-code-index-row:hover,
-.exit-code-index-row.active {
+.exit-code-index-row[aria-current] {
   box-shadow : inset var(--prose-border-2) 0 0 var(--prose-role-link);
-  color      : var(--vp-c-text-1);
-}
-
-.exit-code-index-row:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : calc(var(--prose-space-1) * -1);
-}
-
-.exit-codes-index .band-head {
-  padding : var(--prose-space-8) var(--prose-space-12) 0;
-}
-
-.exit-codes-index .band-rule {
-  height     : var(--prose-size-2);
-  background : var(--outcome-mark);
-}
-
-.exit-code-index-num {
-  font-family          : var(--vp-font-family-mono);
-  font-variant-numeric : tabular-nums lining-nums;
-  font-size            : var(--prose-text-1rem);
-  text-align           : right;
-  transition           : color var(--prose-transition);
-}
-
-.exit-code-index-row:is(:hover, .active) .exit-code-index-num {
-  color : var(--outcome-ink);
-}
-
-.exit-code-index-label {
-  font-family : var(--prose-font-display);
-  font-style  : italic;
-  font-size   : var(--prose-text-md);
-}
-
-.exit-code-index-leader {
-  display : block;
-  margin  : 0 var(--prose-space-4) var(--prose-space-4);
-}
-
-.exit-code-entry {
-  padding-inline-start : var(--prose-space-18);
-}
-
-.exit-code-entry-head {
-  display       : flex;
-  align-items   : center;
-  gap           : var(--prose-space-14);
-  margin-bottom : var(--prose-space-18);
-}
-
-.exit-code-entry-numeral {
-  font-family          : var(--vp-font-family-mono);
-  font-variant-numeric : tabular-nums lining-nums;
-  font-size            : var(--prose-text-2-6rem);
-  font-weight          : 500;
-  line-height          : 1;
-  color                : var(--outcome-ink);
-}
-
-.exit-code-entry-label {
-  font-family : var(--prose-font-display);
-  font-weight : 500;
-  font-size   : var(--prose-text-1-5rem);
-  line-height : 1;
-  color       : var(--vp-c-text-1);
-}
-
-.exit-code-entry-summary {
-  margin      : 0 0 var(--prose-space-14);
-  max-width   : var(--prose-width-60ch);
-  font-family : var(--vp-font-family-base);
-  font-size   : var(--prose-text-md);
-  line-height : 1.55;
-  color       : var(--vp-c-text-1);
-}
-
-/* Lists the code's facts as ruled rows of a label beside its text. */
-.vp-doc .exit-code-entry-facts {
-  display               : grid;
-  grid-template-columns : max-content minmax(0, 1fr);
-  max-width             : var(--prose-width-60ch);
-  margin                : 0;
-  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
-}
-
-.vp-doc .exit-code-entry-facts :is(dt, dd) {
-  margin        : 0;
-  padding       : var(--prose-space-8) 0;
-  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
-}
-
-.vp-doc .exit-code-entry-facts dt {
-  padding-right  : var(--prose-space-16);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size);
-  font-weight    : 400;
-  letter-spacing : var(--prose-kicker-tracking);
-  line-height    : var(--prose-leading-24);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-2);
-}
-
-.vp-doc .exit-code-entry-facts dd {
-  font-family : var(--vp-font-family-base);
-  font-size   : var(--prose-text-0-84rem);
-  line-height : 1.55;
-  color       : var(--vp-c-text-1);
 }
 
 .exit-code-entry-summary :where(code),
 .exit-code-entry-facts :where(code) {
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--vp-code-font-size);
-  color       : var(--vp-c-text-1);
-  white-space : nowrap;
-}
-
-@media (--prose-bp-tablet) {
-  .exit-codes-spread {
-    grid-template-columns : 1fr;
-    gap                   : var(--prose-space-24);
-  }
-  .exit-codes-index {
-    padding-inline-end : 0;
-    border-right       : none;
-    border-bottom      : var(--prose-border-1) solid var(--vp-c-divider);
-    padding-bottom     : var(--prose-space-16);
-  }
-  .exit-code-entry {
-    padding-inline-start : var(--prose-space-16);
-  }
+  padding       : var(--prose-space-2) var(--prose-space-6);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-bg);
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--vp-code-font-size);
+  color         : var(--vp-c-text-1);
+  white-space   : nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .exit-code-index-row,
-  .exit-code-index-num {
+  .exit-code-index-row {
     transition : none;
   }
 }

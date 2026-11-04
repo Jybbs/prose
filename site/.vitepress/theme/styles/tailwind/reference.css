@@ -1,0 +1,78 @@
+@theme inline {
+  --color-domain                              : var(--domain-color);
+  --color-domain-band                         : color-mix(in srgb, var(--domain-color) var(--az-index-band), transparent);
+
+  --flex-basis-1-4em                          : var(--prose-size-1-4em);
+
+  --grid-template-columns-8-1fr-auto          : var(--prose-size-8) minmax(0, 1fr) auto;
+
+  --transition-property-background-and-height : background, height;
+  --transition-property-color-and-box-shadow  : color, box-shadow;
+  --transition-property-translate-and-opacity : translate, opacity;
+}
+
+@utility change-chip {
+  border           : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius    : var(--prose-radius-sm);
+  background-color : var(--vp-c-bg-soft);
+  font-family      : var(--vp-font-family-mono);
+  font-size        : var(--prose-text-meta);
+  letter-spacing   : var(--prose-label-tracking-loose);
+  text-transform   : uppercase;
+  color            : var(--vp-c-text-3);
+}
+
+@utility fixture-nochange-ghost {
+  @apply invisible inline-flex rounded-sm border-1 border-divider bg-bg p-2;
+
+  .fixture-card[data-edits="false"]:not([data-lint="true"], [data-open]) & {
+    display : none;
+  }
+}
+
+@utility fixture-nochange-label {
+  @apply pointer-events-none absolute inset-0 flex items-center justify-center change-chip;
+
+  .fixture-card[data-edits="false"]:not([data-lint="true"], [data-open]) & {
+    position     : static;
+    border-color : transparent;
+    background   : none;
+    color        : var(--vp-c-text-2);
+    white-space  : nowrap;
+  }
+}
+
+@utility hairline-ube {
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 var(--prose-palette-ube);
+}
+
+@utility hairline-ube-38 {
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-38), transparent);
+}
+
+@utility toggle-pill {
+  padding        : var(--prose-space-3) var(--prose-space-12);
+  border         : none;
+  border-radius  : calc(var(--prose-radius-sm) - var(--prose-border-1));
+  background     : transparent;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-text-meta);
+  letter-spacing : var(--prose-label-tracking-loose);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-2);
+  cursor         : pointer;
+  transition     : color var(--prose-transition);
+
+  &:hover {
+    color : var(--vp-c-text-1);
+  }
+
+  &[aria-selected="true"] {
+    font-weight : 600;
+    color       : var(--vp-c-text-1);
+  }
+
+  &[aria-selected="true"][data-side="after"] {
+    color : var(--prose-shade-celadon-page-65);
+  }
+}

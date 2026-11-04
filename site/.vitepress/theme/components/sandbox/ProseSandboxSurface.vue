@@ -274,13 +274,13 @@ onUnmounted(run.cancel)
 <template>
   <section
     ref="surface"
-    class="code-panel sandbox-surface panel panel-clip"
+    class="code-panel overflow-hidden panel transition-colors in-data-editing:border-brand-1"
     aria-label="Formatted Python"
     :style="{ minHeight: heldHeight }"
   >
     <span
       v-if="guide != null"
-      class="sandbox-surface-guide"
+      class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 font-mono text-xs"
       aria-hidden="true"
       :data-hue="guideHue"
       :style="{ '--guide-col': guide }"
@@ -295,10 +295,10 @@ onUnmounted(run.cancel)
       @keydown.enter.meta="applyEdit"
       @keydown.enter.ctrl="applyEdit"
     />
-    <div v-show="editing" class="sandbox-surface-actions">
+    <div v-show="editing" class="absolute right-10 bottom-8 z-4 flex gap-4">
       <button
         type="button"
-        class="panel-seat sandbox-surface-action sandbox-surface-discard"
+        class="sandbox-surface-discard panel-seat size-28 transition-colors"
         title="Discard the edit"
         aria-label="Discard the edit"
         @click="cancelEdit"
@@ -309,7 +309,7 @@ onUnmounted(run.cancel)
       </button>
       <button
         type="button"
-        class="panel-seat sandbox-surface-action sandbox-surface-apply"
+        class="sandbox-surface-apply panel-seat size-28 transition-colors hover:border-brand-1 hover:text-brand-1"
         title="Format this source"
         aria-label="Format this source"
         @click="applyEdit"
@@ -323,7 +323,7 @@ onUnmounted(run.cancel)
       :is="panel"
       v-if="panel && morphSteps.length"
       v-show="morphing && !editing"
-      class="code-panel-code"
+      class="code-text grow overflow-hidden px-22 py-18"
       :steps="morphSteps"
       :step="step"
       :animate="animate && !reducedMotion"
@@ -333,7 +333,7 @@ onUnmounted(run.cancel)
     <div
       v-show="!morphing && !editing"
       ref="display"
-      class="code-panel-code code-panel-editable sandbox-surface-display"
+      class="sandbox-surface-display code-panel-code cursor-text"
       :class="{ 'lint-undrawn': undrawn }"
       role="button"
       tabindex="0"
@@ -345,8 +345,8 @@ onUnmounted(run.cancel)
       @focusout="popper?.hide"
       v-html="displayHtml"
     />
-    <p v-if="error" class="code-panel-error">{{ error }}</p>
-    <p v-if="unstable.length" class="code-panel-warning">
+    <p v-if="error" class="code-panel-error code-panel-notice text-danger-1">{{ error }}</p>
+    <p v-if="unstable.length" class="code-panel-warning code-panel-notice text-warning-1">
       A second run would change this output ({{ unstable.join(', ') }}), which is a defect in
       Prose itself.
       <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>

@@ -22,7 +22,7 @@ const LandingTypingDemo = defineAsyncComponent(() =>
 
 <section class="landing-page" aria-label="prose overview">
   <LandingHero />
-  <LandingSection variant="proof" kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
+  <LandingSection kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
     <LandingTypingDemo />
   </LandingSection>
   <LandingMetaphor />

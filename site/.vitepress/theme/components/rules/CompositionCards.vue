@@ -77,18 +77,18 @@ useHashOpen(fragment => {
 </script>
 
 <template>
-  <ol ref="list" class="composition-cards-list" aria-label="Composition cards">
+  <ol ref="list" class="composition-cards-list m-0 list-none p-0" aria-label="Composition cards">
     <li
       v-for="row in cards"
       :key="row.case"
       :id="row.case"
-      class="fixture-card"
-      :class="{ 'is-open': activeCase === row.case }"
+      class="fixture-card group/fixture cursor-pointer"
+      :data-open="activeCase === row.case || undefined"
       :data-edits="row.changesSource"
       @click="toggle(row)"
     >
-      <div class="fixture-card-summary-row">
-        <span class="composition-cards-slot" aria-hidden="true" :style="{ '--deck-count': row.segments.length }"></span>
+      <div class="fixture-card-summary-row max-mobile:group-data-open/fixture:gap-y-0">
+        <span class="composition-cards-slot col-1 row-1 mt-7 ml-8 h-20 self-start" aria-hidden="true" :style="{ '--deck-count': row.segments.length }"></span>
         <button
           type="button"
           class="fixture-card-summary"
@@ -96,25 +96,25 @@ useHashOpen(fragment => {
           :aria-controls="`composition-body-${row.case}`"
         >
           <span class="fixture-card-num" aria-hidden="true" />
-          <span class="fixture-card-title" v-html="row.titleHtml" />
+          <span class="fixture-card-title text-balance" v-html="row.titleHtml" />
         </button>
-        <div class="composition-cards-tick-cell">
+        <div class="contents">
           <ol
-            class="composition-cards-ticks"
+            class="composition-cards-ticks m-0 list-none p-0"
             :aria-label="`${row.segments.length} rules in pipeline order`"
             :style="{ '--deck-count': row.segments.length }"
           >
             <li
               v-for="(seg, at) in row.segments"
               :key="seg.slug"
-              class="composition-cards-tick-item"
+              class="composition-cards-tick-item my-0 list-none ps-0"
               :style="{ '--deck-at': at }"
               @click.stop
             >
               <RuleSegmentChip :segment="seg" :with-tooltip="false" />
             </li>
           </ol>
-          <div v-show="activeCase === row.case" class="composition-cards-toggle-slot" @click.stop>
+          <div v-show="activeCase === row.case" class="composition-cards-toggle-slot inline-flex items-center" @click.stop>
             <FixtureToggle v-if="row.hasToggle" v-model="activeTab" />
             <FixtureNoChange v-else />
           </div>
@@ -123,7 +123,7 @@ useHashOpen(fragment => {
 
       <div
         :id="`composition-body-${row.case}`"
-        class="fixture-card-body"
+        class="fixture-card-body transition-grid-template-rows duration-grow ease-morph"
         role="region"
         @click.stop
       >
@@ -140,8 +140,8 @@ useHashOpen(fragment => {
               :output-html="row.outputHtml"
               :sandbox-seed="row.sandboxSeed"
             />
-            <ol ref="bars" class="composition-cards-bar" aria-hidden="true" inert>
-              <li v-for="seg in row.segments" :key="seg.slug" class="composition-cards-bar-cell">
+            <ol ref="bars" class="composition-cards-bar invisible mt-12 mb-0 flex list-none flex-wrap gap-6 p-0" aria-hidden="true" inert>
+              <li v-for="seg in row.segments" :key="seg.slug" class="my-0 flex min-w-0 flex-none list-none ps-0">
                 <RuleSegmentChip :segment="seg" :with-tooltip="false" />
               </li>
             </ol>

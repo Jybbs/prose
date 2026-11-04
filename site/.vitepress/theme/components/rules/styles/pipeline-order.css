@@ -1,39 +1,11 @@
 .pipeline-order {
-  margin     : var(--prose-space-32) 0;
-  padding    : var(--prose-space-22) var(--prose-space-32);
-  background : var(--vp-c-bg-soft);
-}
-
-.pipeline-order {
   --pipeline-ease : 160ms var(--prose-ease-emphasized);
 }
 
-.pipeline-order-masthead {
-  display         : flex;
-  flex-wrap       : wrap;
-  align-items     : center;
-  justify-content : space-between;
-  gap             : var(--prose-space-12);
-  margin-bottom   : var(--prose-space-22);
-}
-
-.pipeline-order-edition {
-  margin-left : auto;
-}
-
-.pipeline-order-census {
-  display   : flex;
-  flex-wrap : wrap;
-  gap       : var(--prose-space-4);
-}
-
-.pipeline-order .pipeline-order-census-chip {
-  gap                  : var(--prose-space-5);
-  padding              : var(--prose-space-2) var(--prose-space-6);
-  line-height          : 1.2;
-  letter-spacing       : normal;
-  font-variant-numeric : tabular-nums;
-  transition           : color var(--pipeline-ease);
+.pipeline-order-census-chip {
+  letter-spacing : normal;
+  color          : var(--vp-c-text-1);
+  transition     : color var(--pipeline-ease);
 }
 
 .pipeline-order-census-chip .nib-badge {
@@ -42,25 +14,6 @@
 
 /* Draws one tick per pass in a gray where the double rule stood, the pointed
    pass's tick standing at full height and every later tick lighter. */
-.pipeline-order .pipeline-order-spine {
-  display     : flex;
-  flex        : 1 0 100%;
-  align-items : flex-end;
-  gap         : var(--prose-space-2);
-  height      : var(--prose-size-10);
-  margin      : 0;
-  padding     : 0;
-  list-style  : none;
-}
-
-.pipeline-order .pipeline-order-spine li {
-  display     : flex;
-  flex        : 1;
-  align-items : flex-end;
-  height      : 100%;
-  margin      : 0;
-}
-
 .pipeline-order-spine li::after {
   content    : "";
   flex       : 1;
@@ -75,6 +28,16 @@
 
 .pipeline-order-spine li.is-later::after {
   background : var(--vp-c-divider);
+}
+
+.pipeline-order-entry .nib-badge {
+  color      : var(--family-nib-soft);
+  transition : color var(--pipeline-ease);
+}
+
+.pipeline-order-name {
+  color      : var(--vp-c-text-1);
+  transition : color var(--pipeline-ease);
 }
 
 .pipeline-order-entry.is-later .pipeline-order-name,
@@ -94,87 +57,17 @@
   color : var(--family-nib-soft);
 }
 
+.pipeline-order-edition code {
+  letter-spacing : normal;
+  text-transform : none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pipeline-order-spine li::after,
-  .pipeline-order .pipeline-order-census-chip,
   .pipeline-order-census-chip,
   .pipeline-order-census-chip .nib-badge,
   .pipeline-order-name,
   .pipeline-order-entry .nib-badge {
     transition : none;
   }
-}
-
-.pipeline-order-edition code {
-  background     : transparent;
-  padding        : 0;
-  font-size      : inherit;
-  color          : inherit;
-  letter-spacing : normal;
-  text-transform : none;
-}
-
-.pipeline-order .pipeline-order-columns {
-  margin               : 0;
-  padding              : 0;
-  padding-inline-start : 0;
-  column-count         : 2;
-  column-gap           : var(--prose-space-40);
-  column-rule          : var(--prose-border-1) solid var(--vp-c-divider);
-}
-
-.pipeline-order .pipeline-order-entry {
-  break-inside : avoid;
-  list-style   : none;
-  margin       : 0 0 var(--prose-space-2);
-}
-
-.pipeline-order .pipeline-order-link {
-  display         : flex;
-  align-items     : center;
-  gap             : var(--prose-space-12);
-  padding         : var(--prose-space-9) var(--prose-space-8);
-  border-radius   : var(--prose-radius-6);
-  color           : var(--vp-c-text-1);
-  text-decoration : none;
-  transition      : color var(--prose-transition);
-}
-
-.pipeline-order .pipeline-order-link,
-.pipeline-order .pipeline-order-link:hover,
-.pipeline-order .pipeline-order-link:visited,
-.pipeline-order .pipeline-order-link:focus,
-.pipeline-order .pipeline-order-link:active,
-.pipeline-order .pipeline-order-leader,
-.pipeline-order .pipeline-order-name,
-.pipeline-order .pipeline-order-glyph {
-  text-decoration      : none;
-  text-decoration-line : none;
-}
-
-.pipeline-order-entry .nib-badge {
-  color      : var(--family-nib-soft);
-  transition : color var(--pipeline-ease);
-}
-
-.pipeline-order-name {
-  flex-shrink : 1;
-  min-width   : 0;
-  overflow    : hidden;
-  white-space : nowrap;
-  font-family : var(--prose-font-display);
-  font-style  : italic;
-  font-weight : 500;
-  font-size   : var(--prose-text-0-92rem);
-  color       : var(--vp-c-text-1);
-  transition  : color var(--pipeline-ease);
-}
-
-.pipeline-order-glyph {
-  flex-shrink : 0;
-  font-size   : var(--prose-text-md);
-}
-
-@media (--prose-bp-medium) {
-  .pipeline-order .pipeline-order-columns { column-count : 1; }
 }

@@ -30,13 +30,13 @@ onKeyStroke('Escape', () => { here.value = null })
 </script>
 
 <template>
-  <section class="pipeline-order panel" aria-label="Pipeline order">
-    <header class="pipeline-order-masthead">
-      <div class="pipeline-order-census" role="group" aria-label="Passes per family">
+  <section class="pipeline-order my-32 panel bg-bg-soft px-32 py-22" aria-label="Pipeline order">
+    <header class="mb-22 flex flex-wrap items-center justify-between gap-12">
+      <div class="flex flex-wrap gap-4" role="group" aria-label="Passes per family">
         <span
           v-for="entry in census"
           :key="entry.family"
-          class="pipeline-order-census-chip family-chip nib-ground"
+          class="pipeline-order-census-chip nib-ground inline-flex items-center gap-5 border-1 border-divider px-6 py-2 font-mono text-label leading-1-2 font-400 uppercase tabular-nums"
           :class="{ 'is-later': entry.count === 0 }"
           :data-family="entry.family"
           role="img"
@@ -46,41 +46,42 @@ onKeyStroke('Escape', () => { here.value = null })
           <span aria-hidden="true">{{ entry.count }}</span>
         </span>
       </div>
-      <span class="kicker pipeline-order-edition">
+      <span class="pipeline-order-edition ml-auto kicker">
         <template v-if="here === null">{{ pipeline.rules.length }} rules</template>
         <template v-else>pass {{ formatFolio(here + 1) }} of {{ pipeline.rules.length }}</template>
         &middot; <code>crate/src/rules/registry.rs</code>
       </span>
-      <ol class="pipeline-order-spine" aria-hidden="true">
+      <ol class="pipeline-order-spine m-0 flex h-10 shrink-0 grow basis-full list-none items-end gap-2 p-0" aria-hidden="true">
         <li
           v-for="(rule, at) in pipeline.rules"
           :key="rule.slug"
+          class="m-0 flex h-full flex-1 items-end"
           :class="placed(at)"
           @pointerenter="here = at"
         ></li>
       </ol>
     </header>
-    <ol class="pipeline-order-columns">
+    <ol class="m-0 columns-2 gap-x-40 p-0 column-rule-divider max-medium:columns-1">
       <li
         v-for="(rule, at) in pipeline.rules"
         :key="rule.slug"
-        class="pipeline-order-entry"
+        class="pipeline-order-entry mt-0 mb-2 list-none break-inside-avoid"
         :class="placed(at)"
         :data-family="rule.family"
       >
         <RuleTooltipPopper :rule="rule.documented ? rules.bySlug[rule.slug] : null">
           <a
-            class="pipeline-order-link"
+            class="pipeline-order-link flex items-center gap-12 rounded-6 px-8 py-9 text-text-1 no-underline transition-colors hover:text-brand-2"
             :href="rule.documented ? rules.bySlug[rule.slug].href : undefined"
             :title="rule.title"
             @focusin="focus($event, at)"
             @pointerenter="here = at"
           >
             <span class="folio">№ {{ formatFolio(rule.position) }}</span>
-            <MiddleEllipsis class="pipeline-order-name" :text="rule.slug" :tail="2" />
-            <span class="pipeline-order-leader" aria-hidden="true"></span>
+            <MiddleEllipsis class="pipeline-order-name min-w-0 font-display text-0-92rem font-500 italic" :text="rule.slug" :tail="2" />
+            <span class="leader-fill" aria-hidden="true"></span>
             <NibBadge v-if="rule.family" :emblem="familyEmblem(rule.family)" :size="15.2" />
-            <span v-else class="pipeline-order-glyph" aria-hidden="true">·</span>
+            <span v-else class="pipeline-order-glyph shrink-0 text-md" aria-hidden="true">·</span>
           </a>
         </RuleTooltipPopper>
       </li>

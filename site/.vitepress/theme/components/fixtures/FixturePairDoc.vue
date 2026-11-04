@@ -97,7 +97,7 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
 </script>
 
 <template>
-  <div ref="root" class="fixture-pair fixture-pair-doc panel panel-clip copy-host">
+  <div ref="root" class="fixture-pair-doc copy-host relative overflow-hidden panel bg-code-block">
     <component
       :is="panel"
       v-if="panel && morphSteps.length"

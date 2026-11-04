@@ -96,15 +96,15 @@ onUnmounted(machine.dispose)
 </script>
 
 <template>
-  <div ref="root" class="typing-demo">
-    <section class="code-panel typing-demo-config panel panel-clip" aria-label="prose config">
+  <div ref="root" class="relative mx-auto grid max-w-1120 grid-cols-minmax-0-95fr-minmax-1-5fr gap-18 max-desktop:grid-cols-1fr">
+    <section class="code-panel overflow-hidden panel" aria-label="prose config">
       <header class="code-panel-label">prose.toml</header>
-      <pre class="code-panel-code code-typewriter"><code><span class="typing-demo-config-prelude">{{ segments.before }}</span><span class="typing-demo-config-editing">{{ segments.editingLineBefore }}</span><span class="typing-demo-config-editing">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="typing-demo-config-editing">{{ segments.editingLineAfter }}</span><span class="typing-demo-config-prelude">{{ segments.after }}</span></code></pre>
+      <pre class="code-panel-code code-typewriter"><code><span class="text-text-3">{{ segments.before }}</span><span class="transition-colors">{{ segments.editingLineBefore }}</span><span class="transition-colors">{{ segments.editing }}<span v-if="showCaret" class="code-caret" aria-hidden="true" /></span><span class="transition-colors">{{ segments.editingLineAfter }}</span><span class="text-text-3">{{ segments.after }}</span></code></pre>
     </section>
-    <section class="code-panel typing-demo-python panel panel-clip" aria-label="Python source">
+    <section class="code-panel overflow-hidden panel" aria-label="Python source">
       <header class="code-panel-label">app.py</header>
       <ShikiMagicMovePrecompiled
-        class    = "code-panel-code typing-demo-python-code"
+        class    = "code-panel-code"
         :steps   = "morphSteps"
         :step    = "pythonStateIndex"
         :animate = "!reducedMotion"
@@ -112,9 +112,8 @@ onUnmounted(machine.dispose)
       />
     </section>
     <button
-      v-if="reducedMotion"
       type="button"
-      class="typing-demo-replay"
+      class="absolute top-12 right-12 hidden rounded-sm border-1 border-divider bg-bg px-14 py-6 font-mono text-label tracking-label text-text-2 uppercase transition-colors hover:border-brand-1 hover:text-brand-1 motion-reduce:block"
       @click="machine.replay"
     >Replay</button>
   </div>

@@ -56,7 +56,7 @@ export function ruleLinkPlugin(
       if (tokens[idx].meta?.kind === 'rule') {
         if (!isInert(env)) return `<InlineRuleLink slug="${slug}" />`
         const rule = rules.get(slug)!
-        return `<a class="rule-link" data-family="${rule.family}" href="${rule.href}">`
+        return `<a class="rule-link ground" data-family="${rule.family}" href="${rule.href}">`
           + `${nibBadgeHtml(familyEmblem(rule.family), 14)}${slug}</a>`
       }
       const display = primitives.get(slug)!.name

@@ -4,56 +4,8 @@
   inherits      : false;
 }
 
-.landing-hero {
-  position        : relative;
-  display         : flex;
-  justify-content : center;
-  align-items     : center;
-  padding         : var(--prose-space-88) var(--prose-space-24) var(--prose-space-32);
-  overflow        : visible;
-  isolation       : isolate;
-}
-
-.landing-hero-watermarks {
-  position           : absolute;
-  top                : calc(var(--prose-space-24) * -1);
-  left               : 50%;
-  transform          : translateX(-50%);
-  width              : 100vw;
-  min-height         : 280vh;
-  z-index            : 0;
-  overflow           : clip;
-  pointer-events     : none;
-  -webkit-mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
-          mask-image : linear-gradient(to bottom, var(--vp-c-black) 0%, var(--vp-c-black) 80%, transparent 100%);
-}
-
 .landing-hero-watermark {
-  --rotation       : 0deg;
-
-  position         : absolute;
-  display          : inline-block;
-  opacity          : 0.08;
-  color            : var(--prose-palette-ube);
-  user-select      : none;
-  pointer-events   : none;
-  transform        : translate(-50%, -50%) rotate(var(--rotation));
-  transform-origin : center;
-  will-change      : transform;
-}
-
-.landing-hero-watermark-big {
-  width : var(--prose-size-110);
-  height: auto;
-}
-
-.landing-hero-watermark-small {
-  font-family : var(--prose-font-display);
-  font-style  : normal;
-  font-weight : 700;
-  font-size   : var(--prose-text-2-4rem);
-  line-height : 1;
-  color       : var(--prose-palette-ube);
+  transform : translate(-50%, -50%) rotate(var(--rotation));
 }
 
 @supports (animation-timeline: view()) {
@@ -64,27 +16,5 @@
   }
   @keyframes watermark-align {
     to { --rotation: 0deg; }
-  }
-}
-
-.landing-hero-wordmark {
-  position : relative;
-  z-index  : 1;
-  margin   : 0;
-  width    : min(var(--prose-width-640), 72vw);
-}
-
-.landing-hero-wordmark img {
-  display : block;
-  width   : 100%;
-  height  : auto;
-}
-
-@media (--prose-bp-card-stack) {
-  .landing-hero-watermark-big {
-    width : var(--prose-size-80);
-  }
-  .landing-hero-watermark-small {
-    font-size : var(--prose-text-1-6rem);
   }
 }

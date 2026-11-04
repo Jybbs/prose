@@ -33,47 +33,47 @@ useHashOpen(fragment => {
 </script>
 
 <template>
-  <div class="per-rule-facets">
+  <div class="my-1-5rem flex flex-col gap-6">
     <section
       v-for="family in facetGroups"
       :key="family.family"
-      class="per-rule-facets-section"
+      class="per-rule-facets-section relative"
       :data-family="family.family"
     >
       <button
         type="button"
-        class="per-rule-facets-head"
+        class="per-rule-facets-head group flex w-full items-center gap-9 border-0 border-l-2 py-7 pl-14 text-left border-l-transparent focus-visible:focus-ring focus-visible:outline-offset-2"
         :aria-expanded="open[family.family] ?? false"
         @click="toggle(family.family)"
       >
-        <span class="per-rule-facets-chevron" aria-hidden="true"></span>
-        <span class="kicker per-rule-facets-label">
+        <span class="size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent group-aria-expanded:rotate-90 per-rule-facets-chevron border-l-text-2 group-hover:border-l-text-1 group-focus-visible:border-l-text-1" aria-hidden="true"></span>
+        <span class="per-rule-facets-label kicker text-text-2 font-600">
           <NibBadge v-if="family.family !== 'generic'" :emblem="familyEmblem(family.family)" :size="13.6" />
           {{ family.label }}
-          <span class="per-rule-facets-count">{{ facetCount(family) }}</span>
+          <span class="per-rule-facets-count before:mx-0-5em before:content-middot text-text-2 font-400">{{ facetCount(family) }}</span>
         </span>
       </button>
-      <div v-show="open[family.family]" class="per-rule-facets-body">
-        <div v-for="group in family.rules" :key="group.rule" class="per-rule-facets-rule">
-          <p :id="group.anchor" class="per-rule-facets-rule-head">
+      <div v-show="open[family.family]" class="pt-10 pb-2">
+        <div v-for="group in family.rules" :key="group.rule" class="border-l-2 pl-14 not-first:mt-18 border-l-transparent">
+          <p :id="group.anchor" class="per-rule-facets-rule-head mt-0 mb-10 -ml-14 flex">
             <InlineRuleLink v-if="family.family !== 'generic'" :slug="group.rule" />
-            <span v-else class="per-rule-facets-scope">{{ group.rule }}</span>
+            <span v-else class="per-rule-facets-scope inline-block rounded-r-sm px-10 py-3 font-mono text-0-85em bg-chip-ground text-text-1">{{ group.rule }}</span>
             <PermalinkAnchor :anchor="group.anchor" :label="group.rule" />
           </p>
-          <dl class="per-rule-facets-list">
-            <div v-for="facet in group.facets" :key="facet.key" class="per-rule-facets-entry">
-              <dt :id="facet.anchor" class="per-rule-facets-term">
-                <span class="per-rule-facets-key">{{ facet.key }}</span>
+          <dl class="flex flex-col">
+            <div v-for="facet in group.facets" :key="facet.key" class="per-rule-facets-entry py-10 not-first:border-t-1 not-first:border-t-divider first:pt-0 last:pb-0">
+              <dt :id="facet.anchor" class="per-rule-facets-term flex flex-wrap items-center gap-x-0-75rem gap-y-0-4rem">
+                <span class="per-rule-facets-key font-mono text-md font-600 text-text-1">{{ facet.key }}</span>
                 <PermalinkAnchor :anchor="facet.anchor" :label="facet.key" />
-                <span class="per-rule-facets-badges">
-                  <span class="per-rule-facets-type">{{ facet.type }}</span>
-                  <span class="per-rule-facets-default">
-                    <span class="kicker per-rule-facets-default-label">default</span>
-                    <span class="per-rule-facets-default-value">{{ facet.default }}</span>
+                <span class="ml-auto inline-flex items-center gap-0-4rem">
+                  <span class="per-rule-facets-type rounded-sm bg-bg-soft px-0-5em py-2 font-mono text-xs text-text-2">{{ facet.type }}</span>
+                  <span class="inline-flex items-baseline gap-0-4em rounded-sm px-0-5em py-2 text-xs bg-chip-ground">
+                    <span class="font-mono text-kicker tracking-label uppercase text-text-2">default</span>
+                    <span class="per-rule-facets-default-value font-mono text-text-1">{{ facet.default }}</span>
                   </span>
                 </span>
               </dt>
-              <dd class="per-rule-facets-meaning">
+              <dd class="per-rule-facets-meaning mt-6 max-w-62ch pl-0-9rem text-sm leading-1-6 text-text-2 max-mobile:pl-0">
                 <InlineProse :nodes="facet.meaningNodes" />
               </dd>
             </div>

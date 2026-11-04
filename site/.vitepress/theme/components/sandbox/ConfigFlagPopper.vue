@@ -84,33 +84,33 @@ defineExpose({ hide, show })
     @apply-hide="hide"
   >
     <template #popper>
-      <div class="config-notice-card" @mouseenter="hold" @mouseleave="close">
-        <p class="config-notice-trail">
-          <span class="config-notice-root">[tool.prose]</span>
+      <div class="flex max-w-42ch flex-col gap-12 px-2 py-4" @mouseenter="hold" @mouseleave="close">
+        <p class="flex flex-wrap items-center gap-5 font-mono text-xs text-text-2">
+          <span class="text-text-3">[tool.prose]</span>
           <template v-for="segment in trail" :key="segment">
-            <span class="config-notice-arrow" aria-hidden="true">›</span>
+            <span class="text-text-3" aria-hidden="true">›</span>
             <span>{{ segment }}</span>
           </template>
           <template v-if="!facets.length">
-            <span class="config-notice-arrow" aria-hidden="true">›</span>
-            <span class="config-notice-struck">{{ wrote }}</span>
+            <span class="text-text-3" aria-hidden="true">›</span>
+            <span class="text-danger-1 line-through">{{ wrote }}</span>
           </template>
         </p>
-        <div v-if="facets.length" class="config-notice-fixes">
+        <div v-if="facets.length" class="flex flex-col gap-7">
           <button
             v-for="facet in facets"
             :key="facet.key"
             type="button"
-            class="config-notice-fix"
+            class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
             @click="apply(facet.key)"
           >
-            <span class="config-notice-mark" aria-hidden="true">✓</span>
+            <span class="text-center text-meta text-warning-1" aria-hidden="true">✓</span>
             <span>{{ facet.key }}</span>
-            <span class="config-notice-default">{{ facet.kind }} · {{ facet.default }}</span>
+            <span class="text-right text-meta text-text-3 group-hover:text-warning-1">{{ facet.kind }} · {{ facet.default }}</span>
           </button>
-          <p class="config-notice-absent">
-            <span class="config-notice-mark" aria-hidden="true">✕</span>
-            <span class="config-notice-struck">{{ wrote }}</span>
+          <p class="mt-2 grid grid-cols-14-1fr items-center gap-9 border-t-1 border-t-divider px-12 py-5 font-mono text-xs">
+            <span class="text-center text-meta text-danger-1" aria-hidden="true">✕</span>
+            <span class="text-danger-1 line-through">{{ wrote }}</span>
           </p>
         </div>
       </div>

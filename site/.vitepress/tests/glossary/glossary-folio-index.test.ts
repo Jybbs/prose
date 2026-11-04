@@ -55,7 +55,7 @@ describe('GlossaryFolioIndex', () => {
 
   it('marks the selected row and selects a clicked one', async () => {
     const w = index()
-    expect(w.findAll('.glossary-folio-row.is-active').map(row => row.text())).toStrictEqual(['column'])
+    expect(w.findAll('.glossary-folio-row[aria-current]').map(row => row.text())).toStrictEqual(['column'])
     await w.findAll('.glossary-folio-row')[1]!.trigger('click')
     expect(useGlossaryFolio().selected.value).toBe('pipeline')
   })

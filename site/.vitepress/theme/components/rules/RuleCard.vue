@@ -48,16 +48,16 @@ if (!props.clickable) {
 </script>
 
 <template>
-  <article ref="article" class="rule-card" :data-family="rule.family">
+  <article ref="article" class="rule-card gap-x-16 gap-y-6 px-16 pt-12 pb-14 max-mobile:gap-x-8" :data-family="rule.family">
     <a v-if="clickable" class="rule-card-cover" :href="rule.href" :aria-label="rule.name" />
-    <div v-if="$slots.header" class="rule-card-header"><slot name="header" /></div>
-    <span class="rule-card-mark nib-tag">
+    <div v-if="$slots.header" class="rule-card-header pointer-events-none relative z-2"><slot name="header" /></div>
+    <span class="rule-card-mark nib-tag pointer-events-none relative z-2">
       <NibBadge :emblem="familyEmblem(rule.family)" :size="14" />
       <span class="middle-dot" aria-hidden="true">·</span>
       <span class="kicker">{{ rule.familyLabel }}</span>
     </span>
-    <div class="rule-card-body">
-      <h3 class="rule-card-slug" :title="rule.slug">
+    <div class="rule-card-body pointer-events-none contents">
+      <h3 class="rule-card-slug m-0 min-w-0 border-none font-mono text-0-92rem leading-1-3 font-600 -tracking-0-01em text-text-1" :title="rule.slug">
         <MiddleEllipsis :text="rule.slug" />
       </h3>
       <p ref="caption" class="rule-card-caption" v-html="rule.captionHtml"></p>

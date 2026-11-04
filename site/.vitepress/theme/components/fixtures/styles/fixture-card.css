@@ -1,3 +1,5 @@
+@reference "../../../styles/tailwind.css";
+
 /* Draws the chrome the single-rule cards in FixtureCard.vue and the
    multi-rule cards in CompositionCards.vue share. Each sits on a hairline
    edge, leads its row with a nib slot as wide as a composition's deck, and
@@ -14,59 +16,6 @@
   counter-reset : prose-fixture-folio;
 }
 
-.fixture-card {
-  position      : relative;
-  margin        : 0;
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg-soft);
-  transition    :
-    background   var(--prose-transition),
-    border-color var(--prose-transition);
-}
-
-.fixture-card:hover {
-  border-color : var(--prose-shade-text-3-card-31);
-}
-
-.fixture-card.is-open {
-  background : var(--vp-c-bg);
-}
-
-.fixture-card-summary-row {
-  display               : grid;
-  grid-template-columns : auto minmax(0, 1fr) auto;
-  align-items           : center;
-  gap                   : var(--prose-space-12);
-  padding               : var(--prose-space-4) var(--prose-space-12) var(--prose-space-4) var(--prose-space-4);
-  cursor                : pointer;
-}
-
-.fixture-card-summary {
-  display               : grid;
-  grid-template-columns : auto minmax(0, 1fr);
-  align-items           : baseline;
-  column-gap            : var(--prose-space-10);
-  width                 : 100%;
-  padding               : var(--prose-space-8) var(--prose-space-4) var(--prose-space-8) 0;
-  border                : none;
-  background            : transparent;
-  text-align            : left;
-  cursor                : pointer;
-  color                 : inherit;
-  border-radius         : var(--prose-radius-sm);
-}
-
-.fixture-card-slot {
-  display         : flex;
-  align-items     : center;
-  justify-content : center;
-  align-self      : start;
-  width           : var(--prose-size-20);
-  height          : var(--prose-size-20);
-  margin          : var(--prose-space-7) var(--prose-space-12) 0 var(--prose-space-8);
-}
-
 .fixture-card-slot .nib-badge {
   display : block;
   color   : var(--family-nib-card);
@@ -76,41 +25,8 @@
   color : var(--prose-shade-text-3-card-31);
 }
 
-.fixture-card-num {
-  font-family          : var(--vp-font-family-mono);
-  font-size            : var(--prose-text-0-65rem);
-  font-variant-numeric : tabular-nums;
-  letter-spacing       : var(--prose-folio-tracking);
-  color                : var(--vp-c-text-3);
-}
-
-.fixture-card-num::before {
-  counter-increment : prose-fixture-folio;
-  content           : counter(prose-fixture-folio, prose-fixture-folio);
-}
-
-.fixture-card-title {
-  justify-self   : start;
-  width          : fit-content;
-  max-width      : 100%;
-  font-family    : var(--vp-font-family-mono);
-  font-weight    : 600;
-  font-size      : var(--prose-text-sm);
-  letter-spacing : var(--prose-tracking-0-02em);
-  line-height    : 1.35;
-  text-transform : uppercase;
-  color          : var(--vp-c-text-1);
-}
-
-.fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-title {
-  color : var(--vp-c-text-2);
-}
-
 .fixture-card-title code {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-1em);
   text-transform : none;
-  color          : var(--vp-code-color);
 }
 
 .fixture-card-actions {
@@ -122,68 +38,19 @@
   transition     : opacity var(--prose-transition);
 }
 
-.fixture-card-actions.is-active,
+.fixture-card[data-open] .fixture-card-actions,
 .fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-actions {
   visibility     : visible;
   pointer-events : auto;
   opacity        : 1;
 }
 
-.fixture-card:not(.is-open, [data-edits="false"]:not([data-lint="true"])) .fixture-card-actions {
+.fixture-card:not([data-open], [data-edits="false"]:not([data-lint="true"])) .fixture-card-actions {
   display : none;
-}
-
-/* Sets a closed no-change card's No Change word beside its title. */
-.fixture-card[data-edits="false"]:not([data-lint="true"], .is-open) .fixture-nochange-ghost {
-  display : none;
-}
-
-.fixture-card[data-edits="false"]:not([data-lint="true"], .is-open) .fixture-nochange-label {
-  position     : static;
-  border-color : transparent;
-  background   : none;
-  color        : var(--vp-c-text-2);
-  white-space  : nowrap;
-}
-
-/* The grid-template-rows 0fr → 1fr trick animates an auto height without
-   measuring it from JavaScript. */
-
-.fixture-card-body {
-  display              : grid;
-  grid-template-rows   : 0fr;
-  transition           : grid-template-rows var(--prose-transition);
-}
-
-.fixture-card.is-open > .fixture-card-body {
-  grid-template-rows : 1fr;
-}
-
-.fixture-card-body-inner {
-  overflow   : hidden;
-  min-height : 0;
-}
-
-.fixture-card-body-content {
-  padding : 0 var(--prose-space-12) var(--prose-space-12);
-}
-
-.fixture-card-desc {
-  position    : relative;
-  margin      : 0 0 var(--prose-space-14);
-  padding-top : var(--prose-space-13);
-  border-top  : var(--prose-border-1) solid var(--vp-c-divider);
-  color       : var(--vp-c-text-2);
-  font-size   : var(--prose-text-sm);
 }
 
 .fixture-card-desc :first-child { margin-top    : 0; }
 .fixture-card-desc :last-child  { margin-bottom : 0; }
-
-.fixture-card-desc p {
-  margin      : 0 0 var(--prose-space-0-5em);
-  line-height : 1.55;
-}
 
 .fixture-card-desc ul {
   margin       : var(--prose-space-0-4em) 0 0;
@@ -195,51 +62,15 @@
   margin : var(--prose-space-0-1em) 0;
 }
 
-.fixture-card-desc code {
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-0-85em);
-  color       : var(--vp-code-color);
-}
-
-.fixture-card-rule {
-  height           : var(--prose-size-2);
-  margin           : 0 0 var(--prose-space-14);
-  background       : var(--family-edge-card);
-  transform        : scaleX(0);
-  transform-origin : left;
-  transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease;
-}
-
-.fixture-card.is-open .fixture-card-rule {
-  transform : scaleX(1);
-}
-
-.fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-rule {
-  background : var(--vp-c-text-3);
-}
-
-.fixture-card-body-inner .fixture-pair-doc {
-  margin        : 0;
-  border-radius : var(--prose-radius-sm);
-}
-
 /* Sets an open card's toggle on a row under its title, so the title keeps the
    card's width beside the slot. */
-@media (--prose-bp-mobile) {
-  .fixture-card-slot {
-    margin-right : 0;
-  }
-
-  .fixture-card.is-open .fixture-card-summary-row {
-    row-gap : 0;
-  }
-
-  .fixture-card.is-open .fixture-card-summary {
+@variant max-mobile {
+  .fixture-card[data-open] .fixture-card-summary {
     grid-row    : 1;
     grid-column : 2 / -1;
   }
 
-  .fixture-card.is-open :is(.fixture-card-actions, .composition-cards-toggle-slot) {
+  .fixture-card[data-open] :is(.fixture-card-actions, .composition-cards-toggle-slot) {
     grid-row        : 2;
     grid-column     : 2 / -1;
     justify-self    : start;

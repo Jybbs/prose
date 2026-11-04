@@ -1,147 +1,18 @@
-.panel {
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-}
-
-.panel-clip {
-  overflow : hidden;
-}
-
-.code-panel {
-  position       : relative;
-  display        : flex;
-  flex-direction : column;
-  min-width      : 0;
-  background     : var(--vp-code-block-bg);
-}
-
-.code-panel-label {
-  position       : absolute;
-  bottom         : var(--prose-space-6);
-  right          : var(--prose-space-10);
-  z-index        : 1;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-kicker-size-sm);
-  letter-spacing : var(--prose-meta-tracking);
-  text-transform : uppercase;
-  color          : var(--vp-c-text-3);
-  opacity        : 0.55;
-  pointer-events : none;
-}
-
-.code-panel-code {
-  flex-grow   : 1;
-  margin      : 0;
-  padding     : var(--prose-space-18) var(--prose-space-22);
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-xs);
-  line-height : 1.6;
-  tab-size    : 4;
-  overflow    : auto;
-}
-
-.code-panel-code pre.shiki {
+:is(.code-panel-code, .code-text) pre.shiki {
   margin     : 0;
   padding    : 0;
   background : transparent !important;
 }
 
-.code-panel-editable {
-  cursor : text;
-}
-
-/* The 28px seat a panel's corner controls sit in. */
+/* Holds the seat's ink and the corner's transition beneath the utilities, where `.vp-doc a` overrides them on a linked seat. */
 .panel-seat {
-  display       : grid;
-  place-items   : center;
-  width         : var(--prose-size-28);
-  height        : var(--prose-size-28);
-  padding       : 0;
-  border        : var(--prose-border-1) solid var(--vp-code-copy-code-border-color);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-code-copy-code-bg);
-  color         : var(--vp-c-text-2);
-  cursor        : pointer;
+  color : var(--vp-c-text-2);
 }
 
 .panel-seat:hover {
   color : var(--vp-c-text-1);
 }
 
-.panel-seat:focus-visible {
-  outline        : var(--prose-focus-ring);
-  outline-offset : var(--prose-space-1);
-}
-
-/* A numeric input with the browser spinner suppressed. */
-.panel-number {
-  text-align : center;
-  appearance : textfield;
-}
-
-.panel-number::-webkit-outer-spin-button,
-.panel-number::-webkit-inner-spin-button {
-  margin     : 0;
-  appearance : none;
-}
-
-/* A denser control row takes the 26px seat. */
-.panel-seat-sm {
-  width  : var(--prose-size-26);
-  height : var(--prose-size-26);
-}
-
-/* Places a `.panel-seat` in a panel corner and holds it hidden until the
-   surrounding `.copy-host` is hovered, leaving each site its own offset. */
 .panel-corner {
-  position   : absolute;
-  top        : var(--prose-space-8);
-  z-index    : 3;
-  opacity    : 0;
   transition : opacity var(--prose-transition-slow), color var(--prose-transition);
-}
-
-.panel-corner:focus-visible {
-  opacity : 1;
-}
-
-.copy-host:hover > .panel-corner {
-  opacity : 1;
-}
-
-.code-panel-error,
-.code-panel-warning {
-  margin      : 0;
-  padding     : var(--prose-space-10) var(--prose-space-18);
-  border-top  : var(--prose-border-1) solid var(--vp-c-divider);
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-sm);
-  white-space : pre-wrap;
-}
-
-.code-panel-error {
-  color : var(--vp-c-danger-1);
-}
-
-.code-panel-warning {
-  color : var(--vp-c-warning-1);
-}
-
-.code-typewriter {
-  color       : var(--vp-c-text-1);
-  white-space : pre;
-}
-
-.code-caret {
-  display             : inline-block;
-  width               : var(--prose-size-0-5em);
-  height              : var(--prose-size-1-05em);
-  margin-inline-start : var(--prose-space-1);
-  vertical-align      : text-bottom;
-  background          : var(--prose-palette-whiskey);
-  animation           : code-caret-blink 1s steps(2) infinite;
-}
-
-@keyframes code-caret-blink {
-  50% { opacity: 0; }
 }

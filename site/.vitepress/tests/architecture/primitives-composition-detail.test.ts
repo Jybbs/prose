@@ -30,6 +30,6 @@ const card = () => mount(PrimitivesCompositionDetail, {
 
 describe('PrimitivesCompositionDetail', () => {
   it('leads each rule the focused primitive feeds with its family badge', () => {
-    expect(card().get('.rule-chip use').attributes('href')).toBe('#nib-basket-small')
+    expect(card().get('.chip use').attributes('href')).toBe('#nib-basket-small')
   })
 })

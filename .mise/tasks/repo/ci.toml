@@ -14,11 +14,11 @@ run         = [
     "rust:proof",
     "rust:suite",
     "rust:unused",
+    "site:coverage",
     "site:cruft",
     "site:links",
     "site:lint",
     "site:press",
-    "site:test",
     "site:typecheck",
     "wasm:lint",
     "wasm:smoke"

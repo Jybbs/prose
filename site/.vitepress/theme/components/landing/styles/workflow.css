@@ -1,68 +1,15 @@
+@reference "../../../styles/tailwind.css";
+
 .landing-workflow {
   --workflow-accent : var(--prose-palette-celadon);
-
-  display        : flex;
-  flex-direction : column;
-  margin         : var(--prose-space-24) 0 0;
-  background     : var(--vp-c-bg-soft);
-}
-
-.landing-workflow-section {
-  position              : relative;
-  display               : grid;
-  grid-template-columns : var(--prose-size-72) 1fr;
-  gap                   : var(--prose-space-24);
-  padding               : var(--prose-space-14) var(--prose-space-28);
-  border-bottom         : var(--prose-border-1) dashed color-mix(in srgb, var(--workflow-accent) var(--prose-tint-24), var(--vp-c-divider));
 }
 
 .landing-workflow-section::before {
-  content    : "";
-  position   : absolute;
-  top        : var(--prose-space-14);
-  bottom     : var(--prose-space-14);
-  left       : calc(var(--prose-space-28) + var(--prose-size-72));
-  width      : var(--prose-size-1);
-  background : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-28), var(--vp-c-divider));
+  left : calc(var(--prose-space-28) + var(--prose-size-72));
 }
 
-.landing-workflow-section-last {
-  border-bottom : none;
-}
-
-.landing-workflow-gutter {
-  position           : sticky;
-  top                : var(--prose-space-96);
-  align-self         : start;
-  padding-inline-end : var(--prose-space-14);
-  text-align         : right;
-}
-
-.landing-workflow-roman {
-  display     : inline-block;
-  font-family : var(--prose-font-display);
-  font-style  : italic;
-  font-weight : 500;
-  font-size   : var(--prose-text-1-8rem);
-  line-height : 1;
-  color       : color-mix(in srgb, var(--workflow-accent) var(--prose-tint-70), var(--vp-c-text-1));
-}
-
-@media (--prose-bp-card-stack) {
-  .landing-workflow-section {
-    grid-template-columns : var(--prose-size-64) 1fr;
-    gap                   : var(--prose-space-18);
-    padding               : var(--prose-space-22) var(--prose-space-22) var(--prose-space-24);
-  }
+@variant max-card-stack {
   .landing-workflow-section::before {
-    top    : var(--prose-space-22);
-    bottom : var(--prose-space-24);
-    left   : calc(var(--prose-space-22) + var(--prose-size-64));
-  }
-  .landing-workflow-roman {
-    font-size : var(--prose-text-1-6rem);
-  }
-  .landing-workflow-gutter {
-    position : static;
+    left : calc(var(--prose-space-22) + var(--prose-size-64));
   }
 }

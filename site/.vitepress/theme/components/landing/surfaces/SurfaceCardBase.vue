@@ -33,7 +33,7 @@ const active = useElementHover(rootRef)
 <template>
   <div
     ref="root"
-    class="surface-card panel"
+    class="surface-card relative isolate min-h-320 min-w-0 flex-col panel bg-bg-soft p-28 text-text-1 transition-colors duration-slow focus-within:border-family-edge-soft data-[active=true]:border-family-edge-soft motion-reduce:transition-none"
     :aria-hidden="duplicate || undefined"
     :data-family="family"
     :data-active="active"
@@ -44,10 +44,10 @@ const active = useElementHover(rootRef)
       :aria-label="`See all ${meta.label.toLowerCase()} rules`"
       :tabindex="tabindex"
     />
-    <span class="surface-card-number">— {{ number }}</span>
-    <span class="surface-card-icon"><NibBadge :emblem="familyEmblem(family)" :size="36" /></span>
-    <h3 class="surface-card-label">{{ meta.label }}</h3>
-    <p class="surface-card-blurb"><InlineProse :nodes="bodyNodes" /></p>
-    <SurfaceRail :rules="rules" />
+    <span class="pointer-events-none relative z-1 font-mono text-label tracking-label text-text-3">— {{ number }}</span>
+    <span class="surface-card-icon pointer-events-none absolute top-22 right-22 z-2 flex size-56 items-center justify-center"><NibBadge :emblem="familyEmblem(family)" :size="36" /></span>
+    <h3 class="pointer-events-none relative z-1 mt-42 mb-12 border-none p-0 font-display text-2rem leading-1-05 font-500 text-balance text-text-1">{{ meta.label }}</h3>
+    <p class="surface-card-blurb pointer-events-none relative z-1 m-0 font-base text-md leading-1-6 text-text-2"><InlineProse :nodes="bodyNodes" /></p>
+    <SurfaceRail class="pointer-events-none z-1" :rules="rules" />
   </div>
 </template>

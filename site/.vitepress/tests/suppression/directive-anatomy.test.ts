@@ -53,7 +53,7 @@ describe('DirectiveAnatomy', () => {
 
   it('seeds the focus on the bracketed ignore directive', () => {
     const w = mountAnatomy()
-    expect(w.get('[data-active="true"]').text()).toBe('# prose: ignore[<rule>, ...]')
+    expect(w.get('[data-active]').text()).toBe('# prose: ignore[<rule>, ...]')
     expect(w.findAll('.directive-anatomy-part').map(p => p.text()))
       .toStrictEqual(['#', 'prose:', 'ignore', '[<rule>, ...]'])
   })

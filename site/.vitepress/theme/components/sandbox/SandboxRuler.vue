@@ -173,13 +173,13 @@ function tierOf(key: string): number {
 </script>
 
 <template>
-  <div class="sandbox-ruler-head">
+  <div class="flex flex-wrap items-center gap-x-1-25rem gap-y-0-75rem">
     <div ref="trackEl" class="sandbox-ruler" role="group" aria-label="Line lengths" :style="{ '--rows': rows }">
       <div class="sandbox-ruler-track" aria-hidden="true" />
       <span
         v-for="(knob, index) in lengths"
         :key="`tether-${knob.key}`"
-        class="sandbox-ruler-tether"
+        class="sandbox-ruler-tether pointer-events-none absolute h-2"
         aria-hidden="true"
         :data-hue="hueOf(index)"
         :style="tetherStyle(knob)"
@@ -202,7 +202,7 @@ function tierOf(key: string): number {
       <div
         v-for="(knob, index) in lengths"
         :key="knob.key"
-        class="sandbox-ruler-stop"
+        class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
         :style="stopStyle(knob)"
         :data-changed="shownValue(knob) !== knob.default || null"
         :data-dragging="drag?.key === knob.key || null"
@@ -219,23 +219,23 @@ function tierOf(key: string): number {
         @pointercancel="dragEnd"
         @keydown="keyStep(knob, $event)"
       >
-        <span class="sandbox-ruler-marker" aria-hidden="true" />
+        <span class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:transition-colors before:bg-text-2 group-hover:before:bg-text-1 group-focus-visible:before:bg-text-1 group-data-dragging:before:bg-text-1" aria-hidden="true" />
         <span
           v-if="editing !== knob.key"
           ref="chip"
-          class="sandbox-ruler-chip"
+          class="sandbox-ruler-chip group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
           :data-key="knob.key"
           @dblclick="beginEdit(knob)"
         >
-          <span class="sandbox-ruler-chip-label">{{ knob.label }}</span>
-          <span class="sandbox-ruler-chip-value">{{ shownValue(knob) }}</span>
+          <span class="font-mono text-meta tracking-0-05em text-text-2 uppercase">{{ knob.label }}</span>
+          <span class="font-mono text-0-68rem text-text-1 tabular-nums transition-colors group-data-changed:text-knob-figure">{{ shownValue(knob) }}</span>
         </span>
         <input
           v-else
           :ref="focusInput"
           v-model="draft"
           type="number"
-          class="panel-number sandbox-ruler-chip sandbox-ruler-chip-input"
+          class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text focus-visible:-outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
           :min="MIN"
           :max="MAX"
           :aria-label="`${knob.label} line length`"

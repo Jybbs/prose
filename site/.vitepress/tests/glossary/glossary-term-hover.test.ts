@@ -66,8 +66,9 @@ describe('GlossaryTerm tooltip wiring', () => {
   })
 
   it('draws Read More in the link style', () => {
-    expect(tooltip.mock.calls[0][1].value.content)
-      .toContain('<a href="/reference/glossary#atomic" class="glossary-tooltip-link"><span class="nib-stroke">Read more →</span></a>')
+    const link = new DOMParser().parseFromString(tooltip.mock.calls[0][1].value.content, 'text/html')
+      .querySelector('a[href="/reference/glossary#atomic"]')!
+    expect(link.querySelector('.nib-stroke')?.textContent).toBe('Read more →')
   })
 })
 

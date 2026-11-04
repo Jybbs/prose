@@ -15,7 +15,6 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
 <template>
   <a
     class="tool-mark"
-    :class="{ 'tool-bare': bare }"
     :href="entry.href"
     :title="entry.name"
     target="_blank"
@@ -23,7 +22,7 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
   >
     <code v-if="!bare">
       <svg
-        class="tool-mark-icon"
+        class="tool-mark-icon mr-3 inline-block size-0-78em"
         :viewBox="entry.icon.viewBox"
         aria-hidden="true"
         v-html="entry.icon.body"
@@ -31,7 +30,7 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
     </code>
     <svg
       v-else
-      class="tool-mark-icon"
+      class="tool-mark-icon inline-block"
       :viewBox="entry.icon.viewBox"
       aria-hidden="true"
       v-html="entry.icon.body"

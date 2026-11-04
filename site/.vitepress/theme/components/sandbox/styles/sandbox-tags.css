@@ -1,132 +1,17 @@
-.sandbox-tags {
-  display        : flex;
-  flex-direction : column;
-  gap            : var(--prose-space-0-85rem);
-}
-
-.sandbox-tags-cloud {
-  display     : flex;
-  flex-wrap   : wrap;
-  gap         : var(--prose-space-0-3rem);
-  align-items : center;
-}
-
 .sandbox-tags-tag {
-  position      : relative;
-  display       : inline-flex;
-  align-items   : center;
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg);
   box-shadow    : inset 0 0 0 var(--prose-border-1) var(--vp-c-divider);
   transition    : box-shadow var(--prose-transition);
 }
 
-.sandbox-tags-tag[data-active='true'] {
-  z-index    : 5;
+.sandbox-tags-tag[data-active] {
   box-shadow : inset 0 0 0 var(--prose-border-1) var(--vp-c-text-2);
 }
 
-.sandbox-tags-toggle {
-  display     : inline-flex;
-  align-items : center;
-  gap         : var(--prose-space-5);
-  padding     : var(--prose-space-2) var(--prose-space-7);
-  border      : 0;
-  background  : transparent;
-  cursor      : pointer;
-}
-
-.sandbox-tags-slug {
-  color          : var(--vp-c-text-1);
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-0-68rem);
-  letter-spacing : var(--prose-tracking-0-05em);
-  text-transform : uppercase;
-}
-
-.sandbox-tags-tag[data-on='false'] .sandbox-tags-slug {
-  color           : var(--vp-c-text-2);
-  text-decoration : line-through var(--vp-c-text-2);
-}
-
-.sandbox-tags-tag[data-on='false'] .nib-badge {
+.sandbox-tags-tag[data-off] .nib-badge {
   color : var(--vp-c-text-2);
-}
-
-.sandbox-tags-gear {
-  display     : inline-flex;
-  align-items : center;
-  padding     : var(--prose-space-2) var(--prose-space-6) var(--prose-space-2) var(--prose-space-3);
-  border      : 0;
-  background  : transparent;
-  color       : var(--vp-c-text-3);
-  cursor      : pointer;
-  transition  : color var(--prose-transition), opacity var(--prose-transition);
-}
-
-.sandbox-tags-gear:not(:disabled):hover,
-.sandbox-tags-gear[aria-expanded='true'] {
-  color : var(--family-nib);
-}
-
-.sandbox-tags-gear:disabled {
-  opacity : 0.4;
-  cursor  : default;
-}
-
-.sandbox-tags-gear-icon {
-  --glyph-size : var(--prose-size-15);
-}
-
-.sandbox-tags-power {
-  transition : color var(--prose-transition);
-}
-
-.sandbox-tags-power[aria-pressed='true'] {
-  color : var(--vp-c-text-3);
-}
-
-.sandbox-tags-power-icon {
-  --glyph-size : var(--prose-size-13);
-}
-
-.sandbox-tags-banner {
-  display       : flex;
-  min-height    : var(--prose-size-5-5rem);
-  max-height    : min(45vh, var(--prose-size-30rem));
-  padding       : var(--prose-space-0-9rem) var(--prose-space-1-25rem);
-  overflow-y    : auto;
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
 }
 
 .sandbox-tags-banner .rule-card {
   width      : 100%;
   min-height : auto;
-}
-
-.sandbox-tags-idle {
-  position : relative;
-  display  : flex;
-  width    : 100%;
-}
-
-.sandbox-tags-idle-ghost {
-  visibility : hidden;
-}
-
-.sandbox-tags-idle .sandbox-tags-hint {
-  position    : absolute;
-  inset       : 0;
-  display     : grid;
-  place-items : center;
-  margin      : 0;
-}
-
-.sandbox-tags-hint {
-  margin     : auto;
-  color      : var(--vp-c-text-3);
-  font-size  : var(--prose-text-sm);
-  text-align : center;
 }

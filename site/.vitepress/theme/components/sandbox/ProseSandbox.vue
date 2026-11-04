@@ -63,11 +63,11 @@ onMounted(sandbox.start)
 </script>
 
 <template>
-  <div class="sandbox" :data-editing="editing || null">
-    <section class="sandbox-deck panel" :data-locked="deckLocked">
+  <div class="relative left-1/2 w-sandbox -translate-x-1/2" :data-editing="editing || null">
+    <section class="relative z-20 mb-1-5rem panel bg-bg-soft transition-opacity in-data-editing:pointer-events-none in-data-editing:opacity-50 data-locked:sticky data-locked:top-nav max-tablet:data-locked:static" :data-locked="deckLocked || undefined">
       <button
         type="button"
-        class="sandbox-deck-head"
+        class="flex w-full items-center justify-center border-0 p-0-45rem text-text-2 transition-colors hover:bg-text-1/4 hover:text-text-1 focus-visible:-outline-offset-2 aria-expanded:border-b-1 aria-expanded:border-b-divider"
         :aria-expanded="deckOpen"
         :title="deckOpen ? 'Hide configuration' : 'Show configuration'"
         @click="deckOpen = !deckOpen"
@@ -76,18 +76,18 @@ onMounted(sandbox.start)
       </button>
       <button
         type="button"
-        class="sandbox-deck-lock"
+        class="absolute top-4 right-8 z-1 border-none p-6 text-text-3 transition-colors hover:text-text-1 focus-visible:outline-offset-1 aria-pressed:text-brand-1 max-tablet:hidden"
         :aria-pressed="deckLocked"
         :title="deckLocked ? 'Unpin from scroll' : 'Pin while scrolling'"
         :aria-label="deckLocked ? 'Unpin the configuration' : 'Pin the configuration while scrolling'"
         @click.stop="deckLocked = !deckLocked"
       >
-        <svg class="sandbox-deck-lock-icon glyph" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg class="size-15 glyph-stroke" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <rect x="5" y="11" width="14" height="9" rx="2" />
           <path :d="deckLocked ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 8 0'" />
         </svg>
       </button>
-      <div v-show="deckOpen" class="sandbox-deck-body">
+      <div v-show="deckOpen" class="px-1-25rem pt-0-75rem pb-1-25rem">
         <ProseSandboxControls
           :sandbox="sandbox"
           @dragging="onDragging"
@@ -96,8 +96,8 @@ onMounted(sandbox.start)
       </div>
     </section>
 
-    <div class="sandbox-surfaces">
-      <div class="sandbox-py copy-host">
+    <div class="grid grid-cols-2fr-1fr items-stretch gap-1-25rem *:min-h-30rem max-tablet:grid-cols-1fr">
+      <div class="sandbox-py copy-host relative grid min-w-0">
         <ProseSandboxSurface
           v-model:editing="editing"
           :sandbox="sandbox"
@@ -108,7 +108,7 @@ onMounted(sandbox.start)
         <button
           v-show="!editing"
           type="button"
-          class="panel-seat panel-corner sandbox-refresh"
+          class="panel-corner right-40 panel-seat size-28 data-armed:border-eureka-page-35 data-armed:text-eureka-page-45 data-armed:opacity-100"
           :data-armed="refreshArmed || null"
           :title="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
           :aria-label="refreshArmed ? 'Click again to proceed with a new example' : 'New example'"
@@ -124,7 +124,7 @@ onMounted(sandbox.start)
         <button
           v-show="!editing"
           type="button"
-          class="panel-seat panel-corner sandbox-share"
+          class="panel-corner right-72 panel-seat size-28"
           :title="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           :aria-label="linkCopied ? 'Link copied' : 'Copy a link to this sandbox'"
           @click="shareLink"
@@ -137,10 +137,10 @@ onMounted(sandbox.start)
             </template>
           </svg>
         </button>
-        <span v-if="refreshArmed" class="sandbox-refresh-tip" role="status">
+        <span v-if="refreshArmed" class="pointer-events-none absolute top-8 right-108 z-3 flex h-28 items-center rounded-sm border-1 border-eureka-page-35 bg-bg px-10 font-mono text-xxs tracking-0-04em whitespace-nowrap text-text-1 shadow-tooltip" role="status">
           Click again to proceed with a new example
         </span>
-        <p class="sandbox-announce" aria-live="polite">{{ announcement }}</p>
+        <p class="sr-only" aria-live="polite">{{ announcement }}</p>
       </div>
       <ProseSandboxToml :sandbox="sandbox" />
     </div>

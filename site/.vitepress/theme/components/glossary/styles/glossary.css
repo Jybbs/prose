@@ -41,49 +41,14 @@ a.glossary-anchor {
   transition : opacity 120ms ease-out, transform 120ms ease-out;
 }
 
-.glossary-tooltip-head {
-  display         : flex;
-  align-items     : center;
-  justify-content : space-between;
-  gap             : var(--prose-space-16);
-}
-
-.glossary-tooltip-title {
-  min-width   : 0;
-  margin      : 0;
-  font-family : var(--prose-font-display);
-  font-size   : var(--prose-text-1-2rem);
-  font-weight : 500;
-  line-height : 1.15;
-  color       : var(--vp-c-text-1);
-  white-space : nowrap;
-}
-
 .glossary-tooltip-nib .nib-badge {
   display : block;
 }
 
-.glossary-tooltip-body {
-  margin-top : var(--prose-space-8);
-  font-style : italic;
-  color      : var(--vp-c-text-2);
-}
-
 .glossary-tooltip-body code {
-  font-size : var(--prose-text-0-95em);
-  color     : var(--vp-c-text-1);
-}
-
-.glossary-tooltip-link {
-  display         : block;
-  margin          : var(--prose-space-12) calc(var(--prose-space-16) * -1) calc(var(--prose-space-12) * -1);
-  padding         : var(--prose-space-6) var(--prose-space-16);
-  border-top      : var(--prose-border-1) solid var(--vp-c-divider);
-  font-family     : var(--vp-font-family-mono);
-  font-size       : var(--prose-label-size);
-  letter-spacing  : var(--prose-meta-tracking);
-  text-align      : right;
-  text-transform  : uppercase;
-  color           : var(--vp-c-text-1);
-  text-decoration : none;
+  padding       : var(--prose-space-2) var(--prose-space-6);
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-bg);
+  font-size     : var(--prose-text-0-95em);
+  color         : var(--vp-code-color);
 }

@@ -74,12 +74,12 @@ function releaseAll(): void {
 </script>
 
 <template>
-  <div ref="plate" class="rules-plate">
-    <div class="rules-plate-key" role="toolbar" aria-label="Rule families">
-      <span v-for="({ emblem, family }, at) in KEY" :key="family" class="rules-plate-split" :data-family="family">
+  <div ref="plate" class="relative isolate">
+    <div class="rules-plate-key mt-24 flex flex-wrap gap-x-4 gap-y-6 border-b-1 border-b-divider pb-20" role="toolbar" aria-label="Rule families">
+      <span v-for="({ emblem, family }, at) in KEY" :key="family" class="rules-plate-split inline-flex items-stretch" :data-family="family">
         <button
           type="button"
-          class="family-chip nib-ground"
+          class="chip nib-ground cursor-pointer gap-6 pt-6 pr-4 pb-6 pl-8 font-mono text-label leading-24 font-400 tracking-label whitespace-nowrap text-text-1 uppercase hover:border-text-2 focus-visible:focus-ring focus-visible:outline-offset-2 aria-pressed:font-600"
           :aria-pressed="family === pinned"
           :tabindex="family === roving ? 0 : -1"
           v-bind="on(family)"
@@ -89,13 +89,13 @@ function releaseAll(): void {
           <NibBadge :emblem="emblem" :size="15.2" />
           <span>{{ emblem.name }}</span>
         </button>
-        <a class="rules-plate-go" :href="`/rules/${family}/`" :aria-label="`${emblem.name} page`">
+        <a class="rules-plate-go inline-flex items-center border-1 border-l-0 border-divider bg-chip-ground px-6 py-0 font-mono text-xxs text-text-2 no-underline transition-colors hover:text-text-1 focus-visible:text-text-1" :href="`/rules/${family}/`" :aria-label="`${emblem.name} page`">
           <span class="nib-stroke is-quiet" aria-hidden="true">→</span>
         </a>
       </span>
     </div>
-    <div class="rules-plate-census-row">
-      <div class="rules-plate-census" aria-hidden="true">
+    <div class="mx-0 mt-14 mb-18 flex items-center gap-10">
+      <div class="rules-plate-census flex h-6 min-w-64 basis-1/3 items-end gap-2" aria-hidden="true">
         <span
           v-for="{ count, family } in KEY"
           :key="family"
@@ -104,30 +104,36 @@ function releaseAll(): void {
           :style="{ flex: `${count} 1 0` }"
         ></span>
       </div>
-      <span class="rules-plate-census-cap">
+      <span class="rules-plate-census-cap font-mono text-xs whitespace-nowrap text-text-2 tabular-nums">
         {{ counted ? `${counted.count} of ${rules.list.length}` : rules.list.length }} rules
       </span>
-      <button type="button" class="rules-plate-all" :class="{ 'is-idle': !pinned }" @click="releaseAll">
+      <button type="button" class="rules-plate-all cursor-pointer rounded-sm border-1 border-divider bg-chip-ground px-6 py-0 font-mono text-xs leading-24 whitespace-nowrap text-text-2 transition-colors hover:border-text-2 hover:text-text-1 focus-visible:focus-ring focus-visible:outline-offset-2" :class="{ 'is-idle': !pinned }" @click="releaseAll">
         All families
       </button>
     </div>
-    <p class="rules-plate-live" aria-live="polite">{{ spoken }}</p>
+    <p class="rules-plate-live sr-only" aria-live="polite">{{ spoken }}</p>
     <section
       v-for="section in sections"
       :key="section.key"
-      class="rules-plate-letter"
+      class="rules-plate-letter grid-cols-3rem-minmax-1fr gap-x-14 gap-y-0 border-t-1 border-t-divider py-12"
       :class="{ 'is-out': !section.rules.length, 'rules-plate-gathered': section.family }"
       :data-letter="section.key"
     >
-      <span class="rules-plate-cap" :data-family="section.family ?? undefined" aria-hidden="true">
+      <span class="rules-plate-cap font-display text-2-1rem leading-none font-500 text-text-3 italic" :data-family="section.family ?? undefined" aria-hidden="true">
         <NibBadge v-if="section.family" :emblem="familyEmblem(section.family)" :size="28" />
         <template v-else>{{ section.key.toUpperCase() }}</template>
       </span>
-      <ul class="rules-plate-slugs" :aria-label="section.family ? `${familyEmblem(section.family).name} rules` : undefined">
-        <li v-for="rule in section.rules" :key="rule.slug" :data-slug="rule.slug" :data-family="rule.family">
+      <ul class="rules-plate-slugs m-0 list-none columns-2-11rem gap-x-24 p-0" :aria-label="section.family ? `${familyEmblem(section.family).name} rules` : undefined">
+        <li
+          v-for="rule in section.rules"
+          :key="rule.slug"
+          class="m-0 flex break-inside-avoid items-center gap-8 py-3 focus-within:relative focus-within:z-20 hover:relative hover:z-20"
+          :data-slug="rule.slug"
+          :data-family="rule.family"
+        >
           <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="14" />
           <RuleTooltipPopper :rule="rule">
-            <a class="rules-plate-slug nib-stroke is-quiet" :href="rule.href">{{ rule.slug }}</a>
+            <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline hover:text-brand-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :href="rule.href">{{ rule.slug }}</a>
           </RuleTooltipPopper>
         </li>
       </ul>

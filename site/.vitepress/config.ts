@@ -1,17 +1,18 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import postcssGlobalData                          from '@csstools/postcss-global-data'
-import postcssCustomMedia                         from 'postcss-custom-media'
+import tailwindcss                                from '@tailwindcss/vite'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery'
+import { checkBundleBudget }                          from './lib/config/bundle-budget'
 import { canonicalUrl }                               from './lib/config/canonical-url'
 import * as head                                      from './lib/config/head'
 import { injectFixtures }                             from './lib/config/inject-fixtures'
 import { ROBOTS_TXT }                                 from './lib/config/robots'
 import { buildSidebar }                               from './lib/config/sidebar'
+import * as stylesheetLayer                           from './lib/config/stylesheet-layer'
 import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin'
 import { corpusLintFindings }                         from './lib/fixtures/walker'
 import { glossary }                                   from './lib/glossary/entries'
@@ -44,6 +45,7 @@ import * as version                                   from './lib/shared/version
 
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
+const siteDirectory        = paths.siteDir(import.meta.url)
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
 const ruffRelease          = version.readRuffRelease(crate)
@@ -104,7 +106,7 @@ export default defineConfig({
     ],
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
-    sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, paths.siteDir(import.meta.url)),
+    sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, siteDirectory),
     siteTitle : constants.SITE_NAME,
     socialLinks: [
       { icon: 'github', link: constants.REPO_URL }
@@ -114,8 +116,10 @@ export default defineConfig({
   titleTemplate : head.TITLE_TEMPLATE,
   async buildEnd(siteConfig) {
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
+    stylesheetLayer.layerIconStylesheet(path.join(siteConfig.outDir, siteConfig.assetsDir))
     const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
+    checkBundleBudget(siteConfig.outDir)
   },
   transformHead({ pageData }) {
     return head.pageHead(pageData, proseVersion)
@@ -139,16 +143,6 @@ export default defineConfig({
   vue: { script: { fs: sfcFs } },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
-    css: {
-      postcss: {
-        plugins: [
-          postcssGlobalData({
-            files: [path.join(paths.siteDir(import.meta.url), '.vitepress/theme/styles/tokens.css')]
-          }),
-          postcssCustomMedia()
-        ]
-      }
-    },
     plugins: [{
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',
@@ -156,7 +150,11 @@ export default defineConfig({
         id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
     },
     fixtureReloadPlugin(fixturesRoot),
-    serveWasmPlugin(path.join(paths.siteDir(import.meta.url), 'public')),
+    serveWasmPlugin(path.join(siteDirectory, 'public')),
+    stylesheetLayer.stylesheetLayerPlugin(
+      path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
+    ),
+    tailwindcss(),
     groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),

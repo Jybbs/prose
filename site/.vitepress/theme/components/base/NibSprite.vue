@@ -14,7 +14,7 @@ const motifs = MOTIFS.map((motif, i) => ({
 </script>
 
 <template>
-  <svg class="nib-sprite" aria-hidden="true" focusable="false">
+  <svg class="absolute size-0 overflow-hidden" aria-hidden="true" focusable="false">
     <defs>
       <template v-for="m in motifs" :key="m.paths">
         <g :id="m.paths">

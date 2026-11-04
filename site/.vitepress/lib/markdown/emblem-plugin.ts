@@ -17,7 +17,7 @@ export function emblemPlugin(emblems: ReadonlyMap<string, Emblem>): (md: Markdow
           const emblem = emblems.get(match[0])!
           const family = emblem.family ? ` data-family="${emblem.family}"` : ''
           const chip   = new state.Token('html_inline', '', 0)
-          chip.content = `<span class="nib-chip"${family}>`
+          chip.content = `<span class="nib-chip ground"${family}>`
                        + `${nibBadgeHtml(emblem, 16, emblem.motif.label)}</span>`
           chip.level   = child.level
           return [chip]

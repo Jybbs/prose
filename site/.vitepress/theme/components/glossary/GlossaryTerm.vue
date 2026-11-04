@@ -9,6 +9,9 @@ import { lookup }           from '../../../lib/shared/lookup'
 import { nibBadgeHtml }     from '../../../lib/shared/nib'
 import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 
+const LINK_CLASS = '-mx-16 mt-12 -mb-12 block border-t-1 border-t-divider px-16 py-6 '
+                 + 'text-right font-mono text-label tracking-meta text-text-1 uppercase no-underline'
+
 const props = defineProps<{ slug: string }>()
 
 const ariaHidden = useAriaHidden()
@@ -20,7 +23,7 @@ const families = entry.families
 // Heads the tooltip on one line with the entry's title and, at its right
 // end, each family's nib, a middle dot, and the Glossary kicker.
 const head = [
-  `<div class="glossary-tooltip-title">${entry.slug}</div>`,
+  `<div class="glossary-tooltip-title m-0 min-w-0 font-display text-1-2rem leading-1-15 font-500 whitespace-nowrap text-text-1">${entry.slug}</div>`,
   '<div class="nib-tag">',
   ...families.map(family => {
     const emblem = familyEmblem(family)
@@ -33,11 +36,11 @@ const head = [
 
 const tooltipHtml = computed(() => {
   const parts = [
-    `<div class="glossary-tooltip-head">${head}</div>`,
-    `<div class="glossary-tooltip-body">${entry.definitionHtml}</div>`
+    `<div class="glossary-tooltip-head flex items-center justify-between gap-16">${head}</div>`,
+    `<div class="glossary-tooltip-body mt-8 text-text-2 italic">${entry.definitionHtml}</div>`
   ]
   if (showLink.value) {
-    parts.push(`<a href="${entry.href}" class="glossary-tooltip-link"><span class="nib-stroke">Read more →</span></a>`)
+    parts.push(`<a href="${entry.href}" class="${LINK_CLASS}"><span class="nib-stroke">Read more →</span></a>`)
   }
   return parts.join('')
 })

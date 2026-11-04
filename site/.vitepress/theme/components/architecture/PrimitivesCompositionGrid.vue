@@ -39,52 +39,48 @@ function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' 
 const grid = useTemplateRef<HTMLElement>('grid')
 const wash = useTemplateRef<HTMLElement>('wash')
 
-useGlideWash(grid, wash, '.primitives-composition-tile-active', () => props.focused)
+useGlideWash(grid, wash, '[data-state="active"]', () => props.focused)
 </script>
 
 <template>
-  <div ref="grid" class="primitives-composition-grid">
-    <span ref="wash" class="primitives-composition-wash" aria-hidden="true"></span>
+  <div ref="grid" class="relative isolate flex flex-col gap-8">
+    <span ref="wash" class="primitives-composition-wash pointer-events-none absolute top-0 left-0 z-1 rounded-sm opacity-0 data-on:opacity-100 data-snap:transition-none motion-reduce:transition-none" aria-hidden="true"></span>
     <section
       v-for="band in bands"
       :key="band.key"
-      class="primitives-composition-band"
+      class="flex flex-col gap-5 py-4"
       :data-layer="band.key"
     >
-      <header class="primitives-composition-band-head band-head">
-        <span class="primitives-composition-band-badge">
-          <span class="primitives-composition-band-numeral" aria-hidden="true">{{ band.numeral }}</span>
+      <header class="relative z-2 flex items-center gap-9 px-4 pt-2 pb-4">
+        <span class="inline-flex w-26 shrink-0 items-center justify-center">
+          <span class="font-display text-1-5rem leading-none font-500 text-layer-ink italic select-none" aria-hidden="true">{{ band.numeral }}</span>
         </span>
-        <span class="primitives-composition-band-name band-name">{{ band.key }}</span>
-        <span class="primitives-composition-band-rule band-rule" aria-hidden="true"></span>
+        <span class="band-name">{{ band.key }}</span>
+        <span class="hairline" aria-hidden="true"></span>
       </header>
-      <ul class="primitives-composition-band-cells">
+      <ul class="m-0 grid list-none auto-cols-fr grid-flow-col gap-5 p-0">
         <li
           v-for="entry in band.entries"
           :key="entry.slug"
-          class="primitives-composition-tile"
-          :class="{
-            'primitives-composition-tile-active' : tileState(entry.slug) === 'active',
-            'primitives-composition-tile-related': tileState(entry.slug) === 'related',
-            'primitives-composition-tile-mute'   : tileState(entry.slug) === 'mute'
-          }"
+          class="relative m-0 rounded-sm bg-bg-soft transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:bg-transparent data-[state=mute]:opacity-50 motion-reduce:transition-none"
           :data-layer="entry.layer"
+          :data-state="tileState(entry.slug)"
         >
           <a
-            class="primitives-composition-tile-link"
+            class="relative z-2 flex min-h-30 items-center justify-center px-7 py-5 text-center text-text-1 focus-visible:focus-ring focus-visible:-outline-offset-1"
             :href="primitiveRoute(entry.slug)"
             @mouseenter="emit('focus', entry.slug)"
             @mouseleave="emit('blur')"
             @focus="emit('focus', entry.slug)"
             @blur="emit('blur')"
           >
-            <span class="primitives-composition-tile-name">{{ entry.name }}</span>
+            <span class="font-display text-xs leading-1-15 text-text-1">{{ entry.name }}</span>
           </a>
           <Transition name="primitives-composition-port">
             <span
               v-if="tileState(entry.slug) === 'related'"
               :key="ports.get(entry.slug)"
-              class="primitives-composition-port"
+              class="absolute -top-7 left-6 z-3 port-tab bg-layer-ink"
               :data-dir="ports.get(entry.slug)"
               aria-hidden="true"
             >{{ PORT_WORDS[ports.get(entry.slug)!] }}</span>

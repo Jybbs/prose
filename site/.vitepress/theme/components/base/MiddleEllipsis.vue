@@ -32,4 +32,4 @@ useSettledMeasure(elRef, fit)
 watch(() => props.text, fit)
 </script>
 
-<template><span ref="el" class="middle-ellipsis">{{ display }}</span></template>
+<template><span ref="el" class="overflow-hidden whitespace-nowrap">{{ display }}</span></template>

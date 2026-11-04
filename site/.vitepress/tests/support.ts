@@ -5,6 +5,8 @@ import path from 'node:path'
 import { parse as parseCss, type Root }    from 'postcss'
 import { test as base, type MockInstance } from 'vitest'
 
+export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
+
 interface SupportFixtures {
   tmpDir : string
   warn   : MockInstance
@@ -46,7 +48,7 @@ export function declared(file: string | URL, selector: string): Record<string, s
 // Reads the value the VitePress default theme gives `prop` under `selector`,
 // `:root` for the light scheme and `.dark` for the dark.
 export function vitepressVar(prop: string, selector: string): string {
-  const vars = new URL('../../node_modules/vitepress/dist/client/theme-default/styles/vars.css', import.meta.url)
+  const vars = new URL(`../../${VITEPRESS_THEME}/styles/vars.css`, import.meta.url)
   let value = ''
   parseCss(fs.readFileSync(vars, 'utf8')).walkRules(rule => {
     if (rule.selector === selector) rule.walkDecls(prop, decl => { value = decl.value })

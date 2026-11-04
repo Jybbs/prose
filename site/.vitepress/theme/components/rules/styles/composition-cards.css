@@ -1,5 +1,7 @@
+@reference "../../../styles/tailwind.css";
+
 /* Composition cards. Multi-rule worked examples rendered from the fixture
-   tree, over the shared .fixture-card chrome in fixture-card.css. Each case
+   tree, over the shared .fixture-card chrome in the shapes include. Each case
    stacks its rules in pipeline order as a deck of boxed nibs in the row's
    slot, the first on top at the left and each next one tucked under it to
    the right, showing a slice edged in its family's shade. Pointing at the
@@ -8,71 +10,13 @@
    edge to the case's foot, where the boxes spread and widen to name their
    rules, and closing the case moves it back up. */
 
-.vp-doc .composition-cards-list,
 .composition-cards-list {
-  --card-ease-morph : var(--prose-ease-morph);
-  --card-reveal     : 0.28s;
-  --card-grow       : 0.4s;
-  list-style : none;
-  margin     : 0;
-  padding    : 0;
-}
-
-.vp-doc .composition-cards-list > li,
-.composition-cards-list > li {
-  margin     : 0;
-  list-style : none;
-}
-
-/* VitePress styles the nested `ol`/`li` inside the card with padding,
-   margin, and color that outrank bare classes. Re-assert the box at
-   `.vp-doc` specificity. Any nested-list rule below that restates a margin,
-   width, or a chip's grid must also carry `.vp-doc` specificity. */
-
-.vp-doc .composition-cards-list .composition-cards-ticks,
-.vp-doc .composition-cards-list .composition-cards-bar {
-  margin     : 0;
-  padding    : 0;
-  list-style : none;
-}
-
-.vp-doc .composition-cards-list .composition-cards-ticks > li,
-.vp-doc .composition-cards-list .composition-cards-bar > li {
-  margin               : 0;
-  padding-inline-start : 0;
-  list-style           : none;
-}
-
-/* The whole card expands on click, so it reads as one target. The deck, the
-   toggle, and the open body stop propagation in the template, so they keep
-   their own behavior. The body grows over a slow beat, and `deckTravel` moves
-   the deck down with its lower edge. */
-
-.composition-cards-list .fixture-card {
-  cursor : pointer;
-}
-
-.composition-cards-list .fixture-card-body {
-  transition : grid-template-rows var(--card-grow) var(--card-ease-morph);
-}
-
-.composition-cards-list .fixture-card-rule {
-  background : var(--vp-c-text-3);
-}
-
-.composition-cards-list .fixture-card-title {
-  text-wrap : balance;
-}
-
-.composition-cards-tick-cell {
-  display : contents;
+  --card-reveal : 0.28s;
 }
 
 .composition-cards-toggle-slot {
-  display     : inline-flex;
   grid-column : 3;
   grid-row    : 1;
-  align-items : center;
 }
 
 .composition-cards-list .fixture-card-summary {
@@ -81,15 +25,10 @@
 }
 
 .composition-cards-slot {
-  grid-row    : 1;
-  grid-column : 1;
-  align-self  : start;
-  width       : var(--prose-size-32);
-  height      : var(--prose-size-20);
-  margin      : var(--prose-space-7) 0 0 var(--prose-space-8);
+  width : var(--prose-size-32);
 }
 
-.vp-doc .composition-cards-list .composition-cards-ticks {
+.composition-cards-ticks {
   position   : absolute;
   z-index    : 2;
   top        : var(--prose-space-11);
@@ -100,35 +39,35 @@
   transition : column-gap var(--prose-transition-slow);
 }
 
-.vp-doc .composition-cards-list .is-open .composition-cards-ticks {
+.fixture-card[data-open] .composition-cards-ticks {
   top              : calc(100% - var(--prose-space-12) - var(--deck-bar-h, var(--prose-size-20)));
   right            : var(--prose-space-12);
   flex-wrap        : wrap;
   gap              : var(--prose-space-6);
-  transition-delay : var(--card-grow);
+  transition-delay : var(--prose-duration-morph);
 }
 
-.vp-doc .composition-cards-list .composition-cards-tick-item {
+.composition-cards-tick-item {
   position   : relative;
   z-index    : calc(var(--deck-count) - var(--deck-at));
   display    : flex;
   transition : margin-left var(--prose-transition-slow);
 }
 
-.vp-doc .composition-cards-list .composition-cards-tick-item + .composition-cards-tick-item {
+.composition-cards-tick-item + .composition-cards-tick-item {
   margin-left : calc(var(--prose-space-4) - var(--prose-size-20));
 }
 
-.vp-doc .composition-cards-list .fixture-card:not(.is-open) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-tick-item + .composition-cards-tick-item {
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-tick-item + .composition-cards-tick-item {
   margin-left : var(--prose-space-4);
 }
 
-.vp-doc .composition-cards-list .is-open .composition-cards-tick-item + .composition-cards-tick-item {
+.fixture-card[data-open] .composition-cards-tick-item + .composition-cards-tick-item {
   margin-left      : 0;
-  transition-delay : var(--card-grow);
+  transition-delay : var(--prose-duration-morph);
 }
 
-.fixture-card:not(.is-open) .composition-cards-ticks::before {
+.fixture-card:not([data-open]) .composition-cards-ticks::before {
   content        : "";
   position       : absolute;
   inset          : calc(var(--prose-space-2) * -1) auto;
@@ -141,7 +80,7 @@
   transition     : opacity var(--prose-transition-slow);
 }
 
-.fixture-card:not(.is-open) .composition-cards-ticks:is(:hover, :focus-within)::before {
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within)::before {
   opacity : 1;
 }
 
@@ -149,20 +88,10 @@
    stays at zero width until the case opens or a hovered box raises it. */
 .vp-doc a.composition-cards-chip,
 .composition-cards-chip {
-  display               : grid;
   grid-template-columns : calc(var(--prose-size-20) - var(--prose-space-2)) 0fr;
-  justify-items         : start;
-  align-items           : center;
-  box-sizing            : border-box;
-  height                : var(--prose-size-20);
   border                : var(--prose-border-1) solid var(--vp-c-divider);
-  background            : var(--prose-chip-ground);
-  font-family           : var(--vp-font-family-mono);
-  line-height           : 1.2;
-  color                 : var(--vp-c-text-1);
-  text-decoration       : none;
   transition            :
-    grid-template-columns var(--card-reveal) var(--card-ease-morph),
+    grid-template-columns var(--card-reveal) var(--prose-ease-morph),
     border-color          var(--prose-transition),
     box-shadow            var(--prose-transition-slow);
 }
@@ -187,13 +116,13 @@
   box-shadow         : inset calc(var(--prose-space-2) * -1) 0 0 var(--prose-shade-text-3-chip-31);
 }
 
-.fixture-card:not(.is-open) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-chip,
-.vp-doc .composition-cards-list .is-open .composition-cards-ticks .composition-cards-chip {
+.fixture-card:not([data-open]) .composition-cards-ticks:is(:hover, :focus-within) .composition-cards-chip,
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip {
   border-right-color : var(--vp-c-divider);
   box-shadow         : none;
 }
 
-.is-open .composition-cards-ticks .composition-cards-chip:hover {
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip:hover {
   border-color : var(--vp-c-text-2);
 }
 
@@ -214,25 +143,19 @@
   transition     : opacity var(--prose-transition);
 }
 
-.composition-cards-chip-slug {
-  font-size      : var(--prose-text-xxs);
-  letter-spacing : var(--prose-tracking-0-04em);
-  text-transform : uppercase;
-}
-
-.fixture-card:not(.is-open) .composition-cards-tick-item:is(:hover, :focus-within) .composition-cards-chip-label {
+.fixture-card:not([data-open]) .composition-cards-tick-item:is(:hover, :focus-within) .composition-cards-chip-label {
   opacity : 1;
 }
 
-.vp-doc .composition-cards-list :is(.is-open .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip {
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip {
   grid-template-columns : calc(var(--prose-size-20) - var(--prose-space-2)) 1fr;
 }
 
-.is-open .composition-cards-ticks .composition-cards-chip {
-  transition-delay : var(--card-grow);
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip {
+  transition-delay : var(--prose-duration-morph);
 }
 
-:is(.is-open .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-label {
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-label {
   position       : static;
   overflow       : hidden;
   padding        : 0;
@@ -243,42 +166,25 @@
   pointer-events : auto;
 }
 
-:is(.is-open .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-slug {
+:is(.fixture-card[data-open] .composition-cards-ticks, .composition-cards-bar) .composition-cards-chip-slug {
   padding : 0 var(--prose-space-8) 0 var(--prose-space-2);
 }
 
-.is-open .composition-cards-ticks .composition-cards-chip-label {
-  transition : opacity var(--card-reveal) var(--card-ease-morph) calc(var(--card-grow) + var(--card-reveal) / 2);
+.fixture-card[data-open] .composition-cards-ticks .composition-cards-chip-label {
+  transition : opacity var(--card-reveal) var(--prose-ease-morph) calc(var(--prose-duration-morph) + var(--card-reveal) / 2);
 }
 
-/* Reserves the open case's foot for its deck, laid out as the deck sets its
-   boxes there so `CompositionCards.vue` reads the height it takes. */
-.vp-doc .composition-cards-list .composition-cards-bar {
-  display    : flex;
-  flex-wrap  : wrap;
-  gap        : var(--prose-space-6);
-  margin     : var(--prose-space-12) 0 0;
-  visibility : hidden;
-}
-
-.composition-cards-bar-cell {
-  display   : flex;
-  flex      : none;
-  min-width : 0;
-}
-
-@media (--prose-bp-mobile) {
+@variant max-mobile {
   .composition-cards-slot {
     width : calc(var(--prose-size-20) + (var(--deck-count) - 1) * var(--prose-space-4));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vp-doc .composition-cards-list .composition-cards-ticks,
   .composition-cards-ticks,
   .composition-cards-ticks *,
-  .fixture-card:not(.is-open) .composition-cards-ticks::before,
-  .composition-cards-ticks::before {
+  .composition-cards-ticks::before,
+  .fixture-card:not([data-open]) .composition-cards-ticks::before {
     transition : none !important;
   }
 }

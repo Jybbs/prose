@@ -1,3 +1,5 @@
+@reference "../tailwind.css";
+
 /* Sets each callout on the page ground between two hairlines, its title one
    line of the kind word, a middle dot, and its own title, with the kind's
    mark hung large in the margin. */
@@ -89,7 +91,7 @@
   color : inherit;
 }
 
-@media (--prose-bp-mobile) {
+@variant max-mobile {
   .callout-mark {
     position : static;
     width    : auto;

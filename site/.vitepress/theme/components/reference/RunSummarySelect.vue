@@ -16,18 +16,18 @@ const selected = computed(() =>
 </script>
 
 <template>
-  <VDropdown theme="run-summary-select" class="run-summary-select">
+  <VDropdown theme="run-summary-select" class="inline-block">
     <button
       type="button"
-      class="run-summary-select-trigger"
+      class="run-summary-select-trigger inline-flex items-baseline gap-0-2em border-none px-2 font-mono text-ube-deep hairline-ube-38 transition-color-and-box-shadow hover:text-ube hover:hairline-ube focus-visible:outline-1 focus-visible:outline-ube"
       :aria-label="label"
       aria-haspopup="listbox"
     >
       <span>{{ selected.mono }}</span>
-      <span class="run-summary-select-caret" aria-hidden="true">▾</span>
+      <span class="text-0-7em text-ube-mid" aria-hidden="true">▾</span>
     </button>
     <template #popper>
-      <ul class="run-summary-opts" role="listbox" :aria-label="label">
+      <ul class="run-summary-opts min-w-max" role="listbox" :aria-label="label">
         <li
           v-for="o in options"
           :key="o.id"
@@ -37,19 +37,18 @@ const selected = computed(() =>
             v-close-popper
             type="button"
             role="option"
-            class="run-summary-opt"
-            :class="{ 'is-active': o.id === model }"
+            class="run-summary-opt group flex w-full flex-col gap-3 rounded-sm border-none px-11 py-7 text-start transition-colors not-aria-selected:hover:bg-bg-soft aria-selected:bg-ube/12"
             :aria-selected="o.id === model"
             @click="model = o.id"
           >
-            <span class="run-summary-opt-mono">{{ o.mono }}</span>
-            <span v-if="o.preview" class="run-summary-opt-eg">
+            <span class="run-summary-opt-mono font-mono text-sm text-text-1 group-aria-selected:text-ube-deep">{{ o.mono }}</span>
+            <span v-if="o.preview" class="inline-flex items-baseline gap-0-5em font-mono text-sm">
               <span
                 v-if="o.preview.anchor"
-                class="run-summary-opt-eg-anchor"
+                class="flex-none"
                 aria-hidden="true"
               >{{ o.preview.anchor }}</span>
-              <span class="run-summary-opt-eg-text" :data-tint="o.preview.countTint || undefined">
+              <span class="text-text-2 data-[tint=apricot]:text-apricot data-[tint=celadon]:text-celadon" :data-tint="o.preview.countTint || undefined">
                 {{ o.preview.text }}
               </span>
             </span>

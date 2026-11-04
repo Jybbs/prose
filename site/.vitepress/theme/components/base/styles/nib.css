@@ -1,10 +1,3 @@
-.nib-sprite {
-  position : absolute;
-  width    : 0;
-  height   : 0;
-  overflow : hidden;
-}
-
 .nib-badge {
   --nib-platform : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-ink), var(--vp-c-text-1));
 
