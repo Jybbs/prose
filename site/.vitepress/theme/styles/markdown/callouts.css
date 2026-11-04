@@ -1,38 +1,97 @@
-.vp-doc .custom-block {
+/* Sets each callout on the page ground between two hairlines, its title one
+   line of the kind word, a middle dot, and its own title, with the kind's
+   mark hung large in the margin. */
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) {
+  --callout-mark : var(--vp-c-text-2);
+
   position      : relative;
   margin        : var(--prose-space-1-5rem) 0;
-  padding       : var(--prose-space-16) var(--prose-space-18) var(--prose-space-16) var(--prose-space-22);
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius);
-  background    : var(--vp-c-bg-soft);
-  overflow      : hidden;
-}
-
-.vp-doc .custom-block::before {
-  content  : "";
-  position : absolute;
-  top      : 0;
-  left     : 0;
-  width    : var(--prose-size-3);
-  height   : 100%;
+  padding       : var(--prose-space-12) 0 var(--prose-space-14);
+  border        : 0;
+  border-top    : var(--prose-border-1) solid var(--vp-c-divider);
+  border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
+  border-radius : 0;
+  background    : none;
 }
 
 .vp-doc .custom-block.tip {
-  border-color: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-strong), var(--vp-c-divider));
+  --callout-mark : var(--prose-role-link);
 }
 
-.vp-doc .custom-block.tip::before {
-  background: var(--vp-c-brand-1);
+.vp-doc .custom-block.warning {
+  --callout-mark : var(--prose-shade-eureka-page-45);
 }
 
-.vp-doc .custom-block.warning::before {
-  background: var(--prose-role-warning);
+.vp-doc .custom-block.danger {
+  --callout-mark : var(--prose-shade-apricot-page-45);
 }
 
-.vp-doc .custom-block.danger::before {
-  background: var(--prose-role-error);
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) .custom-block-title {
+  display     : flex;
+  align-items : baseline;
+  column-gap  : var(--prose-space-8);
+  margin      : 0 0 var(--prose-space-6);
+  font-weight : 400;
 }
 
-.vp-doc .custom-block.info::before {
-  background: var(--prose-role-accent);
+.callout-mark {
+  position    : absolute;
+  top         : var(--prose-space-12);
+  left        : calc(var(--prose-size-24) * -1 - var(--prose-space-4));
+  width       : var(--prose-size-24);
+  color       : var(--callout-mark);
+  font-family : var(--prose-font-display);
+  font-size   : var(--prose-text-1-25rem);
+  font-style  : normal;
+  font-weight : 500;
+  line-height : 1;
+  text-align  : center;
+}
+
+.callout-kind {
+  flex           : none;
+  font-family    : var(--vp-font-family-mono);
+  font-size      : var(--prose-kicker-size);
+  font-weight    : 500;
+  letter-spacing : var(--prose-kicker-tracking);
+  line-height    : var(--prose-leading-24);
+  text-transform : uppercase;
+  color          : var(--vp-c-text-2);
+}
+
+.callout-title {
+  flex        : 0 1 auto;
+  min-width   : 0;
+  font-family : var(--prose-font-display);
+  font-size   : var(--prose-text-1-02rem);
+  font-style  : italic;
+  font-weight : 500;
+  line-height : 1.35;
+  text-wrap   : balance;
+  color       : var(--vp-c-text-1);
+}
+
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a {
+  font-weight : 500;
+}
+
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a:hover {
+  opacity : 1;
+}
+
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) code {
+  font-size        : var(--prose-text-0-88em);
+  color            : var(--vp-code-color);
+  background-color : var(--vp-code-bg);
+}
+
+.vp-doc .custom-block:is(.tip, .info, .warning, .danger) a code {
+  color : inherit;
+}
+
+@media (--prose-bp-mobile) {
+  .callout-mark {
+    position : static;
+    width    : auto;
+  }
 }

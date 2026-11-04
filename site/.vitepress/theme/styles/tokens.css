@@ -12,7 +12,6 @@
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --prose-radius-1               : 1px;
-  --prose-radius-2               : 2px;
   --prose-radius-3               : 3px;
   --prose-radius-sm              : 4px;
   --prose-radius-6               : 6px;
@@ -21,15 +20,16 @@
 
   --prose-focus-ring             : var(--prose-border-2) solid var(--vp-c-brand-1);
 
-  --prose-shadow-lift            : 0 12px 28px -10px;
   --prose-shadow-tooltip         : 0 8px 24px rgba(0, 0, 0, 0.28);
 
   --prose-transition             : 0.15s ease;
   --prose-transition-slow        : 0.2s ease;
   --prose-transition-card        : var(--prose-transition-slow);
+  --prose-transition-morph       : 0.4s var(--prose-ease-morph);
   --prose-rule-draw-ms           : 420;
 
   --prose-ease-emphasized        : cubic-bezier(0.4, 0, 0.2, 1);
+  --prose-ease-morph             : cubic-bezier(0.32, 0.72, 0, 1);
 
   --prose-tint-4                 : 4%;
   --prose-tint-faint             : 5%;
@@ -52,9 +52,7 @@
   --prose-tint-35                : 35%;
   --prose-tint-38                : 38%;
   --prose-tint-40                : 40%;
-  --prose-tint-42                : 42%;
   --prose-tint-45                : 45%;
-  --prose-tint-48                : 48%;
   --prose-tint-50                : 50%;
   --prose-tint-55                : 55%;
   --prose-tint-56                : 56%;
@@ -65,13 +63,11 @@
   --prose-tint-68                : 68%;
   --prose-tint-70                : 70%;
   --prose-tint-75                : 75%;
-  --prose-tint-76                : 76%;
   --prose-tint-78                : 78%;
   --prose-tint-80                : 80%;
   --prose-tint-82                : 82%;
   --prose-tint-85                : 85%;
   --prose-tint-88                : 88%;
-  --prose-tint-95                : 95%;
 
   --prose-tracking-0-01em        : 0.01em;
   --prose-tracking-0-02em        : 0.02em;
@@ -137,7 +133,6 @@
   --prose-text-2-8rem            : 2.8rem;
   --prose-text-3-4rem            : 3.4rem;
 
-  --prose-text-0-6em             : 0.6em;
   --prose-text-0-7em             : 0.7em;
   --prose-text-0-8em             : 0.8em;
   --prose-text-0-84em            : 0.84em;
@@ -145,6 +140,7 @@
   --prose-text-0-86em            : 0.86em;
   --prose-text-0-88em            : 0.88em;
   --prose-text-0-9em             : 0.9em;
+  --prose-text-0-92em            : 0.92em;
   --prose-text-0-95em            : 0.95em;
   --prose-text-1em               : 1em;
 
@@ -159,6 +155,7 @@
 
   --prose-space-0-5              : 0.5px;
   --prose-space-1                : 1px;
+  --prose-space-1-5              : 1.5px;
   --prose-space-2                : 2px;
   --prose-space-2-5              : 2.5px;
   --prose-space-3                : 3px;
@@ -173,7 +170,6 @@
   --prose-space-12               : 12px;
   --prose-space-13               : 13px;
   --prose-space-14               : 14px;
-  --prose-space-15               : 15px;
   --prose-space-16               : 16px;
   --prose-space-17               : 17px;
   --prose-space-18               : 18px;
@@ -217,14 +213,15 @@
 
   --prose-space-0-08em           : 0.08em;
   --prose-space-0-1em            : 0.1em;
+  --prose-space-0-12em           : 0.12em;
   --prose-space-0-15em           : 0.15em;
   --prose-space-0-18em           : 0.18em;
   --prose-space-0-2em            : 0.2em;
   --prose-space-0-3em            : 0.3em;
   --prose-space-0-35em           : 0.35em;
   --prose-space-0-4em            : 0.4em;
-  --prose-space-0-45em           : 0.45em;
   --prose-space-0-5em            : 0.5em;
+  --prose-space-0-6em            : 0.6em;
   --prose-space-0-65em           : 0.65em;
   --prose-space-1-1em            : 1.1em;
 
@@ -255,10 +252,8 @@
   --prose-size-36                : 36px;
   --prose-size-40                : 40px;
   --prose-size-56                : 56px;
-  --prose-size-60                : 60px;
   --prose-size-64                : 64px;
   --prose-size-72                : 72px;
-  --prose-size-78                : 78px;
   --prose-size-80                : 80px;
   --prose-size-96                : 96px;
   --prose-size-110               : 110px;
@@ -268,10 +263,8 @@
   --prose-size-240               : 240px;
   --prose-size-260               : 260px;
   --prose-size-320               : 320px;
-  --prose-size-420               : 420px;
 
   --prose-size-2-1rem            : 2.1rem;
-  --prose-size-2-6rem            : 2.6rem;
   --prose-size-3rem              : 3rem;
   --prose-size-3-4rem            : 3.4rem;
   --prose-size-5-5rem            : 5.5rem;
@@ -284,6 +277,7 @@
   --prose-size-1-05em            : 1.05em;
   --prose-size-1-4em             : 1.4em;
   --prose-size-1-5em             : 1.5em;
+  --prose-size-2-5em             : 2.5em;
 
   --prose-width-180              : 180px;
   --prose-width-196              : 196px;
@@ -324,18 +318,14 @@
 
   --prose-panel-wash             : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-30), var(--vp-c-bg));
   --prose-panel-wash-card        : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-35), var(--vp-c-bg));
+  --prose-chip-ground            : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg));
 
-  --prose-scrollbar-thumb        : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-45), var(--vp-c-divider));
+  --prose-scrollbar-thumb        : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-45), var(--vp-c-divider));
 
   --vp-c-brand-1                 : var(--prose-palette-ube);
   --vp-c-brand-2                 : var(--prose-palette-ube-mid);
   --vp-c-brand-3                 : var(--prose-palette-ube-pale);
   --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-medium), transparent);
-
-  --vp-c-tip-1                   : var(--vp-c-brand-1);
-  --vp-c-tip-2                   : var(--vp-c-brand-3);
-  --vp-c-tip-3                   : var(--vp-c-brand-3);
-  --vp-c-tip-soft                : var(--vp-c-brand-soft);
 
   --vp-button-brand-active-bg    : var(--prose-palette-ube-deep);
   --vp-button-brand-bg           : var(--vp-c-brand-1);
@@ -343,20 +333,22 @@
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
+  --vp-code-bg                   : var(--prose-role-code-ground);
   --vp-code-block-bg             : var(--prose-palette-grams-hair);
+  --vp-code-color                : var(--vp-c-text-1);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
+  --vp-code-link-color           : var(--vp-c-text-1);
+  --vp-code-link-hover-color     : var(--vp-c-text-1);
 }
 
 .dark {
-  --vp-c-brand-1          : var(--prose-palette-ube-pale);
-  --vp-c-brand-2          : var(--prose-palette-ube-mid);
-  --vp-c-brand-3          : var(--prose-palette-ube);
-  --vp-c-brand-soft       : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
-  --vp-c-bg-soft          : var(--prose-palette-woodsmoke);
-  --vp-code-block-bg      : var(--prose-shiki-dark-bg);
-  --prose-role-emphasis   : var(--prose-palette-champagne);
-  --prose-role-link-hover : var(--prose-palette-ube);
+  --vp-c-brand-1     : var(--prose-palette-ube-pale);
+  --vp-c-brand-2     : var(--prose-palette-ube-mid);
+  --vp-c-brand-3     : var(--prose-palette-ube);
+  --vp-c-brand-soft  : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
+  --vp-c-bg-soft     : var(--prose-palette-woodsmoke);
+  --vp-code-block-bg : var(--prose-shiki-dark-bg);
 }
 
 .shiki,

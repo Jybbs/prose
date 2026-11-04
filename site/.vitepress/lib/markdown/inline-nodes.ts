@@ -3,7 +3,7 @@ import { inertEnv } from './inert-env'
 // The fields the walk reads off a parsed token, declared structurally so
 // neither parser interface below couples to markdown-it's own type layout.
 interface ParsedToken {
-  attrs    : [string, string][] | null
+  attrs    : [string, string | number][] | null
   children : ParsedToken[] | null
   content  : string
   meta     : Record<string, unknown> | null
@@ -71,7 +71,7 @@ function walk(tokens: readonly ParsedToken[]): InlineNode[] {
     if (token.nesting === 1) {
       const el: InlineNode = {
         kind     : 'el',
-        attrs    : Object.fromEntries(token.attrs ?? []),
+        attrs    : Object.fromEntries(token.attrs?.map(([name, value]) => [name, `${value}`]) ?? []),
         children : [],
         tag      : token.tag
       }

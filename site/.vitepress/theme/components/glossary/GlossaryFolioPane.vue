@@ -3,18 +3,14 @@ import InlineProse from '../base/InlineProse.vue'
 import FamilyChip  from '../rules/FamilyChip.vue'
 
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
-import { railPaint }        from '../../../lib/shared/family-rail'
+import { BODY_LINK_CLASS }  from '../../../lib/shared/constants'
 import { formatFolio }      from '../../../lib/shared/numerals'
 
 const { active, activeIndex, filtered, step } = useGlossaryFolio()
 </script>
 
 <template>
-  <div
-    class="glossary-folio-stage"
-    :data-family="active?.primaryFamily"
-    :style="active ? { '--rail-paint': railPaint(active.families) } : undefined"
-  >
+  <div class="glossary-folio-stage" :data-family="active?.primaryFamily">
     <article v-if="active" class="glossary-folio-pane panel">
       <header class="glossary-folio-head">
         <p class="glossary-folio-folio kicker">
@@ -32,7 +28,7 @@ const { active, activeIndex, filtered, step } = useGlossaryFolio()
         </div>
       </header>
       <h2 class="glossary-folio-headword">
-        <a v-if="active.href" :href="active.href">{{ active.slug }}</a>
+        <a v-if="active.href" :class="BODY_LINK_CLASS" :href="active.href">{{ active.slug }}</a>
         <span v-else>{{ active.slug }}</span>
       </h2>
       <p v-if="active.aliases.length > 0" class="glossary-folio-aliases">

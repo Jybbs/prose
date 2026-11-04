@@ -247,20 +247,10 @@ Every tool, crate, package, and action the repository depends on is pinned to an
 These rules decide what a row of the table holds:
 
 - A lift is major where it changes the left-most non-zero part of the version, so a lift between two `0.x.y` releases is major when the minor part changes, a lift between two `0.0.z` releases when the patch part changes, and a lift between two calendar versions only when the year changes
-- Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the release `[package.metadata.ruff]` names
-- The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry
+- Pins sharing a name take one row and move together, which covers every set `mise run repo:audit` holds equal, and the `ruff_*` crates take one row with the `ruff` tool and the release `[package.metadata.ruff]` names
+- The reports of mise, Cargo, uv, and bun give the newest release of the pins they cover, and a pin none of them covers, such as the `wranglerVersion` input or an `overrides` entry naming no declared package, takes it from its registry. A docs-site pin standing on a prerelease takes the highest PEP 440 version its registry lists, since `bun outdated` reads only the `latest` dist-tag
 - A tool release younger than mise's [**`minimum_release_age`**](https://mise.jdx.dev/configuration/settings.html#minimum_release_age) cutoff takes no row, because mise leaves it out of its report until the cutoff clears it. A second table lists each such release beside the time it clears, and no write takes one before then
 - The `min_version` in `.mise/config.toml` names the oldest mise that reads the config rather than a release to lift to, so it takes no row
-
-### Held Back
-
-A major lift held back from a write is recorded below beside its reason, and each later run passes `--hold` for every pin the table names until the change that lift needs lands.
-
-| **Pin** | **Reason** |
-|---|---|
-| `markdown-it` | The next major release types a token attribute's value as a string or a number, which the docs site's `BlockParser` and `InlineParser` interfaces do not accept, so `site:typecheck` fails |
-| `satori` | The newest release renders each social card's SVG differently, so the card snapshots `site/.vitepress/tests/og/render.test.ts` reads change and need a review |
-| `typescript` | `vue-tsc` loads `typescript/lib/tsc`, which the next major release no longer exports, so `site:typecheck` stops before it checks a file |
 
 ---
 
@@ -360,7 +350,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
 | `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |
-| `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `vue-tsc` reports no type error in the docs site |
+| `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `tsc` reports no type error in the docs site |
 | `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
 | `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |

@@ -4,7 +4,7 @@ description: "Covers the per-user cache, the `[cache]` keys, the `--no-cache` fl
 
 # Cache
 
-*Prose* caches each file's result, keyed on the file's bytes, its path as the run names it, the source type the run reads it as, the configuration that governs it, the rules the run selects, the *Prose* version, and the diagnostic anchor, meaning whether the entry's diagnostics refer to the text before or after a rewrite. A repeat `prose check` or `prose format` over an unchanged file then costs a stat, a hash, and a deserialize, because a cache hit prints the stored diagnostics without running the pipeline. The [**`Cache` Type**](/architecture/cache) page covers how the key is derived from those inputs and how eviction keeps the cache within its caps.
+*Prose* caches each file's result, keyed on the file's bytes, its path as the run names it, the source type the run reads it as, the configuration that governs it, the rules the run selects, the *Prose* version, and the diagnostic anchor, meaning whether the entry's diagnostics refer to the text before or after a rewrite. A repeat `prose check` or `prose format` over an unchanged file then costs a stat, a hash, and a deserialize, because a cache hit prints the stored diagnostics without running the pipeline. The [**`Cache`**](/architecture/cache) type page covers how the key is derived from those inputs and how eviction keeps the cache within its caps.
 
 The cache is on by default, with the `[cache]` table tuning it, `--no-cache` bypassing it for one run, and `prose cache clean` emptying it.
 

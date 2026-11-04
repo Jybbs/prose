@@ -2,7 +2,10 @@
 import { refAutoReset, useClipboard, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref }               from 'vue'
 
-import CopyButton from '../base/CopyButton.vue'
+import CopyButton           from '../base/CopyButton.vue'
+import ProseSandboxControls from './ProseSandboxControls.vue'
+import ProseSandboxSurface  from './ProseSandboxSurface.vue'
+import ProseSandboxToml     from './ProseSandboxToml.vue'
 
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'

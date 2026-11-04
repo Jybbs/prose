@@ -2,7 +2,8 @@ import type { Theme }     from 'vitepress'
 import DefaultTheme       from 'vitepress/theme'
 import type { Component } from 'vue'
 
-import FloatingVue from 'floating-vue'
+import FloatingVue                                              from 'floating-vue'
+import type { Dropdown, Menu, Tooltip, vClosePopper, vTooltip } from 'floating-vue'
 
 import './styles/popper-vendor.css'
 import '@shikijs/magic-move/style.css'
@@ -15,9 +16,9 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
-import { provideCurrentRule, useFamilyDataset } from '../lib/composables/route'
-import { stripSuffix }                          from '../lib/shared/strip-suffix'
-import Layout                                   from './Layout.vue'
+import { provideCurrentRule } from '../lib/composables/route'
+import { stripSuffix }        from '../lib/shared/strip-suffix'
+import Layout                 from './Layout.vue'
 
 import 'virtual:prose-palette.css'
 import './styles/tokens.css'
@@ -31,10 +32,10 @@ import './styles/band-header.css'
 import './styles/code-chip.css'
 import './styles/glyph.css'
 import './styles/leaders.css'
+import './styles/nib-stroke.css'
 import './styles/panel.css'
 import './styles/pips.css'
 import './styles/popper-base.css'
-import './styles/prose-mark.css'
 import './styles/underline-draw.css'
 import './styles/vitepress-chrome.css'
 
@@ -56,7 +57,6 @@ export default {
   Layout,
   setup() {
     provideCurrentRule()
-    useFamilyDataset()
   },
   enhanceApp({ app }) {
     for (const [file, component] of Object.entries(components)) {
@@ -64,16 +64,6 @@ export default {
     }
     app.use(FloatingVue, {
       themes: {
-        'az-index': {
-          $extend        : 'dropdown',
-          delay          : { hide: 220, show: 0 },
-          distance       : 14,
-          handleResize   : false,
-          instantMove    : true,
-          placement      : 'right-start',
-          popperTriggers : ['hover'],
-          triggers       : ['hover', 'focus']
-        },
         glossary: {
           $extend         : 'tooltip',
           'arrow-padding' : 8,
@@ -110,3 +100,17 @@ export default {
     })
   }
 } satisfies Theme
+
+// Declares the components and directives the `FloatingVue` plugin registers globally, for the
+// template type check.
+declare module 'vue' {
+  interface GlobalComponents {
+    VDropdown : typeof Dropdown
+    VMenu     : typeof Menu
+    VTooltip  : typeof Tooltip
+  }
+  interface GlobalDirectives {
+    vClosePopper : typeof vClosePopper
+    vTooltip     : typeof vTooltip
+  }
+}

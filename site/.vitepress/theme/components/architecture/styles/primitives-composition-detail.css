@@ -6,7 +6,6 @@
   padding        : var(--prose-space-18) var(--prose-space-22);
   background     : var(--vp-c-bg);
   border         : var(--prose-border-1) solid var(--vp-c-divider);
-  border-top     : var(--prose-border-3) solid var(--layer-accent);
   border-radius  : var(--prose-radius-sm);
 }
 
@@ -16,16 +15,20 @@
   text-align     : left;
   gap            : var(--prose-space-14);
   padding-bottom : var(--prose-space-12);
-  border-bottom  : var(--prose-border-1) solid color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-70), var(--layer-accent));
+  border-bottom  : var(--prose-border-1) solid var(--vp-c-divider);
+}
+
+.primitives-composition-card-layer-numeral,
+.primitives-composition-card-mention-chip {
+  font-family : var(--prose-font-display);
+  font-style  : italic;
+  font-weight : 500;
+  line-height : 1;
+  color       : var(--layer-ink);
 }
 
 .primitives-composition-card-layer-numeral {
-  width       : var(--prose-size-32);
-  height      : var(--prose-size-32);
-  font-size   : var(--prose-text-1-05rem);
-  line-height : 1;
-  background  : var(--layer-accent);
-  box-shadow  : 0 0 0 var(--prose-border-2) color-mix(in srgb, var(--layer-accent) var(--prose-tint-25), var(--vp-c-bg));
+  font-size   : var(--prose-text-1-5rem);
   flex-shrink : 0;
 }
 
@@ -55,15 +58,15 @@
 .primitives-composition-card-summary code {
   font-family   : var(--vp-font-family-mono);
   font-size     : var(--prose-text-1em);
-  color         : var(--vp-c-brand-1);
-  background    : var(--vp-c-default-soft);
+  color         : var(--vp-code-color);
+  background    : var(--vp-code-bg);
   padding       : var(--prose-space-1) var(--prose-space-4);
   border-radius : var(--prose-radius-sm);
 }
 
 .primitives-composition-card-rel {
   display               : grid;
-  grid-template-columns : var(--prose-size-78) minmax(0, 1fr);
+  grid-template-columns : var(--prose-size-110) minmax(0, 1fr);
   column-gap            : var(--prose-space-10);
   align-items           : center;
 }
@@ -75,7 +78,14 @@
   text-transform : uppercase;
   text-align     : left;
   white-space    : nowrap;
-  color          : color-mix(in srgb, var(--layer-accent) var(--prose-tint-70), var(--vp-c-text-2));
+  color          : var(--vp-c-text-2);
+}
+
+.primitives-composition-card-rel-label > .primitives-composition-port {
+  position     : static;
+  display      : inline-block;
+  margin-right : var(--prose-space-6);
+  background   : var(--vp-c-text-2);
 }
 
 .primitives-composition-card-rel-mentions {
@@ -97,36 +107,14 @@
   font-size            : var(--prose-text-0-68rem);
   color                : var(--vp-c-text-1);
   text-decoration-line : none;
-  border-bottom        : var(--prose-border-1) solid transparent;
-  transition           : color        140ms var(--prose-ease-emphasized),
-                         border-color 140ms var(--prose-ease-emphasized);
-}
-
-.vp-doc .primitives-composition-card-mention[data-layer="base"],
-.primitives-composition-card-mention[data-layer="base"]          { color: color-mix(in srgb, var(--layer-base)          var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-base)          var(--prose-tint-40), transparent); }
-.vp-doc .primitives-composition-card-mention[data-layer="orchestration"],
-.primitives-composition-card-mention[data-layer="orchestration"] { color: color-mix(in srgb, var(--layer-orchestration) var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-orchestration) var(--prose-tint-40), transparent); }
-.vp-doc .primitives-composition-card-mention[data-layer="analysis"],
-.primitives-composition-card-mention[data-layer="analysis"]      { color: color-mix(in srgb, var(--layer-analysis)      var(--prose-tint-70), var(--vp-c-text-1)); border-bottom-color: color-mix(in srgb, var(--layer-analysis)      var(--prose-tint-40), transparent); }
-
-.vp-doc .primitives-composition-card-mention:hover,
-.primitives-composition-card-mention:hover {
-  border-bottom-color: currentColor;
 }
 
 .primitives-composition-card-mention-chip {
-  width       : var(--prose-size-18);
-  height      : var(--prose-size-18);
-  font-size   : var(--prose-text-xxs);
-  line-height : 1;
+  font-size : var(--prose-text-xs);
 }
 
-.primitives-composition-card-mention-chip[data-layer="base"]          { background: var(--layer-base);          }
-.primitives-composition-card-mention-chip[data-layer="orchestration"] { background: var(--layer-orchestration); }
-.primitives-composition-card-mention-chip[data-layer="analysis"]      { background: var(--layer-analysis);      }
-
 .primitives-composition-card-mention-text {
-  display : inline-block;
+  padding-bottom : var(--prose-space-2);
 }
 
 .primitives-composition-card-mention-ext {

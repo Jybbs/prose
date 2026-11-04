@@ -5,7 +5,6 @@ import type { CSSProperties }                      from 'vue'
 
 import type { LengthKnob } from '../../../lib/sandbox/config-schema.data'
 import * as rulerScale     from '../../../lib/sandbox/ruler-scale'
-import { PALETTE }         from '../../../lib/shared/palette'
 
 const props = defineProps<{
   lengths : readonly LengthKnob[]
@@ -23,7 +22,8 @@ const MIN  = rulerScale.LENGTH_MIN
 const SPAN = MAX - MIN
 
 const DRAG_SLOP = 3
-const HUE_NAMES: readonly (keyof typeof PALETTE)[] = ['ube', 'dexter', 'whiskey']
+const HUES      = ['ube', 'dexter', 'whiskey'] as const
+const LANE_SLOP = 6
 const MARKS     = [MIN, 80, 130, MAX] as const
 
 interface DragState {
@@ -63,6 +63,17 @@ const tierByKey = computed(() => rulerScale.packTiers(
   props.lengths.map(knob => ({ key: knob.key, pct: rulerScale.pctOfLength(shownValue(knob)) })),
   trackWidth.value,
   chipWidths
+))
+
+// Joins each knob's default to its value, a tether that would overlap another
+// dropping to the next lane.
+const tethers = computed(() => rulerScale.packLanes(
+  new Map(props.lengths.map(knob => {
+    const [at, home] = [shownValue(knob), knob.default].map(rulerScale.pctOfLength) as [number, number]
+    return [knob.key, { from: Math.min(at, home), to: Math.max(at, home) }]
+  })),
+  trackWidth.value,
+  LANE_SLOP
 ))
 
 // The head reserves rows only for tiers in use, so it stays one row tall
@@ -127,12 +138,14 @@ function dragStart(hue: string, knob: LengthKnob, event: PointerEvent): void {
   }
 }
 
-function focusInput(el: unknown): void {
-  if (el instanceof HTMLInputElement && el !== document.activeElement) el.select()
+// Gives each knob its hue by its place, so a knob, its default, its tether,
+// and the guide it holds share one.
+function hueOf(index: number): string {
+  return HUES[index % HUES.length]!
 }
 
-function hueOf(index: number): string {
-  return `var(--prose-palette-${HUE_NAMES[index % HUE_NAMES.length]})`
+function focusInput(el: unknown): void {
+  if (el instanceof HTMLInputElement && el !== document.activeElement) el.select()
 }
 
 function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
@@ -142,14 +155,17 @@ function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
   emit('setLength', knob.key, rulerScale.clampLength(next))
 }
 
-function stopStyle(index: number, knob: LengthKnob): CSSProperties {
+function stopStyle(knob: LengthKnob): CSSProperties {
   return {
-    '--hue'  : hueOf(index),
     '--pct'  : rulerScale.pctOfLength(shownValue(knob)),
     '--tier' : tierOf(knob.key)
   }
 }
 
+function tetherStyle(knob: LengthKnob): CSSProperties & { '--lane': number } {
+  const { from, lane, to } = tethers.value.get(knob.key)!
+  return { '--lane': lane, 'left': `${from}%`, 'width': `${to - from}%` }
+}
 
 function tierOf(key: string): number {
   return tierByKey.value.get(key) ?? 0
@@ -162,10 +178,19 @@ function tierOf(key: string): number {
       <div class="sandbox-ruler-track" aria-hidden="true" />
       <span
         v-for="(knob, index) in lengths"
+        :key="`tether-${knob.key}`"
+        class="sandbox-ruler-tether"
+        aria-hidden="true"
+        :data-hue="hueOf(index)"
+        :style="tetherStyle(knob)"
+      />
+      <span
+        v-for="(knob, index) in lengths"
         :key="`default-${knob.key}`"
         class="sandbox-ruler-default"
         aria-hidden="true"
-        :style="{ left: `${rulerScale.pctOfLength(knob.default)}%`, '--hue': hueOf(index) }"
+        :data-hue="hueOf(index)"
+        :style="{ '--lane': tetherStyle(knob)['--lane'], 'left': `${rulerScale.pctOfLength(knob.default)}%` }"
       />
       <span
         v-for="mark in MARKS"
@@ -178,8 +203,10 @@ function tierOf(key: string): number {
         v-for="(knob, index) in lengths"
         :key="knob.key"
         class="sandbox-ruler-stop"
-        :style="stopStyle(index, knob)"
+        :style="stopStyle(knob)"
+        :data-changed="shownValue(knob) !== knob.default || null"
         :data-dragging="drag?.key === knob.key || null"
+        :data-hue="hueOf(index)"
         :role="editing === knob.key ? undefined : 'slider'"
         :tabindex="editing === knob.key ? undefined : 0"
         :aria-label="`${knob.label} line length`"

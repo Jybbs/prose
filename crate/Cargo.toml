@@ -11,7 +11,7 @@ rust-version.workspace = true
 version                = "0.10.2"
 
 [package.metadata.ruff]
-release = "0.17.1"
+release = "0.17.3"
 
 [[bin]]
 name              = "prose"
@@ -48,7 +48,7 @@ native  = [
 workspace = true
 
 [dependencies]
-annotate-snippets   = { version = "=0.12.16", optional = true }
+annotate-snippets   = { version = "=0.12.17", optional = true }
 anstream            = { version = "1.0.0", optional = true }
 anstyle             = { version = "1.0.14", optional = true }
 anstyle-query       = { version = "1.1.5", optional = true }
@@ -59,7 +59,7 @@ clap_complete       = { version = "4.6.11", optional = true }
 dirs                = { version = "7.0.0", optional = true }
 fluent-uri          = { version = "0.4.1", optional = true }
 fs-err              = { workspace = true }
-globset             = "0.4.20"
+globset             = "0.4.21"
 heck                = "0.5.0"
 ignore              = { workspace = true, optional = true }
 indexmap            = { version = "2.14.2", features = ["serde"] }
@@ -85,18 +85,17 @@ serde               = { workspace = true }
 serde-sarif         = { version = "0.8.0", optional = true }
 serde_ignored       = "0.1.14"
 serde_json          = { workspace = true }
-similar             = { version = "3.2.0", optional = true }
-smallvec            = { version = "1.16.3", features = ["serde"] }
+similar             = { version = "3.2.1", optional = true }
+smallvec            = { version = "1.16.4", features = ["serde"] }
 tempfile            = { version = "3.27.0", optional = true }
 textwrap            = { version = "0.16.4", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror           = "2.0.21"
-toml                = "1.1.8"
-unicode-width       = "0.2.2"
+toml                = "1.2.0"
+unicode-width       = "0.2.3"
 
 [dev-dependencies]
 assert_cmd            = "2.2.2"
 indoc                 = "2.0.8"
 insta                 = { version = "1.49.0", features = ["glob", "yaml"] }
 proptest              = "1.12.0"
-rstest                = "0.27.0"
-ruff_python_formatter = { workspace = true }
+rstest                = "0.28.0"

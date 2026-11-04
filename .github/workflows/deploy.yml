@@ -118,7 +118,7 @@ jobs:
 
       - name : Restore the wasm build cache
         if   : ${{ steps.wasm-module.outputs.cache-hit != 'true' }}
-        uses : Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        uses : Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if    : 'false'
           shared-key : prose-wasm
@@ -175,7 +175,7 @@ jobs:
           accountId       : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken        : ${{ secrets.CLOUDFLARE_TOKEN }}
           command         : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
-          wranglerVersion : "4.151.1"
+          wranglerVersion : "4.157.0"
 
   prune:
     name            : 🍂 Prune

@@ -1,4 +1,4 @@
-import type MarkdownIt from 'markdown-it'
+import type { MarkdownIt } from 'markdown-it'
 
 import { isInert, isPlainTerms } from '../markdown/inert-env'
 import { replaceTextTokens }     from '../markdown/token-split'
@@ -18,7 +18,7 @@ export function glossaryPlugin(
 
   return function plugin(md: MarkdownIt): void {
     md.core.ruler.after('inline', 'glossary-decorate', state => {
-      const seen: Set<string> = (state.env.seenGlossarySlugs ??= new Set())
+      const seen = (state.env.seenGlossarySlugs ??= new Set()) as Set<string>
       walkBodyInlines(state, (block, children) => {
         block.children = replaceTextTokens(children, state.Token, pattern, (match, child) => {
           const phrase = match[1]

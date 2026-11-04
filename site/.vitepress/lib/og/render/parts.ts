@@ -84,6 +84,7 @@ export function panelShell(accent: string, alpha: string, ...children: JSXNode[]
         backgroundColor : PANEL_FILL,
         border          : `1px solid ${accent}${alpha}`,
         borderRadius    : 8,
+        boxSizing       : 'border-box',
         display         : 'flex',
         flexDirection   : 'column',
         minWidth        : 360,

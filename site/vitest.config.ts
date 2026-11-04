@@ -3,6 +3,7 @@ import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 import * as paths from './.vitepress/lib/shared/paths'
+import { sfcFs }  from './.vitepress/lib/shared/sfc-fs'
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
@@ -21,7 +22,7 @@ export default defineConfig({
 
     projects: [
       {
-        plugins : [vue()],
+        plugins : [vue({ script: { fs: sfcFs } })],
         test    : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],

@@ -8,7 +8,7 @@ import { EMBLEMS } from './emblems'
 const axes = {
   form     : 'line',
   terminal : 'broad nib',
-  tone     : 'family ink on a family tint',
+  tone     : 'ink on a neutral tint',
   weight   : NIB.stroke.nib
 }
 </script>

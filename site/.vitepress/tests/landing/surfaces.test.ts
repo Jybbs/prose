@@ -34,6 +34,7 @@ vi.mock('../../lib/glossary/glossary.data', () => ({
       atomic: {
         aliases        : [],
         definitionHtml : '<p>An indivisible literal.</p>',
+        families       : ['engine'],
         href           : '/reference/glossary#atomic',
         slug           : 'atomic'
       }

@@ -96,10 +96,6 @@
   line-height : 1.3;
   color       : var(--vp-c-text-1);
 }
-.landing-cta-lede em {
-  font-style : italic;
-  color      : var(--vp-c-brand-1);
-}
 
 .landing-cta-cmd {
   position      : relative;

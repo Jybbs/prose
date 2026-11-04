@@ -1,8 +1,7 @@
-import MarkdownIt from 'markdown-it'
+import markdownit, { type MarkdownIt } from 'markdown-it'
 
 import { glossaryPlugin }          from '../../lib/glossary/plugin'
 import { blockNodes, inlineNodes } from '../../lib/markdown/inline-nodes'
-import { proseMarkPlugin }         from '../../lib/markdown/prose-mark-plugin'
 import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 
 const rules = new Map([
@@ -14,10 +13,9 @@ const phrases    = new Map([['atom', 'atomic']])
 const primitives = new Map([['source', { name: 'Source' }]])
 
 function renderer(): MarkdownIt {
-  const md = new MarkdownIt()
+  const md = markdownit()
   md.use(ruleLinkPlugin(rules as never, primitives as never))
   md.use(glossaryPlugin(phrases, hrefs))
-  md.use(proseMarkPlugin)
   return md
 }
 
@@ -53,17 +51,8 @@ describe('inlineNodes', () => {
     }])
   })
 
-  it('walks the Prose mark into a balanced span rather than raw html', () => {
-    expect(inlineNodes(renderer(), 'Prose')).toStrictEqual([{
-      kind     : 'el',
-      attrs    : { class: 'prose-mark' },
-      tag      : 'span',
-      children : [{ kind: 'text', text: 'Prose' }]
-    }])
-  })
-
   it('throws on a token it cannot map, so a new plugin fails the build', () => {
-    const md = new MarkdownIt({ html: true })
+    const md = markdownit({ html: true })
     expect(() => inlineNodes(md, 'text with <b>raw html</b>')).toThrow(/cannot map/)
   })
 
@@ -73,6 +62,16 @@ describe('inlineNodes', () => {
       { kind: 'text', text: ' ' },
       { kind: 'text', text: 'second' }
     ])
+  })
+
+  it('holds every attribute as a string, an ordered list start included', () => {
+    expect(inlineNodes(markdownit(), '[a](/b)')).toStrictEqual([{
+      kind     : 'el',
+      attrs    : { href: '/b' },
+      tag      : 'a',
+      children : [{ kind: 'text', text: 'a' }]
+    }])
+    expect(blockNodes(markdownit(), '3. x')[0]).toMatchObject({ attrs: { start: '3' }, tag: 'ol' })
   })
 
   it('walks block prose, flattening each paragraph inline run into the tree', () => {

@@ -12,7 +12,7 @@
 }
 
 .sandbox-plate {
-  --sandbox-plate-accent    : var(--family-color, var(--vp-c-brand-1));
+  --sandbox-plate-accent    : var(--vp-c-text-1);
   --sandbox-plate-control-h : var(--prose-size-22);
   --sandbox-plate-switch-w  : var(--prose-size-40);
 
@@ -126,8 +126,8 @@
 .sandbox-plate-hint code {
   padding       : var(--prose-space-2) var(--prose-space-6);
   border-radius : var(--prose-radius-sm);
-  background    : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-8), transparent);
-  color         : var(--sandbox-plate-accent);
+  background    : var(--vp-code-bg);
+  color         : var(--vp-code-color);
   font-family   : var(--vp-font-family-mono);
   font-style    : normal;
   font-size     : var(--prose-text-0-86em);

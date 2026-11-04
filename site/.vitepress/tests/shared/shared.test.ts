@@ -1,7 +1,4 @@
-import { fc, test } from '@fast-check/vitest'
-
 import { escapeHtml }                       from '../../lib/shared/escape-html'
-import { railPaint }                        from '../../lib/shared/family-rail'
 import { inlineCode }                       from '../../lib/shared/inline-code'
 import { externalAttrs }                    from '../../lib/shared/links'
 import { lookup }                           from '../../lib/shared/lookup'
@@ -191,38 +188,6 @@ describe('lookup', () => {
     expect(() => lookup(registry, 'gamma', 'Thing'))
       .toThrow('Thing "gamma" not registered. Available: alpha, beta')
   })
-})
-
-describe('railPaint', () => {
-  it.each([
-    [[],            'var(--vp-c-divider)'],
-    [[null],        'var(--vp-c-divider)'],
-    [['alignment'], 'var(--prose-family-alignment)']
-  ])('paints a single or empty rail %j', (families, expected) => {
-    expect(railPaint(families)).toBe(expected)
-  })
-
-  it('builds a gradient across multiple families', () => {
-    expect(railPaint(['alignment', 'ordering'])).toBe(
-      'linear-gradient(to bottom, var(--prose-family-alignment), var(--prose-family-ordering))'
-    )
-  })
-
-  it('honors a custom direction', () => {
-    expect(railPaint(['lint', 'docs'], 'to right')).toBe(
-      'linear-gradient(to right, var(--prose-family-lint), var(--prose-family-docs))'
-    )
-  })
-
-  const familyArb = fc.constantFrom('alignment', 'docs', 'formatting', 'layout', 'lint', 'ordering')
-
-  test.prop([fc.array(familyArb, { minLength: 2, maxLength: 5 })])(
-    'names every family token in a multi-family gradient',
-    (families) => {
-      const out = railPaint(families)
-      for (const family of families) expect(out).toContain(`var(--prose-family-${family})`)
-    }
-  )
 })
 
 describe('withFallback', () => {

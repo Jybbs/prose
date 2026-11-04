@@ -1,0 +1,48 @@
+@property --nib-swell {
+  syntax        : '<number>';
+  inherits      : false;
+  initial-value : 0;
+}
+
+/* Draws a 1px rule in the link color under the words and, beneath it, the
+   nib stroke's tapered lens, 2.5em long and 4px deep at its middle, which
+   grows from nothing through `--nib-swell` and sits wherever `--nib-at` puts
+   it, the middle of each line until `use-nib-stroke.ts` writes the pointer's
+   place. Both are backgrounds, so each line a link wraps to carries them. */
+.vp-doc a.body-link:not(:has(code)),
+:is(.vp-doc a.body-link, a.tool-mark) code,
+.nib-stroke {
+  background-image             : linear-gradient(var(--prose-role-link), var(--prose-role-link)),
+                                 radial-gradient(closest-side, var(--prose-role-link) 92%, transparent);
+  background-position          : 0 calc(100% - var(--prose-space-1-5)), var(--nib-at, 50%) 100%;
+  background-repeat            : no-repeat;
+  background-size              : 100% var(--prose-size-1), calc(var(--nib-swell) * var(--prose-size-2-5em)) var(--prose-size-4);
+  -webkit-box-decoration-break : clone;
+  box-decoration-break         : clone;
+  transition                   : --nib-swell var(--prose-transition-slow);
+}
+
+.vp-doc a.body-link:not(:has(code)) {
+  padding-bottom : var(--prose-space-1);
+}
+
+/* Draws a quiet mark's rule in from the left as its stroke swells, so the
+   mark shows only under the pointer or the keyboard focus. */
+.nib-stroke.is-quiet {
+  background-size : calc(var(--nib-swell) * 100%) var(--prose-size-1), calc(var(--nib-swell) * var(--prose-size-2-5em)) var(--prose-size-4);
+}
+
+.vp-doc a.body-link:is(:hover, :focus-visible),
+:is(.vp-doc a.body-link, a.tool-mark):is(:hover, :focus-visible) code,
+:is(a, button):is(:hover, :focus-visible) .nib-stroke,
+.nib-stroke:is(:hover, :focus-visible) {
+  --nib-swell : 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-doc a.body-link:not(:has(code)),
+  :is(.vp-doc a.body-link, a.tool-mark) code,
+  .nib-stroke {
+    transition : none;
+  }
+}

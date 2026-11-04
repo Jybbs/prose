@@ -64,13 +64,13 @@
 }
 
 .glossary-folio-search:hover {
-  border-color : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-35), var(--vp-c-divider));
+  border-color : var(--vp-c-divider);
   background   : var(--vp-c-bg);
 }
 
 .glossary-folio-search:focus-within {
-  border-color : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-55), var(--vp-c-divider));
-  box-shadow   : 0 0 0 var(--prose-border-3) color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-20), transparent);
+  border-color : var(--prose-role-link);
+  box-shadow   : inset 0 0 0 var(--prose-border-1) var(--prose-role-link);
 }
 
 .glossary-folio-search-glyph {
@@ -160,7 +160,7 @@
 
 .glossary-folio-row {
   display               : grid;
-  grid-template-columns : var(--prose-size-3) 1fr;
+  grid-template-columns : var(--prose-size-8) minmax(0, 1fr) auto;
   align-items           : center;
   gap                   : var(--prose-space-10);
   width                 : 100%;
@@ -171,13 +171,23 @@
   background            : transparent;
   text-align            : left;
   cursor                : pointer;
-  transition            : background var(--prose-transition);
 }
 
-.glossary-folio-row-rail {
-  align-self    : stretch;
-  border-radius : var(--prose-radius-2);
-  background    : var(--rail-paint, var(--family-color));
+.glossary-folio-row:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : calc(var(--prose-space-2) * -1);
+}
+
+.glossary-folio-row-slot {
+  display      : block;
+  width        : var(--prose-size-6);
+  height       : var(--prose-size-6);
+  justify-self : center;
+}
+
+.glossary-folio-row.is-active .glossary-folio-row-slot {
+  background : var(--prose-role-link);
+  transform  : rotate(45deg);
 }
 
 .glossary-folio-row-slug {
@@ -190,19 +200,84 @@
   min-width     : 0;
 }
 
-.glossary-folio-row:hover {
-  background : color-mix(in srgb, var(--family-color) var(--prose-tint-10), transparent);
-}
-
 .glossary-folio-row:hover .glossary-folio-row-slug {
   color : var(--vp-c-text-1);
-}
-
-.glossary-folio-row.is-active {
-  background : color-mix(in srgb, var(--family-color) var(--prose-tint-22), transparent);
 }
 
 .glossary-folio-row.is-active .glossary-folio-row-slug {
   color       : var(--vp-c-text-1);
   font-weight : 600;
+}
+
+/* Stacks a term's family badges as tiles squared up behind the first, which
+   sits on top at the right, each tile beneath it showing its left edge in its
+   family's shade. Pointing at, focusing, or selecting the row spreads the
+   tiles over a ground that fades the end of the name. */
+.glossary-folio-row-deck {
+  --deck-step : var(--prose-size-4);
+
+  position : relative;
+  display  : block;
+  width    : calc(var(--prose-size-20) + (var(--deck-count) - 1) * var(--prose-size-4));
+  height   : var(--prose-size-20);
+}
+
+.glossary-folio-row:is(:hover, :focus-visible, .is-active) .glossary-folio-row-deck {
+  --deck-step : var(--prose-size-24);
+}
+
+.glossary-folio-row-deck.is-stacked::before {
+  content    : "";
+  position   : absolute;
+  inset      : calc(var(--prose-space-2) * -1) 0;
+  left       : auto;
+  width      : calc(var(--prose-size-20) + (var(--deck-count) - 1) * var(--deck-step) + var(--prose-space-12));
+  background : linear-gradient(to right, transparent, var(--vp-c-bg) var(--prose-space-12));
+  opacity    : 0;
+  transition : width var(--prose-transition-slow), opacity var(--prose-transition-slow);
+}
+
+.glossary-folio-row:is(:hover, :focus-visible, .is-active) .glossary-folio-row-deck::before {
+  opacity : 1;
+}
+
+.glossary-folio-row-tile {
+  position    : absolute;
+  top         : 0;
+  right       : calc(var(--deck-at) * var(--deck-step));
+  z-index     : calc(var(--deck-count) - var(--deck-at));
+  display     : grid;
+  place-items : center;
+  box-sizing  : border-box;
+  width       : var(--prose-size-20);
+  height      : var(--prose-size-20);
+  transition  : right var(--prose-transition-slow), border-color var(--prose-transition-slow);
+}
+
+.is-stacked .glossary-folio-row-tile {
+  border     : var(--prose-border-1) solid var(--vp-c-divider);
+  background : var(--prose-chip-ground);
+}
+
+.glossary-folio-row-tile + .glossary-folio-row-tile {
+  border-left : var(--prose-border-3) solid var(--family-edge);
+}
+
+.glossary-folio-row:is(:hover, :focus-visible, .is-active) .glossary-folio-row-tile + .glossary-folio-row-tile {
+  border-left : var(--prose-border-1) solid var(--vp-c-divider);
+}
+
+.glossary-folio-row-tile .nib-badge {
+  display : block;
+}
+
+.is-stacked .glossary-folio-row-tile .nib-badge {
+  color : var(--family-nib-chip);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glossary-folio-row-tile,
+  .glossary-folio-row-deck::before {
+    transition : none;
+  }
 }

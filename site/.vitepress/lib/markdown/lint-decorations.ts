@@ -2,7 +2,7 @@ import type { DecorationItem, ShikiTransformer } from '@shikijs/types'
 
 import type { LintFinding } from '../fixtures/lint-findings'
 
-const FLAG_CLASS  = 'lint-flag underline-draw'
+const FLAG_CLASS  = 'lint-flag'
 const LINE_CLASS  = 'lint-flag lint-flag-line'
 const META_PREFIX = 'lint='
 

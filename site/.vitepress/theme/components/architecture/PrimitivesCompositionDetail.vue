@@ -13,6 +13,7 @@ import type { PrimitiveSlug }                        from '../../../lib/shared/r
 import { primitiveRoute }                            from '../../../lib/shared/routes'
 import InlineProse                                   from '../base/InlineProse.vue'
 import NibBadge                                      from '../base/NibBadge.vue'
+import RuleTooltipPopper                             from '../rules/RuleTooltipPopper.vue'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
@@ -30,8 +31,8 @@ const relations = computed(() => {
   const entry = focusedEntry.value
   if (!entry) return []
   return [
-    { items : entry.consumes,   keyPrefix : 'c', label : 'consumes'    },
-    { items : entry.consumedBy, keyPrefix : 'b', label : 'consumed by' }
+    { items : entry.consumes,   keyPrefix : 'c', label : 'consumes',    port : 'in'  },
+    { items : entry.consumedBy, keyPrefix : 'b', label : 'consumed by', port : 'out' }
   ].map(rel => ({ ...rel, items: rel.items.map(mentionOf) }))
 })
 
@@ -92,12 +93,15 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
       </div>
       <template v-for="rel in relations" :key="rel.label">
         <div v-if="rel.items.length > 0" class="primitives-composition-card-rel">
-          <span class="primitives-composition-card-rel-label">{{ rel.label }}</span>
+          <span class="primitives-composition-card-rel-label">
+            <span class="primitives-composition-port" aria-hidden="true">{{ rel.port }}</span>
+            {{ rel.label }}
+          </span>
           <span class="primitives-composition-card-rel-mentions">
             <span v-for="m in rel.items" :key="`${rel.keyPrefix}-${m.slug}`" class="primitives-composition-card-mention-item">
               <a v-if="m.kind === 'primitive'" class="primitives-composition-card-mention" :data-layer="m.layer" :href="primitiveRoute(m.slug)">
                 <span class="primitives-composition-card-mention-chip" :data-layer="m.layer" aria-hidden="true">{{ m.numeral }}</span>
-                <span class="primitives-composition-card-mention-text">{{ m.slug }}</span>
+                <span class="primitives-composition-card-mention-text nib-stroke">{{ m.slug }}</span>
               </a>
               <RuleTooltipPopper v-else-if="m.kind === 'rule'" :rule="m.rule">
                 <a class="rule-chip" :href="m.rule.href" :data-family="m.rule.family">

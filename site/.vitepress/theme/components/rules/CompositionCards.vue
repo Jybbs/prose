@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useData }       from 'vitepress'
-import { computed, ref } from 'vue'
+import { useResizeObserver }                      from '@vueuse/core'
+import { useData }                                from 'vitepress'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 
 import FixtureNoChange from '../fixtures/FixtureNoChange.vue'
 import FixturePairDoc  from '../fixtures/FixturePairDoc.vue'
@@ -11,21 +12,18 @@ import { useHashOpen }                            from '../../../lib/composables
 import { COMPOSITION_RULE, fixtureEntry }         from '../../../lib/fixtures/entry'
 import type { FixtureEntry }                      from '../../../lib/fixtures/entry'
 import type { CompositionCase }                   from '../../../lib/rules/composition'
+import { deckTravel }                             from '../../../lib/rules/deck-travel'
 import { pageCompositionCases, type RuleSegment } from '../../../lib/rules/rule-view'
 import { data as rules }                          from '../../../lib/rules/rules.data'
 import type { SavedSession }                      from '../../../lib/sandbox/session'
-import { railPaint }                              from '../../../lib/shared/family-rail'
 import type { FixtureTab }                        from '../../../lib/shared/fixture-tab'
 import InlineProse                                from '../base/InlineProse.vue'
 
 interface CardRow extends FixtureEntry {
-  case           : string
-  dominantFamily : string | null
-  headlinePaint  : string
-  railPaint      : string
-  sandboxSeed    : SavedSession
-  segments       : readonly RuleSegment[]
-  titleHtml      : string
+  case        : string
+  sandboxSeed : SavedSession
+  segments    : readonly RuleSegment[]
+  titleHtml   : string
 }
 
 const props = defineProps<{ rule?: string }>()
@@ -33,21 +31,15 @@ const props = defineProps<{ rule?: string }>()
 const { frontmatter } = useData()
 
 function toCardRow(entry: CompositionCase): CardRow {
-  const families = entry.rules.map(slug => rules.bySlug[slug]?.family ?? null)
   return {
     ...fixtureEntry(frontmatter.value, COMPOSITION_RULE, entry.case),
-    case           : entry.case,
-    dominantFamily : families[0] ?? null,
-    headlinePaint  : railPaint(families, 'to right'),
-    railPaint      : railPaint(families),
-    sandboxSeed    : { configToml: entry.configToml, source: entry.source },
-    titleHtml      : entry.titleHtml,
-    segments       : entry.rules.map((slug, idx) => ({
-      family : families[idx] ?? null,
-      index  : idx + 1,
-      rule   : rules.bySlug[slug] ?? null,
-      slug
-    }))
+    case        : entry.case,
+    sandboxSeed : { configToml: entry.configToml, source: entry.source },
+    titleHtml   : entry.titleHtml,
+    segments    : entry.rules.map((slug, idx) => {
+      const rule = rules.bySlug[slug] ?? null
+      return { family: rule?.family ?? null, index: idx + 1, rule, slug }
+    })
   }
 }
 
@@ -61,9 +53,23 @@ const cards = computed<readonly CardRow[]>(() =>
 const activeCase = ref<string | null>(null)
 const activeTab  = ref<FixtureTab>('after')
 
+const list = useTemplateRef<HTMLElement>('list')
+const bars = useTemplateRef<HTMLElement[]>('bars')
+
 function toggle(row: CardRow): void {
-  activeCase.value = activeCase.value === row.case ? null : row.case
+  void deckTravel(list.value!, async () => {
+    activeCase.value = activeCase.value === row.case ? null : row.case
+    await nextTick()
+  })
 }
+
+// Holds each card's foot open for its deck, writing the height the deck takes
+// once its boxes spread and name their rules.
+useResizeObserver(bars, entries => {
+  for (const { target } of entries) {
+    target.closest<HTMLElement>('li.fixture-card')?.style.setProperty('--deck-bar-h', `${(target as HTMLElement).offsetHeight}px`)
+  }
+})
 
 useHashOpen(fragment => {
   if (cards.value.some(row => row.case === fragment)) activeCase.value = fragment
@@ -71,19 +77,18 @@ useHashOpen(fragment => {
 </script>
 
 <template>
-  <ol class="composition-cards-list" aria-label="Composition cards">
+  <ol ref="list" class="composition-cards-list" aria-label="Composition cards">
     <li
       v-for="row in cards"
       :key="row.case"
       :id="row.case"
       class="fixture-card"
       :class="{ 'is-open': activeCase === row.case }"
-      :data-family="row.dominantFamily"
       :data-edits="row.changesSource"
-      :style="{ '--rail-paint': row.railPaint, '--headline-paint': row.headlinePaint }"
       @click="toggle(row)"
     >
       <div class="fixture-card-summary-row">
+        <span class="composition-cards-slot" aria-hidden="true" :style="{ '--deck-count': row.segments.length }"></span>
         <button
           type="button"
           class="fixture-card-summary"
@@ -95,14 +100,15 @@ useHashOpen(fragment => {
         </button>
         <div class="composition-cards-tick-cell">
           <ol
-            v-show="activeCase !== row.case"
             class="composition-cards-ticks"
             :aria-label="`${row.segments.length} rules in pipeline order`"
+            :style="{ '--deck-count': row.segments.length }"
           >
             <li
-              v-for="seg in row.segments"
+              v-for="(seg, at) in row.segments"
               :key="seg.slug"
               class="composition-cards-tick-item"
+              :style="{ '--deck-at': at }"
               @click.stop
             >
               <RuleSegmentChip :segment="seg" :with-tooltip="false" />
@@ -134,18 +140,9 @@ useHashOpen(fragment => {
               :output-html="row.outputHtml"
               :sandbox-seed="row.sandboxSeed"
             />
-            <ol
-              class="composition-cards-bar"
-              :class="{ 'is-open': activeCase === row.case }"
-              :aria-label="`${row.segments.length} rules in pipeline order`"
-            >
-              <li
-                v-for="seg in row.segments"
-                :key="seg.slug"
-                class="composition-cards-bar-cell"
-                @click.stop
-              >
-                <RuleSegmentChip :segment="seg" :with-tooltip="true" />
+            <ol ref="bars" class="composition-cards-bar" aria-hidden="true" inert>
+              <li v-for="seg in row.segments" :key="seg.slug" class="composition-cards-bar-cell">
+                <RuleSegmentChip :segment="seg" :with-tooltip="false" />
               </li>
             </ol>
           </div>

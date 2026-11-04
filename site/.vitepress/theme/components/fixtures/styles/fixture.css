@@ -32,9 +32,9 @@
   font-size       : var(--prose-text-meta);
   letter-spacing  : var(--prose-label-tracking-loose);
   text-transform  : uppercase;
-  color           : var(--vp-c-text-3);
+  color           : var(--vp-c-text-2);
   cursor          : pointer;
-  transition      : background var(--prose-transition), color var(--prose-transition);
+  transition      : color var(--prose-transition);
 }
 
 .fixture-toggle-pill:hover {
@@ -42,8 +42,12 @@
 }
 
 .fixture-toggle-pill[aria-selected="true"] {
-  background : color-mix(in srgb, var(--side-color) var(--prose-tint-20), var(--vp-c-bg));
-  color      : var(--side-color);
+  font-weight : 600;
+  color       : var(--vp-c-text-1);
+}
+
+.fixture-toggle-pill[aria-selected="true"][data-side="after"] {
+  color : var(--prose-shade-celadon-page-65);
 }
 
 .fixture-nochange {

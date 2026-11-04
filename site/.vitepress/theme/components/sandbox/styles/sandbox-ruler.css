@@ -1,3 +1,21 @@
+[data-hue="ube"] {
+  --knob-figure : var(--prose-shade-ube-page-45);
+  --knob-guide  : var(--prose-shade-ube-code-35);
+  --knob-tether : var(--prose-shade-ube-soft-35);
+}
+
+[data-hue="dexter"] {
+  --knob-figure : var(--prose-shade-dexter-page-45);
+  --knob-guide  : var(--prose-shade-dexter-code-35);
+  --knob-tether : var(--prose-shade-dexter-soft-35);
+}
+
+[data-hue="whiskey"] {
+  --knob-figure : var(--prose-shade-whiskey-page-45);
+  --knob-guide  : var(--prose-shade-whiskey-code-35);
+  --knob-tether : var(--prose-shade-whiskey-soft-35);
+}
+
 .sandbox-ruler-head {
   display     : flex;
   flex-wrap   : wrap;
@@ -8,6 +26,7 @@
 .sandbox-ruler {
   --sandbox-ruler-chip-h  : var(--prose-size-20);
   --sandbox-ruler-gap     : var(--prose-space-5);
+  --sandbox-ruler-lane    : var(--prose-space-5);
   --sandbox-ruler-major   : var(--vp-c-text-3);
   --sandbox-ruler-minor   : var(--vp-c-divider);
   --sandbox-ruler-nums-h  : var(--prose-size-14);
@@ -44,15 +63,27 @@
                  ) left bottom / 100% 62% no-repeat;
 }
 
+/* Hangs each knob's hollow default diamond on the track, joined to its needle
+   by a 2px tether in the knob's hue, a tether that would overlap another
+   dropping a lane with its diamond. */
 .sandbox-ruler-default {
   position   : absolute;
-  top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2);
+  top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2 + var(--lane) * var(--sandbox-ruler-lane));
   width      : var(--prose-size-6);
   height     : var(--prose-size-6);
   transform  : translate(-50%, -50%) rotate(45deg);
-  background : var(--hue);
-  opacity    : 0.8;
+  background : var(--vp-c-bg-soft);
+  box-shadow : inset 0 0 0 var(--prose-space-1-5) var(--knob-tether);
   transition : top var(--prose-transition);
+}
+
+.sandbox-ruler-tether {
+  position       : absolute;
+  top            : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2 - var(--prose-size-1) + var(--lane) * var(--sandbox-ruler-lane));
+  height         : var(--prose-size-2);
+  background     : var(--knob-tether);
+  pointer-events : none;
+  transition     : left var(--prose-transition), width var(--prose-transition), top var(--prose-transition);
 }
 
 .sandbox-ruler-num {
@@ -105,13 +136,14 @@
   content    : '';
   position   : absolute;
   inset      : 0 var(--prose-space-4);
-  background : color-mix(in srgb, var(--hue) var(--prose-tint-70), var(--vp-c-text-3));
+  background : var(--vp-c-text-2);
   transition : background var(--prose-transition);
 }
 
 .sandbox-ruler-stop:hover .sandbox-ruler-marker::before,
+.sandbox-ruler-stop:focus-visible .sandbox-ruler-marker::before,
 .sandbox-ruler-stop[data-dragging] .sandbox-ruler-marker::before {
-  background : var(--hue);
+  background : var(--vp-c-text-1);
 }
 
 .sandbox-ruler-chip {
@@ -124,7 +156,7 @@
   align-items   : center;
   height        : var(--sandbox-ruler-chip-h);
   padding       : 0 var(--prose-space-7);
-  border        : var(--prose-border-1) solid color-mix(in srgb, var(--hue) var(--prose-tint-55), var(--vp-c-divider));
+  border        : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius : var(--prose-radius-sm);
   background    : var(--vp-c-bg);
   line-height   : 1;
@@ -135,7 +167,7 @@
 
 .sandbox-ruler-stop:hover .sandbox-ruler-chip,
 .sandbox-ruler-stop[data-dragging] .sandbox-ruler-chip {
-  border-color : var(--hue);
+  border-color : var(--vp-c-text-2);
 }
 
 .sandbox-ruler-stop:focus-visible .sandbox-ruler-chip {
@@ -153,9 +185,14 @@
 
 .sandbox-ruler-chip-value {
   color                : var(--vp-c-text-1);
+  transition           : color var(--prose-transition);
   font-family          : var(--vp-font-family-mono);
   font-size            : var(--prose-text-0-68rem);
   font-variant-numeric : tabular-nums;
+}
+
+.sandbox-ruler-stop[data-changed] .sandbox-ruler-chip-value {
+  color : var(--knob-figure);
 }
 
 .sandbox-ruler-chip-input {
@@ -171,4 +208,10 @@
 .sandbox-ruler-chip-input:focus-visible {
   outline        : var(--prose-focus-ring);
   outline-offset : calc(var(--prose-space-1) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sandbox-ruler-tether {
+    transition : none;
+  }
 }

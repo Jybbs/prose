@@ -1,5 +1,5 @@
-import { LINT_CODE, SOURCES, exitCodes, exitCodesFrom } from '../../lib/exit-codes/sources'
-import { repoRoot }                                     from '../../lib/shared/paths'
+import { LINT_CODE, OUTCOMES, SOURCES, exitCodes, exitCodesFrom } from '../../lib/exit-codes/sources'
+import { repoRoot }                                               from '../../lib/shared/paths'
 
 const HELP = `Usage: prose [OPTIONS] <COMMAND>
 
@@ -22,11 +22,17 @@ describe('SOURCES', () => {
   })
 
   it.each(SOURCES.map(source => [source.code, source] as const))(
-    'carries at least one detail line for code %i',
+    'states every fact for code %i',
     (_code, source) => {
-      expect(source.detail.length).toBeGreaterThan(0)
+      expect(source.facts.every(fact => fact.length > 0)).toBe(true)
     }
   )
+
+  it('lists the codes in the order of their outcomes, so each band opens once', () => {
+    const order = SOURCES.map(source => OUTCOMES.indexOf(source.outcome))
+    expect(order).toStrictEqual(order.toSorted((a, b) => a - b))
+    expect(new Set(SOURCES.map(source => source.outcome))).toStrictEqual(new Set(OUTCOMES))
+  })
 })
 
 describe('exitCodesFrom', () => {

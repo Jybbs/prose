@@ -7,25 +7,34 @@
   max-width      : var(--prose-width-960);
 }
 
+/* Frames a rule card in a hairline on the page ground, headed by its slug at
+   the left and, at the right end, its family's nib, a middle dot, and the
+   family's name, with the caption spanning the card beneath. Pointing at or
+   focusing a card draws its frame in its family's shade. */
 .vp-doc .rule-card,
 .rule-card {
   position              : relative;
   isolation             : isolate;
   display               : grid;
-  grid-template-columns : var(--prose-size-3rem) minmax(0, 1fr);
-  align-items           : stretch;
-  min-height            : var(--prose-size-64);
-  overflow              : hidden;
+  grid-template-areas   : "slug tag" "caption caption";
+  grid-template-columns : minmax(0, 1fr) auto;
+  align-items           : center;
+  gap                   : var(--prose-space-6) var(--prose-space-16);
+  padding               : var(--prose-space-12) var(--prose-space-16) var(--prose-space-14);
   border                : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius         : var(--prose-radius-sm);
-  background            : var(--prose-panel-wash-card);
+  background            : var(--vp-c-bg);
   color                 : var(--vp-c-text-1);
-  transition            : border-color var(--prose-transition-slow);
+  transition            : border-color var(--prose-transition);
 }
 
-.vp-doc .rule-card:hover,
-.rule-card:hover {
-  border-color : color-mix(in srgb, var(--family-color) var(--prose-tint-40), var(--vp-c-divider));
+.rule-card:has(> .rule-card-header) {
+  grid-template-areas : "header header" "slug tag" "caption caption";
+}
+
+.vp-doc .rule-card:is(:hover, :focus-within),
+.rule-card:is(:hover, :focus-within) {
+  border-color : var(--family-edge);
 }
 
 .rule-card-cover {
@@ -38,25 +47,21 @@
   pointer-events : none;
 }
 
+.rule-card-header {
+  grid-area : header;
+}
+
 .rule-card-mark {
-  display         : flex;
-  align-items     : center;
-  justify-content : center;
-  padding         : var(--prose-space-12) 0;
-  border-left     : var(--prose-border-2) solid var(--family-color);
+  grid-area : tag;
 }
 
 .rule-card-body {
-  display       : grid;
-  gap           : var(--prose-space-6);
-  align-content : center;
-  min-width     : 0;
-  padding       : var(--prose-space-14) var(--prose-space-20) var(--prose-space-15);
-  background    : linear-gradient(90deg, color-mix(in srgb, var(--family-color) var(--prose-tint-wash), var(--vp-c-bg)), transparent);
+  display : contents;
 }
 
 .vp-doc .rule-card-slug,
 .rule-card-slug {
+  grid-area      : slug;
   margin         : 0;
   padding        : 0;
   border         : none;
@@ -71,6 +76,7 @@
 
 .vp-doc .rule-card-caption,
 .rule-card-caption {
+  grid-area   : caption;
   max-width   : var(--prose-width-60ch);
   margin      : 0;
   padding     : 0;
@@ -99,11 +105,14 @@
 @media (--prose-bp-mobile) {
   .vp-doc .rule-card,
   .rule-card {
-    grid-template-columns : var(--prose-size-2-6rem) minmax(0, 1fr);
+    column-gap : var(--prose-space-8);
   }
+}
 
-  .rule-card-body {
-    padding-inline : var(--prose-space-14);
+@media (prefers-reduced-motion: reduce) {
+  .vp-doc .rule-card,
+  .rule-card {
+    transition : none;
   }
 }
 

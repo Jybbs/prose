@@ -1,22 +1,9 @@
-.glossary-folio-stage:not([data-family]) {
-  --family-color : var(--prose-palette-ube);
-}
-
 .glossary-folio-pane {
   position   : relative;
   margin     : var(--prose-space-24) 0 0;
   padding    : var(--prose-space-16) var(--prose-space-28) var(--prose-space-18) var(--prose-space-32);
   background : var(--vp-c-bg);
   min-width  : 0;
-}
-
-.glossary-folio-pane::before {
-  content       : '';
-  position      : absolute;
-  inset         : 0 auto 0 0;
-  width         : var(--prose-size-3);
-  background    : var(--rail-paint, var(--family-color));
-  border-radius : var(--prose-radius) 0 0 var(--prose-radius);
 }
 
 .glossary-folio-head {
@@ -40,6 +27,12 @@
   gap          : var(--prose-space-6) var(--prose-space-10);
   padding-left : var(--prose-space-6);
   line-height  : var(--prose-leading-24);
+}
+
+.glossary-folio-folio .family-chip {
+  padding-left : var(--prose-space-2);
+  border       : 0;
+  background   : none;
 }
 
 .glossary-folio-folio > span:not(.family-chip) {
@@ -85,13 +78,10 @@
 
 .glossary-folio-headword a,
 .glossary-folio-headword > span {
-  position        : relative;
-  display         : inline-block;
-  text-decoration : none;
-  color           : inherit;
+  position : relative;
+  display  : inline-block;
 }
 
-.glossary-folio-headword a::after,
 .glossary-folio-headword > span::after {
   content    : '';
   position   : absolute;
@@ -99,13 +89,12 @@
   right      : 0;
   bottom     : calc(var(--prose-space-2) * -1);
   height     : var(--prose-size-1);
-  background : color-mix(in srgb, var(--family-color) var(--prose-tint-55), transparent);
+  background : var(--vp-c-text-3);
   transform  : translateY(var(--prose-space-4));
   opacity    : 0;
   transition : transform var(--prose-transition), opacity var(--prose-transition);
 }
 
-.glossary-folio-headword a:hover::after,
 .glossary-folio-headword > span:hover::after {
   transform : translateY(0);
   opacity   : 1;
@@ -128,7 +117,7 @@
   font-size      : var(--prose-label-size);
   letter-spacing : var(--prose-label-tracking);
   text-transform : uppercase;
-  color          : var(--prose-palette-ube);
+  color          : var(--vp-c-text-2);
 }
 
 .vp-doc code.glossary-folio-aliases-chip,
@@ -157,7 +146,7 @@ code.glossary-folio-aliases-chip {
 .glossary-folio-body code {
   font-family : var(--vp-font-family-mono);
   font-size   : var(--prose-text-0-84em);
-  color       : color-mix(in srgb, var(--family-color) var(--prose-tint-60), var(--vp-c-text-1));
+  color       : var(--vp-code-color);
 }
 
 .glossary-folio-step {
@@ -186,6 +175,6 @@ code.glossary-folio-aliases-chip {
 }
 
 .glossary-folio-step:hover {
-  border-color : color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
+  border-color : var(--vp-c-text-3);
   color        : var(--vp-c-text-1);
 }

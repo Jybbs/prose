@@ -1,27 +1,48 @@
-.vp-doc p em,
-.vp-doc li em {
-  color: var(--prose-role-emphasis);
-}
-
 .vp-doc :not(pre) > code {
   font-size : var(--prose-text-0-88em);
+}
+
+code .code-op {
+  font-weight : 800;
+}
+
+.vp-doc p em,
+.vp-doc li em,
+.glossary-tooltip-body em {
+  color : var(--prose-role-aside);
+}
+
+:is(.vp-doc, .glossary-tooltip-body) .prose-mark {
+  font-family : var(--prose-font-display);
+  font-style  : normal;
+  font-weight : 600;
+  color       : var(--prose-shade-ube-page-45);
 }
 
 .vp-doc a.body-link,
 .vp-doc a.tool-mark,
 a.tool-mark {
-  --underline-accent : var(--vp-c-brand-1);
-  text-decoration    : none;
-  transition         :
-    background-size var(--prose-transition-slow),
-    color           var(--prose-transition);
+  color           : var(--vp-c-text-1);
+  text-decoration : none;
 }
 
 .vp-doc a.body-link:hover,
 .vp-doc a.tool-mark:hover,
 a.tool-mark:hover {
-  --underline-accent : var(--prose-role-link-hover);
-  color              : var(--prose-role-link-hover);
+  color : var(--vp-c-text-1);
+}
+
+.vp-doc a.body-link:focus-visible,
+a.tool-mark:focus-visible {
+  outline        : var(--prose-border-2) solid var(--prose-role-link);
+  outline-offset : var(--prose-space-2);
+}
+
+/* VitePress colors a code span its link holds in the link color, so a link's
+   code takes the link's own ink here. */
+.vp-doc a.body-link code,
+a.tool-mark code {
+  color : inherit;
 }
 
 .v-popper--theme-rule-card {
@@ -29,11 +50,11 @@ a.tool-mark:hover {
 }
 
 .vp-doc a.rule-link,
-.rule-card-caption a.rule-link {
+.rule-card-caption a.rule-link,
+.glossary-tooltip-body a.rule-link {
   display         : inline-block;
   margin          : 0 var(--prose-space-0-1em);
-  padding         : var(--prose-space-1) var(--prose-space-6) var(--prose-space-1) var(--prose-space-5);
-  border-left     : var(--prose-border-2) solid var(--family-color);
+  padding         : var(--prose-space-1) var(--prose-space-6);
   color           : var(--vp-c-text-1);
   font-family     : var(--vp-font-family-mono);
   font-size       : var(--prose-text-0-8em);
@@ -46,8 +67,9 @@ a.tool-mark:hover {
 }
 
 .vp-doc a.rule-link:hover,
-.rule-card-caption a.rule-link:hover {
-  box-shadow : 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--family-color) var(--prose-tint-55), var(--vp-c-divider));
+.rule-card-caption a.rule-link:hover,
+.glossary-tooltip-body a.rule-link:hover {
+  box-shadow : 0 0 0 var(--prose-border-1) var(--vp-c-text-2);
 }
 
 .rule-link .nib-badge {
@@ -85,5 +107,9 @@ a.tool-mark:hover {
 }
 
 .vp-doc tbody tr:hover {
-  background: color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-faint), transparent);
+  background : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-10), var(--vp-c-bg));
+}
+
+.vp-doc tbody tr:nth-child(2n):hover {
+  background : color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-10), var(--vp-c-bg-soft));
 }

@@ -1,7 +1,4 @@
-.directive-anatomy [data-role="comment"]   { --part-color : var(--vp-c-text-3); }
-.directive-anatomy [data-role="namespace"] { --part-color : color-mix(in srgb, var(--prose-palette-ube)     var(--prose-tint-65), var(--vp-c-text-1)); }
-.directive-anatomy [data-role="action"]    { --part-color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-70), var(--vp-c-text-1)); }
-.directive-anatomy [data-role="payload"]   { --part-color : color-mix(in srgb, var(--prose-palette-celadon) var(--prose-tint-70), var(--vp-c-text-1)); }
+.directive-anatomy [data-role="comment"] { --part-color : var(--vp-c-text-2); }
 
 .directive-anatomy {
   background : var(--prose-panel-wash);
@@ -21,17 +18,32 @@
 }
 
 .directive-anatomy-band-head {
-  --band-accent : var(--scope-tint);
-
   padding : 0 var(--prose-space-2);
 }
 
-.directive-anatomy-band-badge {
+.directive-anatomy-band-name {
+  transition : color var(--prose-transition);
+}
+
+.directive-anatomy-band-rule {
+  transition : background var(--prose-transition);
+}
+
+.directive-anatomy-band:has(.directive-anatomy-thumb:is(:hover, :focus-visible)) .directive-anatomy-band-name {
+  color : var(--scope-ink);
+}
+
+.directive-anatomy-band:has(.directive-anatomy-thumb:is(:hover, :focus-visible)) .directive-anatomy-band-rule {
+  background : var(--scope-mark);
+}
+
+.directive-anatomy-band-head .directive-anatomy-band-badge {
   width       : var(--prose-size-22);
   height      : var(--prose-size-22);
   flex-shrink : 0;
-  background  : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
+  background  : var(--scope-mark);
   font-size   : var(--prose-text-0-92rem);
+  color       : var(--prose-palette-woodsmoke);
   line-height : 1;
 }
 
@@ -64,11 +76,20 @@
 }
 
 .directive-anatomy-thumb[data-active="true"] {
-  border-color : color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
-  background   : color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), var(--vp-c-bg));
+  border-color : var(--vp-c-text-2);
 }
 
-.directive-anatomy-thumb[data-active="true"] .directive-anatomy-thumb-form {
+.directive-anatomy-thumb:focus-visible {
+  outline        : var(--prose-focus-ring);
+  outline-offset : var(--prose-space-1);
+}
+
+.directive-anatomy-thumb:is(:hover, :focus-visible) {
+  border-color : var(--scope-mark);
+  background   : color-mix(in srgb, var(--scope-mark) var(--prose-tint-10), var(--vp-c-bg));
+}
+
+.directive-anatomy-thumb:is([data-active="true"], :hover, :focus-visible) .directive-anatomy-thumb-form {
   color : var(--vp-c-text-1);
 }
 
@@ -78,12 +99,13 @@
   grid-template-columns : 1fr;
   gap                   : var(--prose-space-14);
   position              : relative;
-  border-top            : var(--prose-border-2) solid color-mix(in srgb, var(--scope-tint) var(--prose-tint-60), var(--vp-c-divider));
-  background-image      : radial-gradient(
-    ellipse at 50% 100%,
-    color-mix(in srgb, var(--scope-tint) var(--prose-tint-10), transparent) 0%,
-    transparent 70%
-  );
+  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
+  transition            : border-color var(--prose-transition), box-shadow var(--prose-transition);
+}
+
+.directive-anatomy:has(.directive-anatomy-thumb:is(:hover, :focus-visible)) .directive-anatomy-plate {
+  border-top-color : var(--scope-mark);
+  box-shadow       : inset 0 var(--prose-border-1) 0 var(--scope-mark);
 }
 
 .directive-anatomy-specimen {
@@ -114,21 +136,24 @@
   white-space : pre;
 }
 
-.directive-anatomy-part-col[data-role="action"] .directive-anatomy-part { font-weight : 600; }
+.directive-anatomy-part-col[data-role="action"] .directive-anatomy-part {
+  font-weight : 600;
+  color       : var(--scope-ink);
+}
 
 .directive-anatomy-tick {
   display    : block;
   width      : var(--prose-size-1);
   height     : var(--prose-size-24);
   margin     : var(--prose-space-2) 0;
-  background : color-mix(in srgb, var(--part-color, var(--vp-c-text-3)) var(--prose-tint-50), var(--vp-c-divider));
+  background : var(--vp-c-text-2);
 }
 
 .directive-anatomy-label {
   font-family    : var(--prose-font-display);
   font-style     : italic;
   font-size      : var(--prose-text-0-92rem);
-  color          : color-mix(in srgb, var(--part-color, var(--vp-c-text-2)) var(--prose-tint-75), var(--vp-c-text-2));
+  color          : var(--vp-c-text-2);
 }
 
 .directive-anatomy-info {
@@ -170,6 +195,14 @@
   white-space : pre;
 }
 
-.directive-anatomy-line[data-line-kind="directive"] { color : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-75), var(--vp-c-text-1)); font-weight : 500; }
+.directive-anatomy-line[data-line-kind="directive"] { color : var(--vp-c-text-1); font-weight : 500; }
 .directive-anatomy-line[data-line-kind="comment"]   { color : var(--vp-c-text-3); }
 .directive-anatomy-line[data-line-kind="code"]      { color : var(--vp-c-text-1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .directive-anatomy-band-name,
+  .directive-anatomy-band-rule,
+  .directive-anatomy-plate {
+    transition : none;
+  }
+}

@@ -11,7 +11,7 @@ import Kicker from '../base/Kicker.vue'
     <h1 class="not-found-headline">
       A page
       <span class="not-found-strike">misplaced</span>
-      <span class="not-found-fix">mistyped</span>.
+      mistyped.
     </h1>
     <p class="not-found-body">
       The URL didn't resolve to any surface we keep on file. Step back to the home page and try a different route through the catalog.

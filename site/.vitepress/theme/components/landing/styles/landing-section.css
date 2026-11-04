@@ -16,14 +16,8 @@
   text-wrap               : balance;
 }
 
-.landing-section h2 em {
-  font-style : italic;
-  color      : var(--prose-palette-celadon);
-}
-
 .landing-section h2 strong {
   font-weight : 600;
-  color       : var(--vp-c-brand-1);
 }
 
 .landing-section p {

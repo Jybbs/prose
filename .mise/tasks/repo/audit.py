@@ -732,6 +732,11 @@ def parity() -> int:
             build_requirement("maturin")
         ),
         (
+            ".mise/config.toml ruff pin ↔ crate/Cargo.toml ruff release",
+            pins["ruff"],
+            toml("crate/Cargo.toml")["package"]["metadata"]["ruff"]["release"]
+        ),
+        (
             ".mise/config.toml wasm-bindgen pin ↔ Cargo.lock wasm-bindgen",
             pins["github:wasm-bindgen/wasm-bindgen"],
             cargo_lock_version("wasm-bindgen")
