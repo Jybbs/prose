@@ -317,20 +317,21 @@ describe('the classes a template writes', () => {
   })
 
   it.each([
-    { name: 'p-[13px]',             problem: 'arbitrary value' },
-    { name: '[&>*]:p-14',           problem: 'arbitrary value' },
-    { name: 'bg-ube/[0.3]',         problem: 'arbitrary value' },
-    { name: 'outline-offset-7',     problem: 'writes 7px' },
-    { name: 'no-such-class',        problem: 'unknown class' },
-    { name: 'mobile:p-14',          problem: 'min-width variant of a narrow breakpoint' },
-    { name: 'not-tablet:p-14',      problem: 'min-width variant of a narrow breakpoint' },
-    { name: 'p-14',                 problem: undefined },
-    { name: 'max-mobile:p-14',      problem: undefined },
-    { name: 'wide:p-14',            problem: undefined },
-    { name: 'bg-ube/55',            problem: undefined },
-    { name: 'sr-only',              problem: undefined },
-    { name: 'data-[edge=end]:p-14', problem: undefined },
-    { name: 'group/link',           problem: undefined }
+    { name: 'p-[13px]',                 problem: 'arbitrary value' },
+    { name: '[&>*]:p-14',               problem: 'arbitrary value' },
+    { name: 'bg-ube/[0.3]',             problem: 'arbitrary value' },
+    { name: 'outline-offset-7',         problem: 'writes 7px' },
+    { name: 'no-such-class',            problem: 'unknown class' },
+    { name: 'mobile:p-14',              problem: 'min-width variant of a narrow breakpoint' },
+    { name: 'not-tablet:p-14',          problem: 'min-width variant of a narrow breakpoint' },
+    { name: 'p-14',                     problem: undefined },
+    { name: 'max-mobile:p-14',          problem: undefined },
+    { name: 'wide:p-14',                problem: undefined },
+    { name: 'bg-ube/55',                problem: undefined },
+    { name: 'sr-only',                  problem: undefined },
+    { name: 'data-[edge=end]:p-14',     problem: undefined },
+    { name: 'aria-[current=page]:p-14', problem: undefined },
+    { name: 'group/link',               problem: undefined }
   ])('reports $name as $problem', ({ name, problem }) => {
     expect(problemOf(name)).toBe(problem)
   })
@@ -360,6 +361,11 @@ describe('the classes a template writes', () => {
       case      : 'a class a parent passes against the root class of its child',
       classes   : [{ alt: 0, name: 'tracking-display-wide', slot: 0 }, { alt: 0, inherited: true, name: 'kicker', slot: 0 }],
       conflicts : ['tracking-display-wide and kicker both set letter-spacing']
+    },
+    {
+      case      : 'two root classes of one child',
+      classes   : [{ alt: 0, inherited: true, name: 'text-ube', slot: 0 }, { alt: 0, inherited: true, name: 'text-text-1', slot: 0 }],
+      conflicts : []
     }
   ])('finds the conflicts of $case', ({ classes, conflicts }) => {
     expect(conflictsOf({ classes, line: 1 })).toStrictEqual(conflicts)
@@ -396,7 +402,7 @@ describe('the Tailwind theme', () => {
   })
 
   it('applies dark under the VitePress class', () => {
-    expect(DESIGN.candidatesToCss(['dark:text-ube'])[0]).toContain('.dark')
+    expect(DESIGN.candidatesToCss(['dark:text-ube'])[0]).toContain(':where(.dark, .dark *)')
   })
 
   it('generates no utility named for a class a VitePress template writes or binds', () => {

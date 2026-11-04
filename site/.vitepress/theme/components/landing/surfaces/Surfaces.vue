@@ -49,7 +49,7 @@ const trackStyle = computed(() => ({
     kicker="The Surfaces"
   >
     <template #heading-extra>
-      <a href="/rules/" class="mt-18 inline-flex items-center rounded-sm border-1 border-divider bg-bg-soft px-12 py-4 font-mono text-kicker tracking-kicker text-text-2 uppercase transition-colors hover:border-brand-1 hover:bg-bg hover:text-brand-1 focus-visible:border-brand-1 focus-visible:bg-bg focus-visible:text-brand-1">All rules</a>
+      <a href="/rules/" class="mt-18 inline-flex items-center rounded-sm border-1 border-divider bg-bg-soft px-12 py-4 kicker text-text-2 transition-colors hover:border-brand-1 hover:bg-bg hover:text-brand-1 focus-visible:border-brand-1 focus-visible:bg-bg focus-visible:text-brand-1">All rules</a>
     </template>
     <div
       ref="viewport"

@@ -14,10 +14,6 @@
   max-height : calc(100vh - var(--prose-size-240));
 }
 
-.glossary-folio-row {
-  grid-template-columns : var(--prose-size-8) minmax(0, 1fr) auto;
-}
-
 .glossary-folio-row[aria-current] .glossary-folio-row-slot {
   background : var(--prose-role-link);
   transform  : rotate(45deg);

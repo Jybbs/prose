@@ -18,6 +18,17 @@ const mountRuler = (values: Record<string, number> = {}) =>
   })
 
 describe('SandboxRuler', () => {
+  it('marks a stop moved from its default and the stop a press holds', async () => {
+    const wrapper = mountRuler({ 'code-line-length': 90, 'docstring-line-length': 76 })
+    const [moved, resting] = wrapper.findAll('.sandbox-ruler-stop')
+    expect(moved.attributes('data-changed')).toBe('true')
+    expect(resting.attributes('data-changed')).toBeUndefined()
+    moved.element.setPointerCapture = vi.fn<(pointerId: number) => void>()
+    await moved.trigger('pointerdown', { button: 0, pointerId: 1 })
+    expect(moved.attributes('data-dragging')).toBe('true')
+    expect(resting.attributes('data-dragging')).toBeUndefined()
+  })
+
   it('steps a stop by one on an arrow key and by ten with shift', async () => {
     const wrapper = mountRuler()
     const stop    = wrapper.get('.sandbox-ruler-stop')

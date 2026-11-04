@@ -39,7 +39,7 @@ const heads = (at: number) => at === 0 || codes[at - 1]!.outcome !== codes[at]!.
       <p class="exit-code-entry-summary max-w-60ch font-base text-md text-text-1">{{ selectedRow.summary }}</p>
       <dl class="exit-code-entry-facts m-0 grid max-w-60ch grid-cols-max-1fr border-t-1 border-t-divider">
         <template v-for="fact in selectedRow.facts" :key="fact.label">
-          <dt class="m-0 border-b-1 border-b-divider py-8 pr-16 font-mono text-kicker leading-24 font-400 tracking-kicker text-text-2 uppercase">{{ fact.label }}</dt>
+          <dt class="m-0 border-b-1 border-b-divider py-8 pr-16 kicker leading-24 font-400 text-text-2">{{ fact.label }}</dt>
           <dd class="m-0 border-b-1 border-b-divider py-8 font-base text-0-84rem leading-1-55 text-text-1"><InlineProse :nodes="fact.nodes" /></dd>
         </template>
       </dl>

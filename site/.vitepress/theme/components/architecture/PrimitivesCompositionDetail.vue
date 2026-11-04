@@ -99,7 +99,7 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
           </span>
           <span class="flex min-h-24 flex-wrap items-center gap-x-16 gap-y-5 font-mono text-0-68rem text-text-2">
             <span v-for="m in rel.items" :key="`${rel.keyPrefix}-${m.slug}`" class="primitives-composition-card-mention-item relative inline-flex items-center not-last:after:pointer-events-none not-last:after:absolute not-last:after:top-1/2 not-last:after:left-full not-last:after:ml-8 not-last:after:-translate-1/2 not-last:after:text-text-3 not-last:after:content-middot data-suppress-dot:after:hidden">
-              <a v-if="m.kind === 'primitive'" class="inline-flex items-center gap-5 text-0-68rem text-text-1 no-underline" :data-layer="m.layer" :href="primitiveRoute(m.slug)">
+              <a v-if="m.kind === 'primitive'" class="inline-flex items-center gap-5 text-0-68rem text-text-1 no-underline hover:text-brand-2" :data-layer="m.layer" :href="primitiveRoute(m.slug)">
                 <span class="font-display text-xs leading-none font-500 text-layer-ink italic" :data-layer="m.layer" aria-hidden="true">{{ m.numeral }}</span>
                 <span class="nib-stroke pb-2">{{ m.slug }}</span>
               </a>

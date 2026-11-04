@@ -39,7 +39,7 @@ const active = useElementHover(rootRef)
     :data-active="active"
   >
     <a
-      class="surface-card-cover-link absolute inset-0 z-0 overflow-hidden rounded-base whitespace-nowrap"
+      class="surface-card-cover-link"
       :href="href"
       :aria-label="`See all ${meta.label.toLowerCase()} rules`"
       :tabindex="tabindex"

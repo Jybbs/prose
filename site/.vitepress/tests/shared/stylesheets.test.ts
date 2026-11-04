@@ -80,7 +80,10 @@ describe('inlineHues', () => {
     '.landing-cta-lede em',
     '.landing-section h2 strong',
     '.pq-row > p > b',
-    ':is(.tip, .info) mark'
+    ':is(.tip, .info) mark',
+    '.card i',
+    '.card>em',
+    '.card EM'
   ])('reports %s set in a hue', selector => {
     expect(inlineHues(parse(`${selector} { color: var(--vp-c-brand-1); }`)))
       .toStrictEqual([{ line: 1, selector }])
