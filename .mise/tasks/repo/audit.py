@@ -67,7 +67,7 @@ from itertools   import chain, product
 from json        import loads as json_loads
 from os          import environ, killpg
 from pathlib     import Path
-from re          import MULTILINE, escape, findall, finditer, fullmatch, search, sub
+from re          import MULTILINE, escape, findall, fullmatch, search, sub
 from signal      import SIGKILL
 from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, check_output, run
 from tempfile    import TemporaryDirectory
@@ -82,6 +82,7 @@ ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 PROPERTY_ESCAPES : dict[int, str] = ESCAPES | str.maketrans({",": "%2C", ":": "%3A"})
 READ             : set[str]       = set()
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
+USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
 UV_SHEBANG   = r"^#!.*\buv run --script\b"
 
 
@@ -98,13 +99,14 @@ def action_pin(action: str, key: str) -> str:
 
 def action_pins() -> list[tuple[str, str, str]]:
     """
-    Returns one parity pair per repeat of a third-party action pin,
-    comparing every later home's commit against the first home's.
+    Returns one parity pair per repeat of a third-party action pin, with
+    or without a YAML anchor before it, comparing every later home's commit
+    against the first home's.
     """
     homes = defaultdict(list)
     for path in sorted(Path(".github").rglob("*.y*ml")):
-        for match in finditer(r"uses\s*:\s*([\w.-]+/[\w./-]+)@(\S+)", read(path)):
-            homes[match[1]].append((str(path), match[2]))
+        for action, pin in findall(USES, read(path)):
+            homes[action].append((str(path), pin))
 
     return [
         (f"{action} in {first} ↔ {home}", pin, repeat)
@@ -700,12 +702,25 @@ def parity() -> int:
     Reports every cross-config pin or shared declaration that has drifted
     from its pair.
     """
+    failed = 0
+    for label, left, right in parity_pairs():
+        if left != right:
+            annotate(f"parity mismatch in {label}: {left!r} vs {right!r}")
+            failed = 1
+    return failed
+
+
+def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
+    """
+    Returns each pair of cross-config pins or shared declarations `parity`
+    compares, beside the label it reports a mismatch under.
+    """
     cargo   = toml("Cargo.toml")
     package = json_loads(read("site/package.json"))
     pins    = mise_pins(toml(".mise/config.toml"))
     rust    = cargo["workspace"]["package"]["rust-version"]
 
-    pairs = [
+    return [
         (
             "README.md Rust badge ↔ Cargo.toml rust-version",
             badge("rust.svg"),
@@ -761,13 +776,6 @@ def parity() -> int:
         *override_pins(package),
         *patch_pins(package)
     ]
-
-    failed = 0
-    for label, left, right in pairs:
-        if left != right:
-            annotate(f"parity mismatch in {label}: {left!r} vs {right!r}")
-            failed = 1
-    return failed
 
 
 def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
