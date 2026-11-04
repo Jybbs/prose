@@ -17,4 +17,4 @@ prose                    = { path = "../crate", default-features = false }
 ruff_text_size           = { workspace = true }
 serde                    = { workspace = true }
 serde-wasm-bindgen       = "0.6.5"
-wasm-bindgen             = "=0.2.129"
+wasm-bindgen             = "=0.2.130"

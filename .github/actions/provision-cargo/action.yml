@@ -31,7 +31,7 @@ runs:
       uses : $/.github/actions/mise-floor
 
     - name : Install mise tools
-      uses : jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7
+      uses : jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       with:
         cache_max_age_days : 0
         cache_save         : ${{ inputs.shared-key != '' && inputs.save != 'false' }}
@@ -40,7 +40,7 @@ runs:
 
     - name : Restore Cargo cache
       if   : ${{ inputs.shared-key != '' }}
-      uses : Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      uses : Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
       with:
         save-if    : ${{ inputs.save != 'false' }}
         shared-key : ${{ inputs.shared-key }}
