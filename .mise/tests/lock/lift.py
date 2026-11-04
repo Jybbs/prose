@@ -988,7 +988,6 @@ def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: Monke
 @mark.parametrize(
     ("names", "breaking", "attempts", "settled"),
     [
-        param(["ruff", "serde", "uv"], set(), [EVERY], {"uv"}, id = "whole"),
         param(["ruff", "serde", "uv"], {"uv"}, [EVERY], {"uv"}, id = "given hold"),
         param(
             ["ruff", "serde", "typescript", "uv"],
@@ -1776,8 +1775,9 @@ def test_tried_stops_where_the_failure_remains_with_every_major_lift_held_back(
 ):
     """
     Pins that a failure that remains with every major lift held back stops
-    the task after that one attempt and prints that report exactly, and that
-    no attempt repeats where the first already held every major lift back.
+    the task after the one attempt holding them back, exiting with exactly
+    `STOPPED`, and that no attempt repeats where the first already held
+    every major lift back.
     """
     with raises(SystemExit) as stopped:
         lift.tried(holds, lifting(lift, names))

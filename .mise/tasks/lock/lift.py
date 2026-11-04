@@ -23,16 +23,17 @@ so no row or write takes one until it clears.
 uncommitted and untracked files and runs `mise ci` there, logging each
 attempt under `.cache/lift/`. Where that attempt fails and a major lift is
 left to hold back, it tries again with every major lift held back, which
-is one retry for a lone major lift. A failure that remains, or a first
-failure with no major lift left to hold back, ends the trial with a report
-that the failure remains with every major lift held back. Where holding
-back two or more major lifts passes, it retries with each one held back
-in turn and stops at the first that passes, keeping every major lift held
-back where none does. `--write` writes each lift into its homes, locks and
-installs each tool a lifted mise pin names, moves each lifted package in
-its manager's lockfile, and runs `mise relock`, taking the holds the trial
-settles on when `--try` is given too. `--hold <pin>` leaves a pin where it
-stands, and a name the table omits exits 2 before any trial or write.
+is one retry for a lone major lift, and that lift stays held back where the
+retry passes. A failure that remains, or a first failure with no major lift
+left to hold back, ends the trial with a report that the failure remains
+with every major lift held back. Where holding back two or more major lifts
+passes, it retries with each one held back in turn and stops at the first
+that passes, keeping every major lift held back where none does. `--write`
+writes each lift into its homes, locks and installs each tool a lifted mise
+pin names, moves each lifted package in its manager's lockfile, and runs
+`mise relock`, taking the holds the trial settles on when `--try` is given
+too. `--hold <pin>` leaves a pin where it stands, and a name the table omits
+exits 2 before any trial or write.
 """
 
 from argparse           import ArgumentParser
