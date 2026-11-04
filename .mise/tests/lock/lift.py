@@ -6,6 +6,7 @@ trial runs, and what its write changes.
 """
 
 from collections.abc   import Callable
+from contextlib        import AbstractContextManager, nullcontext
 from datetime          import UTC, datetime, timedelta
 from gzip              import compress
 from io                import BytesIO, StringIO
@@ -18,11 +19,18 @@ from tarfile           import TarInfo, open as tar_open
 from types             import ModuleType
 
 CRATES   = "https://crates.io/api/v1/crates/toml"
+CUTOFF   = ["mise", "settings", "get", "minimum_release_age"]
+EVERY    = "with-every-lift"
+MAJORS   = "holding-back-every-major-lift"
+NAMED    = ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]
 NEW      = "b" * 40
 OLD      = "a" * 40
 PYPI     = "https://pypi.org/pypi/toml"
+REMOTE   = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
 SCRIPTS  = ["git", "grep", "-l", "-e", "^# /// script$", "--", ".mise"]
+STOPPED  = "the failure remains with every major lift held back, so nothing is written"
 SYNC     = ["mise", "run", "--force", "lock:sync"]
+TOOLS    = [["mise", "lock"], ["mise", "install"]]
 UNTAGGED = "c" * 40
 TREE     = {
     ".github/README.md": (
@@ -100,6 +108,27 @@ def lift(task: Callable[[str], ModuleType]) -> ModuleType:
 
 
 @fixture
+def logs(
+    breaking    : set[str],
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    tmp_path    : Path
+) -> list[Path]:
+    """
+    Returns the list each attempt's log is recorded in, faking `attempt` to
+    pass exactly where it holds back every name in `breaking`.
+    """
+    recorded = []
+    monkeypatch.setattr(lift, "LOGS", tmp_path)
+    monkeypatch.setattr(
+        lift,
+        "attempt",
+        lambda holds, log: recorded.append(log) or breaking <= holds
+    )
+    return recorded
+
+
+@fixture
 def released(lift: ModuleType, monkeypatch: MonkeyPatch) -> list[tuple]:
     """
     Returns the list each registry lookup of a release is recorded in, every
@@ -126,6 +155,21 @@ def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
     makes it the current directory.
     """
     return workdir(TREE)
+
+
+def lifting(lift: ModuleType, names: list[str]) -> list:
+    """
+    Returns a row for each of `names`, every one a major lift but `serde`.
+    """
+    return [
+        row(
+            current = "1.0.0",
+            lift    = lift,
+            name    = name,
+            newest  = "1.0.1" if name == "serde" else "2.0.0"
+        )
+        for name in names
+    ]
 
 
 def pin(
@@ -404,7 +448,7 @@ def test_cutoff_reads_the_setting_or_takes_the_default(
     and mise's `24h` default where `mise settings get` finds none set, read
     once however many tools ask for it.
     """
-    fp.register(["mise", "settings", "get", "minimum_release_age"], **result)
+    fp.register(CUTOFF, **result)
 
     assert (lift.cutoff(), lift.cutoff()) == (age, age)
 
@@ -444,12 +488,8 @@ def test_held_lists_each_stable_release_newer_than_the_report(
         {"created_at": "2026-10-01T00:00:00Z", "version": "nightly-2026-10-01"},
         {"version": "1.99.2"}
     ]
-    settings = ["mise", "settings", "get", "minimum_release_age"]
-    fp.register(
-        ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"],
-        stdout = dumps(listed)
-    )
-    fp.register(settings, occurrences=asked, returncode=1)
+    fp.register(REMOTE, stdout=dumps(listed))
+    fp.register(CUTOFF, occurrences=asked, returncode=1)
 
     tool = pin(
         lift    = lift,
@@ -462,7 +502,7 @@ def test_held_lists_each_stable_release_newer_than_the_report(
         lift.Held(WHEN + age, "rust", "1.99.1"),
         lift.Held(None, "rust", "1.99.2")
     ]
-    assert fp.call_count(settings) == asked
+    assert fp.call_count(CUTOFF) == asked
 
 
 def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
@@ -521,10 +561,7 @@ def test_held_lists_nothing_at_the_newest_stable_release(
         {"created_at": "2026-10-01T00:00:00Z", "version": "1.99.1"},
         {"created_at": "2026-10-01T00:00:00Z", "version": "2.0.0-beta.1"}
     ]
-    fp.register(
-        ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"],
-        stdout = dumps(listed)
-    )
+    fp.register(REMOTE, stdout=dumps(listed))
 
     tool = pin(
         lift    = lift,
@@ -559,10 +596,7 @@ def test_isolated_drops_what_the_checkout_set(
     }
     for name, value in given.items():
         monkeypatch.setenv(name, value)
-    fp.register(
-        ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
-        stdout = "Jybbs/prose\n"
-    )
+    fp.register(NAMED, stdout="Jybbs/prose\n")
 
     environment = lift.isolated(Path("/clone"), tree)
 
@@ -619,10 +653,7 @@ def test_isolated_names_no_repository_gh_cannot_resolve(
     on to the clone, leaving its own unset.
     """
     monkeypatch.delenv("GH_REPO", raising=False)
-    fp.register(
-        ["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
-        returncode = 1
-    )
+    fp.register(NAMED, returncode=1)
 
     assert "GH_REPO" not in lift.isolated(Path("/clone"), tree)
 
@@ -666,19 +697,7 @@ def test_main_exits_2_on_a_hold_the_table_omits(
     """
     argv = ["lift", "--try", "--write", "--hold", "vite", "--hold", "nope"]
     ran  = []
-    monkeypatch.setattr(
-        lift,
-        "table",
-        lambda: (
-            [row(
-                current = "1",
-                lift    = lift,
-                name    = "vite",
-                newest  = "2"
-            )],
-            []
-        )
-    )
+    monkeypatch.setattr(lift, "table", lambda: (lifting(lift, ["vite"]), []))
     monkeypatch.setattr(lift, "tried", lambda *args: ran.append("tried"))
     monkeypatch.setattr(lift, "write", lambda *args: ran.append("write"))
     monkeypatch.setattr("sys.argv", argv)
@@ -692,33 +711,64 @@ def test_main_exits_2_on_a_hold_the_table_omits(
     assert "--hold names pins the table omits: nope" in printed.err
 
 
-def test_main_writes_the_lifts_the_passing_attempt_kept(
+@mark.usefixtures("logs")
+@mark.parametrize(
+    ("breaking", "flags", "written", "outcome"),
+    [
+        param(
+            {"serde"},
+            ["--write"],
+            [],
+            raises(SystemExit, match=STOPPED),
+            id = "failure remains"
+        ),
+        param(
+            {"ruff"},
+            ["--write"],
+            ["serde", "typescript"],
+            nullcontext(),
+            id = "one hold"
+        ),
+        param(
+            {"ruff", "typescript"},
+            ["--write"],
+            ["serde"],
+            nullcontext(),
+            id = "every major lift held"
+        ),
+        param(set(), [], [], nullcontext(), id = "no write")
+    ]
+)
+def test_main_writes_what_the_trial_settles_on(
+    flags       : list[str],
     lift        : ModuleType,
-    monkeypatch : MonkeyPatch
+    monkeypatch : MonkeyPatch,
+    outcome     : AbstractContextManager,
+    written     : list[str]
 ):
     """
-    Pins that `--try --write` writes every lift but the holds of the attempt
-    that passed, which add a held-back major lift to the given ones.
+    Pins that `--try --write` writes every lift but a given hold and the
+    holds the trial settles on, and that nothing is written where the
+    failure remains with every major lift held back or where `--write` is
+    not given.
     """
-    lifted = [row(
-        current = "1.0.0",
-        lift    = lift,
-        name    = name,
-        newest  = "2.0.0"
-    ) for name in ("ruff", "serde", "vite")]
-    written = []
-    monkeypatch.setattr(lift, "table", lambda: (lifted, []))
-    monkeypatch.setattr(lift, "tried", lambda holds, lifts: holds | {"ruff"})
+    wrote = []
+    monkeypatch.setattr(
+        lift,
+        "table",
+        lambda: (lifting(lift, ["ruff", "serde", "typescript", "vite"]), [])
+    )
     monkeypatch.setattr(
         lift,
         "write",
-        lambda lifts: written.extend(each.name for each in lifts)
+        lambda lifts: wrote.extend(each.name for each in lifts)
     )
-    monkeypatch.setattr("sys.argv", ["lift", "--try", "--write", "--hold", "vite"])
+    monkeypatch.setattr("sys.argv", ["lift", "--try", "--hold", "vite", *flags])
 
-    lift.main()
+    with outcome:
+        lift.main()
 
-    assert written == ["serde"]
+    assert wrote == written
 
 
 def test_of_lifts_every_home_of_a_row_to_its_newest_release(
@@ -936,72 +986,55 @@ def test_packument_escapes_a_scoped_package(lift: ModuleType, monkeypatch: Monke
 
 
 @mark.parametrize(
-    ("passing", "attempts", "holds"),
+    ("names", "breaking", "attempts", "settled"),
     [
-        param({"every"}, ["with every lift"], set(), id = "whole"),
+        param(["ruff", "serde", "uv"], {"uv"}, [EVERY], {"uv"}, id = "given hold"),
         param(
-            {"typescript"},
-            ["with every lift", "holding back ruff", "holding back typescript"],
-            {"typescript"},
-            id = "retry"
+            ["ruff", "serde", "typescript", "uv"],
+            {"ruff"},
+            [EVERY, MAJORS, "holding-back-ruff"],
+            {"ruff", "uv"},
+            id = "first major"
+        ),
+        param(
+            ["ruff", "serde", "typescript", "uv"],
+            {"typescript", "uv"},
+            [EVERY, MAJORS, "holding-back-ruff", "holding-back-typescript"],
+            {"typescript", "uv"},
+            id = "later major beside a given hold"
+        ),
+        param(
+            ["ruff", "serde", "typescript", "uv"],
+            {"ruff", "typescript"},
+            [EVERY, MAJORS, "holding-back-ruff", "holding-back-typescript"],
+            {"ruff", "typescript", "uv"},
+            id = "two majors"
+        ),
+        param(
+            ["ruff", "serde", "uv"],
+            {"ruff", "uv"},
+            [EVERY, "holding-back-ruff"],
+            {"ruff", "uv"},
+            id = "lone major"
         )
     ]
 )
-def test_tried_retries_with_each_major_lift_held_back_in_turn(
-    attempts    : list[str],
-    holds       : set[str],
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    passing     : set[str],
-    tmp_path    : Path
+def test_tried_finds_the_hold_a_major_lift_needs(
+    attempts : list[str],
+    lift     : ModuleType,
+    logs     : list[Path],
+    names    : list[str],
+    settled  : set[str]
 ):
     """
-    Pins that a trial whose whole lift fails retries with each major lift
-    held back in turn, skipping a minor lift and a given hold, stops at the
-    first attempt that passes, and returns its holds, logging each attempt
-    under its own name.
+    Pins that where holding every major lift back passes, each major lift is
+    held back in turn, skipping a minor lift and a given hold. The first of
+    those attempts to pass gives the holds, every major lift stays held back
+    where none does, and a lone major lift takes a single attempt holding it
+    back. Every attempt carries a given hold.
     """
-    logged = []
-
-    def attempt(attempted: set[str], log: Path) -> bool:
-        """
-        Records the attempt's log and passes where it holds back a lift
-        `passing` names, or every lift passes.
-        """
-        logged.append(log.stem.replace("-", " "))
-        return bool(attempted - {"uv"} & passing) or "every" in passing
-
-    monkeypatch.setattr(lift, "LOGS", tmp_path)
-    monkeypatch.setattr(lift, "attempt", attempt)
-    lifted = [
-        row(
-            current = "0.15.22",
-            lift    = lift,
-            name    = "ruff",
-            newest  = "0.17.0"
-        ),
-        row(
-            current = "1.0.229",
-            lift    = lift,
-            name    = "serde",
-            newest  = "1.0.230"
-        ),
-        row(
-            current = "6.0.3",
-            lift    = lift,
-            name    = "typescript",
-            newest  = "7.0.2"
-        ),
-        row(
-            current = "0.12.17",
-            lift    = lift,
-            name    = "uv",
-            newest  = "0.13.0"
-        )
-    ]
-
-    assert lift.tried({"uv"}, lifted) == {"uv"} | holds
-    assert logged == attempts
+    assert lift.tried({"uv"}, lifting(lift, names)) == settled
+    assert [log.stem for log in logs] == attempts
 
 
 def test_pins_reads_every_home(fp: FakeProcess, lift: ModuleType, tree: Path):
@@ -1166,8 +1199,7 @@ def test_released_reads_the_time_mise_lists_for_a_tool(
         {"created_at": "2026-10-01T00:00:00.0Z", "version": "1.99.0"},
         {"version": "3.15.0"}
     ]
-    remote = ["mise", "ls-remote", "--json", "--minimum-release-age", "0s", "rust"]
-    fp.register(remote, stdout=dumps(listed))
+    fp.register(REMOTE, stdout=dumps(listed))
 
     tool = pin(
         lift    = lift,
@@ -1178,7 +1210,7 @@ def test_released_reads_the_time_mise_lists_for_a_tool(
 
     assert tool.released("1.99.0") == lift.Release("1.99.0", WHEN)
     assert tool.released("3.15.0") == lift.Release("3.15.0")
-    assert fp.call_count(remote) == 1
+    assert fp.call_count(REMOTE) == 1
 
 
 @mark.parametrize(
@@ -1237,19 +1269,7 @@ def test_main_moves_nothing_where_every_lift_is_held(
     runs no attempt and writes nothing, `mise relock` included.
     """
     ran = []
-    monkeypatch.setattr(
-        lift,
-        "table",
-        lambda: (
-            [row(
-                current = "1",
-                lift    = lift,
-                name    = "vite",
-                newest  = "2"
-            )],
-            []
-        )
-    )
+    monkeypatch.setattr(lift, "table", lambda: (lifting(lift, ["vite"]), []))
     monkeypatch.setattr(lift, "tried", lambda *args: ran.append("tried"))
     monkeypatch.setattr(lift, "write", lambda *args: ran.append("write"))
     monkeypatch.setattr("sys.argv", ["lift", *argv, "--hold", "vite"])
@@ -1697,30 +1717,73 @@ def test_tagged_reads_an_annotated_tag_as_the_commit_beneath_it(
     assert lift.tagged("owner/action") == {"v1": OLD, "v2": NEW}
 
 
-def test_tried_stops_where_no_attempt_passes(
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    tmp_path    : Path
+@mark.parametrize("breaking", [{"jdx/mise-action", "ruff"}])
+def test_tried_prints_each_result_beside_a_log_of_its_own(
+    capsys   : CaptureFixture[str],
+    lift     : ModuleType,
+    logs     : list[Path],
+    tmp_path : Path
 ):
     """
-    Pins that a trial no attempt passes stops the task before anything is
-    written.
+    Pins that each attempt logs to a file of its own under the trial's
+    directory, replacing the `/` in a repository's name with `-`, and prints
+    its result beside that file's path, and that a last line says every
+    major lift stays held back.
     """
-    monkeypatch.setattr(lift, "LOGS", tmp_path)
-    monkeypatch.setattr(lift, "attempt", lambda attempted, log: False)
+    lift.tried(set(), lifting(lift, ["jdx/mise-action", "ruff"]))
 
-    with raises(SystemExit) as stopped:
-        lift.tried(
+    assert [log.name for log in logs] == [
+        "with-every-lift.log", "holding-back-every-major-lift.log",
+        "holding-back-jdx-mise-action.log", "holding-back-ruff.log"
+    ]
+    assert {log.parent for log in logs} == {*tmp_path.iterdir()}
+    assert capsys.readouterr().out.splitlines() == [
+        f"failed with every lift, logged at {logs[0]}",
+        f"passed holding back every major lift, logged at {logs[1]}",
+        f"failed holding back jdx/mise-action, logged at {logs[2]}",
+        f"failed holding back ruff, logged at {logs[3]}",
+        "no single hold passed, so every major lift stays held back"
+    ]
+
+
+@mark.parametrize("breaking", [{"serde"}])
+@mark.parametrize(
+    ("names", "holds", "attempts"),
+    [
+        param(
+            ["ruff", "serde", "typescript"],
             set(),
-            [row(
-                current = "0.15.22",
-                lift    = lift,
-                name    = "ruff",
-                newest  = "0.17.0"
-            )]
-        )
+            [EVERY, MAJORS],
+            id = "two majors"
+        ),
+        param(
+            ["ruff", "serde"],
+            set(),
+            [EVERY, "holding-back-ruff"],
+            id = "lone major"
+        ),
+        param(["serde"], set(), [EVERY], id = "no major"),
+        param(["ruff", "serde"], {"ruff"}, [EVERY], id = "every major given")
+    ]
+)
+def test_tried_stops_where_the_failure_remains_with_every_major_lift_held_back(
+    attempts : list[str],
+    holds    : set[str],
+    lift     : ModuleType,
+    logs     : list[Path],
+    names    : list[str]
+):
+    """
+    Pins that a failure that remains with every major lift held back stops
+    the task after the one attempt holding them back, exiting with exactly
+    `STOPPED`, and that no attempt repeats where the first already held
+    every major lift back.
+    """
+    with raises(SystemExit) as stopped:
+        lift.tried(holds, lifting(lift, names))
 
-    assert stopped.value.code == "no attempt passed, so nothing is written"
+    assert stopped.value.code == STOPPED
+    assert [log.stem for log in logs] == attempts
 
 
 def test_waiting_lists_each_held_release_under_the_cutoff(lift: ModuleType):
@@ -1762,7 +1825,6 @@ def test_write_moves_every_home_and_each_lifted_package(
         "mise", "x", "--", "uv", "lock",
         "--project", "crate", "--upgrade-package", "pytest"
     ]
-    tools  = [["mise", "lock"], ["mise", "install"]]
     lifted = [
         row(
             current = "1.15.0",
@@ -1824,7 +1886,7 @@ def test_write_moves_every_home_and_each_lifted_package(
             )
         )
     ]
-    for command in [*tools, cargo, uv]:
+    for command in [*TOOLS, cargo, uv]:
         fp.register(command)
     fp.register(SYNC, stdout=" M Cargo.lock\n")
     (tree / "crate/.venv").mkdir(parents=True)
@@ -1840,7 +1902,7 @@ def test_write_moves_every_home_and_each_lifted_package(
     assert (tree / "site/package.json").read_text() == (
         TREE["site/package.json"].replace("8.3.0", "8.3.4")
     )
-    assert [list(call) for call in fp.calls] == [*tools, cargo, uv, SYNC]
+    assert [list(call) for call in fp.calls] == [*TOOLS, cargo, uv, SYNC]
     assert capsys.readouterr().out == " M Cargo.lock\n"
     assert (tree / "crate/.venv").is_dir()
 
@@ -1855,7 +1917,7 @@ def test_write_removes_the_virtualenv_where_python_moves(
     mise config declares once the new Python is installed, so mise creates
     it again on that Python rather than keeping the one it replaced.
     """
-    for command in [["mise", "lock"], ["mise", "install"], SYNC]:
+    for command in [*TOOLS, SYNC]:
         fp.register(command)
     (tree / "crate/.venv/bin").mkdir(parents=True)
 
@@ -1875,11 +1937,7 @@ def test_write_removes_the_virtualenv_where_python_moves(
     )
 
     assert not (tree / "crate/.venv").exists()
-    assert [list(call) for call in fp.calls] == [
-        ["mise", "lock"],
-        ["mise", "install"],
-        SYNC
-    ]
+    assert [list(call) for call in fp.calls] == [*TOOLS, SYNC]
 
 
 def test_write_runs_only_the_relock_for_an_npm_lift(
