@@ -54,8 +54,10 @@ use prose-completions`,
 Add-Content -Path $PROFILE.CurrentUserAllHosts -Value '(& prose completions powershell) | Out-String | Invoke-Expression'`,
     language : 'powershell',
     name     : 'PowerShell',
-    note     : 'PowerShell loads `$PROFILE.CurrentUserAllHosts` on every session, so the '
-             + 'completions register on the next shell start.',
+    note     : 'PowerShell runs `$PROFILE.CurrentUserAllHosts` at each shell start, so the '
+             + 'completions register on the next one. The `Restricted` execution policy runs '
+             + 'no profile, so `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope '
+             + 'CurrentUser` comes first under it.',
     slug     : 'powershell'
   },
   {

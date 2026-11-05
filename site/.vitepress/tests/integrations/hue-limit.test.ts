@@ -11,7 +11,7 @@ const COMPONENTS = fs.globSync(
 )
 
 const OTHER_HUES = Object.keys(palette.PALETTE).filter(name => !name.startsWith('ube'))
-const HUE_CLASS  = new RegExp(`-(?:aside|${OTHER_HUES.join('|')})\\b`)
+const HUE_CLASS  = new RegExp(`-(?:aside|${OTHER_HUES.join('|')})\\b|--vp-c-(?!bg|brand|divider|gray|text)`)
 
 const inks = (scheme: 'dark' | 'light') => ({
   link     : palette.SCHEME_ROLES[scheme].link,
