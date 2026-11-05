@@ -1,6 +1,6 @@
 import { formatHex } from 'culori'
 
-import { SCHEME_SHADES, SCHEMES }               from '../../lib/shared/palette'
+import { GROUNDS, SCHEME_SHADES, SCHEMES }      from '../../lib/shared/palette'
 import { pointAt, renderTest, settle, styleOf } from './page'
 
 const STACKED_ROW = '.glossary-folio-row:visible:has(.is-stacked):not([aria-current])'
@@ -40,6 +40,15 @@ describe('the callout mark', () => {
     const page = await visit('/integrations/editor', { width })
 
     await expect(styleOf(page.locator('.callout-mark').first(), 'position')).resolves.toBe(position)
+  })
+})
+
+describe('the directive anatomy index', () => {
+  renderTest.for(SCHEMES)('sets an entry on the page ground at rest in the %s scheme', async (scheme, { visit }) => {
+    const page  = await visit('/reference/suppression-directives', { scheme })
+    const entry = page.locator('.directive-anatomy-thumb').first()
+
+    await expect(styleOf(entry, 'background-color').then(formatHex)).resolves.toBe(GROUNDS.page[scheme])
   })
 })
 
