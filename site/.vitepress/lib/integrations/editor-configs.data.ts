@@ -14,14 +14,7 @@ interface EditorConfig {
 declare const data: readonly EditorConfig[]
 export { data }
 
-interface EditorConfigSource {
-  caption  : string
-  code     : string
-  language : string
-  name     : string
-  slug     : string
-  target   : string
-}
+type EditorConfigSource = Omit<EditorConfig, 'codeHtml'> & { code: string }
 
 const SOURCES: readonly EditorConfigSource[] = [
   {
