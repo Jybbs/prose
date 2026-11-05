@@ -50,7 +50,7 @@ async function findings(context: BrowserContext, file: string): Promise<Finding[
 }
 
 it('finds the built pages', () => {
-  expect(PAGES).toContain('reference/kit.html')
+  expect(PAGES, 'the sweep reads the bundle `mise run site:press` builds').toContain('reference/kit.html')
 })
 
 describe.each(['dark', 'light'] as const)('the built pages in the %s scheme', colorScheme => {
