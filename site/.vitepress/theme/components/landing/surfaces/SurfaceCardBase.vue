@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useElementHover }               from '@vueuse/core'
-import { computed, useTemplateRef }      from 'vue'
+import { useElementHover }          from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 import { provideAriaHidden } from '../../../../lib/composables/use-aria-hidden'
 import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
@@ -8,7 +8,7 @@ import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { familyEmblem }      from '../../../../lib/shared/emblems'
 import * as registries       from '../../../../lib/shared/registries'
 import InlineProse           from '../../base/InlineProse.vue'
-import NibBadge              from '../../base/NibBadge.vue'
+import { NibBadge }          from '../../../../kit'
 import SurfaceRail           from './SurfaceRail.vue'
 
 const props = defineProps<{

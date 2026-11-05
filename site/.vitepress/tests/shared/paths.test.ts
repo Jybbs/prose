@@ -24,6 +24,29 @@ describe('repoRoot', () => {
   })
 })
 
+describe('proseBinaryPath', () => {
+  // Writes the smallest crate `cargo metadata` reads at `root`.
+  function crateAt(root: string): void {
+    fs.mkdirSync(path.join(root, 'src'))
+    fs.writeFileSync(path.join(root, 'Cargo.toml'), '[package]\nname = "probe"\nversion = "0.0.0"\n')
+    fs.writeFileSync(path.join(root, 'src', 'lib.rs'), '')
+  }
+
+  supportTest('reads the binary under the target directory cargo reports', ({ tmpDir }) => {
+    crateAt(tmpDir)
+    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'elsewhere'))
+    expect(paths.proseBinaryPath(tmpDir)).toBe(path.join(tmpDir, 'elsewhere', 'debug', 'prose'))
+  })
+
+  supportTest('asks cargo once for each root', ({ tmpDir }) => {
+    crateAt(tmpDir)
+    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'first'))
+    const first = paths.proseBinaryPath(tmpDir)
+    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'second'))
+    expect(paths.proseBinaryPath(tmpDir)).toBe(first)
+  })
+})
+
 describe('directory helpers', () => {
   it('resolve the crate, site, rules, architecture, and cache directories under the repo', () => {
     const root = paths.repoRoot(meta)

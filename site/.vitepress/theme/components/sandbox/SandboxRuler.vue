@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useElementSize, useResizeObserver }       from '@vueuse/core'
-import { computed, reactive, ref, useTemplateRef } from 'vue'
-import type { CSSProperties }                      from 'vue'
+import { computed, reactive, ref, useId, useTemplateRef } from 'vue'
+import type { CSSProperties }                             from 'vue'
+
+import { Slider } from '../../../kit'
 
 import type { LengthKnob } from '../../../lib/sandbox/config-schema.data'
 import * as rulerScale     from '../../../lib/sandbox/ruler-scale'
@@ -26,22 +28,14 @@ const HUES      = ['ube', 'dexter', 'whiskey'] as const
 const LANE_SLOP = 6
 const MARKS     = [MIN, 80, 130, MAX] as const
 
-interface DragState {
-  key       : string
-  live      : boolean
-  originX   : number
-  perChar   : number
-  pointerId : number
-  startX    : number
-}
-
 const chipEls    = useTemplateRef<HTMLElement[]>('chip')
 const chipWidths = reactive(new Map<string, number>())
-const drag       = ref<DragState | null>(null)
+const drag       = ref<{ key: string, start: number } | null>(null)
 const draft      = ref('')
 const editing    = ref('')
 const preview    = ref<{ key: string, value: number } | null>(null)
 const trackEl    = ref<HTMLElement | null>(null)
+const trackId    = useId()
 
 // A drag moves this preview alone, the config committing on release, so the
 // code and toml surfaces hold still while a stop is in hand.
@@ -101,8 +95,8 @@ function commitEdit(knob: LengthKnob): void {
   editing.value = ''
 }
 
-function dragEnd(event: PointerEvent): void {
-  if (drag.value?.pointerId !== event.pointerId) return
+function dragEnd(): void {
+  if (!drag.value) return
   const held = preview.value
   if (held) emit('setLength', held.key, held.value)
   preview.value = null
@@ -110,32 +104,20 @@ function dragEnd(event: PointerEvent): void {
   emit('dragging', '', '')
 }
 
-function dragMove(knob: LengthKnob, event: PointerEvent): void {
+// Holds the stop still until the value it would take sits `DRAG_SLOP` pixels
+// from where the press began, so a double-click edits rather than moves.
+function dragMove(knob: LengthKnob, value: number): void {
   const state = drag.value
-  if (!state || state.key !== knob.key || state.pointerId !== event.pointerId) return
-  if (!state.live && Math.abs(event.clientX - state.startX) < DRAG_SLOP) return
-  state.live = true
-  const value = rulerScale.clampLength((event.clientX - state.originX) / state.perChar + MIN)
+  if (state?.key !== knob.key) return
+  if (!preview.value && Math.abs(value - state.start) * trackWidth.value / SPAN < DRAG_SLOP) return
   preview.value = { key: knob.key, value }
   emit('preview', knob.key, value)
 }
 
 function dragStart(hue: string, knob: LengthKnob, event: PointerEvent): void {
-  if (editing.value === knob.key || event.button !== 0 || !trackEl.value) return
-  event.preventDefault()
-  const stop = event.currentTarget as HTMLElement
-  const rect = trackEl.value.getBoundingClientRect()
-  const unit = rect.width / SPAN
-  stop.setPointerCapture(event.pointerId)
+  if (editing.value === knob.key || event.button !== 0) return
   emit('dragging', knob.key, hue)
-  drag.value = {
-    key       : knob.key,
-    live      : false,
-    originX   : event.clientX - (rulerScale.clampLength(props.valueOf(knob.key)) - MIN) * unit,
-    perChar   : unit,
-    pointerId : event.pointerId,
-    startX    : event.clientX
-  }
+  drag.value = { key: knob.key, start: props.valueOf(knob.key) }
 }
 
 // Gives each knob its hue by its place, so a knob, its default, its tether,
@@ -174,7 +156,7 @@ function tierOf(key: string): number {
 
 <template>
   <div class="flex flex-wrap items-center gap-x-1-25rem gap-y-0-75rem">
-    <div ref="trackEl" class="sandbox-ruler" role="group" aria-label="Line lengths" :style="{ '--rows': rows }">
+    <div :id="trackId" ref="trackEl" class="sandbox-ruler" role="group" aria-label="Line lengths" :style="{ '--rows': rows }">
       <div class="sandbox-ruler-track" aria-hidden="true" />
       <span
         v-for="(knob, index) in lengths"
@@ -199,52 +181,56 @@ function tierOf(key: string): number {
         aria-hidden="true"
         :style="{ left: `${rulerScale.pctOfLength(mark)}%` }"
       >{{ mark }}</span>
-      <div
+      <Slider
         v-for="(knob, index) in lengths"
         :key="knob.key"
-        class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
-        :style="stopStyle(knob)"
-        :data-changed="shownValue(knob) !== knob.default || null"
-        :data-dragging="drag?.key === knob.key || null"
-        :data-hue="hueOf(index)"
-        :role="editing === knob.key ? undefined : 'slider'"
-        :tabindex="editing === knob.key ? undefined : 0"
-        :aria-label="`${knob.label} line length`"
-        :aria-valuemin="MIN"
-        :aria-valuemax="MAX"
-        :aria-valuenow="shownValue(knob)"
-        @pointerdown="dragStart(hueOf(index), knob, $event)"
-        @pointermove="dragMove(knob, $event)"
-        @pointerup="dragEnd"
-        @pointercancel="dragEnd"
-        @keydown="keyStep(knob, $event)"
+        v-slot="{ thumb }"
+        :control="trackId"
+        :label="`${knob.label} line length`"
+        :max="MAX"
+        :min="MIN"
+        :model-value="shownValue(knob)"
+        @change="dragMove(knob, $event)"
+        @commit="dragEnd"
       >
-        <span class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:transition-colors before:bg-text-2 group-hover:before:bg-text-1 group-focus-visible:before:bg-text-1 group-data-dragging:before:bg-text-1" aria-hidden="true" />
-        <span
-          v-if="editing !== knob.key"
-          ref="chip"
-          class="sandbox-ruler-chip group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
-          :data-key="knob.key"
-          @dblclick="beginEdit(knob)"
+        <div
+          class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
+          :data-changed="shownValue(knob) !== knob.default || null"
+          :data-hue="hueOf(index)"
+          @keydown="keyStep(knob, $event)"
+          @pointercancel="dragEnd"
+          @pointerdown="dragStart(hueOf(index), knob, $event)"
+          v-bind="editing === knob.key ? null : thumb"
+          :data-dragging="drag?.key === knob.key || null"
+          :style="stopStyle(knob)"
         >
-          <span class="font-mono text-meta tracking-0-05em text-text-2 uppercase">{{ knob.label }}</span>
-          <span class="font-mono text-0-68rem text-text-1 tabular-nums transition-colors group-data-changed:text-knob-figure">{{ shownValue(knob) }}</span>
-        </span>
-        <input
-          v-else
-          :ref="focusInput"
-          v-model="draft"
-          type="number"
-          class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text focus-visible:-outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
-          :min="MIN"
-          :max="MAX"
-          :aria-label="`${knob.label} line length`"
-          @keydown.stop
-          @keydown.enter.prevent="commitEdit(knob)"
-          @keydown.esc="cancelEdit"
-          @blur="commitEdit(knob)"
-        >
-      </div>
+          <span class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:transition-colors before:bg-text-2 group-hover:before:bg-text-1 group-focus-visible:before:bg-text-1 group-data-dragging:before:bg-text-1" aria-hidden="true" />
+          <span
+            v-if="editing !== knob.key"
+            ref="chip"
+            class="sandbox-ruler-chip group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
+            :data-key="knob.key"
+            @dblclick="beginEdit(knob)"
+          >
+            <span class="font-mono text-meta tracking-0-05em text-text-2 uppercase">{{ knob.label }}</span>
+            <span class="font-mono text-0-68rem text-text-1 tabular-nums transition-colors group-data-changed:text-knob-figure">{{ shownValue(knob) }}</span>
+          </span>
+          <input
+            v-else
+            :ref="focusInput"
+            v-model="draft"
+            type="number"
+            class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text focus-visible:-outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
+            :min="MIN"
+            :max="MAX"
+            :aria-label="`${knob.label} line length`"
+            @keydown.stop
+            @keydown.enter.prevent="commitEdit(knob)"
+            @keydown.esc="cancelEdit"
+            @blur="commitEdit(knob)"
+          >
+        </div>
+      </Slider>
     </div>
   </div>
 </template>

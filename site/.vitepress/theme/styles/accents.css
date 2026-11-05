@@ -1,23 +1,23 @@
 [data-scope="file"] {
   --scope-ink  : var(--prose-shade-ube-wash-45);
   --scope-mark : var(--prose-shade-ube-wash-35);
-  --scope-tint : var(--prose-palette-ube);
+  --scope-tint : var(--color-ube);
 }
 
 [data-scope="block"] {
   --scope-ink  : var(--prose-shade-chambray-wash-45);
   --scope-mark : var(--prose-shade-chambray-wash-35);
-  --scope-tint : var(--prose-palette-chambray);
+  --scope-tint : var(--color-chambray);
 }
 
 [data-scope="line"] {
   --scope-ink  : var(--prose-shade-whiskey-wash-45);
   --scope-mark : var(--prose-shade-whiskey-wash-35);
-  --scope-tint : var(--prose-palette-whiskey);
+  --scope-tint : var(--color-whiskey);
 }
 
 [data-scope="construct"] {
   --scope-ink  : var(--prose-shade-celadon-wash-45);
   --scope-mark : var(--prose-shade-celadon-wash-35);
-  --scope-tint : var(--prose-palette-celadon);
+  --scope-tint : var(--color-celadon);
 }

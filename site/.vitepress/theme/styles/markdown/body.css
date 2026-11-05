@@ -9,14 +9,14 @@ code .code-op {
 .vp-doc p em,
 .vp-doc li em,
 .glossary-tooltip-body em {
-  color : var(--prose-role-aside);
+  color : var(--color-aside);
 }
 
 :is(.vp-doc, .glossary-tooltip-body) .prose-mark {
   font-family : var(--prose-font-display);
   font-style  : normal;
   font-weight : 600;
-  color       : var(--prose-shade-ube-page-45);
+  color       : var(--prose-shade-ube-card-45);
 }
 
 .vp-doc a.body-link,
@@ -34,7 +34,7 @@ a.tool-mark:hover {
 
 .vp-doc a.body-link:focus-visible,
 a.tool-mark:focus-visible {
-  outline        : var(--prose-border-2) solid var(--prose-role-link);
+  outline        : var(--prose-border-2) solid var(--color-link);
   outline-offset : var(--prose-space-2);
 }
 
@@ -43,10 +43,6 @@ a.tool-mark:focus-visible {
 .vp-doc a.body-link code,
 a.tool-mark code {
   color : inherit;
-}
-
-.v-popper--theme-rule-card {
-  display : inline;
 }
 
 .vp-doc a.rule-link,

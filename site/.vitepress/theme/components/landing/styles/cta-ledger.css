@@ -6,7 +6,7 @@
   width : var(--prose-size-6);
 }
 .landing-cta-scroll::-webkit-scrollbar-thumb {
-  background    : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-60), var(--panel-edge));
+  background    : color-mix(in srgb, var(--color-ube) var(--prose-tint-60), var(--panel-edge));
   border-radius : var(--prose-radius-3);
 }
 

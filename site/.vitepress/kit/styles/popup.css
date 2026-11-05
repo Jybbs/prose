@@ -1,0 +1,9 @@
+[data-popup] {
+  --arrow-background : var(--vp-c-bg);
+  --arrow-size       : var(--prose-space-10);
+}
+
+[data-popup] [data-part='arrow-tip'] {
+  border-left : var(--prose-border-1) solid var(--popup-border);
+  border-top  : var(--prose-border-1) solid var(--popup-border);
+}

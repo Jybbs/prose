@@ -62,7 +62,7 @@ useGlideWash(grid, wash, '[data-state="active"]', () => props.focused)
         <li
           v-for="entry in band.entries"
           :key="entry.slug"
-          class="relative m-0 rounded-sm bg-bg-soft transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:bg-transparent data-[state=mute]:opacity-50 motion-reduce:transition-none"
+          class="relative m-0 rounded-sm bg-bg-soft transition-background-and-opacity duration-180 ease-emphasized marker:content-none data-[state=active]:bg-transparent data-[state=mute]:opacity-80 motion-reduce:transition-none"
           :data-layer="entry.layer"
           :data-state="tileState(entry.slug)"
         >

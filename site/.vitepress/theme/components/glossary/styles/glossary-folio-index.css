@@ -15,7 +15,7 @@
 }
 
 .glossary-folio-row[aria-current] .glossary-folio-row-slot {
-  background : var(--prose-role-link);
+  background : var(--color-link);
   transform  : rotate(45deg);
 }
 

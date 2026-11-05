@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import Chip     from '../../.vitepress/theme/components/base/Chip.vue'
-import NibBadge from '../../.vitepress/theme/components/base/NibBadge.vue'
+import { Chip, nib, NibBadge } from '../../.vitepress/kit'
 
-import { NIB }     from '../../.vitepress/lib/shared/nib'
 import { EMBLEMS } from './emblems'
 
 const axes = {
   form     : 'line',
   terminal : 'broad nib',
   tone     : 'ink on a neutral tint',
-  weight   : NIB.stroke.nib
+  weight   : nib.NIB.stroke.nib
 }
 </script>
 

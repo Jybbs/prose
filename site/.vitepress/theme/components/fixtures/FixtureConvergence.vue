@@ -46,7 +46,7 @@ const steps = computed<Step[]>(() => {
       >
         <p class="flex items-baseline gap-10">
           <span class="font-mono text-meta tracking-label-loose text-text-1 uppercase">{{ step.label }}</span>
-          <span v-if="step.badge" class="change-chip px-8 py-2 group-data-[badge=settled]:border-celadon/40 group-data-[badge=settled]:text-celadon">
+          <span v-if="step.badge" class="change-chip px-8 py-2 group-data-[badge=settled]:border-celadon/40 group-data-[badge=settled]:text-celadon-soft-45">
             {{ step.badge === 'changed' ? 'Rewritten' : 'No change' }}
           </span>
         </p>

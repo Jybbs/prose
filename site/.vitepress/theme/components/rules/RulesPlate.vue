@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 
-import NibBadge          from '../base/NibBadge.vue'
-import RuleTooltipPopper from './RuleTooltipPopper.vue'
+import { NibBadge, paint } from '../../../kit'
+import RuleTooltipPopup    from './RuleTooltipPopup.vue'
 
 import { useRaisedFamily }       from '../../../lib/composables/use-raised-family'
 import { glide }                 from '../../../lib/rules/plate-glide'
 import { data as rules }         from '../../../lib/rules/rules.data'
 import { arrowIndex }            from '../../../lib/shared/arrow-keys'
 import { familyEmblem }          from '../../../lib/shared/emblems'
-import { morphEase, ruleDrawMs } from '../../../lib/shared/paint'
 import { FAMILY_ORDER }          from '../../../lib/shared/registries'
 import type { RuleFamily }       from '../../../lib/shared/registries'
 
@@ -47,7 +46,7 @@ watch(pinned, family => {
   void glide(plate.value!, async () => {
     arranged.value = family as RuleFamily | null
     await nextTick()
-  }, { duration: ruleDrawMs(), easing: morphEase() })
+  }, { duration: paint.ruleDrawMs(), easing: paint.morphEase() })
 })
 
 // Moves the focus and the key's one tab stop to the chip at `at`.
@@ -132,9 +131,9 @@ function releaseAll(): void {
           :data-family="rule.family"
         >
           <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="14" />
-          <RuleTooltipPopper :rule="rule">
+          <RuleTooltipPopup :rule="rule">
             <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline hover:text-brand-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :href="rule.href">{{ rule.slug }}</a>
-          </RuleTooltipPopper>
+          </RuleTooltipPopup>
         </li>
       </ul>
     </section>

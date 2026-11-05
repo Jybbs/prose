@@ -2,6 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import tailwindcss                                from '@tailwindcss/vite'
+import vueJsx                                     from '@vitejs/plugin-vue-jsx'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
@@ -27,6 +28,7 @@ import { emblemPlugin }                               from './lib/markdown/emble
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
+import { wholeLineTokens }                            from './lib/markdown/whole-line-tokens'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
@@ -35,7 +37,7 @@ import { readRuleFixtures }                           from './lib/rules/rule-fix
 import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
 import { emblemsOf }                                  from './lib/shared/emblems'
-import { PALETTE, paletteCss }                        from './lib/shared/palette'
+import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
 import { sectionRoute }                               from './lib/shared/routes'
@@ -46,6 +48,7 @@ import * as version                                   from './lib/shared/version
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const siteDirectory        = paths.siteDir(import.meta.url)
+const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
 const ruffRelease          = version.readRuffRelease(crate)
@@ -77,7 +80,7 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate))],
+    codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate)), wholeLineTokens],
     config: md => {
       md.use(groupIconMdPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
@@ -89,8 +92,9 @@ export default defineConfig({
       md.use(proseMarkPlugin)
       md.use(codeOperatorPlugin)
     },
-    lineNumbers : false,
-    theme       : constants.SHIKI_THEMES
+    colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
+    lineNumbers       : false,
+    theme             : constants.SHIKI_THEMES
   },
   sitemap: { hostname: constants.SITE_HOSTNAME },
   themeConfig: {
@@ -98,7 +102,7 @@ export default defineConfig({
       pattern : `${constants.REPO_URL}/edit/main/site/:path`,
       text    : 'Suggest an edit to this page'
     },
-    logo      : { alt: 'prose', src: '/logo.svg' },
+    logo      : { alt: '', src: '/logo.svg' },
     nav: [
       ...SECTIONS.map(({ label, slug }) =>
         ({ activeMatch: sectionRoute(slug), link: sectionRoute(slug), text: label })),
@@ -144,17 +148,18 @@ export default defineConfig({
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
     plugins: [{
+      enforce   : 'pre',
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
       name      : 'prose-palette',
       resolveId : id =>
-        id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
+        id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined,
+      transform : (code, id) => id.split('?')[0] === tailwindEntry ? code + themeCss() : undefined
     },
     fixtureReloadPlugin(fixturesRoot),
     serveWasmPlugin(path.join(siteDirectory, 'public')),
-    stylesheetLayer.stylesheetLayerPlugin(
-      path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
-    ),
+    stylesheetLayer.stylesheetLayerPlugin(tailwindEntry),
     tailwindcss(),
+    vueJsx({ tsTransform: 'built-in' }),
     groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),

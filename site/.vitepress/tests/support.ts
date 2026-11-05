@@ -25,7 +25,7 @@ export function expectSlugIndex(
 // each beside its path within the site.
 export function siteSheets(): { file: string, root: Root }[] {
   const site  = new URL('../../', import.meta.url)
-  const files = fs.globSync(['.vitepress/theme/**/*.css', 'prototypes/**/*.css'], { cwd: site })
+  const files = fs.globSync(['.vitepress/{kit,theme}/**/*.css', 'prototypes/**/*.css'], { cwd: site })
   return files.toSorted().map(file => ({
     file : file,
     root : parseCss(fs.readFileSync(new URL(file, site), 'utf8'))

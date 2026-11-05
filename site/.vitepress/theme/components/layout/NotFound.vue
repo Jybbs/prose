@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Kicker from '../base/Kicker.vue'
+import { Kicker } from '../../../kit'
 </script>
 
 <template>
-  <div class="mx-auto my-96 flex max-w-640 flex-col items-start gap-22 px-24">
+  <main class="mx-auto my-96 flex max-w-640 flex-col items-start gap-22 px-24">
     <Kicker class="inline-flex items-center gap-10" variant="wide">
       <span class="text-apricot" aria-hidden="true">&times;</span>
       <span>404 &middot; mistyped</span>
@@ -16,9 +16,9 @@ import Kicker from '../base/Kicker.vue'
     <p class="max-w-48ch text-1rem leading-1-6 text-text-2">
       The URL didn't resolve to any surface we keep on file. Step back to the home page and try a different route through the catalog.
     </p>
-    <a class="group mt-6 inline-flex items-center gap-10 rounded-sm border-1 border-apricot bg-bg px-20 py-11 font-display text-1-02rem font-500 text-apricot-70-text-1 italic transition-colors hover:bg-apricot-medium-bg hover:text-text-1" href="/">
+    <a class="group mt-6 inline-flex items-center gap-10 rounded-sm border-1 border-apricot bg-bg px-20 py-11 font-display text-1-02rem font-500 text-apricot-page-45 italic transition-colors hover:bg-apricot-medium-bg hover:text-text-1" href="/">
       <span>Back to the home page</span>
       <span class="transition-transform group-hover:translate-x-3" aria-hidden="true">&rarr;</span>
     </a>
-  </div>
+  </main>
 </template>

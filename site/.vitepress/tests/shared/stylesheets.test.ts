@@ -92,10 +92,10 @@ describe('inlineHues', () => {
   it('passes a text color, the aside ink, and an inline element inside a link', () => {
     const css = [
       '.rule-card-caption em { color: var(--vp-c-text-1); }',
-      '.vp-doc p em { color: var(--prose-role-aside); }',
+      '.vp-doc p em { color: var(--color-aside); }',
       '.landing-section p em { color: inherit; }',
-      '.pq-row > p a strong { color: var(--prose-role-link); }',
-      '.vp-doc a.body-link em { color: var(--prose-role-link); }'
+      '.pq-row > p a strong { color: var(--color-link); }',
+      '.vp-doc a.body-link em { color: var(--color-link); }'
     ].join('\n')
     expect(inlineHues(parse(css))).toStrictEqual([])
   })
@@ -119,7 +119,7 @@ describe('tokens.css', () => {
   })
 
   it('declares no token the site leaves unread', () => {
-    const sources = fs.globSync(['.vitepress/{lib,theme}/**/*.{ts,vue}', 'prototypes/**/*.{ts,vue}'], { cwd: vocabulary.SITE })
+    const sources = fs.globSync(['.vitepress/{kit,lib,theme}/**/*.{ts,tsx,vue}', 'prototypes/**/*.{ts,vue}'], { cwd: vocabulary.SITE })
       .map(vocabulary.read)
     for (const { root } of STYLESHEETS) {
       const sheet = root.clone()

@@ -7,7 +7,7 @@ import ProseSandboxSurface                          from '../../theme/components
 import type { ProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import { MORPH_LINE_CHURN_CAP }                     from '../../lib/markdown/magic-move-delta'
 import { magicMoveWatchdogMs }                      from '../../lib/markdown/magic-move-options'
-import { nextPaint, ruleDrawMs }                    from '../../lib/shared/paint'
+import { nextPaint, ruleDrawMs }                    from '../../kit/drawing/paint'
 import { domTest, fakeSandbox, isHidden, stubRect } from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)
@@ -41,9 +41,9 @@ const FINDING = {
   message      : 'm'
 }
 
-const LintFlagPopperStub = {
+const LintFlagPopupStub  = {
   methods  : { hide() {}, show() {} },
-  template : '<div class="popper-stub" />'
+  template : '<div class="popup-stub" />'
 }
 
 interface MountOptions {
@@ -65,7 +65,7 @@ const surfaceMount = (reducedMotion: (matches: boolean) => void) =>
     if (diagnostics) sandbox.diagnostics.value = diagnostics
     const wrapper = mount(ProseSandboxSurface, {
       props  : { sandbox },
-      global : { stubs: { LintFlagPopper: LintFlagPopperStub } }
+      global : { stubs: { LintFlagPopup: LintFlagPopupStub } }
     })
     await flushPromises()
     return { sandbox, wrapper }

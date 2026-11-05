@@ -6,7 +6,7 @@ import type { Facet, RuleControl } from './config-schema.data'
 
 const NOTICE = /^warning: unknown key `(?<path>[^`]+)` in \[tool\.prose\]$/u
 
-// A slug matching no rule, so the formatted panel's flag popper skips these
+// A slug matching no rule, so the formatted panel's flag popup skips these
 // anchors when it looks one up.
 const CONFIG_SLUG = 'config-key'
 

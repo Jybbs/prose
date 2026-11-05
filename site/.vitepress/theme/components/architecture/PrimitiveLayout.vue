@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PrimitivesComposition from './PrimitivesComposition.vue'
-import DocHeading            from '../base/DocHeading.vue'
+import { DocHeading }        from '../../../kit'
 
 import type { PrimitiveSlug } from '../../../lib/shared/registries'
 

@@ -113,6 +113,10 @@ exports[`buildSidebar > builds the route-keyed sidebar tree 1`] = `
           "text": "Glossary",
         },
         {
+          "link": "/reference/kit",
+          "text": "Kit",
+        },
+        {
           "link": "/reference/output-formats",
           "text": "Output Formats",
         },

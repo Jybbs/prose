@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Kicker from '../base/Kicker.vue'
+import { Kicker } from '../../../kit'
 
 defineProps<{
   centered ?: boolean

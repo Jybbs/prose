@@ -4,7 +4,7 @@ import { ref }                               from 'vue'
 import type * as configSchema          from '../sandbox/config-schema.data'
 import type { ProseFormat, ProseWasm } from '../sandbox/load-module'
 import * as probe                      from '../sandbox/probe'
-import { nextPaint }                   from '../shared/paint'
+import { nextPaint }                   from '../../kit/drawing/paint'
 
 type SourceProbe = {
   eligible     : readonly string[]

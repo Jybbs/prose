@@ -18,7 +18,7 @@ export function getRenderer(): Promise<MarkdownRenderer> {
 }
 
 // Prose a component renders as live markup walks to a node tree, whereas the
-// `*Html` renderers stay for the strings a popper or a plain-terms caption
+// `*Html` renderers stay for the strings a popup or a plain-terms caption
 // consumes, where a mounted component cannot go.
 export function inlineNodeField<T extends object, K extends string & keyof T>(
   md    : MarkdownRenderer,
@@ -52,7 +52,7 @@ export function renderFencedHtml(
   return md.renderAsync(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
 }
 
-// Caption text renders inside cover-linked cards and hover poppers, where a
+// Caption text renders inside cover-linked cards and hover popups, where a
 // glossary anchor cannot receive its own click, so terms flatten to text.
 export function renderPlainInlineHtml(md: MarkdownRenderer, src: string): string {
   return md.renderInline(src, plainTermsEnv())

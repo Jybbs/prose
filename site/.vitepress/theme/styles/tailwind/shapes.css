@@ -30,7 +30,7 @@
   height              : var(--prose-size-1-05em);
   margin-inline-start : var(--prose-space-1);
   vertical-align      : text-bottom;
-  background          : var(--prose-palette-whiskey);
+  background          : var(--color-whiskey);
   @apply animate-caret-blink;
 }
 
@@ -59,7 +59,6 @@
   letter-spacing : var(--prose-meta-tracking);
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
-  opacity        : 0.55;
   pointer-events : none;
 }
 

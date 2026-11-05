@@ -1,7 +1,7 @@
 @reference "../../../styles/tailwind.css";
 
 .landing-workflow {
-  --workflow-accent : var(--prose-palette-celadon);
+  --workflow-accent : var(--color-celadon);
 }
 
 .landing-workflow-section::before {

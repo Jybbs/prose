@@ -2,8 +2,7 @@
 import { mount } from '@vue/test-utils'
 
 import PrimitivesCompositionDetail from '../../theme/components/architecture/PrimitivesCompositionDetail.vue'
-import RuleTooltipPopper           from '../../theme/components/rules/RuleTooltipPopper.vue'
-import { popperStubMount }         from '../popper-stub'
+import RuleTooltipPopup            from '../../theme/components/rules/RuleTooltipPopup.vue'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ family: 'layout', slug: 'reflow-calls' }]))
@@ -24,7 +23,7 @@ vi.mock('../../lib/architecture/primitives-composition.data', () => ({
 }))
 
 const card = () => mount(PrimitivesCompositionDetail, {
-  global : { ...popperStubMount, components: { RuleTooltipPopper } },
+  global : { components: { RuleTooltipPopup } },
   props  : { focused: 'source' }
 })
 

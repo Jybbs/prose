@@ -1,9 +1,11 @@
 import { converter, formatHex, interpolate, parse, wcagContrast } from 'culori'
-import { parse as parseCss }                                      from 'postcss'
+import { parse as parseCss, type AtRule }                         from 'postcss'
 import githubDark                                                 from 'shiki/themes/github-dark.mjs'
+import githubLight                                                from 'shiki/themes/github-light.mjs'
 
-import * as palette from '../../lib/shared/palette'
-import * as support from '../support'
+import { SHIKI_COLOR_REPLACEMENTS } from '../../lib/shared/constants'
+import * as palette                from '../../lib/shared/palette'
+import * as support                from '../support'
 
 const SCHEMES = ['dark', 'light'] as const
 
@@ -30,13 +32,11 @@ function declarations(): Map<string, [string, string][]> {
 describe('paletteCss', () => {
   const blocks = declarations()
 
-  it('writes every group under :root, the scheme roles and shades under .dark, and each family\'s accents', () => {
+  it('writes the shades under :root and .dark, beside each family\'s accents', () => {
     expect([...blocks.keys()]).toStrictEqual([':root', '.dark', ...Object.keys(palette.FAMILIES).map(family =>
-      `[data-family="${family}"],\n.v-popper--theme-rule-card:has(.rule-card[data-family="${family}"])`)])
-    expect(blocks.get('.dark')!.map(([prop]) => prop)).toStrictEqual([
-      ...Object.keys(palette.SCHEME_ROLES.dark).map(name => `--prose-role-${name}`),
-      ...Object.keys(palette.SCHEME_SHADES.dark).map(name => `--prose-shade-${name}`)
-    ])
+      `[data-family="${family}"],\n[data-popup="rule-card"]:has(.rule-card[data-family="${family}"])`)])
+    expect(blocks.get('.dark')!.map(([prop]) => prop))
+      .toStrictEqual(Object.keys(palette.SCHEME_SHADES.dark).map(name => `--prose-shade-${name}`))
   })
 
   it.each([...blocks.get(':root')!, ...blocks.get('.dark')!])('%s is a concrete hex', (_name, value) => {
@@ -44,15 +44,37 @@ describe('paletteCss', () => {
   })
 
   it.each([
-    '--prose-family-cli',
-    '--prose-palette-ube',
-    '--prose-role-link',
-    '--prose-section-guide',
     '--prose-shade-alignment-chip-45',
     '--prose-shade-text-3-code-35',
     '--prose-shiki-dark-bg'
   ])('emits %s under its group prefix', name => {
     expect(blocks.get(':root')!.map(([prop]) => prop)).toContain(name)
+  })
+})
+
+describe('themeCss', () => {
+  const root   = parseCss(palette.themeCss())
+  const colors = new Map<string, string>()
+  const dark   = new Map<string, string>()
+  root.walkAtRules('theme', theme => { theme.walkDecls(decl => { colors.set(decl.prop, decl.value) }) })
+  root.walkAtRules('layer', layer => { layer.walkDecls(decl => { dark.set(decl.prop, decl.value) }) })
+
+  it('declares the colors in a `@theme static` block and the dark roles in the theme layer', () => {
+    expect(root.nodes.map(node => (node as AtRule).params)).toStrictEqual(['static', 'theme'])
+    expect([...dark.keys()]).toStrictEqual(Object.keys(palette.SCHEME_ROLES.dark).map(name => `--color-${name}`))
+  })
+
+  it.each([...colors, ...dark])('%s is a concrete hex', (_name, value) => {
+    expect(formatHex(parse(value))).toBe(value)
+  })
+
+  it.each([
+    ['--color-family-cli',    palette.FAMILIES.cli],
+    ['--color-link',          palette.SCHEME_ROLES.light.link],
+    ['--color-section-guide', palette.SECTIONS.guide],
+    ['--color-ube',           palette.PALETTE.ube]
+  ])('declares %s from its source', (name, hex) => {
+    expect(colors.get(name)).toBe(hex)
   })
 })
 
@@ -86,8 +108,8 @@ describe('GROUNDS', () => {
 
   it('reads the grounds tokens.css sets for code and the dark soft ground', () => {
     const tokens = new URL('../../theme/styles/tokens.css', import.meta.url)
-    expect(support.declared(tokens, ':root')['--vp-code-block-bg']).toBe('var(--prose-palette-grams-hair)')
-    expect(support.declared(tokens, '.dark')['--vp-c-bg-soft']).toBe('var(--prose-palette-woodsmoke)')
+    expect(support.declared(tokens, ':root')['--vp-code-block-bg']).toBe('var(--color-grams-hair)')
+    expect(support.declared(tokens, '.dark')['--vp-c-bg-soft']).toBe('var(--color-woodsmoke)')
     expect(palette.GROUNDS.code.light).toBe(palette.PALETTE['grams-hair'])
     expect(palette.GROUNDS.soft.dark).toBe(palette.PALETTE.woodsmoke)
   })
@@ -169,8 +191,9 @@ describe('SCHEME_SHADES', () => {
   it.each(SCHEMES.flatMap(scheme => Object.entries(palette.SCHEME_SHADES[scheme]).map(([name, hex]) => [scheme, name, hex] as const)))(
     'reads the %s %s at its ratio on its ground',
     (scheme, name, hex) => {
-      const [, ground, digits] = /-(card|chip|code|page|soft|wash)-(\d+)$/.exec(name)!
+      const [, ground, digits] = /-(any|card|chip|code|page|soft|wash)-(\d+)$/.exec(name)!
       const grounds = {
+        any  : [palette.GROUNDS.page[scheme], palette.GROUNDS.soft[scheme], palette.GROUNDS.code[scheme]],
         card : [palette.GROUNDS.page[scheme], palette.GROUNDS.soft[scheme]],
         chip : [chip(scheme)],
         code : [palette.GROUNDS.code[scheme]],
@@ -192,16 +215,30 @@ describe('SCHEME_SHADES', () => {
   })
 })
 
+describe('SHIKI_COLOR_REPLACEMENTS', () => {
+  it.each([
+    ['dark',  githubDark],
+    ['light', githubLight]
+  ] as const)('reads every token color of the %s theme at 4.5:1 on the code block', (scheme, theme) => {
+    const replacements: Record<string, string> = SHIKI_COLOR_REPLACEMENTS[theme.name as keyof typeof SHIKI_COLOR_REPLACEMENTS]
+    const foregrounds = theme.tokenColors!
+      .filter(({ settings }) => !settings.background)
+      .flatMap(({ settings }) => settings.foreground?.toLowerCase().slice(0, 7) ?? [])
+    const painted     = [...new Set(foregrounds)].map(color => replacements[color] ?? color)
+    expect(painted.filter(color => wcagContrast(color, palette.GROUNDS.code[scheme]) < 4.5)).toStrictEqual([])
+  })
+})
+
 describe('the sheets reading the roles and shades', () => {
   const code = '.vp-doc .custom-block:is(.tip, .info, .warning, .danger) code'
 
   it.each([
     ['components/fixtures/styles/lint-findings.css', '.lint-flag',                    '--lint-color',    'var(--prose-shade-apricot-code-35)'],
     ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.danger',  '--callout-mark',  'var(--prose-shade-apricot-page-45)'],
-    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.tip',     '--callout-mark',  'var(--prose-role-link)'],
+    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.tip',     '--callout-mark',  'var(--color-link)'],
     ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.warning', '--callout-mark',  'var(--prose-shade-eureka-page-45)'],
     ['styles/markdown/callouts.css',                 code,                            'color',           'var(--vp-code-color)'],
-    ['styles/tokens.css',                            ':root',                         '--vp-code-bg',    'var(--prose-role-code-ground)'],
+    ['styles/tokens.css',                            ':root',                         '--vp-code-bg',    'var(--color-code-ground)'],
     ['styles/tokens.css',                            ':root',                         '--vp-code-color', 'var(--vp-c-text-1)']
   ])('%s sets %s %s to %s', (file, selector, prop, value) => {
     expect(support.declared(new URL(`../../theme/${file}`, import.meta.url), selector)[prop]).toBe(value)

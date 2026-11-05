@@ -14,7 +14,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 **Gate CI on pending rewrites.** The command exits non-zero when any file would change, and the [**GitHub Actions**](/integrations/github-actions) page walks the full setup. The [**Exit Codes**](/reference/exit-codes) reference lists what each exit code means for a CI gate.
 
-<aside class="pq-aside"><code>prose check .</code></aside>
+<div class="pq-aside"><code>prose check .</code></div>
 
 </div>
 
@@ -22,7 +22,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 **Rewrite a project in place.** The most common command, run against the project root and walked end to end in the [**Quick Start**](/guide/quick-start).
 
-<aside class="pq-aside"><code>prose format .</code></aside>
+<div class="pq-aside"><code>prose format .</code></div>
 
 </div>
 
@@ -30,7 +30,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 **Preview a rewrite before writing it.** Prints a unified diff and leaves every file as it was. The [**CLI Reference**](/reference/cli) documents every flag and how the flags combine.
 
-<aside class="pq-aside"><code>prose format --diff .</code></aside>
+<div class="pq-aside"><code>prose format --diff .</code></div>
 
 </div>
 
@@ -38,7 +38,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 **Read source from stdin and write to stdout.** The form for an unsaved editor buffer, with the [**Editor**](/integrations/editor) page covering both the language server and the save-hook setup.
 
-<aside class="pq-aside"><code>prose format -</code></aside>
+<div class="pq-aside"><code>prose format -</code></div>
 
 </div>
 
@@ -46,7 +46,7 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 **Adopt one rule at a time.** Runs a single rule, so a project can take the rules on one by one. The [**Quick Start**](/guide/quick-start) covers it under *Subset the active rules*.
 
-<aside class="pq-aside"><code>prose check --select &lt;slug&gt; .</code></aside>
+<div class="pq-aside"><code>prose check --select &lt;slug&gt; .</code></div>
 
 </div>
 

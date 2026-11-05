@@ -2,7 +2,8 @@
 import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
-import LintFlagPopper    from '../rules/LintFlagPopper.vue'
+import { paint }          from '../../../kit'
+import LintFlagPopup     from '../rules/LintFlagPopup.vue'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
 import { useMagicMove }          from '../../../lib/composables/use-magic-move'
@@ -15,7 +16,6 @@ import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
 import { latestRun }             from '../../../lib/shared/latest-run'
 import { externalAttrs }         from '../../../lib/shared/links'
-import { nextPaint, ruleDrawMs } from '../../../lib/shared/paint'
 
 const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
@@ -28,7 +28,7 @@ const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 const reducedMotion = useReducedMotion()
 const display       = useTemplateRef<HTMLElement>('display')
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
-const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
+const popup         = useTemplateRef<InstanceType<typeof LintFlagPopup>>('popup')
 const surface       = useTemplateRef<HTMLElement>('surface')
 
 const animate     = ref(false)
@@ -133,7 +133,7 @@ async function render(next: string): Promise<void> {
   // the step flip. A microtask alone leaves both measurements in one frame
   // and the morph degrades to a jump cut.
   await nextTick()
-  await nextPaint()
+  await paint.nextPaint()
   if (superseded()) return
   commit(html, next)
   pendingEnds  += 1
@@ -149,7 +149,7 @@ async function render(next: string): Promise<void> {
 // machine from the empty state skips the cross-document token sync no morph
 // will ever show.
 async function advancePanel(rest: string, superseded: () => boolean): Promise<void> {
-  await nextPaint()
+  await paint.nextPaint()
   if (superseded()) return
   const pair = await precompile('', rest)
   if (superseded()) return
@@ -167,7 +167,7 @@ async function advancePanel(rest: string, superseded: () => boolean): Promise<vo
 async function warmPanel(text: string, superseded: () => boolean): Promise<void> {
   const rest = text.trimEnd()
   if (rest === '') return
-  await nextPaint()
+  await paint.nextPaint()
   if (superseded() || steps.value.length > 0) return
   const { steps: warmed } = await precompile(rest, rest)
   if (superseded() || steps.value.length > 0) return
@@ -211,7 +211,7 @@ async function reflow(html: string, text: string, superseded: () => boolean): Pr
   const added   = ruleCodes.value.difference(shownRules)
   if (removed.size > 0 && display.value) {
     markUndrawn(display.value, removed)
-    await promiseTimeout(ruleDrawMs())
+    await promiseTimeout(paint.ruleDrawMs())
     if (superseded()) return
   }
   commit(html, text)
@@ -219,7 +219,7 @@ async function reflow(html: string, text: string, superseded: () => boolean): Pr
   await nextTick()
   if (superseded() || !display.value) return
   const drawing = markUndrawn(display.value, added)
-  await nextPaint()
+  await paint.nextPaint()
   if (superseded()) return
   drawing.forEach(flag => flag.classList.remove('lint-undrawn'))
 }
@@ -239,7 +239,7 @@ function markUndrawn(root: HTMLElement, rules: ReadonlySet<string>): HTMLElement
 // idempotent every rewriting rule would then have nothing left to do and drop
 // off the panel.
 function startEditing(): void {
-  popper.value?.hide()
+  popup.value?.hide()
   draft.value    = source.value
   editing.value  = true
   morphing.value = false
@@ -339,10 +339,10 @@ onUnmounted(run.cancel)
       tabindex="0"
       @click="startEditing"
       @keydown.enter.prevent="startEditing"
-      @mouseover="popper?.show"
-      @mouseout="popper?.hide"
-      @focusin="popper?.show"
-      @focusout="popper?.hide"
+      @mouseover="popup?.show"
+      @mouseout="popup?.hide"
+      @focusin="popup?.show"
+      @focusout="popup?.hide"
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error code-panel-notice text-danger-1">{{ error }}</p>
@@ -352,6 +352,6 @@ onUnmounted(run.cancel)
       <a :href="reportUrl" v-bind="externalAttrs(reportUrl)">Report it</a>
       with the source above.
     </p>
-    <LintFlagPopper ref="popper" />
+    <LintFlagPopup ref="popup" />
   </section>
 </template>

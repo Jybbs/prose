@@ -1,5 +1,0 @@
-component = 'base/PermalinkAnchor'
-
-[props]
-anchor = 'reflow-collections-max-dict-entries'
-label  = 'max-dict-entries'

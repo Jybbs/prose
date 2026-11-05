@@ -8,4 +8,6 @@ prev: false
 next: false
 ---
 
+<h1 class="sr-only">Sandbox</h1>
+
 <ProseSandbox />

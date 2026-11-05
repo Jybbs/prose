@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import MiddleEllipsis from '../base/MiddleEllipsis.vue'
-import NibBadge       from '../base/NibBadge.vue'
+import { MiddleEllipsis, NibBadge } from '../../../kit'
 
 import { useMeasuredCssVar } from '../../../lib/composables/use-measured-css-var'
 import type { RenderedRule } from '../../../lib/rules/rules.data'

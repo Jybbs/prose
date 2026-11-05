@@ -1,4 +1,4 @@
-import { millis, reducesMotion } from '../shared/paint'
+import { millis, reducesMotion } from '../../kit/drawing/paint'
 
 const travels = new WeakMap<Element, Animation>()
 

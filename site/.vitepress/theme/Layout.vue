@@ -3,12 +3,12 @@ import DefaultTheme from 'vitepress/theme'
 
 import { useNibStroke } from '../lib/composables/use-nib-stroke'
 
-import NibSprite          from './components/base/NibSprite.vue'
+import { NibSprite }      from '../kit'
 import BuildMetadata      from './components/layout/BuildMetadata.vue'
 import GlossaryFolioIndex from './components/glossary/GlossaryFolioIndex.vue'
 import NotFound           from './components/layout/NotFound.vue'
 import RuleChrome         from './components/rules/RuleChrome.vue'
-import RuleLinkPopper     from './components/rules/RuleLinkPopper.vue'
+import RuleLinkPopup      from './components/rules/RuleLinkPopup.vue'
 import StarBadge          from './components/layout/StarBadge.vue'
 
 useNibStroke()
@@ -28,7 +28,7 @@ useNibStroke()
     <template #layout-bottom>
       <BuildMetadata />
       <NibSprite />
-      <RuleLinkPopper />
+      <RuleLinkPopup />
     </template>
     <template #not-found>
       <NotFound />

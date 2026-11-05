@@ -2,6 +2,7 @@ import { markdownH1 }        from '../../lib/markdown/h1'
 import * as decorations      from '../../lib/markdown/lint-decorations'
 import { replaceTextTokens } from '../../lib/markdown/token-split'
 import { walkBodyInlines }   from '../../lib/markdown/walk'
+import { wholeLineTokens }   from '../../lib/markdown/whole-line-tokens'
 
 class StubToken {
   children: StubToken[] | null = null
@@ -69,6 +70,16 @@ describe('walkBodyInlines', () => {
     const seen: string[] = []
     walkBodyInlines({ tokens }, (_block, children) => seen.push(children[0].content))
     expect(seen).toStrictEqual(['body', 'after heading'])
+  })
+})
+
+describe('wholeLineTokens', () => {
+  it('clears the time limit before the tokenizer reads a line', async () => {
+    const { codeHighlighter } = await import('../../lib/markdown/highlighter')
+    const highlighter         = await codeHighlighter()
+    const options             = { lang: 'python', theme: 'github-dark', tokenizeTimeLimit: 500, transformers: [wholeLineTokens] }
+    highlighter.codeToHtml('x = 1', options)
+    expect(options.tokenizeTimeLimit).toBe(0)
   })
 })
 

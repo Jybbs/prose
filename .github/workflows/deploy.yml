@@ -165,7 +165,7 @@ jobs:
 
     steps:
       - name : Download the site bundle
-        uses : actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        uses : &download actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with : { name: *bundle, path: *dist }
 
       - name : Deploy to Cloudflare Pages
@@ -191,10 +191,30 @@ jobs:
       - name : Prune superseded caches
         uses : $/.github/actions/prune-caches
 
+  sweep:
+    name            : 🦯 Axe
+    needs           : press
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Provision Cargo
+        uses : $/.github/actions/provision-cargo
+        with : { save: *no-save, shared-key: '' }
+
+      - name : Download the site bundle
+        uses : *download
+        with : { name: *bundle, path: *dist }
+
+      - name : Check every built page
+        run  : mise run site:sweep
+
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [checks, deploy, press]
+    needs           : [checks, deploy, press, sweep]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 

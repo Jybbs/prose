@@ -2,8 +2,8 @@
 import { useHiddenTabindex } from '../../../../lib/composables/use-aria-hidden'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { familyEmblem }      from '../../../../lib/shared/emblems'
-import NibBadge              from '../../base/NibBadge.vue'
-import RuleTooltipPopper     from '../../rules/RuleTooltipPopper.vue'
+import { NibBadge }          from '../../../../kit'
+import RuleTooltipPopup      from '../../rules/RuleTooltipPopup.vue'
 
 defineProps<{ rule: RenderedRule | undefined, swap: string }>()
 
@@ -11,7 +11,7 @@ const tabindex = useHiddenTabindex()
 </script>
 
 <template>
-  <RuleTooltipPopper v-if="rule" :rule="rule">
+  <RuleTooltipPopup v-if="rule" :rule="rule">
     <a
       class="surface-rail-chip chip rule-chip"
       :href="rule.href"
@@ -23,5 +23,5 @@ const tabindex = useHiddenTabindex()
         <span :key="rule.slug" class="font-mono">{{ rule.slug }}</span>
       </Transition>
     </a>
-  </RuleTooltipPopper>
+  </RuleTooltipPopup>
 </template>

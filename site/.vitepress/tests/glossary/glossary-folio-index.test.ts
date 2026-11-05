@@ -6,7 +6,8 @@ import { useGlossaryFolio } from '../../lib/composables/use-glossary-folio'
 import { declared }         from '../support'
 
 vi.mock('vitepress', () => ({
-  useData: () => ({ page: { value: { relativePath: 'reference/glossary.md' } } })
+  defineLoader : () => {},
+  useData      : () => ({ page: { value: { relativePath: 'reference/glossary.md' } } })
 }))
 
 vi.mock('../../lib/composables/use-glossary-folio', async () => {

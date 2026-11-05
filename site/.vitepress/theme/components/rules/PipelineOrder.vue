@@ -9,9 +9,8 @@ import { familyEmblem }     from '../../../lib/shared/emblems'
 import { formatFolio }      from '../../../lib/shared/numerals'
 import { FAMILY_META }      from '../../../lib/shared/registries'
 
-import MiddleEllipsis    from '../base/MiddleEllipsis.vue'
-import NibBadge          from '../base/NibBadge.vue'
-import RuleTooltipPopper from './RuleTooltipPopper.vue'
+import { MiddleEllipsis, NibBadge } from '../../../kit'
+import RuleTooltipPopup             from './RuleTooltipPopup.vue'
 
 const families = pipeline.rules.map(rule => rule.family)
 
@@ -69,7 +68,7 @@ onKeyStroke('Escape', () => { here.value = null })
         :class="placed(at)"
         :data-family="rule.family"
       >
-        <RuleTooltipPopper :rule="rule.documented ? rules.bySlug[rule.slug] : null">
+        <RuleTooltipPopup :rule="rule.documented ? rules.bySlug[rule.slug] : null">
           <a
             class="pipeline-order-link flex items-center gap-12 rounded-6 px-8 py-9 text-text-1 no-underline transition-colors hover:text-brand-2"
             :href="rule.documented ? rules.bySlug[rule.slug].href : undefined"
@@ -83,7 +82,7 @@ onKeyStroke('Escape', () => { here.value = null })
             <NibBadge v-if="rule.family" :emblem="familyEmblem(rule.family)" :size="15.2" />
             <span v-else class="pipeline-order-glyph shrink-0 text-md" aria-hidden="true">·</span>
           </a>
-        </RuleTooltipPopper>
+        </RuleTooltipPopup>
       </li>
     </ol>
   </section>

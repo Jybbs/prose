@@ -1,5 +1,0 @@
-component = 'base/DocHeading'
-
-[props]
-id    = 'quick-start'
-title = 'Quick Start'

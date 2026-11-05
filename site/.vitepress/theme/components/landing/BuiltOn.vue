@@ -48,7 +48,7 @@ const entries = credits.map(({ role, slug }) => ({
           />
         </span>
         <span class="font-display text-1-15rem leading-none font-500 italic">{{ entry.tool.name }}</span>
-        <span class="kicker leading-none text-stack-accent-56-text-3">{{ entry.role }}</span>
+        <span class="kicker leading-none text-ube-soft-45">{{ entry.role }}</span>
       </a>
     </div>
   </LandingSection>

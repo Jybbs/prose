@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NibBadge from '../base/NibBadge.vue'
+import { NibBadge } from '../../../kit'
 
 import { data }           from '../../../lib/guide/platforms.data'
 import { platformEmblem } from '../../../lib/shared/emblems'

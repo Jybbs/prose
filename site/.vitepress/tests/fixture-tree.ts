@@ -42,6 +42,10 @@ export function componentFixtures(): ComponentFixture[] {
 }
 
 export async function loadComponent(name: string): Promise<Component> {
+  if (name.startsWith('kit/')) {
+    const pieces = await import('../kit') as unknown as Record<string, Component>
+    return pieces[name.slice('kit/'.length)]!
+  }
   const loader = COMPONENT_MODULES[`../theme/components/${name}.vue`]
   if (loader === undefined) {
     throw new Error(`fixture tree: no component at theme/components/${name}.vue`)

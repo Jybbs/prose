@@ -5,7 +5,6 @@ import { nextTick }             from 'vue'
 import type { RenderedRule }  from '../../lib/rules/rules.data'
 import SurfaceRail            from '../../theme/components/landing/surfaces/SurfaceRail.vue'
 import { domTest, nextFrame } from '../dom'
-import { popperStubMount }    from '../popper-stub'
 
 // The mock keys each measurement off the element it observes rather than off
 // call order, and drives the pointer the edge glide reads.
@@ -44,7 +43,7 @@ const RULES = [
 ].map(rule)
 
 const mountRail = async (rules: readonly RenderedRule[] = RULES) => {
-  const wrapper = mount(SurfaceRail, { global: popperStubMount, props: { rules } })
+  const wrapper = mount(SurfaceRail, { props: { rules } })
   await flushPromises()
   return wrapper
 }

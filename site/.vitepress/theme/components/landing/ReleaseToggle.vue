@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{ open: boolean }>()
-defineEmits<{ toggle: [] }>()
+defineEmits(['toggle'])
 </script>
 
 <template>

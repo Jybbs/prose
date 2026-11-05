@@ -1,6 +1,6 @@
 import { codeHighlighter } from '../markdown/highlighter'
 import { commonPrefix }    from '../shared/common-prefix'
-import { SHIKI_THEMES }    from '../shared/constants'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
 import { escapeHtml }      from '../shared/escape-html'
 
 const CARET = '<span class="code-caret" aria-hidden="true"></span>'
@@ -47,7 +47,7 @@ export async function tokenLines(text: string): Promise<TokenLine[]> {
     import('shiki/core'),
     codeHighlighter()
   ])
-  const { tokens } = highlighter.codeToTokens(text, { lang: 'toml', themes: SHIKI_THEMES })
+  const { tokens } = highlighter.codeToTokens(text, { colorReplacements: SHIKI_COLOR_REPLACEMENTS, lang: 'toml', themes: SHIKI_THEMES })
   return tokens.map(line => line.map(token => ({
     content : token.content,
     style   : stringifyTokenStyle(token.htmlStyle ?? {})

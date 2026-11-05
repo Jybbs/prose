@@ -12,8 +12,8 @@ import { PRIMITIVE_LAYER_NUMERALS, PRIMITIVE_SLUGS } from '../../../lib/shared/r
 import type { PrimitiveSlug }                        from '../../../lib/shared/registries'
 import { primitiveRoute }                            from '../../../lib/shared/routes'
 import InlineProse                                   from '../base/InlineProse.vue'
-import NibBadge                                      from '../base/NibBadge.vue'
-import RuleTooltipPopper                             from '../rules/RuleTooltipPopper.vue'
+import { NibBadge }                                  from '../../../kit'
+import RuleTooltipPopup                              from '../rules/RuleTooltipPopup.vue'
 
 const props = defineProps<{
   focused : PrimitiveSlug | null
@@ -103,12 +103,12 @@ watch(focusedEntry, scheduleUpdate, { immediate: true })
                 <span class="font-display text-xs leading-none font-500 text-layer-ink italic" :data-layer="m.layer" aria-hidden="true">{{ m.numeral }}</span>
                 <span class="nib-stroke pb-2">{{ m.slug }}</span>
               </a>
-              <RuleTooltipPopper v-else-if="m.kind === 'rule'" :rule="m.rule">
+              <RuleTooltipPopup v-else-if="m.kind === 'rule'" :rule="m.rule">
                 <a class="chip nib-ground gap-6 py-2 pr-8 pl-6 text-0-68rem leading-1-5 text-text-1" :href="m.rule.href" :data-family="m.rule.family">
                   <NibBadge :emblem="familyEmblem(m.rule.family)" :size="12.5" />
                   <span class="font-mono text-0-68rem text-text-1">{{ m.slug }}</span>
                 </a>
-              </RuleTooltipPopper>
+              </RuleTooltipPopup>
               <span v-else class="text-0-68rem text-text-3">{{ m.slug }}</span>
             </span>
           </span>

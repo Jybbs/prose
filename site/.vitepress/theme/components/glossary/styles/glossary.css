@@ -19,26 +19,21 @@ a.glossary-anchor {
   text-decoration-style : solid;
 }
 
-.v-popper--theme-glossary {
-  --popper-accent : var(--vp-c-divider);
-  --popper-border : var(--vp-c-divider);
+[data-popup='glossary'] {
+  --popup-border : var(--vp-c-divider);
 }
 
-.v-popper--theme-glossary .v-popper__inner {
+[data-popup='glossary'] [data-part='content'] {
   max-width     : var(--prose-width-22rem);
   min-width     : var(--prose-width-14rem);
   padding       : var(--prose-space-12) var(--prose-space-16);
-  border        : var(--prose-border-1) solid var(--popper-border);
+  border        : var(--prose-border-1) solid var(--popup-border);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
   color         : var(--vp-c-text-1);
   font-size     : var(--prose-text-sm);
   line-height   : 1.5;
-}
-
-.v-popper--theme-glossary .v-popper__wrapper {
-  transition : opacity 120ms ease-out, transform 120ms ease-out;
 }
 
 .glossary-tooltip-nib .nib-badge {

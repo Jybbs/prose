@@ -4,9 +4,8 @@ import { mount } from '@vue/test-utils'
 import Surfaces                             from '../../theme/components/landing/surfaces/Surfaces.vue'
 import { AXE_TIMEOUT_MS, expectAccessible } from '../axe'
 import { domTest }                          from '../dom'
-import { popperStubMount }                  from '../popper-stub'
 
-vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/' }) }))
+vi.mock('vitepress', () => ({ defineLoader: () => {}, useRoute: () => ({ path: '/' }) }))
 
 vi.mock('../../lib/landing/landing.data', () => ({
   data: {
@@ -45,7 +44,7 @@ vi.mock('../../lib/glossary/glossary.data', () => ({
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
-const mountSurfaces = () => mount(Surfaces, { global: popperStubMount })
+const mountSurfaces = () => mount(Surfaces)
 
 describe('Surfaces', () => {
   domTest('doubles the track and hides the second copy from assistive tech', ({ reducedMotion }) => {

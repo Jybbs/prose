@@ -1,0 +1,9 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "axe"
+#MISE depends     = ["site:bake"]
+#MISE description = "Check every page of the static docs bundle in Chromium through `axe-core`, in both color schemes"
+#MISE dir         = "site"
+#MISE wait_for    = ["site:press"]
+
+playwright install --only-shell chromium
+vitest run --project pages "$@"

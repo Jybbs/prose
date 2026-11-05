@@ -1,15 +1,15 @@
 .primitives-composition [data-layer="analysis"] {
-  --layer-hue : var(--prose-palette-ube);
+  --layer-hue : var(--color-ube);
   --layer-ink : var(--prose-shade-ube-page-45);
 }
 
 .primitives-composition [data-layer="base"] {
-  --layer-hue : var(--prose-palette-celadon);
+  --layer-hue : var(--color-celadon);
   --layer-ink : var(--prose-shade-celadon-page-45);
 }
 
 .primitives-composition [data-layer="orchestration"] {
-  --layer-hue : var(--prose-palette-whiskey);
+  --layer-hue : var(--color-whiskey);
   --layer-ink : var(--prose-shade-whiskey-page-45);
 }
 

@@ -25,6 +25,7 @@ const items = computed(() => {
 
 <template>
   <div v-if="items.length" class="flex max-w-960 flex-col gap-6" :class="related ? 'mt-28' : 'mt-24'">
+    <h2 v-if="!related" class="sr-only">Rules</h2>
     <RuleCard v-for="rule in items" :key="rule.slug" :rule="rule" />
   </div>
   <p v-else-if="!related" class="text-sm text-text-3">No rules in this group yet.</p>

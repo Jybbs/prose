@@ -19,7 +19,7 @@ defineProps<{ line: RenderedLine }>()
           :data-ube="line.anchorUbe || undefined"
           aria-hidden="true"
         >{{ line.anchor }}</span>
-        <span class="run-summary-msg data-[tint=apricot]:text-apricot data-[tint=celadon]:text-celadon" :data-tint="line.countTint || undefined">{{ line.text }}</span>
+        <span class="run-summary-msg data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45" :data-tint="line.countTint || undefined">{{ line.text }}</span>
       </div>
     </div>
   </div>
