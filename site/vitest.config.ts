@@ -24,10 +24,19 @@ export default defineConfig({
       {
         plugins : [vue({ script: { fs: sfcFs } })],
         test    : {
-          exclude    : [...configDefaults.exclude, '.vitepress/tests/wasm/**'],
+          exclude    : [...configDefaults.exclude, '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
           name       : 'docs',
           setupFiles : ['./.vitepress/tests/setup.ts']
+        }
+      },
+
+      {
+        test: {
+          globalSetup : ['./.vitepress/tests/render/serve.ts'],
+          include     : ['.vitepress/tests/render/**/*.test.ts'],
+          name        : 'render',
+          testTimeout : 30_000
         }
       },
 

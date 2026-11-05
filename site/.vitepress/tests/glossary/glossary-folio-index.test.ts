@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils'
 
 import GlossaryFolioIndex   from '../../theme/components/glossary/GlossaryFolioIndex.vue'
 import { useGlossaryFolio } from '../../lib/composables/use-glossary-folio'
-import { declared }         from '../support'
 
 vi.mock('vitepress', () => ({
   useData: () => ({ page: { value: { relativePath: 'reference/glossary.md' } } })
@@ -46,11 +45,6 @@ describe('GlossaryFolioIndex', () => {
   it('stacks the first family on top, each tile beneath it one place further in', () => {
     const tiles = index().findAll('.glossary-folio-row-deck.is-stacked .glossary-folio-row-tile')
     expect(tiles.map(tile => tile.attributes('style'))).toStrictEqual(['--deck-at: 0;', '--deck-at: 1;'])
-  })
-
-  it('holds the deck\'s width on the resting step, so a spread moves no name', () => {
-    const sheet = `${import.meta.dirname}/../../theme/components/glossary/styles/glossary-folio-index.css`
-    expect(declared(sheet, '.glossary-folio-row-deck').width).not.toContain('--deck-step')
   })
 
   it('marks the selected row and selects a clicked one', async () => {

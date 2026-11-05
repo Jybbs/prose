@@ -166,6 +166,7 @@ class Summary:
         stages = {
             "checks" : "Checks",
             "press"  : "Press",
+            "render" : "Render",
             "deploy" : "Publish"
         }  # prose: skip
 

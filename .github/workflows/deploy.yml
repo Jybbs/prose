@@ -156,16 +156,39 @@ jobs:
           path              : &dist site/.vitepress/dist
           retention-days    : 1
 
+  render:
+    name            : 🖼️ Render
+    needs           : press
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Provision Cargo
+        uses : $/.github/actions/provision-cargo
+        with : { save: *no-save, shared-key: '', tools: bun node }
+
+      - name : Download the site bundle
+        uses : &download actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with : { name: *bundle, path: *dist }
+
+      - name : Read the values the browser computes
+        env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
+        run  : |
+          mise run site:bake
+          mise run site:render
+
   deploy:
     name            : 🪁 Deploy
-    needs           : [checks, press]
+    needs           : [checks, press, render]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
     steps:
       - name : Download the site bundle
-        uses : actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        uses : *download
         with : { name: *bundle, path: *dist }
 
       - name : Deploy to Cloudflare Pages
@@ -194,7 +217,7 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [checks, deploy, press]
+    needs           : [checks, deploy, press, render]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
