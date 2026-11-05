@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
 import ShellCompletions      from '../../theme/components/integrations/ShellCompletions.vue'
 import { rendersAccessibly } from '../axe'
 
@@ -40,6 +41,8 @@ describe('ShellCompletions', () => {
     const w = mount(ShellCompletions)
     expect(w.findAll('.tool-ring svg')).toHaveLength(3)
     expect(w.find('.tool-ring a').exists()).toBe(false)
+    expect(w.findAllComponents(ToolIcon).map(icon => icon.props('slug')))
+      .toStrictEqual(['bash', 'fish', 'bash'])
   })
 
   it('draws each tab in gray at rest and the selected one on the page with a Ube edge', () => {
@@ -47,6 +50,7 @@ describe('ShellCompletions', () => {
     expect(tab.classes()).toStrictEqual(expect.arrayContaining([
       'bg-bg-soft',
       'border-divider',
+      'group',
       'text-text-2',
       'aria-selected:bg-bg',
       'aria-selected:border-ube',
@@ -61,6 +65,7 @@ describe('ShellCompletions', () => {
     expect(w.findAll('.shell-card-tab')[1].attributes('aria-selected')).toBe('true')
     expect(w.findAll('.shell-card-tab')[0].attributes('aria-selected')).toBe('false')
     expect(w.get('.shell-card-modal .kicker').text()).toBe('completions fish')
+    expect(w.get('.shell-card-modal').getComponent(ToolIcon).props('slug')).toBe('fish')
     expect(w.get('.shell-card-modal-note').text()).toBe('Completions load lazily.')
   })
 

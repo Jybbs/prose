@@ -50,7 +50,8 @@ use prose-completions`,
   },
   {
     caption  : '$PROFILE script',
-    code     : `prose completions powershell > $PROFILE.CurrentUserAllHosts`,
+    code     : `if (!(Test-Path -Path $PROFILE.CurrentUserAllHosts)) { New-Item -ItemType File -Path $PROFILE.CurrentUserAllHosts -Force }
+Add-Content -Path $PROFILE.CurrentUserAllHosts -Value '(& prose completions powershell) | Out-String | Invoke-Expression'`,
     language : 'powershell',
     name     : 'PowerShell',
     note     : 'PowerShell loads `$PROFILE.CurrentUserAllHosts` on every session, so the '

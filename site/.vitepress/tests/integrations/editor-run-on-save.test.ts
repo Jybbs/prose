@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
 import EditorRunOnSave       from '../../theme/components/integrations/EditorRunOnSave.vue'
 import { rendersAccessibly } from '../axe'
 import { isHidden }          from '../dom'
@@ -42,18 +43,26 @@ describe('EditorRunOnSave', () => {
     const w = mount(EditorRunOnSave)
     expect(w.findAll('.tool-ring svg')).toHaveLength(2)
     expect(w.find('.tool-ring a').exists()).toBe(false)
+    expect(w.findAllComponents(ToolIcon).map(icon => icon.props('slug')))
+      .toStrictEqual(['vscode', 'emacs'])
   })
 
   it('draws each row in gray at rest and marks the selected one under aria-selected', () => {
     const row = mount(EditorRunOnSave).get('.editor-card-row')
     expect(row.classes()).toStrictEqual(expect.arrayContaining([
+      'border-0',
+      'border-l-2',
       'border-l-transparent',
+      'group',
       'text-text-2',
       'aria-selected:border-l-link',
       'aria-selected:text-text-1'
     ]))
     expect(row.get('.tool-ring').classes()).toContain('group-aria-selected:text-link')
-    expect(row.get('.italic').classes()).toContain('group-aria-selected:font-600')
+    expect(row.get('.italic').classes()).toStrictEqual(expect.arrayContaining([
+      'group-aria-selected:font-600',
+      'max-card-stack:group-aria-selected:font-500'
+    ]))
   })
 
   it('swaps the visible face when another row takes the pointer', async () => {

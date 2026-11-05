@@ -24,7 +24,7 @@ const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
           >
             <span class="folio">№ {{ formatFolio(i + 1) }}</span>
             <span class="tool-ring size-22 transition-colors group-aria-selected:text-link"><ToolIcon class="size-12" :slug="editor.slug" /></span>
-            <span class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap italic group-aria-selected:font-600">{{ editor.name }}</span>
+            <span class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap italic group-aria-selected:font-600 max-card-stack:group-aria-selected:font-500">{{ editor.name }}</span>
             <span class="leader-fill max-card-stack:hidden" aria-hidden="true"></span>
           </button>
         </li>

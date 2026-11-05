@@ -6,7 +6,7 @@ import * as palette    from '../../lib/shared/palette'
 import * as vocabulary from '../vocabulary'
 
 const COMPONENTS = fs.globSync(
-  '.vitepress/theme/components/integrations/*.vue',
+  '.vitepress/theme/components/integrations/**/*.{css,vue}',
   { cwd: vocabulary.SITE }
 )
 
@@ -32,13 +32,13 @@ const FLOORS = [
 ] as const
 
 describe('the integration components', () => {
-  it.each(COMPONENTS)('%s writes no color class but a gray or a form of Ube', file => {
+  it.each(COMPONENTS)('%s names no color but a gray or a form of Ube', file => {
     expect(vocabulary.read(file)).not.toMatch(HUE_CLASS)
   })
 
   it('draws the tool ring in gray', () => {
     const sheet = vocabulary.read('.vitepress/theme/styles/tailwind/base.css')
-    expect(sheet).toMatch(/@utility tool-ring \{[^}]*border-divider bg-bg text-text-2;/)
+    expect(sheet).toMatch(/@utility tool-ring \{[^}]*flex-none border-divider bg-bg text-text-2;/)
   })
 
   describe.each(['dark', 'light'] as const)('in the %s scheme', scheme => {

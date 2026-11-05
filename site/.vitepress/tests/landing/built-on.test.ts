@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
 import BuiltOn               from '../../theme/components/landing/BuiltOn.vue'
 import { rendersAccessibly } from '../axe'
 
@@ -15,6 +16,8 @@ describe('BuiltOn', () => {
     const hrefs = w.findAll('a.built-on-card').map(card => card.attributes('href'))
     expect(hrefs).toContain('https://mise.jdx.dev/')
     expect(w.findAll('a.built-on-card .medallion svg')).toHaveLength(hrefs.length)
+    expect(w.findAllComponents(ToolIcon).map(icon => icon.props('slug')))
+      .toStrictEqual(['github', 'rust', 'uv', 'mise', 'ruff'])
   })
 
   rendersAccessibly(() => mount(BuiltOn).html())

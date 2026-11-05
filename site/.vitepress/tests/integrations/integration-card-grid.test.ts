@@ -29,9 +29,13 @@ describe('IntegrationCardGrid', () => {
     expect(footer.classes()).toContain('text-text-2')
   })
 
-  it.each(['hover', 'has-focus-visible'])('colors its edge and footer under %s', state => {
+  it.each(['hover', 'has-focus-visible'])('raises its ground and colors its edge and footer under %s', state => {
     const card = mount(IntegrationCardGrid).get('.int-card')
-    expect(card.classes()).toContain(`${state}:border-ube`)
+    expect(card.classes()).toStrictEqual(expect.arrayContaining([
+      'group',
+      `${state}:bg-bg`,
+      `${state}:border-ube`
+    ]))
     expect(card.get('p:last-child').classes()).toContain(`group-${state}:text-link`)
   })
 
