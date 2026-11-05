@@ -13,7 +13,7 @@ const shades = (ofText: boolean, scheme: palette.Scheme): string[] =>
     .map(([, hex]) => hex)
 
 describe('huesIn', () => {
-  it.each(palette.SCHEMES)('finds no hue in the %s VitePress colors or the shades of their text', scheme => {
+  it.each(palette.SCHEMES)('finds no hue in the %s colors the palette reads from VitePress or the shades of their text', scheme => {
     const vitepress = Object.values(palette.VITEPRESS).map(colors => colors[scheme])
 
     expect(huesIn([...vitepress, ...shades(true, scheme)].map(computed).join(' '))).toStrictEqual([])
