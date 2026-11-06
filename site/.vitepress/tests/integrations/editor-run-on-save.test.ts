@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
+import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
 import EditorRunOnSave       from '../../theme/components/integrations/EditorRunOnSave.vue'
 import { rendersAccessibly } from '../axe'
 import { isHidden }          from '../dom'
+
+import type loader from '../../lib/shared/tools.data'
+
+vi.mock('../../lib/shared/tools.data', async importOriginal =>
+  ({ data: await (await importOriginal<{ default: typeof loader }>()).default.load([]) }))
 
 vi.mock('../../lib/integrations/editor-configs.data', () => ({
   data: [
@@ -24,19 +30,43 @@ vi.mock('../../lib/integrations/editor-configs.data', () => ({
   ]
 }))
 
-const mountCard = () => mount(EditorRunOnSave, { global: { stubs: { Tool: true } } })
-
 describe('EditorRunOnSave', () => {
   it('opens on the first editor with only its face visible', () => {
-    const w = mountCard()
+    const w = mount(EditorRunOnSave)
     expect(w.findAll('.editor-card-row')[0].attributes('aria-selected')).toBe('true')
     const faces = w.findAll('.editor-card-face')
     expect(isHidden(faces[0])).toBe(false)
     expect(isHidden(faces[1])).toBe(true)
   })
 
+  it('sets each row\'s mark in a ring holding no link', () => {
+    const w = mount(EditorRunOnSave)
+    expect(w.findAll('.tool-ring svg')).toHaveLength(2)
+    expect(w.find('.tool-ring a').exists()).toBe(false)
+    expect(w.findAllComponents(ToolIcon).map(icon => icon.props('slug')))
+      .toStrictEqual(['vscode', 'emacs'])
+  })
+
+  it('draws each row in gray at rest and marks the selected one under aria-selected', () => {
+    const row = mount(EditorRunOnSave).get('.editor-card-row')
+    expect(row.classes()).toStrictEqual(expect.arrayContaining([
+      'border-0',
+      'border-l-2',
+      'border-l-transparent',
+      'group',
+      'text-text-2',
+      'aria-selected:border-l-link',
+      'aria-selected:text-text-1'
+    ]))
+    expect(row.get('.tool-ring').classes()).toContain('group-aria-selected:text-link')
+    expect(row.get('.italic').classes()).toStrictEqual(expect.arrayContaining([
+      'group-aria-selected:font-600',
+      'max-card-stack:group-aria-selected:font-500'
+    ]))
+  })
+
   it('swaps the visible face when another row takes the pointer', async () => {
-    const w = mountCard()
+    const w = mount(EditorRunOnSave)
     await w.findAll('.editor-card-row')[1].trigger('mouseenter')
     const faces = w.findAll('.editor-card-face')
     expect(isHidden(faces[0])).toBe(true)
@@ -45,10 +75,10 @@ describe('EditorRunOnSave', () => {
   })
 
   it('swaps the visible face when another row takes focus', async () => {
-    const w = mountCard()
+    const w = mount(EditorRunOnSave)
     await w.findAll('.editor-card-row')[1].trigger('focus')
     expect(w.findAll('.editor-card-face')[1].get('.editor-card-face-target').text()).toBe('init.el')
   })
 
-  rendersAccessibly(() => mountCard().html())
+  rendersAccessibly(() => mount(EditorRunOnSave).html())
 })

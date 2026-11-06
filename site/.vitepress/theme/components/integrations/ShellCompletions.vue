@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Tool from '../base/Tool.vue'
+import InlineProse from '../base/InlineProse.vue'
+import ToolIcon    from '../base/ToolIcon.vue'
 
 import { data as shells } from '../../../lib/integrations/shell-completions.data'
 import { useTabSelect }   from '../../../lib/composables/use-tab-select'
-import InlineProse        from '../base/InlineProse.vue'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
 </script>
@@ -17,26 +17,20 @@ const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
           :key="shell.slug"
           type="button"
           role="tab"
-          class="shell-card-tab group absolute z-1 inline-flex w-132 items-center gap-8 rounded-r-6 border-y-1 border-r-1 border-l-0 px-12 py-8 text-left whitespace-nowrap transition-colors max-card-stack:relative max-card-stack:top-auto max-card-stack:right-auto max-card-stack:mr-4 max-card-stack:mb-6 max-card-stack:ml-12 max-card-stack:w-auto max-card-stack:rounded-sm max-card-stack:border-l-1 border-y-divider border-r-divider bg-bg-soft text-text-2 not-aria-selected:hover:bg-celadon-wash-bg-soft not-aria-selected:hover:text-text-1 max-card-stack:border-l-divider aria-selected:z-5 aria-selected:border-celadon-65-divider aria-selected:bg-celadon-24-bg-soft aria-selected:text-text-1"
+          class="shell-card-tab group absolute z-1 inline-flex w-132 items-center gap-8 rounded-r-6 border-y-1 border-r-1 border-l-0 border-divider bg-bg-soft px-12 py-8 text-left whitespace-nowrap text-text-2 transition-colors aria-selected:z-5 aria-selected:border-ube aria-selected:bg-bg aria-selected:text-text-1 max-card-stack:relative max-card-stack:top-auto max-card-stack:right-auto max-card-stack:mr-4 max-card-stack:mb-6 max-card-stack:ml-12 max-card-stack:w-auto max-card-stack:rounded-sm max-card-stack:border-l-1"
           :aria-selected="shell.slug === activeSlug"
           :style="{ '--idx': i }"
           @focus="activeSlug = shell.slug"
           @mouseenter="activeSlug = shell.slug"
         >
-          <span
-            class="tool-ring size-22 border-celadon-28-divider group-aria-selected:border-celadon-70-divider"
-            aria-hidden="true"
-          ><Tool :slug="shell.slug" bare /></span>
+          <span class="tool-ring size-22 transition-colors group-aria-selected:text-link"><ToolIcon class="size-12" :slug="shell.slug" /></span>
           <em class="font-display text-sm font-600">{{ shell.name }}</em>
         </button>
       </div>
 
       <article class="shell-card-modal flex min-h-260 flex-col overflow-hidden panel bg-bg max-card-stack:min-h-auto">
         <header class="flex items-center gap-12 px-18 py-14">
-          <span
-            class="shell-card-modal-mark tool-ring size-26 border-celadon-60-divider"
-            aria-hidden="true"
-          ><Tool :slug="active.slug" bare /></span>
+          <span class="tool-ring size-26"><ToolIcon class="size-14" :slug="active.slug" /></span>
           <span class="kicker">{{ active.caption }}</span>
         </header>
         <div class="flex-auto">

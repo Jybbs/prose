@@ -5,7 +5,7 @@ tagline: 'interactive shell'
 
 # Shell Completions
 
-`prose completions <shell>` prints a completion script for the named shell to stdout. Redirect it into the directory that shell reads completions from, which the widget below names for each shell, so the install is one command on every platform.
+`prose completions <shell>` prints a completion script for the named shell to stdout. The widget below names the install for each shell, where Bash, Elvish, Fish, and Zsh redirect the script into the file that shell reads completions from, whereas PowerShell adds a line to its profile that runs the command at each shell start.
 
 <ShellCompletions />
 
@@ -17,6 +17,6 @@ The script is generated from the flags and rules compiled into the `prose` binar
 
 ## Updating After an Upgrade
 
-A new release that adds a flag or a rule shows it in the menu once the script is regenerated. Re-run the install command from the widget against the upgraded binary to overwrite the script, and the next shell session reads the new one.
+A new release that adds a flag or a rule shows it in the menu once the script is regenerated. On Bash, Elvish, Fish, and Zsh, re-running the install command from the widget against the upgraded binary overwrites the script, and the next shell session reads the new one. The line in PowerShell's profile generates the script at each shell start, so the next session after an upgrade completes from the new binary, and a second run of the install only adds a duplicate line.
 
 The [**CLI Reference**](/reference/cli) lists every flag. Completions install after the binary is on `PATH`, so the [**Installation**](/guide/installation) chapter comes first.
