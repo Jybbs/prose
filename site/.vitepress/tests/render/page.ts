@@ -9,6 +9,8 @@ interface Visit {
   width?  : number
 }
 
+export const PAGE_WIDTH = 1440
+
 const COLOR = /\b(?:color|lab|lch|oklab|oklch|rgba?)\([^)]*\)/g
 
 // Sets the OKLCH chroma past which a color reads as a hue, above each VitePress
@@ -39,7 +41,7 @@ export const renderTest = base
   })
   .extend('visit', ({ browser }, { onCleanup }) => {
     onCleanup(async () => { await Promise.all(browser.contexts().map(context => context.close())) })
-    return async (route: string, { scheme = 'light', width = 1440 }: Visit = {}): Promise<Page> => {
+    return async (route: string, { scheme = 'light', width = PAGE_WIDTH }: Visit = {}): Promise<Page> => {
       const context = await browser.newContext({ colorScheme: scheme, viewport: { height: 900, width } })
       context.setDefaultTimeout(10_000)
       const page  = await context.newPage()

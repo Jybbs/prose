@@ -157,7 +157,7 @@ jobs:
           retention-days    : 1
 
   render:
-    name            : 🖼️ Render
+    name            : 🖋️ Render
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout

@@ -1,9 +1,39 @@
-import { formatHex } from 'culori'
+import { formatHex }    from 'culori'
+import type { Locator } from 'playwright'
 
-import { GROUNDS, SCHEME_SHADES, SCHEMES }      from '../../lib/shared/palette'
-import { pointAt, renderTest, settle, styleOf } from './page'
+import { GROUNDS, SCHEME_SHADES, SCHEMES }                  from '../../lib/shared/palette'
+import { PAGE_WIDTH, pointAt, renderTest, settle, styleOf } from './page'
+
+const CALLOUT_WIDTHS = [
+  { behavior: 'sets the mark inline on a 640px page',         position: 'static',   width: 640 },
+  { behavior: 'hangs the mark in the margin on a 641px page', position: 'absolute', width: 641 }
+]
+
+const NARROW_BREAKPOINTS = [
+  { narrow: 1, route: '/',                     selector: '.built-on-grid',                                variant: 'max-tiny',       wide: 3, width: 480 },
+  { narrow: 1, route: '/',                     selector: '.landing-cta',                                  variant: 'max-card-stack', wide: 2, width: 720 },
+  { narrow: 1, route: '/reference/exit-codes', selector: 'div:has(> nav[aria-label="Exit codes"])',       variant: 'max-tablet',     wide: 2, width: 760 },
+  { narrow: 3, route: '/',                     selector: '.built-on-grid',                                variant: 'max-medium',     wide: 5, width: 820 },
+  { narrow: 1, route: '/',                     selector: 'div:has(> section[aria-label="prose config"])', variant: 'max-desktop',    wide: 2, width: 960 }
+]
 
 const STACKED_ROW = '.glossary-folio-row:visible:has(.is-stacked):not([aria-current])'
+
+const WIDTHS = [
+  ...CALLOUT_WIDTHS.map(({ width }) => width),
+  ...NARROW_BREAKPOINTS.flatMap(({ width }) => [width, width + 1]),
+  PAGE_WIDTH
+]
+
+// Reads whether the language label on a code block overlaps a line of its code.
+const labelOverlapsCode = (block: Locator): Promise<boolean> =>
+  block.evaluate(element => {
+    const label = element.querySelector('span.lang')!.getBoundingClientRect()
+    return [...element.querySelectorAll('.line')].some(line => {
+      const code = line.getBoundingClientRect()
+      return code.left < label.right && label.left < code.right && code.top < label.bottom && label.top < code.bottom
+    })
+  })
 
 describe('the body link', () => {
   renderTest('grows its nib stroke to 2.5em long and 4px deep under the pointer', async ({ visit }) => {
@@ -33,10 +63,7 @@ describe('the before-and-after toggle', () => {
 })
 
 describe('the callout mark', () => {
-  renderTest.for([
-    { behavior: 'sets the mark inline on a 640px page',         position: 'static',   width: 640 },
-    { behavior: 'hangs the mark in the margin on a 641px page', position: 'absolute', width: 641 }
-  ])('$behavior', async ({ position, width }, { visit }) => {
+  renderTest.for(CALLOUT_WIDTHS)('$behavior', async ({ position, width }, { visit }) => {
     const page = await visit('/integrations/editor', { width })
 
     await expect(styleOf(page.locator('.callout-mark').first(), 'position')).resolves.toBe(position)
@@ -102,13 +129,7 @@ describe('the glossary deck', () => {
 })
 
 describe('the narrow breakpoints', () => {
-  renderTest.for([
-    { narrow: 1, route: '/',                     selector: '.built-on-grid',                                variant: 'max-tiny',       wide: 3, width: 480 },
-    { narrow: 1, route: '/',                     selector: '.landing-cta',                                  variant: 'max-card-stack', wide: 2, width: 720 },
-    { narrow: 1, route: '/reference/exit-codes', selector: 'div:has(> nav[aria-label="Exit codes"])',       variant: 'max-tablet',     wide: 2, width: 760 },
-    { narrow: 3, route: '/',                     selector: '.built-on-grid',                                variant: 'max-medium',     wide: 5, width: 820 },
-    { narrow: 1, route: '/',                     selector: 'div:has(> section[aria-label="prose config"])', variant: 'max-desktop',    wide: 2, width: 960 }
-  ])('$variant reaches a $width px page and stops one pixel past it', async ({ narrow, route, selector, wide, width }, { visit }) => {
+  renderTest.for(NARROW_BREAKPOINTS)('$variant reaches a $width px page and stops one pixel past it', async ({ narrow, route, selector, wide, width }, { visit }) => {
     const tracksAt = async (at: number): Promise<number> => {
       const page = await visit(route, { width: at })
       return (await styleOf(page.locator(selector).first(), 'grid-template-columns')).split(' ').length
@@ -117,4 +138,24 @@ describe('the narrow breakpoints', () => {
     await expect(tracksAt(width)).resolves.toBe(narrow)
     await expect(tracksAt(width + 1)).resolves.toBe(wide)
   })
+})
+
+describe('the shell card', () => {
+  renderTest.for(WIDTHS.flatMap(width => SCHEMES.map(scheme => ({ scheme, width }))))(
+    'keeps the language label clear of the code on every shell on a $width px page in the $scheme scheme',
+    async ({ scheme, width }, { visit }) => {
+      const page  = await visit('/integrations/shell-completions', { scheme, width })
+      const block = page.locator('.shell-card-modal-code > div[class*="language-"]')
+      const tabs  = await page.locator('.shell-card-tab').all()
+      const overlapping: string[] = []
+
+      for (const tab of tabs) {
+        await tab.focus()
+        if (await labelOverlapsCode(block)) overlapping.push(await tab.innerText())
+      }
+
+      expect(tabs).not.toHaveLength(0)
+      expect(overlapping).toStrictEqual([])
+    }
+  )
 })
