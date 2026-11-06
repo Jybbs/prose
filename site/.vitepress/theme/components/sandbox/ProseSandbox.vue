@@ -69,10 +69,10 @@ onMounted(sandbox.start)
         <button
           v-bind="disclosure.trigger"
           type="button"
-          class="flex w-full items-center justify-center border-0 p-0-45rem text-text-2 transition-colors hover:bg-text-1/4 hover:text-text-1 focus-visible:-outline-offset-2 aria-expanded:border-b-1 aria-expanded:border-b-divider"
+          class="group flex w-full items-center justify-center border-0 p-0-45rem text-text-2 transition-colors hover:bg-text-1/4 hover:text-text-1 focus-visible:-outline-offset-2 aria-expanded:border-b-1 aria-expanded:border-b-divider"
           :title="deckOpen ? 'Hide configuration' : 'Show configuration'"
         >
-          <span class="kicker">Configuration</span>
+          <span class="kicker group-hover:text-text-2">Configuration</span>
         </button>
         <button
           type="button"

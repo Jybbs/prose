@@ -202,6 +202,7 @@
   --container-62ch                     : var(--prose-width-62ch);
   --container-64ch                     : var(--prose-width-64ch);
   --container-72ch                     : var(--prose-width-72ch);
+  --container-viewport                 : calc(100vw - var(--prose-space-16));
 
   --breakpoint-tiny                    : 480px;
   --breakpoint-mobile                  : 640px;

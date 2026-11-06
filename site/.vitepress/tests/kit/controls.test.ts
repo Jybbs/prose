@@ -45,6 +45,9 @@ const mountListbox = () => mount(Listbox<{ id: string }>, {
 
 const popupsIn = (theme: string) => document.querySelectorAll(`[data-popup="${theme}"] .z-10000`)
 
+// Waits past the frames the machine focuses and dismisses on.
+const nextFrames = () => new Promise(resolve => { setTimeout(resolve, 60) })
+
 describe('Tabs', () => {
   it.each(['click', 'focus', 'mouseenter'])('selects a tab on %s', async event => {
     const wrapper         = mount(TabsHost)
@@ -154,14 +157,18 @@ describe('Listbox', () => {
 })
 
 describe('Popup', () => {
-  const mountPopup = (theme: string, props: { open?: boolean, openDelay?: number } = {}) => mount(Popup, {
+  const mountPopup = (theme: string, props: { anchor?: HTMLElement, open?: boolean, passive?: boolean } = {}) => mount(Popup, {
     attachTo : document.body,
-    props    : { theme, ...props },
+    props    : { label: 'A note', theme, ...props },
     slots    : {
-      default : () => 'content',
-      trigger : scope => h('a', { ...scope.props, class: 'anchor' })
+      default : () => h('a', { class: 'more', href: '/more' }, 'Read more'),
+      trigger : scope => h('span', { ...scope.props, class: 'anchor', tabindex: 0 })
     }
   })
+
+  const focused = async (selector: string) => {
+    await vi.waitFor(() => { expect(document.activeElement?.matches(selector)).toBe(true) })
+  }
 
   it('teleports nothing until it first opens', () => {
     const wrapper = mountPopup('closed')
@@ -172,7 +179,7 @@ describe('Popup', () => {
   it('shows and hides its content through the open prop, keeping its positioner', async () => {
     const wrapper = mountPopup('driven', { open: true })
     expect(popupsIn('driven')).toHaveLength(1)
-    expect(popupsIn('driven')[0].textContent).toContain('content')
+    expect(popupsIn('driven')[0].textContent).toContain('Read more')
 
     await wrapper.setProps({ open: false })
     expect(popupsIn('driven')).toHaveLength(0)
@@ -180,10 +187,79 @@ describe('Popup', () => {
     wrapper.unmount()
   })
 
-  it('opens from a pointer on its trigger', async () => {
-    const wrapper = mountPopup('pointed', { openDelay: 0 })
+  it('opens from a click on its trigger, naming the dialog', async () => {
+    const wrapper = mountPopup('clicked')
+    await wrapper.get('.anchor').trigger('click')
+    const [content] = popupsIn('clicked')
+    expect(content.getAttribute('role')).toBe('dialog')
+    expect(content.getAttribute('aria-label')).toBe('A note')
+    wrapper.unmount()
+  })
+
+  it('stays closed under a pointer on its trigger', async () => {
+    const wrapper = mountPopup('hovered')
     await wrapper.get('.anchor').trigger('pointerenter', { pointerType: 'mouse' })
-    await vi.waitFor(() => { expect(popupsIn('pointed')).toHaveLength(1) })
+    await wrapper.get('.anchor').trigger('pointermove', { pointerType: 'mouse' })
+    await wrapper.get('.anchor').trigger('focus')
+    expect(document.querySelector('[data-popup="hovered"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it.each(['Enter', ' '])('opens from %j and moves focus to the link inside', async key => {
+    const wrapper = mountPopup('keyed')
+    await wrapper.get('.anchor').trigger('keydown', { key })
+    expect(popupsIn('keyed')).toHaveLength(1)
+    await focused('[data-popup="keyed"] .more')
+    wrapper.unmount()
+  })
+
+  it('closes on Escape and returns focus to the trigger', async () => {
+    const wrapper = mountPopup('escaped')
+    await wrapper.get('.anchor').trigger('click')
+    await focused('[data-popup="escaped"] .more')
+    await vi.waitFor(() => {
+      document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
+      expect(popupsIn('escaped')).toHaveLength(0)
+    })
+    await focused('.anchor')
+    wrapper.unmount()
+  })
+
+  it('leaves focus alone when passive, opening and closing', async () => {
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    outside.focus()
+    const wrapper = mountPopup('passive', { anchor: outside, open: false, passive: true })
+    await wrapper.setProps({ open: true })
+    await nextFrames()
+    expect(popupsIn('passive')).toHaveLength(1)
+    expect(document.activeElement).toBe(outside)
+    outside.blur()
+    await wrapper.setProps({ open: false })
+    await nextFrames()
+    expect(document.activeElement).toBe(document.body)
+    wrapper.unmount()
+    outside.remove()
+  })
+
+  it('moves focus into a card a caller opens, and back to its anchor', async () => {
+    const flag = document.createElement('button')
+    document.body.append(flag)
+    const wrapper = mountPopup('delegated', { anchor: flag, open: false })
+    await wrapper.setProps({ open: true })
+    await focused('[data-popup="delegated"] .more')
+    await wrapper.setProps({ open: false })
+    await vi.waitFor(() => { expect(document.activeElement).toBe(flag) })
+    wrapper.unmount()
+    flag.remove()
+  })
+
+  it('reports a dismissal to a caller holding its open state, staying open', async () => {
+    const wrapper = mountPopup('dismissed', { anchor: document.body, open: true })
+    await nextFrames()
+    document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
+    await vi.waitFor(() => { expect(wrapper.emitted('dismiss')).toHaveLength(1) })
+    expect(popupsIn('dismissed')).toHaveLength(1)
     wrapper.unmount()
   })
 })

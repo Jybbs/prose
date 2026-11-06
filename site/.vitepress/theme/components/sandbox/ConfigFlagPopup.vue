@@ -68,8 +68,10 @@ defineExpose({ hide, show })
 <template>
   <Popup
     :anchor="target"
+    :label="path"
     :open="path !== ''"
     :overflow-padding="16"
+    passive
     theme="glossary"
   >
       <div class="flex max-w-42ch flex-col gap-12 px-2 py-4" @mouseenter="hold" @mouseleave="close">

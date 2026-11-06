@@ -42,7 +42,7 @@ const FINDING = {
 }
 
 const LintFlagPopupStub  = {
-  methods  : { hide() {}, show() {} },
+  methods  : { hide() {}, toggle: (event: Event) => (event.target as Element).closest('.lint-flag') !== null },
   template : '<div class="popup-stub" />'
 }
 
@@ -465,6 +465,15 @@ describe('ProseSandboxSurface', () => {
     sandbox.formatted.value = 'x = 3'
     await flushPromises()
     expect(wrapper.attributes('style')).toContain('min-height: 480px')
+  })
+
+  surfaceTest('opens a flag\'s card from a press without opening the editor', async ({ mounted }) => {
+    const { wrapper } = await mounted({ diagnostics: [FINDING], formatted: 'x = 1' })
+    const flag        = wrapper.get('.lint-flag[data-rule="r1"]')
+    expect(flag.attributes()).toMatchObject({ role: 'button', tabindex: '0' })
+    await flag.trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted('update:editing')).toBeUndefined()
   })
 
   surfaceTest('drops a disabled rule\'s squiggle while keeping the code', async ({ mounted }) => {

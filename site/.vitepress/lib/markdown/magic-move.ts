@@ -14,7 +14,7 @@ export type MagicMoveMachine = ReturnType<typeof createMagicMoveMachine>
 export async function magicMoveMachine(): Promise<MagicMoveMachine> {
   const highlighter = await codeHighlighter()
   return createMagicMoveMachine(
-    code => codeToKeyedTokens(highlighter, code, { colorReplacements: SHIKI_COLOR_REPLACEMENTS, lang: 'python', themes: SHIKI_THEMES }),
+    code => codeToKeyedTokens(highlighter, code, { colorReplacements: SHIKI_COLOR_REPLACEMENTS, lang: 'python', themes: SHIKI_THEMES, tokenizeTimeLimit: 0 }),
     { enhanceMatching: true, splitTokens: true }
   )
 }

@@ -81,6 +81,11 @@ describe('wholeLineTokens', () => {
     highlighter.codeToHtml('x = 1', options)
     expect(options.tokenizeTimeLimit).toBe(0)
   })
+
+  it('reaches the markdown highlighter through the site config', async () => {
+    const { default: config } = await import('../../config')
+    expect(config.markdown?.codeTransformers).toContain(wholeLineTokens)
+  }, 60_000)
 })
 
 describe('lintDecorations', () => {
@@ -156,6 +161,22 @@ describe('lintDecorations', () => {
   })
 })
 
+describe('pressableDecorations', () => {
+  const finding = (code: string, start: number, end: number) =>
+    ({ code, end_location: { column: end, row: 1 }, location: { column: start, row: 1 }, message: 'm' })
+
+  it('gives the button role only to a flag holding no other flag', () => {
+    const [outer, inner, beside] = decorations.pressableDecorations(
+      [finding('outer', 1, 6), finding('inner', 2, 4), finding('beside', 7, 9)],
+      'abcdefghijkl'
+    )
+    expect(outer!.properties).toMatchObject({ 'data-rule': 'outer', tabindex: '0' })
+    expect(outer!.properties).not.toHaveProperty('role')
+    expect(inner!.properties).toMatchObject({ 'data-rule': 'inner', role: 'button', tabindex: '0' })
+    expect(beside!.properties).toMatchObject({ 'data-rule': 'beside', role: 'button', tabindex: '0' })
+  })
+})
+
 describe('lintDecorationTransformer', () => {
   const findings = new Map([
     ['demo-rule/basic', [{ code: 'a', end_location: { column: 4, row: 1 }, location: { column: 1, row: 1 }, message: 'm' }]]
@@ -169,7 +190,7 @@ describe('lintDecorationTransformer', () => {
     preprocess('', options)
     expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
-      properties : { class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a' },
+      properties : { class: 'lint-flag', 'data-message': 'm', 'data-rule': 'a', role: 'button', tabindex: '0' },
       start      : { character: 0, line: 0 }
     }])
   })
@@ -180,7 +201,7 @@ describe('lintDecorationTransformer', () => {
     preprocess('x =', options)
     expect(options.decorations).toStrictEqual([{
       end        : { character: 3, line: 0 },
-      properties : { class: 'lint-flag lint-flag-line', 'data-message': 'm', 'data-rule': 'a' },
+      properties : { class: 'lint-flag lint-flag-line', 'data-message': 'm', 'data-rule': 'a', role: 'button', tabindex: '0' },
       start      : { character: 0, line: 0 }
     }])
   })

@@ -158,7 +158,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
-    needs           : [checks, press]
+    needs           : [checks, press, sweep]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout

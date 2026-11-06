@@ -14,7 +14,7 @@ export const SITE_TAGLINE    = 'A Python typesetter for the reader.'
 // code grounds to the nearest color that reaches it, and takes the place of the
 // map VitePress applies to the markdown highlighter alone.
 export const SHIKI_COLOR_REPLACEMENTS = {
-  'github-dark'  : { '#2188ff': '#268bf9', '#586069': '#5b93a3', '#6a737d': '#84909c', '#ea4a5a': '#ef5564' },
+  'github-dark'  : { '#2188ff': '#328fff', '#586069': '#8a9096', '#6a737d': '#84909c', '#ea4a5a': '#ef606a' },
   'github-light' : {
     '#0366d6' : '#0663d0',
     '#1b7c83' : '#06747a',

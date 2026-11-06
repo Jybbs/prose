@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RuleTooltipPopup      from '../../theme/components/rules/RuleTooltipPopup.vue'
 import RulesPlate            from '../../theme/components/rules/RulesPlate.vue'
 import { FAMILY_ORDER }      from '../../lib/shared/registries'
 import { rendersAccessibly } from '../axe'
@@ -18,7 +17,6 @@ vi.mock('../../lib/rules/rules.data', async () =>
 
 const plate = () => mount(RulesPlate, {
   attachTo : document.body,
-  global   : { components: { RuleTooltipPopup } }
 })
 
 const letters = (w: ReturnType<typeof plate>) => w.findAll('.rules-plate-letter:not(.is-out)').map(letter => [

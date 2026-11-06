@@ -19,7 +19,7 @@ const Example = defineComponent(() => {
               <ul {...content} class="z-10000 m-0 min-w-max list-none rounded-sm border-1 border-divider bg-bg p-4 shadow-tooltip">
                 {OPTIONS.map(option => (
                   <li class="mt-0" key={option.id} role="presentation">
-                    <button {...item(option)} class="w-full rounded-sm border-none px-11 py-7 text-start font-mono text-sm" type="button">{option.id}</button>
+                    <button {...item(option)} class="w-full rounded-sm border-none px-11 py-7 text-start font-mono text-sm data-highlighted:bg-bg-soft" type="button">{option.id}</button>
                   </li>
                 ))}
               </ul>

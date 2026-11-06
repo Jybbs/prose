@@ -59,7 +59,7 @@ export const Listbox = defineComponent({
       const { 'aria-labelledby': _trigger, ...trigger } = api.value.getTriggerProps()
       return slots.default({
         content    : { ...content, 'aria-label': props.label },
-        item       : option => api.value.getItemProps({ item: option }),
+        item       : option => ({ ...api.value.getItemProps({ item: option }), tabIndex: -1 }),
         positioner : api.value.getPositionerProps(),
         trigger    : { ...trigger, 'aria-label': props.label }
       })

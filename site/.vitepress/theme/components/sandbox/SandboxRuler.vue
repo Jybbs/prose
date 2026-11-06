@@ -104,11 +104,16 @@ function dragEnd(): void {
   emit('dragging', '', '')
 }
 
-// Holds the stop still until the value it would take sits `DRAG_SLOP` pixels
+// Commits a value no press holds, as a key step reports one. Under a press it
+// holds the stop still until the value it would take sits `DRAG_SLOP` pixels
 // from where the press began, so a double-click edits rather than moves.
 function dragMove(knob: LengthKnob, value: number): void {
   const state = drag.value
-  if (state?.key !== knob.key) return
+  if (!state) {
+    emit('setLength', knob.key, value)
+    return
+  }
+  if (state.key !== knob.key) return
   if (!preview.value && Math.abs(value - state.start) * trackWidth.value / SPAN < DRAG_SLOP) return
   preview.value = { key: knob.key, value }
   emit('preview', knob.key, value)
@@ -128,13 +133,6 @@ function hueOf(index: number): string {
 
 function focusInput(el: unknown): void {
   if (el instanceof HTMLInputElement && el !== document.activeElement) el.select()
-}
-
-function keyStep(knob: LengthKnob, event: KeyboardEvent): void {
-  const next = rulerScale.steppedLength(event.key, event.shiftKey, props.valueOf(knob.key))
-  if (next === null) return
-  event.preventDefault()
-  emit('setLength', knob.key, rulerScale.clampLength(next))
 }
 
 function stopStyle(knob: LengthKnob): CSSProperties {
@@ -197,7 +195,6 @@ function tierOf(key: string): number {
           class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
           :data-changed="shownValue(knob) !== knob.default || null"
           :data-hue="hueOf(index)"
-          @keydown="keyStep(knob, $event)"
           @pointercancel="dragEnd"
           @pointerdown="dragStart(hueOf(index), knob, $event)"
           v-bind="editing === knob.key ? null : thumb"

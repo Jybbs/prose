@@ -34,17 +34,19 @@ const target      = shallowRef<HTMLElement | null>(null)
 const run = latestRun()
 
 // The `.lint-flag` anchors sit inside `v-html` static HTML, so event
-// delegation finds the hovered flag and the popup takes it as its anchor
-// rather than wrapping each anchor in a component.
-function show(event: Event): void {
+// delegation finds the pressed flag and the popup takes it as its anchor
+// rather than wrapping each anchor in a component. Reports whether the event
+// landed on a flag, which closes the card that flag has open.
+function toggle(event: Event): boolean {
   const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
   const slug = flag?.dataset.rule ?? ''
   const rule = rules.bySlug[slug]
-  if (!flag || !rule) return
-  // Crossing between a flag's own token spans re-fires the delegated hover,
-  // so a repeat on the flag already shown returns before the render and the
-  // highlight.
-  if (active.value && flag === target.value) return
+  if (!flag || !rule) return false
+  event.preventDefault()
+  if (active.value && flag === target.value) {
+    hide()
+    return true
+  }
   const message = flag.dataset.message ?? ''
   target.value  = flag
   active.value  = {
@@ -58,6 +60,7 @@ function show(event: Event): void {
       suggested : flag.dataset.suggested
     })
   }
+  return true
 }
 
 function hide(): void {
@@ -66,7 +69,7 @@ function hide(): void {
 
 // A replacement too tall for a chip renders through the same client
 // highlighter the sandbox paints with, so the suggested Python reads as
-// Python. A newer hover supersedes the render in flight, and the message
+// Python. A newer flag supersedes the render in flight, and the message
 // holds the header until the panes land.
 watch(active, async current => {
   const shorthand = current?.shorthand
@@ -84,7 +87,7 @@ watch(active, async current => {
   block.value = { after, before }
 })
 
-defineExpose({ hide, show })
+defineExpose({ hide, toggle })
 </script>
 
 <template>
@@ -92,19 +95,21 @@ defineExpose({ hide, show })
     :anchor="target"
     class="lint-popover"
     :gutter="6"
+    :label="active?.rule.name ?? ''"
     :open="active !== null"
     :overflow-padding="16"
     theme="rule-card"
+    @dismiss="hide"
   >
       <RuleCard v-if="active" :rule="active.rule" :clickable="false">
         <template #header>
           <span v-if="active.shorthand?.kind === 'replace'" class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
-            <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-3 line-through">{{ active.shorthand.before }}</span>
+            <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2 line-through">{{ active.shorthand.before }}</span>
             <span class="text-text-3" aria-hidden="true">→</span>
             <span class="lint-chip-suggest rounded-sm px-0-45rem py-0-1rem bg-text-1/12 text-text-1">{{ active.shorthand.after }}</span>
           </span>
           <span v-else-if="active.shorthand?.kind === 'remove'" class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
-            <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-3 line-through">{{ active.shorthand.text }}</span>
+            <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2 line-through">{{ active.shorthand.text }}</span>
           </span>
           <span v-else-if="active.shorthand?.kind === 'insert'" class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
             <span class="lint-chip-insert rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2">{{ active.shorthand.anchor }}<ins class="lint-inserted no-underline bg-text-1/18 text-text-1">{{ active.shorthand.inserted }}</ins></span>

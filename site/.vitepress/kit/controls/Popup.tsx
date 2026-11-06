@@ -1,49 +1,63 @@
 import { whenever }                                                              from '@vueuse/core'
-import * as hoverCard                                                            from '@zag-js/hover-card'
+import * as popover                                                              from '@zag-js/popover'
 import { normalizeProps, useMachine }                                            from '@zag-js/vue'
 import type { PropTypes }                                                        from '@zag-js/vue'
 import { computed, defineComponent, h, ref, Teleport, Transition, useId, watch } from 'vue'
 import type { PropType, SlotsType }                                              from 'vue'
 
-type Placement = NonNullable<NonNullable<hoverCard.Props['positioning']>['placement']>
+type Placement = NonNullable<NonNullable<popover.Props['positioning']>['placement']>
 
 export interface PopupTriggerScope {
   props : PropTypes['element']
 }
 
-// Shows a popup through the `hover-card` machine, teleported to the body once
-// it first opens. The `trigger` slot binds the element a pointer or a focus
-// opens it from, whereas a caller delegating its own hover passes `open` and
-// the `anchor` element the popup points at.
+// Clicks a trigger that is not a native button from the keys a button takes.
+function pressTrigger(event: KeyboardEvent): void {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  ;(event.currentTarget as HTMLElement).click()
+}
+
+// Shows a card through the `popover` machine, teleported to the body once it
+// first opens. The `trigger` slot binds the element a click, a tap, Enter, or
+// Space toggles it from, focus moves into the card on opening, and Escape
+// closes it and returns focus to the trigger. A caller delegating its own
+// events passes `open` and the `anchor` element the card points at, and hears
+// each dismissal through `dismiss`, whereas `passive` leaves focus where it is
+// for a card that follows a hover.
 export const Popup = defineComponent({
   name         : 'Popup',
   inheritAttrs : false,
   props        : {
     anchor          : { default: undefined, type: Object as PropType<HTMLElement | null> },
-    closeDelay      : { default: 120, type: Number },
     gutter          : { default: 8, type: Number },
+    label           : { required: true, type: String },
     open            : { default: undefined, type: Boolean },
-    openDelay       : { default: 80, type: Number },
     overflowPadding : { default: 8, type: Number },
+    passive         : { default: false, type: Boolean },
     placement       : { default: 'bottom-start', type: String as PropType<Placement> },
     theme           : { required: true, type: String }
   },
+  emits : ['dismiss'],
   slots : Object as SlotsType<{ default: Record<string, never>, trigger: PopupTriggerScope }>,
-  setup(props, { attrs, slots }) {
+  setup(props, { attrs, emit, slots }) {
     const id      = useId()
-    const service = useMachine(hoverCard.machine, computed(() => ({
-      closeDelay  : props.closeDelay,
+    const service = useMachine(popover.machine, computed(() => ({
+      autoFocus          : !props.passive,
+      finalFocusEl       : () => props.anchor ?? null,
       id,
-      open        : props.open,
-      openDelay   : props.openDelay,
-      positioning : {
+      onOpenChange       : ({ open }: popover.OpenChangeDetails) => { if (!open) emit('dismiss') },
+      open               : props.open,
+      persistentElements : [() => props.anchor ?? null],
+      positioning        : {
         getAnchorRect   : props.anchor === undefined ? undefined : () => props.anchor?.getBoundingClientRect() ?? null,
         gutter          : props.gutter,
         overflowPadding : props.overflowPadding,
         placement       : props.placement
-      }
+      },
+      restoreFocus       : !props.passive
     })))
-    const api    = computed(() => hoverCard.connect(service, normalizeProps))
+    const api    = computed(() => popover.connect(service, normalizeProps))
     const shown  = computed(() => props.open ?? api.value.open)
     const opened = ref(false)
 
@@ -51,9 +65,10 @@ export const Popup = defineComponent({
     watch(() => props.anchor, () => api.value.reposition())
 
     return () => {
-      const { hidden: _hidden, ...content } = api.value.getContentProps()
+      const { 'aria-labelledby': _named, hidden: _hidden, ...content } = api.value.getContentProps()
+      const { type: _type, ...trigger }                                = api.value.getTriggerProps()
       return [
-        slots.trigger?.({ props: api.value.getTriggerProps() }),
+        slots.trigger?.({ props: { ...trigger, onKeydown: pressTrigger, role: 'button' } }),
         opened.value && h(Teleport, { to: 'body' }, [
           <div {...api.value.getPositionerProps()} {...attrs} data-popup={props.theme}>
             <Transition
@@ -63,7 +78,7 @@ export const Popup = defineComponent({
               leaveToClass="-translate-y-4 opacity-0"
             >
               {shown.value && (
-                <div {...content} class="z-10000">
+                <div {...content} aria-label={props.label} class="z-10000">
                   {slots.default?.({})}
                   <div {...api.value.getArrowProps()}><div {...api.value.getArrowTipProps()} /></div>
                 </div>

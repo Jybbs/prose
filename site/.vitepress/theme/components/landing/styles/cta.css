@@ -1,6 +1,6 @@
 .landing-cta {
   --stamp-accent : var(--color-whiskey);
-  --stamp-ink    : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-65), var(--vp-c-text-1));
+  --stamp-ink    : color-mix(in srgb, var(--prose-shade-whiskey-page-45) var(--prose-tint-65), var(--vp-c-text-1));
   --panel-bg     : var(--vp-c-bg);
   --panel-edge   : var(--vp-c-divider);
 }

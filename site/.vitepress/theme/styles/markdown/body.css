@@ -1,5 +1,11 @@
+/* A line break takes the whole chip to the next line, since a break after a
+   hyphen would otherwise split `--color` and strand one dash in a sliced chip.
+   A chip wider than the column still wraps inside its own box. */
 .vp-doc :not(pre) > code {
-  font-size : var(--prose-text-0-88em);
+  display     : inline-block;
+  max-width   : 100%;
+  font-size   : var(--prose-text-0-88em);
+  line-height : normal;
 }
 
 code .code-op {

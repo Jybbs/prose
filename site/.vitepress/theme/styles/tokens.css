@@ -279,7 +279,7 @@
   --prose-scrollbar-thumb        : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-45), var(--vp-c-divider));
 
   --vp-c-brand-1                 : var(--color-link);
-  --vp-c-brand-2                 : var(--color-ube-mid);
+  --vp-c-brand-2                 : var(--prose-shade-ube-soft-45);
   --vp-c-brand-3                 : var(--color-ube-pale);
   --vp-c-brand-soft              : color-mix(in srgb, var(--color-ube) var(--prose-tint-medium), transparent);
 

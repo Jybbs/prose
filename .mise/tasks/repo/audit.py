@@ -1074,7 +1074,10 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
         cell = matched(
             message = "CONTRIBUTING.md states nothing `mise ci` runs",
             path    = ".github/CONTRIBUTING.md",
-            pattern = r"`mise ci` runs what (.+) workflows run"
+            pattern = (
+                r"`mise ci` runs what (.+) workflows run, "
+                r"short of uploading coverage"
+            )
         )
     )
     flows = [flow for _, flow in workflows() if flow.get("name") in named]

@@ -1,3 +1,6 @@
+import fs   from 'node:fs'
+import path from 'node:path'
+
 import { converter, formatHex, interpolate, parse, wcagContrast } from 'culori'
 import { parse as parseCss, type AtRule }                         from 'postcss'
 import githubDark                                                 from 'shiki/themes/github-dark.mjs'
@@ -191,13 +194,14 @@ describe('SCHEME_SHADES', () => {
   it.each(SCHEMES.flatMap(scheme => Object.entries(palette.SCHEME_SHADES[scheme]).map(([name, hex]) => [scheme, name, hex] as const)))(
     'reads the %s %s at its ratio on its ground',
     (scheme, name, hex) => {
-      const [, ground, digits] = /-(any|card|chip|code|page|soft|wash)-(\d+)$/.exec(name)!
+      const [, ground, digits] = /-(any|card|chip|code|page|selected|soft|wash)-(\d+)$/.exec(name)!
       const grounds = {
         any  : [palette.GROUNDS.page[scheme], palette.GROUNDS.soft[scheme], palette.GROUNDS.code[scheme]],
         card : [palette.GROUNDS.page[scheme], palette.GROUNDS.soft[scheme]],
         chip : [chip(scheme)],
         code : [palette.GROUNDS.code[scheme]],
         page : [palette.GROUNDS.page[scheme]],
+        selected : [over(palette.GROUNDS.page[scheme], palette.PALETTE.ube, 12)],
         soft : [palette.GROUNDS.soft[scheme]],
         wash : [over(palette.GROUNDS.page[scheme], palette.VITEPRESS['bg-alt'][scheme], 30)]
       }[ground!]!
@@ -227,6 +231,14 @@ describe('SHIKI_COLOR_REPLACEMENTS', () => {
     const painted     = [...new Set(foregrounds)].map(color => replacements[color] ?? color)
     expect(painted.filter(color => wcagContrast(color, palette.GROUNDS.code[scheme]) < 4.5)).toStrictEqual([])
   })
+
+  it.each([
+    ['dark',  'github-dark'],
+    ['light', 'github-light']
+  ] as const)('reads every replacement of the %s map at 4.5:1 on the code block', (scheme, theme) => {
+    const values = Object.values(SHIKI_COLOR_REPLACEMENTS[theme])
+    expect(values.filter(color => wcagContrast(color, palette.GROUNDS.code[scheme]) < 4.5)).toStrictEqual([])
+  })
 })
 
 describe('the sheets reading the roles and shades', () => {
@@ -242,5 +254,15 @@ describe('the sheets reading the roles and shades', () => {
     ['styles/tokens.css',                            ':root',                         '--vp-code-color', 'var(--vp-c-text-1)']
   ])('%s sets %s %s to %s', (file, selector, prop, value) => {
     expect(support.declared(new URL(`../../theme/${file}`, import.meta.url), selector)[prop]).toBe(value)
+  })
+})
+
+describe('tokens.css', () => {
+  const css = (file: string) => fs.readFileSync(path.resolve(import.meta.dirname, '../../theme/styles', file), 'utf8')
+
+  it('reads no `@theme inline` name, which Tailwind leaves undeclared at runtime', () => {
+    const inline = new Set(css('tailwind/base.css').matchAll(/^ +(--color-[\w-]+) +:/gm).map(([, name]) => name))
+    const read   = [...css('tokens.css').matchAll(/var\((--color-[\w-]+)\)/g)].map(([, name]) => name)
+    expect(read.filter(name => inline.has(name))).toStrictEqual([])
   })
 })

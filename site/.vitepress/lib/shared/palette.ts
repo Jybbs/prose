@@ -2,7 +2,7 @@ import { converter, formatHex, interpolate, wcagContrast, wcagLuminance } from '
 
 import type { GlossaryFamily, SectionSlug } from './registries'
 
-type Ground = keyof typeof GROUNDS | 'any' | 'card' | 'chip' | 'wash'
+type Ground = keyof typeof GROUNDS | 'any' | 'card' | 'chip' | 'selected' | 'wash'
 type Scheme = 'dark' | 'light'
 type Text   = 'text-1' | 'text-2' | 'text-3'
 
@@ -91,9 +91,10 @@ type Hue = GlossaryFamily | keyof typeof PALETTE | Text
 // Lists the shades the site reads, each row naming the colors it shades, the
 // grounds they sit on, and the contrast ratios they read at. The `card` ground
 // is a fixture card's, which shows the soft ground closed and the page open,
-// the `chip` ground is 5% of the text color over the page, the `wash` ground is
-// 30% of `--vp-c-bg-alt` over the page, and the `any` ground is each of the page,
-// the soft ground, and the code block.
+// the `chip` ground is 5% of the text color over the page, the `selected` ground
+// is 12% of Ube over the page, the `wash` ground is 30% of `--vp-c-bg-alt` over
+// the page, and the `any` ground is each of the page, the soft ground, and the
+// code block.
 const SHADES: [colors: readonly Hue[], grounds: readonly Ground[], ratios: readonly number[]][] = [
   [Object.keys(FAMILIES) as GlossaryFamily[], ['card', 'chip', 'page', 'soft'], [3.4, 4.5]],
   [['apricot', 'celadon', 'eureka'], ['page'], [3.5, 4.5]],
@@ -105,7 +106,7 @@ const SHADES: [colors: readonly Hue[], grounds: readonly Ground[], ratios: reado
   [['text-3'], ['card', 'chip', 'soft'], [3.1]],
   [['text-3'], ['code'], [3.5]],
   [['text-3'], ['any'], [4.5]],
-  [['apricot', 'celadon'], ['code'], [4.5]],
+  [['apricot', 'celadon'], ['code', 'selected'], [4.5]],
   [['celadon', 'ube'], ['soft'], [4.5]],
   [['ube'], ['card'], [4.5]]
 ]
@@ -125,11 +126,12 @@ export function shadeReading(grounds: string | readonly string[], hue: string, r
 function groundsOf(ground: Ground, scheme: Scheme): string[] {
   const page = GROUNDS.page[scheme]
   switch (ground) {
-    case 'any'  : return [page, GROUNDS.soft[scheme], GROUNDS.code[scheme]]
-    case 'card' : return [page, GROUNDS.soft[scheme]]
-    case 'chip' : return [srgbMix(page, VITEPRESS['text-1'][scheme], 5)]
-    case 'wash' : return [srgbMix(page, VITEPRESS['bg-alt'][scheme], 30)]
-    default     : return [GROUNDS[ground][scheme]]
+    case 'any'      : return [page, GROUNDS.soft[scheme], GROUNDS.code[scheme]]
+    case 'card'     : return [page, GROUNDS.soft[scheme]]
+    case 'chip'     : return [srgbMix(page, VITEPRESS['text-1'][scheme], 5)]
+    case 'selected' : return [srgbMix(page, PALETTE.ube, 12)]
+    case 'wash'     : return [srgbMix(page, VITEPRESS['bg-alt'][scheme], 30)]
+    default         : return [GROUNDS[ground][scheme]]
   }
 }
 

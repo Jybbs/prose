@@ -42,7 +42,7 @@ issues    = "https://github.com/Jybbs/prose/issues"
 source    = "https://github.com/Jybbs/prose"
 
 [dependency-groups]
-test = ["packaging", "pytest", "pytest-subprocess", "pyyaml", "tomlkit"]
+test = ["jinja2", "packaging", "pytest", "pytest-subprocess", "pyyaml", "tomlkit"]
 
 [tool.maturin]
 bindings = "bin"

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
+
 import { Tabs, Tool } from '../../../kit'
 
 import { data as shells } from '../../../lib/integrations/shell-completions.data'
@@ -6,10 +8,11 @@ import { useTabSelect }   from '../../../lib/composables/use-tab-select'
 import InlineProse        from '../base/InlineProse.vue'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
+const stacked                          = useMediaQuery('(width < 720px)')
 </script>
 
 <template>
-  <Tabs v-model="activeSlug" v-slot="tabs" label="Shell completion targets" orientation="vertical">
+  <Tabs v-model="activeSlug" v-slot="tabs" label="Shell completion targets" :orientation="stacked ? 'horizontal' : 'vertical'">
     <div class="relative my-1-5rem pr-132 max-card-stack:pr-0">
       <div class="relative">
         <div v-bind="tabs.list">

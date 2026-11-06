@@ -15,7 +15,7 @@ const groupedByYear = computed(() =>
 <template>
   <div class="landing-cta-scroll relative -ms-10 min-h-0 flex-1 scrollbar-thumb-ube-60-panel-edge scrollbar-track-transparent scrollbar-gutter-stable self-stretch overflow-x-hidden overflow-y-auto">
     <div v-for="group in groupedByYear" :key="group.year" class="ps-14 not-first:mt-6">
-      <p class="sticky top-0 z-1 bg-panel-bg px-8 pt-4 pb-2 font-mono text-kicker-sm tracking-display-wide text-ube uppercase">{{ group.year }}</p>
+      <p class="sticky top-0 z-1 bg-panel-bg px-8 pt-4 pb-2 font-mono text-kicker-sm tracking-display-wide text-ube-page-45 uppercase">{{ group.year }}</p>
       <ol class="flex flex-col gap-1">
         <li v-for="r in group.items" :key="r.version">
           <a class="grid grid-cols-auto-minmax-12-1fr-auto items-baseline gap-6 rounded-sm px-8 py-4 font-mono text-text-1 transition-colors hover:bg-stamp-accent-medium-bg hover:text-stamp-ink" :href="r.url" v-bind="externalAttrs(r.url)">

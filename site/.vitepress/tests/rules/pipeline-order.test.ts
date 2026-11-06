@@ -2,7 +2,6 @@
 import { mount } from '@vue/test-utils'
 
 import PipelineOrder       from '../../theme/components/rules/PipelineOrder.vue'
-import RuleTooltipPopup    from '../../theme/components/rules/RuleTooltipPopup.vue'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([
@@ -20,7 +19,7 @@ vi.mock('../../lib/rules/pipeline.data', () => ({
   }
 }))
 
-const order   = () => mount(PipelineOrder, { global: { components: { RuleTooltipPopup } } })
+const order   = () => mount(PipelineOrder)
 const entries = () => order().findAll('.pipeline-order-entry')
 
 const census = (w: ReturnType<typeof order>) => w.findAll('.pipeline-order-census-chip').map(chip => [

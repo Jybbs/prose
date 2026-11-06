@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
+
 import { Tabs, Tool } from '../../../kit'
 
 import { data as editors } from '../../../lib/integrations/editor-configs.data'
@@ -6,10 +8,11 @@ import { useTabSelect }    from '../../../lib/composables/use-tab-select'
 import { formatFolio }     from '../../../lib/shared/numerals'
 
 const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
+const stacked                  = useMediaQuery('(width < 720px)')
 </script>
 
 <template>
-  <Tabs v-model="activeSlug" v-slot="tabs" label="Editors" orientation="vertical">
+  <Tabs v-model="activeSlug" v-slot="tabs" label="Editors" :orientation="stacked ? 'horizontal' : 'vertical'">
     <div class="my-1-5rem grid grid-cols-232-1fr overflow-hidden panel bg-bg max-card-stack:grid-cols-1fr">
       <div class="border-r-1 border-r-divider bg-bg-soft pt-14 pr-14 pb-18 pl-18 max-card-stack:border-b-1 max-card-stack:border-r-0 max-card-stack:border-r-current max-card-stack:border-b-divider">
         <span class="kicker mb-14 block pb-13 border-b-double-divider">Editors &middot; {{ formatFolio(editors.length) }}</span>

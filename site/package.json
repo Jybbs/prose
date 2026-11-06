@@ -43,7 +43,7 @@
     "@vue/tsconfig"                       : "0.9.1",
     "@vueuse/core"                        : "15.0.0",
     "@zag-js/collapsible"                 : "1.47.0",
-    "@zag-js/hover-card"                  : "1.47.0",
+    "@zag-js/popover"                     : "1.47.0",
     "@zag-js/select"                      : "1.47.0",
     "@zag-js/slider"                      : "1.47.0",
     "@zag-js/tabs"                        : "1.47.0",

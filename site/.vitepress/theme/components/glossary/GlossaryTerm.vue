@@ -55,7 +55,7 @@ const showLink = computed(() => {
 </script>
 
 <template>
-  <Popup :close-delay="320" :open-delay="100" placement="top" theme="glossary">
+  <Popup :label="entry.slug" placement="top" theme="glossary">
     <template v-slot:trigger="{ props: trigger }">
       <span v-bind="trigger" class="glossary-anchor underline-draw" :tabindex="ariaHidden ? -1 : 0"><slot /></span>
     </template>

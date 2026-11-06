@@ -64,7 +64,7 @@ async function prepare(): Promise<void> {
 }
 
 // Magic-move owns the panel through the morph, and on settle the
-// decorated static panel returns so its `.lint-flag` hovers work and the
+// decorated static panel returns so its `.lint-flag` cards open and the
 // squiggles draw back in.
 function settle(): void {
   animating.value = false
@@ -113,10 +113,9 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-show="!animating"
       class="fixture-pair-panel"
       :class="{ 'lint-undrawn': undrawn }"
-      @mouseover="popup?.show"
-      @mouseout="popup?.hide"
-      @focusin="popup?.show"
-      @focusout="popup?.hide"
+      @click="popup?.toggle"
+      @keydown.enter="popup?.toggle"
+      @keydown.space="popup?.toggle"
       v-html="strippedHtml"
     />
     <CopyButton :source="activeCode" label="Copy code" />

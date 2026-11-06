@@ -658,6 +658,13 @@ def test_swept_follows_dependencies_transitively(
             id = "sweep-statement"
         ),
         param(
+            ".github/CONTRIBUTING.md",
+            ", short of uploading coverage",
+            "",
+            "CONTRIBUTING.md states nothing `mise ci` runs",
+            id = "sweep-statement-upload"
+        ),
+        param(
             "crate/pyproject.toml",
             "maturin==",
             "maturin>=",

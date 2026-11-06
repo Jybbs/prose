@@ -15,11 +15,11 @@ const target = shallowRef<HTMLElement | null>(null)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 
-// One delegated popup serves every `a.rule-link[data-rule]` in the page,
-// taking the hovered anchor as its reference node.
+// One delegated popup serves every `a[data-rule]` in the page, taking the
+// hovered anchor as its reference node.
 function linkFrom(event: Event): HTMLElement | null {
   const node = event.target
-  return node instanceof Element ? node.closest<HTMLElement>('a.rule-link[data-rule]') : null
+  return node instanceof Element ? node.closest<HTMLElement>('a[data-rule]') : null
 }
 
 // Reports whether an event landed on the open card, which keeps the card open
@@ -61,7 +61,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>
-  <Popup :anchor="target" class="rule-card-popup" :open="rule !== null" theme="rule-card">
+  <Popup :anchor="target" class="rule-card-popup" :label="rule?.name ?? ''" :open="rule !== null" passive theme="rule-card">
     <RuleCard v-if="rule" :rule="rule" :clickable="false" />
   </Popup>
 </template>

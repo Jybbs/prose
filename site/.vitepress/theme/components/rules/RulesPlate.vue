@@ -2,7 +2,6 @@
 import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { NibBadge, paint } from '../../../kit'
-import RuleTooltipPopup    from './RuleTooltipPopup.vue'
 
 import { useRaisedFamily }       from '../../../lib/composables/use-raised-family'
 import { glide }                 from '../../../lib/rules/plate-glide'
@@ -131,9 +130,7 @@ function releaseAll(): void {
           :data-family="rule.family"
         >
           <NibBadge :emblem="familyEmblem(rule.family)" :label="rule.familyLabel" :size="14" />
-          <RuleTooltipPopup :rule="rule">
-            <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline hover:text-brand-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :href="rule.href">{{ rule.slug }}</a>
-          </RuleTooltipPopup>
+          <a class="rules-plate-slug nib-stroke is-quiet pb-1 font-mono text-0-8rem leading-1-5 font-400 text-text-1 no-underline hover:text-brand-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-link" :data-rule="rule.slug" :href="rule.href">{{ rule.slug }}</a>
         </li>
       </ul>
     </section>

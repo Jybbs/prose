@@ -10,7 +10,7 @@ import { useMagicMove }          from '../../../lib/composables/use-magic-move'
 import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbox'
 import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
-import { lintDecorations }       from '../../../lib/markdown/lint-decorations'
+import { pressableDecorations }  from '../../../lib/markdown/lint-decorations'
 import * as magicMoveDelta       from '../../../lib/markdown/magic-move-delta'
 import { REPO_URL }              from '../../../lib/shared/constants'
 import { highlight }             from '../../../lib/shared/highlight'
@@ -79,7 +79,7 @@ async function render(next: string): Promise<void> {
   // so it publishes whatever its churn reads.
   const drew       = drawn.value !== seenDraw
   seenDraw         = drawn.value
-  const html       = await highlight(next, 'python', lintDecorations(diagnostics.value, next))
+  const html       = await highlight(next, 'python', pressableDecorations(diagnostics.value, next))
   if (superseded()) return
   // Mid-edit the display sits behind the editor, so stage the html silently.
   if (editing.value) {
@@ -238,6 +238,11 @@ function markUndrawn(root: HTMLElement, rules: ReadonlySet<string>): HTMLElement
 // would feed an already-formatted source back in, and since the formatter is
 // idempotent every rewriting rule would then have nothing left to do and drop
 // off the panel.
+// A press on a flag opens its card, and a press anywhere else opens the editor.
+function pressDisplay(event: Event): void {
+  if (!popup.value?.toggle(event)) startEditing()
+}
+
 function startEditing(): void {
   popup.value?.hide()
   draft.value    = source.value
@@ -335,14 +340,12 @@ onUnmounted(run.cancel)
       ref="display"
       class="sandbox-surface-display code-panel-code cursor-text"
       :class="{ 'lint-undrawn': undrawn }"
-      role="button"
+      aria-label="Python source, Enter edits it"
+      role="group"
       tabindex="0"
-      @click="startEditing"
-      @keydown.enter.prevent="startEditing"
-      @mouseover="popup?.show"
-      @mouseout="popup?.hide"
-      @focusin="popup?.show"
-      @focusout="popup?.hide"
+      @click="pressDisplay"
+      @keydown.enter.prevent="pressDisplay"
+      @keydown.space="popup?.toggle"
       v-html="displayHtml"
     />
     <p v-if="error" class="code-panel-error code-panel-notice text-danger-1">{{ error }}</p>
