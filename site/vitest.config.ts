@@ -35,6 +35,7 @@ export default defineConfig({
       {
         test: {
           globalSetup : ['./.vitepress/tests/serve.ts'],
+          hookTimeout : 120_000,
           include     : ['.vitepress/tests/pages/**/*.test.ts'],
           name        : 'pages',
           testTimeout : 120_000
