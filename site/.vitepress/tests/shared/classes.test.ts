@@ -353,8 +353,8 @@ describe('the classes a template writes', () => {
       conflicts : []
     },
     {
-      case      : 'a utility styling only a descendant beside one sizing the element',
-      classes   : [{ alt: 0, name: 'tool-ring', slot: 0 }, { alt: 0, name: 'size-22', slot: 0 }],
+      case      : 'a utility styling a descendant beside one setting that property on the element',
+      classes   : [{ alt: 0, name: 'fixture-card-body-inner', slot: 0 }, { alt: 0, name: 'm-14', slot: 0 }],
       conflicts : []
     },
     {

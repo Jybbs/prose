@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import ToolIcon from './ToolIcon.vue'
+
 import { data as tools } from '../../../lib/shared/tools.data'
+import { externalAttrs } from '../../../lib/shared/links'
 import { lookup }        from '../../../lib/shared/lookup'
 
 const props = defineProps<{
-  bare ?: boolean
-  slug  : string
+  slug : string
 }>()
 
 const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
@@ -17,23 +19,10 @@ const entry = computed(() => lookup(tools.entries, props.slug, 'Tool'))
     class="tool-mark"
     :href="entry.href"
     :title="entry.name"
-    target="_blank"
-    rel="noopener"
+    v-bind="externalAttrs(entry.href)"
   >
-    <code v-if="!bare">
-      <svg
-        class="tool-mark-icon mr-3 inline-block size-0-78em"
-        :viewBox="entry.icon.viewBox"
-        aria-hidden="true"
-        v-html="entry.icon.body"
-      />{{ entry.name }}
+    <code>
+      <ToolIcon class="tool-mark-icon mr-3 inline-block size-0-78em" :slug="slug" />{{ entry.name }}
     </code>
-    <svg
-      v-else
-      class="tool-mark-icon inline-block"
-      :viewBox="entry.icon.viewBox"
-      aria-hidden="true"
-      v-html="entry.icon.body"
-    />
   </a>
 </template>
