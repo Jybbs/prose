@@ -13,7 +13,7 @@ const COMPONENTS = fs.globSync(
 const OTHER_HUES = Object.keys(palette.PALETTE).filter(name => !name.startsWith('ube'))
 const HUE_CLASS  = new RegExp(`-(?:aside|${OTHER_HUES.join('|')})\\b|--vp-c-(?!bg|brand|divider|gray|text)`)
 
-const inks = (scheme: 'dark' | 'light') => ({
+const inks = (scheme: palette.Scheme) => ({
   link     : palette.SCHEME_ROLES[scheme].link,
   'text-1' : palette.VITEPRESS['text-1'][scheme],
   'text-2' : palette.VITEPRESS['text-2'][scheme],
@@ -41,7 +41,7 @@ describe('the integration components', () => {
     expect(sheet).toMatch(/@utility tool-ring \{[^}]*flex-none border-divider bg-bg text-text-2;/)
   })
 
-  describe.each(['dark', 'light'] as const)('in the %s scheme', scheme => {
+  describe.each(palette.SCHEMES)('in the %s scheme', scheme => {
     it.each(FLOORS)('clears the contrast floor for %s', (_role, ink, ground, floor) => {
       const contrast = wcagContrast(inks(scheme)[ink], palette.GROUNDS[ground][scheme])
       expect(contrast).toBeGreaterThanOrEqual(floor)

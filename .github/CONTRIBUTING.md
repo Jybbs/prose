@@ -354,6 +354,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
 | `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |
+| `🖋️ Render` | `🪻 Deploy` | `mise run site:bake`, `mise run site:render` | Chromium computes the expected value for the marks, narrow breakpoints, and neutral surfaces the render suite lists on the pressed docs site, and the shell card's language label clears its code |
 | `⚓ Settle` | `🪻 Corpus` | `mise run rust:settle` | The standard library settles in one pass at every line length |
 | `🎨 Mutations` | `🪻 Corpus` | `mise run rust:mutations` | Every mutation of the standard library settles in one pass |
 | `🦋 Delta` | `🪻 Corpus` | `mise run rust:delta` | The job reports how the branch changes the standard library's formatting against `main`, and never fails |

@@ -19,6 +19,7 @@ run         = [
     "site:links",
     "site:lint",
     "site:press",
+    "site:render",
     "site:typecheck",
     "wasm:lint",
     "wasm:smoke"

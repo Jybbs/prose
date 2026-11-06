@@ -5,8 +5,6 @@ import githubDark                                                 from 'shiki/th
 import * as palette from '../../lib/shared/palette'
 import * as support from '../support'
 
-const SCHEMES = ['dark', 'light'] as const
-
 const lightness = (hex: string): number => converter('oklch')(parse(hex))!.l
 
 // Mixes `share` percent of `hue` toward black the way `oklchMix` in the palette does.
@@ -98,14 +96,14 @@ describe('GROUNDS', () => {
 })
 
 describe('VITEPRESS', () => {
-  it.each(SCHEMES.flatMap(scheme => (['bg-alt', 'text-1', 'text-2', 'text-3'] as const).map(name => [scheme, name] as const)))(
+  it.each(palette.SCHEMES.flatMap(scheme => (['bg-alt', 'text-1', 'text-2', 'text-3'] as const).map(name => [scheme, name] as const)))(
     'reads the %s %s VitePress declares',
     (scheme, name) => {
       expect(palette.VITEPRESS[name][scheme]).toBe(support.vitepressVar(`--vp-c-${name}`, scheme === 'dark' ? '.dark' : ':root'))
     }
   )
 
-  it.each(SCHEMES)('lays the %s gray-soft ground over the page at its alpha', scheme => {
+  it.each(palette.SCHEMES)('lays the %s gray-soft ground over the page at its alpha', scheme => {
     const [r, g, b, alpha] = support.vitepressVar('--vp-c-gray-soft', scheme === 'dark' ? '.dark' : ':root')
       .match(/[\d.]+/g)!.map(Number) as [number, number, number, number]
     const hue = formatHex({ b: b / 255, g: g / 255, mode: 'rgb', r: r / 255 })
@@ -140,7 +138,7 @@ describe('shadeReading', () => {
 })
 
 describe('SCHEME_ROLES', () => {
-  it.each(SCHEMES)('reads the %s link at 4.5:1 on the page', scheme => {
+  it.each(palette.SCHEMES)('reads the %s link at 4.5:1 on the page', scheme => {
     expect(wcagContrast(palette.SCHEME_ROLES[scheme].link!, palette.GROUNDS.page[scheme]))
       .toBeGreaterThanOrEqual(4.5)
   })
@@ -155,7 +153,7 @@ describe('SCHEME_ROLES', () => {
     }
   )
 
-  it.each(SCHEMES)('turns the %s gray code ground to Ube\'s hue at nearly its lightness', scheme => {
+  it.each(palette.SCHEMES)('turns the %s gray code ground to Ube\'s hue at nearly its lightness', scheme => {
     const toOklch = converter('oklch')
     const ground  = toOklch(palette.SCHEME_ROLES[scheme]['code-ground'])!
     expect(Math.abs(ground.h! - toOklch(palette.PALETTE.ube)!.h!)).toBeLessThan(2)
@@ -164,9 +162,9 @@ describe('SCHEME_ROLES', () => {
 })
 
 describe('SCHEME_SHADES', () => {
-  const chip = (scheme: 'dark' | 'light') => over(palette.GROUNDS.page[scheme], palette.VITEPRESS['text-1'][scheme], 5)
+  const chip = (scheme: palette.Scheme) => over(palette.GROUNDS.page[scheme], palette.VITEPRESS['text-1'][scheme], 5)
 
-  it.each(SCHEMES.flatMap(scheme => Object.entries(palette.SCHEME_SHADES[scheme]).map(([name, hex]) => [scheme, name, hex] as const)))(
+  it.each(palette.SCHEMES.flatMap(scheme => Object.entries(palette.SCHEME_SHADES[scheme]).map(([name, hex]) => [scheme, name, hex] as const)))(
     'reads the %s %s at its ratio on its ground',
     (scheme, name, hex) => {
       const [, ground, digits] = /-(card|chip|code|page|soft|wash)-(\d+)$/.exec(name)!
