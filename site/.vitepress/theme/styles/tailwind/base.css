@@ -3,15 +3,9 @@
   --color-apricot-medium-bg        : color-mix(in srgb, var(--color-apricot) var(--prose-tint-medium), var(--vp-c-bg));
   --color-apricot-page-45          : var(--prose-shade-apricot-page-45);
   --color-apricot-selected-45      : var(--prose-shade-apricot-selected-45);
-  --color-celadon-24-bg-soft       : color-mix(in srgb, var(--color-celadon) var(--prose-tint-24), var(--vp-c-bg-soft));
-  --color-celadon-28-divider       : color-mix(in srgb, var(--color-celadon) var(--prose-tint-28), var(--vp-c-divider));
-  --color-celadon-60-divider       : color-mix(in srgb, var(--color-celadon) var(--prose-tint-60), var(--vp-c-divider));
-  --color-celadon-65-divider       : color-mix(in srgb, var(--color-celadon) var(--prose-tint-65), var(--vp-c-divider));
-  --color-celadon-70-divider       : color-mix(in srgb, var(--color-celadon) var(--prose-tint-70), var(--vp-c-divider));
   --color-celadon-code-45          : var(--prose-shade-celadon-code-45);
   --color-celadon-selected-45      : var(--prose-shade-celadon-selected-45);
   --color-celadon-soft-45          : var(--prose-shade-celadon-soft-45);
-  --color-celadon-wash-bg-soft     : color-mix(in srgb, var(--color-celadon) var(--prose-tint-wash), var(--vp-c-bg-soft));
   --color-emblem-ink               : var(--emblem-ink);
   --color-emblem-paint             : var(--emblem-paint);
   --color-ube-page-45              : var(--prose-shade-ube-page-45);
@@ -25,13 +19,5 @@
 }
 
 @utility tool-ring {
-  @apply medallion;
-  flex             : none;
-  background-color : var(--vp-c-bg);
-
-  & .tool-mark-icon {
-    width          : var(--mark-icon-size, var(--prose-size-12));
-    height         : var(--mark-icon-size, var(--prose-size-12));
-    vertical-align : 0;
-  }
+  @apply medallion flex-none border-divider bg-bg text-text-2;
 }

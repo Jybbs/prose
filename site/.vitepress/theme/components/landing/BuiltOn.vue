@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import LandingSection      from './LandingSection.vue'
+import { ToolIcon } from '../../../kit'
+
+import LandingSection from './LandingSection.vue'
 
 import { data as tools } from '../../../lib/shared/tools.data'
 import { externalAttrs } from '../../../lib/shared/links'
-import { lookup }        from '../../../lib/shared/lookup'
+import type { ToolSlug } from '../../../lib/shared/tools'
 
 interface Credit {
   role : string
-  slug : 'github' | 'mise' | 'ruff' | 'rust' | 'uv'
+  slug : ToolSlug
 }
 
 const credits: readonly Credit[] = [
@@ -21,7 +23,7 @@ const credits: readonly Credit[] = [
 const entries = credits.map(({ role, slug }) => ({
   role,
   slug,
-  tool: lookup(tools.entries, slug, 'BuiltOn credit')
+  tool: tools.entries[slug]
 }))
 </script>
 
@@ -40,12 +42,7 @@ const entries = credits.map(({ role, slug }) => ({
         v-bind="externalAttrs(entry.tool.href)"
       >
         <span class="medallion size-56 border-stack-accent-strong-divider bg-stack-accent-faint-bg text-stack-accent-68-text-1 transition-colors duration-slow group-hover/card:border-stack-accent-60-divider group-hover/card:bg-stack-accent-wash-bg group-hover/card:text-stack-accent-82-text-1">
-          <svg
-            class="size-28"
-            :viewBox="entry.tool.icon.viewBox"
-            aria-hidden="true"
-            v-html="entry.tool.icon.body"
-          />
+          <ToolIcon class="size-28" :slug="entry.slug" />
         </span>
         <span class="font-display text-1-15rem leading-none font-500 italic">{{ entry.tool.name }}</span>
         <span class="kicker leading-none text-ube-soft-45">{{ entry.role }}</span>

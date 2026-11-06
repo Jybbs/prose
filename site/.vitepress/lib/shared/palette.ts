@@ -2,9 +2,12 @@ import { converter, formatHex, interpolate, wcagContrast, wcagLuminance } from '
 
 import type { GlossaryFamily, SectionSlug } from './registries'
 
+export type Scheme = (typeof SCHEMES)[number]
+
 type Ground = keyof typeof GROUNDS | 'any' | 'card' | 'chip' | 'selected' | 'wash'
-type Scheme = 'dark' | 'light'
 type Text   = 'text-1' | 'text-2' | 'text-3'
+
+export const SCHEMES = ['dark', 'light'] as const
 
 const oklch = converter('oklch')
 

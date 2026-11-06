@@ -1,7 +1,7 @@
 import { chromium }                           from 'playwright'
 import type { Browser, BrowserContext, Page } from 'playwright'
 
-import { bundleContext, ORIGIN } from './bundle'
+import { bundleContext } from './bundle'
 
 const OPEN_CARD = '[role="dialog"]:visible'
 
@@ -17,7 +17,7 @@ describe('the cards under touch emulation at a phone width', () => {
 
   beforeEach(async () => {
     page = await context.newPage()
-    await page.goto(`${ORIGIN}/rules/lint/step-narration.html`, { waitUntil: 'networkidle' })
+    await page.goto('/rules/lint/step-narration.html', { waitUntil: 'networkidle' })
   })
 
   afterEach(() => page.close())

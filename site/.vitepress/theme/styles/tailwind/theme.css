@@ -204,12 +204,14 @@
   --container-72ch                     : var(--prose-width-72ch);
   --container-viewport                 : calc(100vw - var(--prose-space-16));
 
-  --breakpoint-tiny                    : 480px;
-  --breakpoint-mobile                  : 640px;
-  --breakpoint-card-stack              : 720px;
-  --breakpoint-tablet                  : 760px;
-  --breakpoint-medium                  : 820px;
-  --breakpoint-desktop                 : 960px;
+  /* Sets each narrow breakpoint `N` one past the widest page its `max-*` variant
+     reaches, the variant reading `width < N`. */
+  --breakpoint-tiny                    : 481px;
+  --breakpoint-mobile                  : 641px;
+  --breakpoint-card-stack              : 721px;
+  --breakpoint-tablet                  : 761px;
+  --breakpoint-medium                  : 821px;
+  --breakpoint-desktop                 : 961px;
   --breakpoint-wide                    : 1280px;
 
   --radius-1                           : var(--prose-radius-1);

@@ -22,7 +22,7 @@ interface Scheme {
 
 // Reads the page ground the palette declares and the text color VitePress
 // declares for one scheme, beside the brand color `tokens.css` sets for it.
-function scheme(brand: string, name: 'dark' | 'light'): Scheme {
+function scheme(brand: string, name: palette.Scheme): Scheme {
   const selector = name === 'dark' ? '.dark' : ':root'
   return {
     bg    : palette.GROUNDS.page[name],
@@ -122,7 +122,7 @@ describe('the badge ink', () => {
     expect(painted).toStrictEqual([])
   })
 
-  it.each(['dark', 'light'] as const)('keeps each family\'s nib a shade of its own in the %s scheme', mode => {
+  it.each(palette.SCHEMES)('keeps each family\'s nib a shade of its own in the %s scheme', mode => {
     const nibs = registries.FAMILY_ORDER.map(family => palette.SCHEME_SHADES[mode][`${family}-page-45`]!)
     const gaps = nibs.flatMap((a, i) => nibs.slice(i + 1).map(b => differenceCiede2000()(a, b)))
     expect(Math.min(...gaps)).toBeGreaterThan(5)

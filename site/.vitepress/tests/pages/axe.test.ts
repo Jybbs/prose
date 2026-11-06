@@ -2,7 +2,9 @@ import axe                              from 'axe-core'
 import { chromium }                     from 'playwright'
 import type { Browser, BrowserContext } from 'playwright'
 
-import { bundleContext, ORIGIN, PAGES } from './bundle'
+import { SCHEMES } from '../../lib/shared/palette'
+
+import { bundleContext, PAGES } from './bundle'
 
 interface Finding {
   id      : string
@@ -12,7 +14,7 @@ interface Finding {
 async function findings(context: BrowserContext, file: string): Promise<Finding[]> {
   const page = await context.newPage()
   try {
-    await page.goto(`${ORIGIN}/${file}`, { waitUntil: 'networkidle' })
+    await page.goto(`/${file}`, { waitUntil: 'networkidle' })
     await page.addScriptTag({ content: axe.source })
     return await page.evaluate(async () => {
       const { violations } = await (window as unknown as { axe: typeof axe }).axe.run()
@@ -28,7 +30,7 @@ it('finds the built pages', () => {
   expect(PAGES, 'the sweep reads the bundle `mise run site:press` builds').toContain('reference/kit.html')
 })
 
-describe.each(['dark', 'light'] as const)('the built pages in the %s scheme', colorScheme => {
+describe.each(SCHEMES)('the built pages in the %s scheme', colorScheme => {
   let browser : Browser
   let context : BrowserContext
 

@@ -21,7 +21,6 @@ interface ToolEntry {
   href : string
   icon : ToolIcon
   name : string
-  role : string
 }
 
 interface ToolsData {
@@ -42,7 +41,8 @@ function loadLocalSvg(relative: string): ToolIcon {
 }
 
 const CUSTOM_ICONS: Record<string, ToolIcon> = {
-  mise: loadLocalSvg('mise-logo.svg')
+  mise     : loadLocalSvg('mise-logo.svg'),
+  terminal : loadLocalSvg('terminal-mark.svg')
 }
 
 function loadIcon(spec: string): ToolIcon {

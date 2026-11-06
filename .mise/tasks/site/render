@@ -1,0 +1,8 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "render"
+#MISE depends     = ["site:press"]
+#MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
+#MISE dir         = "site"
+
+playwright install --only-shell chromium
+vitest run --project render "$@"

@@ -25,7 +25,7 @@ export default defineConfig({
       {
         plugins : [vue({ script: { fs: sfcFs } }), vueJsx({ tsTransform: 'built-in' })],
         test    : {
-          exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/wasm/**'],
+          exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
           name       : 'docs',
           setupFiles : ['./.vitepress/tests/setup.ts']
@@ -34,9 +34,19 @@ export default defineConfig({
 
       {
         test: {
+          globalSetup : ['./.vitepress/tests/serve.ts'],
           include     : ['.vitepress/tests/pages/**/*.test.ts'],
           name        : 'pages',
           testTimeout : 120_000
+        }
+      },
+
+      {
+        test: {
+          globalSetup : ['./.vitepress/tests/serve.ts'],
+          include     : ['.vitepress/tests/render/**/*.test.ts'],
+          name        : 'render',
+          testTimeout : 30_000
         }
       },
 

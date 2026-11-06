@@ -2,141 +2,118 @@ interface ToolSeed {
   href : string
   icon : string
   name : string
-  role : string
 }
 
 export const TOOL_SEEDS = {
   bash: {
     href : 'https://www.gnu.org/software/bash/',
-    icon : 'logos:bash-icon',
-    name : 'Bash',
-    role : 'Shell completion target'
+    icon : 'simple-icons:gnubash',
+    name : 'Bash'
   },
   clap: {
     href : 'https://docs.rs/clap/',
     icon : 'logos:rust',
-    name : 'clap',
-    role : 'CLI parsing'
+    name : 'clap'
   },
   elvish: {
     href : 'https://elv.sh/',
-    icon : 'logos:terminal',
-    name : 'Elvish',
-    role : 'Shell completion target'
+    icon : 'custom:terminal',
+    name : 'Elvish'
   },
   emacs: {
     href : 'https://www.gnu.org/software/emacs/',
-    icon : 'logos:emacs',
-    name : 'Emacs',
-    role : 'Editor integration target'
+    icon : 'simple-icons:gnuemacs',
+    name : 'Emacs'
   },
   fish: {
     href : 'https://fishshell.com/',
     icon : 'simple-icons:fishshell',
-    name : 'Fish',
-    role : 'Shell completion target'
+    name : 'Fish'
   },
   github: {
     href : 'https://github.com/features/actions',
     icon : 'simple-icons:githubactions',
-    name : 'GitHub Actions',
-    role : 'CI integration target'
+    name : 'GitHub Actions'
   },
   helix: {
     href : 'https://helix-editor.com/',
     icon : 'simple-icons:helix',
-    name : 'Helix',
-    role : 'Editor integration target'
+    name : 'Helix'
   },
   jetbrains: {
     href : 'https://www.jetbrains.com/',
-    icon : 'logos:intellij-idea',
-    name : 'JetBrains',
-    role : 'Editor integration target'
+    icon : 'simple-icons:jetbrains',
+    name : 'JetBrains'
   },
   maturin: {
     href : 'https://www.maturin.rs/',
     icon : 'logos:rust',
-    name : 'maturin',
-    role : 'Rust to Python wheel build'
+    name : 'maturin'
   },
   mise: {
     href : 'https://mise.jdx.dev/',
     icon : 'custom:mise',
-    name : 'mise',
-    role : 'Tool versions and tasks'
+    name : 'mise'
   },
   neovim: {
     href : 'https://neovim.io/',
-    icon : 'logos:neovim',
-    name : 'Neovim',
-    role : 'Editor integration target'
+    icon : 'simple-icons:neovim',
+    name : 'Neovim'
   },
   powershell: {
     href : 'https://learn.microsoft.com/powershell/',
     icon : 'simple-icons:powershell',
-    name : 'PowerShell',
-    role : 'Shell completion target'
+    name : 'PowerShell'
   },
   precommit: {
     href : 'https://pre-commit.com/',
     icon : 'simple-icons:precommit',
-    name : 'pre-commit',
-    role : 'Git commit-boundary hook'
+    name : 'pre-commit'
   },
   python: {
     href : 'https://www.python.org/',
     icon : 'logos:python',
-    name : 'Python',
-    role : 'The target language'
+    name : 'Python'
   },
   rayon: {
     href : 'https://docs.rs/rayon/',
     icon : 'logos:rust',
-    name : 'rayon',
-    role : 'Per-file parallelism'
+    name : 'rayon'
   },
   ruff: {
     href : 'https://docs.astral.sh/ruff/',
     icon : 'simple-icons:ruff',
-    name : 'Ruff',
-    role : 'Parser & AST'
+    name : 'Ruff'
   },
   rust: {
     href : 'https://www.rust-lang.org/',
     icon : 'simple-icons:rust',
-    name : 'Rust',
-    role : 'Implementation language'
+    name : 'Rust'
   },
   sublime: {
     href : 'https://www.sublimetext.com/',
-    icon : 'logos:sublimetext-icon',
-    name : 'Sublime Text',
-    role : 'Editor integration target'
+    icon : 'simple-icons:sublimetext',
+    name : 'Sublime Text'
   },
   uv: {
     href : 'https://docs.astral.sh/uv/',
     icon : 'simple-icons:uv',
-    name : 'uv',
-    role : 'Canonical install path'
+    name : 'uv'
   },
   vitepress: {
     href : 'https://vitepress.dev/',
     icon : 'simple-icons:vitepress',
-    name : 'VitePress',
-    role : 'Docs site framework'
+    name : 'VitePress'
   },
   vscode: {
     href : 'https://code.visualstudio.com/',
-    icon : 'logos:visual-studio-code',
-    name : 'VS Code',
-    role : 'Editor integration target'
+    icon : 'simple-icons:visualstudiocode',
+    name : 'VS Code'
   },
   zsh: {
     href : 'https://www.zsh.org/',
-    icon : 'logos:zsh',
-    name : 'Zsh',
-    role : 'Shell completion target'
+    icon : 'simple-icons:zsh',
+    name : 'Zsh'
   }
 } as const satisfies Record<string, ToolSeed>
 

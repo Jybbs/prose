@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 
-import { Tabs, Tool } from '../../../kit'
+import { Tabs, ToolIcon } from '../../../kit'
 
 import { data as editors } from '../../../lib/integrations/editor-configs.data'
 import { useTabSelect }    from '../../../lib/composables/use-tab-select'
@@ -21,16 +21,11 @@ const stacked                  = useMediaQuery('(width < 720px)')
             <button
               v-bind="tabs.trigger(editor.slug)"
               type="button"
-              class="editor-card-row group flex w-full items-center gap-10 rounded-sm border-none p-8 text-left text-text-1 transition-colors not-aria-selected:hover:bg-celadon/7 aria-selected:bg-celadon/medium max-card-stack:flex-3/10"
+              class="editor-card-row group flex w-full items-center gap-10 border-0 border-l-2 border-l-transparent p-8 text-left text-text-2 transition-colors aria-selected:border-l-link aria-selected:text-text-1 max-card-stack:flex-3/10"
             >
-              <span class="folio group-aria-selected:text-text-2">№ {{ formatFolio(i + 1) }}</span>
-              <span
-                class="tool-ring size-22 border-celadon-28-divider group-aria-selected:border-celadon-65-divider"
-                aria-hidden="true"
-              ><Tool :slug="editor.slug" bare /></span>
-              <span
-                class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap text-aside italic group-aria-selected:text-text-1"
-              >{{ editor.name }}</span>
+              <span class="folio">№ {{ formatFolio(i + 1) }}</span>
+              <span class="tool-ring size-22 transition-colors group-aria-selected:text-link"><ToolIcon class="size-12" :slug="editor.slug" /></span>
+              <span class="min-w-0 overflow-hidden font-display text-md font-500 whitespace-nowrap italic group-aria-selected:font-600 max-card-stack:group-aria-selected:font-500">{{ editor.name }}</span>
               <span class="leader-fill max-card-stack:hidden" aria-hidden="true"></span>
             </button>
           </li>
