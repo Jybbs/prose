@@ -3,7 +3,7 @@ import type { MarkdownIt } from 'markdown-it'
 // Holds the word naming each callout kind beside the printer's mark hung in
 // its margin, a section mark for a tip, a pilcrow for an info, and a dagger
 // for a warning or a danger.
-const KINDS = {
+export const KINDS = {
   danger  : { label: 'Danger',  mark: '†' },
   info    : { label: 'Info',    mark: '¶' },
   tip     : { label: 'Tip',     mark: '§' },

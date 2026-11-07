@@ -1,5 +1,5 @@
-import axe                                                 from 'axe-core'
-import { chromium }                                        from 'playwright'
+import axe          from 'axe-core'
+import { chromium } from 'playwright'
 import type { Browser, BrowserContext, Page, ViewportSize } from 'playwright'
 
 import { SCHEMES }     from '../../lib/shared/palette'
@@ -133,6 +133,7 @@ const survey = (file: string): Promise<Survey> => surveys.getOrInsertComputed(fi
 
 it('finds the built pages', () => {
   expect(BUILT, 'the sweep reads the bundle `mise run site:press` builds').toContain('reference/kit.html')
+  expect(PAGES, 'the shard reads a share of the built pages').not.toHaveLength(0)
 })
 
 describe.each(SCHEMES)('the built pages in the %s scheme', scheme => {

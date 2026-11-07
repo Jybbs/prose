@@ -1,12 +1,13 @@
-import { computed, defineComponent, ref, watch } from 'vue'
+import { computed, defineComponent, shallowRef, watch } from 'vue'
 
 import { nib, NibBadge, Tabs }                from '../../../kit'
 import type { TabsScope }                     from '../../../kit'
 import { useReducedMotion }                   from '../../../lib/composables/use-reduced-motion'
 import { data }                               from '../../../lib/identity/identity.data'
 import { familyEmblem, strokesOf }            from '../../../lib/shared/emblems'
+import { counted }                            from '../../../lib/shared/numerals'
 import { FAMILY_ORDER, GLOSSARY_FAMILY_META } from '../../../lib/shared/registries'
-import { IdentityCopyChip, IdentityRow, IdentitySchemeLabel } from './IdentityParts'
+import { IdentityCaption, IdentityPanel, IdentityPlain } from './IdentityParts'
 
 import type { GlossaryFamily, RuleFamily } from '../../../lib/shared/registries'
 
@@ -18,15 +19,35 @@ const GROUPS = [
   }
 ]
 
+const FAMILIES = GROUPS.flatMap(group => group.families)
+
+// Draws the large badge this many pixels square.
+const BADGE_PX = 128
+
+const rules = (family: GlossaryFamily): string =>
+  family in data.ruleCounts ? counted(data.ruleCounts[family as RuleFamily], 'rule') : 'a concern'
+
+const holds = (family: GlossaryFamily): string => family in data.ruleCounts
+  ? `The family holds ${rules(family)}.`
+  : 'It marks a concern rather than a rule family.'
+
+const sentence = (family: GlossaryFamily): string => {
+  const { badge, label } = GLOSSARY_FAMILY_META[family]
+  const strokes          = strokesOf(familyEmblem(family).motif).length
+  const ink              = data.inks[family]
+  return `The ${label.toLowerCase()} badge is a ${familyEmblem(family).motif.label.toLowerCase()} ${badge} drawn in ${counted(strokes, 'stroke')}, `
+    + `inked ${ink.light} on the light page and ${ink.dark} on the dark, the family color shaded to ${data.inkRatio}:1 against each.`
+}
+
 // Draws one family's badge large, stroke by stroke in the order its motif
-// declares them, beside a list of every family grouped as rule families and
-// cross-cutting concerns, and reads out the ink the badge takes, its strokes,
-// and the rules the family holds.
+// declares them, beside the list of every family grouped as rule families and
+// cross-cutting concerns, and reads out the badge's motif, its ink, its
+// strokes, and the rules the family holds.
 export const IdentityBadges = defineComponent({
   name : 'IdentityBadges',
   setup() {
-    const chosen  = ref<GlossaryFamily>(FAMILY_ORDER[0])
-    const drawn   = ref(0)
+    const chosen  = shallowRef<GlossaryFamily>(FAMILY_ORDER[0])
+    const drawn   = shallowRef(0)
     const reduced = useReducedMotion()
     const emblem  = computed(() => familyEmblem(chosen.value))
     const strokes = computed(() => strokesOf(emblem.value.motif))
@@ -36,88 +57,93 @@ export const IdentityBadges = defineComponent({
 
     return () => {
       const { fit, label } = emblem.value.motif
+      const meta           = GLOSSARY_FAMILY_META[chosen.value]
       return (
-        <Tabs label="Families" modelValue={chosen.value} onUpdate:modelValue={(next: GlossaryFamily) => { chosen.value = next }} orientation="vertical">
-          {{
-            default: ({ content, list, trigger }: TabsScope<GlossaryFamily>) => (
-              <div class="my-1-5rem grid grid-cols-196-minmax-1fr gap-1-5rem max-tablet:grid-cols-1fr">
-                <div {...list} class="grid content-start">
-                  {GROUPS.map(group => [
-                    <span aria-hidden="true" class="kicker mt-0-5rem" key={group.title}>{group.title}</span>,
-                    ...group.families.map(family => (
-                      <button
-                        key={family}
-                        {...trigger(family)}
-                        aria-controls={undefined}
-                        class="identity-legend flex items-center gap-x-8 text-sm text-text-1"
-                        data-family={family}
-                      >
-                        <NibBadge emblem={familyEmblem(family)} size={16} />
-                        {GLOSSARY_FAMILY_META[family].label}
-                      </button>
-                    ))
-                  ])}
-                </div>
-                <div {...content(chosen.value)} class="grid content-start gap-1rem" data-family={chosen.value}>
-                  <div class="grid place-items-center rounded-sm border-1 border-divider bg-bg p-1-25rem">
-                    <svg
-                      aria-label={`${GLOSSARY_FAMILY_META[chosen.value].label} badge, the ${label.toLowerCase()}`}
-                      class="identity-badge size-9rem"
-                      key={chosen.value}
-                      role="img"
-                      viewBox="0 0 24 24"
-                    >
-                      <g filter={`url(#${nib.nibId(emblem.value.motif, 'jitter')})`}>
-                        <g transform={nib.fitTransform(fit)}>
-                          <g {...nib.STROKE} stroke-width={nib.perScale(fit, nib.NIB.stroke.nib)}>
-                            {nib.NIB.large.map(offset => (
-                              <g key={offset} transform={nib.diagonal(fit, offset)}>
-                                {strokes.value.map((d, index) => (
-                                  <path
-                                    class="identity-stroke"
-                                    d={d}
-                                    key={d}
-                                    onAnimationend={offset === 0 ? () => { drawn.value = index + 1 } : undefined}
-                                    pathLength={1}
-                                    style={{ '--stroke': index }}
-                                  />
-                                ))}
+        <div>
+          <IdentityPanel source="NibSprite" title="One drawing">
+            {{
+              aside   : () => <span class="kicker">{`${BADGE_PX} px`}</span>,
+              default : () => (
+                <Tabs label="Families" modelValue={chosen.value} onUpdate:modelValue={(next: GlossaryFamily) => { chosen.value = next }} orientation="vertical">
+                  {{
+                    default: ({ content, list, trigger }: TabsScope<GlossaryFamily>) => (
+                      <div class="px-18 pb-16">
+                        <div class="identity-badges">
+                          <div {...content(chosen.value)} class="grid place-content-center justify-items-center gap-10 p-16" data-family={chosen.value}>
+                            <svg
+                              aria-label={`${meta.label} badge, the ${label.toLowerCase()}`}
+                              class="identity-badge overflow-visible"
+                              height={BADGE_PX}
+                              key={chosen.value}
+                              role="img"
+                              viewBox="0 0 24 24"
+                              width={BADGE_PX}
+                            >
+                              <g filter={`url(#${nib.nibId(emblem.value.motif, 'jitter')})`}>
+                                {nib.fitted(fit, nib.NIB.stroke.nib, nib.NIB.large.map(offset => (
+                                  <g key={offset} transform={nib.diagonal(fit, offset)}>
+                                    {strokes.value.map((d, index) => (
+                                      <path
+                                        class="identity-stroke"
+                                        d={d}
+                                        key={d}
+                                        onAnimationend={offset === 0 ? () => { drawn.value = index + 1 } : undefined}
+                                        pathLength={1}
+                                        style={{ '--stroke': index }}
+                                      />
+                                    ))}
+                                  </g>
+                                )))}
                               </g>
-                            ))}
-                          </g>
-                        </g>
-                      </g>
-                    </svg>
-                    <p aria-live="polite" class="m-0 font-mono text-meta text-text-3 tabular-nums">
-                      {`Stroke ${shown.value} of ${strokes.value.length}`}
-                    </p>
-                  </div>
-                  <div class="grid grid-cols-max-1fr gap-x-1-5rem">
-                    <IdentityRow label="Ink">{{ default: () => (
-                      <div class="grid gap-6">
-                        {data.schemes.map(scheme => (
-                          <div class="flex flex-wrap items-center gap-8" key={scheme}>
-                            <IdentitySchemeLabel scheme={scheme} />
-                            <IdentityCopyChip label={`the ${scheme} ink`} value={data.inks[chosen.value][scheme]} />
+                            </svg>
+                            <p aria-live="polite" class="m-0 kicker tabular-nums">{`Stroke ${shown.value} of ${strokes.value.length}`}</p>
                           </div>
-                        ))}
-                        <div><IdentityCopyChip label="the ink token" value="--family-nib" /></div>
+                          <div {...list} class="identity-side grid content-start py-8">
+                            {GROUPS.map(group => [
+                              <span aria-hidden="true" class="mx-14 mt-8 mb-4 block kicker" key={group.title}>{group.title}</span>,
+                              ...group.families.map(family => (
+                                <button key={family} {...trigger(family)} aria-controls={undefined} class="identity-pick identity-badge-row" data-family={family}>
+                                  <NibBadge emblem={familyEmblem(family)} size={18} />
+                                  <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{GLOSSARY_FAMILY_META[family].label}</span>
+                                  <span aria-hidden="true" class="text-0-84rem">{GLOSSARY_FAMILY_META[family].badge}</span>
+                                </button>
+                              ))
+                            ])}
+                          </div>
+                        </div>
+                        <p class="mt-0 mb-0 flex flex-wrap items-baseline gap-x-8 gap-y-4 border-t-1 border-t-divider pt-12 text-xs">
+                          <span class="font-display text-1rem font-500 text-text-1 italic">{meta.label}</span>
+                          <span aria-hidden="true" class="middle-dot">·</span>
+                          <span class="kicker">{`${meta.badge} ${label}`}</span>
+                          <span aria-hidden="true" class="middle-dot">·</span>
+                          <span class="font-mono text-text-1 tabular-nums">
+                            {'ink '}
+                            <span class="dark:hidden">{data.inks[chosen.value].light}</span>
+                            <span class="hidden dark:inline">{data.inks[chosen.value].dark}</span>
+                          </span>
+                          <span aria-hidden="true" class="middle-dot">·</span>
+                          <span class="font-mono text-text-1 tabular-nums">{counted(strokes.value.length, 'stroke')}</span>
+                          <span aria-hidden="true" class="middle-dot">·</span>
+                          <span class="font-mono text-text-1 tabular-nums">{rules(chosen.value)}</span>
+                        </p>
+                        <IdentityPlain label="Every badge’s caption, as text">
+                          {{
+                            default: () => (
+                              <ol class="m-0 list-none p-0">
+                                {FAMILIES.map(family => <li class="mt-5 first:mt-0" key={family}>{`${sentence(family)} ${holds(family)}`}</li>)}
+                              </ol>
+                            )
+                          }}
+                        </IdentityPlain>
                       </div>
-                    ) }}</IdentityRow>
-                    <IdentityRow label="Strokes">{{ default: () => (
-                      <p class="m-0 text-sm tabular-nums">{strokes.value.length}</p>
-                    ) }}</IdentityRow>
-                    <IdentityRow label="Rules">{{ default: () => (
-                      <p class="m-0 text-sm tabular-nums">
-                        {chosen.value in data.ruleCounts ? data.ruleCounts[chosen.value as RuleFamily] : 'A concern rather than a rule family'}
-                      </p>
-                    ) }}</IdentityRow>
-                  </div>
-                </div>
-              </div>
-            )
-          }}
-        </Tabs>
+                    )
+                  }}
+                </Tabs>
+              )
+            }}
+          </IdentityPanel>
+          <IdentityCaption>{{ default: () => sentence(chosen.value) }}</IdentityCaption>
+        </div>
       )
     }
   }

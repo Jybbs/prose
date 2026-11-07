@@ -1,96 +1,121 @@
-import { computed, defineComponent, ref } from 'vue'
+import { defineComponent, shallowRef } from 'vue'
 
-import { ScrollRegion, Tabs } from '../../../kit'
-import type { TabsScope }     from '../../../kit'
-import { data }               from '../../../lib/identity/identity.data'
-import { ROLES, SCHEME_TEXT } from '../../../lib/identity/roles'
-import { IdentityCopyChip }   from './IdentityParts'
+import { ScrollRegion, Tabs }             from '../../../kit'
+import type { TabsScope }                 from '../../../kit'
+import { useRaised }                      from '../../../lib/composables/use-raised'
+import { data }                           from '../../../lib/identity/identity.data'
+import * as roles                         from '../../../lib/identity/roles'
+import { KINDS }                          from '../../../lib/markdown/callout-plugin'
+import { IdentityCaption, IdentityPanel } from './IdentityParts'
 
-import type { RoleId } from '../../../lib/identity/roles'
+import type { Role }   from '../../../lib/identity/roles'
 import type { Scheme } from '../../../lib/shared/palette'
 
-// Sets a short page passage in either scheme beside a legend naming every color
-// role it draws with, pointing at a role marking each place the passage uses it.
+const FLOOR = Object.fromEntries(roles.LEVELS)
+
+const passes = (role: Role, scheme: Scheme): boolean => role.contrast[scheme].ratio >= FLOOR[role.judged]!
+
+const kinds = data.roles.filter(role => role.group === 'marks').map(role => {
+  const kind = role.id.replace('callout-', '') as keyof typeof KINDS
+  return { kind, role, ...KINDS[kind] }
+})
+
+// Sets a short page passage in the light scheme or the dark beside a legend of
+// every color role it draws with, each role's contrast judged at its level, and
+// pointing at, focusing, or pinning a role outlines every place the passage
+// uses it.
 export const IdentityRoles = defineComponent({
   name : 'IdentityRoles',
   setup() {
-    const scheme = ref<Scheme>('light')
-    const marked = ref<RoleId>(ROLES[0].id)
-    const tokens = computed(() => Object.fromEntries(ROLES.map(role => [role.token, data.roles[role.id][scheme.value]])))
-    const role   = (id: RoleId) => ({ 'data-marked': marked.value === id || undefined, 'data-role': id })
+    const scheme                = shallowRef<Scheme>('light')
+    const { on, pinned, shown } = useRaised<string>()
+    const mark                  = (id: string) => ({ 'class': 'identity-mark', 'data-marked': shown.value === id || undefined, 'data-role': id })
 
     return () => (
-      <div class="my-1-5rem grid gap-1-25rem">
-        <Tabs label="Passage scheme" modelValue={scheme.value} onUpdate:modelValue={(next: Scheme) => { scheme.value = next }}>
+      <div>
+        <IdentityPanel source="one page" title="Roles">
           {{
-            default: ({ list, trigger }: TabsScope<Scheme>) => (
-              <div {...list} class="inline-flex justify-self-start rounded-sm border-1 border-divider bg-bg p-2">
-                {data.schemes.toReversed().map(each => (
-                  <button key={each} {...trigger(each)} aria-controls={undefined} class="toggle-pill">{SCHEME_TEXT[each]}</button>
-                ))}
+            aside   : () => (
+              <Tabs label="Passage scheme" modelValue={scheme.value} onUpdate:modelValue={(next: Scheme) => { scheme.value = next }}>
+                {{
+                  default: ({ list, trigger }: TabsScope<Scheme>) => (
+                    <div {...list} class="inline-flex rounded-sm border-1 border-divider bg-bg p-2">
+                      {roles.SCHEME_ORDER.map(each => (
+                        <button key={each} {...trigger(each)} aria-controls={undefined} class="toggle-pill">{roles.SCHEME_TEXT[each]}</button>
+                      ))}
+                    </div>
+                  )
+                }}
+              </Tabs>
+            ),
+            default : () => (
+              <div class="identity-roles">
+                <div {...mark('page')} class="bg-bg p-20 text-text-1" style={data.passage[scheme.value]}>
+                  <p class="m-0 leading-1-65">
+                    <span {...mark('text-1')}>Body text sits on the page ground, </span>
+                    <span {...mark('link')} class="nib-stroke pb-1">a link</span>
+                    <span {...mark('text-1')}> carries the link rule and turns to </span>
+                    <span {...mark('link-hover')} class="text-brand-2">the link hover</span>
+                    <span {...mark('text-1')}> under the pointer, </span>
+                    <code {...mark('code-ground')}>inline code</code>
+                    <span {...mark('text-1')}> sits on its own ground, and </span>
+                    <em {...mark('aside')} class="text-aside">an italic aside</em>
+                    <span {...mark('text-1')}> takes the aside color.</span>
+                  </p>
+                  <ScrollRegion as="pre" {...mark('code-block')} class="mt-16 mb-0 overflow-auto rounded-sm bg-code-block px-16 py-12 font-mono text-code text-code-ink">
+                    {{ default: () => 'prose check --output-format sarif .' }}
+                  </ScrollRegion>
+                  <table class="identity-table mt-16 mb-0 w-full">
+                    <thead>
+                      <tr><th {...mark('soft')}>Format</th><th {...mark('text-2')}>Output</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><code>text</code></td><td {...mark('text-1')}>Snippets for a terminal</td></tr>
+                      <tr {...mark('soft')}><td><code>sarif</code></td><td>A SARIF 2.1.0 document</td></tr>
+                    </tbody>
+                  </table>
+                  <p {...mark('text-3')} class="mt-12 mb-0 text-xs text-text-3">Each format prints to stdout.</p>
+                  <div class="identity-callouts mt-16">
+                    {kinds.map(({ kind, label, mark: glyph, role }) => (
+                      <div class={['custom-block', kind]} key={kind}>
+                        <p class="custom-block-title">
+                          <span {...mark(role.id)} aria-hidden="true" class="callout-mark">{glyph}</span>
+                          <span {...mark('text-2')} class="callout-kind">{label}</span>
+                        </p>
+                        <p {...mark('text-1')}>{'Its mark reads '}<code>{role.token}</code>.</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div class="identity-side py-8">
+                  {Object.entries(roles.ROLE_GROUPS).map(([group, title]) => (
+                    <div key={group}>
+                      <span class="mx-14 mt-8 mb-4 block kicker">{title}</span>
+                      {data.roles.filter(role => role.group === group).map(role => (
+                        <button
+                          aria-pressed={pinned.value === role.id}
+                          class="identity-pick identity-legend"
+                          key={role.id}
+                          type="button"
+                          {...on(role.id)}
+                        >
+                          <span aria-hidden="true" class="identity-proof size-12" style={{ background: role.value[scheme.value] }} />
+                          <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{role.label}</span>
+                          <span class="font-mono text-xs text-text-1 tabular-nums">{`${role.contrast[scheme.value].ratio.toFixed(2)}:1`}</span>
+                          <span class="font-display text-sm text-text-2 italic">{passes(role, scheme.value) ? 'pass' : 'fail'}</span>
+                          <span class="sr-only">{`, ${role.token}, ${role.value[scheme.value]}`}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           }}
-        </Tabs>
-        <div class="grid grid-cols-2fr-1fr gap-1-25rem max-desktop:grid-cols-1fr">
-          <div
-            {...role('page')}
-            class="identity-mark grid gap-0-75rem rounded-sm border-1 border-divider bg-bg p-1-25rem text-text-1"
-            style={tokens.value}
-          >
-            <p {...role('text-1')} class="identity-mark m-0 font-display text-1-5rem leading-1-2 text-text-1">Reading at a Glance</p>
-            <p {...role('text-2')} class="identity-mark m-0 text-sm text-text-2">Guide · Formatting a Project</p>
-            <hr {...role('divider')} class="identity-mark m-0 border-0 border-t-1 border-t-divider" />
-            <p class="m-0 leading-1-65">
-              <span {...role('text-1')} class="identity-mark">Run </span>
-              <code {...role('code-ground')} class="identity-mark code-chip px-4 font-mono text-code">
-                <span {...role('code-ink')} class="identity-mark text-code-ink">prose format</span>
-              </code>
-              <span {...role('text-1')} class="identity-mark"> over a project and its columns line up, </span>
-              <em {...role('aside')} class="identity-mark text-aside">set once and read many times</em>
-              <span {...role('text-1')} class="identity-mark">, as the </span>
-              <span {...role('link')} class="identity-mark text-brand-1 underline">configuration reference</span>
-              <span {...role('text-1')} class="identity-mark"> sets out.</span>
-            </p>
-            <div {...role('soft')} class="identity-mark grid gap-0-5rem rounded-sm bg-bg-soft p-0-75rem">
-              <ScrollRegion as="pre" {...role('code-block')} class="identity-mark m-0 overflow-auto rounded-sm bg-code-block p-0-75rem font-mono text-code">
-                {{ default: () => <span {...role('code-ink')} class="identity-mark text-code-ink">{'width  = 88\nheight = 24'}</span> }}
-              </ScrollRegion>
-              <p {...role('text-3')} class="identity-mark m-0 text-xs text-text-3">A config the formatter aligned.</p>
-            </div>
-          </div>
-          <Tabs label="Color roles" modelValue={marked.value} onUpdate:modelValue={(next: RoleId) => { marked.value = next }} orientation="vertical">
-            {{
-              default: ({ list, trigger }: TabsScope<RoleId>) => (
-                <div {...list} class="grid content-start">
-                  {ROLES.map(each => (
-                    <button
-                      key={each.id}
-                      {...trigger(each.id)}
-                      aria-controls={undefined}
-                      class="identity-legend grid grid-cols-14-1fr-auto items-center gap-x-8"
-                    >
-                      <span
-                        aria-hidden="true"
-                        class="size-14 rounded-sm border-1 border-divider"
-                        style={{ background: data.roles[each.id][scheme.value] }}
-                      />
-                      <span class="grid">
-                        <span class="text-sm text-text-1">{each.label}</span>
-                        <span class="font-mono text-meta text-text-3">{each.token}</span>
-                      </span>
-                      <span class="font-mono text-xs text-text-2">{data.roles[each.id][scheme.value]}</span>
-                    </button>
-                  ))}
-                </div>
-              )
-            }}
-          </Tabs>
-        </div>
-        <div class="flex flex-wrap gap-8">
-          <IdentityCopyChip label="the marked role's token" value={ROLES.find(each => each.id === marked.value)!.token} />
-          <IdentityCopyChip label="the marked role's value" value={data.roles[marked.value][scheme.value]} />
-        </div>
+        </IdentityPanel>
+        <IdentityCaption>
+          {{ default: () => `The passage is drawn in the light scheme whatever the page around it is set to, and the switch above it turns it to the other. Each text role is judged at ${FLOOR.text}:1 against the page ground, each callout mark and the link rule at ${FLOOR.mark}:1, and each ground by the text it carries. Pointing at, focusing, or pinning a role marks every place the passage uses it.` }}
+        </IdentityCaption>
       </div>
     )
   }

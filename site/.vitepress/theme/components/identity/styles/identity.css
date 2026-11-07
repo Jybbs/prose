@@ -1,20 +1,269 @@
 @reference "../../../styles/tailwind.css";
 
-.identity-copy > button.copy {
-  top       : 50%;
-  right     : var(--prose-space-2);
-  width     : var(--prose-size-24);
-  height    : var(--prose-size-24);
-  transform : translateY(-50%);
-  opacity   : 1;
+/* Stacks a copied value and the word confirming its copy in one cell, so the
+   confirmation replaces the value without moving the line. */
+.identity-copy {
+  display        : inline-grid;
+  justify-items  : start;
+  margin         : 0;
+  padding        : 0;
+  border         : 0;
+  border-radius  : var(--prose-radius-sm);
+  background     : none;
+  max-width      : 100%;
+  letter-spacing : normal;
+  text-transform : none;
+
+  & > span {
+    grid-area     : 1 / 1;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+    transition    : opacity var(--prose-transition);
+  }
+
+  &[data-variant='chip'] {
+    padding    : var(--prose-space-1) var(--prose-space-6);
+    border     : var(--prose-border-1) solid var(--vp-c-divider);
+    background : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg));
+  }
+
+  &[data-variant='chip']:hover {
+    border-color : var(--vp-c-text-3);
+  }
+
+  &[data-variant='plain'] .identity-copy-value {
+    text-decoration       : underline dotted var(--prose-border-1) color-mix(in srgb, currentColor var(--prose-tint-45), transparent);
+    text-underline-offset : var(--prose-space-3);
+  }
+
+  &[data-variant='plain']:hover .identity-copy-value {
+    text-decoration-color : currentColor;
+    text-decoration-style : solid;
+  }
 }
 
-.identity-strip[aria-selected='true'] {
-  box-shadow : inset 0 calc(var(--prose-border-3) * -1) 0 var(--vp-c-text-1);
+.identity-copy-done,
+.identity-copy[data-copied] .identity-copy-value {
+  opacity : 0;
 }
 
-.identity-legend[aria-selected='true'] {
-  background : var(--prose-chip-ground);
+.identity-copy[data-copied] .identity-copy-done {
+  opacity : 1;
+}
+
+/* Keys every row of an entry to one label column, the summary beside it and
+   the chevron at the row's end, the body opening under the summary. */
+.identity-entry {
+  --identity-key : var(--prose-size-96);
+  --identity-sub : var(--prose-size-5-5rem);
+}
+
+.identity-entry-head {
+  display               : grid;
+  grid-template-columns : var(--identity-key) minmax(0, 1fr);
+}
+
+.identity-row-summary {
+  display               : grid;
+  grid-template-columns : var(--identity-key) minmax(0, 1fr) var(--prose-size-12);
+  align-items           : baseline;
+  column-gap            : var(--prose-space-12);
+}
+
+.identity-row-body {
+  padding-left : calc(var(--identity-key) + var(--prose-space-12));
+}
+
+.identity-chevron,
+.identity-plain-mark {
+  width         : var(--prose-size-6);
+  height        : var(--prose-size-6);
+  border-right  : var(--prose-border-1) solid currentColor;
+  border-bottom : var(--prose-border-1) solid currentColor;
+  transition    : transform var(--prose-transition);
+}
+
+.identity-chevron {
+  justify-self : center;
+  color        : var(--vp-c-text-3);
+  transform    : translateY(calc(var(--prose-space-2) * -1)) rotate(45deg);
+
+  [aria-expanded='true'] > & {
+    transform : translateY(var(--prose-space-1)) rotate(-135deg);
+  }
+}
+
+.identity-plain-mark {
+  transform : rotate(-45deg);
+
+  [aria-expanded='true'] > & {
+    transform : rotate(45deg);
+  }
+}
+
+.identity-values {
+  display               : grid;
+  grid-template-columns : var(--identity-sub) minmax(0, 1fr);
+  align-items           : center;
+  gap                   : var(--prose-space-6) var(--prose-space-12);
+  margin                : 0;
+
+  & > div {
+    display : contents;
+  }
+
+  & dd {
+    display     : flex;
+    align-items : center;
+    gap         : var(--prose-space-8);
+    min-width   : 0;
+    min-height  : var(--prose-size-24);
+    margin      : 0;
+  }
+}
+
+.identity-proof {
+  box-shadow : inset 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-medium), transparent);
+}
+
+/* Sets the palette's strips, the brand hue at twice a shade's width and the
+   chosen strip outlined clear of its neighbors. */
+.identity-strip {
+  flex             : 1 1 0;
+  min-width        : 0;
+  padding          : 0;
+  border           : 0;
+  background       : var(--chip);
+  box-shadow       : inset 0 0 0 var(--prose-border-1) color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-medium), transparent);
+  cursor           : pointer;
+
+  &[data-lead] {
+    flex-grow : 2;
+  }
+
+  &[aria-checked='true'] {
+    z-index        : 1;
+    outline        : var(--prose-border-1) solid var(--vp-c-text-1);
+    outline-offset : var(--prose-space-2);
+  }
+
+  &:focus-visible {
+    z-index        : 2;
+    outline        : var(--prose-focus-ring);
+    outline-offset : var(--prose-space-2);
+  }
+}
+
+.vp-doc .identity-table {
+  display : table;
+}
+
+.vp-doc .identity-uses {
+  width           : 100%;
+  margin          : 0;
+  border-collapse : collapse;
+
+  & tr {
+    border     : 0;
+    background : none;
+  }
+
+  & th {
+    padding       : 0 var(--prose-space-10) var(--prose-space-6) 0;
+    border        : 0;
+    border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
+    background    : none;
+    text-align    : left;
+  }
+
+  & td {
+    padding        : var(--prose-space-6) var(--prose-space-10) var(--prose-space-6) 0;
+    border         : 0;
+    border-bottom  : var(--prose-border-1) solid color-mix(in srgb, var(--vp-c-divider) var(--prose-tint-60), transparent);
+    background     : none;
+    vertical-align : baseline;
+  }
+}
+
+/* Sets the roles passage beside its legend, the legend under the passage on a
+   narrow screen. */
+.identity-roles {
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) var(--prose-width-16rem);
+
+  @variant max-mobile {
+    grid-template-columns : minmax(0, 1fr);
+  }
+}
+
+.identity-side {
+  border-left : var(--prose-border-1) solid var(--vp-c-divider);
+
+  @variant max-mobile {
+    border-top  : var(--prose-border-1) solid var(--vp-c-divider);
+    border-left : 0;
+  }
+}
+
+/* Resets each row of a specimen's index as a bare button, its name turning to
+   the body color under the pointer or once chosen, a chosen tab's name
+   underlined in the brand color. */
+.identity-pick {
+  width      : 100%;
+  border     : 0;
+  background : none;
+  text-align : left;
+  cursor     : pointer;
+
+  &:is(:hover, [aria-pressed='true'], [aria-selected='true']) .identity-pick-name {
+    color : var(--vp-c-text-1);
+  }
+
+  &[aria-selected='true'] .identity-pick-name {
+    text-decoration       : underline var(--prose-border-1) var(--vp-c-brand-1);
+    text-underline-offset : var(--prose-space-0-2em);
+  }
+
+  &:focus-visible {
+    outline        : var(--prose-focus-ring);
+    outline-offset : calc(var(--prose-border-2) * -1);
+  }
+}
+
+.identity-legend {
+  display               : grid;
+  grid-template-columns : var(--prose-size-12) minmax(0, 1fr) auto auto;
+  align-items           : center;
+  column-gap            : var(--prose-space-10);
+  padding               : var(--prose-space-5) var(--prose-space-14);
+
+  &[aria-pressed='true'] {
+    background : var(--prose-chip-ground);
+  }
+}
+
+/* Gives each callout of the roles passage room for the mark hung in its
+   margin and closes the gap between one callout and the next. */
+.vp-doc .identity-callouts {
+  padding-left : calc(var(--prose-size-24) + var(--prose-space-4));
+
+  & .custom-block {
+    margin  : 0;
+    padding : var(--prose-space-10) 0;
+    color   : var(--vp-c-text-1);
+  }
+
+  & .custom-block p:not(.custom-block-title) {
+    margin : 0;
+  }
+
+  & .custom-block + .custom-block {
+    border-top : 0;
+  }
+
+  @variant max-mobile {
+    padding-left : 0;
+  }
 }
 
 /* Rings each element of a specimen's small page that carries the role the
@@ -24,14 +273,88 @@
   outline-offset : var(--prose-space-2);
 }
 
-.identity-small-page :is(h1, h2, h3) {
-  margin  : 0;
-  padding : 0;
-  border  : 0;
+/* Sets the typefaces index beside the chosen role's pane, the index over the
+   pane on a narrow screen. */
+.identity-faces {
+  display               : grid;
+  grid-template-columns : var(--prose-width-14rem) minmax(0, 1fr);
+
+  @variant max-mobile {
+    grid-template-columns : minmax(0, 1fr);
+  }
 }
 
-.vp-doc .identity-table {
-  display : table;
+.identity-face-index {
+  border-right : var(--prose-border-1) solid var(--vp-c-divider);
+
+  @variant max-mobile {
+    grid-template-columns : repeat(2, minmax(0, 1fr));
+    border-right          : 0;
+    border-bottom         : var(--prose-border-1) solid var(--vp-c-divider);
+
+    & > .kicker {
+      grid-column : 1 / -1;
+    }
+  }
+}
+
+.identity-face-tab {
+  display : grid;
+  gap     : var(--prose-space-2);
+  padding : var(--prose-space-6) var(--prose-space-18);
+}
+
+/* Sets every role on the small page in its own styles, the chosen role
+   underlined in the link color and every other role in the muted text. */
+.vp-doc .identity-in-place {
+  & :is(h1, h2, h3) {
+    margin  : 0;
+    padding : 0;
+    border  : 0;
+  }
+
+  & [data-type-role]:not([data-marked]) {
+    color : var(--vp-c-text-2);
+  }
+
+  & [data-marked] {
+    text-decoration       : underline var(--prose-border-1) var(--vp-c-brand-1);
+    text-underline-offset : var(--prose-space-0-2em);
+  }
+}
+
+/* Sets the lockup stage no taller than a square mark needs, the guides drawn
+   in hairlines whatever the file's units. */
+.identity-stage-art {
+  width      : 100%;
+  max-height : var(--prose-size-240);
+}
+
+.identity-guides {
+  fill         : var(--vp-c-text-3);
+  stroke       : var(--vp-c-text-3);
+  stroke-width : var(--prose-border-1);
+
+  & :is(rect, line) {
+    fill           : none;
+    vector-effect  : non-scaling-stroke;
+  }
+
+  & .identity-guide-ink {
+    stroke-dasharray : var(--prose-space-4) var(--prose-space-3);
+  }
+
+  & text {
+    stroke             : none;
+    font-family        : var(--vp-font-family-mono);
+    text-anchor        : middle;
+    dominant-baseline  : auto;
+  }
+
+  & text:is([data-side='top'], [data-side='bottom']) {
+    text-anchor       : start;
+    dominant-baseline : middle;
+  }
 }
 
 .identity-nav {
@@ -59,6 +382,26 @@
 
 .identity-badge {
   color : var(--family-nib);
+}
+
+/* Sets the large badge beside the list of families, the list under it on a
+   narrow screen. */
+.identity-badges {
+  display               : grid;
+  grid-template-columns : minmax(0, 1fr) var(--prose-width-14rem);
+  border-top            : var(--prose-border-1) solid var(--vp-c-divider);
+
+  @variant max-mobile {
+    grid-template-columns : minmax(0, 1fr);
+  }
+}
+
+.identity-badge-row {
+  display               : grid;
+  grid-template-columns : var(--prose-size-18) minmax(0, 1fr) auto;
+  align-items           : center;
+  column-gap            : var(--prose-space-10);
+  padding               : var(--prose-space-5) var(--prose-space-14);
 }
 
 /* Draws each stroke of the large badge in turn, every nib copy of one stroke

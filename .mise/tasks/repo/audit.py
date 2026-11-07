@@ -912,7 +912,10 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
     Returns each check the jobs of `flow` report as its name, the names a
     row may cover it by, the tasks its steps run, and whether a matrix fans
     it out. A row covers a planned matrix's checks together, by naming one
-    of them or the job name's text outside its matrix expressions.
+    of them or the job name's text outside its matrix expressions. A matrix
+    whose job name holds no expression reports each check as GitHub names
+    it, the name followed by the entry's values in parentheses, and a row
+    naming the job covers those checks together.
     """
     reports = []
     for key, job in flow["jobs"].items():
@@ -923,9 +926,11 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
             together = {filled(entry, template) for entry in [{}, *entries]} - {""}
         else:
             entries  = matrix["include"] if matrix else [{}]
-            together = set()
+            together = {template} if matrix and "${{" not in template else set()
         for entry in entries:
             name = filled(entry, template)
+            if together == {template}:
+                name = f"{name} ({', '.join(str(value) for value in entry.values())})"
             runs = [
                 task
                 for step in job.get("steps", [])

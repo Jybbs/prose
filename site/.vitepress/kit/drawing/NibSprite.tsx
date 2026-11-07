@@ -1,8 +1,7 @@
 import { defineComponent } from 'vue'
-import type { VNodeChild } from 'vue'
 
 import { MOTIFS, strokesOf } from '../../lib/shared/emblems'
-import type { Fit }         from '../../lib/shared/emblems'
+import type { Fit }          from '../../lib/shared/emblems'
 
 import * as nib from './nib'
 
@@ -11,12 +10,6 @@ const paths = (drawn: readonly string[]) => drawn.map(d => <path d={d} key={d} /
 const offsets = (fit: Fit, drawn: string, placed: readonly number[]) => placed.map(offset => (
   <use href={`#${drawn}`} key={offset} transform={nib.diagonal(fit, offset)} />
 ))
-
-const fitted = (fit: Fit, units: number, drawing: VNodeChild) => (
-  <g transform={nib.fitTransform(fit)}>
-    <g {...nib.STROKE} stroke-width={nib.perScale(fit, units)}>{drawing}</g>
-  </g>
-)
 
 // Declares every motif's paths, jitter filter, and sized symbols once per
 // page, for each `NibBadge` to reference.
@@ -49,7 +42,7 @@ export const NibSprite = defineComponent({
               </filter>,
               <symbol id={nib.nibId(motif, 'small')} key={`${drawn}-small`} overflow="visible" viewBox="0 0 24 24">
                 {motif.small
-                  ? fitted(motif.small.fit, nib.NIB.stroke.small, [
+                  ? nib.fitted(motif.small.fit, nib.NIB.stroke.small, [
                     paths(motif.small.lines),
                     motif.small.heavy?.map(d => (
                       <path d={d} key={d} stroke-width={nib.perScale(motif.small!.fit, nib.NIB.stroke.heavy)} />
@@ -58,11 +51,11 @@ export const NibSprite = defineComponent({
                       <circle cx={cx} cy={cy} fill="currentColor" key={`${cx} ${cy}`} r={r} stroke="none" />
                     ))
                   ])
-                  : fitted(motif.fit, nib.NIB.stroke.nib, offsets(motif.fit, drawn, nib.NIB.small))}
+                  : nib.fitted(motif.fit, nib.NIB.stroke.nib, offsets(motif.fit, drawn, nib.NIB.small))}
               </symbol>,
               <symbol id={nib.nibId(motif, 'large')} key={`${drawn}-large`} overflow="visible" viewBox="0 0 24 24">
                 <g filter={`url(#${jitter})`}>
-                  {fitted(motif.fit, nib.NIB.stroke.nib, offsets(motif.fit, drawn, nib.NIB.large))}
+                  {nib.fitted(motif.fit, nib.NIB.stroke.nib, offsets(motif.fit, drawn, nib.NIB.large))}
                 </g>
               </symbol>
             ]
