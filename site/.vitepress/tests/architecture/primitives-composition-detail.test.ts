@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import PrimitivesCompositionDetail from '../../theme/components/architecture/PrimitivesCompositionDetail.vue'
+import { PrimitivesCompositionDetail } from '../../theme/components/architecture/PrimitivesCompositionDetail'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ family: 'layout', slug: 'reflow-calls' }]))

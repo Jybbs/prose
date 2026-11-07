@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import Emblem                   from '../../../prototypes/icons/Emblem.vue'
+import { Emblem }               from '../../../prototypes/icons/Emblem'
 import * as emblems             from '../../../prototypes/icons/emblems'
-import IconSpecimen             from '../../../prototypes/icons/IconSpecimen.vue'
-import NibSpecimen              from '../../../prototypes/icons/NibSpecimen.vue'
+import { IconSpecimen }         from '../../../prototypes/icons/IconSpecimen'
+import { NibSpecimen }          from '../../../prototypes/icons/NibSpecimen'
 import { data as platforms }    from '../../lib/guide/platforms.data'
 import type { Motif }           from '../../lib/shared/emblems'
 import { GLOSSARY_FAMILY_META } from '../../lib/shared/registries'
