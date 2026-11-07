@@ -28,6 +28,7 @@ import { lintDecorationTransformer }                  from './lib/markdown/lint-
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
+import { TokenClasses }                               from './lib/markdown/token-classes'
 import { wholeLineTokens }                            from './lib/markdown/whole-line-tokens'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
@@ -60,6 +61,11 @@ const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
+const tokenClasses         = await TokenClasses.read()
+const virtualSheets        = new Map([
+  ['virtual:prose-palette.css', paletteCss],
+  ['virtual:prose-tokens.css',  () => tokenClasses.css()]
+])
 const fixtureSets          = {
   composition  : readCompositionData(compositionDir(crate)),
   ruleFixtures : await readRuleFixtures(crate)
@@ -79,7 +85,11 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate)), wholeLineTokens],
+    codeTransformers : [
+      lintDecorationTransformer(corpusLintFindings(crate)),
+      wholeLineTokens,
+      tokenClasses.transformer()
+    ],
     config: md => {
       md.use(groupIconMdPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
@@ -149,10 +159,9 @@ export default defineConfig({
     oxc: { jsx: constants.VUE_JSX },
     plugins: [{
       enforce   : 'pre',
-      load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
-      name      : 'prose-palette',
-      resolveId : id =>
-        id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined,
+      load      : id => virtualSheets.get(id.replace(/^\0/, ''))?.(),
+      name      : 'prose-sheets',
+      resolveId : id => virtualSheets.has(id) ? `\0${id}` : undefined,
       transform : (code, id) => id.split('?')[0] === tailwindEntry ? code + themeCss() : undefined
     },
     fixtureReloadPlugin(fixturesRoot),

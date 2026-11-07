@@ -19,6 +19,7 @@ import { Layout }             from './components/layout/Layout'
 
 import './styles/tailwind.css'
 import 'virtual:prose-palette.css'
+import 'virtual:prose-tokens.css'
 import './styles/tokens.css'
 import './styles/accents.css'
 import './styles/globals.css'

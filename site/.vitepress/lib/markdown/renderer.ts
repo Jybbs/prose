@@ -1,9 +1,11 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { codeUnitPlugin }                from './code-operators'
-import { inlineNodes, type InlineNode } from './inline-nodes'
-import { siteDir }                      from '../shared/paths'
-import { plainTermsEnv }                from './inert-env'
+import { codeUnitPlugin }                         from './code-operators'
+import { inlineNodes, type InlineNode }           from './inline-nodes'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
+import { siteDir }                                from '../shared/paths'
+import { plainTermsEnv }                          from './inert-env'
+import { TokenClasses }                           from './token-classes'
 
 // Maps each field `K` to `${K}${S}`, carrying one `V` where the source field
 // is a scalar and a `V[]` where it is a list of strings.
@@ -15,7 +17,11 @@ type Rendered<T, K extends string & keyof T> = Suffixed<T, K, 'Html', string>
 type Walked<T, K extends string & keyof T> = Suffixed<T, K, 'Nodes', InlineNode[]>
 
 export async function getRenderer(): Promise<MarkdownRenderer> {
-  const md = await createMarkdownRenderer(siteDir(import.meta.url))
+  const md = await createMarkdownRenderer(siteDir(import.meta.url), {
+    codeTransformers  : [(await TokenClasses.read()).transformer()],
+    colorReplacements : SHIKI_COLOR_REPLACEMENTS,
+    theme             : SHIKI_THEMES
+  })
   md.use(codeUnitPlugin)
   return md
 }
