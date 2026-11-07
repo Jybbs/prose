@@ -2,7 +2,7 @@
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
-import FixtureCard from '../fixtures/FixtureCard.vue'
+import { FixtureCard } from '../fixtures/FixtureCard'
 
 import { pageExamples } from '../../../lib/rules/rule-view'
 

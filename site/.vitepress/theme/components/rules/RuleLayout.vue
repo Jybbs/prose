@@ -7,7 +7,7 @@ import RuleCardList     from './RuleCardList.vue'
 import RuleConfigTable  from './RuleConfigTable.vue'
 import RuleFixtures     from './RuleFixtures.vue'
 import { DocHeading }   from '../../../kit'
-import Fixture          from '../fixtures/Fixture.vue'
+import { Fixture }      from '../fixtures/Fixture'
 
 import { fixturesForRule, pageCompositionCases } from '../../../lib/rules/rule-view'
 

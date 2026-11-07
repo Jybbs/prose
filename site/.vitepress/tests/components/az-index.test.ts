@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import AzIndex from '../../theme/components/reference/AzIndex.vue'
+import { AzIndex } from '../../theme/components/reference/AzIndex'
 
 vi.mock('../../lib/tokens/tokens.data', () => ({
   data: ['check', 'diff'].map(sort => ({

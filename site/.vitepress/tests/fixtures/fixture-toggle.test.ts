@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount, type VueWrapper } from '@vue/test-utils'
 
-import FixtureNoChange       from '../../theme/components/fixtures/FixtureNoChange.vue'
-import FixtureToggle         from '../../theme/components/fixtures/FixtureToggle.vue'
+import { FixtureNoChange }   from '../../theme/components/fixtures/FixtureNoChange'
+import { FixtureToggle }     from '../../theme/components/fixtures/FixtureToggle'
 import { rendersAccessibly } from '../axe'
 
 import type { FixtureTab } from '../../lib/shared/fixture-tab'

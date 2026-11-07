@@ -32,8 +32,8 @@ vi.mock('vitepress', async importOriginal => ({
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
-import Fixture     from '../../theme/components/fixtures/Fixture.vue'
-import FixtureCard from '../../theme/components/fixtures/FixtureCard.vue'
+import { Fixture }     from '../../theme/components/fixtures/Fixture'
+import { FixtureCard } from '../../theme/components/fixtures/FixtureCard'
 
 const STUBS = { global: { stubs: { FixturePairDoc: true } } }
 

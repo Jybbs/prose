@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RunSummaryExplorer    from '../../theme/components/reference/RunSummaryExplorer.vue'
-import { rendersAccessibly } from '../axe'
+import { RunSummaryExplorer } from '../../theme/components/reference/RunSummaryExplorer'
+import { rendersAccessibly }  from '../axe'
 
 const mountExplorer = () => mount(RunSummaryExplorer)
 

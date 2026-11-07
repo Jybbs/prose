@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import { InlineProse }       from '../../theme/components/base/InlineProse'
 import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
-import PerRuleFacets         from '../../theme/components/reference/PerRuleFacets.vue'
+import { PerRuleFacets }     from '../../theme/components/reference/PerRuleFacets'
 import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/rules/rules.data', async () =>

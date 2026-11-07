@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RunSummarySelect from '../../theme/components/reference/RunSummarySelect.vue'
+import { RunSummarySelect } from '../../theme/components/reference/RunSummarySelect'
 
 const options = [
   { id: 'a', mono: 'AA' },

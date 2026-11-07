@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import FixtureCard  from '../../theme/components/fixtures/FixtureCard.vue'
-import RuleFixtures from '../../theme/components/rules/RuleFixtures.vue'
+import { FixtureCard } from '../../theme/components/fixtures/FixtureCard'
+import RuleFixtures    from '../../theme/components/rules/RuleFixtures.vue'
 
 vi.mock('../../lib/rules/rule-fixtures.data', () => ({
   data: {
