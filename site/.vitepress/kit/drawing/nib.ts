@@ -1,3 +1,6 @@
+import { h }                      from 'vue'
+import type { VNode, VNodeChild } from 'vue'
+
 import type { Emblem, Fit, Motif } from '../../lib/shared/emblems'
 
 // Draws every motif with a 0.62-unit stroke repeated along the 45-degree
@@ -26,6 +29,12 @@ type NibSize = 'large' | 'small'
 // by `fit` so the offset stays in grid units.
 export function diagonal(fit: Fit, offset: number): string {
   return `translate(${perScale(fit, offset)} ${perScale(fit, -offset)})`
+}
+
+// Scales `drawing` into the badge box `fit` sets, stroking it `units` wide at
+// that scale.
+export function fitted(fit: Fit, units: number, drawing: VNodeChild): VNode {
+  return h('g', { transform: fitTransform(fit) }, [h('g', { ...STROKE, 'stroke-width': perScale(fit, units) }, [drawing])])
 }
 
 export function fitTransform(fit: Fit): string {

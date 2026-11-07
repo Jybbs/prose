@@ -21,10 +21,8 @@ import {
 import { parse as parseColor } from 'culori'
 import { parse }               from 'postcss'
 
-import { paletteCss, themeCss } from '../lib/shared/palette'
-import { siteDir }    from '../lib/shared/paths'
-
-import { VITEPRESS_THEME } from './support'
+import { paletteCss, themeCss }     from '../lib/shared/palette'
+import { siteDir, VITEPRESS_THEME } from '../lib/shared/paths'
 
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'

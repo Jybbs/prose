@@ -3,7 +3,7 @@ import { computed, defineComponent, nextTick, shallowRef, watch } from 'vue'
 
 import { NibBadge, paint } from '../../../kit'
 
-import { useRaisedFamily } from '../../../lib/composables/use-raised-family'
+import { useRaised }       from '../../../lib/composables/use-raised'
 import { glide }           from '../../../lib/rules/plate-glide'
 import { data as rules }   from '../../../lib/rules/rules.data'
 import { arrowIndex }      from '../../../lib/shared/arrow-keys'
@@ -22,7 +22,7 @@ export const RulesPlate = defineComponent({
   setup() {
     const plate = shallowRef<HTMLElement | null>(null)
 
-    const { on, pinned, release, shown } = useRaisedFamily()
+    const { on, pinned, release, shown } = useRaised<RuleFamily>()
 
     // Holds the family whose rules the list shows gathered above the letters,
     // which follows the pinned family once each move has measured the list.
@@ -46,7 +46,7 @@ export const RulesPlate = defineComponent({
       const entry = KEY.find(each => each.family === family)
       spoken.value = entry ? `${entry.count} ${entry.emblem.name} rules moved above the list.` : 'All families shown.'
       void glide(plate.value!, async () => {
-        arranged.value = family as RuleFamily | null
+        arranged.value = family
         await nextTick()
       }, { duration: paint.ruleDrawMs(), easing: paint.morphEase() })
     })

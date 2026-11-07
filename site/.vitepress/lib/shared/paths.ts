@@ -3,6 +3,9 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// Locates the VitePress default theme under the site's directory.
+export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
+
 export function architectureDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'architecture')
 }

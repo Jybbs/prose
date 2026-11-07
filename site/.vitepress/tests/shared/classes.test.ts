@@ -4,9 +4,10 @@ import path from 'node:path'
 import { babelParse, walk } from '@vue/compiler-sfc'
 import { parse }            from 'postcss'
 
-import { siteSheets, VITEPRESS_THEME } from '../support'
-import * as tailwind                   from '../tailwind'
-import * as vocabulary                 from '../vocabulary'
+import { VITEPRESS_THEME } from '../../lib/shared/paths'
+import { siteSheets }      from '../support'
+import * as tailwind       from '../tailwind'
+import * as vocabulary     from '../vocabulary'
 
 import type { Declaration, Root, Rule } from 'postcss'
 

@@ -5,7 +5,7 @@ import path from 'node:path'
 import { parse as parseCss, type Root }    from 'postcss'
 import { test as base, type MockInstance } from 'vitest'
 
-export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
+import { VITEPRESS_THEME } from '../lib/shared/paths'
 
 interface SupportFixtures {
   tmpDir : string
