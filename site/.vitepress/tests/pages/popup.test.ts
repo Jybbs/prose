@@ -43,3 +43,119 @@ describe('the cards under touch emulation at a phone width', () => {
     await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
   })
 })
+
+describe('the lint cards from a keyboard at a desktop width', () => {
+  let browser : Browser
+  let context : BrowserContext
+  let page    : Page
+
+  const active = () => page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.probe)
+
+  beforeAll(async () => {
+    browser = await chromium.launch()
+    context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
+  })
+
+  beforeEach(async () => {
+    page = await context.newPage()
+    await page.goto('/rules/lint/step-narration.html', { waitUntil: 'networkidle' })
+    await page.locator('.lint-flag').first().focus()
+    await page.evaluate(() => {
+      const tabbable = [...document.querySelectorAll<HTMLElement>('a[href], button, [tabindex="0"]')]
+      const at       = tabbable.indexOf(document.activeElement as HTMLElement)
+      tabbable[at].dataset.probe     = 'flag'
+      tabbable[at + 1].dataset.probe = 'after'
+    })
+  })
+
+  afterEach(() => page.close())
+
+  afterAll(() => browser.close())
+
+  it.each(['Enter', 'Space'])('opens from %s, moves focus inside, and Escape returns focus to the flag', async key => {
+    await page.keyboard.press(key)
+    await page.locator(OPEN_CARD).waitFor()
+    await page.waitForFunction(() => document.activeElement?.getAttribute('role') === 'dialog')
+    await page.keyboard.press('Escape')
+    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    await expect.poll(active).toBe('flag')
+  })
+
+  it('closes on a second click of the flag it opened from', async () => {
+    await page.locator('[data-probe="flag"]').click()
+    await page.locator(OPEN_CARD).waitFor()
+    await page.locator('[data-probe="flag"]').click()
+    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+  })
+
+  it('moves Tab out of a card to the tabbable after its flag', async () => {
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => document.activeElement?.getAttribute('role') === 'dialog')
+    await page.keyboard.press('Tab')
+    await expect.poll(active).toBe('after')
+  })
+
+  it('moves Shift+Tab out of a card to its flag', async () => {
+    await page.keyboard.press('Enter')
+    await page.waitForFunction(() => document.activeElement?.getAttribute('role') === 'dialog')
+    await page.keyboard.press('Shift+Tab')
+    await expect.poll(active).toBe('flag')
+  })
+})
+
+describe('the rule cards from a pointer at a desktop width', () => {
+  let browser : Browser
+  let context : BrowserContext
+  let page    : Page
+
+  const LINK = '.pipeline-order-link[data-rule]'
+
+  beforeAll(async () => {
+    browser = await chromium.launch()
+    context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
+  })
+
+  beforeEach(async () => {
+    page = await context.newPage()
+    await page.goto('/reference/pipeline-order.html', { waitUntil: 'networkidle' })
+    await page.locator(LINK).first().hover()
+    await page.locator(OPEN_CARD).waitFor()
+  })
+
+  afterEach(() => page.close())
+
+  afterAll(() => browser.close())
+
+  it('opens on a hover and leaves focus on the page', async () => {
+    await page.waitForTimeout(200)
+    await expect(page.evaluate(() => document.activeElement?.getAttribute('role'))).resolves.not.toBe('dialog')
+  })
+
+  it('places the card against the hovered link', async () => {
+    const link = (await page.locator(LINK).first().boundingBox())!
+    await expect.poll(async () => {
+      const card = (await page.locator(OPEN_CARD).boundingBox())!
+      return Math.min(Math.abs(card.y - link.y - link.height), Math.abs(link.y - card.y - card.height))
+    }).toBeLessThan(40)
+  })
+})
+
+describe('the tab orientation against the stacked layout', () => {
+  let browser : Browser
+
+  beforeAll(async () => { browser = await chromium.launch() })
+
+  afterAll(() => browser.close())
+
+  it.each(['editor', 'shell-completions'].flatMap(name => [
+    { name, orientation: 'horizontal', width: 420 },
+    { name, orientation: 'horizontal', width: 720 },
+    { name, orientation: 'vertical',   width: 721 }
+  ]))('reads $orientation on the $name page loaded at $width px', async ({ name, orientation, width }) => {
+    const context = await bundleContext(browser, { viewport: { height: 900, width } })
+    const page    = await context.newPage()
+    await page.goto(`/integrations/${name}.html`, { waitUntil: 'networkidle' })
+    await expect.poll(() => page.locator('[role="tablist"]').first().getAttribute('aria-orientation')).toBe(orientation)
+    await context.close()
+  })
+})

@@ -153,4 +153,12 @@ describe('LintFlagPopup', () => {
     await flushPromises()
     expect(popup.find('.rule-card').exists()).toBe(false)
   })
+
+  it('holds a press on a flag back from the page', () => {
+    const popup = mountPopup()
+    press(popup, { message: 'm', rule: 'signature-annotations', suggested: ': int' }, 'count')
+    const event = pressOn(document.querySelector('.lint-flag'))
+    popup.vm.toggle(event)
+    expect(event.preventDefault).toHaveBeenCalledOnce()
+  })
 })

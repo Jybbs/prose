@@ -116,4 +116,9 @@ describe('RulesPlate', () => {
   })
 
   rendersAccessibly(() => plate().html())
+
+  it('marks each slug for the delegated rule card', () => {
+    expect(plate().get('.rules-plate-slugs > li[data-slug="alphabetize-siblings"] a').attributes('data-rule'))
+      .toBe('alphabetize-siblings')
+  })
 })

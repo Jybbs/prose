@@ -3,13 +3,15 @@ import type { Browser, BrowserContext } from 'playwright'
 
 import { bundleContext, PAGES } from './bundle'
 
-// Lists each inline code chip whose box splits across lines.
+// Lists each inline code chip whose box splits across lines or carries the page
+// past the viewport's width.
 async function splitChips(context: BrowserContext, file: string): Promise<string[]> {
   const page = await context.newPage()
   try {
     await page.goto(`/${file}`, { waitUntil: 'networkidle' })
     return await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.vp-doc :not(pre) > code')]
-      .filter(chip => chip.getClientRects().length > 1)
+      .filter(chip => chip.getClientRects().length > 1
+        || (document.documentElement.scrollWidth > innerWidth && chip.getBoundingClientRect().right > innerWidth))
       .map(chip => chip.textContent))
   }
   finally {
@@ -28,7 +30,7 @@ describe.each([1280, 360])('the built pages at %d px', width => {
 
   afterAll(() => browser.close())
 
-  it.concurrent.each(PAGES)('%s holds each inline code chip in one box', async file => {
+  it.concurrent.each(PAGES)('%s holds each inline code chip in one box inside the page', async file => {
     await expect(splitChips(context, file)).resolves.toStrictEqual([])
   })
 })

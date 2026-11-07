@@ -2,7 +2,8 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick }               from 'vue'
 
-import RuleLinkPopup  from '../../theme/components/rules/RuleLinkPopup.vue'
+import { Popup }    from '../../kit'
+import RuleLinkPopup from '../../theme/components/rules/RuleLinkPopup.vue'
 
 const DELAY = { hide: 120, show: 80 }
 
@@ -71,5 +72,22 @@ describe('RuleLinkPopup', () => {
     pointer(document.body, 'mouseout')
     await after(DELAY.hide * 2)
     expect(cardOf(wrapper).exists()).toBe(true)
+  })
+
+  it('opens the card once focus reaches its link and closes it once focus leaves', async () => {
+    document.body.innerHTML = '<a class="rule-link" data-rule="line-overflow"></a>'
+    const link    = document.querySelector('a')!
+    const wrapper = mount(RuleLinkPopup, { attachTo: document.body, global: { stubs } })
+    link.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await after(DELAY.show)
+    expect(cardOf(wrapper).exists()).toBe(true)
+    link.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    await after(DELAY.hide)
+    expect(cardOf(wrapper).exists()).toBe(false)
+  })
+
+  it('leaves focus where it is while the card shows', async () => {
+    const { wrapper } = await opened()
+    expect(wrapper.findComponent(Popup).props('passive')).toBe(true)
   })
 })

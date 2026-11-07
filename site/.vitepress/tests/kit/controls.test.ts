@@ -154,6 +154,12 @@ describe('Listbox', () => {
     await wrapper.findAll('.option')[1].trigger('click')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
+
+  it('leaves each option out of the tab order', async () => {
+    const wrapper = mountListbox()
+    await wrapper.get('.trigger').trigger('click')
+    expect(wrapper.findAll('.option').map(option => option.attributes('tabindex'))).toStrictEqual(OPTIONS.map(() => '-1'))
+  })
 })
 
 describe('Popup', () => {

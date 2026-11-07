@@ -52,14 +52,28 @@ def gate(
     return run
 
 
-def test_a_failed_sweep_names_the_axe_row(gate: Callable[..., tuple[int, str]]):
+@mark.parametrize(("job", "stage"), [("render", "Render"), ("sweep", "Axe")])
+def test_a_failed_browser_row_names_its_stage(
+    gate  : Callable[..., tuple[int, str]],
+    job   : str,
+    stage : str
+):
     """
-    A sweep that fails skips the publish, and the summary names the sweep
-    rather than the job it skipped.
+    A browser row that fails skips the publish, and the summary names that
+    row rather than the job it skipped.
     """
-    code, summary = gate(deploy="skipped", sweep="failure")
+    code, summary = gate(**{"deploy": "skipped", job: "failure"})
     assert code == 1
-    assert "Axe failed" in summary
+    assert f"{stage} failed" in summary
+
+
+@mark.parametrize("job", ["render", "sweep"])
+def test_a_failed_browser_row_withholds_the_publish(job: str):
+    """
+    The publish job waits on each browser row, so a failure in one publishes
+    nothing.
+    """
+    assert job in JOBS["deploy"]["needs"]
 
 
 @mark.parametrize("job", JOBS["gate"]["needs"])
@@ -68,13 +82,6 @@ def test_a_failed_job_fails_the_gate(gate: Callable[..., tuple[int, str]], job: 
     Each job the gate waits on fails it alone.
     """
     assert gate(**{job: "failure"})[0] == 1
-
-
-def test_a_failed_sweep_withholds_the_publish():
-    """
-    The publish job waits on the sweep, so a violation publishes nothing.
-    """
-    assert "sweep" in JOBS["deploy"]["needs"]
 
 
 def test_every_job_passing_passes_the_gate(gate: Callable[..., tuple[int, str]]):

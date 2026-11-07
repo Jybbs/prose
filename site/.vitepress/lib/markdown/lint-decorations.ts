@@ -16,7 +16,7 @@ function coversWholeLines(finding: LintFinding, lines: readonly string[]): boole
     && finding.end_location.column === [...last].length + 1
 }
 
-// Converts findings into shiki decorations carrying the hover data as
+// Converts findings into shiki decorations carrying the card's data as
 // `data-*`. A token span lands on a `.lint-flag` element of its own,
 // whereas a span covering whole rows merges onto the line element and
 // takes the row treatment. Sorted by position, since shiki rejects

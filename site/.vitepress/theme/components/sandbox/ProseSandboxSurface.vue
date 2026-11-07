@@ -233,16 +233,16 @@ function markUndrawn(root: HTMLElement, rules: ReadonlySet<string>): HTMLElement
   return matched
 }
 
-// The box holds the source the reader hands Prose, where the panel behind it
-// shows what Prose returned. Seeding it with the formatted output instead
-// would feed an already-formatted source back in, and since the formatter is
-// idempotent every rewriting rule would then have nothing left to do and drop
-// off the panel.
 // A press on a flag opens its card, and a press anywhere else opens the editor.
 function pressDisplay(event: Event): void {
   if (!popup.value?.toggle(event)) startEditing()
 }
 
+// The box holds the source the reader hands Prose, where the panel behind it
+// shows what Prose returned. Seeding it with the formatted output instead
+// would feed an already-formatted source back in, and since the formatter is
+// idempotent every rewriting rule would then have nothing left to do and drop
+// off the panel.
 function startEditing(): void {
   popup.value?.hide()
   draft.value    = source.value

@@ -74,4 +74,9 @@ describe('PipelineOrder', () => {
     await link.trigger('focusin')
     expect(w.get('.pipeline-order-edition').text()).toMatch(/^3 rules/)
   })
+
+  it('marks only a documented rule for the delegated rule card', () => {
+    expect(order().findAll('.pipeline-order-link').map(link => link.attributes('data-rule')))
+      .toStrictEqual(['reflow-calls', undefined, 'group-imports'])
+  })
 })

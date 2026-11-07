@@ -79,6 +79,11 @@ describe('SurfaceRail', () => {
     expect((await mountRail()).get('.surface-rail-chip use').attributes('href')).toBe('#nib-ladder-small')
   })
 
+  domTest('marks the rule chip for the delegated rule card', async ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect((await mountRail()).get('.surface-rail-chip').attributes('data-rule')).toBe('align-equals')
+  })
+
   domTest('holds every pip in the scrolling window while the roster fits', async ({ reducedMotion }) => {
     reducedMotion(true)
     widths.rail   = 400

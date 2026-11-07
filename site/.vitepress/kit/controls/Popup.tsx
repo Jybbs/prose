@@ -41,14 +41,15 @@ export const Popup = defineComponent({
   emits : ['dismiss'],
   slots : Object as SlotsType<{ default: Record<string, never>, trigger: PopupTriggerScope }>,
   setup(props, { attrs, emit, slots }) {
-    const id      = useId()
-    const service = useMachine(popover.machine, computed(() => ({
+    const id       = useId()
+    const anchorId = `popover:${id}:anchor-element`
+    const service  = useMachine(popover.machine, computed(() => ({
       autoFocus          : !props.passive,
       finalFocusEl       : () => props.anchor ?? null,
       id,
+      ids                : props.anchor === undefined || props.passive ? undefined : { trigger: anchorId },
       onOpenChange       : ({ open }: popover.OpenChangeDetails) => { if (!open) emit('dismiss') },
       open               : props.open,
-      persistentElements : [() => props.anchor ?? null],
       positioning        : {
         getAnchorRect   : props.anchor === undefined ? undefined : () => props.anchor?.getBoundingClientRect() ?? null,
         gutter          : props.gutter,
@@ -63,6 +64,12 @@ export const Popup = defineComponent({
 
     whenever(shown, () => { opened.value = true }, { flush: 'sync', immediate: true })
     watch(() => props.anchor, () => api.value.reposition())
+    // Names the anchor as the machine's trigger, which takes Tab out of the card
+    // to the tabbable after the anchor and leaves a press on the anchor to `toggle`.
+    watch(() => props.passive ? null : props.anchor, (anchor, previous) => {
+      previous?.removeAttribute('id')
+      anchor?.setAttribute('id', anchorId)
+    }, { flush: 'sync' })
 
     return () => {
       const { 'aria-labelledby': _named, hidden: _hidden, ...content } = api.value.getContentProps()

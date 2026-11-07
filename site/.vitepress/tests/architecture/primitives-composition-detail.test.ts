@@ -29,4 +29,8 @@ describe('PrimitivesCompositionDetail', () => {
   it('leads each rule the focused primitive feeds with its family badge', () => {
     expect(card().get('.chip use').attributes('href')).toBe('#nib-basket-small')
   })
+
+  it('marks each rule the focused primitive feeds for the delegated rule card', () => {
+    expect(card().get('.chip').attributes('data-rule')).toBeTruthy()
+  })
 })

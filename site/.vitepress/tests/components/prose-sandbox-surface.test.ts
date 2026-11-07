@@ -520,4 +520,14 @@ describe('ProseSandboxSurface', () => {
 
     expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).toContain('lint-flag-line')
   })
+
+  surfaceTest('names the display and toggles a flag\'s card from Space', async ({ mounted }) => {
+    const toggle      = vi.spyOn(LintFlagPopupStub.methods, 'toggle')
+    const { wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
+    const display     = wrapper.get('.sandbox-surface-display')
+
+    expect(display.attributes('aria-label')).toBe('Python source, Enter edits it')
+    await display.trigger('keydown.space')
+    expect(toggle).toHaveBeenCalledOnce()
+  })
 })

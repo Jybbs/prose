@@ -8,7 +8,7 @@ import { useTabSelect }   from '../../../lib/composables/use-tab-select'
 import InlineProse        from '../base/InlineProse.vue'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
-const stacked                          = useMediaQuery('(width < 720px)')
+const stacked                          = useMediaQuery('(width < 721px)', { ssrWidth: 1280 })
 </script>
 
 <template>
