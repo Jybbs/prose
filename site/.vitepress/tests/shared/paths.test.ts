@@ -32,18 +32,18 @@ describe('proseBinaryPath', () => {
     fs.writeFileSync(path.join(root, 'src', 'lib.rs'), '')
   }
 
-  supportTest('reads the binary under the target directory cargo reports', ({ tmpDir }) => {
-    crateAt(tmpDir)
-    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'elsewhere'))
+  supportTest('reads the binary under `CARGO_TARGET_DIR`, resolved against the root', ({ tmpDir }) => {
+    vi.stubEnv('CARGO_TARGET_DIR', 'elsewhere')
     expect(paths.proseBinaryPath(tmpDir)).toBe(path.join(tmpDir, 'elsewhere', 'debug', 'prose'))
   })
 
-  supportTest('asks cargo once for each root', ({ tmpDir }) => {
+  supportTest('sets `CARGO_TARGET_DIR` from cargo where it is unset', ({ tmpDir }) => {
     crateAt(tmpDir)
-    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'first'))
-    const first = paths.proseBinaryPath(tmpDir)
-    vi.stubEnv('CARGO_TARGET_DIR', path.join(tmpDir, 'second'))
-    expect(paths.proseBinaryPath(tmpDir)).toBe(first)
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- `undefined` removes the variable
+    vi.stubEnv('CARGO_TARGET_DIR', undefined)
+    const target = path.join(fs.realpathSync(tmpDir), 'target')
+    expect(paths.proseBinaryPath(tmpDir)).toBe(path.join(target, 'debug', 'prose'))
+    expect(process.env.CARGO_TARGET_DIR).toBe(target)
   })
 })
 

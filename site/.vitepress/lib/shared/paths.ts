@@ -3,8 +3,6 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const TARGET_DIRS = new Map<string, string>()
-
 export function architectureDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'architecture')
 }
@@ -53,16 +51,14 @@ function resolveProseBinary(root: string): string {
   throw new Error(`prose binary not found at ${binary}. Run \`mise run rust:build\` first.`)
 }
 
-// Returns the directory `cargo metadata` reports for the workspace at `root`,
-// reading it once per root, which `CARGO_TARGET_DIR` or a cargo config moves
-// away from `<root>/target`.
+// Returns `CARGO_TARGET_DIR` resolved against `root`, setting it from `cargo
+// metadata` where it is unset, so every copy of this module a bundle carries
+// reads the one value and a cargo config that moves the directory still holds.
 function targetDir(root: string): string {
-  const known = TARGET_DIRS.get(root)
-  if (known) return known
-  const metadata = execFileSync('cargo', ['metadata', '--format-version', '1', '--no-deps'], { cwd: root, encoding: 'utf8' })
-  const { target_directory: directory } = JSON.parse(metadata) as { target_directory: string }
-  TARGET_DIRS.set(root, directory)
-  return directory
+  process.env.CARGO_TARGET_DIR ??= (JSON.parse(
+    execFileSync('cargo', ['metadata', '--format-version', '1', '--no-deps'], { cwd: root, encoding: 'utf8' })
+  ) as { target_directory: string }).target_directory
+  return path.resolve(root, process.env.CARGO_TARGET_DIR)
 }
 
 export function runProse(
