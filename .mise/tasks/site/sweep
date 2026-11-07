@@ -5,4 +5,4 @@
 #MISE dir         = "site"
 
 playwright install --only-shell chromium
-vitest run --project pages "$@"
+vitest run --passWithNoTests --project pages "$@"

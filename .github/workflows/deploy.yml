@@ -220,6 +220,16 @@ jobs:
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - shard: 1/4
+          - shard: 2/4
+          - shard: 3/4
+          - shard: 4/4
+
     steps:
       - *checkout
 
@@ -235,7 +245,7 @@ jobs:
         env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
         run  : |
           mise run site:bake
-          mise run site:sweep
+          mise run site:sweep --shard ${{ matrix.shard }}
 
   gate:
     name            : 🗞️ Brief
