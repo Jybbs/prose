@@ -74,6 +74,7 @@ describe('LintFlagPopup', () => {
     expect(before.get('.lint-block-label').text()).toBe('Before')
     expect(before.get('.lint-block-code').html()).toContain('pre class="shiki"')
     expect(after.get('.lint-block-code').text()).toContain('"a"')
+    expect(after.get('.lint-block-code').attributes('tabindex')).toBe('0')
   })
 
   it('holds the message in the header until the panes are highlighted', () => {

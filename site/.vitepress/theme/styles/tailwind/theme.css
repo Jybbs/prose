@@ -69,7 +69,6 @@
   --text-2-8rem                        : var(--prose-text-2-8rem);
   --text-0-7em                         : var(--prose-text-0-7em);
   --text-0-8em                         : var(--prose-text-0-8em);
-  --text-0-84em                        : var(--prose-text-0-84em);
   --text-0-85em                        : var(--prose-text-0-85em);
   --text-0-86em                        : var(--prose-text-0-86em);
   --text-0-88em                        : var(--prose-text-0-88em);
@@ -87,6 +86,7 @@
   --tracking-0-02em                    : var(--prose-tracking-0-02em);
   --tracking-0-04em                    : var(--prose-tracking-0-04em);
   --tracking-0-05em                    : var(--prose-tracking-0-05em);
+  --tracking-normal                    : var(--prose-tracking-normal);
   --tracking-0-08em                    : var(--prose-tracking-0-08em);
   --tracking-0-1em                     : var(--prose-tracking-0-1em);
   --tracking-0-12em                    : var(--prose-tracking-0-12em);
@@ -250,6 +250,7 @@
 
 @theme inline {
   --color-code-block                       : var(--vp-code-block-bg);
+  --color-code-ink                         : var(--vp-code-color);
 
   --content-middot                         : "·";
 

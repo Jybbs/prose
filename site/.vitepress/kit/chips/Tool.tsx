@@ -16,7 +16,7 @@ export const Tool = defineComponent({
 
     return () => (
       <a class="tool-mark" href={entry.value.href} title={entry.value.name} {...externalAttrs(entry.value.href)}>
-        <code><ToolIcon class="tool-mark-icon mr-3 inline-block size-0-78em" slug={props.slug} />{entry.value.name}</code>
+        <code><ToolIcon class="mr-3 inline-block size-0-78em align-sub-0-08em" slug={props.slug} />{entry.value.name}</code>
       </a>
     )
   }

@@ -1,6 +1,6 @@
 import { defineComponent } from 'vue'
 
-import { NibBadge } from '../../../kit'
+import { NibBadge, ScrollRegion } from '../../../kit'
 
 import { data }           from '../../../lib/guide/platforms.data'
 import { platformEmblem } from '../../../lib/shared/emblems'
@@ -9,7 +9,7 @@ export const WheelPlatforms = defineComponent({
   name: 'WheelPlatforms',
   setup() {
     return () => (
-      <table>
+      <ScrollRegion as="table">
         <thead>
           <tr>
             <th>Triple</th>
@@ -33,7 +33,7 @@ export const WheelPlatforms = defineComponent({
             </tr>
           ))}
         </tbody>
-      </table>
+      </ScrollRegion>
     )
   }
 })

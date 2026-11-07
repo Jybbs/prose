@@ -27,6 +27,7 @@ import { codeOperatorPlugin }                         from './lib/markdown/code-
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
+import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
 import { wholeLineTokens }                            from './lib/markdown/whole-line-tokens'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
@@ -90,6 +91,7 @@ export default defineConfig({
       md.use(bodyLinkPlugin)
       md.use(proseMarkPlugin)
       md.use(codeOperatorPlugin)
+      md.use(scrollStopPlugin)
     },
     colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
     lineNumbers       : false,

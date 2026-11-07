@@ -47,14 +47,8 @@
 .rule-card-caption {
   grid-area   : caption;
   max-width   : var(--prose-width-60ch);
-  margin      : 0;
-  padding     : 0;
-  text-align  : left;
   text-wrap   : pretty;
   font-family : var(--vp-font-family-base);
-  font-size   : var(--prose-text-0-875rem);
-  line-height : 1.6;
-  color       : var(--vp-c-text-2);
 }
 
 .rule-card-caption em {

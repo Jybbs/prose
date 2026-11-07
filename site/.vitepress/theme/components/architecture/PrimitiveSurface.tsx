@@ -1,6 +1,8 @@
 import { computed, defineComponent } from 'vue'
 import type { PropType }             from 'vue'
 
+import { ScrollRegion } from '../../../kit'
+
 import { data as primitives } from '../../../lib/architecture/primitives-composition.data'
 
 import type { PrimitiveStability } from '../../../lib/shared/registries'
@@ -18,7 +20,7 @@ export const PrimitiveSurface = defineComponent({
     )
 
     return () => (
-      <table>
+      <ScrollRegion as="table">
         <thead>
           <tr>
             <th>Primitive</th>
@@ -37,7 +39,7 @@ export const PrimitiveSurface = defineComponent({
             </tr>
           ))}
         </tbody>
-      </table>
+      </ScrollRegion>
     )
   }
 })

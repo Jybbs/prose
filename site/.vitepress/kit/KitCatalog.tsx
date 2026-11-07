@@ -27,7 +27,7 @@ export default defineComponent({
             <figcaption class="border-b-1 border-b-divider px-1-25rem py-0-3rem font-mono text-0-68rem text-text-2">
               {sources[name]!.file}
             </figcaption>
-            <div class="kit-source" innerHTML={sources[name]!.html} />
+            <div class="flush-code-block" innerHTML={sources[name]!.html} />
           </figure>
         </div>
       </section>

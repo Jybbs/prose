@@ -50,7 +50,7 @@ export const SurfaceCardBase = defineComponent({
           <NibBadge emblem={familyEmblem(props.family)} size={36} />
         </span>
         <h3 class="pointer-events-none relative z-1 mt-42 mb-12 border-none p-0 font-display text-2rem leading-1-05 font-500 text-balance text-text-1">{meta.value.label}</h3>
-        <p class="surface-card-blurb pointer-events-none relative z-1 m-0 font-base text-md leading-1-6 text-text-2">
+        <p class="surface-card-blurb pointer-events-none relative z-1 m-0 font-base text-md leading-1-6 text-text-2 in-code:font-mono in-code:text-0-9em">
           <InlineProse nodes={props.bodyNodes} />
         </p>
         <SurfaceRail class="pointer-events-none z-1" rules={props.rules} />

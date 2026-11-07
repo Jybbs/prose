@@ -28,7 +28,7 @@ export const RuleSegmentChip = defineComponent({
             size={13}
           />
         )}
-        <span class="composition-cards-chip-label">
+        <span class="composition-cards-chip-label z-4 block min-w-0 whitespace-nowrap">
           <span class="composition-cards-chip-slug text-xxs tracking-0-04em uppercase">{props.segment.slug}</span>
         </span>
       </a>

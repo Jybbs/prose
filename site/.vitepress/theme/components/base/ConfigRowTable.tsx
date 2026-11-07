@@ -1,6 +1,8 @@
 import { defineComponent } from 'vue'
 import type { PropType }   from 'vue'
 
+import { ScrollRegion } from '../../../kit'
+
 import type { ConfigRow } from '../../../lib/shared/config-row'
 import { InlineProse }    from './InlineProse'
 
@@ -11,7 +13,7 @@ export const ConfigRowTable = defineComponent({
   },
   setup(props) {
     return () => (
-      <table>
+      <ScrollRegion as="table">
         <thead>
           <tr>
             <th>Key</th>
@@ -40,7 +42,7 @@ export const ConfigRowTable = defineComponent({
             </tr>
           ))}
         </tbody>
-      </table>
+      </ScrollRegion>
     )
   }
 })

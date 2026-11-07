@@ -4,6 +4,7 @@ export const MS_PER_SEC      = 1000
 export const PYPI_PACKAGE    = 'prose-formatter'
 export const REPO_SLUG       = 'Jybbs/prose'
 export const REPO_URL        = `https://github.com/${REPO_SLUG}`
+export const SCROLL_STOP     = { tabindex: 0 }
 export const SHIKI_THEMES    = { dark: 'github-dark', light: 'github-light' } as const
 export const SITE_ALT        = 'Prose, a Python typesetter for the reader.'
 export const SITE_HOSTNAME   = 'https://prose.fyi'

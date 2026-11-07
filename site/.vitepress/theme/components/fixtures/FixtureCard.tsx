@@ -68,7 +68,7 @@ export const FixtureCard = defineComponent({
                   type="button"
                 >
                   <span aria-hidden="true" class="fixture-card-num" />
-                  <span class="fixture-card-title" innerHTML={props.titleHtml} />
+                  <span class="fixture-card-title in-code:normal-case" innerHTML={props.titleHtml} />
                 </button>
                 <div
                   class="hidden items-center group-data-open/fixture:inline-flex group-data-[edits=false]/fixture:not-group-data-[lint=true]/fixture:inline-flex max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-2 max-mobile:group-data-open/fixture:-col-end-1 max-mobile:group-data-open/fixture:min-h-0 max-mobile:group-data-open/fixture:justify-start max-mobile:group-data-open/fixture:justify-self-start max-mobile:group-data-open/fixture:p-0 max-mobile:group-data-open/fixture:pb-8"
@@ -88,7 +88,7 @@ export const FixtureCard = defineComponent({
                   <div class="fixture-card-body-content">
                     {entry.value.descriptionNodes && (
                       <>
-                        <div class="fixture-card-desc">
+                        <div class="fixture-card-desc flush-ends">
                           <InlineProse nodes={entry.value.descriptionNodes} />
                         </div>
                         <div aria-hidden="true" class="fixture-card-rule" />

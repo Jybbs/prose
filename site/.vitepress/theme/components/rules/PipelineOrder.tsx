@@ -38,7 +38,7 @@ export const PipelineOrder = defineComponent({
             {census.value.map(entry => (
               <span
                 aria-label={`${FAMILY_META[entry.family].label}, ${entry.count} rules`}
-                class={['pipeline-order-census-chip nib-ground inline-flex items-center gap-5 border-1 border-divider px-6 py-2 font-mono text-label leading-1-2 font-400 uppercase tabular-nums', { 'is-later': entry.count === 0 }]}
+                class={['pipeline-order-census-chip nib-ground inline-flex items-center gap-5 border-1 border-divider px-6 py-2 font-mono text-label leading-1-2 font-400 uppercase tabular-nums tracking-normal', { 'is-later': entry.count === 0 }]}
                 data-family={entry.family}
                 key={entry.family}
                 role="img"
@@ -48,7 +48,7 @@ export const PipelineOrder = defineComponent({
               </span>
             ))}
           </div>
-          <span class="pipeline-order-edition ml-auto kicker">
+          <span class="pipeline-order-edition ml-auto kicker in-code:tracking-normal in-code:normal-case">
             {here.value === null
               ? (
                 <>

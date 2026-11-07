@@ -1,5 +1,7 @@
 import { defineComponent } from 'vue'
 
+import { ScrollRegion } from '../../../kit'
+
 import { lookup }                                from '../../../lib/shared/lookup'
 import { data as directives }                    from '../../../lib/suppression/directives.data'
 import { directiveHref, SCOPE_META, scopeBands } from '../../../lib/suppression/scopes'
@@ -63,7 +65,7 @@ export const ScopeSpecimen = defineComponent({
 
     return () => (
       <div class="my-1-5rem grid grid-cols-1fr-180-220 gap-24 panel bg-panel-wash px-24 py-22 max-tablet:grid-cols-1fr">
-        <pre class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-8 py-14 text-0-8rem leading-1-55">
+        <ScrollRegion as="pre" class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-8 py-14 text-0-8rem leading-1-55">
           <code class="block">
             {lines.map((line, idx) => (
               <span
@@ -81,7 +83,7 @@ export const ScopeSpecimen = defineComponent({
               </span>
             ))}
           </code>
-        </pre>
+        </ScrollRegion>
         <ul class="m-0 flex list-none flex-col gap-12 self-start pl-0">
           {legend.map(band => (
             <li

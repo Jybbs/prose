@@ -25,7 +25,10 @@ export const PrimitivesCompositionGrid = defineComponent({
     focused : { required: true, type: null as unknown as PropType<PrimitiveSlug | null> },
     ports   : { required: true, type: Map as PropType<ReadonlyMap<string, Port>> }
   },
-  emits : { blur: () => true, focus: (slug: PrimitiveSlug) => true },
+  emits : {
+    blur  : () => true,
+    focus : (slug: PrimitiveSlug) => typeof slug === 'string'
+  },
   setup(props, { emit }) {
     function tileState(slug: PrimitiveSlug): 'active' | 'related' | 'mute' | 'idle' {
       if (props.focused === null) return 'idle'

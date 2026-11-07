@@ -25,7 +25,7 @@ export const RuleCardList = defineComponent({
     })
 
     return () => (
-      items.value.length
+      items.value.length > 0
         ? (
           <div class={['flex max-w-960 flex-col gap-6', props.related ? 'mt-28' : 'mt-24']}>
             {!props.related && <h2 class="sr-only">Rules</h2>}

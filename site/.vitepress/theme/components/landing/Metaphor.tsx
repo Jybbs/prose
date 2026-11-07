@@ -22,11 +22,11 @@ export const Metaphor = defineComponent({
           </header>
           <ol class="flex flex-col gap-12">
             <li class="flex items-baseline gap-12">
-              <span class="landing-definition-num flex-none rounded-pill bg-brand-1/faint px-8 py-1 font-mono text-xxs text-brand-1">1</span>
+              <span class="flex-none rounded-pill bg-brand-1/faint px-8 py-1 font-mono text-xxs text-brand-1 align-0-18em">1</span>
               <span class="text-md leading-1-55 text-text-2 italic">written language in its ordinary form, without metrical structure.</span>
             </li>
             <li class="flex items-baseline gap-12">
-              <span class="landing-definition-num flex-none rounded-pill bg-brand-1/faint px-8 py-1 font-mono text-xxs text-brand-1">2</span>
+              <span class="flex-none rounded-pill bg-brand-1/faint px-8 py-1 font-mono text-xxs text-brand-1 align-0-18em">2</span>
               <span class="text-md leading-1-55 text-text-2 italic">an opinionated formatter that lays Python out so a reader can read it.</span>
             </li>
           </ol>

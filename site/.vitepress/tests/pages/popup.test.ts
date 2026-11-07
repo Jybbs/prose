@@ -155,7 +155,28 @@ describe('the tab orientation against the stacked layout', () => {
     const context = await bundleContext(browser, { viewport: { height: 900, width } })
     const page    = await context.newPage()
     await page.goto(`/integrations/${name}.html`, { waitUntil: 'networkidle' })
+    // Waits for the client to mount, since the server renders the wide layout's
+    // orientation and each read waits on the main thread while it hydrates.
+    await page.waitForFunction(() => '__vue_app__' in (document.querySelector('#app') ?? {}))
     await expect.poll(() => page.locator('[role="tablist"]').first().getAttribute('aria-orientation')).toBe(orientation)
+    await context.close()
+  })
+})
+
+describe('the composition decks on a rule page', () => {
+  let browser : Browser
+
+  beforeAll(async () => { browser = await chromium.launch() })
+
+  afterAll(() => browser.close())
+
+  it('measures the deck of every card', async () => {
+    const context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
+    const page    = await context.newPage()
+    await page.goto('/rules/ordering/alphabetize-siblings.html', { waitUntil: 'networkidle' })
+    const unmeasured = page.locator('li.fixture-card:has(.composition-cards-bar):not([style*="--deck-bar-h"])')
+    await expect.poll(() => page.locator('.composition-cards-bar').count()).toBeGreaterThan(1)
+    await expect.poll(() => unmeasured.count()).toBe(0)
     await context.close()
   })
 })

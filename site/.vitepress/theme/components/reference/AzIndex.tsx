@@ -120,7 +120,7 @@ export const AzIndex = defineComponent({
                       {words.value.head}
                       <span class="whitespace-nowrap">
                         {words.value.code
-                          ? <code class="az-index-detail-code">{words.value.last}</code>
+                          ? <code class="p-0 bg-transparent text-0-92em text-inherit">{words.value.last}</code>
                           : words.value.last}
                         <span
                           aria-hidden="true"

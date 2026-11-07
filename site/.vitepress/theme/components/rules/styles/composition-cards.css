@@ -14,16 +14,10 @@
   --card-reveal : 0.28s;
 }
 
-.composition-cards-slot {
-  width : var(--prose-size-32);
-}
-
 .composition-cards-ticks {
   position   : absolute;
-  z-index    : 2;
   top        : var(--prose-space-11);
   left       : var(--prose-space-12);
-  display    : flex;
   flex-wrap  : nowrap;
   gap        : 0;
   transition : column-gap var(--prose-transition-slow);
@@ -38,9 +32,7 @@
 }
 
 .composition-cards-tick-item {
-  position   : relative;
   z-index    : calc(var(--deck-count) - var(--deck-at));
-  display    : flex;
   transition : margin-left var(--prose-transition-slow);
 }
 
@@ -110,14 +102,10 @@
   position       : absolute;
   bottom         : calc(100% + var(--prose-space-4));
   left           : 0;
-  z-index        : 4;
-  display        : block;
-  min-width      : 0;
   padding        : var(--prose-space-2) var(--prose-space-6);
   border         : var(--prose-border-1) solid var(--vp-c-divider);
   border-radius  : var(--prose-radius-sm);
   background     : var(--vp-c-bg);
-  white-space    : nowrap;
   opacity        : 0;
   pointer-events : none;
   transition     : opacity var(--prose-transition);

@@ -52,7 +52,7 @@ export const Surfaces = defineComponent({
           default: () => (
             <div
               aria-label="Rule family carousel"
-              class="surfaces-carousel group/carousel relative mt-8 w-screen overflow-hidden pt-32 pb-8 mask-x-from-95% data-fits:mask-none"
+              class="surfaces-carousel group/carousel relative mt-8 w-screen overflow-hidden pt-32 pb-8 mask-x-from-95% data-fits:mask-none bleed-x"
               data-fits={fits.value || undefined}
               onPointerleave={onPointerLeave}
               onPointermove={onPointerMove}

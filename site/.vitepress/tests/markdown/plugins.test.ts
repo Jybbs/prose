@@ -9,6 +9,7 @@ import { emblemPlugin }                  from '../../lib/markdown/emblem-plugin'
 import { inertEnv, plainTermsEnv }       from '../../lib/markdown/inert-env'
 import { proseMarkPlugin }               from '../../lib/markdown/prose-mark-plugin'
 import { renderPlainInlineHtml }         from '../../lib/markdown/renderer'
+import { scrollStopPlugin }              from '../../lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }          from '../../lib/markdown/section-heading-plugin'
 import type { DiscoveredRule }           from '../../lib/rules/discovery'
 import { ruleLinkPlugin }                from '../../lib/rules/link-plugin'
@@ -161,6 +162,14 @@ describe('proseMarkPlugin', () => {
     'leaves the common noun and every compound in %s plain',
     src => { expect(render(md => md.use(proseMarkPlugin), src)).not.toContain('prose-mark') }
   )
+})
+
+describe('scrollStopPlugin', () => {
+  it('gives a table a tab stop and leaves a paragraph alone', () => {
+    const html = render(md => md.use(scrollStopPlugin), 'Text.\n\n| a |\n|---|\n| b |')
+    expect(html).toContain('<table tabindex="0">')
+    expect(html).toContain('<p>Text.</p>')
+  })
 })
 
 describe('sectionHeadingPlugin', () => {

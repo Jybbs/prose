@@ -30,6 +30,8 @@ const SLACK_PX     = 1
 
 const SLOT_PX      = 24
 
+const RAIL_END_CLASS = 'surface-rail-end before:pointer-events-none before:absolute before:inset-0 before:z-0 before:m-auto before:rounded-pill before:border-1 before:border-family/30 before:transition-colors before:duration-240 before:ease-linear hover:before:border-family/64 data-active:before:border-family/64'
+
 export const SurfaceRail = defineComponent({
   name  : 'SurfaceRail',
   props : {
@@ -172,7 +174,7 @@ export const SurfaceRail = defineComponent({
           {pinned.value && (
             <SurfacePip
               {...pipBinding(0)}
-              class="surface-rail-end before:pointer-events-none before:absolute before:inset-0 before:z-0 before:m-auto before:rounded-pill before:border-1 before:border-family/30 before:transition-colors before:duration-240 before:ease-linear hover:before:border-family/64 data-active:before:border-family/64"
+              class={RAIL_END_CLASS}
               onSelect={() => select(0)}
             />
           )}
@@ -202,7 +204,7 @@ export const SurfaceRail = defineComponent({
           {pinned.value && (
             <SurfacePip
               {...pipBinding(props.rules.length - 1)}
-              class="surface-rail-end before:pointer-events-none before:absolute before:inset-0 before:z-0 before:m-auto before:rounded-pill before:border-1 before:border-family/30 before:transition-colors before:duration-240 before:ease-linear hover:before:border-family/64 data-active:before:border-family/64"
+              class={RAIL_END_CLASS}
               onSelect={() => select(props.rules.length - 1)}
             />
           )}

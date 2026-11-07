@@ -2,10 +2,10 @@ import { onKeyStroke }                    from '@vueuse/core'
 import { computed, defineComponent, ref } from 'vue'
 import type { PropType }                  from 'vue'
 
-import { NibBadge }     from '../../../kit'
-import { RuleCard }     from '../rules/RuleCard'
-import { SandboxPlate } from './SandboxPlate'
-import { SandboxRuler } from './SandboxRuler'
+import { NibBadge, ScrollRegion } from '../../../kit'
+import { RuleCard }               from '../rules/RuleCard'
+import { SandboxPlate }           from './SandboxPlate'
+import { SandboxRuler }           from './SandboxRuler'
 
 import * as chipPanel        from '../../../lib/composables/use-chip-panel'
 import type { ProseSandbox } from '../../../lib/composables/use-prose-sandbox'
@@ -17,7 +17,10 @@ export const ProseSandboxControls = defineComponent({
   props : {
     sandbox : { required: true, type: Object as PropType<ProseSandbox> }
   },
-  emits : { dragging: (key: string, hue: string) => true, preview: (key: string, value: number) => true },
+  emits : {
+    dragging : (key: string, hue: string) => typeof key === 'string' && typeof hue === 'string',
+    preview  : (key: string, value: number) => typeof key === 'string' && typeof value === 'number'
+  },
   setup(props, { emit }) {
     const {
       enabledFacet, isOn, lengthValue, openFacets, openSlug, ruleData,
@@ -111,7 +114,7 @@ export const ProseSandboxControls = defineComponent({
             </div>
           ))}
         </div>
-        <aside class="sandbox-tags-banner flex max-h-tags-banner min-h-5-5rem overflow-y-auto panel bg-bg-soft px-1-25rem py-0-9rem">
+        <ScrollRegion as="aside" class="sandbox-tags-banner flex max-h-tags-banner min-h-5-5rem overflow-y-auto panel bg-bg-soft px-1-25rem py-0-9rem">
           {openRule.value
             ? (
               <SandboxPlate
@@ -133,7 +136,7 @@ export const ProseSandboxControls = defineComponent({
               </div>
             )
             : <p class="text-center text-sm text-text-3">Hover a rule to read what it does.</p>}
-        </aside>
+        </ScrollRegion>
       </div>
     )
   }

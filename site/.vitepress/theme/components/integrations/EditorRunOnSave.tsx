@@ -1,26 +1,25 @@
 import { defineComponent } from 'vue'
 
-import { useMediaQuery } from '@vueuse/core'
-
 import { Tabs, ToolIcon } from '../../../kit'
 import type { TabsScope } from '../../../kit'
 
-import { data as editors } from '../../../lib/integrations/editor-configs.data'
-import { useTabSelect }    from '../../../lib/composables/use-tab-select'
-import { formatFolio }     from '../../../lib/shared/numerals'
+import { data as editors }   from '../../../lib/integrations/editor-configs.data'
+import { useTabOrientation } from '../../../lib/composables/use-tab-orientation'
+import { useTabSelect }      from '../../../lib/composables/use-tab-select'
+import { formatFolio }       from '../../../lib/shared/numerals'
 
 export const EditorRunOnSave = defineComponent({
   name: 'EditorRunOnSave',
   setup() {
     const { selected: activeSlug } = useTabSelect(editors, e => e.slug)
-    const stacked                  = useMediaQuery('(width < 721px)', { ssrWidth: 1280 })
+    const orientation              = useTabOrientation()
 
     return () => (
       <Tabs
         label="Editors"
         modelValue={activeSlug.value}
         onUpdate:modelValue={next => { activeSlug.value = next }}
-        orientation={stacked.value ? 'horizontal' : 'vertical'}
+        orientation={orientation.value}
       >
         {{
           default: (tabs: TabsScope<string>) => (
@@ -60,7 +59,7 @@ export const EditorRunOnSave = defineComponent({
                       <span class="kicker">{editor.caption}</span>
                       <span class="editor-card-face-target ml-auto font-mono text-xs text-text-2">{editor.target}</span>
                     </header>
-                    <div class="editor-card-face-code flex flex-1 flex-col" innerHTML={editor.codeHtml} />
+                    <div class="flex flex-1 flex-col flush-code-block *:flex-1" innerHTML={editor.codeHtml} />
                   </section>
                 ))}
               </div>

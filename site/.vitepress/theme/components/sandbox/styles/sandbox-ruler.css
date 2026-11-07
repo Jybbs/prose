@@ -25,18 +25,13 @@
   --sandbox-ruler-nums-h  : var(--prose-size-14);
   --sandbox-ruler-row     : calc(var(--sandbox-ruler-chip-h) + var(--sandbox-ruler-gap));
   --sandbox-ruler-track-h : var(--prose-size-16);
-
-  position       : relative;
-  flex           : 1 1 var(--prose-width-16rem);
-  min-width      : 0;
-  height         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--sandbox-ruler-nums-h));
-  container-type : inline-size;
-  user-select    : none;
-  transition     : height var(--prose-transition);
+  flex                    : 1 1 var(--prose-width-16rem);
+  height                  : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--sandbox-ruler-nums-h));
+  container-type          : inline-size;
+  transition              : height var(--prose-transition);
 }
 
 .sandbox-ruler-track {
-  position     : absolute;
   top          : calc(var(--rows, 1) * var(--sandbox-ruler-row));
   transition   : top var(--prose-transition);
   right        : 0;
@@ -60,12 +55,8 @@
    by a 2px tether in the knob's hue, a tether that would overlap another
    dropping a lane with its diamond. */
 .sandbox-ruler-default {
-  position   : absolute;
   top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) / 2 + var(--lane) * var(--sandbox-ruler-lane));
-  width      : var(--prose-size-6);
-  height     : var(--prose-size-6);
   transform  : translate(-50%, -50%) rotate(45deg);
-  background : var(--vp-c-bg-soft);
   box-shadow : inset 0 0 0 var(--prose-space-1-5) var(--knob-tether);
   transition : top var(--prose-transition);
 }
@@ -77,14 +68,9 @@
 }
 
 .sandbox-ruler-num {
-  position    : absolute;
-  top         : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--prose-space-3));
-  transform   : translateX(-50%);
-  color       : var(--vp-c-text-3);
-  font-family : var(--vp-font-family-mono);
-  font-size   : var(--prose-text-0-6rem);
-  line-height : 1;
-  transition  : top var(--prose-transition);
+  top        : calc(var(--rows, 1) * var(--sandbox-ruler-row) + var(--sandbox-ruler-track-h) + var(--prose-space-3));
+  transform  : translateX(-50%);
+  transition : top var(--prose-transition);
 }
 
 .sandbox-ruler-num:first-of-type {
@@ -96,43 +82,25 @@
 }
 
 .sandbox-ruler-stop {
-  position     : absolute;
-  top          : 0;
-  bottom       : 0;
-  left         : calc(var(--pct) * 1%);
-  width        : 0;
-  cursor       : ew-resize;
-  touch-action : none;
-  user-select  : none;
-  outline      : none;
+  top     : 0;
+  bottom  : 0;
+  left    : calc(var(--pct) * 1%);
+  outline : none;
 }
 
 .sandbox-ruler-marker {
-  position   : absolute;
   top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row) + var(--sandbox-ruler-chip-h) - var(--prose-space-2));
   bottom     : var(--sandbox-ruler-nums-h);
   left       : calc(var(--prose-size-10) / -2);
-  width      : var(--prose-size-10);
   transition : top var(--prose-transition);
 }
 
 .sandbox-ruler-chip {
-  position      : absolute;
-  top           : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row));
-  left          : 0;
-  z-index       : 1;
-  display       : inline-flex;
-  gap           : var(--prose-space-0-4rem);
-  align-items   : center;
-  height        : var(--sandbox-ruler-chip-h);
-  padding       : 0 var(--prose-space-7);
-  border        : var(--prose-border-1) solid var(--vp-c-divider);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-c-bg);
-  line-height   : 1;
-  white-space   : nowrap;
-  transform     : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
-  transition    : border-color var(--prose-transition), top var(--prose-transition);
+  top        : calc((var(--rows, 1) - 1 - var(--tier)) * var(--sandbox-ruler-row));
+  left       : 0;
+  height     : var(--sandbox-ruler-chip-h);
+  transform  : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
+  transition : border-color var(--prose-transition), top var(--prose-transition);
 }
 
 @media (prefers-reduced-motion: reduce) {

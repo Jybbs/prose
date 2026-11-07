@@ -75,7 +75,7 @@ export const SandboxPlate = defineComponent({
             >
               <span class="font-mono text-xxs font-500 tracking-0-02em text-text-1 uppercase max-medium:col-start-1 max-medium:row-start-1">{facet.label}</span>
               <span
-                class="sandbox-plate-hint py-0-25rem text-xs leading-1-4 text-text-3 italic max-medium:col-start-1 max-medium:row-start-2 max-medium:py-0"
+                class="py-0-25rem text-xs leading-1-4 text-text-3 italic max-medium:col-start-1 max-medium:row-start-2 max-medium:py-0 in-code:code-chip in-code:whitespace-nowrap in-code:text-code-ink in-code:not-italic"
                 innerHTML={facet.hintHtml}
               />
               {facet.kind === 'bool'

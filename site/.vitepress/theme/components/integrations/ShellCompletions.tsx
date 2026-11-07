@@ -1,26 +1,25 @@
 import { defineComponent } from 'vue'
 
-import { useMediaQuery } from '@vueuse/core'
-
 import { Tabs, ToolIcon } from '../../../kit'
 import type { TabsScope } from '../../../kit'
 
-import { data as shells } from '../../../lib/integrations/shell-completions.data'
-import { useTabSelect }   from '../../../lib/composables/use-tab-select'
-import { InlineProse }    from '../base/InlineProse'
+import { data as shells }    from '../../../lib/integrations/shell-completions.data'
+import { useTabOrientation } from '../../../lib/composables/use-tab-orientation'
+import { useTabSelect }      from '../../../lib/composables/use-tab-select'
+import { InlineProse }       from '../base/InlineProse'
 
 export const ShellCompletions = defineComponent({
   name: 'ShellCompletions',
   setup() {
     const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
-    const stacked                          = useMediaQuery('(width < 721px)', { ssrWidth: 1280 })
+    const orientation                      = useTabOrientation()
 
     return () => (
       <Tabs
         label="Shell completion targets"
         modelValue={activeSlug.value}
         onUpdate:modelValue={next => { activeSlug.value = next }}
-        orientation={stacked.value ? 'horizontal' : 'vertical'}
+        orientation={orientation.value}
       >
         {{
           default: (tabs: TabsScope<string>) => (
@@ -53,8 +52,8 @@ export const ShellCompletions = defineComponent({
                     <span class="kicker">{active.value.caption}</span>
                   </header>
                   <div class="flex-auto">
-                    <div class="shell-card-modal-code" innerHTML={active.value.codeHtml} />
-                    <p class="shell-card-modal-note px-18 pb-14 text-0-92rem text-text-2">
+                    <div class="shell-card-modal-code flush-code-block" innerHTML={active.value.codeHtml} />
+                    <p class="shell-card-modal-note px-18 pb-14 text-0-92rem text-text-2 in-code:text-code-ink">
                       <InlineProse nodes={active.value.noteNodes} />
                     </p>
                   </div>

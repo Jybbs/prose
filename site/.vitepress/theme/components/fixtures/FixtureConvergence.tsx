@@ -42,7 +42,7 @@ export const FixtureConvergence = defineComponent({
         <ol class="flex flex-col gap-10 border-l-1 border-l-divider">
           {steps.value.map(step => (
             <li
-              class="fixture-converge-step group relative before:absolute before:top-0-45rem before:size-7 before:rounded-half before:border-1 before:border-divider before:bg-bg data-[badge=settled]:before:border-celadon data-[badge=settled]:before:bg-celadon"
+              class="fixture-converge-step group relative before:absolute before:top-0-45rem before:size-7 before:rounded-half before:border-1 before:border-divider before:bg-bg data-[badge=settled]:before:border-celadon data-[badge=settled]:before:bg-celadon fixture-converge-dot"
               data-badge={step.badge}
               key={step.label}
             >
@@ -53,7 +53,7 @@ export const FixtureConvergence = defineComponent({
               {step.html
                 ? (
                   <div
-                    class="fixture-converge-state overflow-hidden panel bg-code-block"
+                    class="fixture-converge-state overflow-hidden panel bg-code-block in-pre:m-0"
                     innerHTML={step.html}
                   />
                 )

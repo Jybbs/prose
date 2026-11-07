@@ -56,8 +56,8 @@ export const ExitCodeMatrix = defineComponent({
             >{selectedRow.value.code}</span>
             <span class="exit-code-entry-label font-display text-1-5rem leading-none font-500 text-text-1">{selectedRow.value.label}</span>
           </header>
-          <p class="exit-code-entry-summary max-w-60ch font-base text-md text-text-1">{selectedRow.value.summary}</p>
-          <dl class="exit-code-entry-facts m-0 grid max-w-60ch grid-cols-max-1fr border-t-1 border-t-divider">
+          <p class="exit-code-entry-summary max-w-60ch font-base text-md text-text-1 in-code:whitespace-nowrap">{selectedRow.value.summary}</p>
+          <dl class="exit-code-entry-facts m-0 grid max-w-60ch grid-cols-max-1fr border-t-1 border-t-divider in-code:whitespace-nowrap">
             {selectedRow.value.facts.map(fact => (
               <Fragment key={fact.label}>
                 <dt class="m-0 border-b-1 border-b-divider py-8 pr-16 kicker leading-24 font-400 text-text-2">{fact.label}</dt>

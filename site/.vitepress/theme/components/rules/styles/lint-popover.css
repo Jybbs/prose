@@ -24,7 +24,3 @@
   overflow-wrap : anywhere;
 }
 
-.lint-message code {
-  color     : var(--vp-code-color);
-  font-size : var(--prose-text-0-86em);
-}

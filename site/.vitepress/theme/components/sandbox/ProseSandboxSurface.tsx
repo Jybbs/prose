@@ -24,11 +24,11 @@ export const ProseSandboxSurface = defineComponent({
   name  : 'ProseSandboxSurface',
   props : {
     editing  : { default: false, type: Boolean },
-    guide    : [Number, null] as PropType<number | null>,
+    guide    : { default: null, type: [Number, null] as PropType<number | null> },
     guideHue : String,
     sandbox  : { required: true, type: Object as PropType<ProseSandbox> }
   },
-  emits : { 'update:editing': (value: boolean) => true },
+  emits : { 'update:editing': (value: boolean) => typeof value === 'boolean' },
   setup(props) {
     const editing = useModel(props, 'editing')
     const { diagnostics, drawn, error, formatNow, formatted, source, unstable } = props.sandbox
@@ -292,7 +292,7 @@ export const ProseSandboxSurface = defineComponent({
         ref={surface}
         style={{ minHeight: heldHeight.value }}
       >
-        {props.guide != null && (
+        {props.guide !== null && (
           <span
             aria-hidden="true"
             class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 font-mono text-xs"

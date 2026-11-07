@@ -20,7 +20,7 @@ const LandingTypingDemo = defineAsyncComponent(() =>
 )
 </script>
 
-<main class="landing-page" aria-label="prose overview">
+<main class="mx-auto max-w-1120" aria-label="prose overview">
   <LandingHero />
   <LandingSection kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
     <LandingTypingDemo />

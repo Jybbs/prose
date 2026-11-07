@@ -2,12 +2,15 @@ import { ShikiMagicMovePrecompiled }                                          fr
 import { useIntersectionObserver }                                            from '@vueuse/core'
 import { computed, defineComponent, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 
+import { ScrollRegion } from '../../../kit'
+
 import { data }                               from '../../../lib/landing/landing-typing-demo.data'
 import { useReducedMotion }                   from '../../../lib/composables/use-reduced-motion'
 import * as buffer                            from '../../../lib/landing/typing-demo-buffer'
 import { createTypingMachine, MAGIC_MOVE_MS } from '../../../lib/landing/typing-state-machine'
 import type { Phase }                         from '../../../lib/landing/typing-state-machine'
 import { magicMoveOptions }                   from '../../../lib/markdown/magic-move-options'
+import { SCROLL_STOP }                        from '../../../lib/shared/constants'
 
 export const TypingDemo = defineComponent({
   name: 'TypingDemo',
@@ -103,7 +106,7 @@ export const TypingDemo = defineComponent({
       >
         <section aria-label="prose config" class="code-panel overflow-hidden panel">
           <header class="code-panel-label">prose.toml</header>
-          <pre class="code-panel-code code-typewriter">
+          <ScrollRegion as="pre" class="code-panel-code code-typewriter">
             <code>
               <span class="text-text-3">{segments.value.before}</span>
               <span class="transition-colors">{segments.value.editingLineBefore}</span>
@@ -114,7 +117,7 @@ export const TypingDemo = defineComponent({
               <span class="transition-colors">{segments.value.editingLineAfter}</span>
               <span class="text-text-3">{segments.value.after}</span>
             </code>
-          </pre>
+          </ScrollRegion>
         </section>
         <section aria-label="Python source" class="code-panel overflow-hidden panel">
           <header class="code-panel-label">app.py</header>
@@ -124,6 +127,7 @@ export const TypingDemo = defineComponent({
             options={morphOptions}
             step={pythonStateIndex.value}
             steps={morphSteps}
+            {...SCROLL_STOP}
           />
         </section>
         <button

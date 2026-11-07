@@ -11,7 +11,7 @@ export const FixtureToggle = defineComponent({
   props : {
     modelValue : { required: true, type: String as PropType<FixtureTab> }
   },
-  emits : { 'update:modelValue': (value: FixtureTab) => true },
+  emits : { 'update:modelValue': (value: FixtureTab) => value === 'before' || value === 'after' },
   setup(props) {
     const tab = useModel(props, 'modelValue')
 

@@ -1,7 +1,7 @@
 import { computed, defineComponent, ref, shallowRef, watch } from 'vue'
 
-import { Popup }    from '../../../kit'
-import { RuleCard } from './RuleCard'
+import { Popup, ScrollRegion } from '../../../kit'
+import { RuleCard }            from './RuleCard'
 
 import { lintShorthand, type Shorthand }    from '../../../lib/fixtures/lint-shorthand'
 import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
@@ -147,15 +147,15 @@ export const LintFlagPopup = defineComponent({
                             key={pane.side}
                           >
                             <span class="lint-block-label border-b-1 border-b-divider/40 px-12 py-3 font-mono text-label tracking-label uppercase bg-code-block text-text-2">{pane.label}</span>
-                            <div
+                            <ScrollRegion
                               class="lint-block-code code-text min-h-0 overflow-auto px-12 py-8"
-                              innerHTML={panes[pane.side]}
+                              html={panes[pane.side]}
                             />
                           </div>
                         ))}
                       </div>
                     )
-                    : <span class="lint-message text-sm" innerHTML={messageHtml.value} />
+                    : <span class="text-sm in-code:text-0-86em in-code:text-code-ink" innerHTML={messageHtml.value} />
                 )
               }}
             </RuleCard>

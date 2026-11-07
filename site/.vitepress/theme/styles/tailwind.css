@@ -10,10 +10,13 @@
 @import "./tailwind/shapes.css";
 
 @source "../**/*.tsx";
+@source "../../../index.md";
 @source "../../kit/**/*.{ts,tsx}";
 @source "../../../prototypes/**/*.tsx";
 @source "../../lib/**/*.ts";
 @source not inline("border container filter fixed inline lowercase resize ring static transform transition");
 
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant in-code (& :where(code));
+@custom-variant in-pre (& :where(pre));
 

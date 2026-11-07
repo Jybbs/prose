@@ -98,7 +98,7 @@ export const PrimitivesCompositionDetail = defineComponent({
                 >{PRIMITIVE_LAYER_NUMERALS[focusedEntry.value.layer]}</span>
                 <div class="flex min-w-0 flex-1 flex-col gap-3">
                   <span class="font-display text-1rem leading-1-1 text-text-1">{focusedEntry.value.name}</span>
-                  <span class="primitives-composition-card-summary font-mono text-0-68rem leading-1-5 text-text-2">
+                  <span class="font-mono text-0-68rem leading-1-5 text-text-2 in-code:code-chip in-code:px-4 in-code:py-1 in-code:text-1em in-code:text-code-ink">
                     <InlineProse nodes={focusedEntry.value.summaryNodes} />
                   </span>
                 </div>

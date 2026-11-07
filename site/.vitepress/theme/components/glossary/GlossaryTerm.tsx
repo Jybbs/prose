@@ -42,7 +42,7 @@ export const GlossaryTerm = defineComponent({
     const tooltipHtml = computed(() => {
       const parts = [
         `<div class="glossary-tooltip-head flex items-center justify-between gap-16">${head}</div>`,
-        `<div class="glossary-tooltip-body mt-8 text-text-2 italic">${entry.definitionHtml}</div>`
+        `<div class="glossary-tooltip-body mt-8 text-text-2 italic in-code:code-chip in-code:px-6 in-code:py-2 in-code:text-0-95em in-code:text-code-ink">${entry.definitionHtml}</div>`
       ]
       if (showLink.value) {
         parts.push(`<a href="${entry.href}" class="${LINK_CLASS}"><span class="nib-stroke">Read more →</span></a>`)

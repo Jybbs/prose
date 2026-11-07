@@ -127,7 +127,7 @@ export const RulesPlate = defineComponent({
         <p aria-live="polite" class="rules-plate-live sr-only">{spoken.value}</p>
         {sections.value.map(section => (
           <section
-            class={['rules-plate-letter grid-cols-3rem-minmax-1fr gap-x-14 gap-y-0 border-t-1 border-t-divider py-12', { 'is-out': !section.rules.length, 'rules-plate-gathered': section.family }]}
+            class={['rules-plate-letter grid-cols-3rem-minmax-1fr gap-x-14 gap-y-0 border-t-1 border-t-divider py-12', { 'is-out': section.rules.length === 0, 'rules-plate-gathered': section.family }]}
             data-letter={section.key}
             key={section.key}
           >

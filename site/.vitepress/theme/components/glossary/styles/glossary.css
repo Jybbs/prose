@@ -40,10 +40,3 @@ a.glossary-anchor {
   display : block;
 }
 
-.glossary-tooltip-body code {
-  padding       : var(--prose-space-2) var(--prose-space-6);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-code-bg);
-  font-size     : var(--prose-text-0-95em);
-  color         : var(--vp-code-color);
-}

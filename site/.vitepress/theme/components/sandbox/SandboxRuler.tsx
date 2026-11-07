@@ -29,7 +29,11 @@ export const SandboxRuler = defineComponent({
     lengths  : { required: true, type: Array as PropType<readonly LengthKnob[]> },
     lengthOf : { required: true, type: Function as PropType<(key: string) => number> }
   },
-  emits : { dragging: (key: string, hue: string) => true, preview: (key: string, value: number) => true, setLength: (key: string, value: number) => true },
+  emits : {
+    dragging  : (key: string, hue: string) => typeof key === 'string' && typeof hue === 'string',
+    preview   : (key: string, value: number) => typeof key === 'string' && typeof value === 'number',
+    setLength : (key: string, value: number) => typeof key === 'string' && typeof value === 'number'
+  },
   setup(props, { emit }) {
     const chipEls = shallowRef<HTMLElement[] | null>(null)
     const chipWidths = reactive(new Map<string, number>())
@@ -158,13 +162,13 @@ export const SandboxRuler = defineComponent({
       <div class="flex flex-wrap items-center gap-x-1-25rem gap-y-0-75rem">
         <div
           aria-label="Line lengths"
-          class="sandbox-ruler"
+          class="sandbox-ruler relative min-w-0 select-none"
           id={trackId}
           ref={trackEl}
           role="group"
           style={{ '--rows': rows.value }}
         >
-          <div aria-hidden="true" class="sandbox-ruler-track" />
+          <div aria-hidden="true" class="sandbox-ruler-track absolute" />
           {props.lengths.map((knob, index) => (
             <span
               aria-hidden="true"
@@ -177,7 +181,7 @@ export const SandboxRuler = defineComponent({
           {props.lengths.map((knob, index) => (
             <span
               aria-hidden="true"
-              class="sandbox-ruler-default"
+              class="sandbox-ruler-default absolute w-6 h-6 bg-bg-soft"
               data-hue={hueOf(index)}
               key={`default-${knob.key}`}
               style={{ '--lane': tetherStyle(knob)['--lane'], 'left': `${rulerScale.pctOfLength(knob.default)}%` }}
@@ -186,7 +190,7 @@ export const SandboxRuler = defineComponent({
           {MARKS.map(mark => (
             <span
               aria-hidden="true"
-              class="sandbox-ruler-num"
+              class="sandbox-ruler-num absolute text-text-3 font-mono text-0-6rem leading-none"
               key={mark}
               style={{ left: `${rulerScale.pctOfLength(mark)}%` }}
             >{mark}</span>
@@ -205,7 +209,7 @@ export const SandboxRuler = defineComponent({
               {{
                 default: ({ thumb }: SliderScope) => (
                   <div
-                    class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2"
+                    class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2 absolute w-0 cursor-ew-resize touch-none select-none"
                     data-changed={shownValue(knob) !== knob.default || null}
                     data-hue={hueOf(index)}
                     onPointercancel={dragEnd}
@@ -216,12 +220,12 @@ export const SandboxRuler = defineComponent({
                   >
                     <span
                       aria-hidden="true"
-                      class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:transition-colors before:bg-text-2 group-hover:before:bg-text-1 group-focus-visible:before:bg-text-1 group-data-dragging:before:bg-text-1"
+                      class="sandbox-ruler-marker before:absolute before:inset-x-4 before:inset-y-0 before:transition-colors before:bg-text-2 group-hover:before:bg-text-1 group-focus-visible:before:bg-text-1 group-data-dragging:before:bg-text-1 absolute w-10"
                     />
                     {editing.value !== knob.key
                       ? (
                         <span
-                          class="sandbox-ruler-chip group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
+                          class="sandbox-ruler-chip px-7 group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2 absolute z-1 inline-flex gap-0-4rem items-center py-0 border-1 border-divider rounded-sm bg-bg leading-none whitespace-nowrap"
                           data-key={knob.key}
                           onDblclick={() => beginEdit(knob)}
                           ref={chipEls}
@@ -234,7 +238,7 @@ export const SandboxRuler = defineComponent({
                       : (
                       <input
                         aria-label={`${knob.label} line length`}
-                        class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text focus-visible:-outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2"
+                        class="sandbox-ruler-chip sandbox-ruler-chip-input panel-number w-3-4rem cursor-text px-5 font-mono text-0-68rem text-text-1 select-text focus-visible:-outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2 absolute z-1 inline-flex gap-0-4rem items-center py-0 border-1 border-divider rounded-sm bg-bg leading-none whitespace-nowrap"
                         max={MAX}
                         min={MIN}
                         onBlur={() => commitEdit(knob)}

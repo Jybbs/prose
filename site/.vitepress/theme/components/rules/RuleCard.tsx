@@ -68,7 +68,7 @@ export const RuleCard = defineComponent({
           >
             <MiddleEllipsis text={props.rule.slug} />
           </h3>
-          <p class="rule-card-caption" innerHTML={props.rule.captionHtml} ref={caption} />
+          <p class="rule-card-caption m-0 p-0 text-left text-0-875rem leading-1-6 text-text-2" innerHTML={props.rule.captionHtml} ref={caption} />
         </div>
       </article>
     )

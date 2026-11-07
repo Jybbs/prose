@@ -100,7 +100,7 @@ export const CompositionCards = defineComponent({
                   <div class="fixture-card-summary-row max-mobile:group-data-open/fixture:gap-y-0">
                     <span
                       aria-hidden="true"
-                      class="composition-cards-slot col-1 row-1 mt-7 ml-8 h-20 self-start"
+                      class="composition-cards-slot col-1 row-1 mt-7 ml-8 h-20 self-start w-32"
                       style={{ '--deck-count': row.segments.length }}
                     />
                     <button
@@ -110,17 +110,17 @@ export const CompositionCards = defineComponent({
                       type="button"
                     >
                       <span aria-hidden="true" class="fixture-card-num" />
-                      <span class="fixture-card-title text-balance" innerHTML={row.titleHtml} />
+                      <span class="fixture-card-title text-balance in-code:normal-case" innerHTML={row.titleHtml} />
                     </button>
                     <div class="contents">
                       <ol
                         aria-label={`${row.segments.length} rules in pipeline order`}
-                        class="composition-cards-ticks m-0 list-none p-0"
+                        class="composition-cards-ticks m-0 list-none p-0 z-2 flex"
                         style={{ '--deck-count': row.segments.length }}
                       >
                         {row.segments.map((seg, at) => (
                           <li
-                            class="composition-cards-tick-item my-0 list-none ps-0"
+                            class="composition-cards-tick-item my-0 list-none ps-0 relative flex"
                             key={seg.slug}
                             onClick={event => event.stopPropagation()}
                             style={{ '--deck-at': at }}
@@ -150,7 +150,7 @@ export const CompositionCards = defineComponent({
                       <div class="fixture-card-body-content">
                         {row.descriptionNodes && (
                           <>
-                            <div class="fixture-card-desc">
+                            <div class="fixture-card-desc flush-ends">
                               <InlineProse nodes={row.descriptionNodes} />
                             </div>
                             <div aria-hidden="true" class="fixture-card-rule" />
@@ -169,6 +169,7 @@ export const CompositionCards = defineComponent({
                           class="composition-cards-bar invisible mt-12 mb-0 flex list-none flex-wrap gap-6 p-0"
                           inert
                           ref={bars}
+                          ref_for
                         >
                           {row.segments.map(seg => (
                             <li class="my-0 flex min-w-0 flex-none list-none ps-0" key={seg.slug}>

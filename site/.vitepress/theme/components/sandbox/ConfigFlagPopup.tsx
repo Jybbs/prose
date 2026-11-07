@@ -18,7 +18,9 @@ export const ConfigFlagPopup = defineComponent({
   props : {
     rules : { required: true, type: Array as PropType<readonly RuleControl[]> }
   },
-  emits : { apply: (path: string, replacement: string) => true },
+  emits : {
+    apply : (path: string, replacement: string) => typeof path === 'string' && typeof replacement === 'string'
+  },
   setup(props, { emit, expose }) {
     const path   = ref('')
     const target = shallowRef<HTMLElement | null>(null)
@@ -95,7 +97,7 @@ export const ConfigFlagPopup = defineComponent({
                 <span>{segment}</span>
               </Fragment>
             ))}
-            {!facets.value.length && (
+            {facets.value.length === 0 && (
               <>
                 <span aria-hidden="true" class="text-text-3">›</span>
                 <span class="text-danger-1 line-through">{wrote.value}</span>

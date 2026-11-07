@@ -14,7 +14,11 @@ export const SandboxCodeEditor = defineComponent({
     lang       : { required: true, type: String as PropType<'python' | 'toml'> },
     modelValue : { required: true, type: String }
   },
-  emits : { blur: () => true, keydown: (event: KeyboardEvent) => true, 'update:modelValue': (value: string) => true },
+  emits : {
+    'blur'              : () => true,
+    'keydown'           : (event: KeyboardEvent) => event instanceof KeyboardEvent,
+    'update:modelValue' : (value: string) => typeof value === 'string'
+  },
   setup(props, { emit, expose }) {
     const model = useModel(props, 'modelValue')
 

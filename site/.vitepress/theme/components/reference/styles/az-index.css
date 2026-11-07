@@ -58,14 +58,6 @@
   padding : var(--prose-space-10) var(--prose-space-16) calc(var(--prose-space-12) + var(--cover));
 }
 
-.vp-doc .az-index-detail-code,
-.az-index-detail-code {
-  padding    : 0;
-  background : none;
-  font-size  : var(--prose-text-0-92em);
-  color      : inherit;
-}
-
 /* Runs a dotted leader from the end of the words' last line to Read More. */
 .az-index-detail-leader {
   margin        : 0 calc(var(--prose-size-12) - 100%) 0 var(--prose-space-8);

@@ -1,7 +1,7 @@
 import { defineComponent } from 'vue'
 
-import { Tabs }           from '../../../kit'
-import type { TabsScope } from '../../../kit'
+import { ScrollRegion, Tabs } from '../../../kit'
+import type { TabsScope }     from '../../../kit'
 
 import { data as directives }     from '../../../lib/suppression/directives.data'
 import { useTabSelect }           from '../../../lib/composables/use-tab-select'
@@ -93,10 +93,10 @@ export const DirectiveAnatomy = defineComponent({
                   ))}
                 </div>
                 <div class="flex flex-col gap-4">
-                  <p class="directive-anatomy-effect max-w-72ch text-0-98rem text-text-2 italic">
+                  <p class="directive-anatomy-effect max-w-72ch text-0-98rem text-text-2 italic in-code:not-italic">
                     <InlineProse nodes={focused.value.effectNodes} />
                   </p>
-                  <pre class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-14 py-12 text-code leading-1-55 text-text-2">
+                  <ScrollRegion as="pre" class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-14 py-12 text-code leading-1-55 text-text-2">
                     <code>
                       {focused.value.example.split('\n').map((line, j) => (
                         <span
@@ -106,7 +106,7 @@ export const DirectiveAnatomy = defineComponent({
                         >{line}{"\n"}</span>
                       ))}
                     </code>
-                  </pre>
+                  </ScrollRegion>
                 </div>
               </div>
             </div>

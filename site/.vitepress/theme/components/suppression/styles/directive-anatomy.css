@@ -24,10 +24,6 @@
   box-shadow       : inset 0 var(--prose-border-1) 0 var(--scope-mark);
 }
 
-.directive-anatomy-effect code {
-  font-style : normal;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .directive-anatomy-plate {
     transition : none;

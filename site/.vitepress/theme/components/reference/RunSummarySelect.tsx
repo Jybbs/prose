@@ -13,7 +13,7 @@ export const RunSummarySelect = defineComponent({
     modelValue : { required: true, type: String },
     options    : { required: true, type: Array as PropType<readonly SelectOption[]> }
   },
-  emits : { 'update:modelValue': (value: string) => true },
+  emits : { 'update:modelValue': (value: string) => typeof value === 'string' },
   setup(props) {
     const model = useModel(props, 'modelValue')
 

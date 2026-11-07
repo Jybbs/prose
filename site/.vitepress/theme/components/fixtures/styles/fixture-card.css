@@ -1,7 +1,7 @@
 @reference "../../../styles/tailwind.css";
 
-/* Declares the folio counter the single-rule cards in FixtureCard.vue and the
-   multi-rule cards in CompositionCards.vue share, so one run numbers every
+/* Declares the folio counter the single-rule cards in `FixtureCard` and the
+   multi-rule cards in `CompositionCards` share, so one run numbers every
    card a page shows and every folio shares one column. */
 
 @counter-style prose-fixture-folio {
@@ -12,13 +12,6 @@
 .vp-doc {
   counter-reset : prose-fixture-folio;
 }
-
-.fixture-card-title code {
-  text-transform : none;
-}
-
-.fixture-card-desc :first-child { margin-top    : 0; }
-.fixture-card-desc :last-child  { margin-bottom : 0; }
 
 .fixture-card-desc ul {
   margin       : var(--prose-space-0-4em) 0 0;

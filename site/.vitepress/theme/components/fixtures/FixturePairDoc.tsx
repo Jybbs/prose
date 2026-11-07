@@ -2,14 +2,15 @@ import { useIntersectionObserver }                                              
 import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch, withKeys } from 'vue'
 import type { PropType }                                                                    from 'vue'
 
-import { CopyButton }        from '../../../kit'
+import { CopyButton }                              from '../../../kit'
 import { LintFlagPopup, type LintFlagPopupHandle } from '../rules/LintFlagPopup'
-import { SandboxSeedButton } from '../sandbox/SandboxSeedButton'
+import { SandboxSeedButton }                       from '../sandbox/SandboxSeedButton'
 
 import { useMagicMove }      from '../../../lib/composables/use-magic-move'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
 import { useSquiggleDraw }   from '../../../lib/composables/use-squiggle-draw'
 import type { SavedSession } from '../../../lib/sandbox/session'
+import { SCROLL_STOP }       from '../../../lib/shared/constants'
 import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
 
 export const FixturePairDoc = defineComponent({
@@ -105,16 +106,17 @@ export const FixturePairDoc = defineComponent({
         {panel.value && morphSteps.value.length > 0 && (
           <panel.value
             animate={animate.value && !reducedMotion.value}
-            class="fixture-pair-panel"
+            class="fixture-pair-panel flush-code-block"
             onEnd={settle}
             options={morphOptions.value}
             step={step.value}
             steps={morphSteps.value}
+            {...SCROLL_STOP}
             v-show={animating.value}
           />
         )}
         <div
-          class={['fixture-pair-panel', { 'lint-undrawn': undrawn.value }]}
+          class={['fixture-pair-panel flush-code-block', { 'lint-undrawn': undrawn.value }]}
           innerHTML={strippedHtml.value}
           onClick={event => popup.value?.toggle(event)}
           onKeydown={withKeys(event => popup.value?.toggle(event), ['enter', 'space'])}
