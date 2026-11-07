@@ -25,11 +25,20 @@ export const FamilyChip = defineComponent({
       ? `/rules/${family.value}/`
       : undefined)
 
-    return () => emblem.value && (
-      <Chip class="nib-ground" family={emblem.value.family} href={href.value} variant="family-chip">
-        <NibBadge emblem={emblem.value} size={15.2} />
-        <span>{emblem.value.name}</span>
-      </Chip>
-    )
+    return () => {
+      const current = emblem.value
+      return current
+        ? (
+          <Chip class="nib-ground" family={current.family} href={href.value} variant="family-chip">
+            {{
+              default: () => [
+                <NibBadge emblem={current} size={15.2} />,
+                <span>{current.name}</span>
+              ]
+            }}
+          </Chip>
+        )
+        : null
+    }
   }
 })

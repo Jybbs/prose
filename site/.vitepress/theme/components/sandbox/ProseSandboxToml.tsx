@@ -132,22 +132,22 @@ export const ProseSandboxToml = defineComponent({
           onBlur={stopEditing}
           onUpdate:modelValue={next => { configToml.value = next }}
           ref={editor}
-          v-show={editing.value}
+          style={{ display: editing.value ? undefined : 'none' }}
         />
         <pre
           class="shiki code-panel-code code-typewriter"
           innerHTML={typingHtml.value}
-          v-show={!editing.value && typing.value}
+          style={{ display: !editing.value && typing.value ? undefined : 'none' }}
         />
-        <div class="flex min-h-0" v-show={!editing.value && !typing.value}>
-          {located.value.length > 0 && (
+        <div class="flex min-h-0" style={{ display: !editing.value && !typing.value ? undefined : 'none' }}>
+          {located.value.length > 0 ? (
             <div
               aria-hidden="true"
               class="sandbox-toml-gutter shrink-0 py-18 pl-10 text-xs leading-1-6 select-none"
             >
               {Array.from({ length: rows.value }, (_, index) => index + 1).map(row => <span data-flagged={flagged.value.has(row) ? '' : undefined} key={row} />)}
             </div>
-          )}
+          ) : null}
           <div
             aria-label="Edit the configuration"
             class="sandbox-toml-display code-text grow cursor-text overflow-auto py-18 pr-22 pl-8"
@@ -160,7 +160,7 @@ export const ProseSandboxToml = defineComponent({
             tabindex="0"
           />
         </div>
-        {located.value.length > 0 && (
+        {located.value.length > 0 ? (
           <p class="config-notice-strip flex items-center gap-6 border-t-1 border-t-divider px-14 py-7 font-mono text-xs tracking-0-02em text-text-2">
             <span aria-hidden="true" class="text-warning-1">▲</span>
             {' '}
@@ -170,9 +170,9 @@ export const ProseSandboxToml = defineComponent({
             {' '}
             {located.value.length === 1 ? 'key' : 'keys'}
           </p>
-        )}
-        <CopyButton label="Copy prose.toml" source={configToml.value} v-show={!editing.value} />
-        {configError.value && <p class="code-panel-error code-panel-notice text-danger-1">{configError.value}</p>}
+        ) : null}
+        <CopyButton label="Copy prose.toml" source={configToml.value} style={{ display: editing.value ? 'none' : undefined }} />
+        {configError.value ? <p class="code-panel-error code-panel-notice text-danger-1">{configError.value}</p> : null}
         {stray.value.map(notice => <p class="code-panel-warning code-panel-notice text-warning-1" key={notice}>{notice}</p>)}
         <ConfigFlagPopup onApply={renameConfigKey} ref={popup} rules={rules} />
       </section>

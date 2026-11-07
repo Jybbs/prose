@@ -28,7 +28,7 @@ export const RuleCardList = defineComponent({
       items.value.length > 0
         ? (
           <div class={['flex max-w-960 flex-col gap-6', props.related ? 'mt-28' : 'mt-24']}>
-            {!props.related && <h2 class="sr-only">Rules</h2>}
+            {!props.related ? <h2 class="sr-only">Rules</h2> : null}
             {items.value.map(rule => <RuleCard key={rule.slug} rule={rule} />)}
           </div>
         )

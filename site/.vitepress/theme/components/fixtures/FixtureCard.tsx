@@ -1,4 +1,5 @@
 import { useToggle }                      from '@vueuse/core'
+import { mergeProps }                     from '@zag-js/vue'
 import { computed, defineComponent, ref } from 'vue'
 
 import { Disclosure, NibBadge } from '../../../kit'
@@ -53,18 +54,17 @@ export const FixtureCard = defineComponent({
                   aria-hidden="true"
                   class="mt-7 mr-12 ml-8 flex size-20 items-center justify-center self-start max-mobile:mr-0"
                 >
-                  {family.value && (
+                  {family.value ? (
                     <NibBadge
                       class="block text-family-nib-card group-data-[edits=false]/fixture:not-group-data-[lint=true]/fixture:text-text-3-card-31"
                       emblem={familyEmblem(family.value)}
                       size={14}
                     />
-                  )}
+                  ) : null}
                 </span>
                 <button
-                  {...disclosure.trigger}
+                  {...mergeProps(disclosure.trigger, { onClick: (event: MouseEvent) => event.stopPropagation() })}
                   class="fixture-card-summary max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-1 max-mobile:group-data-open/fixture:-col-end-1"
-                  onClick={event => event.stopPropagation()}
                   type="button"
                 >
                   <span aria-hidden="true" class="fixture-card-num" />
@@ -86,21 +86,21 @@ export const FixtureCard = defineComponent({
               >
                 <div class="fixture-card-body-inner">
                   <div class="fixture-card-body-content">
-                    {entry.value.descriptionNodes && (
+                    {entry.value.descriptionNodes ? (
                       <>
                         <div class="fixture-card-desc flush-ends">
                           <InlineProse nodes={entry.value.descriptionNodes} />
                         </div>
                         <div aria-hidden="true" class="fixture-card-rule" />
                       </>
-                    )}
-                    {isOpen.value && (
+                    ) : null}
+                    {isOpen.value ? (
                       <FixturePairDoc
                         activeTab={activeTab.value}
                         inputHtml={entry.value.inputHtml}
                         outputHtml={entry.value.outputHtml}
                       />
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>

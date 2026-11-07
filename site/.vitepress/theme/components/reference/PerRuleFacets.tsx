@@ -56,7 +56,7 @@ export const PerRuleFacets = defineComponent({
                         class="size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent group-aria-expanded:rotate-90 per-rule-facets-chevron border-l-text-2 group-hover:border-l-text-1 group-focus-visible:border-l-text-1"
                       />
                       <span class="per-rule-facets-label kicker text-text-2 font-600">
-                        {family.family !== 'generic' && <NibBadge emblem={familyEmblem(family.family)} size={13.6} />}
+                        {family.family !== 'generic' ? <NibBadge emblem={familyEmblem(family.family)} size={13.6} /> : null}
                         {' '}
                         {family.label}
                         {' '}

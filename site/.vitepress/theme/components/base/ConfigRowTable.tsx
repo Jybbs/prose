@@ -14,34 +14,38 @@ export const ConfigRowTable = defineComponent({
   setup(props) {
     return () => (
       <ScrollRegion as="table">
-        <thead>
-          <tr>
-            <th>Key</th>
-            <th>Type</th>
-            <th>Default</th>
-            <th>Meaning</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.rows.map(row => (
-            <tr key={row.key}>
-              <td>
-                <code>{row.key}</code>
-              </td>
-              <td>
-                <InlineProse nodes={row.typeNodes} />
-              </td>
-              <td>
-                {row.default !== 'unset'
-                  ? <code>{row.default}</code>
-                  : <span>unset</span>}
-              </td>
-              <td>
-                <InlineProse nodes={row.meaningNodes} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
+        {{
+          default: () => [
+            <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Type</th>
+                  <th>Default</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>,
+            <tbody>
+                {props.rows.map(row => (
+                  <tr key={row.key}>
+                    <td>
+                      <code>{row.key}</code>
+                    </td>
+                    <td>
+                      <InlineProse nodes={row.typeNodes} />
+                    </td>
+                    <td>
+                      {row.default !== 'unset'
+                        ? <code>{row.default}</code>
+                        : <span>unset</span>}
+                    </td>
+                    <td>
+                      <InlineProse nodes={row.meaningNodes} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+          ]
+        }}
       </ScrollRegion>
     )
   }

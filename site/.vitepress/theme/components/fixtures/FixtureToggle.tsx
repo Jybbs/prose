@@ -1,3 +1,4 @@
+import { mergeProps }                from '@zag-js/vue'
 import { defineComponent, useModel } from 'vue'
 import type { PropType }             from 'vue'
 
@@ -21,19 +22,17 @@ export const FixtureToggle = defineComponent({
           default: (tabs: TabsScope<string>) => (
             <div {...tabs.list} class="inline-flex rounded-sm border-1 border-divider bg-bg p-2">
               <button
-                {...tabs.trigger('before')}
+                {...mergeProps(tabs.trigger('before'), { onClick: (event: MouseEvent) => event.stopPropagation() })}
                 aria-controls={undefined}
                 class="fixture-toggle-pill toggle-pill"
                 data-side="before"
-                onClick={event => event.stopPropagation()}
                 type="button"
               >Before</button>
               <button
-                {...tabs.trigger('after')}
+                {...mergeProps(tabs.trigger('after'), { onClick: (event: MouseEvent) => event.stopPropagation() })}
                 aria-controls={undefined}
                 class="fixture-toggle-pill toggle-pill"
                 data-side="after"
-                onClick={event => event.stopPropagation()}
                 type="button"
               >After</button>
             </div>

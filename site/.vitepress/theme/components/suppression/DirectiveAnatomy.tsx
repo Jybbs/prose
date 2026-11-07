@@ -97,15 +97,19 @@ export const DirectiveAnatomy = defineComponent({
                     <InlineProse nodes={focused.value.effectNodes} />
                   </p>
                   <ScrollRegion as="pre" class="overflow-x-auto rounded-sm border-1 border-divider bg-bg px-14 py-12 text-code leading-1-55 text-text-2">
-                    <code>
-                      {focused.value.example.split('\n').map((line, j) => (
-                        <span
-                          class="block data-[line-kind=code]:text-text-1 data-[line-kind=comment]:text-text-3 data-[line-kind=directive]:font-500 data-[line-kind=directive]:text-text-1"
-                          data-line-kind={classifyLine(line)}
-                          key={j}
-                        >{line}{"\n"}</span>
-                      ))}
-                    </code>
+                    {{
+                      default: () => (
+                        <code>
+                            {focused.value.example.split('\n').map((line, j) => (
+                              <span
+                                class="block data-[line-kind=code]:text-text-1 data-[line-kind=comment]:text-text-3 data-[line-kind=directive]:font-500 data-[line-kind=directive]:text-text-1"
+                                data-line-kind={classifyLine(line)}
+                                key={j}
+                              >{line}{"\n"}</span>
+                            ))}
+                          </code>
+                      )
+                    }}
                   </ScrollRegion>
                 </div>
               </div>

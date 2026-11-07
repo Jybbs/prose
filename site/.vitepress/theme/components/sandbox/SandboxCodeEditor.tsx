@@ -52,11 +52,12 @@ export const SandboxCodeEditor = defineComponent({
           autocorrect="off"
           class="sandbox-code-editor-layer absolute inset-0 code-panel-code resize-none rounded-base-inner border-none whitespace-pre text-transparent caret-text-1 focus-visible:-outline-offset-2"
           onBlur={() => emit('blur')}
+          onInput={event => { model.value = (event.target as HTMLTextAreaElement).value }}
           onKeydown={event => emit('keydown', event)}
           onScroll={syncScroll}
           ref={input}
           spellcheck="false"
-          v-model={model.value}
+          value={model.value}
         />
       </div>
     )

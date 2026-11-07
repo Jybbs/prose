@@ -1,6 +1,6 @@
 import { whenever }                                                              from '@vueuse/core'
 import * as popover                                                              from '@zag-js/popover'
-import { normalizeProps, useMachine }                                            from '@zag-js/vue'
+import { mergeProps, normalizeProps, useMachine }                                from '@zag-js/vue'
 import type { PropTypes }                                                        from '@zag-js/vue'
 import { computed, defineComponent, h, ref, Teleport, Transition, useId, watch } from 'vue'
 import type { PropType, SlotsType }                                              from 'vue'
@@ -77,19 +77,23 @@ export const Popup = defineComponent({
       return [
         slots.trigger?.({ props: { ...trigger, onKeydown: pressTrigger, role: 'button' } }),
         opened.value && h(Teleport, { to: 'body' }, [
-          <div {...api.value.getPositionerProps()} {...attrs} data-popup={props.theme}>
+          <div {...mergeProps(api.value.getPositionerProps(), attrs)} data-popup={props.theme}>
             <Transition
               enterActiveClass="duration-140 ease-emphasized transition-translate-and-opacity motion-reduce:transition-none"
               enterFromClass="-translate-y-4 opacity-0"
               leaveActiveClass="duration-140 ease-emphasized transition-translate-and-opacity motion-reduce:transition-none"
               leaveToClass="-translate-y-4 opacity-0"
             >
-              {shown.value && (
-                <div {...content} aria-label={props.label} class="z-10000">
-                  {slots.default?.({})}
-                  <div {...api.value.getArrowProps()}><div {...api.value.getArrowTipProps()} /></div>
-                </div>
-              )}
+              {{
+                default: () => (
+                  shown.value && (
+                      <div {...content} aria-label={props.label} class="z-10000">
+                        {slots.default?.({})}
+                        <div {...api.value.getArrowProps()}><div {...api.value.getArrowTipProps()} /></div>
+                      </div>
+                    )
+                )
+              }}
             </Transition>
           </div>
         ])

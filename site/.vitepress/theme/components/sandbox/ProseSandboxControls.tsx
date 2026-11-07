@@ -62,7 +62,7 @@ export const ProseSandboxControls = defineComponent({
           lengthOf={lengthValue}
         />
         <div class="flex flex-wrap items-center gap-0-3rem">
-          {visible.value.length > 0 && (
+          {visible.value.length > 0 ? (
             <button
               aria-label={allOff.value ? 'Turn every rule on' : 'Turn every rule off'}
               aria-pressed={allOff.value}
@@ -76,7 +76,7 @@ export const ProseSandboxControls = defineComponent({
                 <path d="M6.3 6.6a8 8 0 1 0 11.4 0" />
               </svg>
             </button>
-          )}
+          ) : null}
           {visible.value.map(rule => (
             <div
               class="group relative inline-flex items-center rounded-sm data-active:z-5 sandbox-tags-tag bg-bg"
@@ -92,10 +92,10 @@ export const ProseSandboxControls = defineComponent({
                 onClick={() => toggle(rule)}
                 type="button"
               >
-                {rule.family && <NibBadge emblem={familyEmblem(rule.family)} size={12} />}
+                {rule.family ? <NibBadge emblem={familyEmblem(rule.family)} size={12} /> : null}
                 <span class="font-mono text-0-68rem tracking-0-05em text-text-1 uppercase group-data-off:text-text-2 group-data-off:line-through group-data-off:decoration-text-2">{rule.slug}</span>
               </button>
-              {subFacets(rule).length > 0 && (
+              {subFacets(rule).length > 0 ? (
                 <button
                   aria-expanded={openSlug.value === rule.slug}
                   aria-label={`Settings for ${rule.slug}`}
@@ -110,32 +110,36 @@ export const ProseSandboxControls = defineComponent({
                     <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
                   </svg>
                 </button>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
         <ScrollRegion as="aside" class="sandbox-tags-banner flex max-h-tags-banner min-h-5-5rem overflow-y-auto panel bg-bg-soft px-1-25rem py-0-9rem">
-          {openRule.value
-            ? (
-              <SandboxPlate
-                card={pinnedCard.value}
-                facets={subFacets(openRule.value)}
-                onClose={() => { openSlug.value = '' }}
-                ref={setPanel}
-                rule={openRule.value}
-                sandbox={props.sandbox}
-              />
+          {{
+            default: () => (
+              openRule.value
+                  ? (
+                    <SandboxPlate
+                      card={pinnedCard.value}
+                      facets={subFacets(openRule.value)}
+                      onClose={() => { openSlug.value = '' }}
+                      ref={setPanel}
+                      rule={openRule.value}
+                      sandbox={props.sandbox}
+                    />
+                  )
+                  : hoverCard.value
+                  ? <RuleCard key={hoverCard.value.slug} rule={hoverCard.value} />
+                  : idleCard.value
+                  ? (
+                    <div class="relative flex w-full">
+                      <RuleCard aria-hidden="true" class="invisible" clickable={false} rule={idleCard.value} />
+                      <p class="absolute inset-0 m-0 grid place-items-center text-center text-sm text-text-3">Hover a rule to read what it does.</p>
+                    </div>
+                  )
+                  : <p class="text-center text-sm text-text-3">Hover a rule to read what it does.</p>
             )
-            : hoverCard.value
-            ? <RuleCard key={hoverCard.value.slug} rule={hoverCard.value} />
-            : idleCard.value
-            ? (
-              <div class="relative flex w-full">
-                <RuleCard aria-hidden="true" class="invisible" clickable={false} rule={idleCard.value} />
-                <p class="absolute inset-0 m-0 grid place-items-center text-center text-sm text-text-3">Hover a rule to read what it does.</p>
-              </div>
-            )
-            : <p class="text-center text-sm text-text-3">Hover a rule to read what it does.</p>}
+          }}
         </ScrollRegion>
       </div>
     )

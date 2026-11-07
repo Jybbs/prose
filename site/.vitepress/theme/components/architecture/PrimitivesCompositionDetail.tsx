@@ -105,52 +105,54 @@ export const PrimitivesCompositionDetail = defineComponent({
               </div>
               {relations.value.map(rel => (
                 <Fragment key={rel.label}>
-                  {rel.items.length > 0 && (
-                    <div class="grid grid-cols-110-minmax-1fr items-center gap-x-10">
-                      <span class="text-left font-mono text-0-54rem tracking-kicker whitespace-nowrap text-text-2 uppercase">
-                        <span aria-hidden="true" class="mr-6 inline-block port-tab bg-text-2">{rel.port}</span>
-                        {' '}
-                        {rel.label}
-                      </span>
-                      <span class="flex min-h-24 flex-wrap items-center gap-x-16 gap-y-5 font-mono text-0-68rem text-text-2">
-                        {rel.items.map(m => (
-                          <span
-                            class="primitives-composition-card-mention-item relative inline-flex items-center not-last:after:pointer-events-none not-last:after:absolute not-last:after:top-1/2 not-last:after:left-full not-last:after:ml-8 not-last:after:-translate-1/2 not-last:after:text-text-3 not-last:after:content-middot data-suppress-dot:after:hidden"
-                            key={`${rel.keyPrefix}-${m.slug}`}
-                          >
-                            {m.kind === 'primitive'
-                              ? (
-                                <a
-                                  class="inline-flex items-center gap-5 text-0-68rem text-text-1 no-underline hover:text-brand-2"
-                                  data-layer={m.layer}
-                                  href={primitiveRoute(m.slug)}
-                                >
-                                  <span
-                                    aria-hidden="true"
-                                    class="font-display text-xs leading-none font-500 text-layer-ink italic"
+                  {[
+                    rel.items.length > 0 ? (
+                      <div class="grid grid-cols-110-minmax-1fr items-center gap-x-10">
+                        <span class="text-left font-mono text-0-54rem tracking-kicker whitespace-nowrap text-text-2 uppercase">
+                          <span aria-hidden="true" class="mr-6 inline-block port-tab bg-text-2">{rel.port}</span>
+                          {' '}
+                          {rel.label}
+                        </span>
+                        <span class="flex min-h-24 flex-wrap items-center gap-x-16 gap-y-5 font-mono text-0-68rem text-text-2">
+                          {rel.items.map(m => (
+                            <span
+                              class="primitives-composition-card-mention-item relative inline-flex items-center not-last:after:pointer-events-none not-last:after:absolute not-last:after:top-1/2 not-last:after:left-full not-last:after:ml-8 not-last:after:-translate-1/2 not-last:after:text-text-3 not-last:after:content-middot data-suppress-dot:after:hidden"
+                              key={`${rel.keyPrefix}-${m.slug}`}
+                            >
+                              {m.kind === 'primitive'
+                                ? (
+                                  <a
+                                    class="inline-flex items-center gap-5 text-0-68rem text-text-1 no-underline hover:text-brand-2"
                                     data-layer={m.layer}
-                                  >{m.numeral}</span>
-                                  <span class="nib-stroke pb-2">{m.slug}</span>
-                                </a>
-                              )
-                              : m.kind === 'rule'
-                              ? (
-                                <a
-                                  class="chip nib-ground gap-6 py-2 pr-8 pl-6 text-0-68rem leading-1-5 text-text-1"
-                                  data-family={m.rule.family}
-                                  data-rule={m.slug}
-                                  href={m.rule.href}
-                                >
-                                  <NibBadge emblem={familyEmblem(m.rule.family)} size={12.5} />
-                                  <span class="font-mono text-0-68rem text-text-1">{m.slug}</span>
-                                </a>
-                              )
-                              : <span class="text-0-68rem text-text-3">{m.slug}</span>}
-                          </span>
-                        ))}
-                      </span>
-                    </div>
-                  )}
+                                    href={primitiveRoute(m.slug)}
+                                  >
+                                    <span
+                                      aria-hidden="true"
+                                      class="font-display text-xs leading-none font-500 text-layer-ink italic"
+                                      data-layer={m.layer}
+                                    >{m.numeral}</span>
+                                    <span class="nib-stroke pb-2">{m.slug}</span>
+                                  </a>
+                                )
+                                : m.kind === 'rule'
+                                ? (
+                                  <a
+                                    class="chip nib-ground gap-6 py-2 pr-8 pl-6 text-0-68rem leading-1-5 text-text-1"
+                                    data-family={m.rule.family}
+                                    data-rule={m.slug}
+                                    href={m.rule.href}
+                                  >
+                                    <NibBadge emblem={familyEmblem(m.rule.family)} size={12.5} />
+                                    <span class="font-mono text-0-68rem text-text-1">{m.slug}</span>
+                                  </a>
+                                )
+                                : <span class="text-0-68rem text-text-3">{m.slug}</span>}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
+                    ) : null
+                  ]}
                 </Fragment>
               ))}
             </>

@@ -52,15 +52,15 @@ export const RunSummarySelect = defineComponent({
                         type="button"
                       >
                         <span class="run-summary-opt-mono font-mono text-sm text-text-1 group-aria-selected:text-link">{o.mono}</span>
-                        {o.preview && (
+                        {o.preview ? (
                           <span class="inline-flex items-baseline gap-0-5em font-mono text-sm">
-                            {o.preview.anchor && <span aria-hidden="true" class="flex-none">{o.preview.anchor}</span>}
+                            {o.preview.anchor ? <span aria-hidden="true" class="flex-none">{o.preview.anchor}</span> : null}
                             <span
                               class="text-text-2 data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45 group-aria-selected:data-[tint=apricot]:text-apricot-selected-45 group-aria-selected:data-[tint=celadon]:text-celadon-selected-45"
                               data-tint={o.preview.countTint || undefined}
                             >{o.preview.text}</span>
                           </span>
-                        )}
+                        ) : null}
                       </button>
                     </li>
                   ))}

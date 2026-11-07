@@ -88,7 +88,7 @@ export const AzIndex = defineComponent({
                   </section>
                 ))}
               </div>
-              {shown.value && words.value && (
+              {shown.value && words.value ? (
                 <aside
                   class="az-index-detail absolute top-0 left-0 z-10 flex flex-col rounded-base border-1 border-divider bg-bg shadow-tooltip data-snap:transition-none data-[side=bottom]:rounded-t-none data-[side=left]:rounded-tr-none data-[side=right]:rounded-tl-none motion-reduce:transition-none"
                   data-domain={shown.value.item.domain}
@@ -109,13 +109,13 @@ export const AzIndex = defineComponent({
                       class="min-w-0 flex-1 overflow-clip font-base text-xs leading-1-4 text-text-2"
                       id="az-index-destination"
                     >
-                      {words.value.part && (
+                      {words.value.part ? (
                         <>
                           {words.value.title}
                           {' '}
                           <span aria-hidden="true" class="middle-dot">·</span>
                         </>
-                      )}
+                      ) : null}
                       {' '}
                       {words.value.head}
                       <span class="whitespace-nowrap">
@@ -141,7 +141,7 @@ export const AzIndex = defineComponent({
                     </a>
                   </footer>
                 </aside>
-              )}
+              ) : null}
             </div>
           )
         }}

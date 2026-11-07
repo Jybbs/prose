@@ -1,4 +1,5 @@
 import { useElementSize, useResizeObserver }                                                    from '@vueuse/core'
+import { mergeProps }                                                                           from '@zag-js/vue'
 import { computed, defineComponent, reactive, ref, shallowRef, useId, withKeys, withModifiers } from 'vue'
 import type { CSSProperties, PropType }                                                         from 'vue'
 
@@ -212,9 +213,10 @@ export const SandboxRuler = defineComponent({
                     class="sandbox-ruler-stop group focus-within:z-2 hover:z-2 data-dragging:z-2 absolute w-0 cursor-ew-resize touch-none select-none"
                     data-changed={shownValue(knob) !== knob.default || null}
                     data-hue={hueOf(index)}
-                    onPointercancel={dragEnd}
-                    onPointerdown={event => dragStart(hueOf(index), knob, event)}
-                    {...editing.value === knob.key ? null : thumb}
+                    {...mergeProps(editing.value === knob.key ? {} : thumb, {
+                      onPointercancel : dragEnd,
+                      onPointerdown   : (event: PointerEvent) => dragStart(hueOf(index), knob, event)
+                    })}
                     data-dragging={drag.value?.key === knob.key || null}
                     style={stopStyle(knob)}
                   >
@@ -242,6 +244,7 @@ export const SandboxRuler = defineComponent({
                         max={MAX}
                         min={MIN}
                         onBlur={() => commitEdit(knob)}
+                        onInput={event => { draft.value = (event.target as HTMLInputElement).value }}
                         onKeydown={keyHandlers(
                           event => event.stopPropagation(),
                           withKeys(withModifiers(() => commitEdit(knob), ['prevent']), ['enter']),
@@ -249,7 +252,7 @@ export const SandboxRuler = defineComponent({
                         )}
                         ref={focusInput}
                         type="number"
-                        v-model={draft.value}
+                        value={draft.value}
                       />
                     )}
                   </div>

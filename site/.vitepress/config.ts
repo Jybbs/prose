@@ -2,7 +2,6 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import tailwindcss                                from '@tailwindcss/vite'
-import vueJsx                                     from '@vitejs/plugin-vue-jsx'
 import { defineConfig }                           from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
@@ -147,6 +146,7 @@ export default defineConfig({
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
+    oxc: { jsx: constants.VUE_JSX },
     plugins: [{
       enforce   : 'pre',
       load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
@@ -159,7 +159,6 @@ export default defineConfig({
     serveWasmPlugin(path.join(siteDirectory, 'public')),
     stylesheetLayer.stylesheetLayerPlugin(tailwindEntry),
     tailwindcss(),
-    vueJsx({ tsTransform: 'built-in' }),
     groupIconVitePlugin({
       customIcon: {
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),

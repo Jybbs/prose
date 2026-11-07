@@ -17,7 +17,7 @@ export const GlossaryFolioPane = defineComponent({
 
     return () => (
       <div data-family={active.value?.primaryFamily}>
-        {active.value && (
+        {active.value ? (
           <article class="relative mt-24 min-w-0 panel bg-bg pt-16 pr-28 pb-18 pl-32">
             <header class="-mt-16 -mr-28 mb-18 -ml-32 flex min-h-36 items-center justify-between gap-12 rounded-t-base-inner border-b-1 border-b-divider bg-bg-soft p-6">
               <p class="glossary-folio-folio m-0 kicker flex flex-wrap items-center gap-x-10 gap-y-6 pl-6">
@@ -59,7 +59,7 @@ export const GlossaryFolioPane = defineComponent({
                 ? <a class={BODY_LINK_CLASS} href={active.value.href}>{active.value.slug}</a>
                 : <span class="relative inline-block after:absolute after:inset-x-0 after:-bottom-2 after:h-1 after:translate-y-4 after:bg-text-3 after:opacity-0 after:transition-translate-and-opacity hover:after:translate-y-0 hover:after:opacity-100">{active.value.slug}</span>}
             </h2>
-            {active.value.aliases.length > 0 && (
+            {active.value.aliases.length > 0 ? (
               <p class="mt-0 flex flex-wrap items-center gap-x-8 gap-y-6 border-b-1 border-b-divider pb-18">
                 <span class="mr-8 font-mono text-label tracking-label uppercase text-text-2">also</span>
                 {active.value.aliases.map(alias => (
@@ -69,12 +69,12 @@ export const GlossaryFolioPane = defineComponent({
                   >{alias}</code>
                 ))}
               </p>
-            )}
+            ) : null}
             <div class="text-md leading-1-55 text-text-1">
               <InlineProse nodes={active.value.definitionNodes} />
             </div>
           </article>
-        )}
+        ) : null}
       </div>
     )
   }

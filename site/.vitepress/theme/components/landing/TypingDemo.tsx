@@ -107,16 +107,20 @@ export const TypingDemo = defineComponent({
         <section aria-label="prose config" class="code-panel overflow-hidden panel">
           <header class="code-panel-label">prose.toml</header>
           <ScrollRegion as="pre" class="code-panel-code code-typewriter">
-            <code>
-              <span class="text-text-3">{segments.value.before}</span>
-              <span class="transition-colors">{segments.value.editingLineBefore}</span>
-              <span class="transition-colors">
-                {segments.value.editing}
-                {showCaret.value && <span aria-hidden="true" class="code-caret" />}
-              </span>
-              <span class="transition-colors">{segments.value.editingLineAfter}</span>
-              <span class="text-text-3">{segments.value.after}</span>
-            </code>
+            {{
+              default: () => (
+                <code>
+                    <span class="text-text-3">{segments.value.before}</span>
+                    <span class="transition-colors">{segments.value.editingLineBefore}</span>
+                    <span class="transition-colors">
+                      {segments.value.editing}
+                      {showCaret.value ? <span aria-hidden="true" class="code-caret" /> : null}
+                    </span>
+                    <span class="transition-colors">{segments.value.editingLineAfter}</span>
+                    <span class="text-text-3">{segments.value.after}</span>
+                  </code>
+              )
+            }}
           </ScrollRegion>
         </section>
         <section aria-label="Python source" class="code-panel overflow-hidden panel">

@@ -28,8 +28,12 @@ export const IconSpecimen = defineComponent({
         <div class="icon-specimen-chips flex flex-wrap gap-8">
           {[...EMBLEMS].map(([emoji, emblem]) => (
             <Chip family={emblem.family} key={emoji} variant="family-chip">
-              <Emblem emblem={emblem} house={house} />
-              <span>{emblem.name}</span>
+              {{
+                default: () => [
+                  <Emblem emblem={emblem} house={house} />,
+                  <span>{emblem.name}</span>
+                ]
+              }}
             </Chip>
           ))}
         </div>

@@ -171,13 +171,13 @@ export const SurfaceRail = defineComponent({
           ref={railRef}
           style={railStyle.value}
         >
-          {pinned.value && (
+          {pinned.value ? (
             <SurfacePip
               {...pipBinding(0)}
               class={RAIL_END_CLASS}
               onSelect={() => select(0)}
             />
-          )}
+          ) : null}
           <div
             class="surface-rail-window relative min-w-0 flex-auto scrollbar-none overflow-x-auto overflow-y-hidden overscroll-x-contain transition-mask-image duration-260 ease-linear data-[edge=end]:cursor-e-resize data-[edge=start]:cursor-w-resize"
             data-edge={edge.value}
@@ -201,13 +201,13 @@ export const SurfaceRail = defineComponent({
               type="button"
             >{chevron.glyph}</button>
           ))}
-          {pinned.value && (
+          {pinned.value ? (
             <SurfacePip
               {...pipBinding(props.rules.length - 1)}
               class={RAIL_END_CLASS}
               onSelect={() => select(props.rules.length - 1)}
             />
-          )}
+          ) : null}
         </div>
         <div aria-live="polite" class="pointer-events-auto relative z-2 min-h-26">
           <SurfaceRailName rule={activeRule.value} swap={swap.value} />

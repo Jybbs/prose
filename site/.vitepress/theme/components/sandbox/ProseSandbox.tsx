@@ -115,15 +115,15 @@ export const ProseSandbox = defineComponent({
               onUpdate:editing={next => { editing.value = next }}
               sandbox={sandbox}
             />
-            <CopyButton label="Copy the formatted Python" source={sandbox.formatted.value} v-show={!editing.value} />
+            <CopyButton label="Copy the formatted Python" source={sandbox.formatted.value} style={{ display: editing.value ? 'none' : undefined }} />
             <button
               aria-label={refreshArmed.value ? 'Click again to proceed with a new example' : 'New example'}
               class="panel-corner right-40 panel-seat size-28 data-armed:border-eureka-page-35 data-armed:text-eureka-page-45 data-armed:opacity-100"
               data-armed={refreshArmed.value || null}
               onClick={refresh}
+              style={{ display: editing.value ? 'none' : undefined }}
               title={refreshArmed.value ? 'Click again to proceed with a new example' : 'New example'}
               type="button"
-              v-show={!editing.value}
             >
               <svg aria-hidden="true" class="glyph" fill="none" viewBox="0 0 24 24">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
@@ -136,9 +136,9 @@ export const ProseSandbox = defineComponent({
               aria-label={linkCopied.value ? 'Link copied' : 'Copy a link to this sandbox'}
               class="panel-corner right-72 panel-seat size-28"
               onClick={shareLink}
+              style={{ display: editing.value ? 'none' : undefined }}
               title={linkCopied.value ? 'Link copied' : 'Copy a link to this sandbox'}
               type="button"
-              v-show={!editing.value}
             >
               <svg aria-hidden="true" class="glyph" fill="none" viewBox="0 0 24 24">
                 {linkCopied.value
@@ -151,12 +151,12 @@ export const ProseSandbox = defineComponent({
                 )}
               </svg>
             </button>
-            {refreshArmed.value && (
+            {refreshArmed.value ? (
               <span
                 class="pointer-events-none absolute top-8 right-108 z-3 flex h-28 items-center rounded-sm border-1 border-eureka-page-35 bg-bg px-10 font-mono text-xxs tracking-0-04em whitespace-nowrap text-text-1 shadow-tooltip"
                 role="status"
               > Click again to proceed with a new example </span>
-            )}
+            ) : null}
             <p aria-live="polite" class="sr-only">{announcement.value}</p>
           </div>
           <ProseSandboxToml sandbox={sandbox} />

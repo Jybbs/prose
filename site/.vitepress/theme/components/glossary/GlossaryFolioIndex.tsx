@@ -49,8 +49,9 @@ export const GlossaryFolioIndex = defineComponent({
               <input
                 aria-label="Filter glossary"
                 class="h-22 min-w-0 flex-1 border-none text-sm text-text-1 outline-none placeholder:text-text-3 placeholder:opacity-80"
+                onInput={event => { query.value = (event.target as HTMLInputElement).value }}
                 type="search"
-                v-model={query.value}
+                value={query.value}
               />
             </div>
           </div>
@@ -81,7 +82,7 @@ export const GlossaryFolioIndex = defineComponent({
                         >
                           <span aria-hidden="true" class="glossary-folio-row-slot block size-6 justify-self-center" />
                           <code class="glossary-folio-row-slug min-w-0 rounded-none bg-transparent p-0 font-base text-sm wrap-anywhere text-text-2 transition-none group-hover:text-text-1 group-aria-current:font-600 group-aria-current:text-text-1">{entry.slug}</code>
-                          {entry.families.length > 0 && (
+                          {entry.families.length > 0 ? (
                             <span
                               aria-hidden="true"
                               class={['glossary-folio-row-deck relative block h-20', { 'is-stacked': entry.families.length > 1 }]}
@@ -98,7 +99,7 @@ export const GlossaryFolioIndex = defineComponent({
                                 </span>
                               ))}
                             </span>
-                          )}
+                          ) : null}
                         </button>
                       </li>
                     ))}

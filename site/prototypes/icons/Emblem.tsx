@@ -48,7 +48,7 @@ export const Emblem = defineComponent({
         viewBox="0 0 24 24"
       >
         <defs>
-          {nib.value && (
+          {nib.value ? (
             Object.entries(TIP_FILLS).map(([tip, fill]) => (
               <marker
                 id={`${id}-${tip}`}
@@ -62,24 +62,24 @@ export const Emblem = defineComponent({
                 <path d="M-0.05-0.5 0.5 0-0.05 0.5Z" fill={fill} stroke="none" />
               </marker>
             ))
-          )}
-          {painted.value && (
+          ) : null}
+          {painted.value ? (
             <mask id={`${id}-mask`}>
               <rect fill="#fff" height="24" stroke="none" width="24" />
               {props.emblem.motif.cuts.map(cut => <path d={cut} fill={emblems.isClosed(cut) ? '#000' : 'none'} key={cut} stroke="#000" {...tips(cut, 'cut')} />)}
             </mask>
-          )}
+          ) : null}
         </defs>
-        {painted.value && (
+        {painted.value ? (
           <g class="icon-emblem-paint fill-emblem-paint stroke-none" mask={`url(#${id}-mask)`}>
             {props.emblem.motif.shapes.map(shape => <path d={shape} key={shape} />)}
           </g>
-        )}
-        {!line.value && (
+        ) : null}
+        {!line.value ? (
           <g class="icon-emblem-outline stroke-emblem-paint">
             {props.emblem.motif.shapes.map(shape => <path d={shape} key={shape} />)}
           </g>
-        )}
+        ) : null}
         {strokes.value.map(stroke => <path d={stroke} key={stroke} {...tips(stroke, 'ink')} />)}
       </svg>
     )

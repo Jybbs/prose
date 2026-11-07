@@ -292,15 +292,15 @@ export const ProseSandboxSurface = defineComponent({
         ref={surface}
         style={{ minHeight: heldHeight.value }}
       >
-        {props.guide !== null && (
+        {props.guide !== null ? (
           <span
             aria-hidden="true"
             class="sandbox-surface-guide pointer-events-none absolute inset-y-1 w-0 font-mono text-xs"
             data-hue={props.guideHue}
             style={{ '--guide-col': props.guide }}
           />
-        )}
-        <header class="code-panel-label" v-show={!editing.value}>app.py</header>
+        ) : null}
+        <header class="code-panel-label" style={{ display: editing.value ? 'none' : undefined }}>app.py</header>
         <SandboxCodeEditor
           lang="python"
           modelValue={draft.value}
@@ -311,9 +311,9 @@ export const ProseSandboxSurface = defineComponent({
           )}
           onUpdate:modelValue={next => { draft.value = next }}
           ref={editor}
-          v-show={editing.value}
+          style={{ display: editing.value ? undefined : 'none' }}
         />
-        <div class="absolute right-10 bottom-8 z-4 flex gap-4" v-show={editing.value}>
+        <div class="absolute right-10 bottom-8 z-4 flex gap-4" style={{ display: editing.value ? undefined : 'none' }}>
           <button
             aria-label="Discard the edit"
             class="sandbox-surface-discard panel-seat size-28 transition-colors"
@@ -337,7 +337,7 @@ export const ProseSandboxSurface = defineComponent({
             </svg>
           </button>
         </div>
-        {panel.value && morphSteps.value.length > 0 && (
+        {panel.value && morphSteps.value.length > 0 ? (
           <panel.value
             animate={animate.value && !reducedMotion.value}
             class="code-text grow overflow-hidden px-22 py-18"
@@ -345,9 +345,9 @@ export const ProseSandboxSurface = defineComponent({
             options={morphOptions.value}
             step={step.value}
             steps={morphSteps.value}
-            v-show={morphing.value && !editing.value}
+            style={{ display: morphing.value && !editing.value ? undefined : 'none' }}
           />
-        )}
+        ) : null}
         <div
           aria-label="Python source, Enter edits it"
           class={['sandbox-surface-display code-panel-code cursor-text', { 'lint-undrawn': undrawn.value }]}
@@ -359,11 +359,11 @@ export const ProseSandboxSurface = defineComponent({
           )}
           ref={display}
           role="group"
+          style={{ display: !morphing.value && !editing.value ? undefined : 'none' }}
           tabindex="0"
-          v-show={!morphing.value && !editing.value}
         />
-        {error.value && <p class="code-panel-error code-panel-notice text-danger-1">{error.value}</p>}
-        {unstable.value.length > 0 && (
+        {error.value ? <p class="code-panel-error code-panel-notice text-danger-1">{error.value}</p> : null}
+        {unstable.value.length > 0 ? (
           <p class="code-panel-warning code-panel-notice text-warning-1">
             {' '}
             A second run would change this output (
@@ -375,7 +375,7 @@ export const ProseSandboxSurface = defineComponent({
             with the source above.
             {' '}
           </p>
-        )}
+        ) : null}
         <LintFlagPopup ref={popup} />
       </section>
     )

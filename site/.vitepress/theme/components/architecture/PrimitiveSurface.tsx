@@ -21,24 +21,28 @@ export const PrimitiveSurface = defineComponent({
 
     return () => (
       <ScrollRegion as="table">
-        <thead>
-          <tr>
-            <th>Primitive</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {listed.value.map(row => (
-            <tr key={row.slug}>
-              <td>
-                <InlineProse nodes={row.linkNodes} />
-              </td>
-              <td>
-                <InlineProse nodes={row.summaryNodes} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
+        {{
+          default: () => [
+            <thead>
+                <tr>
+                  <th>Primitive</th>
+                  <th>Role</th>
+                </tr>
+              </thead>,
+            <tbody>
+                {listed.value.map(row => (
+                  <tr key={row.slug}>
+                    <td>
+                      <InlineProse nodes={row.linkNodes} />
+                    </td>
+                    <td>
+                      <InlineProse nodes={row.summaryNodes} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+          ]
+        }}
       </ScrollRegion>
     )
   }

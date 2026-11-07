@@ -20,7 +20,7 @@ export const ExitCodeMatrix = defineComponent({
         >
           {codes.map((row, at) => (
             <Fragment key={row.code}>
-              {heads(at) && (
+              {heads(at) ? (
                 <header
                   class="exit-codes-band-head flex items-center gap-9 px-12 pt-8"
                   data-outcome={row.outcome}
@@ -28,7 +28,7 @@ export const ExitCodeMatrix = defineComponent({
                   <span class="band-name">{row.band}</span>
                   <span aria-hidden="true" class="h-2 grow bg-outcome-mark" />
                 </header>
-              )}
+              ) : null}
               <button
                 aria-current={row.code === selected.value || undefined}
                 class="group exit-code-index-row grid grid-cols-24-auto-1fr items-baseline gap-14 border-none p-12 text-left text-text-2 hover:text-text-1 focus-visible:focus-ring focus-visible:-outline-offset-1 aria-current:text-text-1"

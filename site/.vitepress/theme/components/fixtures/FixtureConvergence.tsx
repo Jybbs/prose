@@ -34,11 +34,11 @@ export const FixtureConvergence = defineComponent({
 
     return () => (
       <section class="my-1-25rem">
-        {entry.value.descriptionNodes && (
+        {entry.value.descriptionNodes ? (
           <div class="fixture-lead mb-1rem">
             <InlineProse nodes={entry.value.descriptionNodes} />
           </div>
-        )}
+        ) : null}
         <ol class="flex flex-col gap-10 border-l-1 border-l-divider">
           {steps.value.map(step => (
             <li
@@ -48,7 +48,7 @@ export const FixtureConvergence = defineComponent({
             >
               <p class="flex items-baseline gap-10">
                 <span class="font-mono text-meta tracking-label-loose text-text-1 uppercase">{step.label}</span>
-                {step.badge && <span class="change-chip px-8 py-2 group-data-[badge=settled]:border-celadon/40 group-data-[badge=settled]:text-celadon-soft-45">{step.badge === 'changed' ? 'Rewritten' : 'No change'}</span>}
+                {step.badge ? <span class="change-chip px-8 py-2 group-data-[badge=settled]:border-celadon/40 group-data-[badge=settled]:text-celadon-soft-45">{step.badge === 'changed' ? 'Rewritten' : 'No change'}</span> : null}
               </p>
               {step.html
                 ? (

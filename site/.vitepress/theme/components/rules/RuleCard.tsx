@@ -50,12 +50,12 @@ export const RuleCard = defineComponent({
         data-family={props.rule.family}
         ref={article}
       >
-        {props.clickable && <a aria-label={props.rule.name} class="rule-card-cover" href={props.rule.href} />}
-        {slots.header && (
+        {props.clickable ? <a aria-label={props.rule.name} class="rule-card-cover" href={props.rule.href} /> : null}
+        {slots.header ? (
           <div class="rule-card-header pointer-events-none relative z-2">
             {slots.header?.()}
           </div>
-        )}
+        ) : null}
         <span class="rule-card-mark nib-tag pointer-events-none relative z-2">
           <NibBadge emblem={familyEmblem(props.rule.family)} size={14} />
           <span aria-hidden="true" class="middle-dot">·</span>

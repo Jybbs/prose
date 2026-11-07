@@ -1,3 +1,4 @@
+import { mergeProps }                                             from '@zag-js/vue'
 import { computed, defineComponent, nextTick, shallowRef, watch } from 'vue'
 
 import { NibBadge, paint } from '../../../kit'
@@ -85,9 +86,11 @@ export const RulesPlate = defineComponent({
                 aria-pressed={family === pinned.value}
                 tabindex={family === roving.value ? 0 : -1}
                 type="button"
-                {...on(family)}
+                {...mergeProps<Partial<ReturnType<typeof on>>>(
+                  on(family),
+                  { onClick: () => { roving.value = family } }
+                )}
                 class="chip nib-ground cursor-pointer gap-6 pt-6 pr-4 pb-6 pl-8 font-mono text-label leading-24 font-400 tracking-label whitespace-nowrap text-text-1 uppercase hover:border-text-2 focus-visible:focus-ring focus-visible:outline-offset-2 aria-pressed:font-600"
-                onClick={() => { roving.value = family }}
                 onKeydown={event => move(event, at)}
               >
                 <NibBadge emblem={emblem} size={15.2} />

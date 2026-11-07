@@ -103,7 +103,7 @@ export const FixturePairDoc = defineComponent({
         class="fixture-pair-doc copy-host relative overflow-hidden panel bg-code-block"
         ref={root}
       >
-        {panel.value && morphSteps.value.length > 0 && (
+        {panel.value && morphSteps.value.length > 0 ? (
           <panel.value
             animate={animate.value && !reducedMotion.value}
             class="fixture-pair-panel flush-code-block"
@@ -112,18 +112,18 @@ export const FixturePairDoc = defineComponent({
             step={step.value}
             steps={morphSteps.value}
             {...SCROLL_STOP}
-            v-show={animating.value}
+            style={{ display: animating.value ? undefined : 'none' }}
           />
-        )}
+        ) : null}
         <div
           class={['fixture-pair-panel flush-code-block', { 'lint-undrawn': undrawn.value }]}
           innerHTML={strippedHtml.value}
           onClick={event => popup.value?.toggle(event)}
           onKeydown={withKeys(event => popup.value?.toggle(event), ['enter', 'space'])}
-          v-show={!animating.value}
+          style={{ display: animating.value ? 'none' : undefined }}
         />
         <CopyButton label="Copy code" source={activeCode.value} />
-        {props.sandboxSeed && <SandboxSeedButton seed={props.sandboxSeed} />}
+        {props.sandboxSeed ? <SandboxSeedButton seed={props.sandboxSeed} /> : null}
         <span class="lang">python</span>
         <LintFlagPopup ref={popup} />
       </div>

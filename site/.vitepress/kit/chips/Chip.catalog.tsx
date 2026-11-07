@@ -5,11 +5,11 @@ export const declaration: Declaration = {
   examples : [
     {
       label  : 'A rule, linked',
-      render : () => <Chip href="/rules/alignment/align-equals" variant="rule-chip">align-equals</Chip>
+      render : () => <Chip href="/rules/alignment/align-equals" variant="rule-chip">{{ default: () => 'align-equals' }}</Chip>
     },
     {
       label  : 'A family, unlinked',
-      render : () => <Chip family="alignment" variant="family-chip">Alignment</Chip>
+      render : () => <Chip family="alignment" variant="family-chip">{{ default: () => 'Alignment' }}</Chip>
     }
   ],
   use      : 'Sets a rule or a family in a small mono label, which becomes a link where it takes an address.'

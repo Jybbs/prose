@@ -21,13 +21,13 @@ export const RuleSegmentChip = defineComponent({
         href={props.segment.rule?.href}
         title={props.segment.rule ? undefined : `${props.segment.slug} (${props.segment.family ?? 'undocumented'})`}
       >
-        {props.segment.family && (
+        {props.segment.family ? (
           <NibBadge
             class="block justify-self-center text-family-nib-chip group-data-[edits=false]/fixture:text-text-3-chip-31"
             emblem={familyEmblem(props.segment.family)}
             size={13}
           />
-        )}
+        ) : null}
         <span class="composition-cards-chip-label z-4 block min-w-0 whitespace-nowrap">
           <span class="composition-cards-chip-slug text-xxs tracking-0-04em uppercase">{props.segment.slug}</span>
         </span>

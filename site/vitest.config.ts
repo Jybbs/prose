@@ -1,8 +1,8 @@
-import vueJsx                           from '@vitejs/plugin-vue-jsx'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import * as paths from './.vitepress/lib/shared/paths'
+import { VUE_JSX } from './.vitepress/lib/shared/constants'
+import * as paths  from './.vitepress/lib/shared/paths'
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
@@ -21,8 +21,8 @@ export default defineConfig({
 
     projects: [
       {
-        plugins : [vueJsx({ tsTransform: 'built-in' })],
-        test    : {
+        oxc  : { jsx: VUE_JSX },
+        test : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
           name       : 'docs',

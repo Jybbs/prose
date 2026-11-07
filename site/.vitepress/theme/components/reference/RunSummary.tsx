@@ -18,13 +18,13 @@ export const RunSummary = defineComponent({
         </div>
         <div class="min-h-1-5em px-22 py-18 leading-1-5">
           <div class="flex items-baseline gap-0-65em">
-            {props.line.anchor && (
+            {props.line.anchor ? (
               <span
                 aria-hidden="true"
                 class="run-summary-anchor shrink-0 basis-1-4em text-center data-ube:text-ube"
                 data-ube={props.line.anchorUbe || undefined}
               >{props.line.anchor}</span>
-            )}
+            ) : null}
             <span
               class="run-summary-msg data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45"
               data-tint={props.line.countTint || undefined}

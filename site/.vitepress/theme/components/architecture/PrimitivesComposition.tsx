@@ -50,7 +50,7 @@ export const PrimitivesComposition = defineComponent({
           onFocus={setFocus}
           ports={ports.value}
         />
-        {props.initialFocus === undefined && <PrimitivesCompositionDetail focused={focused.value} />}
+        {props.initialFocus === undefined ? <PrimitivesCompositionDetail focused={focused.value} /> : null}
       </div>
     )
   }

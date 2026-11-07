@@ -26,17 +26,17 @@ export const RuleLayout = defineComponent({
         {slots.default?.()}
         <DocHeading id="configuration" title="Configuration" />
         {slots.configuration ? slots.configuration() : <RuleConfigTable />}
-        {slots.facets && (
+        {slots.facets ? (
           <>
             <DocHeading id="facets" title="Facets" />
             {slots.facets?.()}
           </>
-        )}
+        ) : null}
         <DocHeading id="the-canonical-case" title="The Canonical Case" />
         <Fixture case={canonical} rule={props.rule} />
         <DocHeading id="more-examples" title="More Examples" />
         <RuleFixtures rule={props.rule} />
-        {composes.value && <CompositionCards rule={props.rule} />}
+        {composes.value ? <CompositionCards rule={props.rule} /> : null}
         <DocHeading id="related" title="Related" />
         <RuleCardList related />
         {slots['related-after']?.()}

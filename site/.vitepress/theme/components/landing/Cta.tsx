@@ -30,24 +30,28 @@ export const Cta = defineComponent({
                   mode="out-in"
                   name="landing-cta-swap"
                 >
-                  {!open.value
-                    ? (
-                      <div
-                        class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16"
-                        key="stamp"
-                      >
-                        <ReleaseStamp release={current} />
-                      </div>
+                  {{
+                    default: () => (
+                      !open.value
+                          ? (
+                            <div
+                              class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16"
+                              key="stamp"
+                            >
+                              <ReleaseStamp release={current} />
+                            </div>
+                          )
+                          : (
+                          <div
+                            key="open"
+                            {...disclosure.content}
+                            class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16"
+                          >
+                            <ReleaseLedger releases={extras} />
+                          </div>
+                        )
                     )
-                    : (
-                    <div
-                      key="open"
-                      {...disclosure.content}
-                      class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16"
-                    >
-                      <ReleaseLedger releases={extras} />
-                    </div>
-                  )}
+                  }}
                 </Transition>
                 <ReleaseToggle {...disclosure.trigger} open={open.value} />
               </aside>

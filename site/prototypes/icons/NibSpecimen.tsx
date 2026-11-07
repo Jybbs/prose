@@ -27,8 +27,12 @@ export const NibSpecimen = defineComponent({
         <div class="flex flex-wrap gap-8">
           {[...EMBLEMS].map(([emoji, emblem]) => (
             <Chip class="nib-ground" family={emblem.family} key={emoji} variant="family-chip">
-              <NibBadge emblem={emblem} size={15.2} />
-              <span>{emblem.name}</span>
+              {{
+                default: () => [
+                  <NibBadge emblem={emblem} size={15.2} />,
+                  <span>{emblem.name}</span>
+                ]
+              }}
             </Chip>
           ))}
         </div>

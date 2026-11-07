@@ -40,7 +40,7 @@ export const LintFlagPopup = defineComponent({
 
     const run = latestRun()
 
-    // The `.lint-flag` anchors sit inside `v-html` static HTML, so event
+    // The `.lint-flag` anchors sit inside HTML set through `innerHTML`, so event
     // delegation finds the pressed flag and the popup takes it as its anchor
     // rather than wrapping each anchor in a component. Reports whether the event
     // landed on a flag, which closes the card that flag has open.

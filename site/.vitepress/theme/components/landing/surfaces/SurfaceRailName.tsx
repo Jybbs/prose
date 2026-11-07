@@ -15,21 +15,24 @@ export const SurfaceRailName = defineComponent({
   setup(props) {
     const tabindex = useHiddenTabindex()
 
-    return () => (
-      props.rule && (
-        <a
-          class="surface-rail-chip chip rule-chip"
-          data-family={props.rule.family}
-          data-rule={props.rule.slug}
-          href={props.rule.href}
-          tabindex={tabindex.value}
-        >
-          <NibBadge emblem={familyEmblem(props.rule.family)} size={14} />
-          <Transition mode="out-in" name={props.swap}>
-            <span class="font-mono" key={props.rule.slug}>{props.rule.slug}</span>
-          </Transition>
-        </a>
-      )
-    )
+    return () => {
+      const { rule } = props
+      return rule
+        ? (
+          <a
+            class="surface-rail-chip chip rule-chip"
+            data-family={rule.family}
+            data-rule={rule.slug}
+            href={rule.href}
+            tabindex={tabindex.value}
+          >
+            <NibBadge emblem={familyEmblem(rule.family)} size={14} />
+            <Transition mode="out-in" name={props.swap}>
+              {{ default: () => <span class="font-mono" key={rule.slug}>{rule.slug}</span> }}
+            </Transition>
+          </a>
+        )
+        : null
+    }
   }
 })

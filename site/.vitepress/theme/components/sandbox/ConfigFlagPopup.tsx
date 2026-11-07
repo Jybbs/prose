@@ -36,7 +36,7 @@ export const ConfigFlagPopup = defineComponent({
     const trail = computed(() => path.value.split('.').slice(0, -1))
     const wrote = computed(() => path.value.split('.').at(-1) ?? '')
 
-    // The anchors sit inside `v-html` static HTML, so event delegation finds the
+    // The anchors sit inside HTML set through `innerHTML`, so event delegation finds the
     // hovered key and the popup takes it as its anchor. A repeat on the flag
     // already shown returns before the read, since crossing between a flag's own
     // token spans re-fires the delegated hover.
@@ -84,47 +84,51 @@ export const ConfigFlagPopup = defineComponent({
         passive
         theme="glossary"
       >
-        <div
-          class="flex max-w-42ch flex-col gap-12 px-2 py-4"
-          onMouseenter={hold}
-          onMouseleave={close}
-        >
-          <p class="flex flex-wrap items-center gap-5 font-mono text-xs text-text-2">
-            <span class="text-text-3">[tool.prose]</span>
-            {trail.value.map(segment => (
-              <Fragment key={segment}>
-                <span aria-hidden="true" class="text-text-3">›</span>
-                <span>{segment}</span>
-              </Fragment>
-            ))}
-            {facets.value.length === 0 && (
-              <>
-                <span aria-hidden="true" class="text-text-3">›</span>
-                <span class="text-danger-1 line-through">{wrote.value}</span>
-              </>
-            )}
-          </p>
-          {facets.value.length > 0 && (
-            <div class="flex flex-col gap-7">
-              {facets.value.map(facet => (
-                <button
-                  class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
-                  key={facet.key}
-                  onClick={() => apply(facet.key)}
-                  type="button"
-                >
-                  <span aria-hidden="true" class="text-center text-meta text-warning-1">✓</span>
-                  <span>{facet.key}</span>
-                  <span class="text-right text-meta text-text-3 group-hover:text-warning-1">{facet.kind} · {facet.default}</span>
-                </button>
-              ))}
-              <p class="mt-2 grid grid-cols-14-1fr items-center gap-9 border-t-1 border-t-divider px-12 py-5 font-mono text-xs">
-                <span aria-hidden="true" class="text-center text-meta text-danger-1">✕</span>
-                <span class="text-danger-1 line-through">{wrote.value}</span>
-              </p>
-            </div>
-          )}
-        </div>
+        {{
+          default: () => (
+            <div
+                class="flex max-w-42ch flex-col gap-12 px-2 py-4"
+                onMouseenter={hold}
+                onMouseleave={close}
+              >
+                <p class="flex flex-wrap items-center gap-5 font-mono text-xs text-text-2">
+                  <span class="text-text-3">[tool.prose]</span>
+                  {trail.value.map(segment => (
+                    <Fragment key={segment}>
+                      <span aria-hidden="true" class="text-text-3">›</span>
+                      <span>{segment}</span>
+                    </Fragment>
+                  ))}
+                  {facets.value.length === 0 ? (
+                    <>
+                      <span aria-hidden="true" class="text-text-3">›</span>
+                      <span class="text-danger-1 line-through">{wrote.value}</span>
+                    </>
+                  ) : null}
+                </p>
+                {facets.value.length > 0 ? (
+                  <div class="flex flex-col gap-7">
+                    {facets.value.map(facet => (
+                      <button
+                        class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
+                        key={facet.key}
+                        onClick={() => apply(facet.key)}
+                        type="button"
+                      >
+                        <span aria-hidden="true" class="text-center text-meta text-warning-1">✓</span>
+                        <span>{facet.key}</span>
+                        <span class="text-right text-meta text-text-3 group-hover:text-warning-1">{facet.kind} · {facet.default}</span>
+                      </button>
+                    ))}
+                    <p class="mt-2 grid grid-cols-14-1fr items-center gap-9 border-t-1 border-t-divider px-12 py-5 font-mono text-xs">
+                      <span aria-hidden="true" class="text-center text-meta text-danger-1">✕</span>
+                      <span class="text-danger-1 line-through">{wrote.value}</span>
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+          )
+        }}
       </Popup>
     )
   }

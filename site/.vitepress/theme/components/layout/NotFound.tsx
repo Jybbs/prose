@@ -8,8 +8,12 @@ export const NotFound = defineComponent({
     return () => (
       <main class="mx-auto my-96 flex max-w-640 flex-col items-start gap-22 px-24">
         <Kicker class="inline-flex items-center gap-10" variant="wide">
-          <span aria-hidden="true" class="text-apricot">×</span>
-          <span>404 · mistyped</span>
+          {{
+            default: () => [
+              <span aria-hidden="true" class="text-apricot">×</span>,
+              <span>404 · mistyped</span>
+            ]
+          }}
         </Kicker>
         <h1 class="max-w-18ch border-none font-display text-404 leading-1-08 font-500 -tracking-0-01em text-text-1 italic">
           {' '}

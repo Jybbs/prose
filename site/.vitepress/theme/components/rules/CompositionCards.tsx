@@ -1,4 +1,5 @@
 import { useResizeObserver }                                    from '@vueuse/core'
+import { mergeProps }                                           from '@zag-js/vue'
 import { useData }                                              from 'vitepress'
 import { computed, defineComponent, nextTick, ref, shallowRef } from 'vue'
 
@@ -104,9 +105,8 @@ export const CompositionCards = defineComponent({
                       style={{ '--deck-count': row.segments.length }}
                     />
                     <button
-                      {...disclosure.trigger}
+                      {...mergeProps(disclosure.trigger, { onClick: (event: MouseEvent) => event.stopPropagation() })}
                       class="fixture-card-summary col-2 row-1 max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-1 max-mobile:group-data-open/fixture:-col-end-1"
-                      onClick={event => event.stopPropagation()}
                       type="button"
                     >
                       <span aria-hidden="true" class="fixture-card-num" />
@@ -132,7 +132,7 @@ export const CompositionCards = defineComponent({
                       <div
                         class="col-3 row-1 inline-flex items-center max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-2 max-mobile:group-data-open/fixture:-col-end-1 max-mobile:group-data-open/fixture:min-h-0 max-mobile:group-data-open/fixture:justify-start max-mobile:group-data-open/fixture:justify-self-start max-mobile:group-data-open/fixture:p-0 max-mobile:group-data-open/fixture:pb-8"
                         onClick={event => event.stopPropagation()}
-                        v-show={activeCase.value === row.case}
+                        style={{ display: activeCase.value === row.case ? undefined : 'none' }}
                       >
                         {row.hasToggle
                           ? <FixtureToggle modelValue={activeTab.value} onUpdate:modelValue={next => { activeTab.value = next }} />
@@ -141,29 +141,28 @@ export const CompositionCards = defineComponent({
                     </div>
                   </div>
                   <div
-                    {...disclosure.content}
+                    {...mergeProps(disclosure.content, { onClick: (event: MouseEvent) => event.stopPropagation() })}
                     class="fixture-card-body transition-grid-template-rows duration-grow ease-morph"
                     hidden={undefined}
-                    onClick={event => event.stopPropagation()}
                   >
                     <div class="fixture-card-body-inner">
                       <div class="fixture-card-body-content">
-                        {row.descriptionNodes && (
+                        {row.descriptionNodes ? (
                           <>
                             <div class="fixture-card-desc flush-ends">
                               <InlineProse nodes={row.descriptionNodes} />
                             </div>
                             <div aria-hidden="true" class="fixture-card-rule" />
                           </>
-                        )}
-                        {activeCase.value === row.case && (
+                        ) : null}
+                        {activeCase.value === row.case ? (
                           <FixturePairDoc
                             activeTab={activeTab.value}
                             inputHtml={row.inputHtml}
                             outputHtml={row.outputHtml}
                             sandboxSeed={row.sandboxSeed}
                           />
-                        )}
+                        ) : null}
                         <ol
                           aria-hidden="true"
                           class="composition-cards-bar invisible mt-12 mb-0 flex list-none flex-wrap gap-6 p-0"

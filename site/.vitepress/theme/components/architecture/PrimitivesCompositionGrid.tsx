@@ -80,14 +80,18 @@ export const PrimitivesCompositionGrid = defineComponent({
                     <span class="font-display text-xs leading-1-15 text-text-1">{entry.name}</span>
                   </a>
                   <Transition name="primitives-composition-port">
-                    {tileState(entry.slug) === 'related' && (
-                      <span
-                        aria-hidden="true"
-                        class="absolute -top-7 left-6 z-3 port-tab bg-layer-ink"
-                        data-dir={props.ports.get(entry.slug)}
-                        key={props.ports.get(entry.slug)}
-                      >{PORT_WORDS[props.ports.get(entry.slug)!]}</span>
-                    )}
+                    {{
+                      default: () => (
+                        tileState(entry.slug) === 'related' && (
+                            <span
+                              aria-hidden="true"
+                              class="absolute -top-7 left-6 z-3 port-tab bg-layer-ink"
+                              data-dir={props.ports.get(entry.slug)}
+                              key={props.ports.get(entry.slug)}
+                            >{PORT_WORDS[props.ports.get(entry.slug)!]}</span>
+                          )
+                      )
+                    }}
                   </Transition>
                 </li>
               ))}
