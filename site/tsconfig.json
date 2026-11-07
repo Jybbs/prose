@@ -11,6 +11,7 @@
   ],
   "include"         : [
     ".vitepress/**/*.ts",
+    ".vitepress/**/*.tsx",
     ".vitepress/**/*.vue",
     "prototypes/**/*.ts",
     "prototypes/**/*.vue",

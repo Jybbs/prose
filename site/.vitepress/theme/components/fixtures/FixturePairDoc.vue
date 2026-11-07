@@ -2,8 +2,8 @@
 import { useIntersectionObserver }                                   from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
-import CopyButton        from '../base/CopyButton.vue'
-import LintFlagPopper    from '../rules/LintFlagPopper.vue'
+import { CopyButton }    from '../../../kit'
+import LintFlagPopup     from '../rules/LintFlagPopup.vue'
 import SandboxSeedButton from '../sandbox/SandboxSeedButton.vue'
 
 import { useMagicMove }      from '../../../lib/composables/use-magic-move'
@@ -21,7 +21,7 @@ const props = defineProps<{
 
 const reducedMotion = useReducedMotion()
 const root          = useTemplateRef<HTMLElement>('root')
-const popper        = useTemplateRef<InstanceType<typeof LintFlagPopper>>('popper')
+const popup         = useTemplateRef<InstanceType<typeof LintFlagPopup>>('popup')
 
 const animate   = ref(false)
 const animating = ref(false)
@@ -64,7 +64,7 @@ async function prepare(): Promise<void> {
 }
 
 // Magic-move owns the panel through the morph, and on settle the
-// decorated static panel returns so its `.lint-flag` hovers work and the
+// decorated static panel returns so its `.lint-flag` cards open and the
 // squiggles draw back in.
 function settle(): void {
   animating.value = false
@@ -113,15 +113,14 @@ const { stop } = useIntersectionObserver(root, ([entry]) => {
       v-show="!animating"
       class="fixture-pair-panel"
       :class="{ 'lint-undrawn': undrawn }"
-      @mouseover="popper?.show"
-      @mouseout="popper?.hide"
-      @focusin="popper?.show"
-      @focusout="popper?.hide"
+      @click="popup?.toggle"
+      @keydown.enter="popup?.toggle"
+      @keydown.space="popup?.toggle"
       v-html="strippedHtml"
     />
     <CopyButton :source="activeCode" label="Copy code" />
     <SandboxSeedButton v-if="sandboxSeed" :seed="sandboxSeed" />
     <span class="lang">python</span>
-    <LintFlagPopper ref="popper" />
+    <LintFlagPopup ref="popup" />
   </div>
 </template>

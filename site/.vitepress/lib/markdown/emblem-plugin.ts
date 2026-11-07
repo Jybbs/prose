@@ -1,7 +1,7 @@
 import type { MarkdownIt } from 'markdown-it'
 
 import type { Emblem }       from '../shared/emblems'
-import { nibBadgeHtml }      from '../shared/nib'
+import { nibBadgeHtml }      from '../../kit/drawing/nib'
 import { replaceTextTokens } from './token-split'
 import { walkBodyInlines }   from './walk'
 

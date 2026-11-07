@@ -1,6 +1,6 @@
 @layer theme, base, components, utilities;
 
-@import "./tailwind/theme.css";
+@import "./tailwind/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "./tailwind/base.css";
 @import "./tailwind/landing.css";
@@ -10,6 +10,7 @@
 @import "./tailwind/shapes.css";
 
 @source "../**/*.vue";
+@source "../../kit/**/*.{ts,tsx}";
 @source "../../../prototypes/**/*.vue";
 @source "../../lib/**/*.ts";
 @source not inline("border container filter fixed inline lowercase resize ring static transform transition");

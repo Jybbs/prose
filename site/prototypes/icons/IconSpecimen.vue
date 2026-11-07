@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Chip   from '../../.vitepress/theme/components/base/Chip.vue'
-import Emblem from './Emblem.vue'
+import { Chip } from '../../.vitepress/kit'
+import Emblem   from './Emblem.vue'
 
 import { EMBLEMS, type House } from './emblems'
 

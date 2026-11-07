@@ -40,6 +40,27 @@
 
   "overrides": [
     {
+      "files" : [".vitepress/theme/*.vue"],
+      "rules" : {
+        "no-restricted-imports" : ["error", {
+          "patterns" : [
+            { "group": ["**/kit/*", "**/kit/**/*"], "message": "Import the kit through its entry." }
+          ]
+        }]
+      }
+    },
+    {
+      "files" : [".vitepress/theme/components/**", "prototypes/**"],
+      "rules" : {
+        "no-restricted-imports" : ["error", {
+          "patterns" : [
+            { "group": ["**/kit/*", "**/kit/**/*"], "message": "Import the kit through its entry." },
+            { "group": ["../[a-z]*/*/**", "../../[a-z]*/*/**", "**/styles/**"], "message": "Import another component through its own file rather than the files it holds." }
+          ]
+        }]
+      }
+    },
+    {
       "files" : ["**/tests/**"],
       "rules" : { "no-throw-literal": "off" }
     }

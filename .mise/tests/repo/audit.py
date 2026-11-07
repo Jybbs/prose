@@ -38,6 +38,11 @@ DRIFTS   = {
         ("Cargo.lock", "0.2.130", "0.2.129")
     ],
 
+    "CONTRIBUTING.md local sweep ↔ the workflows it names": [
+        (".github/CONTRIBUTING.md", "`🪻 Deploy`", "`🪻 Docs`"),
+        (".github/workflows/deploy.yml", "name : 🪻 Deploy", "name : 🪻 Docs")
+    ],
+
     "Cargo.toml members ↔ .github/workflows/warm.yml path filter": [
         ("Cargo.toml", ', "crate"', ""),
         (".github/workflows/warm.yml", "      - crate/Cargo.toml\n", "")
@@ -74,6 +79,16 @@ DRIFTS   = {
         ("lock:sync", "Cargo.lock", "uv.lock")
     ],
 
+    "mise ci tasks ↔ site:upload dependencies": [
+        (".mise/tasks/repo/ci.toml", '"site:coverage", ', ""),
+        ("site:upload", "site:coverage", "site:report")
+    ],
+
+    "mise ci tasks ↔ the tasks its workflows run": [
+        (".mise/tasks/repo/ci.toml", '"rust:suite"', '"rust:other"'),
+        (".github/workflows/ci.yml", "mise run rust:suite", "mise run rust:other")
+    ],
+
     "site/package.json @shikijs/magic-move patch key ↔ its devDependency pin": [
         ("site/package.json", "magic-move@4.6.0", "magic-move@4.5.0"),
         ("site/package.json", 'magic-move": "4.6.0', 'magic-move": "4.5.0')
@@ -105,6 +120,11 @@ DRIFTS   = {
     ]
 }
 PINS = {
+    ".github/CONTRIBUTING.md": (
+        "| Local sweep | `mise ci` runs what the `🪻 CI` and `🪻 Deploy` workflows "
+        "run, short of uploading coverage |\n"
+    ),
+
     ".github/README.md": (
         "[![Rust](rust.svg)![1.99+](https://img.shields.io/badge/1.99+-8a80cb)]\n"
         "[![Python](python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb)]\n"
@@ -114,9 +134,22 @@ PINS = {
         "key : ${{ hashFiles('wasm/**', 'Cargo.toml') }}\n",
 
     ".github/workflows/ci.yml": (
-        "steps:\n"
-        "  - uses : actions/checkout@1111\n"
-        "  - uses : &cache-save actions/cache/save@2222\n"
+        "name : 🪻 CI\n"
+        "jobs:\n"
+        "  check:\n"
+        "    steps:\n"
+        "      - uses : actions/checkout@1111\n"
+        "      - uses : &cache-save actions/cache/save@2222\n"
+        "      - run  : mise run rust:suite\n"
+        "      - run  : mise run gha:brief ci\n"
+    ),
+
+    ".github/workflows/deploy.yml": (
+        "name : 🪻 Deploy\n"
+        "jobs:\n"
+        "  check:\n"
+        "    steps:\n"
+        "      - run : mise run site:upload\n"
     ),
 
     ".github/workflows/warm.yml": (
@@ -139,6 +172,12 @@ PINS = {
         'maturin = "1.16.0"\n'
         'ruff = "0.17.3"\n'
         'rust = { version = "1.99.1", profile = "minimal" }\n'
+    ),
+
+    ".mise/tasks/repo/ci.toml": (
+        '["repo:ci"]\n'
+        'run = ["mise doctor project", { tasks = ["site:coverage", "rust:suite"] }, '
+        '{ task = "rust:wheel" }]\n'
     ),
 
     "Cargo.lock": (
@@ -218,6 +257,12 @@ TASKS  = [
         "name"    : "site:test",
         "depends" : [],
         "sources" : ["**/*", "!dist/**/*"]
+    },
+    {
+        "dir"     : "{root}",
+        "name"    : "site:upload",
+        "depends" : ["site:coverage"],
+        "sources" : []
     },
     {
         "dir"     : "{root}",
@@ -571,6 +616,23 @@ def test_parity_pairs_each_have_a_drift_row(
     assert {label for label, _, _ in audit.parity_pairs()} == set(DRIFTS)
 
 
+def test_swept_follows_dependencies_transitively(
+    audit   : ModuleType,
+    drifted : Callable[[str, str, str], None]
+):
+    """
+    Pins that `swept` reaches a task through another task, keeps a name
+    `mise tasks` does not list, and leaves the list it reads as it stood.
+    """
+    drifted("Cargo.toml", "crate", "crate")
+    names = ["site:press", "nowhere:listed"]
+
+    assert audit.swept(names) == {
+        "nowhere:listed", "rust:build", "site:bake", "site:press", "wasm:pack"
+    }
+    assert names == ["site:press", "nowhere:listed"]
+
+
 @mark.parametrize(
     ("home", "pin", "stray", "reported"),
     [
@@ -587,6 +649,20 @@ def test_parity_pairs_each_have_a_drift_row(
             "maturin-release",
             "no maturin-version pin in build-wheel/action.yml",
             id = "action-input"
+        ),
+        param(
+            ".github/CONTRIBUTING.md",
+            "`mise ci` runs what",
+            "`mise ci` reaches what",
+            "CONTRIBUTING.md states nothing `mise ci` runs",
+            id = "sweep-statement"
+        ),
+        param(
+            ".github/CONTRIBUTING.md",
+            ", short of uploading coverage",
+            "",
+            "CONTRIBUTING.md states nothing `mise ci` runs",
+            id = "sweep-statement-upload"
         ),
         param(
             "crate/pyproject.toml",

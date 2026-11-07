@@ -1,11 +1,8 @@
 @reference "../../../styles/tailwind.css";
 
-/* Draws the chrome the single-rule cards in FixtureCard.vue and the
-   multi-rule cards in CompositionCards.vue share. Each sits on a hairline
-   edge, leads its row with a nib slot as wide as a composition's deck, and
-   leaves the folio to the counter below, so one run numbers every card a page
-   shows and every folio shares one column. A card whose rule leaves the code
-   alone, marked `data-edits="false"` with no finding, draws its nib in gray. */
+/* Declares the folio counter the single-rule cards in FixtureCard.vue and the
+   multi-rule cards in CompositionCards.vue share, so one run numbers every
+   card a page shows and every folio shares one column. */
 
 @counter-style prose-fixture-folio {
   system : extends decimal;
@@ -16,37 +13,8 @@
   counter-reset : prose-fixture-folio;
 }
 
-.fixture-card-slot .nib-badge {
-  display : block;
-  color   : var(--family-nib-card);
-}
-
-.fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-slot .nib-badge {
-  color : var(--prose-shade-text-3-card-31);
-}
-
 .fixture-card-title code {
   text-transform : none;
-}
-
-.fixture-card-actions {
-  display        : inline-flex;
-  align-items    : center;
-  visibility     : hidden;
-  pointer-events : none;
-  opacity        : 0;
-  transition     : opacity var(--prose-transition);
-}
-
-.fixture-card[data-open] .fixture-card-actions,
-.fixture-card[data-edits="false"]:not([data-lint="true"]) .fixture-card-actions {
-  visibility     : visible;
-  pointer-events : auto;
-  opacity        : 1;
-}
-
-.fixture-card:not([data-open], [data-edits="false"]:not([data-lint="true"])) .fixture-card-actions {
-  display : none;
 }
 
 .fixture-card-desc :first-child { margin-top    : 0; }
@@ -60,22 +28,4 @@
 
 .fixture-card-desc li {
   margin : var(--prose-space-0-1em) 0;
-}
-
-/* Sets an open card's toggle on a row under its title, so the title keeps the
-   card's width beside the slot. */
-@variant max-mobile {
-  .fixture-card[data-open] .fixture-card-summary {
-    grid-row    : 1;
-    grid-column : 2 / -1;
-  }
-
-  .fixture-card[data-open] :is(.fixture-card-actions, .composition-cards-toggle-slot) {
-    grid-row        : 2;
-    grid-column     : 2 / -1;
-    justify-self    : start;
-    justify-content : flex-start;
-    min-height      : 0;
-    padding         : 0 0 var(--prose-space-8);
-  }
 }

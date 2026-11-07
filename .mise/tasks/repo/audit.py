@@ -774,7 +774,8 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
         *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
-        *patch_pins(package)
+        *patch_pins(package),
+        *sweep_pairs()
     ]
 
 
@@ -1057,6 +1058,79 @@ def suffixes() -> int:
             )
         ]
     )
+
+
+def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
+    """
+    Returns the parity pairs holding `mise ci` to its statement in
+    `CONTRIBUTING.md`, comparing the workflows the statement names
+    against the workflows carrying those names, each task those workflows
+    run against the ones `mise ci` reaches, and the dependencies of
+    `site:upload` against the ones `mise ci` names. A task in the `gha`
+    group runs only on GitHub and an upload is what the statement leaves
+    out, so neither counts as a task the workflows run.
+    """
+    named = quoted(
+        cell = matched(
+            message = "CONTRIBUTING.md states nothing `mise ci` runs",
+            path    = ".github/CONTRIBUTING.md",
+            pattern = (
+                r"`mise ci` runs what (.+) workflows run, "
+                r"short of uploading coverage"
+            )
+        )
+    )
+    flows = [flow for _, flow in workflows() if flow.get("name") in named]
+    sweep = [
+        task
+        for step in toml(".mise/tasks/repo/ci.toml")["repo:ci"]["run"]
+        if isinstance(step, dict)
+        for task in step.get("tasks", [step.get("task")])
+    ]
+    uploaded = dependencies("site:upload")
+    ran      = {
+        task
+        for flow in flows
+        for _, _, runs, _ in reported(flow)
+        for task in runs
+        if not task.startswith("gha:") and not task.endswith(":upload")
+    }
+
+    return [
+        (
+            "CONTRIBUTING.md local sweep ↔ the workflows it names",
+            sorted(named),
+            sorted(flow["name"] for flow in flows)
+        ),
+        (
+            "mise ci tasks ↔ the tasks its workflows run",
+            sorted(ran),
+            sorted(ran & swept(sweep))
+        ),
+        (
+            "mise ci tasks ↔ site:upload dependencies",
+            sorted(uploaded),
+            sorted(task for task in sweep if task in uploaded)
+        )
+    ]
+
+
+def swept(names: list[str]) -> set[str]:
+    """
+    Returns `names` and every task they depend on, directly or through
+    another task.
+    """
+    listed   = tasks_listed()
+    seen     = set(names)
+    frontier = seen
+    while frontier:
+        frontier = {
+            each
+            for task in frontier & listed.keys()
+            for each in dependencies(task)
+        } - seen
+        seen = seen | frontier
+    return seen
 
 
 def table(header: str) -> list[list[str]]:

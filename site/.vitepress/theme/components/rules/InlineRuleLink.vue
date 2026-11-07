@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NibBadge from '../base/NibBadge.vue'
+import { NibBadge } from '../../../kit'
 
 import { useHiddenTabindex } from '../../../lib/composables/use-aria-hidden'
 import { data as rules }     from '../../../lib/rules/rules.data'

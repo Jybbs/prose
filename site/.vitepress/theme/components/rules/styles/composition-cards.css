@@ -14,16 +14,6 @@
   --card-reveal : 0.28s;
 }
 
-.composition-cards-toggle-slot {
-  grid-column : 3;
-  grid-row    : 1;
-}
-
-.composition-cards-list .fixture-card-summary {
-  grid-row    : 1;
-  grid-column : 2;
-}
-
 .composition-cards-slot {
   width : var(--prose-size-32);
 }
@@ -96,19 +86,9 @@
     box-shadow            var(--prose-transition-slow);
 }
 
-.composition-cards-chip > .nib-badge {
-  display      : block;
-  justify-self : center;
-  color        : var(--family-nib-chip);
-}
-
 .composition-cards-tick-item + .composition-cards-tick-item .composition-cards-chip {
   border-right-color : var(--family-edge-chip);
   box-shadow         : inset calc(var(--prose-space-2) * -1) 0 0 var(--family-edge-chip);
-}
-
-.fixture-card[data-edits="false"] .composition-cards-chip > .nib-badge {
-  color : var(--prose-shade-text-3-chip-31);
 }
 
 .fixture-card[data-edits="false"] .composition-cards-tick-item + .composition-cards-tick-item .composition-cards-chip {

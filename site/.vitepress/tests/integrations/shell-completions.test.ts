@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
+import { ToolIcon }          from '../../kit'
 import ShellCompletions      from '../../theme/components/integrations/ShellCompletions.vue'
 import { rendersAccessibly } from '../axe'
 

@@ -2,7 +2,7 @@
 import { useData }  from 'vitepress'
 import { computed } from 'vue'
 
-import NibBadge from '../base/NibBadge.vue'
+import { NibBadge } from '../../../kit'
 
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 import { arrowIndex }       from '../../../lib/shared/arrow-keys'

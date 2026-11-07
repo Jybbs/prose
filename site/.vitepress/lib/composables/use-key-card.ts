@@ -2,7 +2,7 @@ import { defaultWindow, useEventListener } from '@vueuse/core'
 import { nextTick, shallowRef }            from 'vue'
 import type { Ref, ShallowRef }            from 'vue'
 
-import { millis, morphEase, reducesMotion, snapInPlace } from '../shared/paint'
+import { millis, morphEase, reducesMotion, snapInPlace } from '../../kit/drawing/paint'
 
 type Side = 'bottom' | 'left' | 'right'
 

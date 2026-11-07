@@ -1,10 +1,15 @@
-.v-popper--theme-rule-card.lint-popover .rule-card {
+.lint-popover [data-part='content'] {
+  display    : flex;
+  max-height : var(--available-height);
+}
+
+.lint-popover .rule-card {
   grid-auto-rows : minmax(0, auto);
   max-height     : 100%;
   min-height     : auto;
 }
 
-.v-popper--theme-rule-card.lint-popover .rule-card-header {
+.lint-popover .rule-card-header {
   background    : var(--vp-c-bg-alt);
   border-bottom : var(--prose-border-1) solid var(--vp-c-divider);
   min-height    : 0;

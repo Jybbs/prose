@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-import { nextPaint } from '../shared/paint'
+import { nextPaint } from '../../kit/drawing/paint'
 
 // Stages the lint underlines undrawn, then lifts the class after a paint
 // so their scaleX transition re-fires left to right.

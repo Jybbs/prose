@@ -20,7 +20,7 @@ const LandingTypingDemo = defineAsyncComponent(() =>
 )
 </script>
 
-<section class="landing-page" aria-label="prose overview">
+<main class="landing-page" aria-label="prose overview">
   <LandingHero />
   <LandingSection kicker="The Proof" heading="From <strong>cramped</strong> to <em>composed</em>." centered>
     <LandingTypingDemo />
@@ -30,4 +30,4 @@ const LandingTypingDemo = defineAsyncComponent(() =>
   <LandingWorkflow />
   <LandingBuiltOn />
   <LandingCta />
-</section>
+</main>

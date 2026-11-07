@@ -21,7 +21,7 @@ import {
 import { parse as parseColor } from 'culori'
 import { parse }               from 'postcss'
 
-import { paletteCss } from '../lib/shared/palette'
+import { paletteCss, themeCss } from '../lib/shared/palette'
 import { siteDir }    from '../lib/shared/paths'
 
 import { VITEPRESS_THEME } from './support'
@@ -53,7 +53,7 @@ const WIDE_KEYWORDS  = new Set(['inherit', 'initial', 'revert', 'revert-layer', 
 // Holds the inline elements that set words apart in running text, beside the
 // values that keep one of them in a text color or the aside ink.
 export const INLINE_TEXT = new Set(['b', 'em', 'i', 'mark', 'strong'])
-export const TEXT_COLOR  = /^(?:var\(--(?:vp-c-text-[123]|prose-role-aside)\)|inherit|currentcolor)$/i
+export const TEXT_COLOR  = /^(?:var\(--(?:vp-c-text-[123]|color-aside)\)|inherit|currentcolor)$/i
 export const SITE        = siteDir(import.meta.url)
 export const TOKENS      = '.vitepress/theme/styles/tokens.css'
 
@@ -76,20 +76,25 @@ class Vocabulary {
     readonly properties  : Set<string>
   ) {}
 
-  // Reads each custom property the `declaring` sheets declare, each breakpoint
-  // the `@theme` blocks of the `reading` sheets declare, and each custom property
+  // Reads each custom property the `declaring` sheets or the `@theme` blocks of
+  // the `reading` sheets declare, each breakpoint those blocks declare, and each custom property
   // the `reading` sheets pass to `color-mix()` or read as a font family.
   static read(declaring: Root[], reading: Root[]): Vocabulary {
     const vocabulary = new Vocabulary(breakpointsOf(reading), facedBy(reading), mixedBy(reading), new Set())
     for (const root of declaring) {
       root.walkDecls(/^--/, decl => { vocabulary.properties.add(decl.prop) })
     }
+    for (const root of reading) {
+      root.walkAtRules('theme', theme => {
+        theme.walkDecls(/^--/, decl => { vocabulary.properties.add(decl.prop) })
+      })
+    }
     return vocabulary
   }
 
   // Lists each value a declaration writes in place of a token, meaning a length,
   // a color, a typeface, or a `color-mix()` share, beside each `--prose-*`
-  // property it declares and each `--prose-*` or `--vp-*` property it reads that
+  // property it declares and each `--color-*`, `--prose-*`, or `--vp-*` property it reads that
   // nothing declares.
   private declarationStrays(decl: Declaration): Stray[] {
     const found: Stray[] = []
@@ -107,7 +112,7 @@ class Vocabulary {
       parents.set(node, parent)
       if (named(node, 'var')) {
         const ref = referenced(node)
-        if (ref && /^--(prose|vp)-/.test(ref[4].value) && !this.properties.has(ref[4].value)) {
+        if (ref && /^--(color|prose|vp)-/.test(ref[4].value) && !this.properties.has(ref[4].value)) {
           report('token', ref[2], ref[4].value)
         }
         return
@@ -249,11 +254,11 @@ function mixedBy(roots: Root[]): Set<string> {
 }
 
 // Builds the vocabulary the site's stylesheets read from, meaning what
-// `tokens.css`, the palette sheet, and the VitePress default theme declare,
+// `tokens.css`, the palette and theme sheets, and the VitePress default theme declare,
 // beside the custom properties the `reading` sheets pass to `color-mix()` or
 // read as a font family.
 export function siteVocabulary(tokens: Root, reading: Root[]): Vocabulary {
-  return Vocabulary.read([tokens, parse(paletteCss()), ...vitepressSheets()], reading)
+  return Vocabulary.read([tokens, parse(paletteCss()), parse(themeCss()), ...vitepressSheets()], reading)
 }
 
 // Parses each stylesheet the VitePress default theme ships.

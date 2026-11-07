@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { promiseTimeout }                                            from '@vueuse/core'
+import { promiseTimeout } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
-import ConfigFlagPopper  from './ConfigFlagPopper.vue'
-import CopyButton        from '../base/CopyButton.vue'
+import ConfigFlagPopup   from './ConfigFlagPopup.vue'
+import { CopyButton }    from '../../../kit'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
-import type { ProseSandbox }                    from '../../../lib/composables/use-prose-sandbox'
-import { useReducedMotion }                     from '../../../lib/composables/use-reduced-motion'
+import type { ProseSandbox }                     from '../../../lib/composables/use-prose-sandbox'
+import { useReducedMotion }                      from '../../../lib/composables/use-reduced-motion'
 import { configDecorations, unknownKeyFindings } from '../../../lib/sandbox/config-decorations'
-import * as typewriter                          from '../../../lib/sandbox/typewriter'
-import { highlight }                            from '../../../lib/shared/highlight'
-import { latestRun }                            from '../../../lib/shared/latest-run'
+import * as typewriter                           from '../../../lib/sandbox/typewriter'
+import { highlight }                             from '../../../lib/shared/highlight'
+import { latestRun }                             from '../../../lib/shared/latest-run'
 
 const STEP_MS = 12
 
@@ -20,7 +20,7 @@ const { configError, configNotices, configToml, renameConfigKey, rules } = props
 
 const reducedMotion = useReducedMotion()
 const editor        = useTemplateRef<InstanceType<typeof SandboxCodeEditor>>('editor')
-const popper        = useTemplateRef<InstanceType<typeof ConfigFlagPopper>>('popper')
+const popup         = useTemplateRef<InstanceType<typeof ConfigFlagPopup>>('popup')
 
 // An unknown key the source carries takes a squiggle and a margin mark,
 // leaving the message list to the notices no line matched.
@@ -140,10 +140,11 @@ onMounted(() => settle(configToml.value))
         class="sandbox-toml-display code-text grow cursor-text overflow-auto py-18 pr-22 pl-8"
         role="button"
         tabindex="0"
+        aria-label="Edit the configuration"
         @click="startEditing"
         @keydown.enter.prevent="startEditing"
-        @mouseover="popper?.show"
-        @mouseleave="popper?.hide"
+        @mouseover="popup?.show"
+        @mouseleave="popup?.hide"
         v-html="displayHtml"
       />
     </div>
@@ -154,6 +155,6 @@ onMounted(() => settle(configToml.value))
     <CopyButton v-show="!editing" label="Copy prose.toml" :source="configToml" />
     <p v-if="configError" class="code-panel-error code-panel-notice text-danger-1">{{ configError }}</p>
     <p v-for="notice in stray" :key="notice" class="code-panel-warning code-panel-notice text-warning-1">{{ notice }}</p>
-    <ConfigFlagPopper ref="popper" :rules="rules" @apply="renameConfigKey" />
+    <ConfigFlagPopup ref="popup" :rules="rules" @apply="renameConfigKey" />
   </section>
 </template>

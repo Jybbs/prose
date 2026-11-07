@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { ToolIcon } from '../../../kit'
+
 import LandingSection from './LandingSection.vue'
-import ToolIcon       from '../base/ToolIcon.vue'
 
 import { data as tools } from '../../../lib/shared/tools.data'
 import { externalAttrs } from '../../../lib/shared/links'
@@ -44,7 +45,7 @@ const entries = credits.map(({ role, slug }) => ({
           <ToolIcon class="size-28" :slug="entry.slug" />
         </span>
         <span class="font-display text-1-15rem leading-none font-500 italic">{{ entry.tool.name }}</span>
-        <span class="kicker leading-none text-stack-accent-56-text-3">{{ entry.role }}</span>
+        <span class="kicker leading-none text-ube-soft-45">{{ entry.role }}</span>
       </a>
     </div>
   </LandingSection>

@@ -4,10 +4,10 @@ import { ref } from 'vue'
 import { data as releases } from '../../../lib/landing/pypi-releases.data'
 import { PYPI_PACKAGE }     from '../../../lib/shared/constants'
 
-import CopyButton    from '../base/CopyButton.vue'
-import ReleaseLedger from './ReleaseLedger.vue'
-import ReleaseStamp  from './ReleaseStamp.vue'
-import ReleaseToggle from './ReleaseToggle.vue'
+import { CopyButton, Disclosure } from '../../../kit'
+import ReleaseLedger              from './ReleaseLedger.vue'
+import ReleaseStamp               from './ReleaseStamp.vue'
+import ReleaseToggle              from './ReleaseToggle.vue'
 
 const current = releases[0]
 const extras  = releases.slice(1)
@@ -18,17 +18,19 @@ const installCmd = `uv tool install ${PYPI_PACKAGE}`
 
 <template>
   <section class="landing-cta relative mt-76 grid grid-cols-196-minmax-1fr overflow-hidden border-1 border-divider bg-bg-soft text-left max-card-stack:grid-cols-1fr">
-    <aside class="relative min-h-200 overflow-hidden border-r-1 border-r-panel-edge bg-panel-bg max-card-stack:border-b-1 max-card-stack:border-r-0 max-card-stack:border-r-current max-card-stack:border-b-panel-edge">
-      <Transition name="landing-cta-swap" mode="out-in" enter-from-class="translate-y-8 opacity-0" leave-to-class="translate-y-8 opacity-0">
-        <div v-if="!open" key="stamp" class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16">
-          <ReleaseStamp :release="current" />
-        </div>
-        <div v-else key="open" class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16">
-          <ReleaseLedger :releases="extras" />
-        </div>
-      </Transition>
-      <ReleaseToggle :open="open" @toggle="open = !open" />
-    </aside>
+    <Disclosure v-model:open="open" v-slot="disclosure">
+      <aside class="relative min-h-200 overflow-hidden border-r-1 border-r-panel-edge bg-panel-bg max-card-stack:border-b-1 max-card-stack:border-r-0 max-card-stack:border-r-current max-card-stack:border-b-panel-edge">
+        <Transition name="landing-cta-swap" mode="out-in" enter-from-class="translate-y-8 opacity-0" leave-to-class="translate-y-8 opacity-0">
+          <div v-if="!open" key="stamp" class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16">
+            <ReleaseStamp :release="current" />
+          </div>
+          <div v-else key="open" v-bind="disclosure.content" class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16">
+            <ReleaseLedger :releases="extras" />
+          </div>
+        </Transition>
+        <ReleaseToggle v-bind="disclosure.trigger" :open="open" />
+      </aside>
+    </Disclosure>
 
     <div class="relative grid grid-cols-minmax-1fr-auto items-center gap-x-18 gap-y-4 px-22 py-18">
       <p class="col-start-1 col-end-3 kicker mb-4">Read on</p>

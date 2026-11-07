@@ -1,8 +1,12 @@
 @theme inline {
   --color-family-nib                           : var(--family-nib);
+  --color-family-nib-card                      : var(--family-nib-card);
+  --color-family-nib-chip                      : var(--family-nib-chip);
   --color-layer-ink                            : var(--layer-ink);
   --color-outcome-ink                          : var(--outcome-ink);
   --color-outcome-mark                         : var(--outcome-mark);
+  --color-text-3-card-31                       : var(--prose-shade-text-3-card-31);
+  --color-text-3-chip-31                       : var(--prose-shade-text-3-chip-31);
 
   --columns-2-11rem                            : 2 var(--prose-width-11rem);
 

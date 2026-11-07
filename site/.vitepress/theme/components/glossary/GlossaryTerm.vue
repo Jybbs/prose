@@ -2,11 +2,12 @@
 import { useRoute } from 'vitepress'
 import { computed } from 'vue'
 
+import { nib, Popup } from '../../../kit'
+
 import { useAriaHidden }    from '../../../lib/composables/use-aria-hidden'
 import { data as glossary } from '../../../lib/glossary/glossary.data'
 import { familyEmblem }     from '../../../lib/shared/emblems'
 import { lookup }           from '../../../lib/shared/lookup'
-import { nibBadgeHtml }     from '../../../lib/shared/nib'
 import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 
 const LINK_CLASS = '-mx-16 mt-12 -mb-12 block border-t-1 border-t-divider px-16 py-6 '
@@ -27,7 +28,7 @@ const head = [
   '<div class="nib-tag">',
   ...families.map(family => {
     const emblem = familyEmblem(family)
-    return `<span class="glossary-tooltip-nib" data-family="${family}">${nibBadgeHtml(emblem, 14, emblem.name)}</span>`
+    return `<span class="glossary-tooltip-nib" data-family="${family}">${nib.nibBadgeHtml(emblem, 14, emblem.name)}</span>`
   }),
   families.length > 0 ? '<span class="middle-dot" aria-hidden="true">·</span>' : '',
   '<span class="kicker">Glossary</span>',
@@ -54,16 +55,10 @@ const showLink = computed(() => {
 </script>
 
 <template>
-  <span
-    v-tooltip="{
-      content            : tooltipHtml,
-      html               : true,
-      noAutoFocus        : true,
-      popperHideTriggers : ['hover'],
-      popperTriggers     : ['hover'],
-      theme              : 'glossary'
-    }"
-    class="glossary-anchor underline-draw"
-    :tabindex="ariaHidden ? -1 : 0"
-  ><slot /></span>
+  <Popup :label="entry.slug" placement="top" theme="glossary">
+    <template v-slot:trigger="{ props: trigger }">
+      <span v-bind="trigger" class="glossary-anchor underline-draw" :tabindex="ariaHidden ? -1 : 0"><slot /></span>
+    </template>
+    <div v-html="tooltipHtml" />
+  </Popup>
 </template>

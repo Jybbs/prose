@@ -1,8 +1,15 @@
 @theme inline {
-  --color-apricot-70-text-1        : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-70), var(--vp-c-text-1));
-  --color-apricot-medium-bg        : color-mix(in srgb, var(--prose-palette-apricot) var(--prose-tint-medium), var(--vp-c-bg));
+  --color-apricot-code-45          : var(--prose-shade-apricot-code-45);
+  --color-apricot-medium-bg        : color-mix(in srgb, var(--color-apricot) var(--prose-tint-medium), var(--vp-c-bg));
+  --color-apricot-page-45          : var(--prose-shade-apricot-page-45);
+  --color-apricot-selected-45      : var(--prose-shade-apricot-selected-45);
+  --color-celadon-code-45          : var(--prose-shade-celadon-code-45);
+  --color-celadon-selected-45      : var(--prose-shade-celadon-selected-45);
+  --color-celadon-soft-45          : var(--prose-shade-celadon-soft-45);
   --color-emblem-ink               : var(--emblem-ink);
   --color-emblem-paint             : var(--emblem-paint);
+  --color-ube-page-45              : var(--prose-shade-ube-page-45);
+  --color-ube-soft-45              : var(--prose-shade-ube-soft-45);
 
   --grid-template-columns-232-1fr  : var(--prose-width-232) 1fr;
   --grid-template-columns-fill-260 : repeat(auto-fill, minmax(var(--prose-width-260), 1fr));

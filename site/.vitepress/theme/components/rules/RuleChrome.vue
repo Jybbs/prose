@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import FamilyChip from './FamilyChip.vue'
+import { FamilyChip } from '../../../kit'
 </script>
 
 <template>
-  <div class="mb-12 flex flex-wrap items-center gap-10">
+  <section class="mb-12 flex flex-wrap items-center gap-10" aria-label="Rule family">
     <FamilyChip />
-  </div>
+  </section>
 </template>

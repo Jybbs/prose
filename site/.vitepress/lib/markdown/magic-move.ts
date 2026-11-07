@@ -1,7 +1,7 @@
 import { codeToKeyedTokens, createMagicMoveMachine } from '@shikijs/magic-move/core'
 import type { KeyedTokensInfo }                      from '@shikijs/magic-move/types'
 
-import { SHIKI_THEMES }    from '../shared/constants'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
 import { codeHighlighter } from './highlighter'
 
 export type MagicMoveMachine = ReturnType<typeof createMagicMoveMachine>
@@ -14,7 +14,7 @@ export type MagicMoveMachine = ReturnType<typeof createMagicMoveMachine>
 export async function magicMoveMachine(): Promise<MagicMoveMachine> {
   const highlighter = await codeHighlighter()
   return createMagicMoveMachine(
-    code => codeToKeyedTokens(highlighter, code, { lang: 'python', themes: SHIKI_THEMES }),
+    code => codeToKeyedTokens(highlighter, code, { colorReplacements: SHIKI_COLOR_REPLACEMENTS, lang: 'python', themes: SHIKI_THEMES, tokenizeTimeLimit: 0 }),
     { enhanceMatching: true, splitTokens: true }
   )
 }

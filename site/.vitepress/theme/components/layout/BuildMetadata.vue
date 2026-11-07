@@ -28,7 +28,7 @@ const items = computed((): Item[] => [
 </script>
 
 <template>
-  <footer class="mx-auto mt-24 flex max-w-1120 flex-wrap justify-center gap-x-52 gap-y-16 border-t-1 border-t-divider px-18 pt-18 pb-14 font-mono tracking-folio">
+  <section aria-label="Build" class="mx-auto mt-24 flex max-w-1120 flex-wrap justify-center gap-x-52 gap-y-16 border-t-1 border-t-divider px-18 pt-18 pb-14 font-mono tracking-folio">
     <span v-for="item in items" :key="item.label" class="flex flex-col items-center gap-1">
       <span class="text-md leading-none text-text-1">
         <code v-if="item.code">{{ item.value }}</code>
@@ -36,5 +36,5 @@ const items = computed((): Item[] => [
       </span>
       <span class="text-meta tracking-0-12em text-text-3 uppercase">{{ item.label }}</span>
     </span>
-  </footer>
+  </section>
 </template>

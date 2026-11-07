@@ -21,7 +21,7 @@
 
 .exit-code-index-row:hover,
 .exit-code-index-row[aria-current] {
-  box-shadow : inset var(--prose-border-2) 0 0 var(--prose-role-link);
+  box-shadow : inset var(--prose-border-2) 0 0 var(--color-link);
 }
 
 .exit-code-entry-summary :where(code),

@@ -1,7 +1,7 @@
 import type { DecorationItem } from '@shikijs/types'
 
 import { codeHighlighter } from '../markdown/highlighter'
-import { SHIKI_THEMES }    from './constants'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from './constants'
 
 // Highlights a code string to dual-theme HTML through the shared client
 // highlighter, carrying optional shiki decorations so a runtime surface
@@ -13,8 +13,9 @@ export async function highlight(
 ): Promise<string> {
   const highlighter = await codeHighlighter()
   return highlighter.codeToHtml(code, {
-    decorations : decorations ? [...decorations] : [],
+    colorReplacements : SHIKI_COLOR_REPLACEMENTS,
+    decorations       : decorations ? [...decorations] : [],
     lang,
-    themes      : SHIKI_THEMES
+    themes            : SHIKI_THEMES
   })
 }

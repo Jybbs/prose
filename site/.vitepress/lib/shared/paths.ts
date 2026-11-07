@@ -3,6 +3,8 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+const TARGET_DIRS = new Map<string, string>()
+
 export function architectureDir(metaUrl: string): string {
   return path.join(siteDir(metaUrl), 'architecture')
 }
@@ -28,7 +30,7 @@ export function fixturesDirFrom(crate: string): string {
 }
 
 export function proseBinaryPath(root: string): string {
-  return path.join(root, 'target', 'debug', 'prose')
+  return path.join(targetDir(root), 'debug', 'prose')
 }
 
 export function repoRoot(metaUrl: string): string {
@@ -49,6 +51,18 @@ function resolveProseBinary(root: string): string {
   const binary = proseBinaryPath(root)
   if (fs.existsSync(binary)) return binary
   throw new Error(`prose binary not found at ${binary}. Run \`mise run rust:build\` first.`)
+}
+
+// Returns the directory `cargo metadata` reports for the workspace at `root`,
+// reading it once per root, which `CARGO_TARGET_DIR` or a cargo config moves
+// away from `<root>/target`.
+function targetDir(root: string): string {
+  const known = TARGET_DIRS.get(root)
+  if (known) return known
+  const metadata = execFileSync('cargo', ['metadata', '--format-version', '1', '--no-deps'], { cwd: root, encoding: 'utf8' })
+  const { target_directory: directory } = JSON.parse(metadata) as { target_directory: string }
+  TARGET_DIRS.set(root, directory)
+  return directory
 }
 
 export function runProse(

@@ -17,7 +17,7 @@
 }
 
 .vp-doc .custom-block.tip {
-  --callout-mark : var(--prose-role-link);
+  --callout-mark : var(--color-link);
 }
 
 .vp-doc .custom-block.warning {

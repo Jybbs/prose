@@ -5,7 +5,6 @@ import { nextTick }             from 'vue'
 import type { RenderedRule }  from '../../lib/rules/rules.data'
 import SurfaceRail            from '../../theme/components/landing/surfaces/SurfaceRail.vue'
 import { domTest, nextFrame } from '../dom'
-import { popperStubMount }    from '../popper-stub'
 
 // The mock keys each measurement off the element it observes rather than off
 // call order, and drives the pointer the edge glide reads.
@@ -44,7 +43,7 @@ const RULES = [
 ].map(rule)
 
 const mountRail = async (rules: readonly RenderedRule[] = RULES) => {
-  const wrapper = mount(SurfaceRail, { global: popperStubMount, props: { rules } })
+  const wrapper = mount(SurfaceRail, { props: { rules } })
   await flushPromises()
   return wrapper
 }
@@ -78,6 +77,11 @@ describe('SurfaceRail', () => {
   domTest('leads the rule chip with its family\'s small badge', async ({ reducedMotion }) => {
     reducedMotion(true)
     expect((await mountRail()).get('.surface-rail-chip use').attributes('href')).toBe('#nib-ladder-small')
+  })
+
+  domTest('marks the rule chip for the delegated rule card', async ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect((await mountRail()).get('.surface-rail-chip').attributes('data-rule')).toBe('align-equals')
   })
 
   domTest('holds every pip in the scrolling window while the roster fits', async ({ reducedMotion }) => {

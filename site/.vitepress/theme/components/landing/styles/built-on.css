@@ -1,7 +1,7 @@
 @reference "../../../styles/tailwind.css";
 
 .built-on-grid {
-  --stack-accent : var(--prose-palette-ube);
+  --stack-accent : var(--color-ube);
 }
 
 .built-on-card + .built-on-card {

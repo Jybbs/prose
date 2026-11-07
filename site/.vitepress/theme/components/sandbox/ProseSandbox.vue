@@ -2,10 +2,10 @@
 import { refAutoReset, useClipboard, useStorage } from '@vueuse/core'
 import { computed, onMounted, ref }               from 'vue'
 
-import CopyButton           from '../base/CopyButton.vue'
-import ProseSandboxControls from './ProseSandboxControls.vue'
-import ProseSandboxSurface  from './ProseSandboxSurface.vue'
-import ProseSandboxToml     from './ProseSandboxToml.vue'
+import { CopyButton, Disclosure } from '../../../kit'
+import ProseSandboxControls          from './ProseSandboxControls.vue'
+import ProseSandboxSurface           from './ProseSandboxSurface.vue'
+import ProseSandboxToml              from './ProseSandboxToml.vue'
 
 import { useProseSandbox } from '../../../lib/composables/use-prose-sandbox'
 import { data as schema }  from '../../../lib/sandbox/config-schema.data'
@@ -65,35 +65,36 @@ onMounted(sandbox.start)
 <template>
   <div class="relative left-1/2 w-sandbox -translate-x-1/2" :data-editing="editing || null">
     <section class="relative z-20 mb-1-5rem panel bg-bg-soft transition-opacity in-data-editing:pointer-events-none in-data-editing:opacity-50 data-locked:sticky data-locked:top-nav max-tablet:data-locked:static" :data-locked="deckLocked || undefined">
-      <button
-        type="button"
-        class="flex w-full items-center justify-center border-0 p-0-45rem text-text-2 transition-colors hover:bg-text-1/4 hover:text-text-1 focus-visible:-outline-offset-2 aria-expanded:border-b-1 aria-expanded:border-b-divider"
-        :aria-expanded="deckOpen"
-        :title="deckOpen ? 'Hide configuration' : 'Show configuration'"
-        @click="deckOpen = !deckOpen"
-      >
-        <span class="kicker">Configuration</span>
-      </button>
-      <button
-        type="button"
-        class="absolute top-4 right-8 z-1 border-none p-6 text-text-3 transition-colors hover:text-text-1 focus-visible:outline-offset-1 aria-pressed:text-brand-1 max-tablet:hidden"
-        :aria-pressed="deckLocked"
-        :title="deckLocked ? 'Unpin from scroll' : 'Pin while scrolling'"
-        :aria-label="deckLocked ? 'Unpin the configuration' : 'Pin the configuration while scrolling'"
-        @click.stop="deckLocked = !deckLocked"
-      >
-        <svg class="size-15 glyph-stroke" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="5" y="11" width="14" height="9" rx="2" />
-          <path :d="deckLocked ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 8 0'" />
-        </svg>
-      </button>
-      <div v-show="deckOpen" class="px-1-25rem pt-0-75rem pb-1-25rem">
-        <ProseSandboxControls
-          :sandbox="sandbox"
-          @dragging="onDragging"
-          @preview="onPreview"
-        />
-      </div>
+      <Disclosure v-model:open="deckOpen" v-slot="disclosure">
+        <button
+          v-bind="disclosure.trigger"
+          type="button"
+          class="group flex w-full items-center justify-center border-0 p-0-45rem text-text-2 transition-colors hover:bg-text-1/4 hover:text-text-1 focus-visible:-outline-offset-2 aria-expanded:border-b-1 aria-expanded:border-b-divider"
+          :title="deckOpen ? 'Hide configuration' : 'Show configuration'"
+        >
+          <span class="kicker group-hover:text-text-2">Configuration</span>
+        </button>
+        <button
+          type="button"
+          class="absolute top-4 right-8 z-1 border-none p-6 text-text-3 transition-colors hover:text-text-1 focus-visible:outline-offset-1 aria-pressed:text-brand-1 max-tablet:hidden"
+          :aria-pressed="deckLocked"
+          :title="deckLocked ? 'Unpin from scroll' : 'Pin while scrolling'"
+          :aria-label="deckLocked ? 'Unpin the configuration' : 'Pin the configuration while scrolling'"
+          @click.stop="deckLocked = !deckLocked"
+        >
+          <svg class="size-15 glyph-stroke" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2" />
+            <path :d="deckLocked ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 8 0'" />
+          </svg>
+        </button>
+        <div v-bind="disclosure.content" class="px-1-25rem pt-0-75rem pb-1-25rem">
+          <ProseSandboxControls
+            :sandbox="sandbox"
+            @dragging="onDragging"
+            @preview="onPreview"
+          />
+        </div>
+      </Disclosure>
     </section>
 
     <div class="grid grid-cols-2fr-1fr items-stretch gap-1-25rem *:min-h-30rem max-tablet:grid-cols-1fr">

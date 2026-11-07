@@ -68,7 +68,7 @@ describe('Emblem', () => {
   it('sets the family whose hue a duotone takes', () => {
     const svg = draw(house({ tone: 'duotone' }))
     expect(svg.attributes('data-family')).toBe('docs')
-    expect(svg.attributes('style')).toContain('--emblem-family: var(--prose-family-docs);')
+    expect(svg.attributes('style')).toContain('--emblem-family: var(--color-family-docs);')
   })
 
   it.each([

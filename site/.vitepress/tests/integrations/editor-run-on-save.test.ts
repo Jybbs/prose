@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
+import { ToolIcon }          from '../../kit'
 import EditorRunOnSave       from '../../theme/components/integrations/EditorRunOnSave.vue'
 import { rendersAccessibly } from '../axe'
 import { isHidden }          from '../dom'

@@ -1,4 +1,4 @@
-import { reducesMotion } from '../shared/paint'
+import { reducesMotion } from '../../kit/drawing/paint'
 
 // Holds the duration and curve one move of the rules index takes.
 export interface GlideTiming {

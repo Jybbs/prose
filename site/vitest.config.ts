@@ -1,4 +1,5 @@
 import vue                              from '@vitejs/plugin-vue'
+import vueJsx                           from '@vitejs/plugin-vue-jsx'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
@@ -22,9 +23,9 @@ export default defineConfig({
 
     projects: [
       {
-        plugins : [vue({ script: { fs: sfcFs } })],
+        plugins : [vue({ script: { fs: sfcFs } }), vueJsx({ tsTransform: 'built-in' })],
         test    : {
-          exclude    : [...configDefaults.exclude, '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
+          exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
           name       : 'docs',
           setupFiles : ['./.vitepress/tests/setup.ts']
@@ -33,7 +34,17 @@ export default defineConfig({
 
       {
         test: {
-          globalSetup : ['./.vitepress/tests/render/serve.ts'],
+          globalSetup : ['./.vitepress/tests/serve.ts'],
+          hookTimeout : 120_000,
+          include     : ['.vitepress/tests/pages/**/*.test.ts'],
+          name        : 'pages',
+          testTimeout : 120_000
+        }
+      },
+
+      {
+        test: {
+          globalSetup : ['./.vitepress/tests/serve.ts'],
           include     : ['.vitepress/tests/render/**/*.test.ts'],
           name        : 'render',
           testTimeout : 30_000
@@ -59,9 +70,10 @@ export default defineConfig({
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
       reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
-      include          : ['.vitepress/lib/**', 'prototypes/**/*.{ts,vue}'],
+      include          : ['.vitepress/kit/**', '.vitepress/lib/**', 'prototypes/**/*.{ts,vue}'],
 
       exclude: [
+        '.vitepress/kit/**/*.catalog.tsx',
         '.vitepress/lib/**/*.data.ts',
         '.vitepress/lib/og/render/build.ts',
         '.vitepress/lib/og/render/pool.ts',

@@ -7,7 +7,7 @@ import ProseSandboxSurface                          from '../../theme/components
 import type { ProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import { MORPH_LINE_CHURN_CAP }                     from '../../lib/markdown/magic-move-delta'
 import { magicMoveWatchdogMs }                      from '../../lib/markdown/magic-move-options'
-import { nextPaint, ruleDrawMs }                    from '../../lib/shared/paint'
+import { nextPaint, ruleDrawMs }                    from '../../kit/drawing/paint'
 import { domTest, fakeSandbox, isHidden, stubRect } from '../dom'
 
 const drawSettled = (): Promise<void> => promiseTimeout(550)
@@ -41,9 +41,9 @@ const FINDING = {
   message      : 'm'
 }
 
-const LintFlagPopperStub = {
-  methods  : { hide() {}, show() {} },
-  template : '<div class="popper-stub" />'
+const LintFlagPopupStub  = {
+  methods  : { hide() {}, toggle: (event: Event) => (event.target as Element).closest('.lint-flag') !== null },
+  template : '<div class="popup-stub" />'
 }
 
 interface MountOptions {
@@ -65,7 +65,7 @@ const surfaceMount = (reducedMotion: (matches: boolean) => void) =>
     if (diagnostics) sandbox.diagnostics.value = diagnostics
     const wrapper = mount(ProseSandboxSurface, {
       props  : { sandbox },
-      global : { stubs: { LintFlagPopper: LintFlagPopperStub } }
+      global : { stubs: { LintFlagPopup: LintFlagPopupStub } }
     })
     await flushPromises()
     return { sandbox, wrapper }
@@ -467,6 +467,15 @@ describe('ProseSandboxSurface', () => {
     expect(wrapper.attributes('style')).toContain('min-height: 480px')
   })
 
+  surfaceTest('opens a flag\'s card from a press without opening the editor', async ({ mounted }) => {
+    const { wrapper } = await mounted({ diagnostics: [FINDING], formatted: 'x = 1' })
+    const flag        = wrapper.get('.lint-flag[data-rule="r1"]')
+    expect(flag.attributes()).toMatchObject({ role: 'button', tabindex: '0' })
+    await flag.trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted('update:editing')).toBeUndefined()
+  })
+
   surfaceTest('drops a disabled rule\'s squiggle while keeping the code', async ({ mounted }) => {
     document.documentElement.style.setProperty('--prose-rule-draw-ms', '300')
     onTestFinished(() => { document.documentElement.style.removeProperty('--prose-rule-draw-ms') })
@@ -510,5 +519,15 @@ describe('ProseSandboxSurface', () => {
     })
 
     expect(wrapper.get('.lint-flag[data-rule="r1"]').classes()).toContain('lint-flag-line')
+  })
+
+  surfaceTest('names the display and toggles a flag\'s card from Space', async ({ mounted }) => {
+    const toggle      = vi.spyOn(LintFlagPopupStub.methods, 'toggle')
+    const { wrapper } = await mounted({ formatted: 'x = 1', source: 'x=1' })
+    const display     = wrapper.get('.sandbox-surface-display')
+
+    expect(display.attributes('aria-label')).toBe('Python source, Enter edits it')
+    await display.trigger('keydown.space')
+    expect(toggle).toHaveBeenCalledOnce()
   })
 })

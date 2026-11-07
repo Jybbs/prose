@@ -10,7 +10,7 @@ export function highlight(
 ): Promise<string> {
   const flags = decorations
     .map(item =>
-      `<span class="${item.properties?.class}" data-rule="${item.properties?.['data-rule']}">x</span>`)
+      `<span class="${item.properties?.class}" data-rule="${item.properties?.['data-rule']}" role="${item.properties?.role}" tabindex="${item.properties?.tabindex}">x</span>`)
     .join('')
   return Promise.resolve(`<pre class="shiki"><code>${code}${flags}</code></pre>`)
 }
