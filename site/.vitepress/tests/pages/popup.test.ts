@@ -174,8 +174,12 @@ describe('the composition decks on a rule page', () => {
     const context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
     const page    = await context.newPage()
     await page.goto('/rules/ordering/alphabetize-siblings.html', { waitUntil: 'networkidle' })
+    // Waits for the client to mount, since the server renders every deck and only
+    // the mounted cards measure theirs, while each read waits on the main thread
+    // through hydration.
+    await page.waitForFunction(() => '__vue_app__' in (document.querySelector('#app') ?? {}))
     const unmeasured = page.locator('li.fixture-card:has(.composition-cards-bar):not([style*="--deck-bar-h"])')
-    await expect.poll(() => page.locator('.composition-cards-bar').count()).toBeGreaterThan(1)
+    expect(await page.locator('.composition-cards-bar').count()).toBeGreaterThan(1)
     await expect.poll(() => unmeasured.count()).toBe(0)
     await context.close()
   })
