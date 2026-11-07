@@ -13,7 +13,7 @@ export const GlossaryFolioPane = defineComponent({
     const { active, activeIndex, filtered, step } = useGlossaryFolio()
 
     return () => (
-      <div class="" data-family={active.value?.primaryFamily}>
+      <div data-family={active.value?.primaryFamily}>
         {active.value && (
           <article class="relative mt-24 min-w-0 panel bg-bg pt-16 pr-28 pb-18 pl-32">
             <header class="-mt-16 -mr-28 mb-18 -ml-32 flex min-h-36 items-center justify-between gap-12 rounded-t-base-inner border-b-1 border-b-divider bg-bg-soft p-6">

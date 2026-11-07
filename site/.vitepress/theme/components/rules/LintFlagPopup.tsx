@@ -1,5 +1,4 @@
 import { computed, defineComponent, ref, shallowRef, watch } from 'vue'
-import type { DefineComponent }                              from 'vue'
 
 import { Popup }    from '../../../kit'
 import { RuleCard } from './RuleCard'
@@ -165,4 +164,4 @@ export const LintFlagPopup = defineComponent({
       </Popup>
     )
   }
-}) as DefineComponent<{}, LintFlagPopupHandle>
+})

@@ -5,7 +5,7 @@ import type { Component } from 'vue'
 import { subdirNames } from '../lib/fixtures/walker'
 import { parseToml }   from '../lib/shared/toml'
 
-const COMPONENT_MODULES = import.meta.glob<Record<string, Component>>('../theme/components/**/*.{tsx,vue}')
+const COMPONENT_MODULES = import.meta.glob<Record<string, Component>>('../theme/components/**/*.tsx')
 const FIXTURES_ROOT     = path.join(import.meta.dirname, 'components')
 
 export interface ComponentFixture {
@@ -46,10 +46,10 @@ export async function loadComponent(name: string): Promise<Component> {
     const pieces = await import('../kit') as unknown as Record<string, Component>
     return pieces[name.slice('kit/'.length)]!
   }
-  const loader = COMPONENT_MODULES[`../theme/components/${name}.tsx`] ?? COMPONENT_MODULES[`../theme/components/${name}.vue`]
+  const loader = COMPONENT_MODULES[`../theme/components/${name}.tsx`]
   if (loader === undefined) {
     throw new Error(`fixture tree: no component at theme/components/${name}`)
   }
   const module = await loader()
-  return module.default ?? module[path.basename(name)]!
+  return module[path.basename(name)]!
 }

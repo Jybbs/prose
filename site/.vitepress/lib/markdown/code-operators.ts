@@ -53,9 +53,13 @@ export function codeOperatorPlugin(md: MarkdownIt): void {
 }
 
 // Sets each code span with the punctuation after it in a `code-unit` span, which the
-// HTML renderer and `inlineNodes` each read as they read any other element.
+// HTML renderer and `inlineNodes` each read as they read any other element. The check
+// reads the function's name, since each data loader bundles its own copy of this
+// module and every copy applies the plugin to the one renderer VitePress caches.
 export function codeUnitPlugin(md: MarkdownIt): void {
-  if (!md.core.ruler.getRules('').includes(setCodeUnits)) md.core.ruler.push('code-unit', setCodeUnits)
+  if (!md.core.ruler.getRules('').some(({ name }) => name === setCodeUnits.name)) {
+    md.core.ruler.push('code-unit', setCodeUnits)
+  }
 }
 
 // Moves each code span, the emphasis and link closing on it, and the punctuation

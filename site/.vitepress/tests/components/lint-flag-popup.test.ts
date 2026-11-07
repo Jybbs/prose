@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 
-import { LintFlagPopup } from '../../theme/components/rules/LintFlagPopup'
+import { LintFlagPopup, type LintFlagPopupHandle } from '../../theme/components/rules/LintFlagPopup'
 
 vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 
@@ -32,7 +32,7 @@ function press(popup: Popup, data: Record<string, string>, text: string): void {
 }
 
 function mountPopup() {
-  return mount(LintFlagPopup, { global: { stubs } })
+  return mount(LintFlagPopup, { global: { stubs } }) as unknown as VueWrapper<LintFlagPopupHandle>
 }
 
 describe('LintFlagPopup', () => {

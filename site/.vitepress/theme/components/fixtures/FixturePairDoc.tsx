@@ -2,9 +2,9 @@ import { useIntersectionObserver }                                              
 import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch, withKeys } from 'vue'
 import type { PropType }                                                                    from 'vue'
 
-import { CopyButton }    from '../../../kit'
-import { LintFlagPopup } from '../rules/LintFlagPopup'
-import SandboxSeedButton from '../sandbox/SandboxSeedButton.vue'
+import { CopyButton }        from '../../../kit'
+import { LintFlagPopup, type LintFlagPopupHandle } from '../rules/LintFlagPopup'
+import { SandboxSeedButton } from '../sandbox/SandboxSeedButton'
 
 import { useMagicMove }      from '../../../lib/composables/use-magic-move'
 import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
@@ -23,7 +23,7 @@ export const FixturePairDoc = defineComponent({
   setup(props) {
     const reducedMotion = useReducedMotion()
     const root = shallowRef<HTMLElement | null>(null)
-    const popup = shallowRef<InstanceType<typeof LintFlagPopup> | null>(null)
+    const popup = shallowRef<LintFlagPopupHandle | null>(null)
 
     const animate   = ref(false)
     const animating = ref(false)

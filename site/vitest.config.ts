@@ -1,10 +1,8 @@
-import vue                              from '@vitejs/plugin-vue'
 import vueJsx                           from '@vitejs/plugin-vue-jsx'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 import * as paths from './.vitepress/lib/shared/paths'
-import { sfcFs }  from './.vitepress/lib/shared/sfc-fs'
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
@@ -23,7 +21,7 @@ export default defineConfig({
 
     projects: [
       {
-        plugins : [vue({ script: { fs: sfcFs } }), vueJsx({ tsTransform: 'built-in' })],
+        plugins : [vueJsx({ tsTransform: 'built-in' })],
         test    : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
@@ -70,7 +68,7 @@ export default defineConfig({
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
       reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
-      include          : ['.vitepress/kit/**', '.vitepress/lib/**', 'prototypes/**/*.{ts,tsx,vue}'],
+      include          : ['.vitepress/kit/**', '.vitepress/lib/**', 'prototypes/**/*.{ts,tsx}'],
 
       exclude: [
         '.vitepress/kit/**/*.catalog.tsx',

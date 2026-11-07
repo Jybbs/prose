@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import SandboxRuler        from '../../theme/components/sandbox/SandboxRuler.vue'
+import { SandboxRuler }    from '../../theme/components/sandbox/SandboxRuler'
 import type { LengthKnob } from '../../lib/sandbox/config-schema.data'
 
 const KNOBS: readonly LengthKnob[] = [
@@ -13,7 +13,7 @@ const mountRuler = (values: Record<string, number> = {}) =>
   mount(SandboxRuler, {
     props: {
       lengths : KNOBS,
-      valueOf : (key: string) => values[key] ?? 88
+      lengthOf : (key: string) => values[key] ?? 88
     }
   })
 
@@ -97,7 +97,7 @@ describe('SandboxRuler', () => {
       observe(target: Element) { this.report([{ contentRect: { height: 10, width: 150 }, target } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver) }
       unobserve() {}
     })
-    const wrapper = mount(SandboxRuler, { attachTo: document.body, props: { lengths: KNOBS, valueOf: () => 88 } })
+    const wrapper = mount(SandboxRuler, { attachTo: document.body, props: { lengths: KNOBS, lengthOf: () => 88 } })
     wrapper.get('.sandbox-ruler').element.getBoundingClientRect = () => new DOMRect(0, 0, 150, 10)
     const move = (clientX: number) => document.dispatchEvent(new PointerEvent('pointermove', { button: 0, buttons: 1, clientX, clientY: 5, pointerId: 1 }))
 

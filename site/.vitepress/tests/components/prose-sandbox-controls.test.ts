@@ -2,8 +2,8 @@
 import { mount } from '@vue/test-utils'
 import { ref }   from 'vue'
 
-import ProseSandboxControls from '../../theme/components/sandbox/ProseSandboxControls.vue'
-import { fakeSandbox }      from '../dom'
+import { ProseSandboxControls } from '../../theme/components/sandbox/ProseSandboxControls'
+import { fakeSandbox }          from '../dom'
 
 vi.mock('../../lib/rules/rules.data', async () => (await import('../rules-data-stub')).rulesDataStub())
 

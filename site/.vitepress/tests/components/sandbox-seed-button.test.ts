@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import { decodeShare }   from '../../lib/sandbox/share-link'
-import SandboxSeedButton from '../../theme/components/sandbox/SandboxSeedButton.vue'
+import { decodeShare }       from '../../lib/sandbox/share-link'
+import { SandboxSeedButton } from '../../theme/components/sandbox/SandboxSeedButton'
 
 const seed = { configToml: 'code-line-length = 40\n', source: 'x = 1\n' }
 

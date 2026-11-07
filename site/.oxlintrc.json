@@ -40,7 +40,7 @@
 
   "overrides": [
     {
-      "files" : [".vitepress/theme/*.vue"],
+      "files" : [".vitepress/theme/*.ts"],
       "rules" : {
         "no-restricted-imports" : ["error", {
           "patterns" : [

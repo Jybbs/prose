@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { promiseTimeout }       from '@vueuse/core'
 import { nextTick, ref }        from 'vue'
 
-import ProseSandboxSurface                          from '../../theme/components/sandbox/ProseSandboxSurface.vue'
+import { ProseSandboxSurface }                      from '../../theme/components/sandbox/ProseSandboxSurface'
 import type { ProseSandbox }                        from '../../lib/composables/use-prose-sandbox'
 import { MORPH_LINE_CHURN_CAP }                     from '../../lib/markdown/magic-move-delta'
 import { magicMoveWatchdogMs }                      from '../../lib/markdown/magic-move-options'

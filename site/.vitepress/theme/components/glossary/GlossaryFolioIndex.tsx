@@ -81,7 +81,7 @@ export const GlossaryFolioIndex = defineComponent({
                         >
                           <span aria-hidden="true" class="glossary-folio-row-slot block size-6 justify-self-center" />
                           <code class="glossary-folio-row-slug min-w-0 rounded-none bg-transparent p-0 font-base text-sm wrap-anywhere text-text-2 transition-none group-hover:text-text-1 group-aria-current:font-600 group-aria-current:text-text-1">{entry.slug}</code>
-                          {entry.families.length && (
+                          {entry.families.length > 0 && (
                             <span
                               aria-hidden="true"
                               class={['glossary-folio-row-deck relative block h-20', { 'is-stacked': entry.families.length > 1 }]}

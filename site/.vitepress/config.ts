@@ -41,7 +41,6 @@ import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
 import { sectionRoute }                               from './lib/shared/routes'
-import { sfcFs }                                      from './lib/shared/sfc-fs'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
 import * as version                                   from './lib/shared/version'
 
@@ -144,7 +143,6 @@ export default defineConfig({
     }
     await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
   },
-  vue: { script: { fs: sfcFs } },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
     plugins: [{

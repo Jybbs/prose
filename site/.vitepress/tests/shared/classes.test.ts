@@ -1,8 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { babelParse, parse as parseSfc, walk } from '@vue/compiler-sfc'
-import { parse }                               from 'postcss'
+import { babelParse, walk } from '@vue/compiler-sfc'
+import { parse }            from 'postcss'
 
 import { siteSheets, VITEPRESS_THEME } from '../support'
 import * as tailwind                   from '../tailwind'
@@ -46,9 +46,8 @@ const VOCAB      = vocabulary.siteVocabulary(
   SHEETS.map(({ root }) => root)
 )
 const DESIGN     = await tailwind.designSystem()
-const SFCS       = tailwind.sourceFiles().filter(file => file.endsWith('.vue'))
-const TEMPLATES  = [...SFCS, ...tailwind.sourceFiles().filter(file => file.endsWith('.tsx'))]
-const COMPONENTS = new Map(TEMPLATES.map(file => [path.basename(file, path.extname(file)), file]))
+const TEMPLATES  = tailwind.sourceFiles().filter(file => file.endsWith('.tsx'))
+const COMPONENTS = new Map(TEMPLATES.map(file => [path.basename(file, '.tsx'), file]))
 // Names each breakpoint narrower than the widest the theme declares, each of
 // which a template reads through its `max-*` variant.
 const NARROW     = (() => {
@@ -68,7 +67,7 @@ const DECLARED = new Set(
 // so every class a selector names passes as a hook, and so does a file
 // extension or a domain label such as `json` or `org`.
 const HOOKS = new Set(
-  fs.globSync(['.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx,vue}', 'prototypes/**/*.{ts,tsx,vue}'], { cwd: vocabulary.SITE })
+  fs.globSync(['.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}', 'prototypes/**/*.{ts,tsx}'], { cwd: vocabulary.SITE })
     .flatMap(file => [...vocabulary.read(file).matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
     .flatMap(([, , text]) => [...text.matchAll(CLASS_NAME)].map(([, name]) => name))
 )
@@ -82,37 +81,9 @@ function classesOf(root: Root): string[] {
   return names
 }
 
-// Lists each element a template writes a class on, with the classes its static
-// `class` attribute and its `:class` binding can give it.
-function elementsOf(file: string): Element[] {
-  if (file.endsWith('.tsx')) return jsxElementsOf(file)
-  const ast = parseSfc(vocabulary.read(file)).descriptor.template?.ast
-  const out = [] as Element[]
-  const visit = (node: { children?: unknown[], loc: { start: { line: number } }, props?: unknown[], tag?: string }, within = false) => {
-    const linked  = within || node.tag === 'a'
-    const classes = [] as Written[]
-    let slot = 1
-    for (const prop of (node.props ?? []) as Record<string, any>[]) {
-      if (prop.name === 'class' && prop.value) {
-        classes.push(...words(prop.value.content).map(name => ({ alt: 0, name, slot: 0 })))
-      } else if (prop.name === 'bind' && prop.arg?.content === 'class' && prop.exp) {
-        const [statement] = babelParse(`(${prop.exp.content})`).program.body
-        if (statement.type === 'ExpressionStatement') slot = bound(statement.expression, classes, slot)
-      }
-    }
-    if (classes.length > 0) {
-      const inherited = rootClassesOf(node.tag ?? '').map(name => ({ alt: 0, inherited: true, name, slot: 0 }))
-      out.push({ classes: [...classes, ...inherited], line: node.loc.start.line, linked, tag: node.tag })
-    }
-    for (const child of node.children ?? []) visit(child as typeof node, linked)
-  }
-  if (ast) visit(ast as never)
-  return out
-}
-
-// Lists each JSX element a kit file writes a class on, with the classes its
+// Lists each JSX element a template writes a class on, with the classes its
 // `class` attribute can give it.
-function jsxElementsOf(file: string): Element[] {
+function elementsOf(file: string): Element[] {
   const out = [] as Element[]
   walk(babelParse(vocabulary.read(file), { plugins: ['jsx', 'typescript'], sourceType: 'module' }) as never, {
     enter(raw: unknown) {
@@ -131,22 +102,11 @@ function jsxElementsOf(file: string): Element[] {
   return out
 }
 
-// Returns the classes the static `class` attribute of a component's root
-// element writes, where the component renders exactly one root element.
+// Returns the classes the static `class` attribute of a component's outermost
+// JSX element writes, where the file writes exactly one such element.
 function rootClassesOf(tag: string): string[] {
   const file = COMPONENTS.get(tag)
-  if (file?.endsWith('.tsx')) return jsxRootClassesOf(file)
-  const roots = (file ? parseSfc(vocabulary.read(file)).descriptor.template?.ast?.children ?? [] : [])
-    .filter(node => 'tag' in node) as Record<string, any>[]
-  const attr  = roots.length === 1
-    ? (roots[0].props as Record<string, any>[]).find(prop => prop.name === 'class' && prop.value)
-    : undefined
-  return attr ? words(attr.value.content) : []
-}
-
-// Returns the classes the static `class` attribute of a kit file's outermost
-// JSX element writes, where the file writes exactly one such element.
-function jsxRootClassesOf(file: string): string[] {
+  if (!file) return []
   const roots = [] as Record<string, any>[]
   walk(babelParse(vocabulary.read(file), { plugins: ['jsx', 'typescript'], sourceType: 'module' }) as never, {
     enter(raw: unknown) {
@@ -163,7 +123,7 @@ function jsxRootClassesOf(file: string): string[] {
   return attr ? words(attr.value.value) : []
 }
 
-// Adds the classes a `:class` expression can write, each string in a slot of its
+// Adds the classes a `class` expression can write, each string in a slot of its
 // own unless a ternary holds it, in which case each branch is one alternative of
 // a shared slot, the static `class` attribute holding slot 0. A class an
 // expression computes at run time is left unread.

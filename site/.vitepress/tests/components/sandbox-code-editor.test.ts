@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import SandboxCodeEditor from '../../theme/components/sandbox/SandboxCodeEditor.vue'
+import { SandboxCodeEditor } from '../../theme/components/sandbox/SandboxCodeEditor'
 
 vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 

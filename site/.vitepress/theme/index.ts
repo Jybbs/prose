@@ -15,8 +15,7 @@ import '@fontsource-variable/lora/wght-italic.css'
 
 import { Tool }               from '../kit'
 import { provideCurrentRule } from '../lib/composables/route'
-import { stripSuffix }        from '../lib/shared/strip-suffix'
-import Layout                 from './Layout.vue'
+import { Layout }             from './components/layout/Layout'
 
 import './styles/tailwind.css'
 import 'virtual:prose-palette.css'
@@ -38,7 +37,7 @@ import './styles/vitepress-chrome.css'
 import.meta.glob(['./components/**/*.css', '../kit/styles/*.css'], { eager: true })
 
 const components = import.meta.glob<Record<string, Component>>(
-  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.{tsx,vue}',
+  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.tsx',
   { eager: true }
 )
 
@@ -49,9 +48,8 @@ export default {
     provideCurrentRule()
   },
   enhanceApp({ app }) {
-    for (const [file, module] of Object.entries(components)) {
-      const name = stripSuffix(stripSuffix(file.split('/').pop()!, '.tsx'), '.vue')
-      app.component(name, module.default ?? module[name]!)
+    for (const module of Object.values(components)) {
+      for (const [name, component] of Object.entries(module)) app.component(name, component)
     }
     app.component('KitCatalog', defineAsyncComponent(() => import('../kit/KitCatalog')))
     app.component('Tool', Tool)

@@ -76,6 +76,13 @@ describe('codeOperatorPlugin', () => {
     expect(code('`x`, then')).toContain('<span class="code-unit"><code>x</code>,</span> then')
   })
 
+  it('holds a code span in one span when separate copies of the module apply the plugin', async () => {
+    vi.resetModules()
+    const copy = await import('../../lib/markdown/code-operators')
+    expect(render(md => md.use(codeOperatorPlugin).use(copy.codeOperatorPlugin), '`x`, then'))
+      .toContain('<p><span class="code-unit"><code>x</code>,</span> then')
+  })
+
   it('holds an emphasized code span and the punctuation after it in one span', () => {
     expect(code('(*`x`*), then')).toContain('(<span class="code-unit"><em><code>x</code></em>),</span> then')
   })

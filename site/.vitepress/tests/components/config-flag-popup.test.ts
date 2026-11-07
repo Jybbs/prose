@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import { Popup }       from '../../kit'
-import ConfigFlagPopup from '../../theme/components/sandbox/ConfigFlagPopup.vue'
+import { Popup }           from '../../kit'
+import { ConfigFlagPopup } from '../../theme/components/sandbox/ConfigFlagPopup'
 
 describe('ConfigFlagPopup', () => {
   it('leaves focus where it is while the card shows', () => {

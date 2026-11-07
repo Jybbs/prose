@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ProseSandbox from '../../theme/components/sandbox/ProseSandbox.vue'
+import { ProseSandbox } from '../../theme/components/sandbox/ProseSandbox'
 
 vi.mock('../../lib/composables/use-prose-sandbox', async () => {
   const [{ fakeSandbox }, { ref }] = await Promise.all([import('../dom'), import('vue')])
