@@ -20,6 +20,8 @@ describe('TokenClasses', () => {
     expect(css).toContain('.sd-e1e4e8 { --shiki-dark:#e1e4e8; }\n')
     expect(css).toContain('.sl-62687b { --shiki-light:#62687b; }\n')
     expect(css).toContain('.sl-underline-line-through { --shiki-light-text-decoration:underline line-through; }\n')
+    expect(css).toContain('.sd-italic { --shiki-dark-font-style:italic; }\n')
+    expect(css).toContain('.sd-line-through { --shiki-dark-text-decoration:line-through; }\n')
   })
 
   it('moves every declaration a dual-theme highlight writes onto a class the stylesheet holds', async () => {

@@ -66,6 +66,16 @@ describe('RuleLinkPopup', () => {
     expect(cardOf(wrapper).exists()).toBe(true)
   })
 
+  it('opens no card for a pointer that leaves its link inside the show delay', async () => {
+    document.body.innerHTML = '<a class="rule-link" data-rule="line-overflow"></a>'
+    const link    = document.querySelector('a')!
+    const wrapper = mount(RuleLinkPopup, { attachTo: document.body, global: { stubs } })
+    pointer(link, 'mouseover')
+    pointer(link, 'mouseout')
+    await after(DELAY.show)
+    expect(cardOf(wrapper).exists()).toBe(false)
+  })
+
   it('ignores a pointer moving over the rest of the page', async () => {
     const { wrapper } = await opened()
     pointer(document.body, 'mouseover')

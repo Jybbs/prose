@@ -16,13 +16,14 @@ export function readPackageVersions(
 ): Record<string, string> {
   const manifestPath = path.join(siteDir, 'package.json')
   const parsed       = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
-    devDependencies?: Record<string, unknown>
+    devDependencies? : Record<string, unknown>
+    overrides?       : Record<string, unknown>
   }
   return Object.fromEntries(names.map(name => [
     name,
     requireString(
-      parsed.devDependencies?.[name],
-      `Could not find devDependencies['${name}'] in ${manifestPath}`
+      parsed.devDependencies?.[name] ?? parsed.overrides?.[name],
+      `Could not find devDependencies['${name}'] or overrides['${name}'] in ${manifestPath}`
     )
   ]))
 }

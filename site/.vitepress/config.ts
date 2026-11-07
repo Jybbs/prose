@@ -42,6 +42,7 @@ import { emblemsOf }                                  from './lib/shared/emblems
 import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
+import { readRenderGraph }                            from './lib/shared/render-graph'
 import { sectionRoute }                               from './lib/shared/routes'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
 import * as version                                   from './lib/shared/version'
@@ -72,8 +73,8 @@ const codeTransformers     = [
 const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
   data              : Object.fromEntries(lintFindings),
-  theme             : constants.SHIKI_THEMES,
-  transformers      : codeTransformers
+  graph             : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
+  theme             : constants.SHIKI_THEMES
 })
 const virtualSheets        = new Map([
   ['virtual:prose-palette.css', paletteCss],

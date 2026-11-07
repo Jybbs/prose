@@ -4,9 +4,10 @@ import path from 'node:path'
 import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url'
 import * as cache                       from '../../shared/cache'
 import { cacheDirFrom, crateDirFrom }   from '../../shared/paths'
+import { readRenderGraph }              from '../../shared/render-graph'
 import { readCargoVersion }             from '../../shared/version'
 import { loadBrandAssets }              from './assets'
-import { cardKeyer, readRenderGraph }   from './card-key'
+import { cardKeyer }                    from './card-key'
 import { enumeratePages }               from '../pages'
 import * as pool                        from './pool'
 
@@ -19,7 +20,7 @@ export async function buildOgCards(
   const brand    = loadBrandAssets(srcDir)
   const version  = readCargoVersion(crateDirFrom(repo))
   const cacheDir = cacheDirFrom(repo, 'og')
-  const keyOf    = cardKeyer(brand, await readRenderGraph(), version)
+  const keyOf    = cardKeyer(brand, await readRenderGraph(import.meta.dirname), version)
   const taskFor  = (card: pool.Card, outputPath: string): pool.RenderTask =>
     ({ card, key: keyOf(card), outputPath })
 

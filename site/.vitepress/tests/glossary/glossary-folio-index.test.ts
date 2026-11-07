@@ -48,6 +48,11 @@ describe('GlossaryFolioIndex', () => {
     expect(tiles.map(tile => tile.attributes('style'))).toStrictEqual(['--deck-at: 0;', '--deck-at: 1;'])
   })
 
+  it('reads the filter field into the query as the reader types', async () => {
+    await index().get('input[type="search"]').setValue('sort')
+    expect(useGlossaryFolio().query.value).toBe('sort')
+  })
+
   it('marks the selected row and selects a clicked one', async () => {
     const w = index()
     expect(w.findAll('.glossary-folio-row[aria-current]').map(row => row.text())).toStrictEqual(['column'])

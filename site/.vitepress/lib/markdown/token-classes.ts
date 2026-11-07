@@ -41,8 +41,8 @@ export class TokenClasses {
     })).then(entries => new TokenClasses(new Map(entries.flat())))
   }
 
-  // Writes one rule for each class, setting the custom property the theme
-  // stylesheet reads in each color scheme.
+  // Writes one rule for each class, setting the one custom property its
+  // declaration names.
   css(): string {
     return [...this.classes].map(([declaration, name]) => `.${name} { ${declaration}; }\n`).join('')
   }

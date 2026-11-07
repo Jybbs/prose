@@ -23,6 +23,14 @@ describe('ProseSandbox', () => {
     expect(wrapper.attributes('data-editing')).toBe('true')
   })
 
+  it('hides the copy, refresh, and link buttons while the surface reports an edit in progress', async () => {
+    const wrapper = mountSandbox()
+    await wrapper.findComponent({ name: 'ProseSandboxSurface' }).vm.$emit('update:editing', true)
+    await wrapper.vm.$nextTick()
+    const styles = wrapper.findAll('.sandbox-py > button').map(button => button.attributes('style'))
+    expect(styles).toStrictEqual(Array.from({ length: 3 }, () => 'display: none;'))
+  })
+
   it('arms the refresh button on the first click of a dirty refresh', async () => {
     const wrapper = mountSandbox()
     const refresh = wrapper.get('button[title="New example"]')

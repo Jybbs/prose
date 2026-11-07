@@ -61,6 +61,12 @@ describe('FixtureCard', () => {
     expect(w.get('.fixture-card').attributes('data-open')).toBe('true')
   })
 
+  it('opens the body once from a press of the summary button', async () => {
+    const w = card()
+    await w.get('.fixture-card-summary').trigger('click')
+    expect(w.get('.fixture-card').attributes('data-open')).toBe('true')
+  })
+
   // `FixtureNoChange` reserves the toggle's footprint with an inert clone, so the
   // interactive tablist is what tells the two apart.
   it('shows the no-change chip in place of the toggle for a settled case', () => {

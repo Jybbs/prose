@@ -328,6 +328,17 @@ describe('ProseSandboxSurface', () => {
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
   })
 
+  surfaceTest('hides a running morph the moment the parent opens the editor', async ({ mounted }) => {
+    const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
+
+    sandbox.formatted.value = 'x = 2'
+    await flushPromises()
+    expect(isHidden(wrapper.get('.mm'))).toBe(false)
+
+    await wrapper.setProps({ editing: true })
+    expect(isHidden(wrapper.get('.mm'))).toBe(true)
+  })
+
   surfaceTest('clears a running morph when the parent opens the editor', async ({ mounted }) => {
     const { sandbox, wrapper } = await mounted({ formatted: 'x = 1' })
 
