@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 
-import LintFlagPopup  from '../../theme/components/rules/LintFlagPopup.vue'
+import { LintFlagPopup } from '../../theme/components/rules/LintFlagPopup'
 
 vi.mock('../../lib/shared/highlight', () => import('../highlight-stub'))
 

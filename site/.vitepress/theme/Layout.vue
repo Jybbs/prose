@@ -7,8 +7,8 @@ import { NibSprite }          from '../kit'
 import { BuildMetadata }      from './components/layout/BuildMetadata'
 import { GlossaryFolioIndex } from './components/glossary/GlossaryFolioIndex'
 import { NotFound }           from './components/layout/NotFound'
-import RuleChrome             from './components/rules/RuleChrome.vue'
-import RuleLinkPopup          from './components/rules/RuleLinkPopup.vue'
+import { RuleChrome }         from './components/rules/RuleChrome'
+import { RuleLinkPopup }      from './components/rules/RuleLinkPopup'
 import { StarBadge }          from './components/layout/StarBadge'
 
 useNibStroke()

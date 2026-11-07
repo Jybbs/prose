@@ -115,7 +115,7 @@ describe('the badge ink', () => {
     parseCss(vocabulary.read('.vitepress/theme/components/rules/styles/pipeline-order.css')).walkRules(rule => {
       if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
     })
-    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.vue')
+    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.tsx')
     for (const [name] of template.matchAll(/[\w/-]*hover(?:\/[\w-]+)?:[\w/-]+/g)) {
       if (/background/.test(design.candidatesToCss([name])[0] ?? '')) painted.push(name)
     }

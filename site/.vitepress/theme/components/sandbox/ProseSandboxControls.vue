@@ -3,7 +3,7 @@ import { onKeyStroke }   from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { NibBadge } from '../../../kit'
-import RuleCard     from '../rules/RuleCard.vue'
+import { RuleCard } from '../rules/RuleCard'
 import SandboxPlate from './SandboxPlate.vue'
 import SandboxRuler from './SandboxRuler.vue'
 

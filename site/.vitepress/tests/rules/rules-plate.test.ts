@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RulesPlate            from '../../theme/components/rules/RulesPlate.vue'
+import { RulesPlate }        from '../../theme/components/rules/RulesPlate'
 import { FAMILY_ORDER }      from '../../lib/shared/registries'
 import { rendersAccessibly } from '../axe'
 import { domTest }           from '../dom'

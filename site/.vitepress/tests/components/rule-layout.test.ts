@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import CompositionCards from '../../theme/components/rules/CompositionCards.vue'
-import RuleLayout       from '../../theme/components/rules/RuleLayout.vue'
+import { CompositionCards } from '../../theme/components/rules/CompositionCards'
+import { RuleLayout }       from '../../theme/components/rules/RuleLayout'
 
 vi.mock('../../lib/rules/composition.data', () => ({
   data: {

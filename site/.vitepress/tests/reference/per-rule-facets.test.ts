@@ -3,7 +3,7 @@ import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
 import { InlineProse }       from '../../theme/components/base/InlineProse'
-import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
+import { InlineRuleLink }    from '../../theme/components/rules/InlineRuleLink'
 import { PerRuleFacets }     from '../../theme/components/reference/PerRuleFacets'
 import { rendersAccessibly } from '../axe'
 

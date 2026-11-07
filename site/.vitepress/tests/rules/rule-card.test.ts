@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RuleCard              from '../../theme/components/rules/RuleCard.vue'
+import { RuleCard }          from '../../theme/components/rules/RuleCard'
 import { rendersAccessibly } from '../axe'
 import { rulesDataStub }     from '../rules-data-stub'
 

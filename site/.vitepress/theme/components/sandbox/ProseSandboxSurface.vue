@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { promiseTimeout, useTimeoutFn } from '@vueuse/core'
+import { promiseTimeout, useTimeoutFn }                                           from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
-import { paint }          from '../../../kit'
-import LintFlagPopup     from '../rules/LintFlagPopup.vue'
+import { paint }         from '../../../kit'
+import { LintFlagPopup } from '../rules/LintFlagPopup'
 import SandboxCodeEditor from './SandboxCodeEditor.vue'
 
-import { useMagicMove }          from '../../../lib/composables/use-magic-move'
-import type { ProseSandbox }     from '../../../lib/composables/use-prose-sandbox'
-import { useReducedMotion }      from '../../../lib/composables/use-reduced-motion'
-import { useSquiggleDraw }       from '../../../lib/composables/use-squiggle-draw'
-import { pressableDecorations }  from '../../../lib/markdown/lint-decorations'
-import * as magicMoveDelta       from '../../../lib/markdown/magic-move-delta'
-import { REPO_URL }              from '../../../lib/shared/constants'
-import { highlight }             from '../../../lib/shared/highlight'
-import { latestRun }             from '../../../lib/shared/latest-run'
-import { externalAttrs }         from '../../../lib/shared/links'
+import { useMagicMove }         from '../../../lib/composables/use-magic-move'
+import type { ProseSandbox }    from '../../../lib/composables/use-prose-sandbox'
+import { useReducedMotion }     from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }      from '../../../lib/composables/use-squiggle-draw'
+import { pressableDecorations } from '../../../lib/markdown/lint-decorations'
+import * as magicMoveDelta      from '../../../lib/markdown/magic-move-delta'
+import { REPO_URL }             from '../../../lib/shared/constants'
+import { highlight }            from '../../../lib/shared/highlight'
+import { latestRun }            from '../../../lib/shared/latest-run'
+import { externalAttrs }        from '../../../lib/shared/links'
 
 const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 

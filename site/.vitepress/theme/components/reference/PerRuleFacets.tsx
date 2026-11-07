@@ -2,7 +2,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 
 import { Disclosure, NibBadge, PermalinkAnchor } from '../../../kit'
 import type { DisclosureScope }                  from '../../../kit'
-import InlineRuleLink                            from '../rules/InlineRuleLink.vue'
+import { InlineRuleLink }                        from '../rules/InlineRuleLink'
 
 import { useHashOpen }         from '../../../lib/composables/use-hash-open'
 import { data as facetGroups } from '../../../lib/reference/facets.data'

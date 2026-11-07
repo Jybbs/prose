@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import CompositionCards  from '../../theme/components/rules/CompositionCards.vue'
+import { CompositionCards } from '../../theme/components/rules/CompositionCards'
 
 vi.mock('../../lib/rules/composition.data', () => ({
   data: {

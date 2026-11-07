@@ -2,8 +2,8 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick }               from 'vue'
 
-import { Popup }    from '../../kit'
-import RuleLinkPopup from '../../theme/components/rules/RuleLinkPopup.vue'
+import { Popup }         from '../../kit'
+import { RuleLinkPopup } from '../../theme/components/rules/RuleLinkPopup'
 
 const DELAY = { hide: 120, show: 80 }
 

@@ -3,7 +3,7 @@ import { mount }              from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
-import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
+import { InlineRuleLink }    from '../../theme/components/rules/InlineRuleLink'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))

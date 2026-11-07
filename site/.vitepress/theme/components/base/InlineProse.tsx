@@ -7,7 +7,7 @@ import type { InlineNode }                  from '../../../lib/markdown/inline-n
 import { BODY_LINK_CLASS }                  from '../../../lib/shared/constants'
 import { primitiveRoute }                   from '../../../lib/shared/routes'
 import { GlossaryTerm }                     from '../glossary/GlossaryTerm'
-import InlineRuleLink                       from '../rules/InlineRuleLink.vue'
+import { InlineRuleLink }                   from '../rules/InlineRuleLink'
 
 export const InlineProse = defineComponent({
   name  : 'InlineProse',

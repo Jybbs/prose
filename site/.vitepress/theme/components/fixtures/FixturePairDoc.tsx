@@ -3,7 +3,7 @@ import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch,
 import type { PropType }                                                                    from 'vue'
 
 import { CopyButton }    from '../../../kit'
-import LintFlagPopup     from '../rules/LintFlagPopup.vue'
+import { LintFlagPopup } from '../rules/LintFlagPopup'
 import SandboxSeedButton from '../sandbox/SandboxSeedButton.vue'
 
 import { useMagicMove }      from '../../../lib/composables/use-magic-move'

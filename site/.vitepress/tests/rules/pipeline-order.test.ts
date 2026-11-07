@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import PipelineOrder       from '../../theme/components/rules/PipelineOrder.vue'
+import { PipelineOrder } from '../../theme/components/rules/PipelineOrder'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([

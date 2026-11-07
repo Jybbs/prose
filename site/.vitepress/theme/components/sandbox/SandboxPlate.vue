@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import RuleCard from '../rules/RuleCard.vue'
+import { RuleCard } from '../rules/RuleCard'
 
 import type { Facet, RuleControl } from '../../../lib/composables/use-chip-panel'
 import type { ProseSandbox }       from '../../../lib/composables/use-prose-sandbox'
