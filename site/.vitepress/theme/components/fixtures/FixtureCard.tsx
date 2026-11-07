@@ -4,6 +4,7 @@ import { computed, defineComponent, ref } from 'vue'
 
 import { Disclosure, NibBadge } from '../../../kit'
 import type { DisclosureScope } from '../../../kit'
+import { FixtureConfig }        from './FixtureConfig'
 import { FixtureNoChange }      from './FixtureNoChange'
 import { FixturePairDoc }       from './FixturePairDoc'
 import { FixtureToggle }        from './FixtureToggle'
@@ -19,9 +20,8 @@ import { InlineProse }     from '../base/InlineProse'
 export const FixtureCard = defineComponent({
   name  : 'FixtureCard',
   props : {
-    case      : { required: true, type: String },
-    rule      : { required: true, type: String },
-    titleHtml : { required: true, type: String }
+    case : { required: true, type: String },
+    rule : { required: true, type: String }
   },
   setup(props) {
     const entry     = useFixtureEntry(props)
@@ -68,7 +68,7 @@ export const FixtureCard = defineComponent({
                   type="button"
                 >
                   <span aria-hidden="true" class="fixture-card-num" />
-                  <span class="fixture-card-title in-code:normal-case" innerHTML={props.titleHtml} />
+                  <span class="fixture-card-title in-code:normal-case" innerHTML={entry.value.titleHtml} />
                 </button>
                 <div
                   class="hidden items-center group-data-open/fixture:inline-flex group-data-[edits=false]/fixture:not-group-data-[lint=true]/fixture:inline-flex max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-2 max-mobile:group-data-open/fixture:-col-end-1 max-mobile:group-data-open/fixture:min-h-0 max-mobile:group-data-open/fixture:justify-start max-mobile:group-data-open/fixture:justify-self-start max-mobile:group-data-open/fixture:p-0 max-mobile:group-data-open/fixture:pb-8"
@@ -94,11 +94,13 @@ export const FixtureCard = defineComponent({
                         <div aria-hidden="true" class="fixture-card-rule" />
                       </>
                     ) : null}
+                    {entry.value.configHtml ? <FixtureConfig html={entry.value.configHtml} /> : null}
                     {isOpen.value ? (
                       <FixturePairDoc
                         activeTab={activeTab.value}
                         inputHtml={entry.value.inputHtml}
                         outputHtml={entry.value.outputHtml}
+                        sandboxSeed={entry.value.sandboxSeed}
                       />
                     ) : null}
                   </div>

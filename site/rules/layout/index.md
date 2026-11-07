@@ -1,5 +1,5 @@
 ---
-description: "The rules that explode a bracketed construct across rows once it outgrows its line."
+description: "Covers the rules that explode a bracketed construct across rows once it outgrows its line."
 ---
 
 # Layout Rules

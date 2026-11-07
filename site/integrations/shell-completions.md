@@ -5,7 +5,7 @@ tagline: 'interactive shell'
 
 # Shell Completions
 
-`prose completions <shell>` prints a completion script for the named shell to stdout. The widget below names the install for each shell, where Bash, Elvish, Fish, and Zsh redirect the script into the file that shell reads completions from, whereas PowerShell adds a line to its profile that runs the command at each shell start.
+`prose completions <shell>` prints a completion script for the named shell to stdout. The widget below names the install for each shell, where <Tool slug="bash" />, <Tool slug="elvish" />, <Tool slug="fish" />, and <Tool slug="zsh" /> redirect the script into the file that shell reads completions from, whereas <Tool slug="powershell" /> adds a line to its profile that runs the command at each shell start.
 
 <ShellCompletions />
 

@@ -2,7 +2,11 @@
 description: "Runs `prose format` or `prose check` from an editor save, a pre-commit hook, and a CI job."
 ---
 
-Every integration on the pages below runs `prose format` or `prose check` at one point in the development loop. The editor runs it on save, the pre-commit hook runs it on commit, and the CI workflow runs it before merge. Each one reads the same [`[tool.prose]`](/reference/configuration) table, so a rule turned off there is off at every point, and each reports the same [exit codes](/reference/exit-codes).
+Every integration on the pages below runs `prose format` or `prose check` at one point in the development loop. The editor runs it on save, the <Tool slug="precommit" /> hook runs it on commit, and the CI workflow runs it before merge. Each one reads the same [`[tool.prose]`](/reference/configuration) table, so a rule turned off there is off at every point, and each reports the same [exit codes](/reference/exit-codes).
+
+## The Section at a Glance
+
+<SectionGlance section="integrations" />
 
 ## Pick Your Boundary
 

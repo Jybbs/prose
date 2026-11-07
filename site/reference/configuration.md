@@ -6,11 +6,11 @@ description: "Covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml
 
 *Prose* reads its configuration from a `prose.toml` file, a `.config/prose.toml`, or the `[tool.prose]` table of a `pyproject.toml`, as [**The Config Search Order**](#the-config-search-order) sets out. With no configuration, every rule runs at its default, so a project that writes no config gets the standard *Prose* layout. The whole key set is also available as a [JSON Schema](https://json-schema.org) through [`prose schema`](/reference/cli#prose-schema).
 
-A `prose.toml` keeps its keys at the document root, which is the form this page shows throughout, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under `.config/`. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix, so every key below has a `[tool.prose.<…>]` equivalent for a project that keeps one manifest.
+A `prose.toml` keeps its keys at the document root, and a `.config/prose.toml` reads the same way for a project that keeps its tool config under `.config/`. A `pyproject.toml` carries the same keys under a `[tool.prose]` prefix, so every key below has a `[tool.prose.<…>]` equivalent for a project that keeps one manifest, and each sample on this page gives both forms.
 
 To turn rules off or adjust them, write the `[rules]` table:
 
-```toml
+```toml config
 code-line-length = 88
 
 [rules]
@@ -69,7 +69,7 @@ The `[imports]` table names the project's first-party packages (*`[tool.prose.im
 
 <ConfigKeys section="imports" />
 
-```toml
+```toml config
 [imports]
 first-party = ["myapp", "acme"]
 ```
@@ -99,7 +99,7 @@ Two budgets govern the text [[wrap-docstrings]] wraps inside a docstring. `docst
 
 A single config can carve out exceptions by path through a `[[tool.prose.overrides]]` array of tables. Each entry names a `paths` glob list and the partial `[tool.prose]` body its matching files receive, merged facet by facet over the file's base config, so the override sets the facets it names and leaves the rest. A generated directory can widen a budget, or a test suite can drop a lint, without a nested config file at every boundary.
 
-```toml
+```toml config
 code-line-length = 88
 
 [[overrides]]

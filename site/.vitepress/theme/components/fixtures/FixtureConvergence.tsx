@@ -1,7 +1,8 @@
 import { computed, defineComponent } from 'vue'
 
+import { FixtureLead } from './FixtureLead'
+
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
-import { InlineProse }     from '../base/InlineProse'
 
 interface Step {
   badge ?: 'changed' | 'settled'
@@ -34,11 +35,7 @@ export const FixtureConvergence = defineComponent({
 
     return () => (
       <section class="my-1-25rem">
-        {entry.value.descriptionNodes ? (
-          <div class="fixture-lead mb-1rem">
-            <InlineProse nodes={entry.value.descriptionNodes} />
-          </div>
-        ) : null}
+        <FixtureLead nodes={entry.value.descriptionNodes} />
         <ol class="flex flex-col gap-10 border-l-1 border-l-divider">
           {steps.value.map(step => (
             <li
@@ -53,7 +50,7 @@ export const FixtureConvergence = defineComponent({
               {step.html
                 ? (
                   <div
-                    class="fixture-converge-state overflow-hidden panel bg-code-block in-pre:m-0"
+                    class="fixture-converge-state overflow-hidden panel bg-code-block *:m-0"
                     innerHTML={step.html}
                   />
                 )

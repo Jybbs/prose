@@ -3,5 +3,5 @@ previewable = false
 title       = "A Parenthesized Import Skips Alignment and Ends the Run"
 
 description = '''
-`from sys import (` spreads `path` and `platform` over parenthesized lines between four single-line `from` imports. **The parenthesized import is left as written and ends the run**, because padding its `import` keyword would move it away from the indented names below it. The neighbours regroup on either side, so `typing` pads to match `collections` above and `re` pads to match `os.path` below, and neither run reaches across the parenthesized lines.
+`from sys import (` spreads `path` and `platform` over parenthesized lines between four single-line `from` imports. **The parenthesized import is left as written and ends the run**, because padding its `import` keyword would move it away from the indented names below it. The neighbors regroup on either side, so `typing` pads to match `collections` above and `re` pads to match `os.path` below, and neither run reaches across the parenthesized lines.
 '''

@@ -3,7 +3,7 @@ consumedBy: [aligner, docstring, orderer, pipeline, source]
 consumes: [source]
 layer: base
 stability: internal
-summary: "The `Edit { range, content }` value every rule emits and the pipeline applies."
+summary: "Pairs a `range` with the `content` that replaces it, the value every rule emits and the pipeline applies."
 tagline: rewrite unit
 ---
 
@@ -11,7 +11,7 @@ tagline: rewrite unit
 
 <PrimitiveLayout primitive="edit">
 
-*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between batches, and the rewritten source feeds the next batch. *Prose* uses the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what Ruff and other Astral-stack consumers use.
+*Edit* is the unit every rule emits and the [[pipeline]] applies. A rule's `apply(&Source) -> Vec<Vec<Edit>>` method returns its replacement spans partitioned into fix groups, the pipeline maps each group to one diagnostic and splices their edits into a fresh buffer between batches, and the rewritten source feeds the next batch. *Prose* uses the upstream `ruff_diagnostics::Edit` type rather than defining its own, so the type matches what <Tool slug="ruff" /> and other Astral-stack consumers use.
 
 
 ## Public Surface

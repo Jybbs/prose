@@ -9,6 +9,7 @@ import { InlineProse }    from './InlineProse'
 export const ConfigRowTable = defineComponent({
   name  : 'ConfigRowTable',
   props : {
+    head : { default: 'Key', type: String },
     rows : { required: true, type: Array as PropType<readonly ConfigRow[]> }
   },
   setup(props) {
@@ -18,7 +19,7 @@ export const ConfigRowTable = defineComponent({
           default: () => [
             <thead>
                 <tr>
-                  <th>Key</th>
+                  <th>{props.head}</th>
                   <th>Type</th>
                   <th>Default</th>
                   <th>Meaning</th>

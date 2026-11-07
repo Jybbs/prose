@@ -9,29 +9,11 @@ tagline: 'CI runner · code scanning'
 
 ## Job Skeleton
 
-Every job below plugs its `prose check` step into the same skeleton, which checks out the repository, installs `uv`, and installs the wheel:
+Every job below plugs its `prose check` step into the same skeleton, which checks out the repository, installs `uv`, and installs the wheel. The command above the workflow chooses the output format `prose check` writes, and `+ cache` and `+ ruff` add the steps the sections below describe:
 
-```yaml
-name: prose
+<ActionsJob />
 
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-      - run: uv tool install prose-formatter
-      - run: prose check .
-```
-
-`astral-sh/setup-uv` keeps the `uv` download cache between runs. As written, the skeleton is the minimal job. Any non-zero exit fails a step unless `continue-on-error` is set, so a single `prose check` step is a complete gate, and the [**Exit Codes**](/reference/exit-codes) reference lists what each code means.
+`astral-sh/setup-uv` keeps the `uv` download cache between runs. With the default format and no step added, the workflow is the minimal job. Any non-zero exit fails a step unless `continue-on-error` is set, so a single `prose check` step is a complete gate, and the [**Exit Codes**](/reference/exit-codes) reference lists what each code means.
 
 ## Workflow Command Annotations
 
@@ -73,7 +55,7 @@ The key changes whenever a config file changes, so a configuration edit starts f
 
 ## Pairing With Ruff in CI
 
-A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
+A project that already runs <Tool slug="ruff" /> checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
 
 ```yaml
 - run: uv tool install ruff

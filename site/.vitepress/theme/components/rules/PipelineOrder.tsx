@@ -1,6 +1,7 @@
 import { onKeyStroke }                           from '@vueuse/core'
 import { computed, defineComponent, shallowRef } from 'vue'
 
+import { orderRelation }    from '../../../lib/rules/order-line'
 import { passCensus }       from '../../../lib/rules/pipeline-census'
 import { data as pipeline } from '../../../lib/rules/pipeline.data'
 import { data as rules }    from '../../../lib/rules/rules.data'
@@ -19,6 +20,14 @@ export const PipelineOrder = defineComponent({
     // it as at rest and grays every later one until the Escape key clears it.
     const here   = shallowRef<number | null>(null)
     const census = computed(() => passCensus(families, here.value))
+
+    // Names how each rule stands to the pointed one, which it runs after, which
+    // run after it, or the pointed rule itself.
+    const order = computed(() => {
+      if (here.value === null) return []
+      const chosen = pipeline.rules[here.value]
+      return pipeline.rules.map(rule => orderRelation(chosen, rule))
+    })
 
     const placed = (at: number) => ({ 'is-here': at === here.value, 'is-later': here.value !== null && at > here.value })
 
@@ -101,6 +110,9 @@ export const PipelineOrder = defineComponent({
                 onPointerenter={() => { here.value = at }}
                 title={rule.title}
               >
+                <span aria-hidden="true" class="pipeline-order-gutter w-10 shrink-0 text-center font-mono text-sm" data-order={order.value[at]}>
+                  {order.value[at] === 'earlier' ? '↑' : order.value[at] === 'later' ? '↓' : null}
+                </span>
                 <span class="folio">№ {formatFolio(rule.position)}</span>
                 <MiddleEllipsis
                   class="pipeline-order-name min-w-0 font-display text-0-92rem font-500 italic"

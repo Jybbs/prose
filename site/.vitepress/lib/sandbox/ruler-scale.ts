@@ -1,5 +1,7 @@
 import { clamp } from '@vueuse/core'
 
+import { firstFit } from '../shared/first-fit'
+
 export const LENGTH_MAX = 180
 export const LENGTH_MIN = 30
 
@@ -31,10 +33,7 @@ export function packTiers(
   const placed : RulerStop[] = []
   const tiers  = new Map<string, number>()
   for (const stop of [...stops].sort((a, b) => a.pct - b.pct)) {
-    let tier = 0
-    while (tier < placed.length && collides(placed[tier], stop, track, width)) tier += 1
-    placed[tier] = stop
-    tiers.set(stop.key, tier)
+    tiers.set(stop.key, firstFit(placed, stop, last => !collides(last, stop, track, width)))
   }
   return tiers
 }
@@ -59,9 +58,7 @@ export function packLanes(
   const ends  = [] as number[]
   const lanes = new Map<string, Tether>()
   for (const [key, span] of [...spans].sort(([, a], [, b]) => a.from - b.from)) {
-    const free = ends.findIndex(end => (span.from - end) * track / 100 > slop)
-    const lane = free < 0 ? ends.length : free
-    ends[lane] = span.to
+    const lane = firstFit(ends, span.to, end => (span.from - end) * track / 100 > slop)
     lanes.set(key, { ...span, lane })
   }
   return lanes

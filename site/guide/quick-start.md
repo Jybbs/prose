@@ -4,7 +4,7 @@ description: "Walks each command end to end against a sample project."
 
 # Quick Start
 
-`prose format` rewrites files in place, `prose check` reports what would change without writing anything, and `prose completions` prints a shell-completion script. `format` and `check` use the same exit codes, so a CI step and a local pre-commit hook read the same outcomes.
+`prose format` rewrites files in place, `prose check` reports what would change without writing anything, and `prose completions` prints a shell-completion script. `format` and `check` use the same exit codes, so a CI step and a local <Tool slug="precommit" /> hook read the same outcomes.
 
 ## Run on a Project
 
@@ -49,7 +49,7 @@ The [**Rules**](/rules/) page lists every rule, with one page per rule showing i
 
 ## Parallelism
 
-A run over a directory formats files in parallel through [**`rayon`**](https://docs.rs/rayon/), its worker threads sharing one rule pipeline per configuration the files resolve to. A run prints each file's diagnostics in the order the walk yields the files, whatever the thread count, and `RAYON_NUM_THREADS=1` runs one file at a time, the setting the [[walker]] page gives for debugging a rule. Stdin mode always runs on one thread, since it reads one file.
+A run over a directory formats files in parallel through <Tool slug="rayon" />, its worker threads sharing one rule pipeline per configuration the files resolve to. A run prints each file's diagnostics in the order the walk yields the files, whatever the thread count, and `RAYON_NUM_THREADS=1` runs one file at a time, the setting the [[walker]] page gives for debugging a rule. Stdin mode always runs on one thread, since it reads one file.
 
 ## Cache
 

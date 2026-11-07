@@ -1,7 +1,7 @@
 import { useData }                   from 'vitepress'
 import { computed, defineComponent } from 'vue'
 
-import { FixtureCard } from '../fixtures/FixtureCard'
+import { FixtureCards } from '../fixtures/FixtureCards'
 
 import { pageExamples } from '../../../lib/rules/rule-view'
 
@@ -15,6 +15,6 @@ export const RuleFixtures = defineComponent({
 
     const examples = computed(() => pageExamples(frontmatter.value, props.rule))
 
-    return () => examples.value.map(ex => <FixtureCard case={ex.case} key={ex.case} rule={props.rule} titleHtml={ex.titleHtml} />)
+    return () => <FixtureCards cases={examples.value} rule={props.rule} />
   }
 })

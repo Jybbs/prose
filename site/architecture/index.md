@@ -4,6 +4,12 @@ description: "The shared Rust primitives every rule is composed from, and which 
 
 *Prose* is built from a small set of shared primitives, each with one responsibility. A rule reads source through [[source]], reads the AST through one of the shared walkers, emits [[edit]] lists, and reports diagnostics through the [[pipeline]]. Every rule in the catalog is composed from the pieces named below, so a new rule is a thin walker plus its own per-rule decision rather than an implementation from scratch. The padding math, the comment attachment, and the conflict discipline each live in one place, and the rules read them from there.
 
+## The Section at a Glance
+
+<SectionGlance section="architecture" />
+
+## How the Primitives Compose
+
 The graph below traces how a source flows through the primitives, each node one primitive and each edge one consumer relationship *(`A → B` reads as "A is consumed by B")*. The nodes match the registries below, and hovering a node shows the primitive's one-line role.
 
 <PrimitivesComposition />

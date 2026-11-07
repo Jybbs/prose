@@ -16,19 +16,35 @@ The rule aligns three kinds of run:
 2. Consecutive annotated function-parameter defaults, so a signature with several `param: type = default` entries aligns its `=` the way a stretch of module-level bindings does.
 3. The keyword arguments that each sit alone on their line in an exploded call, so a call written one keyword per line aligns its `name = value` column the way a signature aligns its defaults.
 
+<FixtureCards rule="align_equals" cases="augmented_joins_run type_alias_joins_run annotated_defaults_align exploded_call_keywords_align" />
+
 Every aligned row reads as `name = value`, with the name padded out to the column and one space after the operator. A keyword alone on its line with no column to share still takes one space on each side of its `=`, whereas a keyword that shares its line with another argument keeps the tight `name=value` form PEP 8 gives a call-site keyword.
+
+<FixtureCards rule="align_equals" cases="lone_keyword_buffers partially_packed_keywords" />
 
 A positional argument, a `**` unpacking, an interior comment, or a keyword sharing a line with another argument ends the run, whereas a multi-line value or default joins its run and then closes it, leaving the entries after it to align as a separate group. A blank line, a comment line, or a statement of another kind ends a run of assignments, so each contiguous run aligns on its own. A run of one takes no padding, and the rule removes any its source carries, so a lone binding reads as plain code.
 
+<Fixture rule="align_equals" case="multiline_rhs_breaks_run" />
+
 When the padding or the one-space buffer shifts a value whose rows continue past its opening row, those rows move by the same number of columns, provided the shallowest of them sits past the start of the statement or keyword. A shallowest row one indent step in from the opening row's indent moves this way only where a token of the value starts at its column on the opening row, as the second part of a string run written beneath the first does. A call argument or a string part written beneath the value's first row therefore stays beneath it, whereas a value hanging its rows one indent step in keeps every row where it was written. Where the rows do not all move, each row sitting on the column of a token the value writes on its opening row still moves, along with the rows written beneath or hanging from a row that moves, so a call closing at the statement's own indent moves the arguments written beneath its first and leaves its `)` where it was written. Each row that moves counts toward `code-line-length` at the column it moves to.
 
+<FixtureCards rule="align_equals" cases="rows_beneath_a_value_move_while_its_closer_stays hanging_rows_stay_while_aligned_rows_move string_part_one_step_past_its_keyword_moves_with_its_value" />
+
 Where padding an assignment or a `type` statement out to the column would carry its row past `code-line-length`, [[reflow-calls]] explodes a call value and [[reflow-collections]] expands a collection value in the same pass, so the opening row joins the column, provided the padding stays within `max-shift`. A value broken open ends its run like any other multi-line value, and the rows below it start a run of their own. The layout rules therefore break a value open only where that leaves the run in fewer columns, or in as many columns with fewer rows unpadded, than keeping every value on one row would, so a middle row whose expansion would only move which row stands unpadded keeps its row. Where a layout rule would break a row's value at a bracket inside it rather than at the bracket opening it, the row breaks open only once it crosses the budget with no padding at all. That bracket can belong to any expression nested in the value, such as a list inside a comprehension, a call used as an operand of `+` or as a branch of a conditional expression, or a call whose result is indexed, called again, or read as an attribute. An annotated row above the last row of an [[align-colons]] run also breaks open only once it crosses the budget unpadded, because breaking it open sooner would end that run. The column is read in the order the statements take once [[band-constants]] moves a module's constants into their bands and [[alphabetize-siblings]] sorts a class body, so a run those rules rearrange breaks open where its reordered rows cross the budget.
+
+<FixtureCards rule="align_equals" cases="over_budget_member_partitions capped_head_releases_the_cut_row" />
 
 <template #configuration>
 
 <RuleConfigTable />
 
 Under `max-shift = 0`, every `=` sits one space after its name.
+
+<FixtureCards rule="align_equals" cases="over_cap_pair_stays_natural" />
+
+Stepping `max-shift` along the gauge below formats the case under each value, a taller tick marking each value where the output changes.
+
+<Fixture rule="align_equals" case="wide_target_breaks_run" setting="max-shift" />
 
 </template>
 

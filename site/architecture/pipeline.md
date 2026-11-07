@@ -96,7 +96,7 @@ Every variant names the rule whose output failed:
 
 - A `Batch` error names every rule of a batch whose one-pass splice the reparse rejected, which only `Sharing::Always` reports.
 - A `Cell` error means a notebook cell that parsed on its own before the rule ran no longer does, naming that cell by its position in the notebook.
-- A `Compile` error means the output parses yet fails the semantic-syntax check Python's own `compile` applies.
+- A `Compile` error means the output parses yet fails the semantic-syntax check <Tool slug="python" />'s own `compile` applies.
 - A `Reparse` error means a rule produced syntactically invalid Python.
 
 The last three are rule-authoring bugs rather than conditions a consumer recovers from. The intermediate `Source` is dropped either way, so the caller gets no partial output to inspect.

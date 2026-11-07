@@ -8,7 +8,7 @@ vi.mock('../../lib/rules/rule-fixtures.data', () => ({
   data: {
     align_equals: {
       canonical : 'basic_run',
-      examples  : [{ case: 'nested', titleHtml: 'Nested' }, { case: 'deep', titleHtml: 'Deep' }]
+      examples  : ['nested', 'deep']
     }
   }
 }))

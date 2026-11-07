@@ -112,9 +112,9 @@ export const SandboxRuler = defineComponent({
       emit('dragging', '', '')
     }
 
-    // Commits a value no press holds, as a key step reports one. Under a press it
-    // holds the stop still until the value it would take sits `DRAG_SLOP` pixels
-    // from where the press began, so a double-click edits rather than moves.
+    // Commits a value at once where no press holds it, as on a key step. Under a
+    // press it holds the stop still until the value it would take sits `DRAG_SLOP`
+    // pixels from where the press began, so a double-click leaves the stop in place.
     function dragMove(knob: LengthKnob, value: number): void {
       const state = drag.value
       if (!state) {
@@ -227,7 +227,7 @@ export const SandboxRuler = defineComponent({
                     {editing.value !== knob.key
                       ? (
                         <span
-                          class="sandbox-ruler-chip px-7 group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2 absolute z-1 inline-flex gap-0-4rem items-center py-0 border-1 border-divider rounded-sm bg-bg leading-none whitespace-nowrap"
+                          class="sandbox-ruler-chip ruler-chip group-focus-visible:focus-ring group-focus-visible:outline-offset-1 group-hover:border-text-2 group-data-dragging:border-text-2 absolute z-1 py-0"
                           data-key={knob.key}
                           onDblclick={() => beginEdit(knob)}
                           ref={chipEls}

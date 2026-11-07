@@ -95,6 +95,9 @@ export const fakeSandbox = (overrides: Partial<ProseSandbox> = {}): ProseSandbox
 export const isHidden = (element: Pick<DOMWrapper<Element>, 'attributes'>): boolean =>
   element.attributes('hidden') !== undefined || (element.attributes('style')?.includes('display: none') ?? false)
 
+export const isInert = (element: Pick<DOMWrapper<Element>, 'attributes'>): boolean =>
+  element.attributes('inert') !== undefined
+
 export const mountSetup = <T>(run: () => T): T => {
   let api!: T
   mount(defineComponent({

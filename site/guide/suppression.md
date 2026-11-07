@@ -24,14 +24,7 @@ The subsections below go from the broadest scope to the narrowest, because a nar
 
 Block markers fit several adjacent lines that carry a hand-made layout *(a sparse matrix written as a 4×4 grid, a state-transition table whose row alignment is the diagram, ASCII art inside a comment)*. `# fmt: off` and `# fmt: on` enclose the region, and every line outside them stays under the defaults, so the rules still reach the code on either side.
 
-```python
-# fmt: off
-weights = [[0.7, 0.1, 0.1, 0.1],
-           [0.1, 0.7, 0.1, 0.1],
-           [0.1, 0.1, 0.7, 0.1],
-           [0.1, 0.1, 0.1, 0.7]]
-# fmt: on
-```
+<Fixture rule="suppression" case="fmt_block_survives_between_runs" />
 
 A region holds out lint findings as well as rewrites, so it suits a stretch of code that every rule should leave alone. The [**Block Markers**](/reference/suppression-directives#block-markers) reference lists the `# prose:` and `# yapf:` spellings of the same pair.
 
@@ -48,16 +41,11 @@ A statement that needs both its layout kept and its lint silenced carries one of
 
 `# prose: keep` is the one directive tied to a single construct. It holds a dict literal's entries in the order written, for a dict whose order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*, and it does the same for an `__all__` or `__slots__` list.
 
-```python
-stages = {  # prose: keep
-    "fetch"    : fetch_payload,
-    "parse"    : parse_records,
-    "validate" : validate_schema,
-    "render"   : render_html
-}
-```
+<Fixture rule="alphabetize_siblings" case="dict_keep_marker_vs_sorted" />
 
 On a `class` line, the marker holds the statements of the class body as written, which is the escape for a class whose field order carries meaning *(a `pandera.DataFrameModel` whose columns follow the declaration order, a form whose fields render top to bottom)*.
+
+<Fixture rule="alphabetize_siblings" case="class_keep_marker_vs_sorted" />
 
 Where a whole project reads its dicts in order, the `sort-dict-keys` facet of [[alphabetize-siblings]] turns the sort off everywhere, and `sort-dunder-lists` does the same for every `__all__` and `__slots__` list, each leaving the directive for the exceptions that remain. The [**Construct Order Preservation**](/reference/suppression-directives#construct-order-preservation) reference lists every order the marker holds and everything inside the construct that still sorts.
 

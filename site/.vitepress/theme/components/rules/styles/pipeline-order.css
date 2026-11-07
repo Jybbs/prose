@@ -56,6 +56,19 @@
   color : var(--family-nib-soft);
 }
 
+/* Marks the pointed rule with the logo's pen-nib P in its family color, and
+   the rules it runs after and before with arrows in the link color. */
+.pipeline-order-gutter {
+  color : var(--color-link);
+}
+
+.pipeline-order-gutter[data-order="self"] {
+  align-self   : stretch;
+  background   : var(--family-nib-soft);
+  -webkit-mask : url('/logo.svg') center / contain no-repeat;
+  mask         : url('/logo.svg') center / contain no-repeat;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pipeline-order-spine li::after,
   .pipeline-order-census-chip,

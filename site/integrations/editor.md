@@ -20,7 +20,7 @@ An editor's language-server client starts the binary with the `server` subcomman
 }
 ```
 
-Neovim's built-in client takes the same settings through `vim.lsp.config`, and `vim.lsp.enable` starts the server for each Python buffer:
+<Tool slug="neovim" />'s built-in client takes the same settings through `vim.lsp.config`, and `vim.lsp.enable` starts the server for each Python buffer:
 
 ```lua
 vim.lsp.config("prose", {
@@ -34,17 +34,17 @@ A rewrite that a second run would change again shows up most often under format-
 
 ## Run on Save
 
-Each editor wires the command differently, and every one runs `prose format` on each save, on the saved file's path or, in Helix, on the buffer piped through `-`. A piped run exits `0` whenever it prints the formatted source, so a lint finding never keeps the editor from applying it, and the lint shows through the language server or `prose check` instead.
+Each editor wires the command differently, and every one runs `prose format` on each save, on the saved file's path or, in <Tool slug="helix" />, on the buffer piped through `-`. A piped run exits `0` whenever it prints the formatted source, so a lint finding never keeps the editor from applying it, and the lint shows through the language server or `prose check` instead.
 
 <EditorRunOnSave />
 
 The widget shows the snippet for each editor *Prose* documents. Some of the snippets carry a dependency or a wrapper worth knowing about before pasting:
 
 - The Helix snippet adds `prose server` beside the formatter for diagnostics as you type. A `language-servers` list in a user's `languages.toml` replaces the default for Python, so the snippet keeps the other defaults. Helix formats through `formatter` ahead of any language server, and `prose` sits ahead of `ruff` so that a setup without the `formatter` line still formats through *Prose*.
-- The VS Code snippet needs the [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension, which runs the command on every matching save.
+- The <Tool slug="vscode" /> snippet needs the [**`emeraldwalk.RunOnSave`**](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave) extension, which runs the command on every matching save.
 - The Neovim snippet wraps the command in `silent!`, which hides the command's output and the prompt that would follow it, including the `shell returned` line a lint finding's exit `2` prints.
-- The JetBrains snippet uses the *File Watchers* plugin, which runs the binary on every save and replaces the buffer with the formatted output.
-- The Sublime Text snippet needs the [**`SublimeOnSaveBuild`**](https://packagecontrol.io/packages/SublimeOnSaveBuild) package, which runs the project's build on every save whose file name matches the `filename_filter` the snippet sets.
+- The <Tool slug="jetbrains" /> snippet uses the *File Watchers* plugin, which runs the binary on every save and replaces the buffer with the formatted output.
+- The <Tool slug="sublime" /> snippet needs the [**`SublimeOnSaveBuild`**](https://packagecontrol.io/packages/SublimeOnSaveBuild) package, which runs the project's build on every save whose file name matches the `filename_filter` the snippet sets.
 
 Each of the other editors takes the server setup from [**Language Server**](#language-server) above through its language-server client, for the same inline diagnostics beside its save hook. VS Code and the JetBrains IDEs start a language server only through an extension or a plugin, so a settings file alone does not connect them to `prose server`. Any other editor with a run-a-command-on-save hook takes the same `prose format ${file}` command. These hooks hide the [**unstable-output notice**](/reference/cli#unstable-output), which is printed to stderr where a `silent!` wrapper or a File Watcher never shows it, so a run-on-save user sees that notice only in a terminal run or through [`prose server`](/reference/cli#prose-server).
 

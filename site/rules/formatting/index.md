@@ -1,5 +1,5 @@
 ---
-description: "The rules that rewrite a token, a line, or a spelling once a statement's layout is settled."
+description: "Covers the rules that rewrite a token, a line, or a spelling once a statement's layout is settled."
 ---
 
 # Formatting Rules

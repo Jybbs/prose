@@ -4,7 +4,7 @@ description: "Covers the package managers, post-install verification, and the pl
 
 # Installation
 
-*Prose* is a single native binary, written in Rust and published on PyPI as a Python wheel, so installing it needs no Rust toolchain. Pre-built wheels cover Linux, macOS, and Windows, and the formatter runs with no Python interpreter on the hot path. The recommended installer is <Tool slug="uv" />, whose `uv tool install` downloads the wheel for your platform and puts the `prose` executable on your `PATH` with no virtual environment to manage.
+*Prose* is a single native binary, written in Rust and published on PyPI as a Python wheel, so installing it needs no <Tool slug="rust" /> toolchain. Pre-built wheels cover Linux, macOS, and Windows, and the formatter runs with no <Tool slug="python" /> interpreter on the hot path. The recommended installer is <Tool slug="uv" />, whose `uv tool install` downloads the wheel for your platform and puts the `prose` executable on your `PATH` with no virtual environment to manage.
 
 ## Install
 

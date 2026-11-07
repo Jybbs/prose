@@ -1,0 +1,4 @@
+.composition-trail-step[data-still] {
+  color           : var(--vp-c-text-3);
+  text-decoration : line-through;
+}

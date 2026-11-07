@@ -3,6 +3,8 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
+const DESCRIPTION_FIELDS = ['description', 'caption', 'summary'] as const
+
 interface ContentPageMatter {
   content : string
   data    : Record<string, unknown>
@@ -13,6 +15,12 @@ interface ContentPageMatter {
 // Sorted explicitly because readdir order is platform-dependent.
 export function contentPages(directory: string): string[] {
   return fs.readdirSync(directory).filter(isContentPage).sort()
+}
+
+// The first `DESCRIPTION_FIELDS` entry the frontmatter holds as a string.
+export function frontmatterDescription(frontmatter: Record<string, unknown>): string | undefined {
+  return DESCRIPTION_FIELDS.map(field => frontmatter[field])
+    .find((value): value is string => typeof value === 'string')
 }
 
 export const isContentPage = (name: string): boolean =>

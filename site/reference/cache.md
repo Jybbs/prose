@@ -32,7 +32,7 @@ The keys under the `[cache]` table (*`[tool.prose.cache]` in a `pyproject.toml`*
 
 The sample below raises both caps above their defaults, for a tree whose entries outgrow them:
 
-```toml
+```toml config
 [cache]
 enabled      = true
 max-entries  = 25000

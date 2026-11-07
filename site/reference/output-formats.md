@@ -8,6 +8,10 @@ description: "Covers the `text`, `json`, `github`, and `sarif` formats."
 
 Every format writes diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can separate the two streams without reading exit codes. A file whose syntax its `target-version` rejects prints its `syntax error` line on stderr as well, naming the file, the position, and the version, and the `json`, `github`, and `sarif` formats also print it as a record at that position, so a reader positions it the way it positions a diagnostic.
 
+The samples below come from one `prose check` run in each format over the same file, and from `prose format --diff` over it. Choosing a finding in the index underlines its range in the source and marks its record in the format showing.
+
+<OutputSamples />
+
 ::: warning Diff Mode Is Text-Only
 `--diff` needs `text`, as the [**Mutual Exclusion**](/reference/cli#mutual-exclusion) section of the CLI reference covers.
 :::
@@ -16,48 +20,13 @@ Every format writes diagnostics to stdout, and operational errors *(parse failur
 
 The default format prints each diagnostic as a rustc-style snippet, where a caret marks the range the finding covers, a label names the rule, and, for a diagnostic carrying a fix, a HELP block shows the replacement.
 
-```
-warning: align consecutive `=` operators
-  --> src/module.py:14:8
-   |
-14 |     foo = 1
-   |        ^ align-equals
-   |
-help: replace with
-   |
-14 |     foo   = 1
-   |         ++
-```
-
 A notebook diagnostic prints under a `cell N` header against that cell's own source, with the caret positioned within the cell.
 
 The snippets are rendered by [**`annotate-snippets`**](https://docs.rs/annotate-snippets/) and the color by [**`anstream`**](https://docs.rs/anstream/), so the global `--color` flag controls the ANSI sequences.
 
 ## `json`
 
-One Ruff-compatible record per diagnostic or refused file on its own line, in NDJSON, closed by a summary record. The record shape matches what Ruff prints, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding, `"syntax_error"` for a file its `target-version` refuses, and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
-
-```json
-{
-  "kind"         : "diagnostic",
-  "code"         : "align-equals",
-  "end_location" : { "column": 9, "row": 14 },
-  "filename"     : "src/module.py",
-  "fix"          : {
-    "applicability" : "safe",
-    "edits"         : [
-      {
-        "before"       : " ",
-        "content"      : "   ",
-        "end_location" : { "column": 9, "row": 14 },
-        "location"     : { "column": 8, "row": 14 }
-      }
-    ]
-  },
-  "location"     : { "column": 8, "row": 14 },
-  "message"      : "align consecutive `=` operators"
-}
-```
+One Ruff-compatible record per diagnostic or refused file on its own line, in NDJSON, closed by a summary record. The record shape matches what <Tool slug="ruff" /> prints, so an editor with a diagnostics panel shows each record as an inline squiggle and uses the `fix` payload for a quick-fix action. Every record opens with a `kind` field, `"diagnostic"` for a finding, `"syntax_error"` for a file its `target-version` refuses, and `"summary"` for the closing record, so a streaming reader can dispatch on the first parsed property without inferring the kind from which fields are present.
 
 Fields:
 
@@ -79,35 +48,7 @@ For a notebook input, `location` and `end_location` are positions within the cel
 
 `applicability` is `"safe"` for every auto-fix *Prose* prints, on the scale Ruff uses, where `safe` means the rewrite preserves runtime semantics and an editor can apply it without asking. A lint finding carrying a suggestion (*the SCREAMING_CASE rename `miscased-constants` offers, the annotation `signature-annotations` infers*) prints `"displayonly"`, so an editor shows the edit and never applies it on its own.
 
-An auto-fix that touches several lines prints one diagnostic holding all its edits in `fix.edits`. Three consecutive assignments under `align-equals` print one entry for each row it pads, since `backoff_base` already sits at the column:
-
-```json
-{
-  "kind"         : "diagnostic",
-  "code"         : "align-equals",
-  "end_location" : { "column": 13, "row": 13 },
-  "filename"     : "src/configure.py",
-  "fix"          : {
-    "applicability" : "safe",
-    "edits"         : [
-      {
-        "before"       : " ",
-        "content"      : "      ",
-        "end_location" : { "column": 13, "row": 12 },
-        "location"     : { "column": 12, "row": 12 }
-      },
-      {
-        "before"       : " ",
-        "content"      : "      ",
-        "end_location" : { "column": 13, "row": 13 },
-        "location"     : { "column": 12, "row": 13 }
-      }
-    ]
-  },
-  "location"     : { "column": 12, "row": 12 },
-  "message"      : "align consecutive `=` operators"
-}
-```
+An auto-fix that touches several lines prints one diagnostic holding all its edits in `fix.edits`, as the `align-equals` record in the sample above does, with one edit for each row it pads.
 
 An editor applies the edits in array order, and *Prose* guarantees the spans do not overlap, so within one diagnostic the order does not matter.
 
@@ -116,20 +57,6 @@ The [**Editor**](/integrations/editor#structured-diagnostics) integration page c
 ### Summary Envelope
 
 A final record closes every `json` run, carrying run-wide counts so a reader gets file and rule totals without adding up the per-diagnostic records. It prints even when the run found nothing, with every finding count at zero and the record as the stream's only line.
-
-```json-vue
-{
-  "kind"                   : "summary",
-  "diagnostics_total"      : 12,
-  "files_changed"          : 3,
-  "files_visited"          : 47,
-  "files_with_diagnostics" : 3,
-  "lint_total"             : 0,
-  "prose_version"          : "{{ $frontmatter.proseVersion }}",
-  "rules_fired"            : { "align-equals": 8, "alphabetize-siblings": 4 },
-  "schema_version"         : 1
-}
-```
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -160,11 +87,7 @@ A file whose syntax its `target-version` rejects prints one `"syntax_error"` rec
 
 ## `github`
 
-[**Workflow commands**](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub Actions renders as annotations beside the line each finding covers on the PR diff, one line per diagnostic:
-
-```
-::warning file=src/module.py,line=14,col=8,endLine=14,endColumn=9::align consecutive `=` operators
-```
+[**Workflow commands**](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions) that GitHub Actions renders as annotations beside the line each finding covers on the PR diff, one line per diagnostic, as the `github` tab in the samples above shows.
 
 A file whose syntax its `target-version` rejects prints an `::error` command at that position in place of its warnings.
 

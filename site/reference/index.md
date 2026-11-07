@@ -6,15 +6,15 @@ Reference is where to look up any single thing *Prose* exposes once a project is
 
 The [**Glossary**](/reference/glossary) sits beneath every other reference page, because every `[[term]]` link across the site opens there. Start at the Glossary when a word in the docs needs a definition rather than a walkthrough.
 
+## The Section at a Glance
+
+<SectionGlance section="reference" />
+
 ## A–Z Token Index
 
 The index below lists every CLI flag, configuration key, exit code, output format, subcommand, and suppression directive *Prose* exposes. Hover an entry for its description and the page that documents it in full.
 
 <AzIndex />
-
-## The Section at a Glance
-
-<SectionGlance section="reference" />
 
 ## See Also
 

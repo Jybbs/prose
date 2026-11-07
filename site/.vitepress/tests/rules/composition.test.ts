@@ -11,23 +11,6 @@ describe('readCompositionCases', () => {
     expect(cases().map(entry => entry.case)).toStrictEqual(['alpha_case', 'bare_title_case', 'beta_case'])
   })
 
-  it('titles each case from its meta.toml, falling back to the directory name', () => {
-    expect(cases().map(entry => entry.titleHtml))
-      .toStrictEqual(['Alpha Runs Ahead of Beta', 'Bare Title Case', 'Beta Settles Alone'])
-  })
-
-  it('carries each case source verbatim', () => {
-    expect(cases()[2].source).toBe('gamma = 3\n')
-  })
-
-  it('seeds the sidecar config with the harness table lifted out', () => {
-    expect(cases()[0].configToml).toBe('code-line-length = 60\n')
-  })
-
-  it('seeds an empty config where the sidecar carries harness keys alone', () => {
-    expect(cases()[2].configToml).toBe('')
-  })
-
   it('carries the harness rule list each case activates', () => {
     expect(cases()[0].rules).toStrictEqual(['align-equals', 'space-statements'])
   })
@@ -62,21 +45,5 @@ describe('byRule', () => {
 
   it('indexes nothing when no case is previewable', () => {
     expect(composition.byRule([])).toStrictEqual({})
-  })
-})
-
-describe('seedToml', () => {
-  it('drops the harness table and keeps every other override', () => {
-    expect(composition.seedToml({ 'code-line-length': 60, harness: { rules: ['align-equals'] } }))
-      .toBe('code-line-length = 60\n')
-  })
-
-  it('renders a nested override table', () => {
-    expect(composition.seedToml({ imports: { 'first-party': ['myapp'] } }))
-      .toBe('[imports]\nfirst-party = [ "myapp" ]\n')
-  })
-
-  it('returns an empty string where nothing survives the harness lift', () => {
-    expect(composition.seedToml({ harness: { rules: [] } })).toBe('')
   })
 })

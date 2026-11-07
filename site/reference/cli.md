@@ -18,17 +18,9 @@ The global `--color` flag takes `always`, `auto`, or `never` and applies to ever
 
 Rewrites Python files to the *Prose* style.
 
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--diff` | bool | off | Print a unified diff to stdout instead of writing the files |
-| `--no-cache` | bool | off | Bypass the per-user [**cache**](/reference/cache) for this run |
-| `--output-format` | `text` \| `json` \| `github` \| `sarif` | `text` | The diagnostic format, each one's record layout given under [**Output Formats**](/reference/output-formats). `--diff` needs `text` |
-| `--quiet` / `-q` | bool | off | Reduce the closing [**summary**](#run-summary) to a bare count, dropping the anchor, the color, and the `--diff` heading. A stdin run drops the summary instead. An [**unstable-output notice**](#unstable-output) still prints |
-| `--stdin` | bool | off | Read source from stdin and write the formatted source to stdout, or the patch under `--diff` and the records under a structured `--output-format` |
-| `--stdin-filename` | path | unset | Treat stdin as this path, whose extension selects the source type. A `.ipynb` name reads stdin as a notebook |
-| `--select` | comma-separated rule slugs | unset | Run only the listed rules, replacing the configured set |
-| `--ignore` | comma-separated rule slugs | unset | Skip the listed rules, removing them from whichever set would otherwise run |
-| `PATH...` | one or more paths, or `-` | required without `--stdin` | Files or directories to format, or `-` to read source from stdin |
+<CliFlags command="format" />
+
+Under `--stdin`, `format` writes the formatted source to stdout, or the patch under `--diff` and the records under a structured `--output-format`, whose layouts the [**Output Formats**](/reference/output-formats) reference gives. `--no-cache` bypasses the per-user [**cache**](/reference/cache) for the one run, and `--quiet` trims the closing [**summary**](#run-summary).
 
 Exit codes follow the [**Exit Codes**](/reference/exit-codes) reference, where `1` means a rewrite is pending rather than written, as under `--diff`, and a stdin run that writes the formatted source exits `0` whatever lint it found.
 
@@ -42,21 +34,13 @@ prose format --select align-equals,align-colons src/
 
 `--diff` prints a standard unified diff with three lines of context, which `patch`, `delta`, and any other diff reader accept:
 
-```diff
---- src/example.py
-+++ src/example.py
-@@ -1,4 +1,4 @@
- def configure():
--    timeout = 30
--    retries = 5
-+    timeout      = 30
-+    retries      = 5
-     backoff_base = 1.5
-```
+<DiffSample />
 
 ## `prose check`
 
 Reports what would change without writing anything. The flags match `prose format`'s above, except that `--stdin` prints diagnostics rather than the rewritten source and `--diff` is absent, since nothing is written for a diff to preview. `check` adds `--validate`, a bool off by default, which confirms each file's would-be rewrite parses, compiles, and settles under every enabled rule and reports a rule output that fails to parse or to compile, or an [**unstable one**](#unstable-output), as a config error.
+
+<CliFlags command="check" />
 
 Exit codes follow the [**Exit Codes**](/reference/exit-codes) reference, where `1` means a rewrite is pending.
 
@@ -91,9 +75,7 @@ prose format --stdin --stdin-filename nb.ipynb < nb.ipynb
 
 Prints a completion script for the shell named by the `<shell>` argument:
 
-| Positional | Values | Description |
-|---|---|---|
-| `<shell>` | `bash` \| `zsh` \| `fish` \| `elvish` \| `powershell` | The shell to generate for |
+<CliFlags command="completions" />
 
 ```bash
 prose completions zsh > "${fpath[1]}/_prose"
@@ -105,9 +87,7 @@ The [**Shell Completions**](/integrations/shell-completions) integration page co
 
 Lists every registered rule in pipeline order, one row per rule with its one-based position, its slug, and its imperative. The JSON form prints the same list as an array of `{after, imperative, position, preserves_tree, slug}` records for a script to read, where `preserves_tree` reports whether the rule declares that its output parses to the tree its input does.
 
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--output-format` | `table` \| `json` | `table` | The listing format |
+<CliFlags command="rules" />
 
 ```bash
 prose rules
@@ -131,9 +111,7 @@ The [**Configuration**](/reference/configuration) reference walks through the ke
 
 Runs a language server over stdio, so an editor gets format-on-save and live diagnostics from the binary it already has.
 
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--transport` | `stdio` | `stdio` | The transport the server speaks over. Only stdio is supported |
+<CliFlags command="server" />
 
 ```bash
 prose server
@@ -210,10 +188,9 @@ A stdin run prints the summary only when stderr is a terminal and `--quiet` is o
 
 ## Global Flags
 
-| Flag | Type | Default | Description |
-|---|---|---|---|
-| `--color` | `always` \| `auto` \| `never` | `auto` | Whether to color output, applied to every subcommand |
-| `--verbose` | bool | off | Print one line of cache hit and miss counts to stderr at the end of each `check` or `format` run, the line the [**Cache**](/reference/cache#hit-miss-telemetry) reference shows |
+<CliFlags command="global" />
+
+The line `--verbose` prints is the one the [**Cache**](/reference/cache#hit-miss-telemetry) reference shows.
 
 `--color auto` reads the [**`NO_COLOR`**](https://github.com/jcs/no_color) environment variable and whether each stream is a TTY. `--color always` writes ANSI sequences even when a stream is not a TTY *(useful when piping to `less -R`)*. `--color never` writes none.
 

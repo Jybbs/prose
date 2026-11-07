@@ -19,7 +19,7 @@ export const FixturePairDoc = defineComponent({
     activeTab   : { required: true, type: String as PropType<FixtureTab> },
     inputHtml   : { required: true, type: String },
     outputHtml  : { required: true, type: String },
-    sandboxSeed : Object as PropType<SavedSession>
+    sandboxSeed : { required: true, type: Object as PropType<SavedSession> }
   },
   setup(props) {
     const reducedMotion = useReducedMotion()
@@ -86,6 +86,13 @@ export const FixturePairDoc = defineComponent({
       }
     })
 
+    // A gauge swaps the output in place, so the morph a later toggle runs reads
+    // the output the gauge now holds.
+    watch(() => props.outputHtml, async () => {
+      if (!panel.value || steps.value.length === 0) return
+      steps.value = (await precompile(codeFrom(props.inputHtml), codeFrom(props.outputHtml))).steps
+    })
+
     // The static HTML ships the wave drawn, so staging it undrawn at mount,
     // before the first paint, keeps the first-view entrance a clean draw
     // rather than a shrink-then-grow on intersection.
@@ -123,7 +130,7 @@ export const FixturePairDoc = defineComponent({
           style={{ display: animating.value ? 'none' : undefined }}
         />
         <CopyButton label="Copy code" source={activeCode.value} />
-        {props.sandboxSeed ? <SandboxSeedButton seed={props.sandboxSeed} /> : null}
+        <SandboxSeedButton seed={props.sandboxSeed} />
         <span class="lang">python</span>
         <LintFlagPopup ref={popup} />
       </div>

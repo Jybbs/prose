@@ -14,7 +14,7 @@ A parse failure in one file produces exit code `3` for that file, and every othe
 
 ## CI Gating
 
-A gate that treats rewrites and lints apart can branch on `2` independently of `1`, because a lint finding never auto-fixes and so never resolves on its own. A gate over a stdin buffer, such as a hook reading the staged content of each file, runs `prose check -`, since a stdin `prose format` exits `0` once it writes the formatted source. The [**GitHub Actions**](/integrations/github-actions) integration page covers the CI job, its Ruff step, and the formats that show findings beside the gate.
+A gate that treats rewrites and lints apart can branch on `2` independently of `1`, because a lint finding never auto-fixes and so never resolves on its own. A gate over a stdin buffer, such as a hook reading the staged content of each file, runs `prose check -`, since a stdin `prose format` exits `0` once it writes the formatted source. The [**GitHub Actions**](/integrations/github-actions) integration page covers the CI job, its <Tool slug="ruff" /> step, and the formats that show findings beside the gate.
 
 ## Help Output
 

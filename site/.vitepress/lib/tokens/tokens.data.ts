@@ -1,13 +1,14 @@
 import { defineLoader } from 'vitepress'
 
-import { exitCodes }                           from '../exit-codes/sources'
-import { inlineNodes }                         from '../markdown/inline-nodes'
-import { getRenderer }                         from '../markdown/renderer'
-import { proseBinaryPath, repoRoot, siteDir }  from '../shared/paths'
-import { proseSchema }                         from '../shared/rule-schema'
-import { configKeySources, facetDestinations } from './config-keys'
-import { destinations }                        from './destinations'
-import * as sources                            from './sources'
+import { exitCodes }                          from '../exit-codes/sources'
+import { inlineNodes }                        from '../markdown/inline-nodes'
+import { getRenderer }                        from '../markdown/renderer'
+import * as help                              from '../reference/cli-help'
+import { proseBinaryPath, repoRoot, siteDir } from '../shared/paths'
+import { proseSchema }                        from '../shared/rule-schema'
+import * as configKeys                        from './config-keys'
+import { destinations }                       from './destinations'
+import * as sources                           from './sources'
 
 const root = repoRoot(import.meta.url)
 const site = siteDir(import.meta.url)
@@ -20,10 +21,18 @@ export default defineLoader({
   async load(): Promise<readonly sources.Token[]> {
     const md            = await getRenderer()
     const schema        = proseSchema(root)
-    const destinationOf = destinations(site, facetDestinations(schema))
+    const destinationOf = destinations(site, configKeys.facetDestinations(schema))
+    const pages         = help.readHelp(root)
+    const fromHelp      = (domain: sources.HelpDomain): readonly sources.TokenSource[] =>
+      sources.HELP_SOURCES[domain].map(s => ({
+        ...s,
+        blurb: help.closed(configKeys.firstSentence(help.helpLine(pages, s.key)))
+      }))
     const all: Record<sources.Domain, readonly sources.TokenSource[]> = {
       ...sources.SOURCES,
-      'config-key' : configKeySources(schema),
+      'cli-flag'   : fromHelp('cli-flag'),
+      'subcommand' : fromHelp('subcommand'),
+      'config-key' : configKeys.configKeySources(schema),
       'exit-code'  : exitCodes(root).map(s => ({
         key   : String(s.code),
         href  : '/reference/exit-codes',

@@ -26,7 +26,8 @@ pub(crate) enum CacheAction {
     /// or entry cap.
     Compact,
 
-    /// Print the cache directory, entry count, byte total, and mtimes.
+    /// Print the cache directory, entry count, byte total, and oldest
+    /// and newest mtimes.
     Info,
 }
 
@@ -47,7 +48,8 @@ pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) command: Command,
 
-    /// Print extra diagnostic information to stderr.
+    /// Print one line of cache hit and miss counts to stderr at the end
+    /// of each `check` or `format` run.
     #[arg(long, global = true)]
     pub(crate) verbose: bool,
 }
@@ -76,10 +78,11 @@ pub(crate) enum Command {
         action: CacheAction,
     },
 
-    /// Report pending rewrites and lint findings without writing.
+    /// Report pending rewrites and lint findings without writing, exiting
+    /// non-zero on either.
     Check(CheckArgs),
 
-    /// Print a shell-completion script to stdout.
+    /// Print a shell-completion script for the named shell to stdout.
     Completions {
         /// Shell to generate completions for.
         shell: Shell,
@@ -91,7 +94,8 @@ pub(crate) enum Command {
     /// List the registered rules in pipeline order.
     Rules(RulesArgs),
 
-    /// Print the configuration's JSON Schema to stdout.
+    /// Print the configuration's JSON Schema to stdout, every key with its
+    /// type, default, and range.
     Schema,
 
     /// Run the language server over stdio.

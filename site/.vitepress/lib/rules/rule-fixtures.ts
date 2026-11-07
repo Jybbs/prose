@@ -1,6 +1,5 @@
 import { readFixtureToggle } from '../fixtures/toggle'
 import * as walker           from '../fixtures/walker'
-import { inlineCode }        from '../shared/inline-code'
 
 interface PendingExample {
   case      : string
@@ -8,14 +7,9 @@ interface PendingExample {
   title     : string
 }
 
-interface RuleExample {
-  case      : string
-  titleHtml : string
-}
-
 export interface RuleFixtureSet {
   canonical : string
-  examples  : readonly RuleExample[]
+  examples  : readonly string[]
 }
 
 export type RuleFixturesData = Record<string, RuleFixtureSet>
@@ -54,8 +48,7 @@ export async function readRuleFixtures(crate: string): Promise<RuleFixturesData>
       sortKey(a.title).localeCompare(sortKey(b.title)))
     out[rule] = {
       canonical,
-      examples : ranked.map(({ case: name, title }) =>
-        ({ case: name, titleHtml: inlineCode(title) }))
+      examples : ranked.map(example => example.case)
     }
   }
   return out

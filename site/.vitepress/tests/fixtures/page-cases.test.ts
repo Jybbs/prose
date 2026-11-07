@@ -7,7 +7,7 @@ const SETS: PageFixtureSets = {
   },
 
   ruleFixtures: {
-    align_equals    : { canonical: 'basic_run', examples: [{ case: 'nested' }, { case: 'deep' }] },
+    align_equals    : { canonical: 'basic_run', examples: ['nested', 'deep'] },
     strip_stranding : { canonical: 'only_case', examples: [] }
   }
 }
@@ -72,6 +72,11 @@ describe('readPageCases', () => {
     expect(inline(source)).toStrictEqual(['composition/alpha_case', 'band_constants/stacked'])
   })
 
+  it('lists as inline each case a FixtureCards tag names', () => {
+    expect(inline('<FixtureCards rule="align_equals" cases="nested  deep" />'))
+      .toStrictEqual(['align_equals/nested', 'align_equals/deep'])
+  })
+
   it.each([
     ['a RuleLayout',       '<RuleLayout rule="align_equals">'],
     ['a CompositionCards', '<CompositionCards />']
@@ -85,14 +90,38 @@ describe('readPageCases', () => {
       '<Fixture rule="composition" case="alpha_case" />'
     ].join('\n')
     expect(readPageCases(source, SETS)).toStrictEqual({
-      inline : ['composition/alpha_case'],
+      gauges : [],
       ids    : [
         'align_equals/basic_run',
         'align_equals/nested',
         'align_equals/deep',
         'composition/alpha_case'
-      ]
+      ],
+      inline : ['composition/alpha_case'],
+      trails : []
     })
+  })
+
+  it('reads a gauge from a Fixture naming a setting and embeds its case', () => {
+    const cases = readPageCases('<Fixture rule="align_equals" case="wide" setting="max-shift" />', SETS)
+    expect(cases.gauges).toStrictEqual([
+      { case: 'wide', id: 'align_equals/wide#max-shift', rule: 'align_equals', setting: 'max-shift' }
+    ])
+    expect(cases.inline).toStrictEqual(['align_equals/wide'])
+  })
+
+  it('reads no gauge from a Fixture naming no setting', () => {
+    expect(readPageCases('<Fixture rule="align_equals" case="wide" />', SETS).gauges).toStrictEqual([])
+  })
+
+  it('reads a trail from a CompositionTrail and embeds its composition case', () => {
+    const cases = readPageCases('<CompositionTrail case="alpha_case" />', SETS)
+    expect(cases.trails).toStrictEqual(['composition/alpha_case'])
+    expect(cases.inline).toStrictEqual(['composition/alpha_case'])
+  })
+
+  it('reaches no case from a CompositionTrail missing its case', () => {
+    expect(readPageCases('<CompositionTrail />', SETS)).toMatchObject({ ids: [], trails: [] })
   })
 
   it('collects every tag on a page in source order', () => {

@@ -5,6 +5,8 @@ import { RunSummarySelect } from './RunSummarySelect'
 
 import * as runSummary from '../../../lib/reference/run-summary'
 
+const RESERVE = runSummary.longestLine()
+
 export const RunSummaryExplorer = defineComponent({
   name: 'RunSummaryExplorer',
   setup() {
@@ -56,7 +58,7 @@ export const RunSummaryExplorer = defineComponent({
             options={streamOpts.value}
           />
         </div>
-        <RunSummary line={line.value}>
+        <RunSummary line={line.value} reserve={RESERVE}>
           {{
             bar: () => <span class="run-summary-caption ms-10 min-w-0 overflow-hidden border-s-1 border-s-divider ps-10 font-base text-md leading-1-4 text-ellipsis whitespace-nowrap text-text-3 italic">{gloss.value}</span>
           }}

@@ -3,5 +3,5 @@ previewable = false
 title       = "Blank Lines Split the Imports Into Separate Groups"
 
 description = '''
-Two `from` imports, two `import … as` lines, and two more `from` imports sit in three blocks separated by blank lines. **Each block aligns on a column of its own**, so `collections` and `typing` share one `import` column, `re` and `json` share an `as` column, and `sys` and `os.path` share an `import` column narrower than the first block's. A blank line ends a run, so each block aligns alone whatever form its neighbours take.
+Two `from` imports, two `import … as` lines, and two more `from` imports sit in three blocks separated by blank lines. **Each block aligns on a column of its own**, so `collections` and `typing` share one `import` column, `re` and `json` share an `as` column, and `sys` and `os.path` share an `import` column narrower than the first block's. A blank line ends a run, so each block aligns alone whatever form its neighbors take.
 '''

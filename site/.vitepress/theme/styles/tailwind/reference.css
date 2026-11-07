@@ -23,8 +23,32 @@
   color            : var(--vp-c-text-3);
 }
 
+@utility code-pill {
+  padding       : var(--prose-space-3) var(--prose-space-12);
+  border-radius : calc(var(--prose-radius-sm) - var(--prose-border-1));
+  background    : transparent;
+  font-family   : var(--vp-font-family-mono);
+  font-size     : var(--prose-text-meta);
+  color         : var(--vp-c-text-2);
+  cursor        : pointer;
+  transition    : color var(--prose-transition);
+
+  &:hover {
+    color : var(--vp-c-text-1);
+  }
+
+  &:is([aria-pressed="true"], [aria-selected="true"]) {
+    font-weight : 600;
+    color       : var(--vp-c-text-1);
+  }
+}
+
+@utility code-caption {
+  @apply mb-4 font-mono text-meta tracking-label-loose text-text-2 uppercase;
+}
+
 @utility fixture-nochange-ghost {
-  @apply invisible inline-flex rounded-sm border-1 border-divider bg-bg p-2;
+  @apply invisible toggle-row;
 
   .fixture-card[data-edits="false"]:not([data-lint="true"], [data-open]) & {
     display : none;
@@ -51,29 +75,21 @@
   box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--color-ube) var(--prose-tint-38), transparent);
 }
 
+@utility ruler-chip {
+  @apply inline-flex items-center gap-0-4rem whitespace-nowrap rounded-sm border-1 border-divider bg-bg px-7 leading-none;
+}
+
 @utility toggle-pill {
-  padding        : var(--prose-space-3) var(--prose-space-12);
+  @apply code-pill;
   border         : none;
-  border-radius  : calc(var(--prose-radius-sm) - var(--prose-border-1));
-  background     : transparent;
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-meta);
   letter-spacing : var(--prose-label-tracking-loose);
   text-transform : uppercase;
-  color          : var(--vp-c-text-2);
-  cursor         : pointer;
-  transition     : color var(--prose-transition);
-
-  &:hover {
-    color : var(--vp-c-text-1);
-  }
-
-  &[aria-selected="true"] {
-    font-weight : 600;
-    color       : var(--vp-c-text-1);
-  }
 
   &[aria-selected="true"][data-side="after"] {
     color : var(--prose-shade-celadon-page-65);
   }
+}
+
+@utility toggle-row {
+  @apply inline-flex rounded-sm border-1 border-divider bg-bg p-2;
 }

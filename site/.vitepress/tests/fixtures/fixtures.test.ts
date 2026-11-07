@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { fixtureEntry, fixtureId }              from '../../lib/fixtures/entry'
+import * as entry                              from '../../lib/fixtures/entry'
 import { LINT_FINDINGS_FILE, readLintFindings } from '../../lib/fixtures/lint-findings'
 import { readFixtureToggle }                    from '../../lib/fixtures/toggle'
 import * as walker                              from '../../lib/fixtures/walker'
@@ -21,36 +21,63 @@ describe('walkFixtures', () => {
 
 describe('fixtureId', () => {
   it('joins a rule and case into the key a page frontmatter carries', () => {
-    expect(fixtureId('align_equals', 'basic_run')).toBe('align_equals/basic_run')
+    expect(entry.fixtureId('align_equals', 'basic_run')).toBe('align_equals/basic_run')
   })
 
   it('keys every walked case the same way', () => {
-    expect(CASES.every(entry => entry.id === fixtureId(entry.rule, entry.caseName))).toBe(true)
+    expect(CASES.every(found => found.id === entry.fixtureId(found.rule, found.caseName))).toBe(true)
   })
 })
 
 describe('fixtureEntry', () => {
-  const entry = {
+  const record = {
     changesSource : true,
     hasFindings   : false,
     hasToggle     : true,
     inputHtml     : '<pre>a</pre>',
     outputHtml    : '<pre>b</pre>'
   }
-  const frontmatter = { fixtures: { 'align_equals/basic_run': entry } }
+  const frontmatter = { fixtures: { 'align_equals/basic_run': record } }
 
   it('reads the entry a page carries for a rule and case', () => {
-    expect(fixtureEntry(frontmatter, 'align_equals', 'basic_run')).toBe(entry)
+    expect(entry.fixtureEntry(frontmatter, 'align_equals', 'basic_run')).toBe(record)
   })
 
   it('names a case the page does not carry', () => {
-    expect(() => fixtureEntry(frontmatter, 'align_equals', 'absent'))
+    expect(() => entry.fixtureEntry(frontmatter, 'align_equals', 'absent'))
       .toThrow(/Fixture case "align_equals\/absent" not registered/)
   })
 
   it('names the case where the page carries no fixtures at all', () => {
-    expect(() => fixtureEntry({}, 'align_equals', 'basic_run'))
+    expect(() => entry.fixtureEntry({}, 'align_equals', 'basic_run'))
       .toThrow(/Fixture case "align_equals\/basic_run" not registered/)
+  })
+})
+
+describe('fixtureGauge', () => {
+  const gauge       = { default: 16, outputs: ['<pre>a</pre>'], setting: 'max-shift', steps: [0] }
+  const frontmatter = { fixtureGauges: { [entry.gaugeId('align_equals', 'wide', 'max-shift')]: gauge } }
+
+  it('reads the gauge a page carries for a case and the setting it steps', () => {
+    expect(entry.fixtureGauge(frontmatter, 'align_equals', 'wide', 'max-shift')).toBe(gauge)
+  })
+
+  it('names a gauge the page does not carry', () => {
+    expect(() => entry.fixtureGauge(frontmatter, 'align_equals', 'wide', 'enabled'))
+      .toThrow(/Fixture gauge "align_equals\/wide#enabled" not registered/)
+  })
+})
+
+describe('fixtureTrail', () => {
+  const trail       = { outputs: ['<pre>a</pre>'], rules: ['align-equals'], steps: [0, 0] }
+  const frontmatter = { fixtureTrails: { [entry.fixtureId(entry.COMPOSITION_RULE, 'alpha_case')]: trail } }
+
+  it('reads the trail a page carries for a composition case', () => {
+    expect(entry.fixtureTrail(frontmatter, 'alpha_case')).toBe(trail)
+  })
+
+  it('names a trail the page does not carry', () => {
+    expect(() => entry.fixtureTrail({}, 'alpha_case')).toThrow(/Composition trail ".*alpha_case" not registered/)
   })
 })
 
@@ -120,6 +147,22 @@ describe('readLintFindings', () => {
   })
 })
 
+describe('overrideToml', () => {
+  it('drops the harness table and keeps every other override', () => {
+    expect(walker.overrideToml({ 'code-line-length': 60, harness: { rules: ['align-equals'] } }))
+      .toBe('code-line-length = 60\n')
+  })
+
+  it('renders a nested override table', () => {
+    expect(walker.overrideToml({ imports: { 'first-party': ['myapp'] } }))
+      .toBe('[imports]\nfirst-party = [ "myapp" ]\n')
+  })
+
+  it('returns an empty string where nothing survives the harness lift', () => {
+    expect(walker.overrideToml({ harness: { rules: [] } })).toBe('')
+  })
+})
+
 describe('readFixtureDocs', () => {
   it('reads the [docs] table from meta.toml when present', () => {
     const withMeta = CASES.find(c => hasSidecar(c.inputPath, 'meta.toml'))!
@@ -134,5 +177,17 @@ describe('readFixtureDocs', () => {
 
   it('returns undefined when meta.toml is absent', () => {
     expect(walker.readFixtureDocs(absent)).toBeUndefined()
+  })
+})
+
+describe('readOverrideToml', () => {
+  it('reads the override a case carries beside its input', () => {
+    const configured = CASES.find(found => hasSidecar(found.inputPath, walker.CONFIG_FILE)
+      && walker.readOverrideToml(found.inputPath) !== '')!
+    expect(walker.readOverrideToml(configured.inputPath)).toMatch(/=/)
+  })
+
+  it('returns an empty string where a case carries no config', () => {
+    expect(walker.readOverrideToml(absent)).toBe('')
   })
 })

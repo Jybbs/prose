@@ -1,22 +1,12 @@
-import fs   from 'node:fs'
 import path from 'node:path'
 
 import { COMPOSITION_RULE } from '../fixtures/entry'
 import * as walker          from '../fixtures/walker'
-import { inlineCode }       from '../shared/inline-code'
 import { fixturesDirFrom }  from '../shared/paths'
-import { toTitleCase }      from '../shared/title-case'
-import { parseToml }        from '../shared/toml'
-import { tomlText }         from '../shared/toml-text'
-
-type CaseConfig = Record<string, unknown> & { harness?: { rules?: readonly string[] } }
 
 export interface CompositionCase {
-  case       : string
-  configToml : string
-  rules      : readonly string[]
-  source     : string
-  titleHtml  : string
+  case  : string
+  rules : readonly string[]
 }
 
 export interface CompositionData {
@@ -45,23 +35,15 @@ export function readCompositionCases(dir: string): CompositionCase[] {
   const cases: CompositionCase[] = []
   for (const caseName of walker.subdirNames(dir)) {
     const caseDir = path.join(dir, caseName)
-    const config  = parseToml(path.join(caseDir, walker.CONFIG_FILE)) as CaseConfig
-    const rules   = config.harness?.rules
+    const rules   = walker.readCaseConfig(path.join(caseDir, walker.INPUT_FILE)).harness?.rules
     if (rules === undefined) {
       throw new Error(`composition: ${caseName}/${walker.CONFIG_FILE} missing [harness].rules`)
     }
 
-    const inputPath = path.join(caseDir, walker.INPUT_FILE)
-    const docs      = walker.readFixtureDocs(inputPath)
+    const docs = walker.readFixtureDocs(path.join(caseDir, walker.INPUT_FILE))
     if (docs?.previewable !== true) continue
 
-    cases.push({
-      case       : caseName,
-      configToml : seedToml(config),
-      rules,
-      source     : fs.readFileSync(inputPath, 'utf8'),
-      titleHtml  : inlineCode(walker.fixtureTitle(docs) ?? toTitleCase(caseName))
-    })
+    cases.push({ case: caseName, rules })
   }
   return cases
 }
@@ -71,11 +53,4 @@ export function readCompositionCases(dir: string): CompositionCase[] {
 export function readCompositionData(dir: string): CompositionData {
   const cases = readCompositionCases(dir)
   return { byRule: byRule(cases), cases }
-}
-
-// Renders everything outside `[harness]`, which is the prose config the case
-// formats under.
-export function seedToml(config: Record<string, unknown>): string {
-  const { harness: _, ...overrides } = config
-  return tomlText(overrides)
 }

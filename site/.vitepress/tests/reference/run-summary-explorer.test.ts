@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 
 import { RunSummaryExplorer } from '../../theme/components/reference/RunSummaryExplorer'
+import * as runSummary        from '../../lib/reference/run-summary'
 import { rendersAccessibly }  from '../axe'
 
 const mountExplorer = () => mount(RunSummaryExplorer)
@@ -32,8 +33,13 @@ describe('RunSummaryExplorer', () => {
     await w.findAll('.run-summary-select-trigger')[1].trigger('click')
     await quiet!.trigger('click')
 
-    expect(w.find('.run-summary-anchor').exists()).toBe(false)
+    expect(w.get('.run-summary-msg').element.parentElement!.querySelector('.run-summary-anchor')).toBeNull()
     expect(w.get('.run-summary-msg').text()).toBe('All clean.')
+  })
+
+  it('holds the longest outcome in a hidden line behind the one shown', () => {
+    const reserve = mountExplorer().get('[aria-hidden="true"].invisible')
+    expect(reserve.get('.run-summary-msg').text()).toBe(runSummary.longestLine().text)
   })
 
   rendersAccessibly(() => mountExplorer().html())

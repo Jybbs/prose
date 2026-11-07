@@ -4,7 +4,6 @@ import { defineAsyncComponent } from 'vue'
 import type { Component }       from 'vue'
 
 import '@shikijs/magic-move/style.css'
-import 'virtual:group-icons.css'
 
 import '@fontsource-variable/fraunces'
 import '@fontsource-variable/fraunces/wght-italic.css'
@@ -34,8 +33,9 @@ import './styles/vitepress-chrome.css'
 
 // The base and markdown sheets above stay explicit imports because their
 // cascade order is load-bearing, whereas the component layer's sheets are
-// order-free and load through one glob in path order.
-import.meta.glob(['./components/**/*.css', '../kit/styles/*.css'], { eager: true })
+// order-free and load through one glob in path order. A sheet beside a base
+// component loads with that component alone, which only some pages render.
+import.meta.glob(['./components/**/*.css', '!./components/base/*.css', '../kit/styles/*.css'], { eager: true })
 
 const components = import.meta.glob<Record<string, Component>>(
   './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.tsx',
@@ -52,6 +52,7 @@ export default {
     for (const module of Object.values(components)) {
       for (const [name, component] of Object.entries(module)) app.component(name, component)
     }
+    app.component('ConfigForms', defineAsyncComponent(() => import('./components/base/ConfigForms')))
     app.component('KitCatalog', defineAsyncComponent(() => import('../kit/KitCatalog')))
     app.component('Tool', Tool)
   }

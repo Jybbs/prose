@@ -3,7 +3,7 @@ consumedBy: [alphabetize-siblings, band-constants, inert-directives, line-overfl
 consumes: [rule-id, source]
 layer: analysis
 stability: internal
-summary: "Per-source index of every `# fmt: off`, `# fmt: skip`, and `# prose: ignore[...]` directive, read before an edit or a lint is emitted."
+summary: "Indexes every `# fmt: off`, `# fmt: skip`, and `# prose: ignore[...]` directive in a source, which each edit and lint is checked against before it is emitted."
 tagline: directive index
 ---
 
