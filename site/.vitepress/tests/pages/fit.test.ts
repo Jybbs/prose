@@ -1,16 +1,10 @@
-import axe          from 'axe-core'
 import { chromium } from 'playwright'
 import type { Browser, BrowserContext, Page, ViewportSize } from 'playwright'
 
-import { SCHEMES }     from '../../lib/shared/palette'
-import type { Scheme } from '../../lib/shared/palette'
+import { audit }        from '../axe'
+import type { Finding } from '../axe'
 
-import { BUILT, bundleContext, PAGES } from './bundle'
-
-interface Finding {
-  id      : string
-  targets : string[]
-}
+import { bundleContext, open, PAGES, WIDE } from './bundle'
 
 interface Layout {
   overflow : number
@@ -24,7 +18,6 @@ interface Scrolling {
 }
 
 interface Survey {
-  axe      : Record<Scheme, Finding[]>
   layout   : Record<number, Layout>
   overflow : Scrolling
 }
@@ -33,16 +26,6 @@ const FOCUSABLE       = 'a[href], button:not([disabled]), input, select, textare
 const FORCED_OVERFLOW = 'pre, code, table, td { letter-spacing: 0.5em; white-space: nowrap; }'
 const NARROW          : ViewportSize = { height: 800, width: 360 }
 const OVERFLOWING     : ViewportSize = { height: 640, width: 320 }
-const WIDE            : ViewportSize = { height: 800, width: 1280 }
-
-// Runs `axe-core` on the page, limited to the rules `runOnly` names where it names any.
-async function audit(page: Page, runOnly?: string[]): Promise<Finding[]> {
-  await page.addScriptTag({ content: axe.source })
-  return page.evaluate(async options => {
-    const { violations } = await (window as unknown as { axe: typeof axe }).axe.run(document, options)
-    return violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => node.target.join(' ')) }))
-  }, runOnly ? { runOnly } : {})
-}
 
 // Reads how far the page runs past the viewport's width, each inline code chip
 // whose box splits across lines or carries the page past that width, and each chip
@@ -72,18 +55,6 @@ function layout(page: Page): Promise<Layout> {
   })
 }
 
-// Opens the page in the context and returns what `measure` reads from it.
-async function open<T>(context: BrowserContext, file: string, measure: (page: Page) => Promise<T>): Promise<T> {
-  const page = await context.newPage()
-  try {
-    await page.goto(`/${file}`, { waitUntil: 'networkidle' })
-    return await measure(page)
-  }
-  finally {
-    await page.close()
-  }
-}
-
 // Forces every code block, chip, and table to overflow, then reads each rendered
 // element a style lets scroll that has no tab stop of its own or inside it, beside
 // the regions `axe-core` finds no keyboard reaches.
@@ -102,44 +73,35 @@ async function scrolling(page: Page): Promise<Scrolling> {
 }
 
 let browser  : Browser
-let contexts : Record<'narrow' | 'overflowing' | Scheme, BrowserContext>
+let contexts : Record<'narrow' | 'overflowing' | 'wide', BrowserContext>
 
 beforeAll(async () => {
   browser  = await chromium.launch()
-  const [dark, light, narrow, overflowing] = await Promise.all([
-    bundleContext(browser, { colorScheme: 'dark', viewport: WIDE }),
-    bundleContext(browser, { colorScheme: 'light', viewport: WIDE }),
+  const [narrow, overflowing, wide] = await Promise.all([
     bundleContext(browser, { viewport: NARROW }),
-    bundleContext(browser, { viewport: OVERFLOWING })
+    bundleContext(browser, { viewport: OVERFLOWING }),
+    bundleContext(browser, { viewport: WIDE })
   ])
-  contexts = { dark, light, narrow, overflowing }
+  contexts = { narrow, overflowing, wide }
 })
 
 afterAll(() => browser.close())
 
 const surveys = new Map<string, Promise<Survey>>()
 
-// Loads the page once in each scheme and at each width, the first test to read it
-// starting every load, and holds what each load read for every test after it.
+// Loads the page once at each width, the first test to read it starting every
+// load, and holds what each load read for every test after it.
 const survey = (file: string): Promise<Survey> => surveys.getOrInsertComputed(file, async () => {
-  const [light, dark, narrow, overflow] = await Promise.all([
-    open(contexts.light, file, async page => ({ axe: await audit(page), layout: await layout(page) })),
-    open(contexts.dark, file, audit),
+  const [narrow, overflow, wide] = await Promise.all([
     open(contexts.narrow, file, layout),
-    open(contexts.overflowing, file, scrolling)
+    open(contexts.overflowing, file, scrolling),
+    open(contexts.wide, file, layout)
   ])
-  return { axe: { dark, light: light.axe }, layout: { [NARROW.width]: narrow, [WIDE.width]: light.layout }, overflow }
+  return { layout: { [NARROW.width]: narrow, [WIDE.width]: wide }, overflow }
 })
 
 it('finds the built pages', () => {
-  expect(BUILT, 'the sweep reads the bundle `mise run site:press` builds').toContain('reference/kit.html')
-  expect(PAGES, 'the shard reads a share of the built pages').not.toHaveLength(0)
-})
-
-describe.each(SCHEMES)('the built pages in the %s scheme', scheme => {
-  it.concurrent.each(PAGES)('%s has no axe violations', async file => {
-    expect((await survey(file)).axe[scheme]).toStrictEqual([])
-  })
+  expect(PAGES, 'the sweep reads the bundle `mise run site:press` builds').toContain('reference/kit.html')
 })
 
 describe.each([WIDE.width, NARROW.width])('the built pages at %d px', width => {

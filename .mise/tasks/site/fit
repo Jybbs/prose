@@ -1,0 +1,8 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "fit"
+#MISE depends     = ["site:press"]
+#MISE description = "Check every page of the static docs bundle in Chromium for overflow at a wide and a narrow width"
+#MISE dir         = "site"
+
+playwright install --only-shell chromium
+vitest run --project fit "$@"

@@ -16,6 +16,7 @@ run         = [
     "rust:unused",
     "site:coverage",
     "site:cruft",
+    "site:fit",
     "site:links",
     "site:lint",
     "site:press",
