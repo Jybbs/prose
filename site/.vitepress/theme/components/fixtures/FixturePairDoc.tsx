@@ -1,4 +1,4 @@
-import { useIntersectionObserver }                                                          from '@vueuse/core'
+import { isClient, useIntersectionObserver }                                                from '@vueuse/core'
 import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch, withKeys } from 'vue'
 import type { PropType }                                                                    from 'vue'
 
@@ -23,8 +23,8 @@ export const FixturePairDoc = defineComponent({
   },
   setup(props) {
     const reducedMotion = useReducedMotion()
-    const root = shallowRef<HTMLElement | null>(null)
-    const popup = shallowRef<LintFlagPopupHandle | null>(null)
+    const root          = shallowRef<HTMLElement | null>(null)
+    const popup         = shallowRef<LintFlagPopupHandle | null>(null)
 
     const animate   = ref(false)
     const animating = ref(false)
@@ -40,7 +40,7 @@ export const FixturePairDoc = defineComponent({
     // elements so they hold their place across the morph, and the static markup
     // drops them so the two do not double up. The source resolves client-side,
     // where `codeFrom` has a DOM to read.
-    const activeCode   = computed(() => typeof window === 'undefined' ? '' : codeFrom(activeHtml.value))
+    const activeCode   = computed(() => isClient ? codeFrom(activeHtml.value) : '')
     const strippedHtml = computed(() => activeHtml.value
       .replace(/<button\b[^>]*class="copy"[^>]*>\s*<\/button>/, '')
       .replace(/<span class="lang">[^<]*<\/span>/, ''))

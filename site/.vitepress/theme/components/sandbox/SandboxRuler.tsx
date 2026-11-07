@@ -36,7 +36,7 @@ export const SandboxRuler = defineComponent({
     setLength : (key: string, value: number) => typeof key === 'string' && typeof value === 'number'
   },
   setup(props, { emit }) {
-    const chipEls = shallowRef<HTMLElement[] | null>(null)
+    const chipEls    = shallowRef<HTMLElement[] | null>(null)
     const chipWidths = reactive(new Map<string, number>())
     const drag       = ref<{ key: string, start: number } | null>(null)
     const draft      = ref('')

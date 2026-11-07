@@ -1,4 +1,4 @@
-import * as cacache from 'cacache'
+import * as cacache              from 'cacache'
 import type { MarkdownRenderer } from 'vitepress'
 
 import { HighlightCache } from '../../lib/markdown/highlight-cache'
@@ -13,7 +13,7 @@ const INPUTS = { colorReplacements: {}, data: {}, theme: 'github-dark', transfor
 // holds under `inputs`.
 async function cached(dir: string, inputs = INPUTS) {
   const placeholderMap = new Map<string, [Promise<string>, string, string, string]>()
-  const inner = vi.fn<Highlight>((code, lang, attrs) => {
+  const inner          = vi.fn<Highlight>((code, lang, attrs) => {
     placeholderMap.set(`id-${placeholderMap.size}`, [Promise.resolve(`<pre>${code}</pre>`), code, lang, attrs])
     return '<pre><!--placeholder--></pre>'
   })

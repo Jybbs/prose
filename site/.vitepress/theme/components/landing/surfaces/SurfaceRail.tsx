@@ -38,8 +38,8 @@ export const SurfaceRail = defineComponent({
     rules : { required: true, type: Array as PropType<readonly RenderedRule[]> }
   },
   setup(props) {
-    const railRef = shallowRef<HTMLElement | null>(null)
-    const windowRef = shallowRef<HTMLElement | null>(null)
+    const railRef       = shallowRef<HTMLElement | null>(null)
+    const windowRef     = shallowRef<HTMLElement | null>(null)
     const reducedMotion = useReducedMotion()
 
     const { width: railWidth }    = useElementSize(railRef)

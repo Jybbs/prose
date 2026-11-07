@@ -1,5 +1,5 @@
-import { useEventListener }                             from '@vueuse/core'
-import { defineComponent, onBeforeUnmount, shallowRef } from 'vue'
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
+import { defineComponent, shallowRef }    from 'vue'
 
 import { Popup }    from '../../../kit'
 import { RuleCard } from './RuleCard'
@@ -16,7 +16,16 @@ export const RuleLinkPopup = defineComponent({
     const rule   = shallowRef<RenderedRule | null>(null)
     const target = shallowRef<HTMLElement | null>(null)
 
-    let timer: ReturnType<typeof setTimeout> | undefined
+    const reveal  = useTimeoutFn((link: HTMLElement, found: RenderedRule) => {
+      target.value = link
+      rule.value   = found
+    }, SHOW_MS, { immediate: false })
+    const conceal = useTimeoutFn(() => { rule.value = null }, HIDE_MS, { immediate: false })
+
+    function hold(): void {
+      reveal.stop()
+      conceal.stop()
+    }
 
     // One delegated popup serves every `a[data-rule]` in the page, taking the
     // hovered anchor as its reference node.
@@ -34,33 +43,28 @@ export const RuleLinkPopup = defineComponent({
 
     function show(event: Event): void {
       if (onCard(event)) {
-        clearTimeout(timer)
+        hold()
         return
       }
       const link = linkFrom(event)
       if (!link) return
       const found = rules.bySlug[link.dataset.rule ?? '']
       if (!found) return
-      clearTimeout(timer)
+      hold()
       if (link === target.value && rule.value) return
-      timer = setTimeout(() => {
-        target.value = link
-        rule.value   = found
-      }, SHOW_MS)
+      reveal.start(link, found)
     }
 
     function hide(event: Event): void {
       if (!linkFrom(event) && !onCard(event)) return
-      clearTimeout(timer)
-      timer = setTimeout(() => { rule.value = null }, HIDE_MS)
+      hold()
+      conceal.start()
     }
 
     useEventListener('focusin',   show)
     useEventListener('focusout',  hide)
     useEventListener('mouseover', show)
     useEventListener('mouseout',  hide)
-
-    onBeforeUnmount(() => clearTimeout(timer))
 
     return () => (
       <Popup

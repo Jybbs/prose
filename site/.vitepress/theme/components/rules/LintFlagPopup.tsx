@@ -25,6 +25,10 @@ const BLOCK_SIDES: readonly { label: string, side: keyof BlockPanes }[] = [
   { label: 'After',  side: 'after'  }
 ]
 
+const CHIP = 'rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2'
+
+const SHORTHAND = 'flex flex-wrap items-center gap-0-4rem font-mono text-xs'
+
 export interface LintFlagPopupHandle {
   hide   : () => void
   toggle : (event: Event) => boolean
@@ -116,22 +120,22 @@ export const LintFlagPopup = defineComponent({
                 header: () => (
                   finding.shorthand?.kind === 'replace'
                     ? (
-                      <span class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
-                        <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2 line-through">{finding.shorthand.before}</span>
+                      <span class={SHORTHAND}>
+                        <span class={`lint-chip-struck ${CHIP} line-through`}>{finding.shorthand.before}</span>
                         <span aria-hidden="true" class="text-text-3">→</span>
                         <span class="lint-chip-suggest rounded-sm px-0-45rem py-0-1rem bg-text-1/12 text-text-1">{finding.shorthand.after}</span>
                       </span>
                     )
                     : finding.shorthand?.kind === 'remove'
                     ? (
-                      <span class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
-                        <span class="lint-chip-struck rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2 line-through">{finding.shorthand.text}</span>
+                      <span class={SHORTHAND}>
+                        <span class={`lint-chip-struck ${CHIP} line-through`}>{finding.shorthand.text}</span>
                       </span>
                     )
                     : finding.shorthand?.kind === 'insert'
                     ? (
-                      <span class="flex flex-wrap items-center gap-0-4rem font-mono text-xs">
-                        <span class="lint-chip-insert rounded-sm bg-text-1/8 px-0-45rem py-0-1rem text-text-2">
+                      <span class={SHORTHAND}>
+                        <span class={`lint-chip-insert ${CHIP}`}>
                           {finding.shorthand.anchor}
                           <ins class="lint-inserted no-underline bg-text-1/18 text-text-1">{finding.shorthand.inserted}</ins>
                         </span>

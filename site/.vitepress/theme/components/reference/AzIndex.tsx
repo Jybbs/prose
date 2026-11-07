@@ -24,7 +24,7 @@ export const AzIndex = defineComponent({
     })
 
     const stage = shallowRef<HTMLElement | null>(null)
-    const card = shallowRef<HTMLElement | null>(null)
+    const card  = shallowRef<HTMLElement | null>(null)
 
     const { hide, keep, show, shown } = useKeyCard<sources.Token>(stage, card, 'a.az-index-key-btn, .az-index-section-head', 220)
 

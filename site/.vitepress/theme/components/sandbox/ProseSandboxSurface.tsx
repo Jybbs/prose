@@ -16,7 +16,7 @@ import { REPO_URL }             from '../../../lib/shared/constants'
 import { highlight }            from '../../../lib/shared/highlight'
 import { latestRun }            from '../../../lib/shared/latest-run'
 import { externalAttrs }        from '../../../lib/shared/links'
-import { keyHandlers } from '../../../lib/shared/key-handlers'
+import { keyHandlers }          from '../../../lib/shared/key-handlers'
 
 const NO_PAIR = { churn: 0, lines: [0, 0] as const, shifts: 0 }
 
@@ -36,10 +36,10 @@ export const ProseSandboxSurface = defineComponent({
     const reportUrl = `${REPO_URL}/issues/new?template=unstable-output.yml`
 
     const reducedMotion = useReducedMotion()
-    const display = shallowRef<HTMLElement | null>(null)
-    const editor = shallowRef<SandboxCodeEditorHandle | null>(null)
-    const popup = shallowRef<LintFlagPopupHandle | null>(null)
-    const surface = shallowRef<HTMLElement | null>(null)
+    const display       = shallowRef<HTMLElement | null>(null)
+    const editor        = shallowRef<SandboxCodeEditorHandle | null>(null)
+    const popup         = shallowRef<LintFlagPopupHandle | null>(null)
+    const surface       = shallowRef<HTMLElement | null>(null)
 
     const animate     = ref(false)
     const displayHtml = ref('')

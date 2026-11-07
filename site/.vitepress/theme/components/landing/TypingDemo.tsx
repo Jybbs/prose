@@ -27,7 +27,7 @@ export const TypingDemo = defineComponent({
     const pythonStateIndex = ref(0)
 
     const reducedMotion = useReducedMotion()
-    const rootRef = shallowRef<HTMLElement | null>(null)
+    const rootRef       = shallowRef<HTMLElement | null>(null)
 
     const machine = createTypingMachine({
       entries       : data.entries,

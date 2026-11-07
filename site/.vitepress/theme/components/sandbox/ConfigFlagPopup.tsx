@@ -1,3 +1,4 @@
+import { useTimeoutFn }                                         from '@vueuse/core'
 import { computed, defineComponent, Fragment, ref, shallowRef } from 'vue'
 import type { PropType }                                        from 'vue'
 
@@ -25,7 +26,7 @@ export const ConfigFlagPopup = defineComponent({
     const path   = ref('')
     const target = shallowRef<HTMLElement | null>(null)
 
-    let closing: number | null = null
+    const closing = useTimeoutFn(() => { path.value = '' }, GRACE_MS, { immediate: false })
 
     // A path that names a rule offers that rule's facets, closest spelling first.
     // A root key names no rule, so it offers none.
@@ -54,13 +55,11 @@ export const ConfigFlagPopup = defineComponent({
     // The pointer crosses dead space on its way from the key to a replacement
     // button, so a leave schedules the close and entering the card cancels it.
     function hide(): void {
-      closing ??= window.setTimeout(() => { path.value = ''; closing = null }, GRACE_MS)
+      if (!closing.isPending.value) closing.start()
     }
 
     function hold(): void {
-      if (closing === null) return
-      window.clearTimeout(closing)
-      closing = null
+      closing.stop()
     }
 
     function close(): void {
@@ -87,46 +86,46 @@ export const ConfigFlagPopup = defineComponent({
         {{
           default: () => (
             <div
-                class="flex max-w-42ch flex-col gap-12 px-2 py-4"
-                onMouseenter={hold}
-                onMouseleave={close}
-              >
-                <p class="flex flex-wrap items-center gap-5 font-mono text-xs text-text-2">
-                  <span class="text-text-3">[tool.prose]</span>
-                  {trail.value.map(segment => (
-                    <Fragment key={segment}>
-                      <span aria-hidden="true" class="text-text-3">›</span>
-                      <span>{segment}</span>
-                    </Fragment>
-                  ))}
-                  {facets.value.length === 0 ? (
-                    <>
-                      <span aria-hidden="true" class="text-text-3">›</span>
-                      <span class="text-danger-1 line-through">{wrote.value}</span>
-                    </>
-                  ) : null}
-                </p>
-                {facets.value.length > 0 ? (
-                  <div class="flex flex-col gap-7">
-                    {facets.value.map(facet => (
-                      <button
-                        class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
-                        key={facet.key}
-                        onClick={() => apply(facet.key)}
-                        type="button"
-                      >
-                        <span aria-hidden="true" class="text-center text-meta text-warning-1">✓</span>
-                        <span>{facet.key}</span>
-                        <span class="text-right text-meta text-text-3 group-hover:text-warning-1">{facet.kind} · {facet.default}</span>
-                      </button>
-                    ))}
-                    <p class="mt-2 grid grid-cols-14-1fr items-center gap-9 border-t-1 border-t-divider px-12 py-5 font-mono text-xs">
-                      <span aria-hidden="true" class="text-center text-meta text-danger-1">✕</span>
-                      <span class="text-danger-1 line-through">{wrote.value}</span>
-                    </p>
-                  </div>
+              class="flex max-w-42ch flex-col gap-12 px-2 py-4"
+              onMouseenter={hold}
+              onMouseleave={close}
+            >
+              <p class="flex flex-wrap items-center gap-5 font-mono text-xs text-text-2">
+                <span class="text-text-3">[tool.prose]</span>
+                {trail.value.map(segment => (
+                  <Fragment key={segment}>
+                    <span aria-hidden="true" class="text-text-3">›</span>
+                    <span>{segment}</span>
+                  </Fragment>
+                ))}
+                {facets.value.length === 0 ? (
+                  <>
+                    <span aria-hidden="true" class="text-text-3">›</span>
+                    <span class="text-danger-1 line-through">{wrote.value}</span>
+                  </>
                 ) : null}
-              </div>
+              </p>
+              {facets.value.length > 0 ? (
+                <div class="flex flex-col gap-7">
+                  {facets.value.map(facet => (
+                    <button
+                      class="group grid grid-cols-14-1fr-auto items-center gap-9 rounded-sm border-1 border-divider bg-bg px-11 py-7 text-left font-mono text-xs text-text-1 transition-colors hover:border-warning-1/55 hover:bg-warning-1/10 focus-visible:border-warning-1/55 focus-visible:bg-warning-1/10"
+                      key={facet.key}
+                      onClick={() => apply(facet.key)}
+                      type="button"
+                    >
+                      <span aria-hidden="true" class="text-center text-meta text-warning-1">✓</span>
+                      <span>{facet.key}</span>
+                      <span class="text-right text-meta text-text-3 group-hover:text-warning-1">{facet.kind} · {facet.default}</span>
+                    </button>
+                  ))}
+                  <p class="mt-2 grid grid-cols-14-1fr items-center gap-9 border-t-1 border-t-divider px-12 py-5 font-mono text-xs">
+                    <span aria-hidden="true" class="text-center text-meta text-danger-1">✕</span>
+                    <span class="text-danger-1 line-through">{wrote.value}</span>
+                  </p>
+                </div>
+              ) : null}
+            </div>
           )
         }}
       </Popup>

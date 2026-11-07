@@ -1,4 +1,4 @@
-import { useElementBounding }                              from '@vueuse/core'
+import { defaultDocument, useElementBounding }             from '@vueuse/core'
 import { computed, defineComponent, Fragment, shallowRef } from 'vue'
 
 import { tileStamps }                from '../../../lib/landing/hero-stamps'
@@ -8,13 +8,13 @@ import { SITE_ALT }                  from '../../../lib/shared/constants'
 export const Hero = defineComponent({
   name: 'Hero',
   setup() {
-    const heroRef = shallowRef<HTMLElement | null>(null)
+    const heroRef  = shallowRef<HTMLElement | null>(null)
     const layerRef = shallowRef<HTMLElement | null>(null)
 
     const { top:   heroTop }     = useElementBounding(heroRef)
     const { width: layerWidth }  = useElementBounding(layerRef)
     const { top:   terminusTop } = useElementBounding(() =>
-      typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('.surfaces-carousel')
+      defaultDocument?.querySelector<HTMLElement>('.surfaces-carousel') ?? null
     )
 
     const layerHeight = computed(() => {

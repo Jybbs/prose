@@ -29,8 +29,8 @@ export const Surfaces = defineComponent({
       `<strong>${surfaceCards.value.length}</strong> rule families. <em>${ruleCount.value}</em> rules.`
     )
 
-    const trackRef = shallowRef<HTMLElement | null>(null)
-    const viewportRef = shallowRef<HTMLElement | null>(null)
+    const trackRef      = shallowRef<HTMLElement | null>(null)
+    const viewportRef   = shallowRef<HTMLElement | null>(null)
     const reducedMotion = useReducedMotion()
 
     const { fits, halfWidth } = useCarouselMeasurement(trackRef, viewportRef, () => surfaceCards.value.length)

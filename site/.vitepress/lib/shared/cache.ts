@@ -52,8 +52,8 @@ export async function readEntry(cacheDir: string, key: string): Promise<Buffer |
 // where the store is missing or fails to read.
 export async function readEntries(cacheDir: string): Promise<Map<string, Buffer>> {
   try {
-    const keys = Object.keys(await cacache.ls(cacheDir))
-    return new Map(await Promise.all(keys.map(async key => [key, (await cacache.get(cacheDir, key)).data] as const)))
+    const index = Object.entries(await cacache.ls(cacheDir))
+    return new Map(await Promise.all(index.map(async ([key, { integrity }]) => [key, await cacache.get.byDigest(cacheDir, integrity)] as const)))
   }
   catch {
     // A store that fails to read leaves every block to a fresh highlight

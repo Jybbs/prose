@@ -1,7 +1,7 @@
-import type { Theme }          from 'vitepress'
-import DefaultTheme            from 'vitepress/theme'
+import type { Theme }           from 'vitepress'
+import DefaultTheme             from 'vitepress/theme'
 import { defineAsyncComponent } from 'vue'
-import type { Component }      from 'vue'
+import type { Component }       from 'vue'
 
 import '@shikijs/magic-move/style.css'
 import 'virtual:group-icons.css'

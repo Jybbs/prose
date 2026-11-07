@@ -2,8 +2,8 @@ import { promiseTimeout }                                                       
 import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch, withKeys, withModifiers } from 'vue'
 import type { PropType }                                                                                   from 'vue'
 
-import { ConfigFlagPopup, type ConfigFlagPopupHandle } from './ConfigFlagPopup'
-import { CopyButton }        from '../../../kit'
+import { ConfigFlagPopup, type ConfigFlagPopupHandle }     from './ConfigFlagPopup'
+import { CopyButton }                                      from '../../../kit'
 import { SandboxCodeEditor, type SandboxCodeEditorHandle } from './SandboxCodeEditor'
 
 import type { ProseSandbox }                     from '../../../lib/composables/use-prose-sandbox'
@@ -24,8 +24,8 @@ export const ProseSandboxToml = defineComponent({
     const { configError, configNotices, configToml, renameConfigKey, rules } = props.sandbox
 
     const reducedMotion = useReducedMotion()
-    const editor = shallowRef<SandboxCodeEditorHandle | null>(null)
-    const popup = shallowRef<ConfigFlagPopupHandle | null>(null)
+    const editor        = shallowRef<SandboxCodeEditorHandle | null>(null)
+    const popup         = shallowRef<ConfigFlagPopupHandle | null>(null)
 
     // An unknown key the source carries takes a squiggle and a margin mark,
     // leaving the message list to the notices no line matched.
