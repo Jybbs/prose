@@ -153,9 +153,9 @@ export const CompositionCards = defineComponent({
                         {activeCase.value === row.case ? (
                           <FixturePairDoc
                             activeTab={activeTab.value}
+                            configHtml={row.configHtml}
                             inputHtml={row.inputHtml}
                             outputHtml={row.outputHtml}
-                            sandboxSeed={row.sandboxSeed}
                           />
                         ) : null}
                         <ol

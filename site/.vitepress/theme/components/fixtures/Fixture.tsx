@@ -45,9 +45,9 @@ export const Fixture = defineComponent({
         {gauge.value ? <SettingGauge gauge={gauge.value} modelValue={value.value} onUpdate:modelValue={next => { value.value = next }} /> : null}
         <FixturePairDoc
           activeTab={activeTab.value}
+          configHtml={entry.value.configHtml}
           inputHtml={entry.value.inputHtml}
           outputHtml={outputHtml.value}
-          sandboxSeed={entry.value.sandboxSeed}
         />
       </div>
     )

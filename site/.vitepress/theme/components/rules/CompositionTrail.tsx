@@ -30,6 +30,13 @@ export const CompositionTrail = defineComponent({
     const states  = computed(() => trail.value.steps.map(at => trail.value.outputs[at]!))
     const through = computed(() => Number(step.value))
 
+    // Every step's line stacks in one grid cell, so the cell holds the height of
+    // the line that wraps furthest whichever step shows.
+    const lines = computed(() => [
+      'The case as written, before any rule runs',
+      ...trail.value.rules.map((_, at) => `prose format --select ${trail.value.rules.slice(0, at + 1).join(',')}`)
+    ])
+
     return () => (
       <section class="my-1-25rem">
         <FixtureLead nodes={entry.value.descriptionNodes} />
@@ -61,10 +68,16 @@ export const CompositionTrail = defineComponent({
             )
           }}
         </Tabs>
-        <p class="my-0 mb-8 font-mono text-meta text-text-2">
-          {through.value === 0
-            ? 'The case as written, before any rule runs'
-            : <code>{`prose format --select ${trail.value.rules.slice(0, through.value).join(',')}`}</code>}
+        <p class="my-0 mb-8 grid font-mono text-meta text-text-2">
+          {lines.value.map((line, at) => (
+            <span
+              aria-hidden={at === through.value ? undefined : 'true'}
+              class={['col-start-1 row-start-1', { invisible: at !== through.value }]}
+              key={at}
+            >
+              {at === 0 ? line : <code>{line}</code>}
+            </span>
+          ))}
         </p>
         <div class="grid overflow-hidden panel bg-code-block">
           {states.value.map((html, at) => (

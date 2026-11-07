@@ -24,8 +24,23 @@ vi.mock('../../lib/rules/rules.data', async () =>
 describe('CompositionTrail', () => {
   const render = () => mount(CompositionTrail, { props: { case: 'alpha_case' } })
 
+  const shown = (wrapper: ReturnType<typeof render>) =>
+    wrapper.findAll('p > span').filter(line => !line.classes('invisible'))
+
   it('opens on the whole rule set, its command naming every rule', () => {
-    expect(render().get('p code').text()).toBe('prose format --select a,b,c')
+    expect(shown(render()).map(line => line.text())).toStrictEqual(['prose format --select a,b,c'])
+  })
+
+  it('names the rules up to the chosen step', async () => {
+    const wrapper = render()
+    await wrapper.findAll('[role=tab]')[2].trigger('click')
+    expect(shown(wrapper).map(line => line.text())).toStrictEqual(['prose format --select a,b'])
+  })
+
+  it('stacks every step line in one cell, hiding all but the shown one from a reader', () => {
+    const lines = render().findAll('p > span')
+    expect(lines).toHaveLength(4)
+    expect(lines.map(line => line.attributes('aria-hidden'))).toStrictEqual(['true', 'true', 'true', undefined])
   })
 
   it('strikes each step whose output matches the step before it', () => {
@@ -36,7 +51,7 @@ describe('CompositionTrail', () => {
   it('shows the case as written from the first step', async () => {
     const wrapper = render()
     await wrapper.findAll('[role=tab]')[0].trigger('click')
-    expect(wrapper.get('p').text()).toBe('The case as written, before any rule runs')
+    expect(shown(wrapper).map(line => line.text())).toStrictEqual(['The case as written, before any rule runs'])
     expect(wrapper.findAll('.grid > div').find(panel => !isInert(panel))?.text()).toBe('in')
   })
 })

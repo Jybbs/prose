@@ -1,5 +1,4 @@
 import type { InlineNode }   from '../markdown/inline-nodes'
-import type { SavedSession } from '../sandbox/session'
 import { lookup }            from '../shared/lookup'
 
 export const COMPOSITION_RULE = 'composition'
@@ -21,7 +20,6 @@ export interface FixtureEntry extends FixtureFlags {
   descriptionNodes ?: InlineNode[]
   inputHtml         : string
   outputHtml        : string
-  sandboxSeed       : SavedSession
   titleHtml         : string
 }
 

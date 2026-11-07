@@ -37,10 +37,13 @@ import './styles/vitepress-chrome.css'
 // component loads with that component alone, which only some pages render.
 import.meta.glob(['./components/**/*.css', '!./components/base/*.css', '../kit/styles/*.css'], { eager: true })
 
-const components = import.meta.glob<Record<string, Component>>(
+// A component carrying data that one page alone reads loads in a chunk of its
+// own, through the async registrations below.
+const components = import.meta.glob<Record<string, Component>>([
   './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.tsx',
-  { eager: true }
-)
+  '!./components/integrations/ActionsJob.tsx',
+  '!./components/reference/{DiffSample,OutputSamples}.tsx'
+], { eager: true })
 
 export default {
   extends: DefaultTheme,
@@ -52,8 +55,14 @@ export default {
     for (const module of Object.values(components)) {
       for (const [name, component] of Object.entries(module)) app.component(name, component)
     }
+    app.component('ActionsJob', defineAsyncComponent(async () =>
+      (await import('./components/integrations/ActionsJob')).ActionsJob))
     app.component('ConfigForms', defineAsyncComponent(() => import('./components/base/ConfigForms')))
+    app.component('DiffSample', defineAsyncComponent(async () =>
+      (await import('./components/reference/DiffSample')).DiffSample))
     app.component('KitCatalog', defineAsyncComponent(() => import('../kit/KitCatalog')))
+    app.component('OutputSamples', defineAsyncComponent(async () =>
+      (await import('./components/reference/OutputSamples')).OutputSamples))
     app.component('Tool', Tool)
   }
 } satisfies Theme

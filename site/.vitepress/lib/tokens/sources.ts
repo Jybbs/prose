@@ -35,8 +35,8 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   'suppression'   : 'Suppression Directive'
 }
 
-// The domains whose blurb is the first sentence of the line `prose --help`
-// prints for the entry.
+// The domains whose blurb is the first sentence of the line the `--help` of
+// the command declaring the entry prints for it.
 export type HelpDomain = 'cli-flag' | 'subcommand'
 
 export type StaticDomain = Exclude<Domain, 'config-key' | 'exit-code' | HelpDomain>

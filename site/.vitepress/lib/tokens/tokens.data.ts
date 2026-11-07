@@ -4,6 +4,7 @@ import { exitCodes }                          from '../exit-codes/sources'
 import { inlineNodes }                        from '../markdown/inline-nodes'
 import { getRenderer }                        from '../markdown/renderer'
 import * as help                              from '../reference/cli-help'
+import { readPipeline }                       from '../rules/pipeline'
 import { proseBinaryPath, repoRoot, siteDir } from '../shared/paths'
 import { proseSchema }                        from '../shared/rule-schema'
 import * as configKeys                        from './config-keys'
@@ -23,11 +24,13 @@ export default defineLoader({
     const schema        = proseSchema(root)
     const destinationOf = destinations(site, configKeys.facetDestinations(schema))
     const pages         = help.readHelp(root)
+    const slugs         = new Set(readPipeline(import.meta.url).map(entry => entry.slug))
     const fromHelp      = (domain: sources.HelpDomain): readonly sources.TokenSource[] =>
-      sources.HELP_SOURCES[domain].map(s => ({
-        ...s,
-        blurb: help.closed(configKeys.firstSentence(help.helpLine(pages, s.key)))
-      }))
+      sources.HELP_SOURCES[domain].map(s => {
+        const line   = help.helpLine(pages, s.key)
+        const values = help.listsRuleSet(line, slugs) ? undefined : line.values
+        return { ...s, blurb: help.closed(help.withValues(configKeys.firstSentence(line.help), values)) }
+      })
     const all: Record<sources.Domain, readonly sources.TokenSource[]> = {
       ...sources.SOURCES,
       'cli-flag'   : fromHelp('cli-flag'),

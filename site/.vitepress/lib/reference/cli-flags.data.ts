@@ -22,12 +22,11 @@ export { data }
 // Builds the table row one help entry reads as, naming a value list equal to
 // the registered rule set as rule slugs rather than spelling out every slug.
 export function flagRow(md: InlineParser, entry: help.HelpEntry, slugs: ReadonlySet<string>): ConfigRow {
-  const ruleSet = entry.values?.length === slugs.size && entry.values.every(value => slugs.has(value))
-  const type    = ruleSet                    ? '[rule slugs](/rules/)'
-                : entry.values !== undefined ? entry.values.map(value => `\`${value}\``).join(' \\| ')
-                : entry.value !== undefined  ? `\`<${entry.value}>\``
-                : entry.name.startsWith('-') ? 'bool'
-                : 'path'
+  const type = help.listsRuleSet(entry, slugs) ? '[rule slugs](/rules/)'
+             : entry.values !== undefined      ? entry.values.map(value => `\`${value}\``).join(' \\| ')
+             : entry.value !== undefined       ? `\`<${entry.value}>\``
+             : entry.name.startsWith('-')      ? 'bool'
+             : 'path'
   return {
     default      : entry.default ?? (entry.name.startsWith('-') && entry.value === undefined ? 'off' : 'unset'),
     key          : entry.short === undefined ? entry.name : `${entry.name}, -${entry.short}`,

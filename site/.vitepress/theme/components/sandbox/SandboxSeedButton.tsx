@@ -1,23 +1,27 @@
 import { defineComponent } from 'vue'
-import type { PropType }   from 'vue'
 
 import { computedAsync } from '@vueuse/core'
 
-import { seedUrl, type SavedSession } from '../../../lib/sandbox/session'
+import { seedUrl }  from '../../../lib/sandbox/session'
+import { codeFrom } from '../../../lib/shared/code-from'
 
 export const SandboxSeedButton = defineComponent({
   name  : 'SandboxSeedButton',
   props : {
-    seed : { required: true, type: Object as PropType<SavedSession> }
+    configHtml : String,
+    inputHtml  : { required: true, type: String }
   },
   setup(props) {
-    // The payload deflates through `CompressionStream`, so the link resolves
-    // client-side and stays empty where the platform lacks the codec.
-    const href = computedAsync(
-      async () => await seedUrl(props.seed.configToml, props.seed.source) ?? '', '')
+    // The link resolves client-side, where `codeFrom` has a DOM to read and the
+    // payload deflates through `CompressionStream`, so it stays empty where the
+    // platform lacks the codec.
+    const href = computedAsync(async () => {
+      const configToml = props.configHtml ? `${codeFrom(props.configHtml)}\n` : ''
+      return await seedUrl(configToml, `${codeFrom(props.inputHtml)}\n`) ?? ''
+    }, '')
 
     return () => (
-      href.value && (
+      href.value ? (
         <a
           aria-label="Open this case in the sandbox"
           class="sandbox-seed panel-corner right-40 panel-seat size-28"
@@ -33,7 +37,7 @@ export const SandboxSeedButton = defineComponent({
             <circle cx="15.5" cy="15" r="2.2" />
           </svg>
         </a>
-      )
+      ) : null
     )
   }
 })

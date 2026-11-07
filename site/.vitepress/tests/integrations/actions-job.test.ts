@@ -38,7 +38,7 @@ describe('jobYaml', () => {
 
   it('restores the cache ahead of the run', () => {
     const yaml = job.jobYaml(choice({ cache: true }))
-    expect(yaml.indexOf('actions/cache@v4')).toBeLessThan(yaml.indexOf('prose check'))
+    expect(yaml.indexOf('actions/cache@')).toBeLessThan(yaml.indexOf('prose check'))
   })
 
   it('installs and runs Ruff ahead of the prose check', () => {
@@ -47,9 +47,9 @@ describe('jobYaml', () => {
     expect(lines).toContain('      - run: uv tool install ruff')
   })
 
-  it('grants the upload its permission and uploads the file sarif writes', () => {
+  it('grants the upload its permissions and uploads the file sarif writes', () => {
     const yaml = job.jobYaml(choice({ format: job.UPLOADED_FORMAT }))
-    expect(yaml).toContain('security-events: write')
+    expect(yaml).toMatch(/permissions:\n {6}actions: read\n {6}contents: read\n {6}security-events: write/)
     expect(yaml).toContain('sarif_file: prose.sarif')
   })
 })

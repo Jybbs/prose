@@ -13,6 +13,7 @@ const md       = await getRenderer()
 const inputOf  = (rule: string, caseName: string): string =>
   path.join(fixturesDirFrom(CRATE), rule, caseName, walker.INPUT_FILE)
 const WIDE     = inputOf('align_equals', 'wide_target_breaks_run')
+const UNPADDED = inputOf('align_colons', 'docstring_entries_off_keeps_unpadded_entries')
 const TRAILED  = inputOf('composition', 'overflow_dict_constants_modernize_unions')
 const snapshot = async (inputPath: string): Promise<string> =>
   renderFencedHtml(md, (await readFixtureToggle(inputPath)).output, 'python')
@@ -34,8 +35,13 @@ describe('readGauge', () => {
     expect(gauge.outputs[gauge.steps[gauge.default]!]).toBe(await snapshot(WIDE))
   })
 
-  it('reads the case override beside the setting it steps', () => {
+  it('changes the output at each value the setting moves a row', () => {
     expect(changeValues(gauge.steps)).toStrictEqual([2, 6, 19, 20, 21])
+  })
+
+  it('keeps the case override of the other keys of the rule beside the setting it steps', async () => {
+    const kept = await readGauge(md, 'align_colons', UNPADDED, 'max-shift')
+    expect(kept.outputs[kept.steps[kept.default]!]).toBe(await snapshot(UNPADDED))
   })
 
   it('names a rule declaring no numeric setting of that name', async () => {

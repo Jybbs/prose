@@ -11,9 +11,10 @@ import type { HeadConfig, PageData } from 'vitepress'
 
 export const TITLE_TEMPLATE = `:title · ${constants.SITE_NAME}`
 
-// Sets the description to the frontmatter's description flattened to plain
-// text, titles a section's index page with its `SECTIONS` label, and titles the
-// landing page with the site name and tagline in place of `TITLE_TEMPLATE`.
+// Sets the description to the first `description`, `caption`, or `summary` the
+// frontmatter holds, flattened to plain text, titles a section's index page with
+// its `SECTIONS` label, and titles the landing page with the site name and
+// tagline in place of `TITLE_TEMPLATE`.
 export function describePage(pageData: PageData): void {
   const source = frontmatterDescription(pageData.frontmatter)
   if (source !== undefined) pageData.description = inlineText(source)

@@ -6,7 +6,7 @@ export const DEFAULT_FORMAT = 'text'
 // The output format a later step uploads, which the job writes to a file.
 export const UPLOADED_FORMAT = 'sarif'
 
-const CACHE = `      - uses: actions/cache@v4
+const CACHE = `      - uses: actions/cache@v6
         with:
           path: ~/.cache/prose
           key: prose-\${{ runner.os }}-\${{ hashFiles('prose.toml', '.config/prose.toml', 'pyproject.toml') }}`
@@ -23,11 +23,12 @@ jobs:
     runs-on: ubuntu-latest`
 
 const PERMISSIONS = `    permissions:
+      actions: read
       contents: read
       security-events: write`
 
-const SETUP = `      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+const SETUP = `      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true`
 

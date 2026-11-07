@@ -4,6 +4,11 @@ import { mount } from '@vue/test-utils'
 const { frontmatter } = vi.hoisted(() => ({
   frontmatter: {
     value: {
+      fixtureGauges: {
+        'align_equals/basic_run#max-shift': {
+          default: 1, outputs: ['<pre>held</pre>', '<pre>aligned</pre>'], setting: 'max-shift', steps: [0, 1, 1]
+        }
+      },
       fixtures: {
         'align_equals/basic_run': {
           changesSource : true,
@@ -12,7 +17,6 @@ const { frontmatter } = vi.hoisted(() => ({
           hasToggle     : true,
           inputHtml     : '<pre><code>a = 1</code></pre>',
           outputHtml    : '<pre><code>a  = 1</code></pre>',
-          sandboxSeed   : { configToml: 'max-shift = 0\n', source: 'a = 1\n' },
           titleHtml     : 'A <code>Run</code> Aligns'
         },
         'align_equals/settled_run': {
@@ -21,7 +25,6 @@ const { frontmatter } = vi.hoisted(() => ({
           hasToggle     : false,
           inputHtml     : '<pre><code>a = 1</code></pre>',
           outputHtml    : '<pre><code>a = 1</code></pre>',
-          sandboxSeed   : { configToml: '', source: 'a = 1\n' },
           titleHtml     : 'Settled'
         }
       }
@@ -85,11 +88,12 @@ describe('FixtureCard', () => {
     expect(card('settled_run').findAll('.fixture-config')).toHaveLength(0)
   })
 
-  it('hands the pair the session that opens the case in the sandbox', async () => {
+  it('hands the pair the panes the sandbox link reads', async () => {
     const w = card()
     await w.get('.fixture-card-summary').trigger('click')
-    expect(w.getComponent({ name: 'FixturePairDoc' }).props('sandboxSeed'))
-      .toStrictEqual({ configToml: 'max-shift = 0\n', source: 'a = 1\n' })
+    const pair = w.getComponent({ name: 'FixturePairDoc' })
+    expect([pair.props('configHtml'), pair.props('inputHtml')])
+      .toStrictEqual(['<pre><code>max-shift = 0</code></pre>', '<pre><code>a = 1</code></pre>'])
   })
 })
 
@@ -106,9 +110,19 @@ describe('Fixture', () => {
     expect(bare('settled_run').findAll('.fixture-bar')).toHaveLength(0)
   })
 
-  it('shows the configuration and hands the pair its sandbox session', () => {
+  it('swaps the output for the one the gauge steps to', async () => {
+    const w    = mount(Fixture, { ...STUBS, props: { case: 'basic_run', rule: 'align_equals', setting: 'max-shift' } })
+    const pair = () => w.getComponent({ name: 'FixturePairDoc' }).props('outputHtml')
+    expect(pair()).toBe('<pre>aligned</pre>')
+    const stop = w.get('.fixture-gauge-stop')
+    await stop.trigger('focusin')
+    await stop.trigger('keydown', { key: 'Home' })
+    expect(pair()).toBe('<pre>held</pre>')
+  })
+
+  it('shows the configuration and hands the pair the pane it overrides', () => {
     const w = bare()
     expect(w.findAll('.fixture-config')).toHaveLength(1)
-    expect(w.getComponent({ name: 'FixturePairDoc' }).props('sandboxSeed').source).toBe('a = 1\n')
+    expect(w.getComponent({ name: 'FixturePairDoc' }).props('configHtml')).toBe('<pre><code>max-shift = 0</code></pre>')
   })
 })

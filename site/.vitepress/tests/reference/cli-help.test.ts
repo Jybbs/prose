@@ -77,11 +77,25 @@ describe('helpLine', () => {
     expect(helpLine('--select <slug>')).toMatch(/^Comma-separated rule slugs to run/)
   })
 
+  it('carries the values clap lists for a flag', () => {
+    expect(help.helpLine(HELP, '--output-format').values).toStrictEqual(['github', 'json', 'sarif', 'text'])
+  })
+
   it.each(['prose cache vacuum', 'prose nothing', '--no-such-flag'])('throws for %j, which no page prints', key => {
     expect(() => helpLine(key)).toThrow(/prints (no )?a? ?line/)
   })
 })
 
+describe('withValues', () => {
+  it.each([
+    ['Output format for diagnostics',  ['text', 'json'], 'Output format for diagnostics, `text` or `json`'],
+    ['Pick one.',                      ['a', 'b', 'c'],  'Pick one, `a`, `b`, or `c`'],
+    ['Read stdin.',                    undefined,        'Read stdin.']
+  ])('appends to %j the values %j', (sentence, values, expected) => {
+    expect(help.withValues(sentence, values)).toBe(expected)
+  })
+})
+
 function helpLine(key: string): string {
-  return help.helpLine(HELP, key)
+  return help.helpLine(HELP, key).help
 }

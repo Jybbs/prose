@@ -6,20 +6,20 @@ import { CopyButton }                              from '../../../kit'
 import { LintFlagPopup, type LintFlagPopupHandle } from '../rules/LintFlagPopup'
 import { SandboxSeedButton }                       from '../sandbox/SandboxSeedButton'
 
-import { useMagicMove }      from '../../../lib/composables/use-magic-move'
-import { useReducedMotion }  from '../../../lib/composables/use-reduced-motion'
-import { useSquiggleDraw }   from '../../../lib/composables/use-squiggle-draw'
-import type { SavedSession } from '../../../lib/sandbox/session'
-import { SCROLL_STOP }       from '../../../lib/shared/constants'
-import type { FixtureTab }   from '../../../lib/shared/fixture-tab'
+import { useMagicMove }     from '../../../lib/composables/use-magic-move'
+import { useReducedMotion } from '../../../lib/composables/use-reduced-motion'
+import { useSquiggleDraw }  from '../../../lib/composables/use-squiggle-draw'
+import { codeFrom }         from '../../../lib/shared/code-from'
+import { SCROLL_STOP }      from '../../../lib/shared/constants'
+import type { FixtureTab }  from '../../../lib/shared/fixture-tab'
 
 export const FixturePairDoc = defineComponent({
   name  : 'FixturePairDoc',
   props : {
-    activeTab   : { required: true, type: String as PropType<FixtureTab> },
-    inputHtml   : { required: true, type: String },
-    outputHtml  : { required: true, type: String },
-    sandboxSeed : { required: true, type: Object as PropType<SavedSession> }
+    activeTab  : { required: true, type: String as PropType<FixtureTab> },
+    configHtml : String,
+    inputHtml  : { required: true, type: String },
+    outputHtml : { required: true, type: String },
   },
   setup(props) {
     const reducedMotion = useReducedMotion()
@@ -44,13 +44,6 @@ export const FixturePairDoc = defineComponent({
     const strippedHtml = computed(() => activeHtml.value
       .replace(/<button\b[^>]*class="copy"[^>]*>\s*<\/button>/, '')
       .replace(/<span class="lang">[^<]*<\/span>/, ''))
-
-    // Recover the source from a prebuilt highlight, reading only `<pre><code>` so
-    // the lang chip and copy button stay out of the retokenized code.
-    function codeFrom(html: string): string {
-      return new DOMParser().parseFromString(html, 'text/html')
-        .querySelector('pre code')?.textContent?.trimEnd() ?? ''
-    }
 
     // Once the fixture scrolls into view, load the renderer and highlighter,
     // paint the active step, then enable motion for later toggles. The
@@ -130,7 +123,7 @@ export const FixturePairDoc = defineComponent({
           style={{ display: animating.value ? 'none' : undefined }}
         />
         <CopyButton label="Copy code" source={activeCode.value} />
-        <SandboxSeedButton seed={props.sandboxSeed} />
+        <SandboxSeedButton configHtml={props.configHtml} inputHtml={props.inputHtml} />
         <span class="lang">python</span>
         <LintFlagPopup ref={popup} />
       </div>

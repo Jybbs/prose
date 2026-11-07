@@ -98,9 +98,9 @@ export const FixtureCard = defineComponent({
                     {isOpen.value ? (
                       <FixturePairDoc
                         activeTab={activeTab.value}
+                        configHtml={entry.value.configHtml}
                         inputHtml={entry.value.inputHtml}
                         outputHtml={entry.value.outputHtml}
-                        sandboxSeed={entry.value.sandboxSeed}
                       />
                     ) : null}
                   </div>

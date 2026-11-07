@@ -37,14 +37,14 @@ The `sarif` output format writes findings to a file that a second step uploads t
     sarif_file: prose.sarif
 ```
 
-Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload needs the job's `permissions` to grant `security-events: write`. The step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
+Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload needs the job's `permissions` to grant `security-events: write`, and in a private repository `actions: read` and `contents: read` as well. The step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
 
 ## Persisting the Cache
 
 Every run uses the per-user [**cache**](/reference/cache) by default, but a runner's filesystem is discarded after each job. `actions/cache` keeps `~/.cache/prose` between runs, so a file that has not changed is read from the cache instead of formatted again:
 
 ```yaml
-- uses: actions/cache@v4
+- uses: actions/cache@v6
   with:
     path: ~/.cache/prose
     key: prose-${{ runner.os }}-${{ hashFiles('prose.toml', '.config/prose.toml', 'pyproject.toml') }}

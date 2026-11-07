@@ -83,7 +83,7 @@ newest: 5m ago
 
 ## Hit-Miss Telemetry
 
-The global `--verbose` flag prints one line of cache counts to stderr at the end of each `prose check` or `prose format` run:
+The global `--verbose` flag prints one line of cache counts to stderr ahead of the closing summary of each `prose check` or `prose format` run:
 
 ```bash
 $ prose --verbose check src/

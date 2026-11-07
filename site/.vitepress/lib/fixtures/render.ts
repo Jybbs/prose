@@ -43,7 +43,6 @@ async function renderEntry(id: string, inputPath: string): Promise<FixtureEntry>
     descriptionNodes : description ? blockNodes(md, description) : undefined,
     inputHtml        : await renderer.renderFencedHtml(md, inputRaw, 'python'),
     outputHtml       : await renderer.renderFencedHtml(md, output, 'python', fenceMeta),
-    sandboxSeed      : { configToml, source: inputRaw },
     titleHtml        : inlineCode(title)
   }
 }

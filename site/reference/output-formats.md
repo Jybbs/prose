@@ -8,7 +8,7 @@ description: "Covers the `text`, `json`, `github`, and `sarif` formats."
 
 Every format writes diagnostics to stdout, and operational errors *(parse failures, IO errors, config errors)* go to stderr with an `error:` prefix, so a CI pipeline can separate the two streams without reading exit codes. A file whose syntax its `target-version` rejects prints its `syntax error` line on stderr as well, naming the file, the position, and the version, and the `json`, `github`, and `sarif` formats also print it as a record at that position, so a reader positions it the way it positions a diagnostic.
 
-The samples below come from one `prose check` run in each format over the same file, and from `prose format --diff` over it. Choosing a finding in the index underlines its range in the source and marks its record in the format showing.
+The samples below come from one `prose check` run in each of the `text`, `json`, and `github` formats over the same file, and from `prose format --diff` over it. Choosing a finding in the index underlines its range in the source and marks its record in the format showing.
 
 <OutputSamples />
 

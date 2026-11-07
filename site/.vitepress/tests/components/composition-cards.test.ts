@@ -26,7 +26,6 @@ const { frontmatter } = vi.hoisted(() => {
     hasToggle     : true,
     inputHtml     : '',
     outputHtml    : '',
-    sandboxSeed   : { configToml: '', source: '' },
     titleHtml
   })
   const value: Record<string, unknown> = {

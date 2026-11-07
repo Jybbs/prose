@@ -1,5 +1,3 @@
-import fs from 'node:fs'
-
 import { COMPOSITION_RULE, fixtureId, gaugeId } from '../../lib/fixtures/entry'
 import { LINT_FINDINGS_FILE }                    from '../../lib/fixtures/lint-findings'
 import * as render                               from '../../lib/fixtures/render'
@@ -22,12 +20,6 @@ describe('fixtureEntries', () => {
     const entry  = (await render.fixtureEntries(CRATE, [titled.id]))[titled.id]
     expect(entry.titleHtml).toContain('<code>')
     expect(entry.titleHtml).not.toContain('`')
-  })
-
-  it('seeds the sandbox with the input and the override beside it', async () => {
-    const entry = (await render.fixtureEntries(CRATE, [CANONICAL.id]))[CANONICAL.id]
-    expect(entry.sandboxSeed.source).toBe(fs.readFileSync(CANONICAL.inputPath, 'utf8'))
-    expect(entry.sandboxSeed.configToml).toBe(walker.readOverrideToml(CANONICAL.inputPath))
   })
 
   it('walks the meta description to inline nodes', async () => {
