@@ -2,9 +2,7 @@
 .fixture-lead :last-child  { margin-bottom : 0; }
 
 .vp-doc .fixture-pair-doc .fixture-pair-panel > div[class*='language-'] {
-  margin        : 0;
-  border-radius : 0;
-  background    : transparent;
+  background : transparent;
 }
 
 .fixture-pair-doc .shiki-magic-move-container {

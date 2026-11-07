@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ReleaseToggle         from '../../theme/components/landing/ReleaseToggle.vue'
+import { ReleaseToggle }     from '../../theme/components/landing/ReleaseToggle'
 import { rendersAccessibly } from '../axe'
 
 const mountToggle = (open: boolean) => mount(ReleaseToggle, { props: { open } })

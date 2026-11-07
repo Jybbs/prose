@@ -3,9 +3,9 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h }     from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
-import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
+import { GlossaryTerm }      from '../../theme/components/glossary/GlossaryTerm'
 
-vi.mock('vitepress', () => ({ useRoute: () => ({ path: '/architecture/' }) }))
+vi.mock('vitepress', () => ({ defineLoader: () => {}, useRoute: () => ({ path: '/architecture/' }) }))
 
 vi.mock('../../lib/glossary/glossary.data', () => ({
   data: {
@@ -24,21 +24,19 @@ vi.mock('../../lib/glossary/glossary.data', () => ({
   }
 }))
 
-// FloatingVue's popper cannot open inside happy-dom, so the assertions stop
-// at the directive receiving the binding and the binding carrying the
-// definition, the same wiring the compiled pages hover through.
-describe('GlossaryTerm tooltip wiring', () => {
-  interface TooltipBinding {
-    value: { content: string, theme: string }
-  }
+// Renders the popup's content in place, so the assertions read the content
+// the term passes the popup and the theme it names.
+const Popup = {
+  props    : ['theme'],
+  template : '<div :data-popup="theme"><slot name="trigger" :props="{}" /><slot /></div>'
+}
 
-  const tooltip = vi.fn<(el: Element, binding: TooltipBinding) => void>()
-
+describe('GlossaryTerm popup wiring', () => {
   let w: VueWrapper
 
   beforeEach(() => {
     w = mount(GlossaryTerm, {
-      global : { directives: { tooltip } },
+      global : { stubs: { Popup } },
       props  : { slug: 'atomic' },
       slots  : { default: () => 'atom' }
     })
@@ -48,33 +46,27 @@ describe('GlossaryTerm tooltip wiring', () => {
     expect(w.get('.glossary-anchor').text()).toBe('atom')
   })
 
-  it('hands the tooltip directive the definition and the glossary theme', () => {
-    const binding = tooltip.mock.calls[0][1].value
-    expect(binding.theme).toBe('glossary')
-    expect(binding.content).toContain('An indivisible literal.')
-    expect(binding.content).toContain('href="/reference/glossary#atomic"')
+  it('hands the popup the definition and the glossary theme', () => {
+    expect(w.attributes('data-popup')).toBe('glossary')
+    expect(w.get('.glossary-tooltip-body').text()).toBe('An indivisible literal.')
+    expect(w.find('a[href="/reference/glossary#atomic"]').exists()).toBe(true)
   })
 
-  it('heads the tooltip with the title, each family nib, a middle dot, and the Glossary kicker', () => {
-    const head = new DOMParser().parseFromString(tooltip.mock.calls[0][1].value.content, 'text/html')
-      .querySelector('.glossary-tooltip-head')!
-    expect(head.querySelector('.glossary-tooltip-title')?.textContent).toBe('atomic')
-    expect([...head.querySelectorAll<HTMLElement>('.glossary-tooltip-nib')].map(nib => [nib.dataset.family, nib.querySelector('svg')?.getAttribute('aria-label')]))
+  it('heads the popup with the title, each family nib, a middle dot, and the Glossary kicker', () => {
+    const head = w.get('.glossary-tooltip-head')
+    expect(head.get('.glossary-tooltip-title').text()).toBe('atomic')
+    expect(head.findAll('.glossary-tooltip-nib').map(nib => [nib.attributes('data-family'), nib.get('svg').attributes('aria-label')]))
       .toStrictEqual([['engine', 'Engine']])
-    expect(head.querySelector('.middle-dot')?.textContent).toBe('·')
-    expect(head.querySelector('.kicker')?.textContent).toBe('Glossary')
+    expect(head.get('.middle-dot').text()).toBe('·')
+    expect(head.get('.kicker').text()).toBe('Glossary')
   })
 
   it('draws Read More in the link style', () => {
-    const link = new DOMParser().parseFromString(tooltip.mock.calls[0][1].value.content, 'text/html')
-      .querySelector('a[href="/reference/glossary#atomic"]')!
-    expect(link.querySelector('.nib-stroke')?.textContent).toBe('Read more →')
+    expect(w.get('a[href="/reference/glossary#atomic"] .nib-stroke').text()).toBe('Read more →')
   })
 })
 
 describe('GlossaryTerm tab order', () => {
-  const tooltip = vi.fn<() => void>()
-
   const anchor = (hidden: boolean) => {
     const Child = defineComponent({
       setup: () => () => h(GlossaryTerm, { slug: 'atomic' }, () => 'atom')
@@ -85,7 +77,7 @@ describe('GlossaryTerm tab order', () => {
         return () => h(Child)
       }
     })
-    return mount(Parent, { global: { directives: { tooltip } } }).get('.glossary-anchor')
+    return mount(Parent).get('.glossary-anchor')
   }
 
   it('stays focusable in ordinary prose', () => {

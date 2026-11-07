@@ -1,40 +1,27 @@
-.v-popper--theme-rule-card .v-popper__inner {
-  padding    : 0;
-  background : transparent;
-  border     : none;
-  box-shadow : none;
+[data-popup='rule-card'] {
+  --popup-border : var(--vp-c-divider);
 }
 
-.v-popper--theme-rule-card {
-  --popper-border : var(--vp-c-divider);
+[data-popup='rule-card']:is(:hover, :focus-within) {
+  --popup-border : var(--family-edge);
 }
 
-.v-popper--theme-rule-card:is(:hover, :focus-within) {
-  --popper-border : var(--family-edge);
-}
-
-.v-popper--theme-rule-card .v-popper__wrapper {
-  transition :
-    opacity   140ms var(--prose-ease-emphasized),
-    transform 140ms var(--prose-ease-emphasized);
-}
-
-.v-popper--theme-rule-card .rule-card {
+[data-popup='rule-card'] .rule-card {
   width         : max-content;
   max-width     : min(calc(100vw - var(--prose-space-32)), var(--prose-width-600));
   height        : auto;
-  border        : var(--prose-border-1) solid var(--popper-border);
+  border        : var(--prose-border-1) solid var(--popup-border);
   border-radius : var(--prose-radius);
   background    : var(--vp-c-bg);
   box-shadow    : var(--prose-shadow-tooltip);
 }
 
-.v-popper--theme-rule-card .rule-card-caption {
+[data-popup='rule-card'] .rule-card-caption {
   max-width     : var(--rule-card-caption-width, var(--prose-width-30rem));
   text-wrap     : balance;
   overflow-wrap : anywhere;
 }
 
-.v-popper--theme-rule-card .rule-card-caption :where(code) {
+[data-popup='rule-card'] .rule-card-caption :where(code) {
   white-space : normal;
 }

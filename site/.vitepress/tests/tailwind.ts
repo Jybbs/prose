@@ -5,6 +5,8 @@ import path              from 'node:path'
 import { Scanner }                      from '@tailwindcss/oxide'
 import { __unstable__loadDesignSystem } from 'tailwindcss'
 
+import { themeCss } from '../lib/shared/palette'
+
 import { read, SITE } from './vocabulary'
 
 import type { Root } from 'postcss'
@@ -22,10 +24,11 @@ export function blockedCandidates(): Set<string> {
     .flatMap(([, names]) => names.split(/\s+/)))
 }
 
-// Loads the design system Tailwind builds from its entry, resolving each sheet
-// the entry imports against the site or `node_modules`.
+// Loads the design system Tailwind builds from its entry and the `@theme` block
+// the build gives that entry, resolving each sheet the entry imports against the
+// site or `node_modules`.
 export function designSystem(): Promise<DesignSystem> {
-  return __unstable__loadDesignSystem(read(ENTRY), {
+  return __unstable__loadDesignSystem(read(ENTRY) + themeCss(), {
     base           : path.join(SITE, path.dirname(ENTRY)),
     loadStylesheet : async (id, base) => {
       const file = id.startsWith('.') ? path.resolve(base, id) : REQUIRE.resolve(id)

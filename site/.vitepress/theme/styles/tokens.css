@@ -48,14 +48,11 @@
   --prose-tint-45                : 45%;
   --prose-tint-50                : 50%;
   --prose-tint-55                : 55%;
-  --prose-tint-56                : 56%;
   --prose-tint-ink               : 58%;
   --prose-tint-60                : 60%;
   --prose-tint-65                : 65%;
   --prose-tint-68                : 68%;
   --prose-tint-70                : 70%;
-  --prose-tint-75                : 75%;
-  --prose-tint-78                : 78%;
   --prose-tint-80                : 80%;
   --prose-tint-82                : 82%;
   --prose-tint-85                : 85%;
@@ -65,6 +62,7 @@
   --prose-tracking-0-02em        : 0.02em;
   --prose-tracking-0-04em        : 0.04em;
   --prose-tracking-0-05em        : 0.05em;
+  --prose-tracking-normal        : normal;
   --prose-tracking-0-06em        : 0.06em;
   --prose-tracking-0-08em        : 0.08em;
   --prose-tracking-0-1em         : 0.1em;
@@ -127,7 +125,6 @@
 
   --prose-text-0-7em             : 0.7em;
   --prose-text-0-8em             : 0.8em;
-  --prose-text-0-84em            : 0.84em;
   --prose-text-0-85em            : 0.85em;
   --prose-text-0-86em            : 0.86em;
   --prose-text-0-88em            : 0.88em;
@@ -153,7 +150,6 @@
   --prose-space-4                : 4px;
   --prose-space-5                : 5px;
   --prose-space-6                : 6px;
-  --prose-space-7                : 7px;
   --prose-space-8                : 8px;
   --prose-space-10               : 10px;
   --prose-space-11               : 11px;
@@ -216,7 +212,6 @@
   --prose-size-20                : 20px;
   --prose-size-24                : 24px;
   --prose-size-28                : 28px;
-  --prose-size-32                : 32px;
   --prose-size-64                : 64px;
   --prose-size-72                : 72px;
   --prose-size-96                : 96px;
@@ -248,7 +243,6 @@
   --prose-width-300              : 300px;
   --prose-width-600              : 600px;
   --prose-width-640              : 640px;
-  --prose-width-1120             : 1120px;
 
   --prose-width-11rem            : 11rem;
   --prose-width-14rem            : 14rem;
@@ -277,21 +271,23 @@
   --prose-panel-wash-card        : color-mix(in srgb, var(--vp-c-bg-alt) var(--prose-tint-35), var(--vp-c-bg));
   --prose-chip-ground            : color-mix(in srgb, var(--vp-c-text-1) var(--prose-tint-faint), var(--vp-c-bg));
 
+  --vp-c-text-3                  : var(--prose-shade-text-3-any-45);
+
   --prose-scrollbar-thumb        : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-45), var(--vp-c-divider));
 
-  --vp-c-brand-1                 : var(--prose-palette-ube);
-  --vp-c-brand-2                 : var(--prose-palette-ube-mid);
-  --vp-c-brand-3                 : var(--prose-palette-ube-pale);
-  --vp-c-brand-soft              : color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-medium), transparent);
+  --vp-c-brand-1                 : var(--color-link);
+  --vp-c-brand-2                 : var(--prose-shade-ube-soft-45);
+  --vp-c-brand-3                 : var(--color-ube-pale);
+  --vp-c-brand-soft              : color-mix(in srgb, var(--color-ube) var(--prose-tint-medium), transparent);
 
-  --vp-button-brand-active-bg    : var(--prose-palette-ube-deep);
+  --vp-button-brand-active-bg    : var(--color-ube-deep);
   --vp-button-brand-bg           : var(--vp-c-brand-1);
   --vp-button-brand-border       : transparent;
   --vp-button-brand-hover-bg     : var(--vp-c-brand-2);
   --vp-button-brand-hover-border : transparent;
 
-  --vp-code-bg                   : var(--prose-role-code-ground);
-  --vp-code-block-bg             : var(--prose-palette-grams-hair);
+  --vp-code-bg                   : var(--color-code-ground);
+  --vp-code-block-bg             : var(--color-grams-hair);
   --vp-code-color                : var(--vp-c-text-1);
   --vp-code-font-size            : var(--prose-text-code);
   --vp-code-line-height          : 1.6;
@@ -300,11 +296,12 @@
 }
 
 .dark {
-  --vp-c-brand-1     : var(--prose-palette-ube-pale);
-  --vp-c-brand-2     : var(--prose-palette-ube-mid);
-  --vp-c-brand-3     : var(--prose-palette-ube);
-  --vp-c-brand-soft  : color-mix(in srgb, var(--prose-palette-ube-pale) var(--prose-tint-ground), transparent);
-  --vp-c-bg-soft     : var(--prose-palette-woodsmoke);
+  --vp-c-brand-1     : var(--color-link);
+  --vp-c-brand-2     : var(--color-ube-mid);
+  --vp-c-brand-3     : var(--color-ube);
+  --vp-c-brand-soft  : color-mix(in srgb, var(--color-ube-pale) var(--prose-tint-ground), transparent);
+  --vp-c-bg-soft     : var(--color-woodsmoke);
+  --vp-c-text-3      : var(--prose-shade-text-3-any-45);
   --vp-code-block-bg : var(--prose-shiki-dark-bg);
 }
 

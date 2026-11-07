@@ -17,7 +17,7 @@ export function isInert(env: Env | undefined): boolean {
   return env?.inertHtml === true
 }
 
-// Caption renders live inside cover-linked cards and hover poppers, where a
+// Caption renders live inside cover-linked cards and hover popups, where a
 // glossary anchor cannot receive its own click, so the plain-terms env drops
 // the anchor and keeps the text.
 export function plainTermsEnv(): InertEnv {

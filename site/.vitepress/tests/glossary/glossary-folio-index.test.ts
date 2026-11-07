@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import GlossaryFolioIndex   from '../../theme/components/glossary/GlossaryFolioIndex.vue'
-import { useGlossaryFolio } from '../../lib/composables/use-glossary-folio'
+import { GlossaryFolioIndex } from '../../theme/components/glossary/GlossaryFolioIndex'
+import { useGlossaryFolio }   from '../../lib/composables/use-glossary-folio'
 
 vi.mock('vitepress', () => ({
-  useData: () => ({ page: { value: { relativePath: 'reference/glossary.md' } } })
+  defineLoader : () => {},
+  useData      : () => ({ page: { value: { relativePath: 'reference/glossary.md' } } })
 }))
 
 vi.mock('../../lib/composables/use-glossary-folio', async () => {
@@ -45,6 +46,11 @@ describe('GlossaryFolioIndex', () => {
   it('stacks the first family on top, each tile beneath it one place further in', () => {
     const tiles = index().findAll('.glossary-folio-row-deck.is-stacked .glossary-folio-row-tile')
     expect(tiles.map(tile => tile.attributes('style'))).toStrictEqual(['--deck-at: 0;', '--deck-at: 1;'])
+  })
+
+  it('reads the filter field into the query as the reader types', async () => {
+    await index().get('input[type="search"]').setValue('sort')
+    expect(useGlossaryFolio().query.value).toBe('sort')
   })
 
   it('marks the selected row and selects a clicked one', async () => {

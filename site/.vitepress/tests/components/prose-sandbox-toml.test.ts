@@ -2,7 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick, ref }        from 'vue'
 
-import ProseSandboxToml                   from '../../theme/components/sandbox/ProseSandboxToml.vue'
+import { ProseSandboxToml }               from '../../theme/components/sandbox/ProseSandboxToml'
 import type { ProseSandbox }              from '../../lib/composables/use-prose-sandbox'
 import { domTest, fakeSandbox, isHidden } from '../dom'
 

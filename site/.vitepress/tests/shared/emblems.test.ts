@@ -87,7 +87,7 @@ describe('the badge ink', () => {
   })
 
   it('draws a badge in its family\'s nib, a platform badge in the brand ink', () => {
-    const nib      = new URL('../../theme/components/base/styles/nib.css', import.meta.url)
+    const nib      = new URL('../../kit/styles/nib.css', import.meta.url)
     expect(support.declared(nib, '.nib-badge')['--nib-platform'])
       .toBe('color-mix(in srgb, var(--vp-c-brand-1) var(--prose-tint-ink), var(--vp-c-text-1))')
     expect(support.declared(nib, '.nib-badge').color).toBe('var(--family-nib, var(--nib-platform))')
@@ -101,7 +101,7 @@ describe('the badge ink', () => {
     const strays = support.siteSheets().flatMap(({ file, root }) => {
       const found = [] as string[]
       root.walkRules(rule => {
-        if (!rule.selector.includes('.nib-badge') || file.endsWith('base/styles/nib.css')) return
+        if (!rule.selector.includes('.nib-badge') || file.endsWith('kit/styles/nib.css')) return
         rule.walkDecls('color', decl => { if (!NIB_INK.test(decl.value)) found.push(`${file} ${rule.selector} ${decl.value}`) })
       })
       return found
@@ -115,7 +115,7 @@ describe('the badge ink', () => {
     parseCss(vocabulary.read('.vitepress/theme/components/rules/styles/pipeline-order.css')).walkRules(rule => {
       if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
     })
-    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.vue')
+    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.tsx')
     for (const [name] of template.matchAll(/[\w/-]*hover(?:\/[\w-]+)?:[\w/-]+/g)) {
       if (/background/.test(design.candidatesToCss([name])[0] ?? '')) painted.push(name)
     }

@@ -1,3 +1,11 @@
+@utility align-0-18em {
+  vertical-align : var(--prose-space-0-18em);
+}
+
+@utility align-sub-0-08em {
+  vertical-align : calc(var(--prose-space-0-08em) * -1);
+}
+
 @utility band-name {
   flex-shrink    : 0;
   font-family    : var(--vp-font-family-mono);
@@ -5,6 +13,10 @@
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
   color          : var(--vp-c-text-2);
+}
+
+@utility bleed-x {
+  margin-inline : calc(50% - 50vw);
 }
 
 @utility border-b-double-divider {
@@ -30,8 +42,13 @@
   height              : var(--prose-size-1-05em);
   margin-inline-start : var(--prose-space-1);
   vertical-align      : text-bottom;
-  background          : var(--prose-palette-whiskey);
+  background          : var(--color-whiskey);
   @apply animate-caret-blink;
+}
+
+@utility code-chip {
+  border-radius : var(--prose-radius-sm);
+  background    : var(--vp-code-bg);
 }
 
 @utility code-panel {
@@ -59,7 +76,6 @@
   letter-spacing : var(--prose-meta-tracking);
   text-transform : uppercase;
   color          : var(--vp-c-text-3);
-  opacity        : 0.55;
   pointer-events : none;
 }
 
@@ -218,6 +234,29 @@
 
   .fixture-card[data-edits="false"]:not([data-lint="true"]) & {
     color : var(--vp-c-text-2);
+  }
+}
+
+@utility fixture-converge-dot {
+  &::before {
+    left : calc(var(--prose-space-1-5rem) * -1 - var(--prose-space-4));
+  }
+}
+
+@utility flush-code-block {
+  & > div[class*='language-'] {
+    margin        : 0;
+    border-radius : 0;
+  }
+}
+
+@utility flush-ends {
+  & :first-child {
+    margin-top : 0;
+  }
+
+  & :last-child {
+    margin-bottom : 0;
   }
 }
 

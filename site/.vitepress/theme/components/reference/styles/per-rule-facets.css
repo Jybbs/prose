@@ -28,7 +28,7 @@
   vertical-align : calc(var(--prose-space-2) * -1);
 }
 
-.per-rule-facets-rule-head .v-popper--theme-rule-card {
+.per-rule-facets-rule-head [data-part='trigger'] {
   display : flex;
 }
 

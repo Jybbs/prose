@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import CompositionCards  from '../../theme/components/rules/CompositionCards.vue'
+import { CompositionCards } from '../../theme/components/rules/CompositionCards'
 
 vi.mock('../../lib/rules/composition.data', () => ({
   data: {
@@ -104,6 +104,21 @@ describe('CompositionCards', () => {
     expect(wrapper.findAll('.fixture-pair-doc')).toHaveLength(0)
     await wrapper.get('#beta_case').trigger('click')
     expect(wrapper.findAll('.fixture-pair-doc')).toHaveLength(1)
+  })
+
+  it('opens a card from its summary button and keeps it open on a click in its body', async () => {
+    const wrapper = render()
+    await wrapper.get('#beta_case .fixture-card-summary').trigger('click')
+    expect(wrapper.get('#beta_case').attributes('data-open')).toBe('true')
+    await wrapper.get('#beta_case .fixture-card-body').trigger('click')
+    expect(wrapper.get('#beta_case').attributes('data-open')).toBe('true')
+  })
+
+  it('shows the toggle bar on the open card alone', async () => {
+    const wrapper = render()
+    await wrapper.get('#beta_case').trigger('click')
+    const bars = wrapper.findAll('.fixture-card .contents > div').map(bar => bar.attributes('style'))
+    expect(bars).toStrictEqual(['display: none;', undefined, 'display: none;'])
   })
 
   it('opens the card the address-bar fragment names', async () => {

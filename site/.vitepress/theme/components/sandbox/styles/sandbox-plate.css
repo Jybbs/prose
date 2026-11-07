@@ -9,9 +9,3 @@
   transform    : translateY(-50%);
 }
 
-.sandbox-plate-hint code {
-  background    : var(--vp-code-bg);
-  color         : var(--vp-code-color);
-  font-style    : normal;
-  white-space   : nowrap;
-}

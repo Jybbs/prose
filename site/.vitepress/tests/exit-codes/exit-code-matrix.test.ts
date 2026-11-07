@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ExitCodeMatrix        from '../../theme/components/exit-codes/ExitCodeMatrix.vue'
+import { ExitCodeMatrix }    from '../../theme/components/exit-codes/ExitCodeMatrix'
 import { rendersAccessibly } from '../axe'
 
 vi.mock('../../lib/exit-codes/exit-codes.data', () => {

@@ -2,7 +2,7 @@ import { useResizeObserver }          from '@vueuse/core'
 import { nextTick, onMounted, watch } from 'vue'
 import type { Ref, WatchSource }      from 'vue'
 
-import { snapInPlace } from '../shared/paint'
+import { snapInPlace } from '../../kit/drawing/paint'
 
 // Places one wash behind the element `selector` matches inside `grid`,
 // sizing it to that element and copying its `data-layer`, each time `active`

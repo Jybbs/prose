@@ -3,9 +3,8 @@
 }
 
 .pipeline-order-census-chip {
-  letter-spacing : normal;
-  color          : var(--vp-c-text-1);
-  transition     : color var(--pipeline-ease);
+  color      : var(--vp-c-text-1);
+  transition : color var(--pipeline-ease);
 }
 
 .pipeline-order-census-chip .nib-badge {
@@ -55,11 +54,6 @@
 
 .pipeline-order-entry.is-here .pipeline-order-name {
   color : var(--family-nib-soft);
-}
-
-.pipeline-order-edition code {
-  letter-spacing : normal;
-  text-transform : none;
 }
 
 @media (prefers-reduced-motion: reduce) {

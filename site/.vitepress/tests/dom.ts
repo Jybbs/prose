@@ -93,7 +93,7 @@ export const fakeSandbox = (overrides: Partial<ProseSandbox> = {}): ProseSandbox
 // these mounts render detached, so visibility reads the inline style the
 // `v-show` directive writes.
 export const isHidden = (element: Pick<DOMWrapper<Element>, 'attributes'>): boolean =>
-  element.attributes('style')?.includes('display: none') ?? false
+  element.attributes('hidden') !== undefined || (element.attributes('style')?.includes('display: none') ?? false)
 
 export const mountSetup = <T>(run: () => T): T => {
   let api!: T

@@ -67,7 +67,7 @@ describe('family registry and stylesheet parity', () => {
     })
     for (const family of glossaryFamilies) {
       const at = `[data-family="${family}"]`
-      expect.soft(values.get(`${at} --family-color`)).toBe(`var(--prose-family-${family})`)
+      expect.soft(values.get(`${at} --family-color`)).toBe(`var(--color-family-${family})`)
       for (const [kind, ratio] of [['edge', 34], ['nib', 45]] as const) {
         for (const ground of ['', '-card', '-chip', '-soft']) {
           expect.soft(values.get(`${at} --family-${kind}${ground}`))

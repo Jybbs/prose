@@ -5,9 +5,3 @@
   z-index  : 1;
 }
 
-.int-card .int-body code {
-  background    : var(--vp-code-bg);
-  padding       : var(--prose-space-1) var(--prose-space-5);
-  border-radius : var(--prose-radius-sm);
-  font-size     : var(--prose-text-xs);
-}

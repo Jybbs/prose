@@ -32,8 +32,8 @@ vi.mock('vitepress', async importOriginal => ({
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
-import Fixture     from '../../theme/components/fixtures/Fixture.vue'
-import FixtureCard from '../../theme/components/fixtures/FixtureCard.vue'
+import { Fixture }     from '../../theme/components/fixtures/Fixture'
+import { FixtureCard } from '../../theme/components/fixtures/FixtureCard'
 
 const STUBS = { global: { stubs: { FixturePairDoc: true } } }
 
@@ -58,6 +58,12 @@ describe('FixtureCard', () => {
     const w = card()
     expect(w.get('.fixture-card').attributes('data-open')).toBeUndefined()
     await w.get('.fixture-card-summary-row').trigger('click')
+    expect(w.get('.fixture-card').attributes('data-open')).toBe('true')
+  })
+
+  it('opens the body once from a press of the summary button', async () => {
+    const w = card()
+    await w.get('.fixture-card-summary').trigger('click')
     expect(w.get('.fixture-card').attributes('data-open')).toBe('true')
   })
 

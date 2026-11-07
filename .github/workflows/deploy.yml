@@ -181,7 +181,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
-    needs           : [checks, press, render]
+    needs           : [checks, press, render, sweep]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -214,10 +214,33 @@ jobs:
       - name : Prune superseded caches
         uses : $/.github/actions/prune-caches
 
+  sweep:
+    name            : 🦯 Axe
+    needs           : press
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Provision Cargo
+        uses : $/.github/actions/provision-cargo
+        with : { save: *no-save, shared-key: '', tools: bun node }
+
+      - name : Download the site bundle
+        uses : *download
+        with : { name: *bundle, path: *dist }
+
+      - name : Check every built page
+        env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
+        run  : |
+          mise run site:bake
+          mise run site:sweep
+
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [checks, deploy, press, render]
+    needs           : [checks, deploy, press, render, sweep]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 

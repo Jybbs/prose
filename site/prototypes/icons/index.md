@@ -5,8 +5,8 @@ description: "Draws one icon for each emoji the docs site uses as a badge or a l
 <script setup lang="ts">
 import './icons.css'
 
-import IconSpecimen from './IconSpecimen.vue'
-import NibSpecimen  from './NibSpecimen.vue'
+import { IconSpecimen } from './IconSpecimen'
+import { NibSpecimen }  from './NibSpecimen'
 </script>
 
 # Icon Family

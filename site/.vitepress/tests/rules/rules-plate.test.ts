@@ -1,12 +1,10 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RuleTooltipPopper     from '../../theme/components/rules/RuleTooltipPopper.vue'
-import RulesPlate            from '../../theme/components/rules/RulesPlate.vue'
+import { RulesPlate }        from '../../theme/components/rules/RulesPlate'
 import { FAMILY_ORDER }      from '../../lib/shared/registries'
 import { rendersAccessibly } from '../axe'
 import { domTest }           from '../dom'
-import { popperStubMount }   from '../popper-stub'
 
 vi.mock('../../lib/composables/route', () => ({ useCurrentRule: () => ({ value: null }) }))
 
@@ -19,7 +17,6 @@ vi.mock('../../lib/rules/rules.data', async () =>
 
 const plate = () => mount(RulesPlate, {
   attachTo : document.body,
-  global   : { ...popperStubMount, components: { RuleTooltipPopper } }
 })
 
 const letters = (w: ReturnType<typeof plate>) => w.findAll('.rules-plate-letter:not(.is-out)').map(letter => [
@@ -119,4 +116,9 @@ describe('RulesPlate', () => {
   })
 
   rendersAccessibly(() => plate().html())
+
+  it('marks each slug for the delegated rule card', () => {
+    expect(plate().get('.rules-plate-slugs > li[data-slug="alphabetize-siblings"] a').attributes('data-rule'))
+      .toBe('alphabetize-siblings')
+  })
 })

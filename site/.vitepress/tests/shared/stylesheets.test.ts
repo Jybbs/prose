@@ -63,6 +63,15 @@ describe('the site stylesheets', () => {
     expect(VOCABULARY.strays(root)).toStrictEqual([])
   })
 
+  it('declares each custom property a script reads off a computed style', () => {
+    const declared = new Set(VOCABULARY.properties)
+    for (const { root } of STYLESHEETS) root.walkDecls(/^--/, ({ prop }) => { declared.add(prop) })
+    const read = fs.globSync('.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', { cwd: vocabulary.SITE })
+      .flatMap(file => [...vocabulary.read(file).matchAll(/getPropertyValue\('(--[\w-]+)'\)/g)].map(([, name]) => name))
+    expect(read.length).toBeGreaterThan(0)
+    expect(read.filter(name => !declared.has(name))).toStrictEqual([])
+  })
+
   it.each(STYLESHEETS)(
     '$file sets each em, i, strong, b, and mark outside a link in a text color or the aside ink',
     ({ root }) => {
@@ -92,10 +101,10 @@ describe('inlineHues', () => {
   it('passes a text color, the aside ink, and an inline element inside a link', () => {
     const css = [
       '.rule-card-caption em { color: var(--vp-c-text-1); }',
-      '.vp-doc p em { color: var(--prose-role-aside); }',
+      '.vp-doc p em { color: var(--color-aside); }',
       '.landing-section p em { color: inherit; }',
-      '.pq-row > p a strong { color: var(--prose-role-link); }',
-      '.vp-doc a.body-link em { color: var(--prose-role-link); }'
+      '.pq-row > p a strong { color: var(--color-link); }',
+      '.vp-doc a.body-link em { color: var(--color-link); }'
     ].join('\n')
     expect(inlineHues(parse(css))).toStrictEqual([])
   })
@@ -119,7 +128,7 @@ describe('tokens.css', () => {
   })
 
   it('declares no token the site leaves unread', () => {
-    const sources = fs.globSync(['.vitepress/{lib,theme}/**/*.{ts,vue}', 'prototypes/**/*.{ts,vue}'], { cwd: vocabulary.SITE })
+    const sources = fs.globSync(['.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', 'prototypes/**/*.{ts,tsx}'], { cwd: vocabulary.SITE })
       .map(vocabulary.read)
     for (const { root } of STYLESHEETS) {
       const sheet = root.clone()

@@ -3,15 +3,7 @@
   top           : calc(var(--prose-space-23) + var(--idx) * var(--prose-space-44));
 }
 
-.shell-card-modal .shell-card-modal-code > div[class*='language-'] {
-  margin        : 0;
-  border-radius : 0;
-}
-
 .shell-card-modal .shell-card-modal-code > div[class*='language-'] > pre {
   padding-bottom : var(--prose-space-22);
 }
 
-.shell-card-modal-note code {
-  color         : var(--vp-code-color);
-}

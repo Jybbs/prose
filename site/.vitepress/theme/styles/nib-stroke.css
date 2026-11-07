@@ -12,8 +12,8 @@
 .vp-doc a.body-link:not(:has(code)),
 :is(.vp-doc a.body-link, a.tool-mark) code,
 .nib-stroke {
-  background-image             : linear-gradient(var(--prose-role-link), var(--prose-role-link)),
-                                 radial-gradient(closest-side, var(--prose-role-link) 92%, transparent);
+  background-image             : linear-gradient(var(--color-link), var(--color-link)),
+                                 radial-gradient(closest-side, var(--color-link) 92%, transparent);
   background-position          : 0 calc(100% - var(--prose-space-1-5)), var(--nib-at, 50%) 100%;
   background-repeat            : no-repeat;
   background-size              : 100% var(--prose-size-1), calc(var(--nib-swell) * var(--prose-size-2-5em)) var(--prose-size-4);

@@ -1,9 +1,9 @@
-[data-domain="cli-flag"]      { --domain-color: var(--prose-palette-ube);      }
-[data-domain="config-key"]    { --domain-color: var(--prose-palette-celadon);  }
-[data-domain="exit-code"]     { --domain-color: var(--prose-palette-chambray); }
-[data-domain="output-format"] { --domain-color: var(--prose-palette-whiskey);  }
-[data-domain="subcommand"]    { --domain-color: var(--prose-palette-eureka);   }
-[data-domain="suppression"]   { --domain-color: var(--prose-palette-apricot);  }
+[data-domain="cli-flag"]      { --domain-color: var(--color-ube);      }
+[data-domain="config-key"]    { --domain-color: var(--color-celadon);  }
+[data-domain="exit-code"]     { --domain-color: var(--color-chambray); }
+[data-domain="output-format"] { --domain-color: var(--color-whiskey);  }
+[data-domain="subcommand"]    { --domain-color: var(--color-eureka);   }
+[data-domain="suppression"]   { --domain-color: var(--color-apricot);  }
 
 :root {
   --az-index-band : var(--prose-tint-18);
@@ -11,37 +11,6 @@
 
 .dark {
   --az-index-band : var(--prose-tint-22);
-}
-
-.az-index-section-head,
-a.az-index-key-btn {
-  transition :
-    opacity    var(--prose-transition),
-    background var(--prose-transition),
-    color      var(--prose-transition);
-}
-
-a.az-index-key-btn {
-  border-radius : var(--prose-radius-sm);
-}
-
-.az-index-float-keys-wrap[data-dim="true"] :is(.az-index-section-head, a.az-index-key-btn:not([aria-current="true"])) {
-  opacity : 0.55;
-}
-
-.az-index-stage:has(.az-index-detail[data-side="right"]) a.az-index-key-btn[aria-current="true"] {
-  border-top-right-radius    : 0;
-  border-bottom-right-radius : 0;
-}
-
-.az-index-stage:has(.az-index-detail[data-side="left"]) a.az-index-key-btn[aria-current="true"] {
-  border-top-left-radius    : 0;
-  border-bottom-left-radius : 0;
-}
-
-.az-index-stage:has(.az-index-detail[data-side="bottom"]) a.az-index-key-btn[aria-current="true"] {
-  border-bottom-left-radius  : 0;
-  border-bottom-right-radius : 0;
 }
 
 /* Draws the one card every key opens, hung from its key by a band in the
@@ -89,23 +58,8 @@ a.az-index-key-btn {
   padding : var(--prose-space-10) var(--prose-space-16) calc(var(--prose-space-12) + var(--cover));
 }
 
-.vp-doc .az-index-detail-code,
-.az-index-detail-code {
-  padding    : 0;
-  background : none;
-  font-size  : var(--prose-text-0-92em);
-  color      : inherit;
-}
-
 /* Runs a dotted leader from the end of the words' last line to Read More. */
 .az-index-detail-leader {
   margin        : 0 calc(var(--prose-size-12) - 100%) 0 var(--prose-space-8);
   border-bottom : var(--prose-border-1) dotted var(--vp-c-text-3);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .az-index-section-head,
-  a.az-index-key-btn {
-    transition : none;
-  }
 }

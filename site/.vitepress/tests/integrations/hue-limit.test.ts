@@ -6,7 +6,7 @@ import * as palette    from '../../lib/shared/palette'
 import * as vocabulary from '../vocabulary'
 
 const COMPONENTS = fs.globSync(
-  '.vitepress/theme/components/integrations/**/*.{css,vue}',
+  '.vitepress/theme/components/integrations/**/*.{css,tsx}',
   { cwd: vocabulary.SITE }
 )
 

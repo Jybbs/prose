@@ -3,10 +3,10 @@ import { deckTravel } from '../../lib/rules/deck-travel'
 import { domTest }    from '../dom'
 
 // Builds a list of one card holding a deck the card's rect and the deck's
-// top place, the card growing by `--card-grow` on its morph curve.
+// top place, the card growing over `--prose-duration-morph` on its morph curve.
 function listOf(): { card: HTMLElement, deck: HTMLElement, list: HTMLElement } {
   const list = document.createElement('ol')
-  list.innerHTML = '<li class="fixture-card" style="--card-grow: 0.4s; --card-ease-morph: ease"><ol class="composition-cards-ticks"></ol></li>'
+  list.innerHTML = '<li class="fixture-card" style="--prose-duration-morph: 0.4s; --prose-ease-morph: ease"><ol class="composition-cards-ticks"></ol></li>'
   document.body.replaceChildren(list)
   const card = list.querySelector<HTMLElement>('li')!
   return { card, deck: card.querySelector<HTMLElement>('ol')!, list }

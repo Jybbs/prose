@@ -16,7 +16,7 @@ function coversWholeLines(finding: LintFinding, lines: readonly string[]): boole
     && finding.end_location.column === [...last].length + 1
 }
 
-// Converts findings into shiki decorations carrying the hover data as
+// Converts findings into shiki decorations carrying the card's data as
 // `data-*`. A token span lands on a `.lint-flag` element of its own,
 // whereas a span covering whole rows merges onto the line element and
 // takes the row treatment. Sorted by position, since shiki rejects
@@ -46,6 +46,25 @@ export function lintDecorations(findings: readonly LintFinding[], code: string):
     })
 }
 
+// Adds what a flag needs to open its card from the keyboard to each
+// decoration, for a surface whose listeners answer a press on a flag. A flag
+// holding another flag stays focusable without the `button` role, since a
+// button holds no focusable content.
+export function pressableDecorations(findings: readonly LintFinding[], code: string): DecorationItem[] {
+  const items = lintDecorations(findings, code)
+  return items.map(item => {
+    const holds = items.some(other => other !== item && spans(item, other))
+    return { ...item, properties: { ...item.properties, ...(holds ? {} : { role: 'button' }), tabindex: '0' } }
+  })
+}
+
+// Whether the range of `outer` covers the range of `inner`.
+function spans(outer: DecorationItem, inner: DecorationItem): boolean {
+  const offset = ({ character, line }: { character: number, line: number }) => line * 1e6 + character
+  const [start, end, from, to] = [outer.start, outer.end, inner.start, inner.end].map(at => offset(at as { character: number, line: number }))
+  return start! <= from! && to! <= end!
+}
+
 // Binds the corpus findings map at config load, so a fence names its
 // fixture with a plain `lint=<id>` token and the decorations are computed
 // in preprocess. An id the map does not hold is a build error.
@@ -60,7 +79,7 @@ export function lintDecorationTransformer(
       const id    = token.slice(META_PREFIX.length)
       const found = findings.get(id)
       if (!found) throw new Error(`${META_PREFIX}${id} references no fixture findings`)
-      ;(options.decorations ??= []).push(...lintDecorations(found, code))
+      ;(options.decorations ??= []).push(...pressableDecorations(found, code))
     }
   }
 }

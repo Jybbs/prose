@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import IntegrationCardGrid   from '../../theme/components/integrations/IntegrationCardGrid.vue'
-import { rendersAccessibly } from '../axe'
+import { IntegrationCardGrid } from '../../theme/components/integrations/IntegrationCardGrid'
+import { rendersAccessibly }   from '../axe'
 
 vi.mock('../../lib/integrations/integrations.data', () => ({
   data: [

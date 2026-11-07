@@ -3,19 +3,15 @@ import { mount }              from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
-import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
-import { popperStubMount }   from '../popper-stub'
+import { InlineRuleLink }    from '../../theme/components/rules/InlineRuleLink'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
 
-const MOUNT = { global: popperStubMount }
-
 const anchor = (hidden: boolean) => mount(
   defineComponent({
     setup: () => { provideAriaHidden(hidden); return () => h(InlineRuleLink, { slug: 'align-equals' }) }
-  }),
-  MOUNT
+  })
 ).get('.rule-link')
 
 describe('InlineRuleLink', () => {
@@ -39,7 +35,7 @@ describe('InlineRuleLink', () => {
     expect(link.text()).toBe('align-equals')
   })
 
-  it('carries the slug the delegated popper reads', () => {
+  it('carries the slug the delegated popup reads', () => {
     expect(anchor(false).attributes('data-rule')).toBe('align-equals')
   })
 })

@@ -28,7 +28,7 @@ export function fixturesDirFrom(crate: string): string {
 }
 
 export function proseBinaryPath(root: string): string {
-  return path.join(root, 'target', 'debug', 'prose')
+  return path.join(targetDir(root), 'debug', 'prose')
 }
 
 export function repoRoot(metaUrl: string): string {
@@ -51,12 +51,26 @@ function resolveProseBinary(root: string): string {
   throw new Error(`prose binary not found at ${binary}. Run \`mise run rust:build\` first.`)
 }
 
+// Returns `CARGO_TARGET_DIR` resolved against `root`, setting it from `cargo
+// metadata` where it is unset, so every copy of this module a bundle carries
+// reads the one value and a cargo config that moves the directory still holds.
+function targetDir(root: string): string {
+  process.env.CARGO_TARGET_DIR ??= (JSON.parse(
+    execFileSync('cargo', ['metadata', '--format-version', '1', '--no-deps'], { cwd: root, encoding: 'utf8' })
+  ) as { target_directory: string }).target_directory
+  return path.resolve(root, process.env.CARGO_TARGET_DIR)
+}
+
 export function runProse(
   root    : string,
   args    : readonly string[],
   options : { cwd?: string, input?: string, stdio?: 'pipe' } = {}
 ): string {
   return execFileSync(resolveProseBinary(root), args, { encoding: 'utf8', ...options })
+}
+
+export function highlightCacheDir(metaUrl: string): string {
+  return cacheDirFrom(repoRoot(metaUrl), 'highlight')
 }
 
 export function siteDir(metaUrl: string): string {

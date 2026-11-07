@@ -1,29 +1,7 @@
 @theme inline {
   --*: initial;
 
-  --color-apricot                      : var(--prose-palette-apricot);
-  --color-casper                       : var(--prose-palette-casper);
-  --color-celadon                      : var(--prose-palette-celadon);
-  --color-chambray                     : var(--prose-palette-chambray);
-  --color-champagne                    : var(--prose-palette-champagne);
-  --color-dexter                       : var(--prose-palette-dexter);
-  --color-eureka                       : var(--prose-palette-eureka);
-  --color-grams-hair                   : var(--prose-palette-grams-hair);
-  --color-heath                        : var(--prose-palette-heath);
-  --color-oat                          : var(--prose-palette-oat);
-  --color-rainee                       : var(--prose-palette-rainee);
-  --color-toronto                      : var(--prose-palette-toronto);
-  --color-ube                          : var(--prose-palette-ube);
-  --color-ube-deep                     : var(--prose-palette-ube-deep);
-  --color-ube-mid                      : var(--prose-palette-ube-mid);
-  --color-ube-night                    : var(--prose-palette-ube-night);
-  --color-ube-pale                     : var(--prose-palette-ube-pale);
-  --color-whiskey                      : var(--prose-palette-whiskey);
-  --color-woodsmoke                    : var(--prose-palette-woodsmoke);
-  --color-aside                        : var(--prose-role-aside);
   --color-chip-ground                  : var(--prose-chip-ground);
-  --color-code-ground                  : var(--prose-role-code-ground);
-  --color-link                         : var(--prose-role-link);
   --color-bg                           : var(--vp-c-bg);
   --color-bg-alt                       : var(--vp-c-bg-alt);
   --color-bg-soft                      : var(--vp-c-bg-soft);
@@ -91,7 +69,6 @@
   --text-2-8rem                        : var(--prose-text-2-8rem);
   --text-0-7em                         : var(--prose-text-0-7em);
   --text-0-8em                         : var(--prose-text-0-8em);
-  --text-0-84em                        : var(--prose-text-0-84em);
   --text-0-85em                        : var(--prose-text-0-85em);
   --text-0-86em                        : var(--prose-text-0-86em);
   --text-0-88em                        : var(--prose-text-0-88em);
@@ -109,6 +86,7 @@
   --tracking-0-02em                    : var(--prose-tracking-0-02em);
   --tracking-0-04em                    : var(--prose-tracking-0-04em);
   --tracking-0-05em                    : var(--prose-tracking-0-05em);
+  --tracking-normal                    : var(--prose-tracking-normal);
   --tracking-0-08em                    : var(--prose-tracking-0-08em);
   --tracking-0-1em                     : var(--prose-tracking-0-1em);
   --tracking-0-12em                    : var(--prose-tracking-0-12em);
@@ -224,6 +202,7 @@
   --container-62ch                     : var(--prose-width-62ch);
   --container-64ch                     : var(--prose-width-64ch);
   --container-72ch                     : var(--prose-width-72ch);
+  --container-viewport                 : calc(100vw - var(--prose-space-16));
 
   /* Sets each narrow breakpoint `N` one past the widest page its `max-*` variant
      reaches, the variant reading `width < N`. */
@@ -271,6 +250,7 @@
 
 @theme inline {
   --color-code-block                       : var(--vp-code-block-bg);
+  --color-code-ink                         : var(--vp-code-color);
 
   --content-middot                         : "·";
 

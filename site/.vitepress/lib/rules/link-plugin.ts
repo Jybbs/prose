@@ -5,7 +5,7 @@ import { isInert }                  from '../markdown/inert-env'
 import { walkBodyInlines }          from '../markdown/walk'
 import { BODY_LINK_CLASS }          from '../shared/constants'
 import { familyEmblem }             from '../shared/emblems'
-import { nibBadgeHtml }             from '../shared/nib'
+import { nibBadgeHtml }             from '../../kit/drawing/nib'
 import { primitiveRoute }           from '../shared/routes'
 import type { DiscoveredRule }      from './discovery'
 

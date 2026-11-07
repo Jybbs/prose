@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RuleCard              from '../../theme/components/rules/RuleCard.vue'
+import { RuleCard }          from '../../theme/components/rules/RuleCard'
 import { rendersAccessibly } from '../axe'
 import { rulesDataStub }     from '../rules-data-stub'
 
@@ -30,7 +30,7 @@ describe('RuleCard', () => {
     expect(card().get('.rule-card-cover').attributes('href')).toBe('/rules/layout/reflow-calls')
   })
 
-  it('leaves the hover card a popper shows with no link of its own', () => {
+  it('leaves the hover card a popup shows with no link of its own', () => {
     expect(card(false).find('.rule-card-cover').exists()).toBe(false)
   })
 

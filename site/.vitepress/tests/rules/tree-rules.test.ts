@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import InlineRuleLink from '../../theme/components/rules/InlineRuleLink.vue'
-import TreeRules      from '../../theme/components/rules/TreeRules.vue'
+import { InlineRuleLink } from '../../theme/components/rules/InlineRuleLink'
+import { TreeRules }      from '../../theme/components/rules/TreeRules'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([

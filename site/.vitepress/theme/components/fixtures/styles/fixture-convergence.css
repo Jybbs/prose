@@ -1,7 +1,0 @@
-.fixture-converge-step::before {
-  left : calc(var(--prose-space-1-5rem) * -1 - var(--prose-space-4));
-}
-
-.fixture-converge-state pre {
-  margin : 0;
-}

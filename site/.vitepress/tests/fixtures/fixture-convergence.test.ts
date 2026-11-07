@@ -29,8 +29,8 @@ vi.mock('vitepress', async importOriginal => ({
   useData: () => ({ frontmatter })
 }))
 
-import FixtureConvergence    from '../../theme/components/fixtures/FixtureConvergence.vue'
-import { rendersAccessibly } from '../axe'
+import { FixtureConvergence } from '../../theme/components/fixtures/FixtureConvergence'
+import { rendersAccessibly }  from '../axe'
 
 const mountCase = (name: string) =>
   mount(FixtureConvergence, { props: { case: name, rule: 'band_constants' } })

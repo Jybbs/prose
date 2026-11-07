@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import WheelPlatforms from '../../theme/components/guide/WheelPlatforms.vue'
+import { WheelPlatforms } from '../../theme/components/guide/WheelPlatforms'
 
 vi.mock('../../lib/guide/platforms.data', () => ({
   data: [

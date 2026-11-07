@@ -22,5 +22,5 @@
 }
 
 .vp-doc :is(h1, h2, h3, h4, .per-rule-facets-rule-head, .per-rule-facets-term) .header-anchor:is(:hover, :focus-visible) {
-  color : var(--prose-role-link);
+  color : var(--color-link);
 }

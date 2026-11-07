@@ -6,9 +6,10 @@
 
   --grid-template-columns-8-1fr-auto          : var(--prose-size-8) minmax(0, 1fr) auto;
 
-  --transition-property-background-and-height : background, height;
-  --transition-property-color-and-box-shadow  : color, box-shadow;
-  --transition-property-translate-and-opacity : translate, opacity;
+  --transition-property-background-and-height        : background, height;
+  --transition-property-background-color-and-opacity : background, color, opacity;
+  --transition-property-color-and-box-shadow         : color, box-shadow;
+  --transition-property-translate-and-opacity        : translate, opacity;
 }
 
 @utility change-chip {
@@ -43,11 +44,11 @@
 }
 
 @utility hairline-ube {
-  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 var(--prose-palette-ube);
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 var(--color-ube);
 }
 
 @utility hairline-ube-38 {
-  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--prose-palette-ube) var(--prose-tint-38), transparent);
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--color-ube) var(--prose-tint-38), transparent);
 }
 
 @utility toggle-pill {

@@ -21,18 +21,7 @@
 
 .exit-code-index-row:hover,
 .exit-code-index-row[aria-current] {
-  box-shadow : inset var(--prose-border-2) 0 0 var(--prose-role-link);
-}
-
-.exit-code-entry-summary :where(code),
-.exit-code-entry-facts :where(code) {
-  padding       : var(--prose-space-2) var(--prose-space-6);
-  border-radius : var(--prose-radius-sm);
-  background    : var(--vp-code-bg);
-  font-family   : var(--vp-font-family-mono);
-  font-size     : var(--vp-code-font-size);
-  color         : var(--vp-c-text-1);
-  white-space   : nowrap;
+  box-shadow : inset var(--prose-border-2) 0 0 var(--color-link);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -12,7 +12,7 @@ describe('renderer', () => {
     const md  = await renderer.getRenderer()
     const out = await renderer.renderFencedHtml(md, 'x = 1', 'python')
     expect(out).toContain('<pre')
-    expect(out).toContain('<span style=')
+    expect(out).toContain('<span class="sd-')
   })
 
   it('appends fence meta to the fence line', async () => {

@@ -1,0 +1,5 @@
+component = 'kit/DocHeading'
+
+[props]
+id    = 'quick-start'
+title = 'Quick Start'

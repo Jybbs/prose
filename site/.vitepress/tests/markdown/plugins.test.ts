@@ -9,6 +9,7 @@ import { emblemPlugin }                  from '../../lib/markdown/emblem-plugin'
 import { inertEnv, plainTermsEnv }       from '../../lib/markdown/inert-env'
 import { proseMarkPlugin }               from '../../lib/markdown/prose-mark-plugin'
 import { renderPlainInlineHtml }         from '../../lib/markdown/renderer'
+import { scrollStopPlugin }              from '../../lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }          from '../../lib/markdown/section-heading-plugin'
 import type { DiscoveredRule }           from '../../lib/rules/discovery'
 import { ruleLinkPlugin }                from '../../lib/rules/link-plugin'
@@ -72,6 +73,37 @@ describe('codeParts', () => {
 describe('codeOperatorPlugin', () => {
   const code = (src: string): string => render(md => md.use(codeOperatorPlugin), src)
 
+  it('holds a code span and the punctuation after it in one span', () => {
+    expect(code('`x`, then')).toContain('<span class="code-unit"><code>x</code>,</span> then')
+  })
+
+  it('holds a code span in one span when separate copies of the module apply the plugin', async () => {
+    vi.resetModules()
+    const copy = await import('../../lib/markdown/code-operators')
+    expect(render(md => md.use(codeOperatorPlugin).use(copy.codeOperatorPlugin), '`x`, then'))
+      .toContain('<p><span class="code-unit"><code>x</code>,</span> then')
+  })
+
+  it('holds an emphasized code span and the punctuation after it in one span', () => {
+    expect(code('(*`x`*), then')).toContain('(<span class="code-unit"><em><code>x</code></em>),</span> then')
+  })
+
+  it('closes an emphasis opened before the code span ahead of the span', () => {
+    expect(code('*a `x`*)')).toContain('<em>a </em><span class="code-unit"><em><code>x</code></em>)</span>')
+  })
+
+  it('holds a link closing on its code span and the punctuation after it in one span', () => {
+    expect(code('[`x`](/y), then')).toContain('<span class="code-unit"><a href="/y"><code>x</code></a>,</span> then')
+  })
+
+  it('leaves a code span with no punctuation after it unwrapped', () => {
+    expect(code('`x` then')).not.toContain('code-unit')
+  })
+
+  it('leaves a link\'s code span as its direct child', () => {
+    expect(code('[`x`, y](/z)')).toContain('<code>x</code>, y')
+  })
+
   it.each([
     ['`x = 1`',                                  '<code>x <span class="code-op">=</span> 1</code>'],
     ['`=`',                                      '<code><span class="code-op">=</span></code>'],
@@ -130,6 +162,14 @@ describe('proseMarkPlugin', () => {
     'leaves the common noun and every compound in %s plain',
     src => { expect(render(md => md.use(proseMarkPlugin), src)).not.toContain('prose-mark') }
   )
+})
+
+describe('scrollStopPlugin', () => {
+  it('gives a table a tab stop and leaves a paragraph alone', () => {
+    const html = render(md => md.use(scrollStopPlugin), 'Text.\n\n| a |\n|---|\n| b |')
+    expect(html).toContain('<table tabindex="0">')
+    expect(html).toContain('<p>Text.</p>')
+  })
 })
 
 describe('sectionHeadingPlugin', () => {

@@ -5,7 +5,7 @@ import type { MagicMoveMachine }                 from '../markdown/magic-move'
 import { lineChurn, type MorphMeasure }          from '../markdown/magic-move-delta'
 import { magicMoveOptions, magicMoveWatchdogMs } from '../markdown/magic-move-options'
 import type { MagicMovePanel }                   from '../markdown/magic-move-options'
-import { ruleDrawMs }                            from '../shared/paint'
+import { ruleDrawMs }                            from '../../kit/drawing/paint'
 
 export interface MorphPair extends MorphMeasure {
   steps : readonly KeyedTokensInfo[]

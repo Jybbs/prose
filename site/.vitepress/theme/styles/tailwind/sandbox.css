@@ -6,8 +6,6 @@
   --color-scope-25-divider         : color-mix(in srgb, var(--scope-tint) var(--prose-tint-25), var(--vp-c-divider));
   --color-scope-6-bg               : color-mix(in srgb, var(--scope-tint) var(--prose-tint-6), var(--vp-c-bg));
   --color-scope-70-divider         : color-mix(in srgb, var(--scope-tint) var(--prose-tint-70), var(--vp-c-divider));
-  --color-scope-75-text-1          : color-mix(in srgb, var(--scope-tint) var(--prose-tint-75), var(--vp-c-text-1));
-  --color-scope-78-text-2          : color-mix(in srgb, var(--scope-tint) var(--prose-tint-78), var(--vp-c-text-2));
   --color-scope-80-bg              : color-mix(in srgb, var(--scope-tint) var(--prose-tint-80), var(--vp-c-bg));
   --color-scope-85-bg              : color-mix(in srgb, var(--scope-tint) var(--prose-tint-85), var(--vp-c-bg));
   --color-scope-ink                : var(--scope-ink);
@@ -68,4 +66,9 @@
 
 @utility focus-ring {
   outline : var(--prose-focus-ring);
+}
+
+@utility sandbox-surface-guide {
+  left        : calc(var(--prose-space-22) + var(--guide-col) * var(--prose-space-1ch));
+  border-left : var(--prose-border-2) dotted var(--knob-guide, var(--vp-c-text-2));
 }

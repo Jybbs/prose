@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import ToolIcon              from '../../theme/components/base/ToolIcon.vue'
-import BuiltOn               from '../../theme/components/landing/BuiltOn.vue'
+import { ToolIcon }          from '../../kit'
+import { BuiltOn }           from '../../theme/components/landing/BuiltOn'
 import { rendersAccessibly } from '../axe'
 
 import type loader from '../../lib/shared/tools.data'

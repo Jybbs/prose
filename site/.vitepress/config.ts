@@ -24,9 +24,13 @@ import { bodyLinkPlugin }                             from './lib/markdown/body-
 import { calloutPlugin }                              from './lib/markdown/callout-plugin'
 import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
+import { HighlightCache }                             from './lib/markdown/highlight-cache'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
+import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
+import { TokenClasses }                               from './lib/markdown/token-classes'
+import { wholeLineTokens }                            from './lib/markdown/whole-line-tokens'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
@@ -35,17 +39,18 @@ import { readRuleFixtures }                           from './lib/rules/rule-fix
 import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
 import * as constants                                 from './lib/shared/constants'
 import { emblemsOf }                                  from './lib/shared/emblems'
-import { PALETTE, paletteCss }                        from './lib/shared/palette'
+import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette'
 import * as paths                                     from './lib/shared/paths'
 import { SECTIONS }                                   from './lib/shared/registries'
+import { readRenderGraph }                            from './lib/shared/render-graph'
 import { sectionRoute }                               from './lib/shared/routes'
-import { sfcFs }                                      from './lib/shared/sfc-fs'
 import { TOOL_SEEDS }                                 from './lib/shared/tools'
 import * as version                                   from './lib/shared/version'
 
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const siteDirectory        = paths.siteDir(import.meta.url)
+const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
 const ruffRelease          = version.readRuffRelease(crate)
@@ -58,6 +63,23 @@ const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
+const tokenClasses         = await TokenClasses.read()
+const lintFindings         = corpusLintFindings(crate)
+const codeTransformers     = [
+  lintDecorationTransformer(lintFindings),
+  wholeLineTokens,
+  tokenClasses.transformer()
+]
+const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+  colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
+  data              : Object.fromEntries(lintFindings),
+  graph             : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
+  theme             : constants.SHIKI_THEMES
+})
+const virtualSheets        = new Map([
+  ['virtual:prose-palette.css', paletteCss],
+  ['virtual:prose-tokens.css',  () => tokenClasses.css()]
+])
 const fixtureSets          = {
   composition  : readCompositionData(compositionDir(crate)),
   ruleFixtures : await readRuleFixtures(crate)
@@ -77,8 +99,9 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers : [lintDecorationTransformer(corpusLintFindings(crate))],
+    codeTransformers,
     config: md => {
+      md.use(highlightCache.plugin)
       md.use(groupIconMdPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
@@ -88,9 +111,11 @@ export default defineConfig({
       md.use(bodyLinkPlugin)
       md.use(proseMarkPlugin)
       md.use(codeOperatorPlugin)
+      md.use(scrollStopPlugin)
     },
-    lineNumbers : false,
-    theme       : constants.SHIKI_THEMES
+    colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
+    lineNumbers       : false,
+    theme             : constants.SHIKI_THEMES
   },
   sitemap: { hostname: constants.SITE_HOSTNAME },
   themeConfig: {
@@ -98,7 +123,7 @@ export default defineConfig({
       pattern : `${constants.REPO_URL}/edit/main/site/:path`,
       text    : 'Suggest an edit to this page'
     },
-    logo      : { alt: 'prose', src: '/logo.svg' },
+    logo      : { alt: '', src: '/logo.svg' },
     nav: [
       ...SECTIONS.map(({ label, slug }) =>
         ({ activeMatch: sectionRoute(slug), link: sectionRoute(slug), text: label })),
@@ -120,6 +145,7 @@ export default defineConfig({
     const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
     checkBundleBudget(siteConfig.outDir)
+    await highlightCache.flush()
   },
   transformHead({ pageData }) {
     return head.pageHead(pageData, proseVersion)
@@ -140,20 +166,19 @@ export default defineConfig({
     }
     await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
   },
-  vue: { script: { fs: sfcFs } },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },
+    oxc: { jsx: constants.VUE_JSX },
     plugins: [{
-      load      : id => id === '\0virtual:prose-palette.css' ? paletteCss() : undefined,
-      name      : 'prose-palette',
-      resolveId : id =>
-        id === 'virtual:prose-palette.css' ? '\0virtual:prose-palette.css' : undefined
+      enforce   : 'pre',
+      load      : id => virtualSheets.get(id.replace(/^\0/, ''))?.(),
+      name      : 'prose-sheets',
+      resolveId : id => virtualSheets.has(id) ? `\0${id}` : undefined,
+      transform : (code, id) => id.split('?')[0] === tailwindEntry ? code + themeCss() : undefined
     },
     fixtureReloadPlugin(fixturesRoot),
     serveWasmPlugin(path.join(siteDirectory, 'public')),
-    stylesheetLayer.stylesheetLayerPlugin(
-      path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
-    ),
+    stylesheetLayer.stylesheetLayerPlugin(tailwindEntry),
     tailwindcss(),
     groupIconVitePlugin({
       customIcon: {

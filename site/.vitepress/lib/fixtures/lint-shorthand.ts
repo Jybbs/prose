@@ -1,5 +1,5 @@
 // Derives the card-header shorthand for a lint finding from the data the
-// hover already carries (rule, flagged text, message, and the fix edit's
+// flag already holds (rule, flagged text, message, and the fix edit's
 // two sides). Four shapes cover the lint surface: a `replace` before/after
 // pair, a `remove`, an `insert` against an empty before, and a `block`
 // whose replacement spans several lines.

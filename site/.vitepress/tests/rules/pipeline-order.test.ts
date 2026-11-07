@@ -1,9 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import PipelineOrder       from '../../theme/components/rules/PipelineOrder.vue'
-import RuleTooltipPopper   from '../../theme/components/rules/RuleTooltipPopper.vue'
-import { popperStubMount } from '../popper-stub'
+import { PipelineOrder } from '../../theme/components/rules/PipelineOrder'
 
 vi.mock('../../lib/rules/rules.data', async () =>
   (await import('../rules-data-stub')).rulesDataStub([
@@ -21,7 +19,7 @@ vi.mock('../../lib/rules/pipeline.data', () => ({
   }
 }))
 
-const order   = () => mount(PipelineOrder, { global: { ...popperStubMount, components: { RuleTooltipPopper } } })
+const order   = () => mount(PipelineOrder)
 const entries = () => order().findAll('.pipeline-order-entry')
 
 const census = (w: ReturnType<typeof order>) => w.findAll('.pipeline-order-census-chip').map(chip => [
@@ -75,5 +73,10 @@ describe('PipelineOrder', () => {
     Object.defineProperty(link.element, 'matches', { value: () => false })
     await link.trigger('focusin')
     expect(w.get('.pipeline-order-edition').text()).toMatch(/^3 rules/)
+  })
+
+  it('marks only a documented rule for the delegated rule card', () => {
+    expect(order().findAll('.pipeline-order-link').map(link => link.attributes('data-rule')))
+      .toStrictEqual(['reflow-calls', undefined, 'group-imports'])
   })
 })

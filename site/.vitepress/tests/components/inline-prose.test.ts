@@ -3,9 +3,9 @@ import { mount }              from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
-import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
-import InlineProse           from '../../theme/components/base/InlineProse.vue'
-import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
+import { GlossaryTerm }      from '../../theme/components/glossary/GlossaryTerm'
+import { InlineProse }       from '../../theme/components/base/InlineProse'
+import { InlineRuleLink }    from '../../theme/components/rules/InlineRuleLink'
 
 import type { InlineNode } from '../../lib/markdown/inline-nodes'
 

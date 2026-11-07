@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { computed } from 'vue'
 
-import GlossaryFolioPane from '../../theme/components/glossary/GlossaryFolioPane.vue'
+import { GlossaryFolioPane } from '../../theme/components/glossary/GlossaryFolioPane'
 
 vi.mock('../../lib/composables/use-glossary-folio', () => ({
   useGlossaryFolio: () => {

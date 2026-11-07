@@ -23,6 +23,10 @@ describe('readPackageVersions', () => {
       .toStrictEqual({ '@resvg/resvg-js': semver, satori: semver })
   })
 
+  it('reads the pin of a package the manifest only overrides', () => {
+    expect(version.readPackageVersions(site, ['shiki'])).toStrictEqual({ shiki: expect.stringMatching(/^\d+\.\d+\.\d+/) })
+  })
+
   it.each([
     ['throws when the manifest has no such devDependency',      'package-no-pin'],
     ['throws when the manifest has no devDependencies at all',  'package-no-dev-deps']

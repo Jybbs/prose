@@ -4,7 +4,7 @@ import type { GlossaryFamily, SectionSlug } from './registries'
 
 export type Scheme = (typeof SCHEMES)[number]
 
-type Ground = keyof typeof GROUNDS | 'card' | 'chip' | 'wash'
+type Ground = keyof typeof GROUNDS | 'any' | 'card' | 'chip' | 'selected' | 'wash'
 type Text   = 'text-1' | 'text-2' | 'text-3'
 
 export const SCHEMES = ['dark', 'light'] as const
@@ -94,8 +94,10 @@ type Hue = GlossaryFamily | keyof typeof PALETTE | Text
 // Lists the shades the site reads, each row naming the colors it shades, the
 // grounds they sit on, and the contrast ratios they read at. The `card` ground
 // is a fixture card's, which shows the soft ground closed and the page open,
-// the `chip` ground is 5% of the text color over the page, and the `wash`
-// ground is 30% of `--vp-c-bg-alt` over the page.
+// the `chip` ground is 5% of the text color over the page, the `selected` ground
+// is 12% of Ube over the page, the `wash` ground is 30% of `--vp-c-bg-alt` over
+// the page, and the `any` ground is each of the page, the soft ground, and the
+// code block.
 const SHADES: [colors: readonly Hue[], grounds: readonly Ground[], ratios: readonly number[]][] = [
   [Object.keys(FAMILIES) as GlossaryFamily[], ['card', 'chip', 'page', 'soft'], [3.4, 4.5]],
   [['apricot', 'celadon', 'eureka'], ['page'], [3.5, 4.5]],
@@ -105,7 +107,11 @@ const SHADES: [colors: readonly Hue[], grounds: readonly Ground[], ratios: reado
   [['celadon', 'chambray', 'ube', 'whiskey'], ['wash'], [3.5, 4.5]],
   [['dexter', 'ube', 'whiskey'], ['code', 'soft'], [3.5]],
   [['text-3'], ['card', 'chip', 'soft'], [3.1]],
-  [['text-3'], ['code'], [3.5]]
+  [['text-3'], ['code'], [3.5]],
+  [['text-3'], ['any'], [4.5]],
+  [['apricot', 'celadon'], ['code', 'selected'], [4.5]],
+  [['celadon', 'ube'], ['soft'], [4.5]],
+  [['ube'], ['card'], [4.5]]
 ]
 
 // Returns the `oklchMix` of `hue` nearest the hue that reads at `ratio`
@@ -123,10 +129,12 @@ export function shadeReading(grounds: string | readonly string[], hue: string, r
 function groundsOf(ground: Ground, scheme: Scheme): string[] {
   const page = GROUNDS.page[scheme]
   switch (ground) {
-    case 'card' : return [page, GROUNDS.soft[scheme]]
-    case 'chip' : return [srgbMix(page, VITEPRESS['text-1'][scheme], 5)]
-    case 'wash' : return [srgbMix(page, VITEPRESS['bg-alt'][scheme], 30)]
-    default     : return [GROUNDS[ground][scheme]]
+    case 'any'      : return [page, GROUNDS.soft[scheme], GROUNDS.code[scheme]]
+    case 'card'     : return [page, GROUNDS.soft[scheme]]
+    case 'chip'     : return [srgbMix(page, VITEPRESS['text-1'][scheme], 5)]
+    case 'selected' : return [srgbMix(page, PALETTE.ube, 12)]
+    case 'wash'     : return [srgbMix(page, VITEPRESS['bg-alt'][scheme], 30)]
+    default         : return [GROUNDS[ground][scheme]]
   }
 }
 
@@ -177,21 +185,15 @@ export const SCHEME_SHADES: Record<Scheme, Record<string, string>> = {
   light : shadesOf('light')
 }
 
-const GROUPS = {
-  family  : FAMILIES,
-  palette : PALETTE,
-  role    : SCHEME_ROLES.light,
-  section : SECTIONS,
-  shade   : SCHEME_SHADES.light,
-  shiki   : { 'dark-bg': GROUNDS.code.dark }
+// Writes each color as a custom property under one selector.
+function block(selector: string, colors: Record<string, string>): string {
+  const lines = Object.entries(colors).map(([name, value]) => `  ${name}: ${value};`)
+  return `${selector} {\n${lines.join('\n')}\n}\n`
 }
 
-// Writes each group's colors as `--prose-<group>-<name>` properties under one
-// selector.
-function block(groups: Record<string, Record<string, string>>, selector: string): string {
-  const lines = Object.entries(groups).flatMap(([prefix, entries]) =>
-    Object.entries(entries).map(([name, value]) => `  --prose-${prefix}-${name}: ${value};`))
-  return `${selector} {\n${lines.join('\n')}\n}\n`
+// Names each color `<prefix><name>`.
+function prefixed(prefix: string, colors: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(colors).map(([name, value]) => [`${prefix}${name}`, value]))
 }
 
 // Writes each family's accents under every element naming the family and
@@ -201,14 +203,31 @@ function familyAccents(): string {
   const shades = (['edge', 'nib'] as const).flatMap(kind => ['', '-card', '-chip', '-soft'].map(ground => ({ ground, kind })))
   return Object.keys(FAMILIES).map(family => {
     const lines = [
-      `  --family-color: var(--prose-family-${family});`,
+      `  --family-color: var(--color-family-${family});`,
       ...shades.map(({ ground, kind }) =>
         `  --family-${kind}${ground}: var(--prose-shade-${family}-${ground.slice(1) || 'page'}-${kind === 'nib' ? 45 : 34});`)
     ]
-    return `[data-family="${family}"],\n.v-popper--theme-rule-card:has(.rule-card[data-family="${family}"]) {\n${lines.join('\n')}\n}\n`
+    return `[data-family="${family}"],\n[data-popup="rule-card"]:has(.rule-card[data-family="${family}"]) {\n${lines.join('\n')}\n}\n`
   }).join('')
 }
 
+// Writes the shades, the shiki ground, and each family's accents, none of which
+// Tailwind's theme declares.
 export function paletteCss(): string {
-  return block(GROUPS, ':root') + block({ role: SCHEME_ROLES.dark, shade: SCHEME_SHADES.dark }, '.dark') + familyAccents()
+  return block(':root', { ...prefixed('--prose-shade-', SCHEME_SHADES.light), '--prose-shiki-dark-bg': GROUNDS.code.dark })
+    + block('.dark', prefixed('--prose-shade-', SCHEME_SHADES.dark))
+    + familyAccents()
+}
+
+// Writes what the Tailwind entry takes from the palette, meaning the palette,
+// role, family, and section colors as a `@theme static` block, so Tailwind emits
+// each `--color-*` property for the sheets and the utilities alike, beside each
+// role's dark value in the layer those properties land in.
+export function themeCss(): string {
+  const theme = block('@theme static', {
+    ...prefixed('--color-', { ...PALETTE, ...SCHEME_ROLES.light }),
+    ...prefixed('--color-family-', FAMILIES),
+    ...prefixed('--color-section-', SECTIONS)
+  })
+  return `${theme}@layer theme {\n${block('.dark', prefixed('--color-', SCHEME_ROLES.dark))}}\n`
 }

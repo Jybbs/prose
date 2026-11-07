@@ -1,8 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import RunSummarySelect    from '../../theme/components/reference/RunSummarySelect.vue'
-import { popperStubMount } from '../popper-stub'
+import { RunSummarySelect } from '../../theme/components/reference/RunSummarySelect'
 
 const options = [
   { id: 'a', mono: 'AA' },
@@ -10,8 +9,7 @@ const options = [
 ]
 
 const mountSelect = (modelValue: string) => mount(RunSummarySelect, {
-  props  : { label: 'Verbosity', modelValue, options },
-  global : popperStubMount
+  props: { label: 'Verbosity', modelValue, options }
 })
 
 describe('RunSummarySelect', () => {
@@ -31,6 +29,7 @@ describe('RunSummarySelect', () => {
 
   it('updates the model when an option is clicked', async () => {
     const w = mountSelect('a')
+    await w.get('.run-summary-select-trigger').trigger('click')
     await w.findAll('.run-summary-opt')[1].trigger('click')
     expect(w.emitted('update:modelValue')?.[0]).toStrictEqual(['b'])
   })

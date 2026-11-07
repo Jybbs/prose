@@ -1,8 +1,11 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { inlineNodes, type InlineNode } from './inline-nodes'
-import { siteDir }                      from '../shared/paths'
-import { plainTermsEnv }                from './inert-env'
+import { codeUnitPlugin }                         from './code-operators'
+import { inlineNodes, type InlineNode }           from './inline-nodes'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
+import { siteDir }                                from '../shared/paths'
+import { plainTermsEnv }                          from './inert-env'
+import { TokenClasses }                           from './token-classes'
 
 // Maps each field `K` to `${K}${S}`, carrying one `V` where the source field
 // is a scalar and a `V[]` where it is a list of strings.
@@ -13,12 +16,18 @@ type Rendered<T, K extends string & keyof T> = Suffixed<T, K, 'Html', string>
 
 type Walked<T, K extends string & keyof T> = Suffixed<T, K, 'Nodes', InlineNode[]>
 
-export function getRenderer(): Promise<MarkdownRenderer> {
-  return createMarkdownRenderer(siteDir(import.meta.url))
+export async function getRenderer(): Promise<MarkdownRenderer> {
+  const md = await createMarkdownRenderer(siteDir(import.meta.url), {
+    codeTransformers  : [(await TokenClasses.read()).transformer()],
+    colorReplacements : SHIKI_COLOR_REPLACEMENTS,
+    theme             : SHIKI_THEMES
+  })
+  md.use(codeUnitPlugin)
+  return md
 }
 
 // Prose a component renders as live markup walks to a node tree, whereas the
-// `*Html` renderers stay for the strings a popper or a plain-terms caption
+// `*Html` renderers stay for the strings a popup or a plain-terms caption
 // consumes, where a mounted component cannot go.
 export function inlineNodeField<T extends object, K extends string & keyof T>(
   md    : MarkdownRenderer,
@@ -52,7 +61,7 @@ export function renderFencedHtml(
   return md.renderAsync(`\`\`\`${language}${meta ? ` ${meta}` : ''}\n${code}\n\`\`\``)
 }
 
-// Caption text renders inside cover-linked cards and hover poppers, where a
+// Caption text renders inside cover-linked cards and hover popups, where a
 // glossary anchor cannot receive its own click, so terms flatten to text.
 export function renderPlainInlineHtml(md: MarkdownRenderer, src: string): string {
   return md.renderInline(src, plainTermsEnv())

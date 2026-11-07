@@ -1,11 +1,8 @@
-import type { Theme }     from 'vitepress'
-import DefaultTheme       from 'vitepress/theme'
-import type { Component } from 'vue'
+import type { Theme }           from 'vitepress'
+import DefaultTheme             from 'vitepress/theme'
+import { defineAsyncComponent } from 'vue'
+import type { Component }       from 'vue'
 
-import FloatingVue                                              from 'floating-vue'
-import type { Dropdown, Menu, Tooltip, vClosePopper, vTooltip } from 'floating-vue'
-
-import './styles/popper-vendor.css'
 import '@shikijs/magic-move/style.css'
 import 'virtual:group-icons.css'
 
@@ -16,12 +13,13 @@ import '@fontsource-variable/jetbrains-mono/wght-italic.css'
 import '@fontsource-variable/lora'
 import '@fontsource-variable/lora/wght-italic.css'
 
+import { Tool }               from '../kit'
 import { provideCurrentRule } from '../lib/composables/route'
-import { stripSuffix }        from '../lib/shared/strip-suffix'
-import Layout                 from './Layout.vue'
+import { Layout }             from './components/layout/Layout'
 
 import './styles/tailwind.css'
 import 'virtual:prose-palette.css'
+import 'virtual:prose-tokens.css'
 import './styles/tokens.css'
 import './styles/accents.css'
 import './styles/globals.css'
@@ -31,21 +29,17 @@ import './styles/markdown/headings.css'
 import './styles/markdown/pull-quote.css'
 import './styles/nib-stroke.css'
 import './styles/panel.css'
-import './styles/popper-base.css'
 import './styles/underline-draw.css'
 import './styles/vitepress-chrome.css'
 
 // The base and markdown sheets above stay explicit imports because their
 // cascade order is load-bearing, whereas the component layer's sheets are
 // order-free and load through one glob in path order.
-import.meta.glob('./components/**/*.css', { eager: true })
+import.meta.glob(['./components/**/*.css', '../kit/styles/*.css'], { eager: true })
 
-const components = import.meta.glob<Component>(
-  [
-    './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.vue',
-    './components/base/Tool.vue'
-  ],
-  { eager: true, import: 'default' }
+const components = import.meta.glob<Record<string, Component>>(
+  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.tsx',
+  { eager: true }
 )
 
 export default {
@@ -55,58 +49,10 @@ export default {
     provideCurrentRule()
   },
   enhanceApp({ app }) {
-    for (const [file, component] of Object.entries(components)) {
-      app.component(stripSuffix(file.split('/').pop()!, '.vue'), component)
+    for (const module of Object.values(components)) {
+      for (const [name, component] of Object.entries(module)) app.component(name, component)
     }
-    app.use(FloatingVue, {
-      themes: {
-        glossary: {
-          $extend         : 'tooltip',
-          'arrow-padding' : 8,
-          autoHide        : true,
-          delay           : { hide: 320, show: 100 },
-          handleResize    : true,
-          html            : true,
-          instantMove     : true,
-          noAutoFocus     : true,
-          placement       : 'top',
-          triggers        : ['focus', 'hover']
-        },
-        'rule-card': {
-          $extend         : 'tooltip',
-          'arrow-padding' : 14,
-          autoHide        : true,
-          delay           : { hide: 120, show: 80 },
-          handleResize    : true,
-          instantMove     : true,
-          noAutoFocus     : true,
-          placement       : 'bottom-start',
-          triggers        : ['focus', 'hover']
-        },
-        'run-summary-select': {
-          $extend        : 'dropdown',
-          delay          : { hide: 200, show: 60 },
-          handleResize   : true,
-          instantMove    : true,
-          placement      : 'bottom-start',
-          popperTriggers : ['hover'],
-          triggers       : ['hover', 'focus']
-        }
-      }
-    })
+    app.component('KitCatalog', defineAsyncComponent(() => import('../kit/KitCatalog')))
+    app.component('Tool', Tool)
   }
 } satisfies Theme
-
-// Declares the components and directives the `FloatingVue` plugin registers globally, for the
-// template type check.
-declare module 'vue' {
-  interface GlobalComponents {
-    VDropdown : typeof Dropdown
-    VMenu     : typeof Menu
-    VTooltip  : typeof Tooltip
-  }
-  interface GlobalDirectives {
-    vClosePopper : typeof vClosePopper
-    vTooltip     : typeof vTooltip
-  }
-}
