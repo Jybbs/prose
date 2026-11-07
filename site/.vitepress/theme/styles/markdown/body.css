@@ -8,6 +8,16 @@
   line-height : normal;
 }
 
+/* The chip and the punctuation after it stay on one line, and the chip keeps its
+   own wrapping for the span wider than the column. */
+.code-unit {
+  white-space : nowrap;
+}
+
+.code-unit code {
+  white-space : normal;
+}
+
 code .code-op {
   font-weight : 800;
 }

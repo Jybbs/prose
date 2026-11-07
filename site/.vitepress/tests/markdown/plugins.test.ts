@@ -72,6 +72,30 @@ describe('codeParts', () => {
 describe('codeOperatorPlugin', () => {
   const code = (src: string): string => render(md => md.use(codeOperatorPlugin), src)
 
+  it('holds a code span and the punctuation after it in one span', () => {
+    expect(code('`x`, then')).toContain('<span class="code-unit"><code>x</code>,</span> then')
+  })
+
+  it('holds an emphasized code span and the punctuation after it in one span', () => {
+    expect(code('(*`x`*), then')).toContain('(<span class="code-unit"><em><code>x</code></em>),</span> then')
+  })
+
+  it('closes an emphasis opened before the code span ahead of the span', () => {
+    expect(code('*a `x`*)')).toContain('<em>a </em><span class="code-unit"><em><code>x</code></em>)</span>')
+  })
+
+  it('holds a link closing on its code span and the punctuation after it in one span', () => {
+    expect(code('[`x`](/y), then')).toContain('<span class="code-unit"><a href="/y"><code>x</code></a>,</span> then')
+  })
+
+  it('leaves a code span with no punctuation after it unwrapped', () => {
+    expect(code('`x` then')).not.toContain('code-unit')
+  })
+
+  it('leaves a link\'s code span as its direct child', () => {
+    expect(code('[`x`, y](/z)')).toContain('<code>x</code>, y')
+  })
+
   it.each([
     ['`x = 1`',                                  '<code>x <span class="code-op">=</span> 1</code>'],
     ['`=`',                                      '<code><span class="code-op">=</span></code>'],

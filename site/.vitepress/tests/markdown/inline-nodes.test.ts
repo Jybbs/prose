@@ -1,6 +1,7 @@
 import markdownit, { type MarkdownIt } from 'markdown-it'
 
 import { glossaryPlugin }          from '../../lib/glossary/plugin'
+import { codeUnitPlugin }          from '../../lib/markdown/code-operators'
 import { blockNodes, inlineNodes } from '../../lib/markdown/inline-nodes'
 import { ruleLinkPlugin }          from '../../lib/rules/link-plugin'
 
@@ -85,5 +86,14 @@ describe('inlineNodes', () => {
         { kind: 'text', text: '.' }
       ]
     }])
+  })
+
+  it('holds a code span and the punctuation after it in one `code-unit` element', () => {
+    expect(inlineNodes(markdownit().use(codeUnitPlugin), '`x`, then')).toStrictEqual([{
+      attrs    : { class: 'code-unit' },
+      children : [{ kind: 'code', text: 'x' }, { kind: 'text', text: ',' }],
+      kind     : 'el',
+      tag      : 'span'
+    }, { kind: 'text', text: ' then' }])
   })
 })

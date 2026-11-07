@@ -1,5 +1,6 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
+import { codeUnitPlugin }                from './code-operators'
 import { inlineNodes, type InlineNode } from './inline-nodes'
 import { siteDir }                      from '../shared/paths'
 import { plainTermsEnv }                from './inert-env'
@@ -13,8 +14,10 @@ type Rendered<T, K extends string & keyof T> = Suffixed<T, K, 'Html', string>
 
 type Walked<T, K extends string & keyof T> = Suffixed<T, K, 'Nodes', InlineNode[]>
 
-export function getRenderer(): Promise<MarkdownRenderer> {
-  return createMarkdownRenderer(siteDir(import.meta.url))
+export async function getRenderer(): Promise<MarkdownRenderer> {
+  const md = await createMarkdownRenderer(siteDir(import.meta.url))
+  md.use(codeUnitPlugin)
+  return md
 }
 
 // Prose a component renders as live markup walks to a node tree, whereas the
