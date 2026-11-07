@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick }             from 'vue'
 
 import type { RenderedRule }  from '../../lib/rules/rules.data'
-import SurfaceRail            from '../../theme/components/landing/surfaces/SurfaceRail.vue'
+import { SurfaceRail }        from '../../theme/components/landing/surfaces/SurfaceRail'
 import { domTest, nextFrame } from '../dom'
 
 // The mock keys each measurement off the element it observes rather than off

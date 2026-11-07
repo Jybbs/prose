@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import Surfaces                             from '../../theme/components/landing/surfaces/Surfaces.vue'
+import { Surfaces }                         from '../../theme/components/landing/surfaces/Surfaces'
 import { AXE_TIMEOUT_MS, expectAccessible } from '../axe'
 import { domTest }                          from '../dom'
 
