@@ -179,7 +179,7 @@ describe('the composition decks on a rule page', () => {
     // through hydration.
     await page.waitForFunction(() => '__vue_app__' in (document.querySelector('#app') ?? {}))
     const unmeasured = page.locator('li.fixture-card:has(.composition-cards-bar):not([style*="--deck-bar-h"])')
-    expect(await page.locator('.composition-cards-bar').count()).toBeGreaterThan(1)
+    await expect(page.locator('.composition-cards-bar').count()).resolves.toBeGreaterThan(1)
     await expect.poll(() => unmeasured.count()).toBe(0)
     await context.close()
   })
