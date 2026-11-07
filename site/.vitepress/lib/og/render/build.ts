@@ -2,10 +2,10 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url'
+import * as cache                       from '../../shared/cache'
 import { cacheDirFrom, crateDirFrom }   from '../../shared/paths'
 import { readCargoVersion }             from '../../shared/version'
 import { loadBrandAssets }              from './assets'
-import * as cache                       from './cache'
 import { cardKeyer, readRenderGraph }   from './card-key'
 import { enumeratePages }               from '../pages'
 import * as pool                        from './pool'
@@ -31,7 +31,7 @@ export async function buildOgCards(
 
   const misses: pool.RenderTask[] = []
   await Promise.all(tasks.map(async task => {
-    const png = await cache.readCard(cacheDir, task.key)
+    const png = await cache.readEntry(cacheDir, task.key)
     if (png) writeDist(outDir, task.outputPath, png)
     else misses.push(task)
   }))
@@ -40,11 +40,11 @@ export async function buildOgCards(
     const rendered = await pool.renderCards(brand, version, misses)
     await Promise.all(rendered.map(async card => {
       writeDist(outDir, card.outputPath, card.png)
-      await cache.writeCard(cacheDir, card.key, Buffer.from(card.png))
+      await cache.writeEntry(cacheDir, card.key, Buffer.from(card.png))
     }))
   }
 
-  await cache.pruneCards(cacheDir, tasks.map(task => task.key))
+  await cache.pruneEntries(cacheDir, tasks.map(task => task.key))
 }
 
 function writeDist(outDir: string, outputPath: string, png: Uint8Array): void {

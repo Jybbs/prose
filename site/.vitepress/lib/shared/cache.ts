@@ -11,7 +11,7 @@ declare module 'cacache' {
   }
 }
 
-export async function pruneCards(cacheDir: string, live: Iterable<string>): Promise<void> {
+export async function pruneEntries(cacheDir: string, live: Iterable<string>): Promise<void> {
   try {
     const keep  = new Set(live)
     const index = await cacache.ls(cacheDir)
@@ -38,7 +38,7 @@ async function removeEmptyBuckets(cacheDir: string): Promise<void> {
   }
 }
 
-export async function readCard(cacheDir: string, key: string): Promise<Buffer | null> {
+export async function readEntry(cacheDir: string, key: string): Promise<Buffer | null> {
   try {
     return (await cacache.get(cacheDir, key)).data
   }
@@ -48,11 +48,24 @@ export async function readCard(cacheDir: string, key: string): Promise<Buffer | 
   }
 }
 
-export async function writeCard(cacheDir: string, key: string, png: Buffer): Promise<void> {
+// Reads every entry the store under `cacheDir` holds, resolving an empty map
+// where the store is missing or fails to read.
+export async function readEntries(cacheDir: string): Promise<Map<string, Buffer>> {
   try {
-    await cacache.put(cacheDir, key, png)
+    const keys = Object.keys(await cacache.ls(cacheDir))
+    return new Map(await Promise.all(keys.map(async key => [key, (await cacache.get(cacheDir, key)).data] as const)))
   }
   catch {
-    // A failed write still leaves the rendered card in dist
+    // A store that fails to read leaves every block to a fresh highlight
+    return new Map()
+  }
+}
+
+export async function writeEntry(cacheDir: string, key: string, data: Buffer | string): Promise<void> {
+  try {
+    await cacache.put(cacheDir, key, data)
+  }
+  catch {
+    // A failed write still leaves the caller its rendered value
   }
 }

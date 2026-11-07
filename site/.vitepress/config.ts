@@ -24,6 +24,7 @@ import { bodyLinkPlugin }                             from './lib/markdown/body-
 import { calloutPlugin }                              from './lib/markdown/callout-plugin'
 import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
+import { HighlightCache }                             from './lib/markdown/highlight-cache'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
@@ -62,6 +63,18 @@ const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const tokenClasses         = await TokenClasses.read()
+const lintFindings         = corpusLintFindings(crate)
+const codeTransformers     = [
+  lintDecorationTransformer(lintFindings),
+  wholeLineTokens,
+  tokenClasses.transformer()
+]
+const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+  colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
+  data              : Object.fromEntries(lintFindings),
+  theme             : constants.SHIKI_THEMES,
+  transformers      : codeTransformers
+})
 const virtualSheets        = new Map([
   ['virtual:prose-palette.css', paletteCss],
   ['virtual:prose-tokens.css',  () => tokenClasses.css()]
@@ -85,12 +98,9 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers : [
-      lintDecorationTransformer(corpusLintFindings(crate)),
-      wholeLineTokens,
-      tokenClasses.transformer()
-    ],
+    codeTransformers,
     config: md => {
+      md.use(highlightCache.plugin)
       md.use(groupIconMdPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))
@@ -134,6 +144,7 @@ export default defineConfig({
     const { buildOgCards } = await import('./lib/og/render/build')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
     checkBundleBudget(siteConfig.outDir)
+    await highlightCache.flush()
   },
   transformHead({ pageData }) {
     return head.pageHead(pageData, proseVersion)

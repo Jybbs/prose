@@ -69,6 +69,10 @@ export function runProse(
   return execFileSync(resolveProseBinary(root), args, { encoding: 'utf8', ...options })
 }
 
+export function highlightCacheDir(metaUrl: string): string {
+  return cacheDirFrom(repoRoot(metaUrl), 'highlight')
+}
+
 export function siteDir(metaUrl: string): string {
   return path.join(repoRoot(metaUrl), 'site')
 }
