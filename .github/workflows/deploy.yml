@@ -181,7 +181,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
-    needs           : [checks, press, render, sweep]
+    needs           : [checks, fit, press, render, sweep]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -237,10 +237,33 @@ jobs:
           mise run site:bake
           mise run site:sweep
 
+  fit:
+    name            : 🍋 Squeeze
+    needs           : press
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Provision Cargo
+        uses : $/.github/actions/provision-cargo
+        with : { save: *no-save, shared-key: '', tools: bun node }
+
+      - name : Download the site bundle
+        uses : *download
+        with : { name: *bundle, path: *dist }
+
+      - name : Check every built page at each width
+        env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
+        run  : |
+          mise run site:bake
+          mise run site:fit
+
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [checks, deploy, press, render, sweep]
+    needs           : [checks, deploy, fit, press, render, sweep]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 

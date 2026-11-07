@@ -4,6 +4,14 @@ import { configDefaults, defineConfig } from 'vitest/config'
 import { VUE_JSX } from './.vitepress/lib/shared/constants'
 import * as paths  from './.vitepress/lib/shared/paths'
 
+const BUNDLE = {
+  globalSetup : ['./.vitepress/tests/serve.ts'],
+  hookTimeout : 120_000,
+  testTimeout : 120_000
+}
+
+const FIT = '.vitepress/tests/pages/fit.test.ts'
+
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
   test     : {
@@ -32,11 +40,18 @@ export default defineConfig({
 
       {
         test: {
-          globalSetup : ['./.vitepress/tests/serve.ts'],
-          hookTimeout : 120_000,
-          include     : ['.vitepress/tests/pages/**/*.test.ts'],
-          name        : 'pages',
-          testTimeout : 120_000
+          ...BUNDLE,
+          exclude : [...configDefaults.exclude, FIT],
+          include : ['.vitepress/tests/pages/**/*.test.ts'],
+          name    : 'pages'
+        }
+      },
+
+      {
+        test: {
+          ...BUNDLE,
+          include : [FIT],
+          name    : 'fit'
         }
       },
 

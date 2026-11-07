@@ -19,9 +19,9 @@ Subcommands:
               defaults. Exits 0 when every job that ran succeeded, the delta
               reporting without gating.
     deploy  : Renders the Deploy gate summary. Reads the `checks`, `press`,
-              `render`, `sweep`, and `deploy` results, the `deploy` job's
-              `url` output, and the GitHub-runner defaults. Exits 0 when all
-              of them succeeded.
+              `render`, `sweep`, `fit`, and `deploy` results, the `deploy`
+              job's `url` output, and the GitHub-runner defaults. Exits 0
+              when all of them succeeded.
     draft   : Renders the Draft summary. Reads `DRAFT_STATE`, `DRAFT_URL`,
               and `VERSION`, plus the GitHub-runner defaults.
     release : Renders the Release gate summary. Reads the `build`, `sdist`,
@@ -169,6 +169,7 @@ class Summary:
             "press"  : "Press",
             "render" : "Render",
             "sweep"  : "Axe",
+            "fit"    : "Squeeze",
             "deploy" : "Publish"
         }  # prose: skip
 

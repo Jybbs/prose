@@ -1,7 +1,22 @@
-import axe       from 'axe-core'
-import { JSDOM } from 'jsdom'
+import axe           from 'axe-core'
+import { JSDOM }     from 'jsdom'
+import type { Page } from 'playwright'
+
+export interface Finding {
+  id      : string
+  targets : string[]
+}
 
 export const AXE_TIMEOUT_MS = 15_000
+
+// Runs `axe-core` on the page, limited to the rules `runOnly` names where it names any.
+export async function audit(page: Page, runOnly?: string[]): Promise<Finding[]> {
+  await page.addScriptTag({ content: axe.source })
+  return page.evaluate(async options => {
+    const { violations } = await (window as unknown as { axe: typeof axe }).axe.run(document, options)
+    return violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => node.target.join(' ')) }))
+  }, runOnly ? { runOnly } : {})
+}
 
 export async function expectAccessible(
   html   : string,

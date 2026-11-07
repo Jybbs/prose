@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { useRaisedFamily } from '../../lib/composables/use-raised-family'
-import { mountSetup }      from '../dom'
+import { useRaised }  from '../../lib/composables/use-raised'
+import { mountSetup } from '../dom'
 
 // Builds the focus event a raise reads, its target matching `:focus-visible`
 // only where the browser would draw a focus ring.
@@ -9,13 +9,13 @@ const focusing = (visible: boolean): FocusEvent =>
 
 const escape = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
 
-describe('useRaisedFamily', () => {
-  it('shows no family at rest', () => {
-    expect(mountSetup(useRaisedFamily).shown.value).toBeNull()
+describe('useRaised', () => {
+  it('shows no item at rest', () => {
+    expect(mountSetup(useRaised<string>).shown.value).toBeNull()
   })
 
   it('ranks the pointer over the focus and the focus over the pin', () => {
-    const raise = mountSetup(useRaisedFamily)
+    const raise = mountSetup(useRaised<string>)
     raise.on('lint').onClick()
     raise.on('docs').onFocusin(focusing(true))
     raise.on('layout').onMouseenter()
@@ -27,13 +27,13 @@ describe('useRaisedFamily', () => {
   })
 
   it('counts only a focus the browser draws a ring for', () => {
-    const raise = mountSetup(useRaisedFamily)
+    const raise = mountSetup(useRaised<string>)
     raise.on('docs').onFocusin(focusing(false))
     expect(raise.shown.value).toBeNull()
   })
 
-  it('releases a pin on a second click of the same family and moves it on another', () => {
-    const raise = mountSetup(useRaisedFamily)
+  it('releases a pin on a second click of the same item and moves it on another', () => {
+    const raise = mountSetup(useRaised<string>)
     raise.on('ordering').onClick()
     raise.on('alignment').onClick()
     expect(raise.pinned.value).toBe('alignment')
@@ -42,7 +42,7 @@ describe('useRaisedFamily', () => {
   })
 
   it('releases the pin through release, leaving the pointer and the focus', () => {
-    const raise = mountSetup(useRaisedFamily)
+    const raise = mountSetup(useRaised<string>)
     raise.on('lint').onClick()
     raise.on('docs').onFocusin(focusing(true))
     raise.release()
@@ -51,7 +51,7 @@ describe('useRaisedFamily', () => {
   })
 
   it('releases the pin and the focus on Escape, leaving the pointer', () => {
-    const raise = mountSetup(useRaisedFamily)
+    const raise = mountSetup(useRaised<string>)
     raise.on('lint').onClick()
     raise.on('docs').onFocusin(focusing(true))
     escape()

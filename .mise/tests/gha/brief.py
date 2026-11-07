@@ -52,26 +52,29 @@ def gate(
     return run
 
 
-@mark.parametrize(("job", "stage"), [("render", "Render"), ("sweep", "Axe")])
+@mark.parametrize(
+    ("job", "stage"),
+    [("fit", "Squeeze"), ("render", "Render"), ("sweep", "Axe")]
+)
 def test_a_failed_browser_row_names_its_stage(
     gate  : Callable[..., tuple[int, str]],
     job   : str,
     stage : str
 ):
     """
-    A browser row that fails skips the publish, and the summary names that
-    row rather than the job it skipped.
+    Pins that a failed browser row skips the publish and that the summary
+    names that row rather than the job it skipped.
     """
     code, summary = gate(**{"deploy": "skipped", job: "failure"})
     assert code == 1
     assert f"{stage} failed" in summary
 
 
-@mark.parametrize("job", ["render", "sweep"])
+@mark.parametrize("job", ["fit", "render", "sweep"])
 def test_a_failed_browser_row_withholds_the_publish(job: str):
     """
-    The publish job waits on each browser row, so a failure in one publishes
-    nothing.
+    Asserts that the publish job waits on each browser row, so a failure in
+    one publishes nothing.
     """
     assert job in JOBS["deploy"]["needs"]
 
@@ -79,14 +82,14 @@ def test_a_failed_browser_row_withholds_the_publish(job: str):
 @mark.parametrize("job", JOBS["gate"]["needs"])
 def test_a_failed_job_fails_the_gate(gate: Callable[..., tuple[int, str]], job: str):
     """
-    Each job the gate waits on fails it alone.
+    Asserts that each job the gate waits on fails it alone.
     """
     assert gate(**{job: "failure"})[0] == 1
 
 
 def test_every_job_passing_passes_the_gate(gate: Callable[..., tuple[int, str]]):
     """
-    A run whose every row passed exits 0 on the live preview.
+    Asserts that a run whose every row passed exits 0 on the live preview.
     """
     code, summary = gate()
     assert code == 0
