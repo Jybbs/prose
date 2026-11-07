@@ -220,3 +220,9 @@ export function familyEmblem(family: GlossaryFamily): Emblem {
 export function platformEmblem(name: string): Emblem {
   return { motif: lookup(PLATFORM_MOTIFS, name, 'Platform'), name }
 }
+
+// Lists every stroke a motif draws, its shapes first, then its cuts, then its
+// lines.
+export function strokesOf(motif: Motif): readonly string[] {
+  return [...motif.shapes, ...motif.cuts, ...motif.lines]
+}

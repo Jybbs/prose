@@ -1,8 +1,8 @@
 import { defineComponent } from 'vue'
 import type { VNodeChild } from 'vue'
 
-import { MOTIFS }   from '../../lib/shared/emblems'
-import type { Fit } from '../../lib/shared/emblems'
+import { MOTIFS, strokesOf } from '../../lib/shared/emblems'
+import type { Fit }         from '../../lib/shared/emblems'
 
 import * as nib from './nib'
 
@@ -30,7 +30,7 @@ export const NibSprite = defineComponent({
             const drawn  = nib.nibId(motif, 'paths')
             const jitter = nib.nibId(motif, 'jitter')
             return [
-              <g id={drawn} key={drawn}>{paths([...motif.shapes, ...motif.cuts, ...motif.lines])}</g>,
+              <g id={drawn} key={drawn}>{paths(strokesOf(motif))}</g>,
               <filter height="140%" id={jitter} key={jitter} width="140%" x="-20%" y="-20%">
                 <feTurbulence
                   baseFrequency={nib.NIB.jitter.baseFrequency}

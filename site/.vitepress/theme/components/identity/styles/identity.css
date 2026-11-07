@@ -1,0 +1,82 @@
+@reference "../../../styles/tailwind.css";
+
+.identity-copy > button.copy {
+  top       : 50%;
+  right     : var(--prose-space-2);
+  width     : var(--prose-size-24);
+  height    : var(--prose-size-24);
+  transform : translateY(-50%);
+  opacity   : 1;
+}
+
+.identity-strip[aria-selected='true'] {
+  box-shadow : inset 0 calc(var(--prose-border-3) * -1) 0 var(--vp-c-text-1);
+}
+
+.identity-legend[aria-selected='true'] {
+  background : var(--prose-chip-ground);
+}
+
+/* Rings each element of a specimen's small page that carries the role the
+   reader points at. */
+.identity-mark[data-marked] {
+  outline        : var(--prose-border-2) dashed var(--vp-c-brand-1);
+  outline-offset : var(--prose-space-2);
+}
+
+.identity-small-page :is(h1, h2, h3) {
+  margin  : 0;
+  padding : 0;
+  border  : 0;
+}
+
+.vp-doc .identity-table {
+  display : table;
+}
+
+.identity-nav {
+  height : var(--vp-nav-height);
+}
+
+.vp-doc .identity-nav a {
+  text-decoration : none;
+}
+
+.identity-ruler-track {
+  top        : 50%;
+  height     : var(--prose-border-2);
+  background : var(--vp-c-divider);
+}
+
+.identity-diamond {
+  top        : 50%;
+  width      : var(--prose-size-10);
+  height     : var(--prose-size-10);
+  border     : var(--prose-border-2) solid var(--vp-c-text-2);
+  background : var(--vp-c-bg);
+  transform  : translate(-50%, -50%) rotate(45deg);
+}
+
+.identity-badge {
+  color : var(--family-nib);
+}
+
+/* Draws each stroke of the large badge in turn, every nib copy of one stroke
+   together, the stroke at index `--stroke` starting once each stroke before it
+   has drawn. */
+.identity-stroke {
+  animation        : identity-draw var(--prose-duration-morph) var(--prose-ease-emphasized) both;
+  animation-delay  : calc(var(--stroke) * var(--prose-duration-morph));
+  stroke-dasharray : 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identity-stroke {
+    animation : none;
+  }
+}
+
+@keyframes identity-draw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}

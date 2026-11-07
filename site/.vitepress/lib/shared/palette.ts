@@ -9,6 +9,10 @@ type Text   = 'text-1' | 'text-2' | 'text-3'
 
 export const SCHEMES = ['dark', 'light'] as const
 
+// Builds a record holding what `read` returns for each scheme.
+export const perScheme = <T>(read: (scheme: Scheme) => T): Record<Scheme, T> =>
+  Object.fromEntries(SCHEMES.map(scheme => [scheme, read(scheme)])) as Record<Scheme, T>
+
 const oklch = converter('oklch')
 
 // Blends `base` toward black or white the way `color-mix(in oklch, base, toward pct%)` does
@@ -19,7 +23,7 @@ const oklchMix = (base: string, toward: 'black' | 'white', share: number): strin
 const srgbMix = (base: string, hue: string, share: number): string =>
   formatHex(interpolate([base, hue], 'rgb')(share / 100))
 
-const HUES = {
+export const HUES = {
   apricot      : '#e8876f',
   casper       : '#adbdcd',
   celadon      : '#8cc5a3',
@@ -37,12 +41,21 @@ const HUES = {
   woodsmoke    : '#17171b'
 } as const
 
+export const BRAND = 'ube' satisfies keyof typeof HUES
+
+// Declares each shade of the brand hue as the color it mixes toward and the
+// share it takes of that color.
+export const BRAND_SHADES = {
+  'ube-deep'  : { share: 22, toward: 'black' },
+  'ube-mid'   : { share: 18, toward: 'white' },
+  'ube-night' : { share: 45, toward: 'black' },
+  'ube-pale'  : { share: 36, toward: 'white' }
+} as const satisfies Record<string, { share: number, toward: 'black' | 'white' }>
+
 export const PALETTE = {
   ...HUES,
-  'ube-deep'  : oklchMix(HUES.ube, 'black', 22),
-  'ube-mid'   : oklchMix(HUES.ube, 'white', 18),
-  'ube-night' : oklchMix(HUES.ube, 'black', 45),
-  'ube-pale'  : oklchMix(HUES.ube, 'white', 36)
+  ...Object.fromEntries(Object.entries(BRAND_SHADES).map(([name, { share, toward }]) =>
+    [name, oklchMix(HUES[BRAND], toward, share)])) as Record<keyof typeof BRAND_SHADES, string>
 }
 
 // Holds the grounds each scheme draws on, the page being VitePress's
@@ -91,6 +104,10 @@ export const SECTIONS: Record<Exclude<SectionSlug, 'rules'>, string> = {
 
 type Hue = GlossaryFamily | keyof typeof PALETTE | Text
 
+// Holds the contrast ratio each family accent reads at, the edge marking a
+// border and the nib inking a badge.
+export const ACCENT_RATIOS = { edge: 3.4, nib: 4.5 } as const
+
 // Lists the shades the site reads, each row naming the colors it shades, the
 // grounds they sit on, and the contrast ratios they read at. The `card` ground
 // is a fixture card's, which shows the soft ground closed and the page open,
@@ -99,7 +116,7 @@ type Hue = GlossaryFamily | keyof typeof PALETTE | Text
 // the page, and the `any` ground is each of the page, the soft ground, and the
 // code block.
 const SHADES: [colors: readonly Hue[], grounds: readonly Ground[], ratios: readonly number[]][] = [
-  [Object.keys(FAMILIES) as GlossaryFamily[], ['card', 'chip', 'page', 'soft'], [3.4, 4.5]],
+  [Object.keys(FAMILIES) as GlossaryFamily[], ['card', 'chip', 'page', 'soft'], Object.values(ACCENT_RATIOS)],
   [['apricot', 'celadon', 'eureka'], ['page'], [3.5, 4.5]],
   [['celadon'], ['page'], [6.5]],
   [['apricot'], ['code'], [3.5]],
@@ -145,12 +162,16 @@ function hexOf(hue: Hue, scheme: Scheme): string {
   return VITEPRESS[hue as Text][scheme]
 }
 
-// Names each shade `<hue>-<ground>-<ratio>`, the ratio without its point, as
+// Names a shade `<hue>-<ground>-<ratio>`, the ratio without its point, as
 // `alignment-chip-45` for the alignment hue reading 4.5:1 on the chip ground.
+export function shadeName(hue: string, ground: string, ratio: number): string {
+  return `${hue}-${ground}-${String(ratio).replace('.', '')}`
+}
+
 function shadesOf(scheme: Scheme): Record<string, string> {
   return Object.fromEntries(SHADES.flatMap(([colors, grounds, ratios]) =>
     colors.flatMap(hue => grounds.flatMap(ground => ratios.map(ratio => [
-      `${hue}-${ground}-${String(ratio).replace('.', '')}`,
+      shadeName(hue, ground, ratio),
       shadeReading(groundsOf(ground, scheme), hexOf(hue, scheme), ratio)
     ])))))
 }
@@ -175,15 +196,9 @@ function schemeRoles(scheme: Scheme): Record<string, string> {
   }
 }
 
-export const SCHEME_ROLES: Record<Scheme, Record<string, string>> = {
-  dark  : schemeRoles('dark'),
-  light : schemeRoles('light')
-}
+export const SCHEME_ROLES = perScheme(schemeRoles)
 
-export const SCHEME_SHADES: Record<Scheme, Record<string, string>> = {
-  dark  : shadesOf('dark'),
-  light : shadesOf('light')
-}
+export const SCHEME_SHADES = perScheme(shadesOf)
 
 // Writes each color as a custom property under one selector.
 function block(selector: string, colors: Record<string, string>): string {
@@ -200,12 +215,12 @@ function prefixed(prefix: string, colors: Record<string, string>): Record<string
 // under a rule's hover card, its hue beside a nib shade reading 4.5:1 and an
 // edge shade reading 3.4:1 on each ground a badge sits on.
 function familyAccents(): string {
-  const shades = (['edge', 'nib'] as const).flatMap(kind => ['', '-card', '-chip', '-soft'].map(ground => ({ ground, kind })))
+  const shades = (Object.keys(ACCENT_RATIOS) as (keyof typeof ACCENT_RATIOS)[]).flatMap(kind => ['', '-card', '-chip', '-soft'].map(ground => ({ ground, kind })))
   return Object.keys(FAMILIES).map(family => {
     const lines = [
       `  --family-color: var(--color-family-${family});`,
       ...shades.map(({ ground, kind }) =>
-        `  --family-${kind}${ground}: var(--prose-shade-${family}-${ground.slice(1) || 'page'}-${kind === 'nib' ? 45 : 34});`)
+        `  --family-${kind}${ground}: var(--prose-shade-${shadeName(family, ground.slice(1) || 'page', ACCENT_RATIOS[kind])});`)
     ]
     return `[data-family="${family}"],\n[data-popup="rule-card"]:has(.rule-card[data-family="${family}"]) {\n${lines.join('\n')}\n}\n`
   }).join('')

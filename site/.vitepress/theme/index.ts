@@ -38,7 +38,7 @@ import './styles/vitepress-chrome.css'
 import.meta.glob(['./components/**/*.css', '../kit/styles/*.css'], { eager: true })
 
 const components = import.meta.glob<Record<string, Component>>(
-  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.tsx',
+  './components/{architecture,exit-codes,fixtures,glossary,guide,identity,integrations,reference,rules,sandbox,suppression}/*.tsx',
   { eager: true }
 )
 
