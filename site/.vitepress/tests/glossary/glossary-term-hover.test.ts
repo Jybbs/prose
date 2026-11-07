@@ -3,7 +3,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h }     from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
-import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
+import { GlossaryTerm }      from '../../theme/components/glossary/GlossaryTerm'
 
 vi.mock('vitepress', () => ({ defineLoader: () => {}, useRoute: () => ({ path: '/architecture/' }) }))
 

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import DirectiveAnatomy      from '../../theme/components/suppression/DirectiveAnatomy.vue'
+import { DirectiveAnatomy }  from '../../theme/components/suppression/DirectiveAnatomy'
 import { InlineProse }       from '../../theme/components/base/InlineProse'
 import { SCOPE_ORDER }       from '../../lib/suppression/scopes'
 import { rendersAccessibly } from '../axe'

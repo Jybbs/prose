@@ -3,13 +3,13 @@ import DefaultTheme from 'vitepress/theme'
 
 import { useNibStroke } from '../lib/composables/use-nib-stroke'
 
-import { NibSprite }      from '../kit'
-import BuildMetadata      from './components/layout/BuildMetadata.vue'
-import GlossaryFolioIndex from './components/glossary/GlossaryFolioIndex.vue'
-import NotFound           from './components/layout/NotFound.vue'
-import RuleChrome         from './components/rules/RuleChrome.vue'
-import RuleLinkPopup      from './components/rules/RuleLinkPopup.vue'
-import StarBadge          from './components/layout/StarBadge.vue'
+import { NibSprite }          from '../kit'
+import { BuildMetadata }      from './components/layout/BuildMetadata'
+import { GlossaryFolioIndex } from './components/glossary/GlossaryFolioIndex'
+import { NotFound }           from './components/layout/NotFound'
+import RuleChrome             from './components/rules/RuleChrome.vue'
+import RuleLinkPopup          from './components/rules/RuleLinkPopup.vue'
+import { StarBadge }          from './components/layout/StarBadge'
 
 useNibStroke()
 </script>

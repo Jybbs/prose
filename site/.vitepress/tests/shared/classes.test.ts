@@ -420,7 +420,7 @@ describe('the classes a template writes', () => {
   })
 
   it('marks the root classes of a child component as inherited', () => {
-    const inherited = elementsOf('.vitepress/theme/components/layout/NotFound.vue')
+    const inherited = elementsOf('.vitepress/theme/components/layout/NotFound.tsx')
       .flatMap(({ classes }) => classes.filter(written => written.inherited))
     expect(inherited).toStrictEqual([{ alt: 0, inherited: true, name: 'kicker', slot: 0 }])
   })

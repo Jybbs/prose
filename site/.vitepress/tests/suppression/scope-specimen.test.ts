@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 
 import { directiveHref, SCOPE_ORDER } from '../../lib/suppression/scopes'
-import ScopeSpecimen                  from '../../theme/components/suppression/ScopeSpecimen.vue'
+import { ScopeSpecimen }              from '../../theme/components/suppression/ScopeSpecimen'
 import { rendersAccessibly }          from '../axe'
 
 vi.mock('../../lib/suppression/directives.data', async () =>

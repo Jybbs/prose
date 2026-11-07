@@ -1,12 +1,12 @@
 import { defineComponent, Fragment, h } from 'vue'
-import type { PropType }             from 'vue'
+import type { PropType }                from 'vue'
 
 import { useAriaHidden, useHiddenTabindex } from '../../../lib/composables/use-aria-hidden'
 import { codeParts }                        from '../../../lib/markdown/code-operators'
 import type { InlineNode }                  from '../../../lib/markdown/inline-nodes'
 import { BODY_LINK_CLASS }                  from '../../../lib/shared/constants'
 import { primitiveRoute }                   from '../../../lib/shared/routes'
-import GlossaryTerm                         from '../glossary/GlossaryTerm.vue'
+import { GlossaryTerm }                     from '../glossary/GlossaryTerm'
 import InlineRuleLink                       from '../rules/InlineRuleLink.vue'
 
 export const InlineProse = defineComponent({

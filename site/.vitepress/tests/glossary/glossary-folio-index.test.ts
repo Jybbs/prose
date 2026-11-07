@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 
-import GlossaryFolioIndex   from '../../theme/components/glossary/GlossaryFolioIndex.vue'
-import { useGlossaryFolio } from '../../lib/composables/use-glossary-folio'
+import { GlossaryFolioIndex } from '../../theme/components/glossary/GlossaryFolioIndex'
+import { useGlossaryFolio }   from '../../lib/composables/use-glossary-folio'
 
 vi.mock('vitepress', () => ({
   defineLoader : () => {},

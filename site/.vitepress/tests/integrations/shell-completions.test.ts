@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 
 import { ToolIcon }          from '../../kit'
-import ShellCompletions      from '../../theme/components/integrations/ShellCompletions.vue'
+import { ShellCompletions }  from '../../theme/components/integrations/ShellCompletions'
 import { rendersAccessibly } from '../axe'
 
 import type loader from '../../lib/shared/tools.data'
