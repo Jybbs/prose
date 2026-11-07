@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { data as configs } from '../../../lib/rules/rule-configs.data'
 import { useCurrentRule }  from '../../../lib/composables/route'
-import ConfigRowTable      from '../base/ConfigRowTable.vue'
+import { ConfigRowTable }  from '../base/ConfigRowTable'
 
 const current = useCurrentRule()
 

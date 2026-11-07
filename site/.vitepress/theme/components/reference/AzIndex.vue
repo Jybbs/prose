@@ -6,7 +6,7 @@ import { Tabs } from '../../../kit'
 import { useKeyCard }     from '../../../lib/composables/use-key-card'
 import { data as TOKENS } from '../../../lib/tokens/tokens.data'
 import * as sources       from '../../../lib/tokens/sources'
-import InlineProse        from '../base/InlineProse.vue'
+import { InlineProse }    from '../base/InlineProse'
 
 const domains = (Object.keys(sources.DOMAIN_LABELS) as sources.Domain[]).sort()
 

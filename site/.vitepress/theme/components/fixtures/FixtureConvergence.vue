@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
-import InlineProse         from '../base/InlineProse.vue'
+import { InlineProse }     from '../base/InlineProse'
 
 interface Step {
   badge ?: 'changed' | 'settled'

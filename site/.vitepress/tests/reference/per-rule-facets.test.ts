@@ -2,7 +2,7 @@
 import { mount }    from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import InlineProse           from '../../theme/components/base/InlineProse.vue'
+import { InlineProse }       from '../../theme/components/base/InlineProse'
 import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
 import PerRuleFacets         from '../../theme/components/reference/PerRuleFacets.vue'
 import { rendersAccessibly } from '../axe'

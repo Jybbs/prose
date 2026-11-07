@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import InlineProse    from '../base/InlineProse.vue'
-import { FamilyChip } from '../../../kit'
+import { InlineProse } from '../base/InlineProse'
+import { FamilyChip }  from '../../../kit'
 
 import { useGlossaryFolio } from '../../../lib/composables/use-glossary-folio'
 import { BODY_LINK_CLASS }  from '../../../lib/shared/constants'

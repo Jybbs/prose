@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import { data, type GlanceSection } from '../../../lib/reference/section-glance.data'
 import { BODY_LINK_CLASS }          from '../../../lib/shared/constants'
-import InlineProse                  from '../base/InlineProse.vue'
+import { InlineProse }              from '../base/InlineProse'
 
 const props = defineProps<{ section: GlanceSection }>()
 

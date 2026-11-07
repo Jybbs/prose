@@ -9,9 +9,9 @@
 @import "./tailwind/sandbox.css";
 @import "./tailwind/shapes.css";
 
-@source "../**/*.vue";
+@source "../**/*.{tsx,vue}";
 @source "../../kit/**/*.{ts,tsx}";
-@source "../../../prototypes/**/*.vue";
+@source "../../../prototypes/**/*.{tsx,vue}";
 @source "../../lib/**/*.ts";
 @source not inline("border container filter fixed inline lowercase resize ring static transform transition");
 

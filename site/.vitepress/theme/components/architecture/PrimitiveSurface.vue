@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { data as primitives } from '../../../lib/architecture/primitives-composition.data'
 
 import type { PrimitiveStability } from '../../../lib/shared/registries'
-import InlineProse                 from '../base/InlineProse.vue'
+import { InlineProse }             from '../base/InlineProse'
 
 const props = defineProps<{ stability: PrimitiveStability }>()
 

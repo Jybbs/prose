@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { data as cards } from '../../../lib/integrations/integrations.data'
-import InlineProse       from '../base/InlineProse.vue'
+import { InlineProse }   from '../base/InlineProse'
 </script>
 
 <template>

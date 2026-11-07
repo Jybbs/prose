@@ -68,7 +68,7 @@ const DECLARED = new Set(
 // so every class a selector names passes as a hook, and so does a file
 // extension or a domain label such as `json` or `org`.
 const HOOKS = new Set(
-  fs.globSync(['.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx,vue}', 'prototypes/**/*.{ts,vue}'], { cwd: vocabulary.SITE })
+  fs.globSync(['.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx,vue}', 'prototypes/**/*.{ts,tsx,vue}'], { cwd: vocabulary.SITE })
     .flatMap(file => [...vocabulary.read(file).matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
     .flatMap(([, , text]) => [...text.matchAll(CLASS_NAME)].map(([, name]) => name))
 )
@@ -123,7 +123,8 @@ function jsxElementsOf(file: string): Element[] {
         if (name?.name === 'class' && value) bound(value.expression ?? value, classes, 1)
       }
       if (classes.length > 0) {
-        out.push({ classes, line: node.loc.start.line, linked: node.name.name === 'a', tag: node.name.name })
+        const inherited = rootClassesOf(node.name.name ?? '').map(name => ({ alt: 0, inherited: true, name, slot: 0 }))
+        out.push({ classes: [...classes, ...inherited], line: node.loc.start.line, linked: node.name.name === 'a', tag: node.name.name })
       }
     }
   })

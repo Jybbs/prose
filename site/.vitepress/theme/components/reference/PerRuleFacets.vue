@@ -8,7 +8,7 @@ import { useHashOpen }         from '../../../lib/composables/use-hash-open'
 import { data as facetGroups } from '../../../lib/reference/facets.data'
 import { familyEmblem }        from '../../../lib/shared/emblems'
 import { counted }             from '../../../lib/shared/numerals'
-import InlineProse             from '../base/InlineProse.vue'
+import { InlineProse }         from '../base/InlineProse'
 
 const open       = ref<Record<string, boolean>>({})
 const toggle     = (family: string): void => { open.value[family] = !open.value[family] }

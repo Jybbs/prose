@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useResizeObserver }                      from '@vueuse/core'
-import { useData }                                from 'vitepress'
+import { useResizeObserver }                       from '@vueuse/core'
+import { useData }                                 from 'vitepress'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 
 import { Disclosure }  from '../../../kit'
@@ -18,7 +18,7 @@ import { pageCompositionCases, type RuleSegment } from '../../../lib/rules/rule-
 import { data as rules }                          from '../../../lib/rules/rules.data'
 import type { SavedSession }                      from '../../../lib/sandbox/session'
 import type { FixtureTab }                        from '../../../lib/shared/fixture-tab'
-import InlineProse                                from '../base/InlineProse.vue'
+import { InlineProse }                            from '../base/InlineProse'
 
 interface CardRow extends FixtureEntry {
   case        : string

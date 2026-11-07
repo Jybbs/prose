@@ -5,7 +5,7 @@ import { Tabs, ToolIcon } from '../../../kit'
 
 import { data as shells } from '../../../lib/integrations/shell-completions.data'
 import { useTabSelect }   from '../../../lib/composables/use-tab-select'
-import InlineProse        from '../base/InlineProse.vue'
+import { InlineProse }    from '../base/InlineProse'
 
 const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
 const stacked                          = useMediaQuery('(width < 721px)', { ssrWidth: 1280 })

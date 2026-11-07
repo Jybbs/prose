@@ -1,0 +1,39 @@
+import { defineComponent } from 'vue'
+
+import { NibBadge } from '../../../kit'
+
+import { data }           from '../../../lib/guide/platforms.data'
+import { platformEmblem } from '../../../lib/shared/emblems'
+
+export const WheelPlatforms = defineComponent({
+  name: 'WheelPlatforms',
+  setup() {
+    return () => (
+      <table>
+        <thead>
+          <tr>
+            <th>Triple</th>
+            <th>Platform</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map(platform => (
+            <tr key={platform.target}>
+              <td>
+                <code>{platform.target}</code>
+              </td>
+              <td>
+                <span class="nib-chip">
+                  <NibBadge emblem={platformEmblem(platform.name)} size={14} />
+                </span>
+                {' '}
+                {platform.label}
+                {platform.manylinux && <em> (glibc, manylinux)</em>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+})

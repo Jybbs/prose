@@ -7,7 +7,7 @@ import type { InlineNode }   from '../../../../lib/markdown/inline-nodes'
 import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { familyEmblem }      from '../../../../lib/shared/emblems'
 import * as registries       from '../../../../lib/shared/registries'
-import InlineProse           from '../../base/InlineProse.vue'
+import { InlineProse }       from '../../base/InlineProse'
 import { NibBadge }          from '../../../../kit'
 import SurfaceRail           from './SurfaceRail.vue'
 

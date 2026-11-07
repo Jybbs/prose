@@ -4,7 +4,7 @@ import { defineComponent, h } from 'vue'
 
 import { provideAriaHidden } from '../../lib/composables/use-aria-hidden'
 import GlossaryTerm          from '../../theme/components/glossary/GlossaryTerm.vue'
-import InlineProse           from '../../theme/components/base/InlineProse.vue'
+import { InlineProse }       from '../../theme/components/base/InlineProse'
 import InlineRuleLink        from '../../theme/components/rules/InlineRuleLink.vue'
 
 import type { InlineNode } from '../../lib/markdown/inline-nodes'

@@ -11,7 +11,7 @@ import { pickOr }                                    from '../../../lib/shared/p
 import { PRIMITIVE_LAYER_NUMERALS, PRIMITIVE_SLUGS } from '../../../lib/shared/registries'
 import type { PrimitiveSlug }                        from '../../../lib/shared/registries'
 import { primitiveRoute }                            from '../../../lib/shared/routes'
-import InlineProse                                   from '../base/InlineProse.vue'
+import { InlineProse }                               from '../base/InlineProse'
 import { NibBadge }                                  from '../../../kit'
 
 const props = defineProps<{

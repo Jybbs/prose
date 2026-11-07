@@ -6,7 +6,7 @@ import FixtureToggle  from './FixtureToggle.vue'
 
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
-import InlineProse         from '../base/InlineProse.vue'
+import { InlineProse }     from '../base/InlineProse'
 
 const props = defineProps<{
   case : string

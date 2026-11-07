@@ -37,9 +37,9 @@ import './styles/vitepress-chrome.css'
 // order-free and load through one glob in path order.
 import.meta.glob(['./components/**/*.css', '../kit/styles/*.css'], { eager: true })
 
-const components = import.meta.glob<Component>(
-  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.vue',
-  { eager: true, import: 'default' }
+const components = import.meta.glob<Record<string, Component>>(
+  './components/{architecture,exit-codes,fixtures,glossary,guide,integrations,reference,rules,sandbox,suppression}/*.{tsx,vue}',
+  { eager: true }
 )
 
 export default {
@@ -49,8 +49,9 @@ export default {
     provideCurrentRule()
   },
   enhanceApp({ app }) {
-    for (const [file, component] of Object.entries(components)) {
-      app.component(stripSuffix(file.split('/').pop()!, '.vue'), component)
+    for (const [file, module] of Object.entries(components)) {
+      const name = stripSuffix(stripSuffix(file.split('/').pop()!, '.tsx'), '.vue')
+      app.component(name, module.default ?? module[name]!)
     }
     app.component('KitCatalog', defineAsyncComponent(() => import('../kit/KitCatalog')))
     app.component('Tool', Tool)

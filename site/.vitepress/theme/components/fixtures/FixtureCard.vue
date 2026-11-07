@@ -13,7 +13,7 @@ import { data as rules }   from '../../../lib/rules/rules.data'
 import { familyEmblem }    from '../../../lib/shared/emblems'
 import type { FixtureTab } from '../../../lib/shared/fixture-tab'
 import { ruleSlug }        from '../../../lib/shared/rule-slug'
-import InlineProse         from '../base/InlineProse.vue'
+import { InlineProse }     from '../base/InlineProse'
 
 const props = defineProps<{
   case      : string

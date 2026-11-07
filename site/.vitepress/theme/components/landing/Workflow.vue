@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import LandingSection from './LandingSection.vue'
 
 import { data as landing } from '../../../lib/landing/landing.data'
-import InlineProse         from '../base/InlineProse.vue'
+import { InlineProse }     from '../base/InlineProse'
 
 const chapters = computed(() =>
   landing.workflow.map((s, i) => ({ ...s, roman: romanize(i + 1) }))

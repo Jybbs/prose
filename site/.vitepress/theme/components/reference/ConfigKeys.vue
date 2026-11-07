@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { data, type ConfigKeys } from '../../../lib/reference/config-keys.data'
-import ConfigRowTable            from '../base/ConfigRowTable.vue'
+import { ConfigRowTable }        from '../base/ConfigRowTable'
 
 const props = defineProps<{ section: keyof ConfigKeys }>()
 
