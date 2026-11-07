@@ -26,8 +26,8 @@ export async function deckTravel(list: HTMLElement, change: () => Promise<void>)
     if (Math.abs(from) < 1) continue
     const style = win.getComputedStyle(card)
     travels.set(deck, deck.animate([{ transform: `translateY(${from}px)` }, { transform: 'none' }], {
-      duration : millis(style.getPropertyValue('--card-grow')),
-      easing   : style.getPropertyValue('--card-ease-morph').trim()
+      duration : millis(style.getPropertyValue('--prose-duration-morph')),
+      easing   : style.getPropertyValue('--prose-ease-morph').trim()
     }))
   }
 }

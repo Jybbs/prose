@@ -63,6 +63,15 @@ describe('the site stylesheets', () => {
     expect(VOCABULARY.strays(root)).toStrictEqual([])
   })
 
+  it('declares each custom property a script reads off a computed style', () => {
+    const declared = new Set(VOCABULARY.properties)
+    for (const { root } of STYLESHEETS) root.walkDecls(/^--/, ({ prop }) => { declared.add(prop) })
+    const read = fs.globSync('.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', { cwd: vocabulary.SITE })
+      .flatMap(file => [...vocabulary.read(file).matchAll(/getPropertyValue\('(--[\w-]+)'\)/g)].map(([, name]) => name))
+    expect(read.length).toBeGreaterThan(0)
+    expect(read.filter(name => !declared.has(name))).toStrictEqual([])
+  })
+
   it.each(STYLESHEETS)(
     '$file sets each em, i, strong, b, and mark outside a link in a text color or the aside ink',
     ({ root }) => {
