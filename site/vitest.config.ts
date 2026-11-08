@@ -1,8 +1,8 @@
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { VUE_JSX } from './.vitepress/lib/shared/constants'
-import * as paths  from './.vitepress/lib/shared/paths'
+import { VUE_JSX } from './.vitepress/lib/shared/constants.ts'
+import * as paths  from './.vitepress/lib/shared/paths.ts'
 
 const BUNDLE = {
   globalSetup : ['./.vitepress/tests/serve.ts'],

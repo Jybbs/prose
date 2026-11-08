@@ -43,7 +43,7 @@ runs:
         tools      : rust
 
     - name : Run maturin
-      env  : { PIP_BREAK_SYSTEM_PACKAGES: '1' }
+      env  : { PIP_BREAK_SYSTEM_PACKAGES: '1', PIP_DISABLE_PIP_VERSION_CHECK: '1' }
       uses : PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
       with:
         args              : ${{ inputs.command == 'build' && format('--release --locked {0}', inputs.args) || inputs.args }}

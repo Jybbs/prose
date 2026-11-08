@@ -15,7 +15,7 @@ restore() {
 }
 
 (cd site && bun install --dry-run --frozen-lockfile)
-cargo update --dry-run --locked --workspace
+cargo metadata --format-version 1 --locked > /dev/null
 snapshot=$(mktemp)
 cp -p .mise/mise.lock "$snapshot"
 trap restore EXIT

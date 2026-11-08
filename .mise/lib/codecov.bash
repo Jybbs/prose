@@ -6,8 +6,10 @@ upload_report() {
   fi
 
   codecovcli upload-process \
+    --disable-search \
     --file "$file" \
     --flag "$flag" \
     ${parent:+--parent-sha "$parent"} \
+    --plugin noop \
     --sha "$SHA"
 }
