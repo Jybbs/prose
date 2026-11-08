@@ -4,6 +4,10 @@ description: "The path from a fresh install to a formatted project, one page per
 
 The Guide's chapters follow the path from a fresh install to a formatted project, one page per step. This section tells that story against a working project, whereas the [**Reference**](/reference/) section lists every flag and key.
 
+## The Section at a Glance
+
+<SectionGlance section="guide" />
+
 ## Pick Your Run Shape
 
 The commands below cover almost every run, plus one for adopting a single rule at a time. Each row pairs what you want to do with the command that does it.
@@ -52,13 +56,9 @@ The commands below cover almost every run, plus one for adopting a single rule a
 
 </div>
 
-## The Section at a Glance
-
-<SectionGlance section="guide" />
-
 ## See Also
 
-- [**Integrations**](/integrations/) covers running `prose format` or `prose check` from an editor's save event, a pre-commit hook, and a CI job.
+- [**Integrations**](/integrations/) covers running `prose format` or `prose check` from an editor's save event, a <Tool slug="precommit" /> hook, and a CI job.
 - [**Rules**](/rules/) lists every rule *Prose* runs.
 - [**Architecture**](/architecture/) covers the Rust types a downstream crate links against.
 - [**Sandbox**](/sandbox/) runs the formatter in the browser on examples taken from the fixture set.

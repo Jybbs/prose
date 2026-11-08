@@ -1,5 +1,5 @@
 ---
-description: "The rules that pad the space before a shared token so consecutive rows read as columns."
+description: "Covers the rules that pad the space before a shared token so consecutive rows read as columns."
 ---
 
 # Alignment Rules

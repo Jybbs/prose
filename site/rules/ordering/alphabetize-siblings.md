@@ -22,9 +22,15 @@ layout  : doc
 | Imports | Alphabetical within each [[group-imports]] section |
 | Docstring entries | Parameter entries follow the signature order, all else alphabetical |
 
+<FixtureCards rule="alphabetize_siblings" cases="classes_band_above_functions methods_four_subgroup_order enum_members_single_group pydantic_required_then_optional dataclass_fields_hold_positional_order method_kwonly_params_sort dict_scalars_then_collections from_import_names_sort docstring_args_mirror_source_order" />
+
 Order that carries meaning stays as written, covering positional-only parameters ahead of the `/`, the members of an enumeration whose values or aliases depend on where each member sits, and tuple-unpacking targets.
 
+<FixtureCards rule="alphabetize_siblings" cases="enum_numbering_by_position_holds" />
+
 At module scope the classes and the functions sort as one run with every class above every function, each band alphabetical and the function band grouped as dunder, private, public the way methods are, so a module reads its classes first and its functions below them whatever order the author interleaved them in.
+
+<FixtureCards rule="alphabetize_siblings" cases="banded_functions_keep_their_groups" />
 
 A definition stays behind any sibling it names at evaluation time (*a base class, a decorator, a parameter default, a non-deferred annotation, a class-body value*), and a module-level statement that reads one pins its run the same way. A `type` statement holds its run by what its value names and calls, and so does a statement naming the alias, since reading the alias's `__value__` or calling its `evaluate_value` evaluates that value while the module runs. Several other statements pin a run or fence it:
 
@@ -36,11 +42,19 @@ A definition stays behind any sibling it names at evaluation time (*a base class
 - A decorated definition at module scope keeps its slot outright whereas a decorated method still sorts, and a reference cycle leaves its run in source order.
 - Inside a class body the constants and the annotated fields sort through one dependency graph, so a constant a method default or base class reads stays above it.
 
+<FixtureCards rule="alphabetize_siblings" cases="base_class_reference_pins_run decorator_reference_pins_function_run statement_reading_a_definition_holds_the_run opaque_base_fences_the_run class_reference_cycle_skips_run" />
+
 A [**section marker**](/rules/ordering/) splits a run into sections that each sort on their own while the marker keeps its place. An ordinary comment at the member's own indent is no divider and travels with the member below it. A group that packs several members onto one row keeps its order across a comment, because its members swap in place with every gap kept as written and the comment would stay put while they moved past it.
+
+<FixtureCards rule="alphabetize_siblings" cases="banner_sections_module_defs attached_comment_travels_with_method" />
 
 Positional-or-keyword parameters never reorder, since a slot is part of the call contract, whereas the keyword-only block past the `*` sorts, and [[unsorted-positionals]] reports a run out of order. A class whose header generates its constructor follows the same contract, so a `NamedTuple` or `msgspec.Struct` base and a `@dataclass`, `attrs`, or `pydantic.dataclasses` decorator each pin the field run, whereas `kw_only=True`, a `dataclasses.KW_ONLY` block, a `TypedDict`, and a `pydantic.BaseModel` sort throughout. A class whose field order carries meaning some other way, such as a `pandera.DataFrameModel` whose columns follow the declaration order, takes `# prose: keep` on its header, and the marker holds the class body as the [**Construct Order Preservation**](/reference/suppression-directives#construct-order-preservation) section of the suppression reference sets out.
 
+<FixtureCards rule="alphabetize_siblings" cases="method_positional_params_keep_order head_sharing_keyword_only_params_swap_in_place" />
+
 At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots, except in a `dict(...)` or `frozendict(...)` call, whose keywords set the mapping's iteration order and so keep the order written. A `dict(...)` call that [[simplify-comprehensions]] rewrites as a literal sorts as a literal's keys do. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless. A multi-line dict the sort reorders takes a blank line on either side of each entry spanning rows once two do, in place of the blank lines its source wrote, whereas a dict already in order keeps its blank lines as written.
+
+<FixtureCards rule="alphabetize_siblings" cases="call_kwargs_trailing_comments_travel mapping_constructor_keywords_keep_their_order" />
 
 <template #facets>
 
@@ -50,13 +64,19 @@ Each sort switches off on its own, so a project can keep its methods grouped whi
 
 `group-methods` sorts a class body into its dunder, property, private, and public groups before alphabetizing within each, so the constructor sits above the properties and the helpers below them. Setting it to `false` sorts every method on its plain name instead.
 
+<FixtureCards rule="alphabetize_siblings" cases="group_methods_false_sorts_by_name" />
+
 ### `sort-definitions`
 
 `sort-definitions` alphabetizes the class and function definitions, keeping each below any sibling it names at evaluation time. With it off, the definitions stay in source order while every other sort still runs.
 
+<FixtureCards rule="alphabetize_siblings" cases="sort_definitions_false_freezes_defs" />
+
 ### `sort-dict-keys`
 
 `sort-dict-keys` sorts a dict literal's entries, the scalar values ahead of the collection values and alphabetical by key within each. Insertion order is observable through iteration, `.items()`, and `**` unpacking, so a project relying on that order sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
+
+<FixtureCards rule="alphabetize_siblings" cases="sort_dict_keys_false_keeps_order" />
 
 ### `sort-docstring-entries`
 
@@ -65,6 +85,8 @@ Each sort switches off on its own, so a project can keep its methods grouped whi
 ### `sort-dunder-lists`
 
 `sort-dunder-lists` sorts the string items inside `__all__` and `__slots__`. A hand-ordered public API keeps the order written under `false`, and `# prose: keep` holds a single list.
+
+<FixtureCards rule="alphabetize_siblings" cases="sort_dunder_lists_false_keeps_order" />
 
 </template>
 

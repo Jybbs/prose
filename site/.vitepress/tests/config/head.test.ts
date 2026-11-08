@@ -6,6 +6,7 @@ import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 
 import * as head                                 from '../../lib/config/head'
 import { SITE_ALT, SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
+import { frontmatterDescription }                from '../../lib/shared/content-page'
 import { siteDir }                               from '../../lib/shared/paths'
 import { SECTIONS }                              from '../../lib/shared/registries'
 
@@ -109,7 +110,7 @@ describe('describePage', () => {
     [{ description: 'd', caption: 'c', summary: 's' }, 'd'],
     [{ description: ['d'], caption: 'c' },             'c'],
     [{ summary: '`s`' },                               's']
-  ])('takes the first string in DESCRIPTION_FIELDS order from %o', (frontmatter, expected) => {
+  ])('takes the first string among description, caption, and summary from %o', (frontmatter, expected) => {
     const data = page({ frontmatter })
     head.describePage(data)
     expect(data.description).toBe(expected)
@@ -171,6 +172,6 @@ describe('every page', () => {
 describe('every page but the landing', () => {
   it.each(files.filter(file => file !== 'index.md'))('%s declares a description field', file => {
     const { data } = matter.read(path.join(site, file))
-    expect(head.DESCRIPTION_FIELDS.some(field => typeof data[field] === 'string')).toBe(true)
+    expect(frontmatterDescription(data)).toBeTypeOf('string')
   })
 })

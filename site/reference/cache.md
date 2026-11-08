@@ -32,7 +32,7 @@ The keys under the `[cache]` table (*`[tool.prose.cache]` in a `pyproject.toml`*
 
 The sample below raises both caps above their defaults, for a tree whose entries outgrow them:
 
-```toml
+```toml config
 [cache]
 enabled      = true
 max-entries  = 25000
@@ -83,7 +83,7 @@ newest: 5m ago
 
 ## Hit-Miss Telemetry
 
-The global `--verbose` flag prints one line of cache counts to stderr at the end of each `prose check` or `prose format` run:
+The global `--verbose` flag prints one line of cache counts to stderr ahead of the closing summary of each `prose check` or `prose format` run:
 
 ```bash
 $ prose --verbose check src/

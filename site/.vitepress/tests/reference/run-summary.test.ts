@@ -33,3 +33,13 @@ describe('glossFor', () => {
     expect(runSummary.glossFor('x', 'y', 'z')).toBe('A clean run, full output, on a tty.')
   })
 })
+
+describe('longestLine', () => {
+  it('renders the anchored line no other selection outruns', () => {
+    const longest = runSummary.longestLine()
+    const every   = runSummary.OUTCOMES.flatMap(outcome => runSummary.QUIET_OPTIONS.flatMap(quiet => runSummary.STREAM_OPTIONS.map(stream =>
+      runSummary.resolveSelection(outcome.key, quiet.id, stream.id))))
+    expect(longest.anchor).not.toBeNull()
+    expect(every.every(line => line.text.length <= longest.text.length)).toBe(true)
+  })
+})

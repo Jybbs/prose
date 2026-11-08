@@ -12,29 +12,27 @@ vi.mock('../../lib/rules/composition.data', () => ({
       'wrap-docstrings'  : ['gamma_case']
     },
     cases: [
-      { case: 'alpha_case', configToml: '', rules: ['align-equals', 'space-statements'],
-        source: 'a = 1\n', titleHtml: 'Alpha Case' },
-      { case: 'beta_case', configToml: '', rules: ['align-equals'],
-        source: 'b = 2\n', titleHtml: 'Beta Case' },
-      { case: 'gamma_case', configToml: '', rules: ['wrap-docstrings'],
-        source: 'c = 3\n', titleHtml: 'Gamma <code>c = 3</code> Case' }
+      { case: 'alpha_case', rules: ['align-equals', 'space-statements'] },
+      { case: 'beta_case', rules: ['align-equals'] },
+      { case: 'gamma_case', rules: ['wrap-docstrings'] }
     ]
   }
 }))
 
 const { frontmatter } = vi.hoisted(() => {
-  const fixture = {
+  const fixture = (titleHtml: string) => ({
     changesSource : true,
     hasFindings   : false,
     hasToggle     : true,
     inputHtml     : '',
-    outputHtml    : ''
-  }
+    outputHtml    : '',
+    titleHtml
+  })
   const value: Record<string, unknown> = {
     fixtures: {
-      'composition/alpha_case' : fixture,
-      'composition/beta_case'  : fixture,
-      'composition/gamma_case' : fixture
+      'composition/alpha_case' : fixture('Alpha Case'),
+      'composition/beta_case'  : fixture('Beta Case'),
+      'composition/gamma_case' : fixture('Gamma <code>c = 3</code> Case')
     }
   }
   return { frontmatter: { value } }

@@ -10,13 +10,23 @@ layout  : doc
 
 `reflow-collections` expands a multi-entry collection literal across lines once its single-line form overflows `code-line-length`, and leaves a literal that fits on its row. It reaches dict, list, set, and tuple literals, a tuple only where it carries its parentheses.
 
+<FixtureCards rule="reflow_collections" cases="tuple_overflow_expands bare_tuple_skips_expansion single_element_and_grouping_stay_inline" />
+
 Inside the expanded form, a non-atomic entry (*a function call, a nested collection, a computed expression*) takes a row of its own, whereas a run of atomic entries (*ints, floats, strings, single-name identifiers*) packs across as few rows as fit, each row taking at most `max-atomics` entries within the budget. A non-atomic entry in the middle of such a run splits it into two runs packed on their own.
+
+<Fixture rule="reflow_collections" case="list_atomics_flow_pack" />
 
 The rule runs the inverse move too, rejoining a construct broken somewhere other than an entry boundary, and the rejoin reaches a multi-line subscript, a collection used as a dict key, and a comprehension broken across its `for` and `if` clauses. A subscript and a comprehension only ever rejoin and never expand the way a literal does, so one too wide to fit, or one carrying a comment or a multi-line string, keeps its breaks. A construct that would overflow once joined keeps its break, as does one whose nested call is already written one argument per line, carries a comment, or passes `max-args`. A collection inside an f-string replacement field is left as written whatever its width, and a literal inside a `%` template or a `str.format()` call that [[prefer-fstring]] converts on the row it lands on never expands, since the conversion places it in a replacement field.
 
+<FixtureCards rule="reflow_collections" cases="subscript_target_joins dict_tuple_key_joins comprehension_collapses_when_fits comprehension_too_wide_keeps_breaks comprehension_comment_pins_source single_item_literals_join_back" />
+
 A member the expansion keeps as written rather than laying out moves whole into the expanded form, its continuation rows shifted to the column the entries sit at, so a kept call or subscript reads under its siblings. A member whose rows align under its own opening bracket keeps the whole construct as written instead, and one running through a multi-line string keeps the string's own columns. A literal nested inside a member that moves whole, whether as a kept call's argument, an operand inside a generator, or the list a subscript indexes, still takes the layout it would take as an entry of its own, measured at the row where it lands.
 
+<FixtureCards rule="reflow_collections" cases="held_call_member_hangs_from_its_row" />
+
 A dict the [`max-dict-entries`](#max-dict-entries) cap expands takes every collection enclosing it along, and a collection expands the same way when it holds a call that the count trigger of [[reflow-calls]] explodes, since that call leaves the collection no one-row form to keep.
+
+<FixtureCards rule="reflow_collections" cases="count_reaches_dict_in_singleton_list count_nests_outermost_first" />
 
 Every width the rule reads counts the separator closing an entry's row at the position [[alphabetize-siblings]] leaves it in, on the rejoin as well as the expansion. An entry the sort moves last sheds the comma it carries and one the sort moves up gains one before either is measured, so the layout the rule picks stays put once the sort is written. Each construct is then measured at the column it settles at:
 
@@ -28,6 +38,8 @@ Every width the rule reads counts the separator closing an entry's row at the po
 6. The value of an assignment or a `type` statement is measured at the column [[align-equals]] pads its row to, so a collection value whose row would cross the budget at that column expands in the same pass on the terms [[align-equals]] sets for breaking a value open.
 7. A literal's row is measured only through the opening bracket of a later literal on it that expands wherever the earlier one lands, so a sibling the same pass breaks open never counts toward that literal's budget.
 
+<FixtureCards rule="reflow_collections" cases="last_row_pair_skips_the_comma_charge dict_value_measures_past_a_multi_row_key sibling_literal_lands_on_the_closer_row" />
+
 <template #facets>
 
 Each move sits behind its own facet, whereas the rejoin has none.
@@ -36,21 +48,31 @@ Each move sits behind its own facet, whereas the rejoin has none.
 
 `explode` gates the expansion itself, covering the count trigger as well as the width one. At `false` every expansion stops and the count cap has nothing left to act on, whereas the rejoin runs either way.
 
+<FixtureCards rule="reflow_collections" cases="explode_false_freezes_overflow" />
+
 ### `keep-multiline-literals`
 
 `keep-multiline-literals` keeps a literal the author wrote as a bracketed column of two or more entries, its opening bracket ending a line and its closing bracket opening one, and re-expands it to the canonical layout rather than joining it back, since the column's breaks already sit at entry boundaries. The facet keeps the `:` alignment [[align-colons]] pads in that column as well. A construct enclosing a kept literal has no one-line form, so it keeps its break too. Setting it to `false` joins such a literal onto a single line wherever it fits the budget, and any other multi-line layout rejoins either way.
+
+<FixtureCards rule="reflow_collections" cases="keep_false_joins_fitting_literal" />
 
 ### `max-atomics`
 
 `max-atomics` caps how many atomic entries one packed row of an expanded collection carries, defaulting to <ConfigDefault rule="reflow-collections" facet="max-atomics" />, and `false` removes the cap so each row packs by width alone.
 
+<FixtureCards rule="reflow_collections" cases="atomics_cap_disabled_packs_by_width" />
+
 ### `max-dict-entries`
 
 `max-dict-entries` expands a dict once its entry count passes the cap, whatever its width, so a four-entry `dict` expands at the default <ConfigDefault rule="reflow-collections" facet="max-dict-entries" /> even when it fits the line. The cap reads dicts alone, which is why a short tuple inside a call's argument list, like `numpy.zeros((3, 4))`, stays inline, whereas at `false` a dict expands only as any collection does, on its width or around a call [[reflow-calls]] explodes by count.
 
+<FixtureCards rule="reflow_collections" cases="count_expands_short_dict count_disabled_via_false" />
+
 ### `wrap-dict-entries`
 
 `wrap-dict-entries` breaks an over-wide `key: value` at its `:` and hangs the value one indent step in, row by row rather than across the whole literal, a layout only a dict takes. Setting it to `false` leaves the oversized entry on one line.
+
+<FixtureCards rule="reflow_collections" cases="overflow_row_hangs_value wrap_false_keeps_entry_inline" />
 
 </template>
 

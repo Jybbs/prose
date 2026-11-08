@@ -6,6 +6,7 @@ import * as paths            from '../shared/paths'
 import type { RuleFamily }   from '../shared/registries'
 
 interface PipelineRule {
+  after         : readonly string[]
   documented    : boolean
   family        : RuleFamily | null
   position      : number
@@ -31,6 +32,7 @@ export default defineLoader({
       const entry  = discovered.get(slug)
       const behind = after.length > 0 ? ` · runs behind ${after.join(', ')}` : ''
       return {
+        after         : after,
         documented    : entry !== undefined,
         family        : entry?.family ?? null,
         position      : position,

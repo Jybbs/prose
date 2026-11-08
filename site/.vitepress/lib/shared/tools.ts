@@ -1,7 +1,11 @@
+// Declares one tool the `Tool` chip links to, `language` marking a name that
+// also names a language, whose chip marks only a mention of the interpreter or
+// the toolchain.
 interface ToolSeed {
-  href : string
-  icon : string
-  name : string
+  href      : string
+  icon      : string
+  language ?: true
+  name      : string
 }
 
 export const TOOL_SEEDS = {
@@ -71,9 +75,10 @@ export const TOOL_SEEDS = {
     name : 'pre-commit'
   },
   python: {
-    href : 'https://www.python.org/',
-    icon : 'logos:python',
-    name : 'Python'
+    href     : 'https://www.python.org/',
+    icon     : 'logos:python',
+    language : true,
+    name     : 'Python'
   },
   rayon: {
     href : 'https://docs.rs/rayon/',
@@ -86,9 +91,10 @@ export const TOOL_SEEDS = {
     name : 'Ruff'
   },
   rust: {
-    href : 'https://www.rust-lang.org/',
-    icon : 'simple-icons:rust',
-    name : 'Rust'
+    href     : 'https://www.rust-lang.org/',
+    icon     : 'simple-icons:rust',
+    language : true,
+    name     : 'Rust'
   },
   sublime: {
     href : 'https://www.sublimetext.com/',

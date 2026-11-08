@@ -17,15 +17,12 @@ import type { CompositionCase }                   from '../../../lib/rules/compo
 import { deckTravel }                             from '../../../lib/rules/deck-travel'
 import { pageCompositionCases, type RuleSegment } from '../../../lib/rules/rule-view'
 import { data as rules }                          from '../../../lib/rules/rules.data'
-import type { SavedSession }                      from '../../../lib/sandbox/session'
 import type { FixtureTab }                        from '../../../lib/shared/fixture-tab'
 import { InlineProse }                            from '../base/InlineProse'
 
 interface CardRow extends FixtureEntry {
-  case        : string
-  sandboxSeed : SavedSession
-  segments    : readonly RuleSegment[]
-  titleHtml   : string
+  case     : string
+  segments : readonly RuleSegment[]
 }
 
 export const CompositionCards = defineComponent({
@@ -39,10 +36,8 @@ export const CompositionCards = defineComponent({
     function toCardRow(entry: CompositionCase): CardRow {
       return {
         ...fixtureEntry(frontmatter.value, COMPOSITION_RULE, entry.case),
-        case        : entry.case,
-        sandboxSeed : { configToml: entry.configToml, source: entry.source },
-        titleHtml   : entry.titleHtml,
-        segments    : entry.rules.map((slug, idx) => {
+        case     : entry.case,
+        segments : entry.rules.map((slug, idx) => {
           const rule = rules.bySlug[slug] ?? null
           return { family: rule?.family ?? null, index: idx + 1, rule, slug }
         })
@@ -158,9 +153,9 @@ export const CompositionCards = defineComponent({
                         {activeCase.value === row.case ? (
                           <FixturePairDoc
                             activeTab={activeTab.value}
+                            configHtml={row.configHtml}
                             inputHtml={row.inputHtml}
                             outputHtml={row.outputHtml}
-                            sandboxSeed={row.sandboxSeed}
                           />
                         ) : null}
                         <ol

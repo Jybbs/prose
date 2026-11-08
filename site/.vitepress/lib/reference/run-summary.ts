@@ -70,3 +70,10 @@ export function glossFor(outcomeId: string, quietId: string, streamId: string): 
   const stream  = STREAM_OPTIONS.find(s => s.id === streamId) ?? STREAM_OPTIONS[0]
   return `${outcome.gloss}, ${quiet.gloss}, ${stream.gloss}.`
 }
+
+// Returns the line of the outcome whose text runs longest, anchor included,
+// which wraps onto as many rows as any selection does.
+export function longestLine(): RenderedLine {
+  const outcome = OUTCOMES.reduce((longest, each) => each.text.length > longest.text.length ? each : longest)
+  return resolveLine(outcome, false, true)
+}

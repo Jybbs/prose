@@ -39,7 +39,7 @@ export const IdentityRoles = defineComponent({
               <Tabs label="Passage scheme" modelValue={scheme.value} onUpdate:modelValue={(next: Scheme) => { scheme.value = next }}>
                 {{
                   default: ({ list, trigger }: TabsScope<Scheme>) => (
-                    <div {...list} class="inline-flex rounded-sm border-1 border-divider bg-bg p-2">
+                    <div {...list} class="toggle-row justify-self-start">
                       {roles.SCHEME_ORDER.map(each => (
                         <button key={each} {...trigger(each)} aria-controls={undefined} class="toggle-pill">{roles.SCHEME_TEXT[each]}</button>
                       ))}

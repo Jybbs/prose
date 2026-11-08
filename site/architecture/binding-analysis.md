@@ -3,7 +3,7 @@ consumedBy: [alphabetize-siblings, band-constants, bare-imports, inlinable-bindi
 consumes: [source]
 layer: analysis
 stability: internal
-summary: "Per-source table recording every write and read of every name in every lexical scope."
+summary: "Records every write and read of every name in every lexical scope of a source."
 tagline: name binding index
 ---
 

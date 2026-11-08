@@ -1,10 +1,27 @@
+import { nodeText }                        from '../../lib/markdown/inline-text'
 import { declaredKeys }                    from '../../lib/shared/rule-schema'
 import { configKeySources, firstSentence } from '../../lib/tokens/config-keys'
 import * as sources                        from '../../lib/tokens/sources'
+import loader                              from '../../lib/tokens/tokens.data'
 import { SCHEMA }                          from '../schema'
 
 const token = (domain: sources.Domain, key: string): sources.Token =>
   ({ blurbNodes: [], destination: { code: false, part: null, title: '' }, domain, href: '', key, sort: key })
+
+const loaded = await loader.load([])
+const blurb  = (key: string): string => loaded.find(entry => entry.key === key)!.blurbNodes.map(nodeText).join('')
+
+describe('the token loader', () => {
+  it('cuts a flag blurb at the first sentence of its help line', () => {
+    expect(blurb('--stdin')).toMatch(/to stdout\.$/)
+    expect(blurb('--stdin')).not.toContain('Equivalent')
+  })
+
+  it('names the values clap lists for a flag, short of the whole rule set', () => {
+    expect(blurb('--output-format')).toBe('Output format for diagnostics, github, json, sarif, or text.')
+    expect(blurb('--select <slug>')).toMatch(/^Comma-separated rule slugs to run, replacing the configured-enabled set\.$/)
+  })
+})
 
 describe('stripPrefix', () => {
   it.each([

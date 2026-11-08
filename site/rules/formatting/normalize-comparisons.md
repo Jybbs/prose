@@ -10,13 +10,7 @@ layout  : doc
 
 `normalize-comparisons` rewrites a comparison so it states its check directly, turning a `==` or `!=` test against `None` into an identity test, moving a leading constant to the right of its subject, and folding a leading `not` into the operator it negates.
 
-```python
-if 0 == n and x == None and not y in ys:
-```
-
-```python
-if n == 0 and x is None and y not in ys:
-```
+<Fixture rule="normalize_comparisons" case="condition_settles_all_three_rewrites" />
 
 ## Comparisons Left as Written
 

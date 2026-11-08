@@ -145,7 +145,7 @@ describe('the shell card', () => {
     'keeps the language label clear of the code on every shell on a $width px page in the $scheme scheme',
     async ({ scheme, width }, { visit }) => {
       const page  = await visit('/integrations/shell-completions', { scheme, width })
-      const block = page.locator('.shell-card-modal-code > div[class*="language-"]')
+      const block = page.locator('.shell-card-modal > :not([inert]) .shell-card-modal-code > div[class*="language-"]')
       const tabs  = await page.locator('.shell-card-tab').all()
       const overlapping: string[] = []
 

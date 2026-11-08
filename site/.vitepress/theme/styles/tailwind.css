@@ -18,5 +18,4 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant in-code (& :where(code));
-@custom-variant in-pre (& :where(pre));
 

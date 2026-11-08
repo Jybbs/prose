@@ -11,7 +11,7 @@ vi.mock('../../lib/rules/rule-fixtures.data', () => ({
   data: {
     align_equals: {
       canonical : 'basic_run',
-      examples  : [{ case: 'nested', titleHtml: 'Nested' }, { case: 'deep', titleHtml: 'Deep' }]
+      examples  : ['nested', 'deep']
     }
   }
 }))
@@ -20,7 +20,7 @@ const cardCases = (frontmatter: Record<string, unknown>, rule?: string): string[
   ruleView.pageCompositionCases(frontmatter, rule).map(entry => entry.case)
 
 const exampleCases = (frontmatter: Record<string, unknown>): string[] =>
-  ruleView.pageExamples(frontmatter, 'align_equals').map(example => example.case)
+  [...ruleView.pageExamples(frontmatter, 'align_equals')]
 
 describe('casesForRule', () => {
   it('resolves a fixture directory name to its kebab-case slug', () => {
@@ -36,7 +36,7 @@ describe('fixturesForRule', () => {
   it('returns the canonical case and examples registered for a rule', () => {
     expect(ruleView.fixturesForRule('align_equals')).toStrictEqual({
       canonical : 'basic_run',
-      examples  : [{ case: 'nested', titleHtml: 'Nested' }, { case: 'deep', titleHtml: 'Deep' }]
+      examples  : ['nested', 'deep']
     })
   })
 

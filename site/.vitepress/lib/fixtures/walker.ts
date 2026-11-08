@@ -3,8 +3,16 @@ import path from 'node:path'
 
 import { fixturesDirFrom } from '../shared/paths'
 import { parseToml }       from '../shared/toml'
+import { tomlText }        from '../shared/toml-text'
 import { fixtureId }       from './entry'
 import * as lintFindings   from './lint-findings'
+
+// The `config.toml` a case carries beside its input, with the harness table
+// naming the rules a composition case runs.
+export type CaseConfig = Record<string, unknown> & {
+  harness ?: { rules?: readonly string[] }
+  rules   ?: Record<string, unknown>
+}
 
 export const CONFIG_FILE = 'config.toml'
 export const INPUT_FILE  = 'input.py'
@@ -51,6 +59,26 @@ export function fixtureWatchGlobs(crateDir: string): string[] {
     `${fixturesRoot}/*/*/${lintFindings.LINT_FINDINGS_FILE}`,
     `${fixturesRoot}/*/*/${META_FILE}`
   ]
+}
+
+// Renders everything outside `[harness]`, which is the configuration the case
+// formats under.
+export function overrideToml(config: Record<string, unknown>): string {
+  const { harness: _, ...overrides } = config
+  return tomlText(overrides)
+}
+
+// Reads the `config.toml` beside a case's input, empty where the case carries
+// none.
+export function readCaseConfig(inputPath: string): CaseConfig {
+  const configPath = path.join(path.dirname(inputPath), CONFIG_FILE)
+  return fs.existsSync(configPath) ? parseToml(configPath) as CaseConfig : {}
+}
+
+// Reads the configuration a case overrides beside its input, empty where the
+// case carries no `config.toml`.
+export function readOverrideToml(inputPath: string): string {
+  return overrideToml(readCaseConfig(inputPath))
 }
 
 export function readFixtureDocs(inputPath: string): FixtureDocs | undefined {

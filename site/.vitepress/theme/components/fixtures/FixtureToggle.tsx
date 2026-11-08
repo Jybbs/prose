@@ -20,7 +20,7 @@ export const FixtureToggle = defineComponent({
       <Tabs label="Fixture view" modelValue={tab.value} onUpdate:modelValue={next => { tab.value = next }}>
         {{
           default: (tabs: TabsScope<string>) => (
-            <div {...tabs.list} class="inline-flex rounded-sm border-1 border-divider bg-bg p-2">
+            <div {...tabs.list} class="toggle-row">
               <button
                 {...mergeProps(tabs.trigger('before'), { onClick: (event: MouseEvent) => event.stopPropagation() })}
                 aria-controls={undefined}

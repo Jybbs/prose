@@ -8,6 +8,8 @@ description: "Covers the fixed order rules run in, why each rule sits where it d
 
 ## Canonical Order
 
+Pointing at a rule marks it with the pen-nib P, sets a ↑ beside each rule it declares it runs after, and a ↓ beside each rule that declares it runs after the one pointed at.
+
 <PipelineOrder />
 
 ## Order Dependencies

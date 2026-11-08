@@ -12,9 +12,9 @@ vi.mock('../../lib/rules/rules.data', async () =>
 vi.mock('../../lib/rules/pipeline.data', () => ({
   data: {
     rules: [
-      { documented: true,  family: 'layout',   position: 1, slug: 'reflow-calls',   title: 'reflow-calls' },
-      { documented: false, family: null,       position: 2, slug: 'unwritten-rule', title: 'unwritten-rule' },
-      { documented: true,  family: 'ordering', position: 3, slug: 'group-imports',  title: 'group-imports' }
+      { after: [],               documented: true,  family: 'layout',   position: 1, slug: 'reflow-calls',   title: 'reflow-calls' },
+      { after: ['reflow-calls'], documented: false, family: null,       position: 2, slug: 'unwritten-rule', title: 'unwritten-rule' },
+      { after: ['unwritten-rule'], documented: true,  family: 'ordering', position: 3, slug: 'group-imports',  title: 'group-imports' }
     ]
   }
 }))
@@ -42,6 +42,14 @@ describe('PipelineOrder', () => {
     expect(census(w)).toStrictEqual([['layout', '1', false], ['ordering', '1', false]])
     expect(w.get('.pipeline-order-census-chip').attributes('aria-label')).toBe('Layout, 1 rules')
     expect(w.findAll('.pipeline-order-spine > li')).toHaveLength(3)
+  })
+
+  it('marks the pointed rule, the rules it runs after, and the rules that run after it', async () => {
+    const w = order()
+    const gutter = () => w.findAll('.pipeline-order-gutter').map(cell => [cell.attributes('data-order'), cell.text()])
+    expect(gutter()).toStrictEqual([[undefined, ''], [undefined, ''], [undefined, '']])
+    await w.findAll('.pipeline-order-link')[1]!.trigger('pointerenter')
+    expect(gutter()).toStrictEqual([['earlier', '↑'], ['self', ''], ['later', '↓']])
   })
 
   it('keeps every pass up to a pointed one at rest and grays every later one', async () => {

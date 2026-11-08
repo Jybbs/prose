@@ -1,7 +1,3 @@
-import fs   from 'node:fs'
-import os   from 'node:os'
-import path from 'node:path'
-
 import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 import { defineLoader }         from 'vitepress'
 
@@ -54,11 +50,5 @@ function formatState(source: string, select: string, configToml?: string): strin
   if (configToml === undefined) {
     return paths.runProse(root, args, { input: source, stdio: 'pipe' })
   }
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'prose-demo-'))
-  try {
-    fs.writeFileSync(path.join(tmpDir, 'prose.toml'), configToml)
-    return paths.runProse(root, args, { cwd: tmpDir, input: source, stdio: 'pipe' })
-  } finally {
-    fs.rmSync(tmpDir, { force: true, recursive: true })
-  }
+  return paths.readProseUnder(root, args, source, configToml)
 }

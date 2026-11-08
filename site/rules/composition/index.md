@@ -1,5 +1,5 @@
 ---
-description: "Small sources run through several rules together, in pipeline order."
+description: "Runs small sources through several rules together, in pipeline order."
 ---
 
 # Rule Composition
@@ -16,7 +16,9 @@ One module-level constant exercises a rule from each of the alignment, formattin
 - The keys then sit one per line in a column, so [[align-colons]] computes the padding from the widths the rewrite leaves.
 - [[space-statements]] runs too and writes nothing, since the import leaves no gap where it stood.
 
-<Fixture rule="composition" case="overflow_dict_constants_modernize_unions" />
+Each step on the trail below adds the next rule in pipeline order to `--select`, so the case shows what the rules up to that step write.
+
+<CompositionTrail case="overflow_dict_constants_modernize_unions" />
 
 ## The Cases
 

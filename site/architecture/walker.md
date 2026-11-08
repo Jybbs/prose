@@ -3,7 +3,7 @@ consumedBy: [cli]
 consumes: [source]
 layer: analysis
 stability: internal
-summary: "Ignore-aware filesystem walker yielding every `.py`, `.pyi`, and `.pyw` source file and every `.ipynb` notebook under the given paths."
+summary: "Yields every `.py`, `.pyi`, and `.pyw` source file and every `.ipynb` notebook under the given paths, skipping each path an ignore file excludes."
 tagline: ignore-aware path walker
 ---
 
@@ -54,7 +54,7 @@ Extension matching compares the extension string exactly, so on every filesystem
 
 ## Parallel Execution
 
-The path-mode CLI collects the walk and then fans out across the file list through [**`rayon`**](https://docs.rs/rayon/), each file getting its own [[source]] construction and [[pipeline]] run, and it reports outcomes in the order the walker yielded them. The walker's iterator is `Send`, so it hands off across rayon worker threads cleanly.
+The path-mode CLI collects the walk and then fans out across the file list through <Tool slug="rayon" />, each file getting its own [[source]] construction and [[pipeline]] run, and it reports outcomes in the order the walker yielded them. The walker's iterator is `Send`, so it hands off across rayon worker threads cleanly.
 
 ::: tip Single-Threaded for Debugging
 Setting `RAYON_NUM_THREADS=1` forces single-threaded execution, which is the right setting when debugging a rule against one file or stepping through the [[pipeline]] in a debugger.

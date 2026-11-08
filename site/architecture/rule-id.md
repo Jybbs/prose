@@ -3,7 +3,7 @@ consumedBy: [pipeline, suppression-map]
 consumes: []
 layer: base
 stability: public
-summary: "The kebab-case slug that names each rule across the CLI, config, suppressions, and diagnostics."
+summary: "Names each rule by its kebab-case slug across the CLI, config, suppressions, and diagnostics."
 tagline: canonical rule slug
 ---
 

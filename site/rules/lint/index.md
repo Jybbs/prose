@@ -1,5 +1,5 @@
 ---
-description: "The rules that report a finding without rewriting the source."
+description: "Covers the rules that report a finding without rewriting the source."
 ---
 
 # Lint Rules

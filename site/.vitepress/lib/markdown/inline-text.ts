@@ -17,7 +17,11 @@ export function inlineText(src: string): string {
   return bareInlineNodes(src).map(nodeText).join('')
 }
 
-function nodeText(node: InlineNode): string {
-  if (node.kind === 'el') return node.children.map(nodeText).join('')
-  return 'text' in node ? node.text : ''
+// Returns the text one node reads as, a rule as its slug and a primitive as
+// its display name.
+export function nodeText(node: InlineNode): string {
+  return node.kind === 'el'        ? node.children.map(nodeText).join('')
+       : node.kind === 'rule'      ? node.slug
+       : node.kind === 'primitive' ? node.display
+       : node.text
 }

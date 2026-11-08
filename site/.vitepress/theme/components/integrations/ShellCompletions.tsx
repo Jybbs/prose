@@ -11,8 +11,8 @@ import { InlineProse }       from '../base/InlineProse'
 export const ShellCompletions = defineComponent({
   name: 'ShellCompletions',
   setup() {
-    const { selected: activeSlug, active } = useTabSelect(shells, s => s.slug)
-    const orientation                      = useTabOrientation()
+    const { selected: activeSlug } = useTabSelect(shells, s => s.slug)
+    const orientation              = useTabOrientation()
 
     return () => (
       <Tabs
@@ -43,20 +43,28 @@ export const ShellCompletions = defineComponent({
                 </div>
                 <section
                   {...tabs.content(activeSlug.value)}
-                  class="shell-card-modal flex min-h-260 flex-col overflow-hidden panel bg-bg max-card-stack:min-h-auto"
+                  class="shell-card-modal grid min-h-260 overflow-hidden panel bg-bg max-card-stack:min-h-auto"
                 >
-                  <header class="flex items-center gap-12 px-18 py-14">
-                    <span class="tool-ring size-26">
-                      <ToolIcon class="size-14" slug={active.value.slug} />
-                    </span>
-                    <span class="kicker">{active.value.caption}</span>
-                  </header>
-                  <div class="flex-auto">
-                    <div class="shell-card-modal-code flush-code-block" innerHTML={active.value.codeHtml} />
-                    <p class="shell-card-modal-note px-18 pb-14 text-0-92rem text-text-2 in-code:text-code-ink">
-                      <InlineProse nodes={active.value.noteNodes} />
-                    </p>
-                  </div>
+                  {shells.map(shell => (
+                    <div
+                      class="col-start-1 row-start-1 flex min-w-0 flex-col inert:invisible"
+                      inert={shell.slug !== activeSlug.value}
+                      key={shell.slug}
+                    >
+                      <header class="flex items-center gap-12 px-18 py-14">
+                        <span class="tool-ring size-26">
+                          <ToolIcon class="size-14" slug={shell.slug} />
+                        </span>
+                        <span class="kicker">{shell.caption}</span>
+                      </header>
+                      <div class="flex-auto">
+                        <div class="shell-card-modal-code flush-code-block" innerHTML={shell.codeHtml} />
+                        <p class="shell-card-modal-note px-18 pb-14 text-0-92rem text-text-2 in-code:text-code-ink">
+                          <InlineProse nodes={shell.noteNodes} />
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </section>
               </div>
             </div>

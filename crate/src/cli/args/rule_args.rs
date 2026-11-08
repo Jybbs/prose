@@ -108,8 +108,9 @@ pub(crate) struct RunArgs {
     #[command(flatten)]
     pub(crate) rules: RuleFilter,
 
-    /// Read source from stdin instead of the filesystem. Equivalent
-    /// to passing `-` as the sole path.
+    /// Read source from stdin instead of the filesystem, `format` writing
+    /// the formatted source to stdout. Equivalent to passing `-` as the
+    /// sole path.
     #[arg(long)]
     pub(crate) stdin: bool,
 

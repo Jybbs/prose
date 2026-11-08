@@ -9,29 +9,11 @@ tagline: 'CI runner · code scanning'
 
 ## Job Skeleton
 
-Every job below plugs its `prose check` step into the same skeleton, which checks out the repository, installs `uv`, and installs the wheel:
+Every job below plugs its `prose check` step into the same skeleton, which checks out the repository, installs `uv`, and installs the wheel. The command above the workflow chooses the output format `prose check` writes, and `+ cache` and `+ ruff` add the steps the sections below describe:
 
-```yaml
-name: prose
+<ActionsJob />
 
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-      - run: uv tool install prose-formatter
-      - run: prose check .
-```
-
-`astral-sh/setup-uv` keeps the `uv` download cache between runs. As written, the skeleton is the minimal job. Any non-zero exit fails a step unless `continue-on-error` is set, so a single `prose check` step is a complete gate, and the [**Exit Codes**](/reference/exit-codes) reference lists what each code means.
+`astral-sh/setup-uv` keeps the `uv` download cache between runs. With the default format and no step added, the workflow is the minimal job. Any non-zero exit fails a step unless `continue-on-error` is set, so a single `prose check` step is a complete gate, and the [**Exit Codes**](/reference/exit-codes) reference lists what each code means.
 
 ## Workflow Command Annotations
 
@@ -55,14 +37,14 @@ The `sarif` output format writes findings to a file that a second step uploads t
     sarif_file: prose.sarif
 ```
 
-Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload needs the job's `permissions` to grant `security-events: write`. The step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
+Each SARIF record carries the rule slug and the source location, so the Security tab keeps a history per rule. The upload needs the job's `permissions` to grant `security-events: write`, and in a private repository `actions: read` and `contents: read` as well. The step runs whatever `prose check` exits, so the findings reach the Security tab on the run whose gate fails.
 
 ## Persisting the Cache
 
 Every run uses the per-user [**cache**](/reference/cache) by default, but a runner's filesystem is discarded after each job. `actions/cache` keeps `~/.cache/prose` between runs, so a file that has not changed is read from the cache instead of formatted again:
 
 ```yaml
-- uses: actions/cache@v4
+- uses: actions/cache@v6
   with:
     path: ~/.cache/prose
     key: prose-${{ runner.os }}-${{ hashFiles('prose.toml', '.config/prose.toml', 'pyproject.toml') }}
@@ -73,7 +55,7 @@ The key changes whenever a config file changes, so a configuration edit starts f
 
 ## Pairing With Ruff in CI
 
-A project that already runs [**Ruff**](https://docs.astral.sh/ruff/) checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
+A project that already runs <Tool slug="ruff" /> checks the layout through `prose check` and runs Ruff's linter beside it, since `ruff format --check` reports every row *Prose* pads as a pending change. Neither step rewrites a source file:
 
 ```yaml
 - run: uv tool install ruff

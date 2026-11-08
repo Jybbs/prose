@@ -1,5 +1,5 @@
 ---
-description: "The rules that reshape PEP 257 docstrings, their bodies and their quotes."
+description: "Covers the rules that reshape PEP 257 docstrings, their bodies and their quotes."
 ---
 
 # Docs Rules

@@ -16,10 +16,14 @@ const CODE_PREFIX = /^(?:[^"'#]|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')*$/
 // matches the text before it and the span does not end on a period.
 const OPERATOR = /(^|\s)((is not|not in|is|(?<!\bfor\b.*)in)|==|!=|<=|>=|\*\*=|\/\/=|>>=|<<=|[-+*/%@&|^]=|=|<|>|:|#)(?=\s|$)/g
 
-// Matches the punctuation a code span's chip holds on its own line.
+// Matches the punctuation a chip holds on its own line.
 const CHIP_TRAIL = /^[,.;:!?)\]}'"’”…]+/
 
-// Pairs each closing token that can end on a code span with the token opening it.
+// Matches a component tag that closes itself, such as `<Tool slug="uv" />`, which
+// renders a chip in place of a code span.
+const COMPONENT_TAG = /^<[A-Z][\w-]*(?:\s[^>]*)?\/>$/
+
+// Pairs each closing token that can end on a chip with the token opening it.
 const OPENERS: Record<string, string> = { em_close: 'em_open', link_close: 'link_open', strong_close: 'strong_open' }
 
 // Splits a code span's text into its operators and the runs between them.
@@ -38,7 +42,7 @@ export function codeParts(text: string): CodePart[] {
 }
 
 // Sets each operator of a code span outside a link in a `code-op` span, and each
-// code span with the punctuation after it in a `code-unit` span.
+// chip with the punctuation after it in a `code-unit` span.
 export function codeOperatorPlugin(md: MarkdownIt): void {
   md.use(codeUnitPlugin)
   const plain = md.renderer.rules.code_inline!
@@ -52,7 +56,7 @@ export function codeOperatorPlugin(md: MarkdownIt): void {
   }
 }
 
-// Sets each code span with the punctuation after it in a `code-unit` span, which the
+// Sets each chip with the punctuation after it in a `code-unit` span, which the
 // HTML renderer and `inlineNodes` each read as they read any other element. The check
 // reads the function's name, since each data loader bundles its own copy of this
 // module and every copy applies the plugin to the one renderer VitePress caches.
@@ -62,15 +66,16 @@ export function codeUnitPlugin(md: MarkdownIt): void {
   }
 }
 
-// Moves each code span, the emphasis and link closing on it, and the punctuation
-// after them into one `code-unit` span. An emphasis opened earlier in the run closes
-// ahead of the span and reopens inside it, so the span holds no other text. A code
-// span inside a link that holds more than that span stays where it is.
+// Moves each chip, meaning a code span or a component tag `COMPONENT_TAG` matches,
+// the emphasis and link closing on it, and the punctuation after them into one
+// `code-unit` span. An emphasis opened earlier in the run closes ahead of the span
+// and reopens inside it, so the span holds no other text. A chip inside a link that
+// holds more than that chip stays where it is.
 function codeUnits(children: readonly Token[], Make: StateCore['Token']): Token[] {
   const tokens = [...children]
   const make   = (type: string, tag: string, nesting: 0 | 1 | -1) => new Make(type, tag, nesting)
   for (let at = tokens.length - 1; at >= 0; at--) {
-    if (tokens[at]!.type !== 'code_inline') continue
+    if (!chip(tokens[at]!)) continue
 
     let end = at + 1
     while (tokens[end]?.type && tokens[end]!.type in OPENERS) end++
@@ -106,6 +111,11 @@ function codeUnits(children: readonly Token[], Make: StateCore['Token']): Token[
     )
   }
   return tokens
+}
+
+// Reports whether a token renders a chip, as a code span or a component tag does.
+function chip({ content, type }: Token): boolean {
+  return type === 'code_inline' || (type === 'html_inline' && COMPONENT_TAG.test(content))
 }
 
 // Sets the `code-unit` spans of each inline block.

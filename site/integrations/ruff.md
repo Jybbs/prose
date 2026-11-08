@@ -1,5 +1,5 @@
 ---
-summary: 'For a project that already runs Ruff, the `extend-ignore` list that keeps Ruff’s `pycodestyle` codes from reporting the whitespace *Prose*’s alignment rules write.'
+summary: 'Lists the `extend-ignore` codes that keep Ruff’s `pycodestyle` checks from reporting the whitespace *Prose*’s alignment rules write, for a project that already runs Ruff.'
 tagline: 'alongside Ruff'
 ---
 

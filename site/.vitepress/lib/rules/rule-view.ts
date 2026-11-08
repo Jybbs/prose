@@ -49,5 +49,5 @@ export function pageExamples(
   fixtureRule : string
 ): RuleFixtureSet['examples'] {
   return fixturesForRule(fixtureRule).examples
-    .filter(example => !embedsInline(frontmatter, fixtureRule, example.case))
+    .filter(caseName => !embedsInline(frontmatter, fixtureRule, caseName))
 }

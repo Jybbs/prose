@@ -1,5 +1,5 @@
 ---
-description: "The rules that reorder sibling nodes by a fixed key while keeping each node's comments with it."
+description: "Covers the rules that reorder sibling nodes by a fixed key while keeping each node's comments with it."
 ---
 
 # Ordering Rules

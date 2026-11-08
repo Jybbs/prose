@@ -56,20 +56,6 @@
 }
 
 
-/* VitePress derives this label's line-height from a font size this rule shrinks,
-   so 3rem restores the height the default theme computes. */
-.vp-code-group .tabs label {
-  font-family    : var(--vp-font-family-mono);
-  font-size      : var(--prose-text-sm);
-  line-height    : var(--prose-leading-3rem);
-  letter-spacing : var(--prose-tracking-0-02em);
-  text-transform : none;
-}
-
-.vp-code-group .tabs label::before {
-  margin-right: var(--prose-space-6);
-}
-
 .VPDocAsideOutline .outline-title,
 .VPSidebarItem.level-0 > .item > .link > .text,
 .VPSidebarItem.level-0 > .item > .text {

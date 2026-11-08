@@ -23,6 +23,7 @@ import { readPlatforms }                              from './lib/guide/platform
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
 import { calloutPlugin }                              from './lib/markdown/callout-plugin'
 import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
+import { configFormsPlugin }                          from './lib/markdown/config-forms-plugin'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { HighlightCache }                             from './lib/markdown/highlight-cache'
 import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
@@ -102,6 +103,7 @@ export default defineConfig({
     codeTransformers,
     config: md => {
       md.use(highlightCache.plugin)
+      md.use(configFormsPlugin)
       md.use(groupIconMdPlugin)
       md.use(ruleLinkPlugin(ruleIndex, primitiveIndex))
       md.use(glossaryPlugin(glossaryPhraseToSlug, glossaryHrefs(glossary, ruleIndex)))

@@ -1,0 +1,69 @@
+.fixture-gauge {
+  --fixture-gauge-chip-h    : var(--prose-size-20);
+  --fixture-gauge-nums-h    : var(--prose-size-14);
+  --fixture-gauge-track-h   : var(--prose-size-16);
+  --fixture-gauge-track-top : calc(var(--fixture-gauge-chip-h) + var(--prose-space-5));
+  height                    : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h) + var(--fixture-gauge-nums-h));
+  container-type            : inline-size;
+}
+
+.fixture-gauge-ticks {
+  top    : var(--fixture-gauge-track-top);
+  height : var(--fixture-gauge-track-h);
+}
+
+.fixture-gauge-ticks svg {
+  display : block;
+  width   : 100%;
+  height  : 100%;
+}
+
+.fixture-gauge-ticks line {
+  stroke-width : var(--prose-size-1);
+}
+
+.fixture-gauge-ticks line[data-change="true"] {
+  stroke       : var(--vp-c-text-1);
+  stroke-width : calc(2 * var(--prose-size-1));
+}
+
+/* Hangs the setting's hollow default diamond on the track, as the sandbox
+   ruler marks a line length's default. */
+.fixture-gauge-default {
+  top        : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h));
+  transform  : translate(-50%, -50%) rotate(45deg);
+  box-shadow : inset 0 0 0 var(--prose-space-1-5) var(--vp-c-text-2);
+}
+
+.fixture-gauge-num {
+  top       : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h) + var(--prose-space-5));
+  transform : translateX(-50%);
+}
+
+.fixture-gauge-num[data-end="start"] {
+  transform : none;
+}
+
+.fixture-gauge-num[data-end="end"] {
+  transform : translateX(-100%);
+}
+
+.fixture-gauge-stop {
+  top    : 0;
+  bottom : var(--fixture-gauge-nums-h);
+  left   : calc(var(--pct) * 1%);
+}
+
+.fixture-gauge-marker {
+  top    : var(--fixture-gauge-chip-h);
+  bottom : 0;
+  left   : calc(var(--prose-size-1) / -2);
+  width  : var(--prose-size-1);
+}
+
+.fixture-gauge-chip {
+  top       : 0;
+  left      : 0;
+  height    : var(--fixture-gauge-chip-h);
+  transform : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
+}

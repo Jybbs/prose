@@ -96,6 +96,12 @@ describe('codeOperatorPlugin', () => {
     expect(code('[`x`](/y), then')).toContain('<span class="code-unit"><a href="/y"><code>x</code></a>,</span> then')
   })
 
+  it('holds a component tag closing on itself and the punctuation after it in one span', () => {
+    const html = (src: string): string => markdownit({ html: true }).use(codeOperatorPlugin).render(src)
+    expect(html('a <Tool slug="uv" />, then')).toContain('a <span class="code-unit"><Tool slug="uv" />,</span> then')
+    expect(html('a <b>x</b>, then')).not.toContain('code-unit')
+  })
+
   it('leaves a code span with no punctuation after it unwrapped', () => {
     expect(code('`x` then')).not.toContain('code-unit')
   })

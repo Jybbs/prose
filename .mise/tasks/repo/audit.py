@@ -278,11 +278,11 @@ def families() -> dict[str, tuple[str, str | None]]:
     family, keyed by the GitHub label that family carries, its badge
     from `FAMILY_META` followed by its name. The color is the palette
     hue `FAMILIES` maps the family to, and the description is the one its
-    rule-index page declares, without its leading `The ` or its closing
-    period. The `docs` family's label covers documentation at large rather
-    than the docstring rules alone, so it takes no description from its
-    page. A family without a badge, a hue, or a rule-index page fails the
-    audit.
+    rule-index page declares, without its leading `Covers the ` or its
+    closing period. The `docs` family's label covers documentation at large
+    rather than the docstring rules alone, so it takes no description from
+    its page. A family without a badge, a hue, or a rule-index page fails
+    the audit.
     """
     registries = "site/.vitepress/lib/shared/registries.ts"
     meta       = extract(
@@ -307,7 +307,11 @@ def families() -> dict[str, tuple[str, str | None]]:
             fail(f"FAMILIES in palette.ts gives the {family} family no palette hue")
         if not (page := Path(f"site/rules/{family}/index.md")).exists():
             fail(f"the {family} family has no rule-index page at {page}")
-        described = yaml(page)["description"].removeprefix("The ").removesuffix(".")
+        described = (
+            yaml(page)["description"]
+            .removeprefix("Covers the ")
+            .removesuffix(".")
+        )
         sited[f"{emoji} {family}"] = (
             hues[tints[family]],
             None if family == "docs" else described[:1].upper() + described[1:]
