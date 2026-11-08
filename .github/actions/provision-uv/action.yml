@@ -1,5 +1,5 @@
 name        : Provision uv
-description : Install uv through mise off the `.mise/config.toml` pin, so one home carries the version.
+description : Install uv through mise off the `.mise/config.toml` pin, so one home carries the version, and set `MISE_ENABLE_TOOLS` to uv for the rest of the job, so the `_.python.venv` directive stays off.
 
 inputs:
   cache:
@@ -14,6 +14,10 @@ runs:
   using: composite
 
   steps:
+    - name  : Limit mise to uv for the rest of the job
+      run   : echo "MISE_ENABLE_TOOLS=uv" >> "$GITHUB_ENV"
+      shell : bash
+
     - name : Read the required mise version
       id   : mise
       uses : $/.github/actions/mise-floor

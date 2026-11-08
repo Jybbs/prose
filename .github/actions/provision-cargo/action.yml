@@ -12,18 +12,21 @@ inputs:
 
   tools:
     default     : ''
-    description : Space-separated subset of `.mise/config.toml` tools to install. Empty installs the full toolset.
+    description : Space-separated subset of `.mise/config.toml` tools to install, which `MISE_ENABLE_TOOLS` then limits the rest of the job to beside the uv `provision-uv` installs, so the `_.python.venv` directive stays off in a job that installs no Python. Empty installs the full toolset.
 
 runs:
   using: composite
 
   steps:
     - name  : Point mise, rustup, and Cargo at the shared environment
+      env   : { TOOLS: "${{ inputs.tools }}" }
       shell : bash
       run   : |
         {
           echo "CARGO_TERM_COLOR=always"
+          echo "MISE_CARGO_HOME=${LOCALAPPDATA:-$HOME/.local/share}/mise/cargo"
           echo "MISE_RUSTUP_HOME=${LOCALAPPDATA:-$HOME/.local/share}/mise/rustup"
+          [[ -z "$TOOLS" ]] || echo "MISE_ENABLE_TOOLS=uv,${TOOLS// /,}"
         } >> "$GITHUB_ENV"
 
     - name : Read the required mise version
