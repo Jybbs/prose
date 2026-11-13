@@ -37,6 +37,8 @@ use crate::{
 mod brackets;
 mod cells;
 mod lines;
+#[cfg(feature = "native")]
+mod native;
 mod reparse;
 #[cfg(test)]
 pub(crate) use reparse::slid_range;
@@ -106,18 +108,6 @@ pub struct Source {
 }
 
 impl Source {
-    /// Builds a plain module source around an already-parsed tree, the
-    /// probe-side counterpart to [`parsed_module`](Self::parsed_module).
-    pub(crate) fn from_parsed_module(text: String, parsed: Parsed<ModModule>) -> Self {
-        Self::from_parsed(
-            text,
-            BUFFER_NAME,
-            PySourceType::default(),
-            CellOffsets::default(),
-            parsed,
-        )
-    }
-
     /// Wraps an already-parsed module in its indexes, splitting the
     /// tree from the token stream this source then owns separately.
     fn from_parsed(
@@ -330,12 +320,6 @@ impl Source {
     /// Returns `ParseError` when `text` is not a valid Python module.
     pub fn parse_named(text: String, name: &str) -> Result<Self, ParseError> {
         Self::build_module(text, name, PySourceType::default())
-    }
-
-    /// Parses `text` as a plain module, returning the tree a probe
-    /// rebuild clones per subset.
-    pub(crate) fn parsed_module(text: &str) -> Result<Parsed<ModModule>, ParseError> {
-        parse_typed_module(text, ParseOptions::from(PySourceType::default()))
     }
 
     /// Reads the file at `path` the way [`read`](Self::read) reads a

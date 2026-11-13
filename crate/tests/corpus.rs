@@ -23,16 +23,13 @@ use prose::{
     rules::{RuleId, render_slugs},
     source::{Source, Target},
 };
-use ruff_python_ast::PythonVersion;
-use rustc_hash::FxHashMap;
-
-use common::{
+use prose_harness::{
     Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified,
     report_verified, repro_command, swept, target_name, target_names, targets_or, unread,
     verifying, widths_or,
 };
-
-mod common;
+use ruff_python_ast::PythonVersion;
+use rustc_hash::FxHashMap;
 
 /// The environment variable narrowing the axes by name.
 const AXES_VAR: &str = "PROSE_SETTLE_AXES";
@@ -446,7 +443,7 @@ fn verify_unlanded(
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_width_settles_and_applies_what_it_reports() {
-    let files = corpus();
+    let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
     let previous = panic::take_hook();
     panic::set_hook(Box::new(|info| {
         let at = info
