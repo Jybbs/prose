@@ -1,6 +1,8 @@
 from typing import NamedTuple
 
 
-class ModelSpec(NamedTuple):
-    display: str
-    build: type
+class Box(NamedTuple):
+    west: float
+    south: float
+    east: float
+    north: float

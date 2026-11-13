@@ -23,6 +23,17 @@ pub(crate) fn classify_field(stmt: &Stmt) -> Option<(u8, &str)> {
     Some((u8::from(has_default(ann)), name))
 }
 
+/// True when a base class names `NamedTuple`, resolved on its tail
+/// segment so `typing.NamedTuple` matches alike. The field run of such a
+/// class is the tuple's own layout, which indexing, unpacking, iteration,
+/// and comparison read as well as the constructor.
+pub(crate) fn is_named_tuple(class: &StmtClassDef) -> bool {
+    class
+        .bases()
+        .iter()
+        .any(|base| type_head_identifier(base) == Some("NamedTuple"))
+}
+
 /// The offset from which a class's annotated fields bind by name rather
 /// than by position. A field starting below it holds its source slot.
 /// Returns the class start where the header names no field-ordered
@@ -126,6 +137,18 @@ mod tests {
     ) {
         let source = parse(src);
         assert_eq!(classify_field(&source.ast().body[0]), expected);
+    }
+
+    #[rstest]
+    #[case("class C(NamedTuple): pass\n", true)]
+    #[case("class C(typing.NamedTuple): pass\n", true)]
+    #[case("class C(NamedTuple, Generic[T]): pass\n", true)]
+    #[case("class C(msgspec.Struct): pass\n", false)]
+    #[case("class C(namedtuple(\"P\", \"x y\")): pass\n", false)]
+    #[case("@dataclass\nclass C: pass\n", false)]
+    fn is_named_tuple_reads_the_base_list(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        assert_eq!(is_named_tuple(first_class(&source)), expected);
     }
 
     #[test]

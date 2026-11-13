@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
-input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_flagged/input.py
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_unflagged/input.py
 ---
-unsorted-positionals@65..93
+
