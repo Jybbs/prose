@@ -186,7 +186,7 @@ A fixture case pins one shape, whereas the corpus tasks run the formatter over a
 
 | **Task** | **What It Does** |
 |---|---|
-| `mise run rust:proof` | Formats the fixture tree at every line length, then checks that a second pass changes nothing and that every reported fix was applied, which is the settling half of `rust:test` |
+| `mise run rust:proof` | Formats the fixture tree at every line length, then checks that a second pass changes nothing and that every reported fix was applied, which is the settling half of `rust:test`. Given the name of a proof binary, it runs that binary alone, as each `🥃 Proof` row does |
 | `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took |
 | `mise run rust:mutations` | Formats every mutation of a corpus with the unstable-output notice on, generating the set under a budget into the directory `PROSE_SETTLE_MUTATIONS` names, or a scratch one, when that directory is absent |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling, and holds each rule declaring `PRESERVES_TREE` to its input's tree |
@@ -344,8 +344,8 @@ The table lists each row beside the task that runs the same check locally:
 | `🪓 Unused` | `🪻 CI` | `mise run rust:unused` | `cargo-shear` reports no unused or misplaced dependency and no empty or unlinked source file |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target or in the build without the `native` feature |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
-| `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which `🥃 Proof` runs |
-| `🥃 Proof` | `🪻 CI` | `mise run rust:proof` | The fixture tree settles in one pass at every line length, with every reported fix applied |
+| `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which the `🥃 Proof` rows run |
+| `🥃 Proof · Corpus`, `🥃 Proof · Settle` | `🪻 CI` | `mise run rust:proof` | The fixture tree settles in one pass at every line length, with every reported fix applied, each proof binary on a runner of its own |
 | `🪻 Prose` | `🪻 CI` | `mise run py:lint` | The checkout's own build of *Prose* reports no rewrite and no lint finding in the repository's Python outside the fixture trees |
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |

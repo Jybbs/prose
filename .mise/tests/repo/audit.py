@@ -61,6 +61,11 @@ DRIFTS   = {
         (".mise/config.toml", "1.99.1", "1.98.1")
     ],
 
+    "PROOF_TARGETS ↔ the rust:proof binaries the workflows name": [
+        (".mise/lib/workspace.bash", " settle)", ")"),
+        (".github/workflows/ci.yml", "rust:proof settle", "rust:proof other")
+    ],
+
     "README.md Python badge ↔ crate/pyproject.toml requires-python": [
         (".github/README.md", "3.10+", "3.11+"),
         ("crate/pyproject.toml", ">=3.10", ">=3.11")
@@ -144,6 +149,8 @@ PINS = {
         "      - uses : actions/checkout@1111\n"
         "      - uses : &cache-save actions/cache/save@2222\n"
         "      - run  : mise run rust:suite\n"
+        "      - run  : mise run rust:proof corpus\n"
+        "      - run  : mise run rust:proof settle\n"
         "      - run  : mise run gha:brief ci\n"
     ),
 
@@ -177,9 +184,12 @@ PINS = {
         'rust = { version = "1.99.1", profile = "minimal" }\n'
     ),
 
+    ".mise/lib/workspace.bash": "PROOF_TARGETS=(corpus settle)\n",
+
     ".mise/tasks/repo/ci.toml": (
         '["repo:ci"]\n'
-        'run = ["mise doctor project", { tasks = ["site:coverage", "rust:suite"] }, '
+        'run = ["mise doctor project", '
+        '{ tasks = ["site:coverage", "rust:proof", "rust:suite"] }, '
         '{ task = "rust:wheel" }]\n'
     ),
 

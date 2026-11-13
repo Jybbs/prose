@@ -780,6 +780,17 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
             task_paths("wasm:pack", "sources"),
             sorted(hashed_paths("restore-wasm"))
         ),
+        (
+            "PROOF_TARGETS ↔ the rust:proof binaries the workflows name",
+            sorted(
+                matched(
+                    message = ".mise/lib/workspace.bash declares no PROOF_TARGETS",
+                    path    = ".mise/lib/workspace.bash",
+                    pattern = r"(?m)^PROOF_TARGETS=\((.*)\)$"
+                ).split()
+            ),
+            proof_binaries()
+        ),
         *action_pins(),
         *member_pins(cargo),
         *override_pins(package),
@@ -907,6 +918,18 @@ def privileges() -> int:
             if writes(job.get("permissions", flow.get("permissions", {})))
             if any(map(restores, job.get("steps", [])))
         ]
+    )
+
+
+def proof_binaries() -> list[str]:
+    """
+    Returns every test binary a `mise run rust:proof` in a workflow names,
+    sorted.
+    """
+    return sorted(
+        binary
+        for path, _ in workflows()
+        for binary in findall(r"\bmise run rust:proof[ \t]+(\w+)", read(path))
     )
 
 

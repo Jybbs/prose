@@ -1,51 +1,10 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Format the fixture tree at every line length, then check that a second pass changes nothing and that every reported fix was applied"
+#MISE description = "Format the fixture tree at every line length through the proof binaries named, or through every one when none is, then check that a second pass changes nothing and that every reported fix was applied"
 
-source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-print_blocks() {
-  local target
-  for target in "${PROOF_TARGETS[@]}"; do
-    printf '\n%s output\n\n' "$target"
-    cat "$logs/$target.log"
-  done
-}
+if (($#)); then
+  PROOF_TARGETS=("$@")
+fi
 
-run_binary() {
-  local PROOF_TARGETS=("$1") started=$SECONDS status=0
-  split_proof cargo test > "$logs/$1.log" 2>&1 || status=$?
-  printf '%s exited %s after %ss\n' "$1" "$status" "$((SECONDS - started))"
-  return "$status"
-}
-
-stop() {
-  trap '' INT TERM
-  kill -"$1" -- "${pids[@]/#/-}" 2> /dev/null || true
-  wait
-  print_blocks
-  exit "$2"
-}
-
-split_proof cargo test --no-run
-
-logs=$(scratch_dir proof)
-trap 'rm -rf "$logs"' EXIT
-
-printf 'Running %s side by side\n' "${PROOF_TARGETS[*]}"
-pids=()
-set -m
-for target in "${PROOF_TARGETS[@]}"; do
-  run_binary "$target" &
-  pids+=("$!")
-done
-trap 'stop INT 130' INT
-trap 'stop TERM 143' TERM
-
-failed=0
-for pid in "${pids[@]}"; do
-  wait "$pid" || failed=1
-done
-
-print_blocks
-exit "$failed"
+split_proof cargo test
