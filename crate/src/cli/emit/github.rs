@@ -5,12 +5,8 @@ use std::io::{self, Write};
 use ruff_notebook::NotebookIndex;
 use ruff_source_file::{LineColumn, OneIndexed, SourceFile};
 
-use super::{Emitter, EmitterSummary, RefusedEntry, Run, diagnostics};
-use crate::{
-    diagnostics::Diagnostic,
-    findings::{cell_message, located},
-    rules::render_slugs,
-};
+use super::{Emitter, EmitterSummary, RefusedEntry, Run, cell_message, diagnostics};
+use crate::{diagnostics::Diagnostic, findings::located, rules::render_slugs};
 
 pub(crate) struct Github;
 

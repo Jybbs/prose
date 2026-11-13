@@ -4,9 +4,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use itertools::Itertools;
+use prose_harness::with_rest;
 
 use crate::{
-    common::with_rest,
     outcome::{ANNOTATED, Kind, Outcome},
     records::{Blocked, Break, Frame},
 };

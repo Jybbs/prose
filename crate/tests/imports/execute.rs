@@ -12,8 +12,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+use prose_harness::setting;
+
 use crate::{
-    common::setting,
     corpus::VENDORED,
     outcome::{Kind, Outcome},
     stage::Stage,

@@ -8,14 +8,12 @@ use std::{
 };
 
 use prose::pipeline::Pipeline;
+use prose_harness::{Absorbing, Slot, python_files, swept};
 use ruff_diagnostics::Applicability;
 use ruff_source_file::LineIndex;
 use ruff_text_size::{Ranged, TextSize};
 
-use crate::{
-    common::{Absorbing, Slot, python_files, swept},
-    records::{EditRows, Fixes},
-};
+use crate::records::{EditRows, Fixes};
 
 /// What formatting one tree in place left behind, each file named relative
 /// to the tree.

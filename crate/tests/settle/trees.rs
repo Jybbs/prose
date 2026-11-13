@@ -9,6 +9,7 @@
 use std::{iter::successors, ops::RangeInclusive};
 
 use indoc::indoc;
+use prose_harness::{excerpt, subset};
 use ruff_python_ast::{
     Stmt,
     comparable::{ComparableModModule, ComparableStmt},
@@ -17,7 +18,6 @@ use ruff_python_ast::{
 use ruff_text_size::Ranged;
 
 use super::*;
-use crate::common::{excerpt, subset};
 
 /// Every statement a walk reaches, each ahead of the statements nested
 /// in it.

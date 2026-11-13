@@ -11,8 +11,6 @@
 //! rather than to its snapshot alone, holding the fixture to the name
 //! it carries as the config surface grows.
 
-mod common;
-
 use std::collections::BTreeMap;
 
 use prose::config::Config;
@@ -50,7 +48,7 @@ fn fixtures() {
         let (config, notices) = Config::from_prose_toml_str(&toml).expect("fixture parses");
         assert!(notices.is_empty(), "{}: {notices:?}", path.display());
 
-        common::in_snapshot_dir(path, || {
+        prose_harness::in_snapshot_dir(path, || {
             insta::assert_debug_snapshot!("config", config);
         });
     });

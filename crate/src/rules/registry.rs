@@ -95,7 +95,7 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
     /// One-line imperative carried as `Diagnostic.message`. Defaults
     /// to the `MESSAGE` const on the rule registered under `self.id()`.
     fn message(&self) -> &'static str {
-        message_for_id(self.id())
+        self.id().message()
     }
 
     /// True where this rule's edits leave every binding its name, its
@@ -110,7 +110,7 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 }
 
 /// Generates [`KNOWN_IDS`], [`RuleConfigs`] with its bool-or-table
-/// `JsonSchema` impl, [`message_for_id`], [`preserves_bindings_for_id`],
+/// `JsonSchema` impl, [`RuleId::message`], [`preserves_bindings_for_id`],
 /// [`Pipeline::for_rule`], [`Pipeline::with_defaults`], and
 /// [`Pipeline::with_filters`] from a registry table. Each row leads
 /// with the rule's kebab-case slug, then its `[tool.prose.rules]`
@@ -122,7 +122,7 @@ pub(crate) trait Rule: fmt::Debug + Send + Sync {
 /// Each rule's type declares its one-line imperative as `MESSAGE`,
 /// whether its edits leave every binding standing as
 /// `PRESERVES_BINDINGS`, and whether its output parses to the tree its
-/// input does as `PRESERVES_TREE`. [`message_for_id`],
+/// input does as `PRESERVES_TREE`. [`RuleId::message`],
 /// [`preserves_bindings_for_id`], and [`preserves_tree`] read each one
 /// back per slug.
 ///
@@ -245,10 +245,12 @@ macro_rules! register_rules {
             }
         };
 
-        /// Default backing for [`Rule::message`], the `MESSAGE` const
-        /// on the rule registered under `id`.
-        pub(crate) fn message_for_id(id: RuleId) -> &'static str {
-            MESSAGES[registered_index(id)]
+        impl RuleId {
+            /// Returns the `MESSAGE` const on the rule registered under
+            /// this slug, the default backing for [`Rule::message`].
+            pub(crate) fn message(self) -> &'static str {
+                MESSAGES[registered_index(self)]
+            }
         }
 
         /// Default backing for [`Rule::preserves_bindings`], the

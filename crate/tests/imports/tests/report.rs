@@ -2,8 +2,10 @@
 //! block of counts, the reach split beneath it, the listings capped at a
 //! shown limit, and the command that reproduces one break alone.
 
+use prose_harness::SHOWN;
+
 use super::*;
-use crate::{common::SHOWN, records::Width, report::render};
+use crate::{records::Width, report::render};
 
 #[test]
 fn a_break_the_report_names_carries_its_frame_reason_and_repro() {
