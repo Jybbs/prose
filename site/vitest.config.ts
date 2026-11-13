@@ -17,9 +17,9 @@ const FIT = '.vitepress/tests/pages/fit.test.ts'
 const ROOT = paths.repoRoot(import.meta.url)
 
 const READ_FROM_DISK = [
-  'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**', 'crate/tests/fixtures/**',
-  'site/**/*.{css,md}', 'site/.vitepress/tests/**/fixtures/**', 'site/{bun.lock,patches/**}',
-  'site/public/**'
+  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**',
+  'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/assets/**',
+  'site/.vitepress/tests/**/fixtures/**', 'site/{bun.lock,patches/**}', 'site/public/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
@@ -93,7 +93,7 @@ export default defineConfig({
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
-      reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
+      reportsDirectory : paths.cacheDirFrom(ROOT, 'coverage/site'),
       include          : ['.vitepress/kit/**', '.vitepress/lib/**', 'prototypes/**/*.{ts,tsx}'],
 
       exclude: [
