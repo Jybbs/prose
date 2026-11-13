@@ -52,7 +52,7 @@ impl LineScanner {
     fn classify(&mut self, trimmed: &str, indent_chars: usize) -> LineScan {
         let at_block_start = std::mem::replace(&mut self.at_block_start, trimmed.is_empty());
         if trimmed.starts_with("```") {
-            self.in_fence = !self.in_fence;
+            self.in_fence.toggle();
             self.list_indent = None;
             return LineScan::Fence;
         }

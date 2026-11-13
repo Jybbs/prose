@@ -105,7 +105,7 @@ mod tests {
             cycle_index in 0usize..8,
         ) {
             let cycle_index = cycle_index.min(n - 1);
-            let mut deps: Vec<FxHashSet<usize>> = (0..n).map(|_| FxHashSet::default()).collect();
+            let mut deps = vec![FxHashSet::<usize>::default(); n];
             deps[cycle_index].insert(cycle_index);
             prop_assert_eq!(tier_levels(&deps), None);
         }

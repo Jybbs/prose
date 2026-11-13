@@ -183,9 +183,7 @@ mod tests {
 
     #[test]
     fn reproducing_subset_stops_probing_at_the_budget() {
-        let candidates: Vec<RuleId> = (0..20)
-            .map(|n| RuleId::from(format!("calm-{n}").leak() as &str))
-            .collect();
+        let candidates = Vec::from_fn(20, |n| RuleId::from(format!("calm-{n}").leak() as &str));
         let probes = std::cell::Cell::new(0usize);
 
         let found = reproducing_subset(&candidates, SOURCE, |_| {

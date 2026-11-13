@@ -12,9 +12,11 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+prose              = { path = "../crate", default-features = false }
+ruff_text_size     = { workspace = true }
+serde              = { workspace = true }
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen       = "=0.2.130"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
-prose                    = { path = "../crate", default-features = false }
-ruff_text_size           = { workspace = true }
-serde                    = { workspace = true }
-serde-wasm-bindgen       = "0.6.5"
-wasm-bindgen             = "=0.2.130"

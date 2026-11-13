@@ -1,0 +1,1 @@
+ignore-interior-mutability = ["ruff_python_ast::comparable::HashableExpr"]

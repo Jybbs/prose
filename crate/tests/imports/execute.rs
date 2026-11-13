@@ -171,9 +171,9 @@ pub(crate) fn module_name(module: &str) -> String {
         .strip_prefix(VENDORED)
         .and_then(|rest| rest.strip_prefix('/'))
         .unwrap_or(module);
-    let stem = module.strip_suffix(".py").unwrap_or(module);
-    stem.strip_suffix("/__init__")
-        .unwrap_or(stem)
+    module
+        .trim_suffix(".py")
+        .trim_suffix("/__init__")
         .replace('/', ".")
 }
 

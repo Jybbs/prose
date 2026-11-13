@@ -24,7 +24,7 @@ use prose::{
     source::{Source, Target},
 };
 use prose_harness::{
-    Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified,
+    Absorbing, Hit, TARGETS, Tally, WIDTHS, corpus, env_list, excerpt, note_verified, open_slot,
     report_verified, repro_command, swept, target_name, target_names, targets_or, unread,
     verifying, widths_or,
 };
@@ -230,7 +230,7 @@ struct Slice {
 }
 
 impl Slice {
-    /// The phrase a finding and a `Slot` label name this slice by.
+    /// The phrase a finding and an `open_slot` label name this slice by.
     fn clause(&self) -> String {
         format!("{} {}", self.label(), self.width)
     }
@@ -280,7 +280,7 @@ fn probe(
         detail,
         repro: Some(slice.repro(path)),
     };
-    let slot = Slot::open(format!("{} at {}", path.display(), slice.clause()));
+    let slot = open_slot(format!("{} at {}", path.display(), slice.clause()));
     let recorded = RefCell::new(BTreeMap::new());
     let ran = panic::catch_unwind(AssertUnwindSafe(|| {
         let mut current = entry;

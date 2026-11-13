@@ -34,7 +34,7 @@ use prose::{
     source::Source,
 };
 use prose_harness::{
-    Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified,
+    Absorbing, Hit, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified, open_slot,
     pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
     target_names, targets_or, unread, verifying, widths_or,
 };
@@ -539,7 +539,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         findings.skipped.insert(path.display().to_string());
         return findings;
     };
-    let _slot = Slot::open(format!("{} {}", path.display(), probes.budget));
+    let _slot = open_slot(format!("{} {}", path.display(), probes.budget));
     let text: Rc<str> = Rc::from(source.text());
     let mut memo = Memo::new(probes, source);
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();

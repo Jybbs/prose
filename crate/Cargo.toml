@@ -11,7 +11,7 @@ rust-version.workspace = true
 version                = "0.11.0"
 
 [package.metadata.ruff]
-release = "0.17.3"
+release = "0.17.5"
 
 [[bin]]
 name              = "prose"
@@ -48,7 +48,7 @@ native  = [
 workspace = true
 
 [dependencies]
-annotate-snippets   = { version = "=0.12.17", optional = true }
+annotate-snippets   = { version = "=0.12.18", optional = true }
 anstream            = { version = "1.0.0", optional = true }
 anstyle             = { version = "1.0.14", optional = true }
 anstyle-query       = { version = "1.1.5", optional = true }
@@ -86,7 +86,7 @@ serde-sarif         = { version = "0.8.0", optional = true }
 serde_ignored       = "0.1.14"
 serde_json          = { workspace = true }
 similar             = { workspace = true, optional = true }
-smallvec            = { version = "1.16.4", features = ["serde"] }
+smallvec            = { version = "1.16.5", features = ["serde"] }
 tempfile            = { version = "3.27.0", optional = true }
 textwrap            = { version = "0.16.4", default-features = false, features = ["smawk", "unicode-width"] }
 thiserror           = "2.0.21"

@@ -385,9 +385,9 @@ pub(super) const fn precedes(earlier: &str, later: &str) -> bool {
 }
 
 /// Reports whether the rule named `slug` declares that its output parses
-/// to a tree whose `ComparableModModule` equals its input's, a form that
-/// ignores positions, parentheses, comments, and implicit string
-/// concatenation. `false` for an unknown slug.
+/// to a body equal to its input's statement by statement under
+/// `ComparableStmt`, a form that ignores positions, parentheses, comments,
+/// and implicit string concatenation. `false` for an unknown slug.
 pub fn preserves_tree(slug: &str) -> bool {
     slug_index(slug).is_some_and(|seat| PRESERVES_TREE[seat])
 }
