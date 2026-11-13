@@ -67,6 +67,7 @@ annotation.
 """
 
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from functools   import cache
 from itertools   import chain, product
 from json        import loads as json_loads
@@ -89,6 +90,21 @@ READ             : set[str]       = set()
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
 USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
 UV_SHEBANG   = r"^#!.*\buv run --script\b"
+
+
+@dataclass(frozen=True)
+class Report:
+    """
+    Holds one check a workflow's jobs report, the names a row may cover it
+    by, whether a matrix fans it out, its name, the tasks its steps run, and
+    the script its steps run.
+    """
+
+    covers : set[str]
+    matrix : bool
+    name   : str
+    runs   : list[str]
+    script : str
 
 
 def action_pin(action: str, key: str) -> str:
@@ -205,17 +221,17 @@ def checks() -> int:
         unlisted |= claimed - listed.keys()
         for flow, check in product(workflows, checked):
             reports = [
-                (name, runs)
-                for name, covers, runs, _, _ in carried.get(flow, [])
-                if check in covers
+                report
+                for report in carried.get(flow, [])
+                if check in report.covers
             ]
             if flow in carried and not reports:
                 absent.add(f"{check} in {flow}")
-            for name, runs in reports:
-                named.add((flow, name))
+            for report in reports:
+                named.add((flow, report.name))
                 strays |= {
-                    f"{name} in {flow} runs {task}"
-                    for task in (aliases.get(each, each) for each in runs)
+                    f"{report.name} in {flow} runs {task}"
+                    for task in (aliases.get(each, each) for each in report.runs)
                     if not task.startswith("gha:")
                     if claimed.isdisjoint(reaches.get(task, {task}))
                 }
@@ -238,10 +254,10 @@ def checks() -> int:
             (strays,   "checks running a task their CONTRIBUTING.md row does not name"),
             (
                 {
-                    f"{name} in {flow}"
+                    f"{report.name} in {flow}"
                     for flow, reports in carried.items()
-                    for name, _, _, matrix, _ in reports
-                    if matrix and (flow, name) not in named
+                    for report in reports
+                    if report.matrix and (flow, report.name) not in named
                 },
                 "matrix checks no CONTRIBUTING.md row names"
             )
@@ -936,13 +952,16 @@ def proof_rows() -> list[tuple[str, list[str]]]:
     with test binaries named, beside those binaries.
     """
     return [
-        (name, binaries)
+        (report.name, binaries)
         for _, flow in workflows()
-        for name, _, _, _, script in reported(flow)
+        for report in reported(flow)
         if (
             binaries := [
                 binary
-                for named in findall(r"\bmise run rust:proof((?:[ \t]+\w+)+)", script)
+                for named in findall(
+                    r"\bmise run rust:proof((?:[ \t]+\w+)+)",
+                    report.script
+                )
                 for binary in named.split()
             ]
         )
@@ -990,35 +1009,6 @@ def repeated(values: list[str]) -> set[str]:
     Returns every value `values` holds more than once.
     """
     return {value for value, count in Counter(values).items() if count > 1}
-
-
-def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool, str]]:
-    """
-    Returns each check the jobs of `flow` report as its name, the names
-    a row may cover it by, the tasks its steps run, whether a matrix fans
-    it out, and the script its steps run. A row covers a planned matrix's
-    checks together, by naming one of them or the job name's text outside
-    its matrix expressions.
-    """
-    reports = []
-    for key, job in flow["jobs"].items():
-        template = job.get("name", key)
-        matrix   = job.get("strategy", {}).get("matrix")
-        if isinstance(matrix, str):
-            entries  = planned(flow, matrix)
-            together = {filled(entry, template) for entry in [{}, *entries]} - {""}
-        else:
-            entries  = matrix["include"] if matrix else [{}]
-            together = set()
-        for entry in entries:
-            name   = filled(entry, template)
-            script = "\n".join(
-                filled(entry, step.get("run", "")) for step in job.get("steps", [])
-            )
-            reports.append(
-                (name, together or {name}, invoked(script), matrix is not None, script)
-            )
-    return reports
 
 
 def restores(step: dict, uncached: bool = False) -> bool:
@@ -1228,8 +1218,8 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
     ran      = {
         task
         for flow in flows
-        for _, _, runs, _, _ in reported(flow)
-        for task in runs
+        for report in reported(flow)
+        for task in report.runs
         if not task.startswith("gha:") and not task.endswith(":upload")
     }
 
@@ -1315,20 +1305,20 @@ def tasks() -> int:
     return failed
 
 
-@cache
-def tasks_listed() -> dict[str, dict]:
-    """
-    Returns every task `mise tasks ls --json` lists, keyed by name.
-    """
-    return {task["name"]: task for task in mise_json("tasks", "ls")}
-
-
 def templates() -> list[tuple[Path, dict]]:
     """
     Returns every issue template beside its parsed form, which for a
     Markdown template is its frontmatter.
     """
     return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
+
+
+@cache
+def tasks_listed() -> dict[str, dict]:
+    """
+    Returns every task `mise tasks ls --json` lists, keyed by name.
+    """
+    return {task["name"]: task for task in mise_json("tasks", "ls")}
 
 
 def toml(path: str | Path) -> dict:
@@ -1439,6 +1429,39 @@ def yaml(path: str | Path) -> dict:
     it read as a string, which for a Markdown file is its frontmatter.
     """
     return next(load_all(read(path), Loader=BaseLoader))
+
+
+def reported(flow: dict) -> list[Report]:
+    """
+    Returns a `Report` for each check the jobs of `flow` report. A row
+    covers a planned matrix's checks together, by naming one of them or the
+    job name's text outside its matrix expressions.
+    """
+    reports = []
+    for key, job in flow["jobs"].items():
+        template = job.get("name", key)
+        matrix   = job.get("strategy", {}).get("matrix")
+        if isinstance(matrix, str):
+            entries  = planned(flow, matrix)
+            together = {filled(entry, template) for entry in [{}, *entries]} - {""}
+        else:
+            entries  = matrix["include"] if matrix else [{}]
+            together = set()
+        for entry in entries:
+            name   = filled(entry, template)
+            script = "\n".join(
+                filled(entry, step.get("run", "")) for step in job.get("steps", [])
+            )
+            reports.append(
+                Report(
+                    covers = together or {name},
+                    matrix = matrix is not None,
+                    name   = name,
+                    runs   = invoked(script),
+                    script = script
+                )
+            )
+    return reports
 
 
 if __name__ == "__main__":

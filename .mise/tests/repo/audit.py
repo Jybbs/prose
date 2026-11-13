@@ -63,7 +63,14 @@ DRIFTS   = {
 
     "PROOF_TARGETS ↔ the rust:proof binaries the workflows name": [
         (".mise/lib/workspace.bash", " settle)", ")"),
-        (".github/workflows/ci.yml", "rust:proof settle", "rust:proof other")
+        (".github/workflows/ci.yml", "rust:proof settle", "rust:proof other"),
+        (
+            ".github/workflows/ci.yml",
+            "          - command : mise run rust:proof settle\n",
+            "          - command : mise run rust:proof corpus\n"
+            "            name    : 🥃 Proof · Corpus\n"
+            "          - command : mise run rust:proof settle\n"
+        )
     ],
 
     "README.md Python badge ↔ crate/pyproject.toml requires-python": [
@@ -808,20 +815,42 @@ def test_parity_pairs_each_have_a_drift_row(
     assert {label for label, _, _ in audit.parity_pairs()} == set(DRIFTS)
 
 
+@mark.parametrize(
+    ("pin", "stray", "rows"),
+    [
+        param(
+            "rust:proof corpus",
+            "rust:proof corpus settle",
+            [
+                ("🥃 Proof · Corpus", ["corpus", "settle"]),
+                ("🥃 Proof · Settle", ["settle"])
+            ],
+            id = "several-binaries"
+        ),
+        param(
+            "      - run : ${{ matrix.command }}\n",
+            "      - run : ${{ matrix.command }}\n"
+            "      - run : mise run gha:brief ci\n",
+            [("🥃 Proof · Corpus", ["corpus"]), ("🥃 Proof · Settle", ["settle"])],
+            id = "step-after"
+        )
+    ]
+)
 def test_proof_rows_read_every_binary_a_row_names(
     audit   : ModuleType,
-    drifted : Callable[[str, str, str], None]
+    drifted : Callable[[str, str, str], None],
+    pin     : str,
+    rows    : list[tuple[str, list[str]]],
+    stray   : str
 ):
     """
     Pins that a row running `rust:proof` over several binaries reads as
-    naming each of them, beside the rows naming one.
+    naming each of them, and that a step after the one running it adds no
+    binary.
     """
-    drifted(".github/workflows/ci.yml", "rust:proof corpus", "rust:proof corpus settle")
+    drifted(".github/workflows/ci.yml", pin, stray)
 
-    assert audit.proof_rows() == [
-        ("🥃 Proof · Corpus", ["corpus", "settle"]),
-        ("🥃 Proof · Settle", ["settle"])
-    ]
+    assert audit.proof_rows() == rows
 
 
 def test_swept_follows_dependencies_transitively(
