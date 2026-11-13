@@ -30,7 +30,7 @@ pub(crate) fn dropped_member_spans(
     members: &[TextRange],
     reject: impl Fn(usize) -> bool,
 ) -> Vec<TextRange> {
-    let rejected: Vec<bool> = (0..members.len()).map(reject).collect();
+    let rejected = Vec::from_fn(members.len(), reject);
     slot_runs(&rejected, |a, b| a == b)
         .filter(|run| rejected[run.start] && run.len() < members.len())
         .map(|run| member_deletion_span(members, run))

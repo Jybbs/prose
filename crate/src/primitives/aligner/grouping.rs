@@ -209,11 +209,9 @@ fn shared_rows<T: Ranged>(source: &Source, items: &[T]) -> Vec<bool> {
         .windows(2)
         .map(|pair| source.same_line(pair[0].end(), pair[1].start()))
         .collect();
-    (0..items.len())
-        .map(|i| {
-            i.checked_sub(1).is_some_and(|p| touching[p]) || touching.get(i).is_some_and(|&t| t)
-        })
-        .collect()
+    Vec::from_fn(items.len(), |i| {
+        i.checked_sub(1).is_some_and(|p| touching[p]) || touching.get(i).is_some_and(|&t| t)
+    })
 }
 
 #[cfg(test)]

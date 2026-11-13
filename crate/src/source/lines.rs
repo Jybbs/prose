@@ -66,7 +66,7 @@ impl Source {
         let above = &text[..text.line_start(offset).to_usize()];
         let Some(joined) = above
             .strip_suffix('\n')
-            .map(|row| row.strip_suffix('\r').unwrap_or(row))
+            .map(|row| row.trim_suffix('\r'))
             .or_else(|| above.strip_suffix('\r'))
         else {
             return false;

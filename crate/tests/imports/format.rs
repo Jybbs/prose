@@ -8,7 +8,7 @@ use std::{
 };
 
 use prose::pipeline::Pipeline;
-use prose_harness::{Absorbing, Slot, python_files, swept};
+use prose_harness::{Absorbing, open_slot, python_files, swept};
 use ruff_diagnostics::Applicability;
 use ruff_source_file::LineIndex;
 use ruff_text_size::{Ranged, TextSize};
@@ -76,7 +76,7 @@ pub(crate) fn row_of(lines: &LineIndex, at: usize) -> usize {
 /// unread file and nothing else where the pipeline could not read or parse
 /// it or its syntax fails the pipeline's target.
 fn formatted(path: &Path, pipeline: &Pipeline, tree: &Path) -> Formatted {
-    let _slot = Slot::open(path.display().to_string());
+    let _slot = open_slot(path.display().to_string());
     let Ok(Some(source)) = pipeline.read_path(path) else {
         return Formatted {
             unread: 1,

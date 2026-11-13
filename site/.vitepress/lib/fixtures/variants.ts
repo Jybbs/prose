@@ -27,7 +27,7 @@ function formatUnder(input: string, config: walker.CaseConfig, select: readonly 
 function ruleDefault(slug: string, setting: string): number {
   defs ??= ruleSchema.ruleDefsOf(ruleSchema.proseSchema(root))
   const value = defs[slug]?.default[setting]
-  if (typeof value !== 'number') throw new Error(`${slug} declares no numeric \`${setting}\``)
+  if (typeof value !== 'number') throw new TypeError(`${slug} declares no numeric \`${setting}\``)
   return value
 }
 

@@ -3,9 +3,7 @@
 //! numbering them as it runs, through an `_order_` the loader checks, or
 //! through two members sharing one value.
 
-use ruff_python_ast::{
-    Expr, Stmt, StmtClassDef, comparable::ComparableExpr, helpers::any_over_expr,
-};
+use ruff_python_ast::{Expr, Stmt, StmtClassDef, comparable::HashableExpr, helpers::any_over_expr};
 use rustc_hash::FxHashSet;
 
 use crate::primitives::binding::{
@@ -104,11 +102,12 @@ fn names_a_base(class: &StmtClassDef, bases: &FxHashSet<&str>) -> bool {
 /// True where one class-body statement makes a member's value or its
 /// identity depend on where it sits: a `__new__` the enumeration runs
 /// per member, an `_order_` the loader checks the declared order
-/// against, a value reaching `auto` anywhere inside it, or a value a
-/// member above already carries, which makes the one above canonical
-/// and this one its alias.
+/// against, a value reaching `auto` anywhere inside it, or a value
+/// equal to one a member above already carries, as `1.0` and `True`
+/// are to `1`, which makes the one above canonical and this one its
+/// alias.
 fn numbers_by_position(body: &[Stmt], autos: &FxHashSet<&str>) -> bool {
-    let mut seen: FxHashSet<ComparableExpr> = FxHashSet::default();
+    let mut seen = FxHashSet::default();
     for stmt in body {
         if let Stmt::FunctionDef(func) = stmt {
             if func.name.as_str() == "__new__" {
@@ -126,7 +125,7 @@ fn numbers_by_position(body: &[Stmt], autos: &FxHashSet<&str>) -> bool {
         if any_over_expr(value, |expr| calls_auto(expr, autos)) {
             return true;
         }
-        if !seen.insert(ComparableExpr::from(value)) {
+        if !seen.insert(HashableExpr::from(value)) {
             return true;
         }
     }
@@ -175,6 +174,10 @@ mod tests {
     )]
     #[case::repeated_value(
         "from enum import Enum\n\n\nclass K(Enum):\n    Z = 1\n    Y = 1\n",
+        true
+    )]
+    #[case::repeated_value_under_python_equality(
+        "from enum import Enum\n\n\nclass K(Enum):\n    Z = 1\n    Y = 1.0\n    X = True\n",
         true
     )]
     #[case::base_one_hop(

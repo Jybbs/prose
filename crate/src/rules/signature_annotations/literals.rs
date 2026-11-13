@@ -4,6 +4,7 @@
 use ruff_python_ast::{
     Expr, Parameters, Stmt, StmtFunctionDef,
     helpers::ReturnStatementVisitor,
+    statement_visitor::StatementVisitor,
     visitor::{Visitor as AstVisitor, walk_expr},
 };
 use ruff_text_size::{Ranged, TextSize};

@@ -5,6 +5,7 @@ use std::{
     collections::BTreeMap,
     env,
     io::{self, Write},
+    mem::DropGuard,
     num::NonZeroUsize,
     path::{Path, PathBuf},
     process,
@@ -67,26 +68,6 @@ pub trait Absorbing: Default + Send {
     fn absorb(&mut self, other: Self);
 }
 
-/// One probe's entry in [`IN_FLIGHT`], cleared however the probe leaves.
-pub struct Slot(usize);
-
-impl Slot {
-    /// Opens an entry the watchdog names by `label` should the probe
-    /// outrun [`BUDGET`].
-    pub fn open(label: String) -> Self {
-        static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let id = NEXT.fetch_add(1, Ordering::Relaxed);
-        registry().insert(id, (Instant::now(), label));
-        Self(id)
-    }
-}
-
-impl Drop for Slot {
-    fn drop(&mut self) {
-        registry().remove(&self.0);
-    }
-}
-
 /// The Python sources a sweep reads, under the directory [`CORPUS`] names or
 /// under `fixtures` where it is unset, with the runaway watchdog opened
 /// and an empty corpus failing the sweep outright.
@@ -115,6 +96,18 @@ pub fn env_list_of<T>(set: &str, parse: impl Fn(&str) -> T) -> Vec<T> {
 /// Counts one probe verified against its reference reading.
 pub fn note_verified() {
     VERIFIED.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Opens the probe's entry in [`IN_FLIGHT`] under `label`, the name the
+/// watchdog prints should the probe outrun [`BUDGET`]. The returned guard
+/// clears the entry however the probe leaves.
+pub fn open_slot(label: String) -> DropGuard<usize, impl FnOnce(usize)> {
+    static NEXT: AtomicUsize = AtomicUsize::new(0);
+    let id = NEXT.fetch_add(1, Ordering::Relaxed);
+    registry().insert(id, (Instant::now(), label));
+    DropGuard::new(id, |id| {
+        registry().remove(&id);
+    })
 }
 
 /// The directory [`CORPUS`] aims a sweep at, `None` for the fixture
@@ -293,6 +286,15 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
+
+    #[test]
+    fn open_slot_clears_its_entry_once_dropped() {
+        let slot = open_slot("a probe".to_string());
+        let id = *slot;
+        assert!(registry().contains_key(&id));
+        drop(slot);
+        assert!(!registry().contains_key(&id));
+    }
 
     #[rstest]
     #[case::unset(None)]

@@ -20,9 +20,7 @@ pub(crate) fn block_ranges<T: Ranged>(
     items: &[T],
     outer: TextRange,
 ) -> Vec<TextRange> {
-    (0..items.len())
-        .map(|i| block_range(source, items, i, outer))
-        .collect()
+    Vec::from_fn(items.len(), |i| block_range(source, items, i, outer))
 }
 
 /// The end of `items[i]`'s block, reaching over the comments that close
@@ -44,9 +42,9 @@ pub(crate) fn member_blocks<T: Ranged>(
     outer: TextRange,
 ) -> Vec<TextRange> {
     let ends = trailing_body_ends(source, items);
-    (0..items.len())
-        .map(|i| member_block(source, items, i, outer, &ends))
-        .collect()
+    Vec::from_fn(items.len(), |i| {
+        member_block(source, items, i, outer, &ends)
+    })
 }
 
 /// True when only whitespace sits between `offset` and the start of its
@@ -202,9 +200,7 @@ pub(super) fn tail_end(source: &Source, item_end: TextSize) -> TextSize {
 
 /// Returns the end of each member's block per [`body_end`].
 fn trailing_body_ends<T: Ranged>(source: &Source, items: &[T]) -> Vec<TextSize> {
-    (0..items.len())
-        .map(|i| body_end(source, items, i))
-        .collect()
+    Vec::from_fn(items.len(), |i| body_end(source, items, i))
 }
 
 #[cfg(test)]

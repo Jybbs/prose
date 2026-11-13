@@ -14,9 +14,9 @@ mod tally;
 
 pub use diff::{excerpt, unified_diff};
 pub use sweep::{
-    Absorbing, Slot, TARGETS, WIDTHS, WIDTHS_VAR, corpus, env_list, env_list_of, note_verified,
-    pointed_corpus, python_files, report_verified, repro_command, setting, swept, target_name,
-    target_names, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
+    Absorbing, TARGETS, WIDTHS, WIDTHS_VAR, corpus, env_list, env_list_of, note_verified,
+    open_slot, pointed_corpus, python_files, report_verified, repro_command, setting, swept,
+    target_name, target_names, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
 };
 use tally::more;
 pub use tally::{Hit, SHOWN, Tally, remainder, with_rest};

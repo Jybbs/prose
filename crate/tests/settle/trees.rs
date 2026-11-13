@@ -1,8 +1,9 @@
 //! Holds every rule declaring `PRESERVES_TREE` to the tree its input
 //! parses to. The check files every rewrite the subset sweep records for
-//! such a rule, pair runs included, whose output's `ComparableModModule`
-//! differs from its input's, and runs every such rule together in one
-//! pipeline held to the same comparison, a rejection there filing too.
+//! such a rule, pair runs included, whose output's body differs from its
+//! input's statement by statement under `ComparableStmt`, and runs every
+//! such rule together in one pipeline held to the same comparison, a
+//! rejection there filing too.
 //! Over the fixture tree it also records whether each run of a rule
 //! declaring `false` changed the tree.
 
@@ -12,7 +13,7 @@ use indoc::indoc;
 use prose_harness::{excerpt, subset};
 use ruff_python_ast::{
     Stmt,
-    comparable::{ComparableModModule, ComparableStmt},
+    comparable::ComparableStmt,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::Ranged;
@@ -65,10 +66,9 @@ pub(super) fn check_trees(
         .into_group_map();
     for (input, runs) in checked {
         let before = memo.source(input);
-        let tree = ComparableModModule::from(before.ast());
         for (rule, preserves, output) in runs {
             let after = memo.source(output);
-            let reshaped = ComparableModModule::from(after.ast()) != tree;
+            let reshaped = reshapes(before, after);
             if !preserves {
                 *findings.changing.entry(rule).or_default() |= reshaped;
             } else if reshaped {
@@ -92,15 +92,10 @@ pub(super) fn check_trees(
     );
     let (defect, detail) = match joint.format(source.clone()) {
         Err(error) => (format!("{together} was rejected: {error}"), None),
-        Ok(after)
-            if ComparableModModule::from(after.ast())
-                != ComparableModModule::from(source.ast()) =>
-        {
-            (
-                format!("{together} changes the tree it rewrites"),
-                Some(reshaping(source, &after, "after every rule together")),
-            )
-        }
+        Ok(after) if reshapes(source, &after) => (
+            format!("{together} changes the tree it rewrites"),
+            Some(reshaping(source, &after, "after every rule together")),
+        ),
         Ok(_) => return,
     };
     findings.reshaped.record_hit(
@@ -137,6 +132,16 @@ fn moved_rows(before: &Source, after: &Source) -> Option<RangeInclusive<usize>> 
 /// Parses the buffer a test writes.
 fn parsed(text: &str) -> Source {
     text.parse().expect("a test's buffer parses")
+}
+
+/// True where the body of `after` differs from the body of `before`
+/// statement by statement under `ComparableStmt`, which ignores positions,
+/// parentheses, comments, and implicit string concatenation.
+fn reshapes(before: &Source, after: &Source) -> bool {
+    let (old, new) = (&before.ast().body, &after.ast().body);
+    old.iter()
+        .map(ComparableStmt::from)
+        .ne(new.iter().map(ComparableStmt::from))
 }
 
 /// Renders the excerpt from `before` to `after`, headed `"before"` and
