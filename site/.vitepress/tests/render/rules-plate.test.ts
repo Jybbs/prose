@@ -25,7 +25,9 @@ const SLACK = 1
 const SWITCH = NAMES.flatMap(engine => [470, 481, 486, 500, 640, 641].map(width => ({ engine, width })))
 
 // Presses the chip of `family` and reads the plate's height and the top of the
-// section below it on each frame from the press until `ms` past it.
+// section below it on each frame from the press until `ms` past it. The press
+// is timed at the timeline's current time, which WebKit starts each move from
+// and which can trail `performance.now()` by up to a frame.
 const press = (page: Page, family: string, ms: number): Promise<Frame[]> =>
   page.evaluate(([name, until]) => new Promise<Frame[]>(resolve => {
     const chip   = document.querySelector<HTMLElement>(`.rules-plate-split[data-family="${name}"] button`)!
@@ -38,7 +40,7 @@ const press = (page: Page, family: string, ms: number): Promise<Frame[]> =>
         .map(list => list.offsetHeight).join(','),
       next   : next.getBoundingClientRect().top + scrollY
     })
-    const frames = [read(performance.now())]
+    const frames = [read(Number(document.timeline.currentTime))]
     const tick   = (at: number) => {
       frames.push(read(at))
       if (at - frames[0]!.at < until) requestAnimationFrame(tick)
