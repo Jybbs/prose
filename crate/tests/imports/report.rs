@@ -11,9 +11,9 @@ use std::{
 };
 
 use itertools::Itertools;
+use prose_harness::{Hit, SHOWN, Tally, WIDTHS_VAR, remainder, setting};
 
 use crate::{
-    common::{Hit, SHOWN, Tally, WIDTHS_VAR, remainder, setting},
     corpus::PYTHON_VAR,
     execute::TIMEOUT_VAR,
     outcome::Kind,

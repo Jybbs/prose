@@ -2,7 +2,9 @@
 //! it, each naming the first module or file it reached beside how many more
 //! it reached.
 
-use crate::{common::with_rest, reach::Reach, records::Width};
+use prose_harness::with_rest;
+
+use crate::{reach::Reach, records::Width};
 
 /// Every cause that fails one width's run, empty where it passes. A run
 /// fails where a module left no record, where the format pass rewrote no

@@ -34,6 +34,7 @@ manifests = [
   "corpus/Cargo.toml",
   "crate/Cargo.toml",
   "crate/pyproject.toml",
+  "harness/Cargo.toml",
   "site/package.json",
   "wasm/Cargo.toml"
 ]

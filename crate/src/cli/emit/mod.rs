@@ -139,6 +139,15 @@ pub(in crate::cli) fn write_json_line<T: Serialize>(
     writer.write_all(b"\n")
 }
 
+/// Prefixes `message` with its cell number for a notebook and returns it
+/// bare for a module.
+fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
+    cell.map_or_else(
+        || message.to_owned(),
+        |cell| format!("cell {cell}: {message}"),
+    )
+}
+
 /// Flattens every run into its `(file, notebook index, diagnostic)`
 /// triples in file-major order, the traversal the structured emitters
 /// walk. The notebook index is `None` for an ordinary module.
@@ -177,4 +186,21 @@ fn emitted_runs(emitter: &dyn Emitter, runs: &[Run<'_>], summary: &EmitterSummar
     let mut buf = Vec::new();
     emitter.emit(&mut buf, runs, summary).expect("emits");
     buf
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::module(None, "unused import")]
+    #[case::notebook(Some(OneIndexed::from_zero_indexed(2)), "cell 3: unused import")]
+    fn cell_message_prefixes_a_notebook_cell_number(
+        #[case] cell: Option<OneIndexed>,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(cell_message("unused import", cell), expected);
+    }
 }

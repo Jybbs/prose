@@ -16,12 +16,13 @@ use serde_sarif::sarif::{
 };
 
 use super::{
-    Emitter, EmitterSummary, RefusedEntry, Run, UnstableEntry, diagnostics, write_json_line,
+    Emitter, EmitterSummary, RefusedEntry, Run, UnstableEntry, cell_message, diagnostics,
+    write_json_line,
 };
 use crate::{
     diagnostics::Diagnostic,
     file_uri,
-    findings::{cell_message, line_columns, located},
+    findings::{line_columns, located},
     rules::render_slugs,
 };
 

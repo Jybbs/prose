@@ -107,14 +107,6 @@ impl From<LineColumn> for JsonLocation {
     }
 }
 
-/// `message` under its cell number for a notebook, bare for a module.
-pub(crate) fn cell_message(message: &str, cell: Option<OneIndexed>) -> String {
-    cell.map_or_else(
-        || message.to_owned(),
-        |cell| format!("cell {cell}: {message}"),
-    )
-}
-
 pub(crate) fn line_columns(file: &SourceFile, range: TextRange) -> (LineColumn, LineColumn) {
     let code = file.to_source_code();
     (

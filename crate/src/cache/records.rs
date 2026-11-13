@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     diagnostics::{Diagnostic, Severity},
-    rules::{RuleId, message_for_id},
+    rules::RuleId,
     unstable::UnstableRewrite,
 };
 
@@ -44,11 +44,11 @@ pub struct CacheEntryRef<'a> {
 /// Reads and writes a diagnostic list with each message elided where it
 /// matches the static message its rule registers. Postcard spends one
 /// byte on the `Option` discriminant in its place, and the read resolves
-/// the elision back through `message_for_id`.
+/// the elision back through `RuleId::message`.
 mod elided_messages {
     use super::{
         Deserialize, Deserializer, Diagnostic, Fix, RuleId, Serialize, Serializer, Severity,
-        TextRange, message_for_id,
+        TextRange,
     };
 
     /// One diagnostic as stored, its `message` `None` where the rule's
@@ -69,7 +69,7 @@ mod elided_messages {
     {
         serializer.collect_seq(diagnostics.as_ref().iter().map(|d| Stored {
             fix: d.fix.clone(),
-            message: (d.message != message_for_id(d.rule)).then_some(d.message.as_str()),
+            message: (d.message != d.rule.message()).then_some(d.message.as_str()),
             range: d.range,
             rule: d.rule,
             severity: d.severity,
@@ -87,7 +87,7 @@ mod elided_messages {
                     fix: s.fix,
                     message: s
                         .message
-                        .map_or_else(|| message_for_id(s.rule).to_owned(), ToOwned::to_owned),
+                        .map_or_else(|| s.rule.message().to_owned(), ToOwned::to_owned),
                     range: s.range,
                     rule: s.rule,
                     severity: s.severity,

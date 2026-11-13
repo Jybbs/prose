@@ -10,12 +10,10 @@ use std::{
 };
 
 use itertools::Itertools;
+use prose_harness::{python_files, setting};
 use ruff_python_ast::PythonVersion;
 
-use crate::{
-    common::{python_files, setting},
-    records::Corpus,
-};
+use crate::records::Corpus;
 
 /// The module names a walk leaves out wherever they sit, since running
 /// either one launches a program instead of binding a namespace.

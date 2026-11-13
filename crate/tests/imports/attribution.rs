@@ -5,12 +5,12 @@
 use std::{collections::BTreeMap, path::Path, slice::from_ref};
 
 use prose::{config::Config, pipeline::Pipeline};
+use prose_harness::subset;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use similar::TextDiff;
 
 use crate::{
     bindings::bound_at,
-    common::subset,
     compare::divergence,
     diff::{hunk, mapped_rows},
     execute::Runner,
