@@ -9,6 +9,9 @@ export interface GlideTiming {
 const LETTERS = '.rules-plate-letter:not(.is-ghost)'
 const ROWS    = '.rules-plate-slugs > li[data-slug]'
 
+// Sets how far, in pixels, a box has to move before its move eases.
+const STILL = 0.5
+
 const moves = new WeakMap<Element, Animation[]>()
 
 // Moves the rules index from one arrangement to the next through `change`. It
@@ -18,7 +21,9 @@ const moves = new WeakMap<Element, Animation[]>()
 // from where it stood and each row by what is left of its own move once its
 // letter's is taken out, dimming early in the move where it changes letters. A
 // letter the change hides leaves a copy of its rule and cap fading where it
-// stood, and a letter the change shows fades its rule and cap in.
+// stood, and a letter the change shows fades its rule and cap in. The plate
+// eases from the height it stood at to its new one, clipping what runs past
+// its foot, so the section below arrives with the last row.
 export async function glide(plate: HTMLElement, change: () => Promise<void>, timing: GlideTiming): Promise<void> {
   const win = plate.ownerDocument.defaultView!
   if (reducesMotion(win)) return change()
@@ -45,6 +50,14 @@ export async function glide(plate: HTMLElement, change: () => Promise<void>, tim
 
   await change()
 
+  const height = plate.getBoundingClientRect().height
+  if (Math.abs(base.height - height) > STILL) {
+    running.push(plate.animate([
+      { height: `${base.height}px`, overflowY: 'clip' },
+      { height: `${height}px`, overflowY: 'clip' }
+    ], timing))
+  }
+
   const shift = new Map<string, [number, number]>()
   for (const letter of plate.querySelectorAll<HTMLElement>(LETTERS)) {
     const to = seen(letter)
@@ -54,7 +67,7 @@ export async function glide(plate: HTMLElement, change: () => Promise<void>, tim
     if (from) {
       const delta = [from.left - to.left, from.top - to.top] as [number, number]
       shift.set(letter.dataset.letter!, delta)
-      if (Math.abs(delta[0]) + Math.abs(delta[1]) > 0.5) {
+      if (Math.abs(delta[0]) + Math.abs(delta[1]) > STILL) {
         running.push(letter.animate([{ transform: `translate(${delta[0]}px, ${delta[1]}px)` }, { transform: 'none' }], timing))
       }
       if (cap && fade! < 0.99) running.push(cap.animate([{ opacity: fade }, { opacity: 1 }], half))
@@ -74,7 +87,7 @@ export async function glide(plate: HTMLElement, change: () => Promise<void>, tim
     const dx       = from.left - to.left - lx
     const dy       = from.top - to.top - ly
     const fade     = before.fades.get(slugOf(row)) ?? 1
-    if (Math.abs(dx) + Math.abs(dy) <= 0.5 && fade > 0.99) continue
+    if (Math.abs(dx) + Math.abs(dy) <= STILL && fade > 0.99) continue
     const dim = before.homes.get(slugOf(row)) === home ? [] : [{ offset: 0.35, opacity: Math.min(fade, 0.45) }]
     running.push(row.animate([{ opacity: fade, transform: `translate(${dx}px, ${dy}px)` }, ...dim, { opacity: 1, transform: 'none' }], timing))
   }

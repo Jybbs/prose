@@ -145,11 +145,12 @@ export const RulesPlate = defineComponent({
             </span>
             <ul
               aria-label={section.family ? `${familyEmblem(section.family).name} rules` : undefined}
-              class="rules-plate-slugs m-0 list-none columns-2-11rem gap-x-24 p-0"
+              class="rules-plate-slugs m-0 grid list-none grid-flow-col grid-cols-2 grid-rows-plate gap-x-24 p-0 max-tiny:block"
+              style={{ '--plate-rows': Math.ceil(section.rules.length / 2) }}
             >
               {section.rules.map(rule => (
                 <li
-                  class="m-0 flex break-inside-avoid items-center gap-8 py-3 focus-within:relative focus-within:z-20 hover:relative hover:z-20"
+                  class="m-0 flex items-center gap-8 py-3 focus-within:relative focus-within:z-20 hover:relative hover:z-20"
                   data-family={rule.family}
                   data-slug={rule.slug}
                   key={rule.slug}
