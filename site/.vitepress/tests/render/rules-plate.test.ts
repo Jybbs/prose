@@ -6,6 +6,7 @@ import type { Engine }         from './page'
 interface Frame {
   at     : number
   height : number
+  lists  : string
   next   : number
 }
 
@@ -19,6 +20,10 @@ const MOVES = NAMES.flatMap(engine => [1280, 390].map(width => ({ engine, width 
 // the rounding of a box's edges.
 const SLACK = 1
 
+// Sets the widths either side of where each letter's list switches to two
+// columns, in each engine.
+const SWITCH = NAMES.flatMap(engine => [470, 481, 486, 500, 640, 641].map(width => ({ engine, width })))
+
 // Presses the chip of `family` and reads the plate's height and the top of the
 // section below it on each frame from the press until `ms` past it.
 const press = (page: Page, family: string, ms: number): Promise<Frame[]> =>
@@ -29,6 +34,8 @@ const press = (page: Page, family: string, ms: number): Promise<Frame[]> =>
     const read   = (at: number) => ({
       at,
       height : plate.getBoundingClientRect().height,
+      lists  : [...plate.querySelectorAll<HTMLElement>('.rules-plate-letter:not(.is-out):not(.is-ghost) .rules-plate-slugs')]
+        .map(list => list.offsetHeight).join(','),
       next   : next.getBoundingClientRect().top + scrollY
     })
     const frames = [read(performance.now())]
@@ -64,8 +71,8 @@ function strays(frames: Frame[], key: 'height' | 'next', slope: number, ms: numb
   })
 }
 
-// Opens the rules index scrolled to its key and reads the curve and duration
-// each move takes.
+// Scrolls the rules index to its key and reads the curve and duration each
+// move takes.
 async function rulesIndex(page: Page): Promise<{ ms: number, slope: number }> {
   await page.locator('.rules-plate-key').scrollIntoViewIfNeeded()
   const [easing, ms] = await page.evaluate(() => {
@@ -76,22 +83,23 @@ async function rulesIndex(page: Page): Promise<{ ms: number, slope: number }> {
 }
 
 describe('the rules index', () => {
-  renderTest.for(MOVES)('eases its height and the section below with the rows in $engine at $width px', async ({ engine, width }, { visit }) => {
+  renderTest.for(MOVES)('eases its height and the section below with the rows, each letter holding its layout, in $engine at $width px', async ({ engine, width }, { visit }) => {
     const page          = await visit('/rules/', { engine, width })
     const { ms, slope } = await rulesIndex(page)
 
-    const moves = [] as { change: number, strays: string[] }[]
+    const moves = [] as { change: number, layouts: number, strays: string[] }[]
     for (let at = 0; at < 2; at++) {
       const frames = await press(page, FAMILY, ms + 300)
       moves.push({
-        change : Math.sign(frames.at(-1)!.height - frames[0]!.height),
-        strays : [...strays(frames, 'height', slope, ms), ...strays(frames, 'next', slope, ms)]
+        change  : Math.sign(frames.at(-1)!.height - frames[0]!.height),
+        layouts : new Set(frames.slice(1).map(({ lists }) => lists)).size,
+        strays  : [...strays(frames, 'height', slope, ms), ...strays(frames, 'next', slope, ms)]
       })
     }
 
     expect(moves).toStrictEqual([
-      { change: moves[0]!.change, strays: [] },
-      { change: -moves[0]!.change, strays: [] }
+      { change: moves[0]!.change, layouts: 1, strays: [] },
+      { change: -moves[0]!.change, layouts: 1, strays: [] }
     ])
     expect(moves[0]!.change).not.toBe(0)
   })
@@ -100,10 +108,23 @@ describe('the rules index', () => {
     const page          = await visit('/rules/', { engine, width })
     const { ms, slope } = await rulesIndex(page)
 
-    await press(page, FAMILY, ms / 2)
+    await press(page, FAMILY, ms / 10)
     const frames = await press(page, FAMILY, ms + 300)
 
     expect([...strays(frames, 'height', slope, ms), ...strays(frames, 'next', slope, ms)]).toStrictEqual([])
+  })
+
+  renderTest.for(SWITCH)('keeps each slug on one line in $engine at $width px', async ({ engine, width }, { visit }) => {
+    const page = await visit('/rules/', { engine, width })
+
+    const wrapped = await page.locator('.rules-plate-letter:not(.is-out) .rules-plate-slug').evaluateAll(slugs =>
+      slugs.filter(slug => {
+        const text = document.createRange()
+        text.selectNodeContents(slug)
+        return text.getClientRects().length > 1
+      }).map(slug => slug.textContent))
+
+    expect(wrapped).toStrictEqual([])
   })
 
   renderTest.for(NAMES)('takes its new height in the first frame under reduced motion in %s', async (engine, { visit }) => {

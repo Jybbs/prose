@@ -9,7 +9,8 @@ export interface GlideTiming {
 const LETTERS = '.rules-plate-letter:not(.is-ghost)'
 const ROWS    = '.rules-plate-slugs > li[data-slug]'
 
-// Sets how far, in pixels, a box has to move before its move eases.
+// Sets how far, in pixels, a box has to move or change its height before the
+// change eases.
 const STILL = 0.5
 
 const moves = new WeakMap<Element, Animation[]>()

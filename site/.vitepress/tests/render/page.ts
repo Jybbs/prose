@@ -38,7 +38,7 @@ export async function pointAt(target: Locator): Promise<void> {
 }
 
 // Launches each engine's browser once per test file, on the first visit that
-// names it. Each `visit` opens its route in a new context at the given engine,
+// opens a page in it. Each `visit` opens its route in a new context at the given engine,
 // motion preference, color scheme, and viewport width, and resolves once the
 // page's root has hydrated.
 export const renderTest = base

@@ -354,7 +354,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
 | `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |
-| `🖋️ Render` | `🪻 Deploy` | `mise run site:bake`, `mise run site:render` | Chromium computes the expected value for the marks, narrow breakpoints, and neutral surfaces the render suite lists on the pressed docs site, and the shell card's language label clears its code |
+| `🖋️ Render` | `🪻 Deploy` | `mise run site:bake`, `mise run site:render` | Chromium computes the expected value for the marks, narrow breakpoints, and neutral surfaces the render suite lists on the pressed docs site, the shell card's language label clears its code, and in Chromium and WebKit the rules index eases its height with its rows through a family filter and keeps each slug on one line |
 | `🦯 Axe` | `🪻 Deploy` | `mise run site:bake`, `mise run site:sweep` | Every built page of the docs site reports no `axe-core` violation in Chromium, color contrast included, in both color schemes |
 | `🍋 Squeeze` | `🪻 Deploy` | `mise run site:bake`, `mise run site:fit` | Every built page of the docs site fits a wide and a narrow viewport in Chromium, holds each inline code chip and the punctuation after it on one line, and gives each scrolling region a tab stop |
 | `⚓ Settle` | `🪻 Corpus` | `mise run rust:settle` | The standard library settles in one pass at every line length |

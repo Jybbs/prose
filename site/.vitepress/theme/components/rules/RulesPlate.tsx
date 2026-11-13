@@ -145,7 +145,7 @@ export const RulesPlate = defineComponent({
             </span>
             <ul
               aria-label={section.family ? `${familyEmblem(section.family).name} rules` : undefined}
-              class="rules-plate-slugs m-0 grid list-none grid-flow-col grid-cols-2 grid-rows-plate gap-x-24 p-0 max-tiny:block"
+              class="rules-plate-slugs m-0 grid list-none grid-flow-col grid-cols-2 grid-rows-plate gap-x-24 p-0 max-mobile:block"
               style={{ '--plate-rows': Math.ceil(section.rules.length / 2) }}
             >
               {section.rules.map(rule => (
