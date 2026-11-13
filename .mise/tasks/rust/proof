@@ -1,6 +1,39 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE description = "Format the fixture tree at every line length, then check that a second pass changes nothing and that every reported fix was applied"
 
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-split_proof cargo test
+print_block() {
+  printf '\n%s output\n\n' "$1"
+  cat "$logs/$1.log"
+}
+
+run_binary() {
+  local started=$SECONDS status=0
+  cargo test --locked --package prose --test="$1" > "$logs/$1.log" 2>&1 || status=$?
+  printf '%s exited %s after %ss\n' "$1" "$status" "$((SECONDS - started))"
+  return "$status"
+}
+
+split_proof cargo test --no-run
+
+logs=$(scratch_dir proof)
+trap 'rm -rf "$logs"' EXIT
+
+printf 'Running %s side by side\n' "${PROOF_TARGETS[*]}"
+pids=()
+for target in "${PROOF_TARGETS[@]}"; do
+  run_binary "$target" &
+  pids+=("$!")
+done
+
+failed=0
+for pid in "${pids[@]}"; do
+  wait "$pid" || failed=1
+done
+
+for target in "${PROOF_TARGETS[@]}"; do
+  print_block "$target"
+done
+exit "$failed"
