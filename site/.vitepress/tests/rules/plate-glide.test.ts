@@ -95,6 +95,27 @@ describe('glide', () => {
     expect(frames).toContainEqual({ opacity: 0.6, transform: 'translate(0px, 0px)' })
   })
 
+  domTest('eases the plate from the height it stood at to its new one, clipping its foot', async () => {
+    const plate   = plateOf({ a: ['align'] })
+    const tall    = (height: number) => { plate.getBoundingClientRect = () => ({ height, left: 0, top: 0 }) as DOMRect }
+    const animate = vi.spyOn(Element.prototype, 'animate')
+    stand(plate, { a: 0, align: 10 })
+    tall(120)
+    await glide(plate, () => Promise.resolve(tall(80)), TIMING)
+    expect(animate).toHaveBeenCalledWith([
+      { height: '120px', overflowY: 'clip' },
+      { height: '80px', overflowY: 'clip' }
+    ], TIMING)
+  })
+
+  domTest('leaves the plate\'s height to layout where the change keeps it', async () => {
+    const plate   = plateOf({ a: ['align'] })
+    const animate = vi.spyOn(Element.prototype, 'animate')
+    stand(plate, { a: 0, align: 10 })
+    await glide(plate, () => Promise.resolve(), TIMING)
+    expect(animate.mock.calls.some(([frames]) => 'height' in (frames as Keyframe[])[0]!)).toBe(false)
+  })
+
   domTest('takes its places at once under reduced motion', async ({ reducedMotion }) => {
     reducedMotion(true)
     const plate   = plateOf({ a: ['align'] })
