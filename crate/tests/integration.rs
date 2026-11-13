@@ -6,8 +6,6 @@
 //! `lint_findings.snap` renders the lint records against the rewritten
 //! output, the buffer the docs site decorates onto its formatted view.
 
-mod common;
-
 use std::{fmt::Write, path::Path, process::Command};
 
 use itertools::Itertools;
@@ -15,21 +13,25 @@ use prose::{
     config::Config, diagnostics::Diagnostic, findings::lint_records, pipeline::Pipeline,
     source::Source,
 };
+use prose_harness::{
+    HarnessOptions, build_pipeline, case_name, domain_name, fixture_inputs, in_snapshot_dir,
+    unified_diff,
+};
 use ruff_python_ast::PySourceType;
 use ruff_source_file::{LineEnding, UniversalNewlines};
 
 #[test]
 fn fixtures() {
     insta::glob!("fixtures/**/input.{py,ipynb}", |path| {
-        let domain = common::domain_name(path);
-        let case = common::case_name(path);
+        let domain = domain_name(path);
+        let case = case_name(path);
         let input_name = path
             .file_name()
             .and_then(|name| name.to_str())
             .expect("fixture filename is UTF-8");
 
-        let (config, harness) = common::fixture_inputs(path);
-        let pipeline = common::build_pipeline(domain, &config, &harness);
+        let (config, harness) = fixture_inputs(path);
+        let pipeline = build_pipeline(domain, &config, &harness);
         let source = accepted(path, &config, domain, case);
 
         // `diagnose` reads the source as written, so it runs before the
@@ -43,7 +45,7 @@ fn fixtures() {
             .expect("first pass succeeds on fixture input");
         let output = formatted.text();
 
-        common::in_snapshot_dir(path, || {
+        in_snapshot_dir(path, || {
             if let Some(diagnostics) = &diagnostics {
                 insta::assert_snapshot!("diagnostics", render(diagnostics));
                 let lint = lint_records(formatted.source_file(), &records);
@@ -77,13 +79,13 @@ fn fixtures() {
         }
 
         let fresh_source = accepted(path, &config, domain, case);
-        let (fresh_formatted, _, _) = common::build_pipeline(domain, &config, &harness)
+        let (fresh_formatted, _, _) = build_pipeline(domain, &config, &harness)
             .run(fresh_source)
             .expect("fresh pipeline run succeeds");
         assert!(
             fresh_formatted.text() == output,
             "fixture `{domain}/{case}` not deterministic across pipeline instances:\n{}",
-            common::unified_diff(output, fresh_formatted.text()),
+            unified_diff(output, fresh_formatted.text()),
         );
     });
 }
@@ -108,19 +110,19 @@ fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, u
     assert!(
         second.text() == output,
         "fixture `{domain}/{case}` not idempotent {under}:\n{}",
-        common::unified_diff(output, second.text()),
+        unified_diff(output, second.text()),
     );
 }
 
 /// The domain, case, sidecar options, and default pipeline for `path`,
 /// `None` for an `identity` fixture the full-pipeline sweeps pass over.
-fn sweepable(path: &Path) -> Option<(&str, &str, common::HarnessOptions, Pipeline)> {
-    let domain = common::domain_name(path);
+fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
+    let domain = domain_name(path);
     (domain != "identity").then(|| {
-        let (config, harness) = common::fixture_inputs(path);
+        let (config, harness) = fixture_inputs(path);
         (
             domain,
-            common::case_name(path),
+            case_name(path),
             harness,
             Pipeline::with_defaults(&config),
         )
@@ -283,7 +285,7 @@ fn prose_is_stable_after_ruff() {
             "prose not stable on `{domain}/{case}` after ruff:\n\
              --- post-ruff (input to prose) ---\n{post_ruff}\
              --- diff between first and second prose pass ---\n{}",
-            common::unified_diff(one.text(), two.text()),
+            unified_diff(one.text(), two.text()),
         );
     }
 }

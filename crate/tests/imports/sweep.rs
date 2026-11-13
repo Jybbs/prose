@@ -11,12 +11,12 @@ use std::{
 };
 
 use prose::{config::Config, pipeline::Pipeline};
+use prose_harness::setting;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::PythonVersion;
 
 use crate::{
     attribution::Attributor,
-    common::setting,
     compare::{compare, divergence, varying},
     corpus::{candidates, excluded, importable},
     execute::Runner,

@@ -33,19 +33,17 @@ use prose::{
     rules::{RuleId, independent, preserves_tree, render_slugs, runs_behind},
     source::Source,
 };
-use rstest::{fixture, rstest};
-use ruff_python_ast::PythonVersion;
-use rustc_hash::{FxBuildHasher, FxHashMap};
-
-use common::{
+use prose_harness::{
     Absorbing, Hit, Slot, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified,
     pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
     target_names, targets_or, unread, verifying, widths_or,
 };
+use rstest::{fixture, rstest};
+use ruff_python_ast::PythonVersion;
+use rustc_hash::{FxBuildHasher, FxHashMap};
+
 use trees::check_trees;
 
-#[path = "../common/mod.rs"]
-mod common;
 mod trees;
 
 #[global_allocator]
@@ -736,7 +734,7 @@ fn verify_pair(
             **new == *old,
             "forward text differs for `{earlier}` then `{later}` on {}:\n{}",
             path.display(),
-            common::unified_diff(&old, new),
+            prose_harness::unified_diff(&old, new),
         ),
         (Err(_), Err(_)) => {}
         (new, old) => panic!(
@@ -793,7 +791,7 @@ fn claims_reads_the_first_rule_when_owned_and_any_when_touching(
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() {
-    let files = corpus();
+    let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
     let lengths = lengths();
     let targets = targets_or(TARGETS);
     let mut findings = Findings::default();

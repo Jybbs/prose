@@ -1,6 +1,7 @@
-//! Shared snapshot harness for integration test binaries.
-
-#![allow(dead_code, unused_imports)]
+//! The test support the `prose` integration binaries share, covering the
+//! fixture harness that builds each case's pipeline and snapshot settings,
+//! the corpus-sweep surface the settle, subset, and import probes read, and
+//! the diff excerpts and defect tallies their reports render.
 
 use std::{ffi::OsStr, io::ErrorKind, path::Path};
 
@@ -11,21 +12,21 @@ mod diff;
 mod sweep;
 mod tally;
 
-pub(crate) use diff::{EXCERPT, excerpt, unified_diff};
-pub(crate) use sweep::{
+pub use diff::{excerpt, unified_diff};
+pub use sweep::{
     Absorbing, Slot, TARGETS, WIDTHS, WIDTHS_VAR, corpus, env_list, env_list_of, note_verified,
     pointed_corpus, python_files, report_verified, repro_command, setting, swept, target_name,
-    target_names, target_of, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
+    target_names, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
 };
-pub(crate) use tally::{Hit, SHOWN, Tally, more, remainder, with_rest};
+pub use tally::{Hit, SHOWN, Tally, more, remainder, with_rest};
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
-pub(crate) struct HarnessOptions {
+pub struct HarnessOptions {
     rules: Vec<RuleId>,
-    pub(crate) skip_ruff_coexistence: bool,
+    pub skip_ruff_coexistence: bool,
 }
 
 /// Returns the pipeline that exercises a fixture directory.
@@ -38,11 +39,7 @@ pub(crate) struct HarnessOptions {
 /// fixtures pin parser and no-op behavior. Every other directory matches
 /// a rule slug and runs that rule beside any the sidecar's
 /// `[harness] rules` lists, every other rule resolving to off.
-pub(crate) fn build_pipeline(
-    directory: &str,
-    config: &Config,
-    harness: &HarnessOptions,
-) -> Pipeline {
+pub fn build_pipeline(directory: &str, config: &Config, harness: &HarnessOptions) -> Pipeline {
     match directory {
         "composition" => subset(config, &harness.rules),
         "notebook" | "suppression" | "thematic" => Pipeline::with_defaults(config),
@@ -56,14 +53,14 @@ pub(crate) fn build_pipeline(
     }
 }
 
-pub(crate) fn case_name(path: &Path) -> &str {
+pub fn case_name(path: &Path) -> &str {
     path.parent()
         .and_then(Path::file_name)
         .and_then(OsStr::to_str)
         .expect("fixture path has a case directory")
 }
 
-pub(crate) fn domain_name(path: &Path) -> &str {
+pub fn domain_name(path: &Path) -> &str {
     path.parent()
         .map(case_name)
         .expect("fixture path has a domain directory")
@@ -73,7 +70,7 @@ pub(crate) fn domain_name(path: &Path) -> &str {
 /// the `[harness]` table out before the remainder deserializes into `Config`,
 /// so the prose config sits at the document root the way a real `prose.toml`
 /// carries it. A sidecar with no prose keys resolves to `Config::default`.
-pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
+pub fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
     let Some(contents) = sidecar_contents(path) else {
         return Default::default();
     };
@@ -93,7 +90,9 @@ pub(crate) fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
     (config, harness)
 }
 
-pub(crate) fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
+/// Runs `f` with `insta` keeping each snapshot in the case directory that
+/// holds `path`, under the `fixtures/` tree beside the calling binary.
+pub fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
     insta::with_settings!({
         snapshot_path => format!("fixtures/{}/{}", domain_name(path), case_name(path)),
         prepend_module_to_snapshot => false,
@@ -105,7 +104,7 @@ pub(crate) fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
 
 /// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
 /// flag the way a `--select` run does.
-pub(crate) fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
+pub fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
     Pipeline::with_filters(config, rules, &[])
 }
 

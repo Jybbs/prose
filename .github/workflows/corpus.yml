@@ -31,10 +31,10 @@ on:
       - corpus/**
       - crate/Cargo.toml
       - crate/src/**
-      - crate/tests/common/**
       - crate/tests/corpus.rs
       - crate/tests/imports/**
       - crate/tests/settle/**
+      - harness/**
 
   push:
     branches:

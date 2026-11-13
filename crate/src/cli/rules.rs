@@ -11,7 +11,7 @@ use super::{
 };
 use crate::{
     pipeline::Pipeline,
-    rules::{dependencies_of, message_for_id, preserves_tree},
+    rules::{dependencies_of, preserves_tree},
 };
 
 /// One registered rule, carrying its one-based pipeline position, the
@@ -35,7 +35,7 @@ pub(crate) fn list<W: Write>(args: &RulesArgs, mut stdout: W) -> anyhow::Result<
             let slug = id.as_str();
             RuleInfo {
                 after: dependencies_of(slug),
-                imperative: message_for_id(*id),
+                imperative: id.message(),
                 position: index + 1,
                 preserves_tree: preserves_tree(slug),
                 slug,

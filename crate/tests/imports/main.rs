@@ -6,9 +6,6 @@
 //! it executes a corpus, and it fails on any break and on any condition that
 //! leaves it unable to judge whether a module broke.
 
-#[path = "../common/mod.rs"]
-mod common;
-
 mod attribution;
 mod bindings;
 mod compare;
@@ -28,8 +25,9 @@ mod sweep;
 
 use std::{iter, num::NonZeroUsize};
 
+use prose_harness::{watch_for_a_runaway, widths_or};
+
 use crate::{
-    common::{watch_for_a_runaway, widths_or},
     corpus::{identity, interpreter, standard_library, target, version},
     gate::failures,
     report::render,

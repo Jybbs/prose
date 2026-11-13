@@ -1,7 +1,5 @@
 //! Prose is an opinionated Python code formatter.
 
-#![cfg_attr(not(feature = "native"), allow(dead_code, unused_imports))]
-
 pub mod config;
 pub mod diagnostics;
 pub mod findings;

@@ -36,7 +36,7 @@ static IN_FLIGHT: Mutex<BTreeMap<usize, (Instant, String)>> = Mutex::new(BTreeMa
 /// The `target-version` settings a sweep covers absent [`TARGETS_VAR`],
 /// the shipped default of none beside the newest stable version the
 /// parser models, which sits at or above every rule's version floor.
-pub(crate) const TARGETS: &[Option<PythonVersion>] = &[None, Some(PythonVersion::latest())];
+pub const TARGETS: &[Option<PythonVersion>] = &[None, Some(PythonVersion::latest())];
 
 /// The environment variable naming the `target-version` settings a sweep
 /// covers, [`UNSET`] standing for the shipped default.
@@ -56,24 +56,24 @@ const VERIFY_VAR: &str = "PROSE_SETTLE_VERIFY";
 /// The line lengths a sweep covers absent [`WIDTHS_VAR`], the shipped
 /// default flanked by the narrow and wide settings a project sets it
 /// to.
-pub(crate) const WIDTHS: &[usize] = &[40, 50, 60, 79, 88, 100];
+pub const WIDTHS: &[usize] = &[40, 50, 60, 79, 88, 100];
 
 /// The environment variable naming the line lengths a sweep covers.
-pub(crate) const WIDTHS_VAR: &str = "PROSE_SETTLE_WIDTHS";
+pub const WIDTHS_VAR: &str = "PROSE_SETTLE_WIDTHS";
 
 /// A per-file finding set a parallel sweep folds together.
-pub(crate) trait Absorbing: Default + Send {
+pub trait Absorbing: Default + Send {
     /// Folds `other`'s findings into this set.
     fn absorb(&mut self, other: Self);
 }
 
 /// One probe's entry in [`IN_FLIGHT`], cleared however the probe leaves.
-pub(crate) struct Slot(usize);
+pub struct Slot(usize);
 
 impl Slot {
     /// Opens an entry the watchdog names by `label` should the probe
     /// outrun [`BUDGET`].
-    pub(crate) fn open(label: String) -> Self {
+    pub fn open(label: String) -> Self {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
         registry().insert(id, (Instant::now(), label));
@@ -87,10 +87,11 @@ impl Drop for Slot {
     }
 }
 
-/// The `.py` files a sweep reads, with the runaway watchdog opened and
-/// an empty corpus failing the sweep outright.
-pub(crate) fn corpus() -> Vec<PathBuf> {
-    let files = walked();
+/// The `.py` files a sweep reads, under the directory [`CORPUS`] names or
+/// under `fixtures` where it is unset, with the runaway watchdog opened
+/// and an empty corpus failing the sweep outright.
+pub fn corpus(fixtures: &Path) -> Vec<PathBuf> {
+    let files = walked(fixtures);
     assert!(!files.is_empty(), "the corpus holds no `.py` files");
     watch_for_a_runaway();
     files
@@ -98,13 +99,13 @@ pub(crate) fn corpus() -> Vec<PathBuf> {
 
 /// The values `var` carries as a space-separated list, `defaults` where
 /// it is unset.
-pub(crate) fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
+pub fn env_list<T: Clone>(var: &str, defaults: &[T], parse: impl Fn(&str) -> T) -> Vec<T> {
     setting(var).map_or_else(|| defaults.to_vec(), |set| env_list_of(&set, parse))
 }
 
 /// The values `set` lists, separated by spaces or commas, each read
 /// through `parse`.
-pub(crate) fn env_list_of<T>(set: &str, parse: impl Fn(&str) -> T) -> Vec<T> {
+pub fn env_list_of<T>(set: &str, parse: impl Fn(&str) -> T) -> Vec<T> {
     set.split([' ', ','])
         .filter(|part| !part.is_empty())
         .map(parse)
@@ -112,13 +113,13 @@ pub(crate) fn env_list_of<T>(set: &str, parse: impl Fn(&str) -> T) -> Vec<T> {
 }
 
 /// Counts one probe verified against its reference reading.
-pub(crate) fn note_verified() {
+pub fn note_verified() {
     VERIFIED.fetch_add(1, Ordering::Relaxed);
 }
 
 /// The directory [`CORPUS`] aims a sweep at, `None` for the fixture
 /// tree.
-pub(crate) fn pointed_corpus() -> Option<PathBuf> {
+pub fn pointed_corpus() -> Option<PathBuf> {
     setting(CORPUS).map(PathBuf::from)
 }
 
@@ -127,7 +128,7 @@ pub(crate) fn pointed_corpus() -> Option<PathBuf> {
 /// a `SourceMap`. The walk carries no standard filter, so a hidden directory
 /// and an ignored one both enter the sweep rather than leaving it short
 /// without saying so.
-pub(crate) fn python_files(root: &Path) -> impl Iterator<Item = PathBuf> {
+pub fn python_files(root: &Path) -> impl Iterator<Item = PathBuf> {
     WalkBuilder::new(root)
         .standard_filters(false)
         .build()
@@ -140,7 +141,7 @@ pub(crate) fn python_files(root: &Path) -> impl Iterator<Item = PathBuf> {
 
 /// Prints how many probes were verified, `what` naming them, when any
 /// were.
-pub(crate) fn report_verified(what: &str) {
+pub fn report_verified(what: &str) {
     let verified = VERIFIED.load(Ordering::Relaxed);
     if verified > 0 {
         eprintln!("verified {verified} {what}");
@@ -150,7 +151,7 @@ pub(crate) fn report_verified(what: &str) {
 /// The command sweeping `path` alone through the `test` binary at
 /// `target` and `width`, `narrowing` naming any further setting ahead of
 /// them.
-pub(crate) fn repro_command(
+pub fn repro_command(
     test: &str,
     path: &Path,
     narrowing: &str,
@@ -165,15 +166,12 @@ pub(crate) fn repro_command(
 }
 
 /// The value `var` carries, `None` where it is unset or blank.
-pub(crate) fn setting(var: &str) -> Option<String> {
+pub fn setting(var: &str) -> Option<String> {
     env::var(var).ok().filter(|value| !value.trim().is_empty())
 }
 
 /// Folds what `probe` reads off each of `files`, walked in parallel.
-pub(crate) fn swept<F: Absorbing>(
-    files: &[PathBuf],
-    probe: impl Fn(&Path) -> F + Send + Sync,
-) -> F {
+pub fn swept<F: Absorbing>(files: &[PathBuf], probe: impl Fn(&Path) -> F + Send + Sync) -> F {
     files
         .par_iter()
         .map(|path| probe(path))
@@ -185,36 +183,26 @@ pub(crate) fn swept<F: Absorbing>(
 
 /// The [`TARGETS_VAR`] entry naming `target`, which a report and a
 /// reproduction command both print.
-pub(crate) fn target_name(target: Option<PythonVersion>) -> String {
+pub fn target_name(target: Option<PythonVersion>) -> String {
     target.map_or_else(|| UNSET.to_owned(), |version| version.to_string())
 }
 
 /// The [`target_name`] of each of `targets`, comma-separated, which a
 /// sweep's summary and its failure report both print.
-pub(crate) fn target_names(targets: &[Option<PythonVersion>]) -> String {
+pub fn target_names(targets: &[Option<PythonVersion>]) -> String {
     targets.iter().copied().map(target_name).join(", ")
-}
-
-/// The `target-version` a [`TARGETS_VAR`] entry names, [`UNSET`] reading
-/// as none.
-pub(crate) fn target_of(token: &str) -> Option<PythonVersion> {
-    (token != UNSET).then(|| {
-        token.parse().unwrap_or_else(|error| {
-            panic!("every `{TARGETS_VAR}` entry is `{UNSET}` or a version: {error}")
-        })
-    })
 }
 
 /// The `target-version` settings this run sweeps, [`TARGETS_VAR`]
 /// overriding `defaults` as a space-separated list of `major.minor`
 /// versions and [`UNSET`].
-pub(crate) fn targets_or(defaults: &[Option<PythonVersion>]) -> Vec<Option<PythonVersion>> {
+pub fn targets_or(defaults: &[Option<PythonVersion>]) -> Vec<Option<PythonVersion>> {
     env_list(TARGETS_VAR, defaults, target_of)
 }
 
 /// The clause a report carries for the files a sweep could not read,
 /// naming the count on stderr as it goes.
-pub(crate) fn unread(count: usize, total: usize, what: &str) -> String {
+pub fn unread(count: usize, total: usize, what: &str) -> String {
     if count == 0 {
         return String::new();
     }
@@ -223,7 +211,7 @@ pub(crate) fn unread(count: usize, total: usize, what: &str) -> String {
 }
 
 /// Whether [`VERIFY_VAR`] is set.
-pub(crate) fn verifying() -> bool {
+pub fn verifying() -> bool {
     setting(VERIFY_VAR).is_some()
 }
 
@@ -232,7 +220,7 @@ pub(crate) fn verifying() -> bool {
 /// thread running it, and it grows until the machine reaches an
 /// out-of-memory kill, so a sweep stops itself first. The watch starts
 /// once however many times it is called.
-pub(crate) fn watch_for_a_runaway() {
+pub fn watch_for_a_runaway() {
     static STARTED: Once = Once::new();
     STARTED.call_once(|| {
         thread::spawn(|| {
@@ -260,7 +248,7 @@ pub(crate) fn watch_for_a_runaway() {
 
 /// The line lengths this run sweeps, [`WIDTHS_VAR`] overriding
 /// `defaults` as a space-separated list.
-pub(crate) fn widths_or(defaults: &[usize]) -> Vec<usize> {
+pub fn widths_or(defaults: &[usize]) -> Vec<usize> {
     env_list(WIDTHS_VAR, defaults, |width| {
         width
             .parse::<NonZeroUsize>()
@@ -275,17 +263,60 @@ fn registry() -> MutexGuard<'static, BTreeMap<usize, (Instant, String)>> {
     IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
+/// The `target-version` a [`TARGETS_VAR`] entry names, [`UNSET`] reading
+/// as none.
+fn target_of(token: &str) -> Option<PythonVersion> {
+    (token != UNSET).then(|| {
+        token.parse().unwrap_or_else(|error| {
+            panic!("every `{TARGETS_VAR}` entry is `{UNSET}` or a version: {error}")
+        })
+    })
+}
+
 /// The Python sources under the corpus root, largest first with the path
 /// breaking ties, so a parallel sweep's tail is one file long and a
 /// failure names the same file across runs. [`CORPUS`] points a sweep
-/// at a directory other than the fixture tree.
-fn walked() -> Vec<PathBuf> {
-    let root = pointed_corpus()
-        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
+/// at a directory other than `fixtures`.
+fn walked(fixtures: &Path) -> Vec<PathBuf> {
+    let root = pointed_corpus().unwrap_or_else(|| fixtures.to_path_buf());
     python_files(&root)
         .sorted_by_cached_key(|path| {
             let size = fs_err::metadata(path).map_or(0, |data| data.len());
             (Reverse(size), path.clone())
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
+
+    use super::*;
+
+    #[rstest]
+    #[case::unset(None)]
+    #[case::a_version_floor(Some(PythonVersion::PY39))]
+    #[case::the_newest_version(Some(PythonVersion::latest()))]
+    fn target_of_reads_back_the_entry_target_name_prints(#[case] target: Option<PythonVersion>) {
+        assert_eq!(target_of(&target_name(target)), target);
+    }
+
+    #[rstest]
+    #[should_panic(expected = "is `unset` or a version")]
+    fn target_of_rejects_an_entry_other_than_unset_or_major_minor(
+        #[values("", "3", "3.14.6", "py314", "Unset")] entry: &str,
+    ) {
+        let _ = target_of(entry);
+    }
+
+    #[rstest]
+    #[case(0, "")]
+    #[case(3, " and 3 the probe could not read")]
+    fn unread_names_the_count_only_where_a_file_went_unread(
+        #[case] count: usize,
+        #[case] clause: &str,
+    ) {
+        assert_eq!(unread(count, 1050, "probe"), clause);
+    }
 }
