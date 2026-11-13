@@ -209,7 +209,7 @@ def checks() -> int:
         for alias in [name, *task["aliases"]]
     }
     reaches = {name: {name, *dependencies(name)} for name in listed}
-    carried = {flow["name"]: reported(flow) for _, flow in pull_request_workflows()}
+    carried = {flow["name"]: reported(path) for path, flow in pull_request_workflows()}
 
     blank, unknown, absent, unlisted, strays, named = [set() for _ in range(6)]
     for row, flows, local, _ in table("Row"):
@@ -948,13 +948,13 @@ def privileges() -> int:
 
 def proof_rows() -> list[tuple[str, list[str]]]:
     """
-    Returns each check a workflow reports that runs `mise run rust:proof`
-    with test binaries named, beside those binaries.
+    Returns each check of a pull-request workflow whose steps name test
+    binaries to `mise run rust:proof`, beside those binaries.
     """
     return [
         (report.name, binaries)
-        for _, flow in workflows()
-        for report in reported(flow)
+        for path, _ in pull_request_workflows()
+        for report in reported(path)
         if (
             binaries := [
                 binary
@@ -1009,6 +1009,41 @@ def repeated(values: list[str]) -> set[str]:
     Returns every value `values` holds more than once.
     """
     return {value for value, count in Counter(values).items() if count > 1}
+
+
+@cache
+def reported(path: Path) -> list[Report]:
+    """
+    Returns a `Report` for each check the jobs of the workflow at `path`
+    report. A row covers a planned matrix's checks together, by naming one
+    of them or the job name's text outside its matrix expressions.
+    """
+    flow    = yaml(path)
+    reports = []
+    for key, job in flow["jobs"].items():
+        template = job.get("name", key)
+        matrix   = job.get("strategy", {}).get("matrix")
+        if isinstance(matrix, str):
+            entries  = planned(flow, matrix)
+            together = {filled(entry, template) for entry in [{}, *entries]} - {""}
+        else:
+            entries  = matrix["include"] if matrix else [{}]
+            together = set()
+        for entry in entries:
+            name   = filled(entry, template)
+            script = "\n".join(
+                filled(entry, step.get("run", "")) for step in job.get("steps", [])
+            )
+            reports.append(
+                Report(
+                    covers = together or {name},
+                    matrix = matrix is not None,
+                    name   = name,
+                    runs   = invoked(script),
+                    script = script
+                )
+            )
+    return reports
 
 
 def restores(step: dict, uncached: bool = False) -> bool:
@@ -1207,7 +1242,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
             )
         )
     )
-    flows = [flow for _, flow in workflows() if flow.get("name") in named]
+    flows = [(path, flow) for path, flow in workflows() if flow.get("name") in named]
     sweep = [
         task
         for step in toml(".mise/tasks/repo/ci.toml")["repo:ci"]["run"]
@@ -1217,8 +1252,8 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
     uploaded = dependencies("site:upload")
     ran      = {
         task
-        for flow in flows
-        for report in reported(flow)
+        for path, _ in flows
+        for report in reported(path)
         for task in report.runs
         if not task.startswith("gha:") and not task.endswith(":upload")
     }
@@ -1227,7 +1262,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
         (
             "CONTRIBUTING.md local sweep ↔ the workflows it names",
             sorted(named),
-            sorted(flow["name"] for flow in flows)
+            sorted(flow["name"] for _, flow in flows)
         ),
         (
             "mise ci tasks ↔ the tasks its workflows run",
@@ -1305,20 +1340,20 @@ def tasks() -> int:
     return failed
 
 
-def templates() -> list[tuple[Path, dict]]:
-    """
-    Returns every issue template beside its parsed form, which for a
-    Markdown template is its frontmatter.
-    """
-    return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
-
-
 @cache
 def tasks_listed() -> dict[str, dict]:
     """
     Returns every task `mise tasks ls --json` lists, keyed by name.
     """
     return {task["name"]: task for task in mise_json("tasks", "ls")}
+
+
+def templates() -> list[tuple[Path, dict]]:
+    """
+    Returns every issue template beside its parsed form, which for a
+    Markdown template is its frontmatter.
+    """
+    return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
 
 
 def toml(path: str | Path) -> dict:
@@ -1429,39 +1464,6 @@ def yaml(path: str | Path) -> dict:
     it read as a string, which for a Markdown file is its frontmatter.
     """
     return next(load_all(read(path), Loader=BaseLoader))
-
-
-def reported(flow: dict) -> list[Report]:
-    """
-    Returns a `Report` for each check the jobs of `flow` report. A row
-    covers a planned matrix's checks together, by naming one of them or the
-    job name's text outside its matrix expressions.
-    """
-    reports = []
-    for key, job in flow["jobs"].items():
-        template = job.get("name", key)
-        matrix   = job.get("strategy", {}).get("matrix")
-        if isinstance(matrix, str):
-            entries  = planned(flow, matrix)
-            together = {filled(entry, template) for entry in [{}, *entries]} - {""}
-        else:
-            entries  = matrix["include"] if matrix else [{}]
-            together = set()
-        for entry in entries:
-            name   = filled(entry, template)
-            script = "\n".join(
-                filled(entry, step.get("run", "")) for step in job.get("steps", [])
-            )
-            reports.append(
-                Report(
-                    covers = together or {name},
-                    matrix = matrix is not None,
-                    name   = name,
-                    runs   = invoked(script),
-                    script = script
-                )
-            )
-    return reports
 
 
 if __name__ == "__main__":

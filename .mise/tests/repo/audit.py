@@ -158,6 +158,8 @@ PINS = {
 
     ".github/workflows/ci.yml": (
         "name : 🪻 CI\n"
+        "on:\n"
+        "  pull_request:\n"
         "jobs:\n"
         "  check:\n"
         "    steps:\n"
@@ -180,6 +182,8 @@ PINS = {
 
     ".github/workflows/deploy.yml": (
         "name : 🪻 Deploy\n"
+        "on:\n"
+        "  pull_request:\n"
         "jobs:\n"
         "  check:\n"
         "    steps:\n"
