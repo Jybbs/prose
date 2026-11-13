@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
@@ -12,10 +14,19 @@ const BUNDLE = {
 
 const FIT = '.vitepress/tests/pages/fit.test.ts'
 
+const ROOT = paths.repoRoot(import.meta.url)
+
+const READ_FROM_DISK = [
+  'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**', 'crate/tests/fixtures/**',
+  'site/**/*.{css,md}', 'site/.vitepress/tests/**/fixtures/**', 'site/{bun.lock,patches/**}',
+  'site/public/**'
+].map(glob => path.join(ROOT, glob))
+
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
   test     : {
     environment         : 'node',
+    forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...READ_FROM_DISK],
     globals             : true,
     pool                : 'threads',
     reporters           : process.env.GITHUB_ACTIONS
