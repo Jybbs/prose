@@ -4,16 +4,27 @@
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-print_block() {
-  printf '\n%s output\n\n' "$1"
-  cat "$logs/$1.log"
+print_blocks() {
+  local target
+  for target in "${PROOF_TARGETS[@]}"; do
+    printf '\n%s output\n\n' "$target"
+    cat "$logs/$target.log"
+  done
 }
 
 run_binary() {
-  local started=$SECONDS status=0
-  cargo test --locked --package prose --test="$1" > "$logs/$1.log" 2>&1 || status=$?
+  local PROOF_TARGETS=("$1") started=$SECONDS status=0
+  split_proof cargo test > "$logs/$1.log" 2>&1 || status=$?
   printf '%s exited %s after %ss\n' "$1" "$status" "$((SECONDS - started))"
   return "$status"
+}
+
+stop() {
+  trap '' INT TERM
+  kill -"$1" -- "${pids[@]/#/-}" 2> /dev/null || true
+  wait
+  print_blocks
+  exit "$2"
 }
 
 split_proof cargo test --no-run
@@ -23,17 +34,18 @@ trap 'rm -rf "$logs"' EXIT
 
 printf 'Running %s side by side\n' "${PROOF_TARGETS[*]}"
 pids=()
+set -m
 for target in "${PROOF_TARGETS[@]}"; do
   run_binary "$target" &
   pids+=("$!")
 done
+trap 'stop INT 130' INT
+trap 'stop TERM 143' TERM
 
 failed=0
 for pid in "${pids[@]}"; do
   wait "$pid" || failed=1
 done
 
-for target in "${PROOF_TARGETS[@]}"; do
-  print_block "$target"
-done
+print_blocks
 exit "$failed"
