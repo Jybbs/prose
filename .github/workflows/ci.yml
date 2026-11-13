@@ -54,8 +54,11 @@ jobs:
           - command    : mise run rust:suite
             name       : 🪚 Suite
             shared-key : *debug-key
-          - command    : mise run rust:proof
-            name       : 🥃 Proof
+          - command    : mise run rust:proof corpus
+            name       : 🥃 Proof · Corpus
+            shared-key : *debug-key
+          - command    : mise run rust:proof settle
+            name       : 🥃 Proof · Settle
             shared-key : *debug-key
           - command    : mise run py:lint
             name       : 🪻 Prose
