@@ -238,6 +238,7 @@ fn check_trees_files_a_run_in_the_sweep_that_reports_it(
 #[rstest]
 #[case::a_kept_tree_under_a_preserving_rule("align-equals", "x=1\n", "x = 1\n", 0, None)]
 #[case::a_changed_tree_under_a_preserving_rule("align-equals", "x = 1\n", "x = 2\n", 1, None)]
+#[case::a_shorter_body_under_a_preserving_rule("align-equals", "x\ny\n", "x\n", 1, None)]
 #[case::a_kept_tree_under_a_changing_rule("reflow-calls", "x=1\n", "x = 1\n", 0, Some(false))]
 #[case::a_changed_tree_under_a_changing_rule("reflow-calls", "x = 1\n", "x = 2\n", 0, Some(true))]
 fn check_trees_holds_each_run_to_its_rules_declaration(
