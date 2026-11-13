@@ -51,7 +51,6 @@ site      = [
 wasm      = [
   ".mise/config.toml",
   ".mise/lib/wasm.bash",
-  ".mise/tasks/wasm/build",
   ".mise/tasks/wasm/pack",
   "Cargo.lock",
   "Cargo.toml",
