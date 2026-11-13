@@ -10,20 +10,25 @@ from pytest     import mark, param
 from subprocess import run
 
 ROOT     = Path(__file__).resolve().parents[3]
-STAND_IN = '#!/bin/sh\necho "$@"\n'
+STAND_IN = "#!/bin/sh\nprintf '%s\\n' \"$@\"\n"
 
 
 @mark.parametrize(
     ("binaries", "tests"),
     [
-        param([], "--test=corpus --test=settle", id = "every-binary"),
-        param(["corpus"], "--test=corpus", id = "corpus-alone"),
-        param(["settle"], "--test=settle", id = "settle-alone")
+        param([], ["--test=corpus", "--test=settle"], id = "every-binary"),
+        param(
+            ["corpus", "settle"],
+            ["--test=corpus", "--test=settle"],
+            id = "both-named"
+        ),
+        param(["corpus"], ["--test=corpus"], id = "corpus-alone"),
+        param(["settle"], ["--test=settle"], id = "settle-alone")
     ]
 )
 def test_proof_runs_the_binaries_it_is_given(
     binaries : list[str],
-    tests    : str,
+    tests    : list[str],
     tmp_path : Path
 ):
     """
@@ -45,4 +50,7 @@ def test_proof_runs_the_binaries_it_is_given(
         text = True
     )
 
-    assert finished.stdout == f"test --locked --package prose {tests}\n"
+    assert finished.stdout.splitlines() == [
+        "test", "--locked", "--package", "prose",
+        *tests
+    ]

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Format the fixture tree at every line length through the proof binaries named, or through every one when none is, then check that a second pass changes nothing and that every reported fix was applied"
+#MISE description = "Sweep the fixture tree at every line length through the proof binaries named, or through every one when none is, for a rewrite a second pass would change, a reported fix the output never took, and a rule or ordered rule pair that does not settle alone"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 

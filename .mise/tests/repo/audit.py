@@ -81,6 +81,14 @@ DRIFTS   = {
         (".github/workflows/warm.yml", "save@2222", "save@2223")
     ],
 
+    "each 🥃 Proof row's name ↔ the rust:proof binaries it runs": [
+        (
+            ".github/workflows/ci.yml", "name    : 🥃 Proof · Settle",
+            "name    : 🥃 Settle"
+        ),
+        (".github/workflows/ci.yml", "rust:proof corpus", "rust:proof settle")
+    ],
+
     "lock:check sources ↔ lock:sync sources and outputs": [
         ("lock:check", "Cargo.lock", "uv.lock"),
         ("lock:sync", ".mise/config.toml", ".mise/other.toml"),
@@ -149,9 +157,18 @@ PINS = {
         "      - uses : actions/checkout@1111\n"
         "      - uses : &cache-save actions/cache/save@2222\n"
         "      - run  : mise run rust:suite\n"
-        "      - run  : mise run rust:proof corpus\n"
-        "      - run  : mise run rust:proof settle\n"
         "      - run  : mise run gha:brief ci\n"
+        "  proof:\n"
+        "    name : ${{ matrix.name }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        include:\n"
+        "          - command : mise run rust:proof corpus\n"
+        "            name    : 🥃 Proof · Corpus\n"
+        "          - command : mise run rust:proof settle\n"
+        "            name    : 🥃 Proof · Settle\n"
+        "    steps:\n"
+        "      - run : ${{ matrix.command }}\n"
     ),
 
     ".github/workflows/deploy.yml": (
@@ -791,6 +808,22 @@ def test_parity_pairs_each_have_a_drift_row(
     assert {label for label, _, _ in audit.parity_pairs()} == set(DRIFTS)
 
 
+def test_proof_rows_read_every_binary_a_row_names(
+    audit   : ModuleType,
+    drifted : Callable[[str, str, str], None]
+):
+    """
+    Pins that a row running `rust:proof` over several binaries reads as
+    naming each of them, beside the rows naming one.
+    """
+    drifted(".github/workflows/ci.yml", "rust:proof corpus", "rust:proof corpus settle")
+
+    assert audit.proof_rows() == [
+        ("🥃 Proof · Corpus", ["corpus", "settle"]),
+        ("🥃 Proof · Settle", ["settle"])
+    ]
+
+
 def test_swept_follows_dependencies_transitively(
     audit   : ModuleType,
     drifted : Callable[[str, str, str], None]
@@ -852,6 +885,13 @@ def test_swept_follows_dependencies_transitively(
             "pdm==",
             "no build-system requirement named 'maturin'",
             id = "absent-build-requirement"
+        ),
+        param(
+            ".mise/lib/workspace.bash",
+            "PROOF_TARGETS=",
+            "PROOF_BINARIES=",
+            ".mise/lib/workspace.bash declares no PROOF_TARGETS",
+            id = "proof-targets"
         ),
         param(
             "Cargo.lock",

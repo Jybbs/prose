@@ -206,7 +206,7 @@ def checks() -> int:
         for flow, check in product(workflows, checked):
             reports = [
                 (name, runs)
-                for name, covers, runs, _ in carried.get(flow, [])
+                for name, covers, runs, _, _ in carried.get(flow, [])
                 if check in covers
             ]
             if flow in carried and not reports:
@@ -240,7 +240,7 @@ def checks() -> int:
                 {
                     f"{name} in {flow}"
                     for flow, reports in carried.items()
-                    for name, _, _, matrix in reports
+                    for name, _, _, matrix, _ in reports
                     if matrix and (flow, name) not in named
                 },
                 "matrix checks no CONTRIBUTING.md row names"
@@ -727,6 +727,7 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
     cargo   = toml("Cargo.toml")
     package = json_loads(read("site/package.json"))
     pins    = mise_pins(toml(".mise/config.toml"))
+    proofs  = proof_rows()
     rust    = cargo["workspace"]["package"]["rust-version"]
 
     return [
@@ -789,7 +790,15 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
                     pattern = r"(?m)^PROOF_TARGETS=\((.*)\)$"
                 ).split()
             ),
-            proof_binaries()
+            sorted(binary for _, binaries in proofs for binary in binaries)
+        ),
+        (
+            "each 🥃 Proof row's name ↔ the rust:proof binaries it runs",
+            [name for name, _ in proofs],
+            [
+                " · ".join(["🥃 Proof", *(binary.title() for binary in binaries)])
+                for _, binaries in proofs
+            ]
         ),
         *action_pins(),
         *member_pins(cargo),
@@ -921,16 +930,23 @@ def privileges() -> int:
     )
 
 
-def proof_binaries() -> list[str]:
+def proof_rows() -> list[tuple[str, list[str]]]:
     """
-    Returns every test binary a `mise run rust:proof` in a workflow names,
-    sorted.
+    Returns each check a workflow reports that runs `mise run rust:proof`
+    with test binaries named, beside those binaries.
     """
-    return sorted(
-        binary
-        for path, _ in workflows()
-        for binary in findall(r"\bmise run rust:proof[ \t]+(\w+)", read(path))
-    )
+    return [
+        (name, binaries)
+        for _, flow in workflows()
+        for name, _, _, _, script in reported(flow)
+        if (
+            binaries := [
+                binary
+                for named in findall(r"\bmise run rust:proof((?:[ \t]+\w+)+)", script)
+                for binary in named.split()
+            ]
+        )
+    ]
 
 
 def pull_request_workflows() -> list[tuple[Path, dict]]:
@@ -976,12 +992,13 @@ def repeated(values: list[str]) -> set[str]:
     return {value for value, count in Counter(values).items() if count > 1}
 
 
-def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
+def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool, str]]:
     """
-    Returns each check the jobs of `flow` report as its name, the names a
-    row may cover it by, the tasks its steps run, and whether a matrix fans
-    it out. A row covers a planned matrix's checks together, by naming one
-    of them or the job name's text outside its matrix expressions.
+    Returns each check the jobs of `flow` report as its name, the names
+    a row may cover it by, the tasks its steps run, whether a matrix fans
+    it out, and the script its steps run. A row covers a planned matrix's
+    checks together, by naming one of them or the job name's text outside
+    its matrix expressions.
     """
     reports = []
     for key, job in flow["jobs"].items():
@@ -994,13 +1011,13 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
             entries  = matrix["include"] if matrix else [{}]
             together = set()
         for entry in entries:
-            name = filled(entry, template)
-            runs = [
-                task
-                for step in job.get("steps", [])
-                for task in invoked(filled(entry, step.get("run", "")))
-            ]
-            reports.append((name, together or {name}, runs, matrix is not None))
+            name   = filled(entry, template)
+            script = "\n".join(
+                filled(entry, step.get("run", "")) for step in job.get("steps", [])
+            )
+            reports.append(
+                (name, together or {name}, invoked(script), matrix is not None, script)
+            )
     return reports
 
 
@@ -1211,7 +1228,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
     ran      = {
         task
         for flow in flows
-        for _, _, runs, _ in reported(flow)
+        for _, _, runs, _, _ in reported(flow)
         for task in runs
         if not task.startswith("gha:") and not task.endswith(":upload")
     }
