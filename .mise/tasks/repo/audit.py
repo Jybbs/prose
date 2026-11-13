@@ -67,6 +67,7 @@ annotation.
 """
 
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from functools   import cache
 from itertools   import chain, product
 from json        import loads as json_loads
@@ -89,6 +90,21 @@ READ             : set[str]       = set()
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
 USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
 UV_SHEBANG   = r"^#!.*\buv run --script\b"
+
+
+@dataclass(frozen=True)
+class Report:
+    """
+    Holds one check a workflow's jobs report, the names a row may cover it
+    by, whether a matrix fans it out, its name, the tasks its steps run, and
+    the script its steps run.
+    """
+
+    covers : set[str]
+    matrix : bool
+    name   : str
+    runs   : list[str]
+    script : str
 
 
 def action_pin(action: str, key: str) -> str:
@@ -193,7 +209,7 @@ def checks() -> int:
         for alias in [name, *task["aliases"]]
     }
     reaches = {name: {name, *dependencies(name)} for name in listed}
-    carried = {flow["name"]: reported(flow) for _, flow in pull_request_workflows()}
+    carried = {flow["name"]: reported(path) for path, flow in pull_request_workflows()}
 
     blank, unknown, absent, unlisted, strays, named = [set() for _ in range(6)]
     for row, flows, local, _ in table("Row"):
@@ -205,17 +221,17 @@ def checks() -> int:
         unlisted |= claimed - listed.keys()
         for flow, check in product(workflows, checked):
             reports = [
-                (name, runs)
-                for name, covers, runs, _ in carried.get(flow, [])
-                if check in covers
+                report
+                for report in carried.get(flow, [])
+                if check in report.covers
             ]
             if flow in carried and not reports:
                 absent.add(f"{check} in {flow}")
-            for name, runs in reports:
-                named.add((flow, name))
+            for report in reports:
+                named.add((flow, report.name))
                 strays |= {
-                    f"{name} in {flow} runs {task}"
-                    for task in (aliases.get(each, each) for each in runs)
+                    f"{report.name} in {flow} runs {task}"
+                    for task in (aliases.get(each, each) for each in report.runs)
                     if not task.startswith("gha:")
                     if claimed.isdisjoint(reaches.get(task, {task}))
                 }
@@ -238,10 +254,10 @@ def checks() -> int:
             (strays,   "checks running a task their CONTRIBUTING.md row does not name"),
             (
                 {
-                    f"{name} in {flow}"
+                    f"{report.name} in {flow}"
                     for flow, reports in carried.items()
-                    for name, _, _, matrix in reports
-                    if matrix and (flow, name) not in named
+                    for report in reports
+                    if report.matrix and (flow, report.name) not in named
                 },
                 "matrix checks no CONTRIBUTING.md row names"
             )
@@ -727,6 +743,7 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
     cargo   = toml("Cargo.toml")
     package = json_loads(read("site/package.json"))
     pins    = mise_pins(toml(".mise/config.toml"))
+    proofs  = proof_rows()
     rust    = cargo["workspace"]["package"]["rust-version"]
 
     return [
@@ -779,6 +796,25 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
             "wasm:pack sources ↔ restore-wasm hashFiles paths",
             task_paths("wasm:pack", "sources"),
             sorted(hashed_paths("restore-wasm"))
+        ),
+        (
+            "PROOF_TARGETS ↔ the rust:proof binaries the workflows name",
+            sorted(
+                matched(
+                    message = ".mise/lib/workspace.bash declares no PROOF_TARGETS",
+                    path    = ".mise/lib/workspace.bash",
+                    pattern = r"(?m)^PROOF_TARGETS=\((.*)\)$"
+                ).split()
+            ),
+            sorted(binary for _, binaries in proofs for binary in binaries)
+        ),
+        (
+            "each 🥃 Proof row's name ↔ the rust:proof binaries it runs",
+            [name for name, _ in proofs],
+            [
+                " · ".join(["🥃 Proof", *(binary.title() for binary in binaries)])
+                for _, binaries in proofs
+            ]
         ),
         *action_pins(),
         *member_pins(cargo),
@@ -910,6 +946,28 @@ def privileges() -> int:
     )
 
 
+def proof_rows() -> list[tuple[str, list[str]]]:
+    """
+    Returns each check of a pull-request workflow whose steps name test
+    binaries to `mise run rust:proof`, beside those binaries.
+    """
+    return [
+        (report.name, binaries)
+        for path, _ in pull_request_workflows()
+        for report in reported(path)
+        if (
+            binaries := [
+                binary
+                for named in findall(
+                    r"\bmise run rust:proof((?:[ \t]+\w+)+)",
+                    report.script
+                )
+                for binary in named.split()
+            ]
+        )
+    ]
+
+
 def pull_request_workflows() -> list[tuple[Path, dict]]:
     """
     Returns every workflow a `pull_request` event triggers beside its parsed
@@ -953,13 +1011,14 @@ def repeated(values: list[str]) -> set[str]:
     return {value for value, count in Counter(values).items() if count > 1}
 
 
-def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
+@cache
+def reported(path: Path) -> list[Report]:
     """
-    Returns each check the jobs of `flow` report as its name, the names a
-    row may cover it by, the tasks its steps run, and whether a matrix fans
-    it out. A row covers a planned matrix's checks together, by naming one
+    Returns a `Report` for each check the jobs of the workflow at `path`
+    report. A row covers a planned matrix's checks together, by naming one
     of them or the job name's text outside its matrix expressions.
     """
+    flow    = yaml(path)
     reports = []
     for key, job in flow["jobs"].items():
         template = job.get("name", key)
@@ -971,13 +1030,19 @@ def reported(flow: dict) -> list[tuple[str, set[str], list[str], bool]]:
             entries  = matrix["include"] if matrix else [{}]
             together = set()
         for entry in entries:
-            name = filled(entry, template)
-            runs = [
-                task
-                for step in job.get("steps", [])
-                for task in invoked(filled(entry, step.get("run", "")))
-            ]
-            reports.append((name, together or {name}, runs, matrix is not None))
+            name   = filled(entry, template)
+            script = "\n".join(
+                filled(entry, step.get("run", "")) for step in job.get("steps", [])
+            )
+            reports.append(
+                Report(
+                    covers = together or {name},
+                    matrix = matrix is not None,
+                    name   = name,
+                    runs   = invoked(script),
+                    script = script
+                )
+            )
     return reports
 
 
@@ -1177,7 +1242,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
             )
         )
     )
-    flows = [flow for _, flow in workflows() if flow.get("name") in named]
+    flows = [(path, flow) for path, flow in workflows() if flow.get("name") in named]
     sweep = [
         task
         for step in toml(".mise/tasks/repo/ci.toml")["repo:ci"]["run"]
@@ -1187,9 +1252,9 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
     uploaded = dependencies("site:upload")
     ran      = {
         task
-        for flow in flows
-        for _, _, runs, _ in reported(flow)
-        for task in runs
+        for path, _ in flows
+        for report in reported(path)
+        for task in report.runs
         if not task.startswith("gha:") and not task.endswith(":upload")
     }
 
@@ -1197,7 +1262,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
         (
             "CONTRIBUTING.md local sweep ↔ the workflows it names",
             sorted(named),
-            sorted(flow["name"] for flow in flows)
+            sorted(flow["name"] for _, flow in flows)
         ),
         (
             "mise ci tasks ↔ the tasks its workflows run",

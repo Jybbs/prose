@@ -61,6 +61,18 @@ DRIFTS   = {
         (".mise/config.toml", "1.99.1", "1.98.1")
     ],
 
+    "PROOF_TARGETS ↔ the rust:proof binaries the workflows name": [
+        (".mise/lib/workspace.bash", " settle)", ")"),
+        (".github/workflows/ci.yml", "rust:proof settle", "rust:proof other"),
+        (
+            ".github/workflows/ci.yml",
+            "          - command : mise run rust:proof settle\n",
+            "          - command : mise run rust:proof corpus\n"
+            "            name    : 🥃 Proof · Corpus\n"
+            "          - command : mise run rust:proof settle\n"
+        )
+    ],
+
     "README.md Python badge ↔ crate/pyproject.toml requires-python": [
         (".github/README.md", "3.10+", "3.11+"),
         ("crate/pyproject.toml", ">=3.10", ">=3.11")
@@ -74,6 +86,14 @@ DRIFTS   = {
     "actions/cache/save in .github/workflows/ci.yml ↔ .github/workflows/warm.yml": [
         (".github/workflows/ci.yml", "save@2222", "save@2223"),
         (".github/workflows/warm.yml", "save@2222", "save@2223")
+    ],
+
+    "each 🥃 Proof row's name ↔ the rust:proof binaries it runs": [
+        (
+            ".github/workflows/ci.yml", "name    : 🥃 Proof · Settle",
+            "name    : 🥃 Settle"
+        ),
+        (".github/workflows/ci.yml", "rust:proof corpus", "rust:proof settle")
     ],
 
     "lock:check sources ↔ lock:sync sources and outputs": [
@@ -138,6 +158,8 @@ PINS = {
 
     ".github/workflows/ci.yml": (
         "name : 🪻 CI\n"
+        "on:\n"
+        "  pull_request:\n"
         "jobs:\n"
         "  check:\n"
         "    steps:\n"
@@ -145,10 +167,23 @@ PINS = {
         "      - uses : &cache-save actions/cache/save@2222\n"
         "      - run  : mise run rust:suite\n"
         "      - run  : mise run gha:brief ci\n"
+        "  proof:\n"
+        "    name : ${{ matrix.name }}\n"
+        "    strategy:\n"
+        "      matrix:\n"
+        "        include:\n"
+        "          - command : mise run rust:proof corpus\n"
+        "            name    : 🥃 Proof · Corpus\n"
+        "          - command : mise run rust:proof settle\n"
+        "            name    : 🥃 Proof · Settle\n"
+        "    steps:\n"
+        "      - run : ${{ matrix.command }}\n"
     ),
 
     ".github/workflows/deploy.yml": (
         "name : 🪻 Deploy\n"
+        "on:\n"
+        "  pull_request:\n"
         "jobs:\n"
         "  check:\n"
         "    steps:\n"
@@ -177,9 +212,12 @@ PINS = {
         'rust = { version = "1.99.1", profile = "minimal" }\n'
     ),
 
+    ".mise/lib/workspace.bash": "PROOF_TARGETS=(corpus settle)\n",
+
     ".mise/tasks/repo/ci.toml": (
         '["repo:ci"]\n'
-        'run = ["mise doctor project", { tasks = ["site:coverage", "rust:suite"] }, '
+        'run = ["mise doctor project", '
+        '{ tasks = ["site:coverage", "rust:proof", "rust:suite"] }, '
         '{ task = "rust:wheel" }]\n'
     ),
 
@@ -781,6 +819,44 @@ def test_parity_pairs_each_have_a_drift_row(
     assert {label for label, _, _ in audit.parity_pairs()} == set(DRIFTS)
 
 
+@mark.parametrize(
+    ("pin", "stray", "rows"),
+    [
+        param(
+            "rust:proof corpus",
+            "rust:proof corpus settle",
+            [
+                ("🥃 Proof · Corpus", ["corpus", "settle"]),
+                ("🥃 Proof · Settle", ["settle"])
+            ],
+            id = "several-binaries"
+        ),
+        param(
+            "      - run : ${{ matrix.command }}\n",
+            "      - run : ${{ matrix.command }}\n"
+            "      - run : mise run gha:brief ci\n",
+            [("🥃 Proof · Corpus", ["corpus"]), ("🥃 Proof · Settle", ["settle"])],
+            id = "step-after"
+        )
+    ]
+)
+def test_proof_rows_read_every_binary_a_row_names(
+    audit   : ModuleType,
+    drifted : Callable[[str, str, str], None],
+    pin     : str,
+    rows    : list[tuple[str, list[str]]],
+    stray   : str
+):
+    """
+    Pins that a row running `rust:proof` over several binaries reads as
+    naming each of them, and that a step after the one running it adds no
+    binary.
+    """
+    drifted(".github/workflows/ci.yml", pin, stray)
+
+    assert audit.proof_rows() == rows
+
+
 def test_swept_follows_dependencies_transitively(
     audit   : ModuleType,
     drifted : Callable[[str, str, str], None]
@@ -842,6 +918,13 @@ def test_swept_follows_dependencies_transitively(
             "pdm==",
             "no build-system requirement named 'maturin'",
             id = "absent-build-requirement"
+        ),
+        param(
+            ".mise/lib/workspace.bash",
+            "PROOF_TARGETS=",
+            "PROOF_BINARIES=",
+            ".mise/lib/workspace.bash declares no PROOF_TARGETS",
+            id = "proof-targets"
         ),
         param(
             "Cargo.lock",
