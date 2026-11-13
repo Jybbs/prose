@@ -32,6 +32,11 @@ them fails.
                every file the wasm module is built from, and the
                `lock:sync` sources cover every project config file
                declaring a tool.
+    patterns   Every `sources` pattern a task declares and every `paths`
+               entry a workflow trigger filters on selects a tracked file.
+    stamps     Every cache restore bringing back a task's `outputs` is
+               followed by a step touching the restored files on a hit, so
+               mise reads them as current.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
@@ -814,6 +819,43 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     return pairs
 
 
+def patterns() -> int:
+    """
+    Reports every `sources` pattern a task declares and every `paths` entry
+    a workflow trigger filters on that selects no tracked file, which is
+    what a retired file leaves behind in each list still naming it. A `!`
+    entry excludes files rather than selecting them, so it is left out.
+    """
+    files = tracked()
+    return flagged(
+        findings = [
+            (
+                {
+                    f"{name}: {entry}"
+                    for name, task in tasks_listed().items()
+                    if isinstance(task.get("sources"), list)
+                    for entry in task_paths(name, "sources")
+                    if not entry.startswith("!")
+                    if not tracked(entry)
+                },
+                "task sources selecting no tracked file"
+            ),
+            (
+                {
+                    f"{path.name} {event}: {entry}"
+                    for path, flow in workflows()
+                    for event, trigger in flow["on"].items()
+                    if isinstance(trigger, dict)
+                    for entry in trigger.get("paths", [])
+                    if not entry.startswith("!")
+                    if not any(filtered(file, [entry]) for file in files)
+                },
+                "workflow paths selecting no tracked file"
+            )
+        ]
+    )
+
+
 def planned(flow: dict, matrix: str) -> list[dict]:
     """
     Returns the entries of the matrix the `matrix` expression reads off
@@ -1035,6 +1077,57 @@ def shadowed(tool: str) -> bool:
         text           = True
     ).stdout.strip()
     return Path(printed).resolve() != Path(".mise/bin", tool).resolve()
+
+
+def stamps() -> int:
+    """
+    Reports every `actions/cache/restore` step bringing back a task's
+    `outputs` that no later step in its list touches under that restore's
+    `cache-hit`, which leaves mise reading the restored files as older than
+    the checkout and running the task again.
+    """
+    outputs = [
+        rooted(task["dir"], entry)
+        for task in tasks_listed().values()
+        if isinstance(task.get("outputs"), list)
+        for entry in task["outputs"]
+    ]
+    lists = [
+        *(
+            (path, yaml(path)["runs"].get("steps", []))
+            for path in sorted(Path(".github/actions").glob("*/action.y*ml"))
+        ),
+        *(
+            (path, job.get("steps", []))
+            for path, flow in workflows()
+            for job in flow["jobs"].values()
+        )
+    ]
+    unstamped = set()
+    for path, steps in lists:
+        for index, step in enumerate(steps):
+            if step.get("uses", "").partition("@")[0] != "actions/cache/restore":
+                continue
+            hit = f"steps.{step.get('id')}.outputs.cache-hit == 'true'"
+            for restored in (
+                step.get("with", {})
+                    .get("path", "")
+                    .split()
+            ):
+                held     = any(output.startswith(f"{restored}/") for output in outputs)
+                stamping = any(
+                    hit          in later.get("if", "")
+                    and "touch"  in later.get("run", "")
+                    and restored in later.get("run", "")
+                    for later in steps[index + 1:]
+                )
+                if held and not stamping:
+                    unstamped.add(f"{path}: {restored}")
+    return flagged(
+        findings = [
+            (unstamped, "cache restores leaving task outputs older than the checkout")
+        ]
+    )
 
 
 def suffixes() -> int:
@@ -1317,6 +1410,8 @@ if __name__ == "__main__":
         | manifests()
         | privileges()
         | triggers()
+        | patterns()
+        | stamps()
         | gates()
         | checks()
         | tasks()
