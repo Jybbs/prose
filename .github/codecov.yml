@@ -1,6 +1,6 @@
 comment: false
 
-ignore: [corpus/src, wasm/src]
+ignore: [corpus/src, harness/src, wasm/src]
 
 coverage:
   precision : 2

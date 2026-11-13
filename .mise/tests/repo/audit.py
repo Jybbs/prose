@@ -1,9 +1,11 @@
 """
 Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
-it finds a filter leaving out across a task and the tasks it depends on, and
-the trigger it reports for each. Also pins the label `parity` reports a pin
-under once either side of its pair drifts, and the annotation a `fail` in a
-helper of `parity` stops the audit on.
+it finds a filter leaving out across a task and the tasks it depends on,
+and the trigger it reports for each. Also pins the label `parity` reports
+a pin under once either side of its pair drifts, the annotation a `fail` in
+a helper of `parity` stops the audit on, the task source and workflow path
+entries `patterns` reports for selecting no tracked file, and the cache
+restores `stamps` reports for leaving a task's outputs unstamped.
 """
 
 from collections.abc   import Callable
@@ -15,6 +17,7 @@ from subprocess        import run
 from types             import ModuleType
 
 COVERING = ["Cargo.lock", "site/**", "wasm/**"]
+LIVE     = ["{root}/Cargo.lock", "{root}/wasm/**"]
 OMITTING = ["Cargo.lock", "site/**"]
 WHEEL    = ".github/actions/build-wheel/action.yml"
 DRIFTS   = {
@@ -213,8 +216,13 @@ PINS = {
         }
     )
 }
-REPORT = "::error::{}.yml {} paths omit sources {} reads: ['wasm/**']\n"
-TASKS  = [
+REPORT  = "::error::{}.yml {} paths omit sources {} reads: ['wasm/**']\n"
+RESTORE = ".github/actions/restore-wasm/action.yml"
+STAMP   = {
+    "if"  : "${{ steps.entry.outputs.cache-hit == 'true' }}",
+    "run" : "find site/public/wasm -type f -exec touch {} +"
+}
+TASKS = [
     {
         "dir"     : "{root}",
         "name"    : "lock:check",
@@ -278,6 +286,10 @@ TREE = {
     "site/lib/a.ts"    : "",
     "wasm/lib.rs"      : ""
 }
+UNSTAMPED = (
+    "::error::cache restores leaving task outputs older than the checkout: "
+    "['{}: site/public/wasm']\n"
+)
 
 
 @fixture
@@ -316,30 +328,52 @@ def drifted(
 
 
 @fixture
-def tree(
+def repository(
     fp          : FakeProcess,
     monkeypatch : MonkeyPatch,
     workdir     : Callable[[dict[str, str]], Path]
+) -> Callable[[dict[str, str], list[dict]], Path]:
+    """
+    Returns a function making the current directory a git repository
+    tracking the files it is given, with `mise` faked to list the tasks it
+    is given and every `git` call run as given.
+    """
+    for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
+        monkeypatch.delenv(variable, raising=False)
+    fp.keep_last_process(True)
+    fp.pass_command(["git", fp.any()])
+
+    def write(files: dict[str, str], tasks: list[dict]) -> Path:
+        """
+        Writes and tracks `files`, registers `tasks` as the listing with
+        each `{root}` replaced by the tree, and returns the tree.
+        """
+        root = workdir(files)
+        run(["git", "init", "-q"], check=True)
+        run(["git", "add", "."], check=True)
+        fp.register(
+            ["mise", "tasks", "ls", "--json"],
+            stdout = dumps(tasks).replace("{root}", str(root))
+        )
+        return root
+
+    return write
+
+
+@fixture
+def tree(
+    fp         : FakeProcess,
+    repository : Callable[[dict[str, str], list[dict]], Path]
 ):
     """
     Makes the current directory a git repository tracking `TREE`, with
     `mise` faked to list `TASKS` and one config file declaring a tool, and
     every `git` call run as given.
     """
-    for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
-        monkeypatch.delenv(variable, raising=False)
-    fp.keep_last_process(True)
-    fp.pass_command(["git", fp.any()])
-    root = workdir(TREE)
-    run(["git", "init", "-q"], check=True)
-    run(["git", "add", "."], check=True)
+    root = repository(TREE, TASKS)
     fp.register(
         ["mise", "config", "ls", "--json"],
         stdout = dumps([{"path": f"{root}/.mise/config.toml", "tools": ["uv"]}])
-    )
-    fp.register(
-        ["mise", "tasks", "ls", "--json"],
-        stdout = dumps(TASKS).replace("{root}", str(root))
     )
 
 
@@ -488,6 +522,137 @@ def test_triggers_reports_each_trigger_omitting_a_source(
     )
 
     assert audit.triggers() == bool(reported)
+    assert capsys.readouterr().out == reported
+
+
+@mark.parametrize(
+    ("paths", "sources", "reported"),
+    [
+        param(COVERING, LIVE, "", id="covered"),
+        param(
+            COVERING,
+            [*LIVE, "{root}/wasm/build"],
+            "::error::task sources selecting no tracked file: "
+            "['wasm:pack: wasm/build']\n",
+            id = "task-source-retired"
+        ),
+        param(
+            [*COVERING, "wasm/build"],
+            LIVE,
+            "::error::workflow paths selecting no tracked file: "
+            "['module.yml push: wasm/build']\n",
+            id = "workflow-path-retired"
+        ),
+        param(
+            [*COVERING, "!wasm/target/**"],
+            [*LIVE, "!{root}/wasm/target/**"],
+            "",
+            id = "exclusions-skipped"
+        )
+    ]
+)
+def test_patterns_reports_each_entry_selecting_no_tracked_file(
+    audit      : ModuleType,
+    capsys     : CaptureFixture[str],
+    paths      : list[str],
+    reported   : str,
+    repository : Callable[[dict[str, str], list[dict]], Path],
+    sources    : list[str]
+):
+    """
+    Pins that a task source and a workflow path entry left naming a retired
+    file each fail the audit on an annotation naming the entry, whereas a
+    `!` entry, which excludes rather than selects, is not held to a file.
+    """
+    repository(
+        TREE | {
+            ".github/workflows/module.yml": dumps({"on": {"push": {"paths": paths}}})
+        },
+        [{
+            "dir"     : "{root}",
+            "name"    : "wasm:pack",
+            "sources" : sources,
+            "depends" : []
+        }]
+    )
+
+    assert audit.patterns() == bool(reported)
+    assert capsys.readouterr().out == reported
+
+
+@mark.parametrize(
+    ("home", "path", "stamp", "reported"),
+    [
+        param(RESTORE, "site/public/wasm", [STAMP], "", id="stamped"),
+        param(
+            RESTORE,
+            "site/public/wasm",
+            [],
+            UNSTAMPED.format(RESTORE),
+            id = "stamp-absent"
+        ),
+        param(
+            RESTORE,
+            "site/public/wasm",
+            [STAMP | {"if": STAMP["if"].replace("==", "!=")}],
+            UNSTAMPED.format(RESTORE),
+            id = "stamp-on-a-miss"
+        ),
+        param(
+            RESTORE,
+            "site/public/wasm",
+            [STAMP | {"run": STAMP["run"].replace("wasm", "other")}],
+            UNSTAMPED.format(RESTORE),
+            id = "stamp-on-another-path"
+        ),
+        param(RESTORE, ".cache/og", [], "", id="no-task-output"),
+        param(
+            ".github/workflows/deploy.yml",
+            "site/public/wasm",
+            [],
+            UNSTAMPED.format(".github/workflows/deploy.yml"),
+            id = "workflow-job"
+        )
+    ]
+)
+def test_stamps_reports_each_restore_leaving_outputs_stale(
+    audit      : ModuleType,
+    capsys     : CaptureFixture[str],
+    home       : str,
+    path       : str,
+    reported   : str,
+    repository : Callable[[dict[str, str], list[dict]], Path],
+    stamp      : list[dict[str, str]]
+):
+    """
+    Pins that a cache restore bringing back a task's `outputs` fails the
+    audit unless a later step touches the restored path under that restore's
+    `cache-hit`, in a composite action and in a workflow job, whereas a
+    restore holding no task output needs no stamp.
+    """
+    steps = [
+        {"id": "entry", "uses": "actions/cache/restore@1111", "with": {"path": path}},
+        *stamp
+    ]
+    text = dumps(
+        {"runs": {"steps": steps}}
+        if home == RESTORE
+        else {"jobs": {"press": {"steps": steps}}, "on": {"push": {}}}
+    )
+    repository(
+        {home: text},
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.stamps() == bool(reported)
     assert capsys.readouterr().out == reported
 
 

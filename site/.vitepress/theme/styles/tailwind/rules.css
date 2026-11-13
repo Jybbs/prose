@@ -8,8 +8,6 @@
   --color-text-3-card-31                       : var(--prose-shade-text-3-card-31);
   --color-text-3-chip-31                       : var(--prose-shade-text-3-chip-31);
 
-  --columns-2-11rem                            : 2 var(--prose-width-11rem);
-
   --content-diamond                            : "◆";
 
   --ease-morph                                 : var(--prose-ease-morph);
@@ -19,6 +17,8 @@
   --grid-template-columns-280-1fr              : var(--prose-width-280) 1fr;
   --grid-template-columns-3rem-minmax-1fr      : var(--prose-size-3rem) minmax(0, 1fr);
   --grid-template-columns-max-1fr              : max-content minmax(0, 1fr);
+
+  --grid-template-rows-plate                   : repeat(var(--plate-rows), auto);
 
   --text-underline-offset-3                    : var(--prose-space-3);
 

@@ -4,5 +4,5 @@
 #MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
 #MISE dir         = "site"
 
-playwright install --only-shell chromium
+playwright install --only-shell --with-deps chromium webkit
 vitest run --project render "$@"

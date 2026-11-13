@@ -6,6 +6,7 @@
 #MISE   "Cargo.toml",
 #MISE   "corpus/**/*",
 #MISE   "crate/**/*",
+#MISE   "harness/**/*",
 #MISE   "site/**/*.md",
 #MISE   "wasm/**/*"
 #MISE ]

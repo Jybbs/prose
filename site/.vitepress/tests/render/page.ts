@@ -1,15 +1,23 @@
-import { converter }                         from 'culori'
-import { chromium, type Locator, type Page } from 'playwright'
-import { inject, test as base }              from 'vitest'
+import { converter }            from 'culori'
+import { chromium, webkit }     from 'playwright'
+import { inject, test as base } from 'vitest'
+
+import type { Browser, BrowserContext, BrowserContextOptions, Locator, Page } from 'playwright'
 
 import type { Scheme } from '../../lib/shared/palette'
 
 interface Visit {
+  engine? : Engine
+  motion? : NonNullable<BrowserContextOptions['reducedMotion']>
   scheme? : Scheme
   width?  : number
 }
 
+export const ENGINES = { chromium, webkit }
+
 export const PAGE_WIDTH = 1440
+
+export type Engine = keyof typeof ENGINES
 
 const COLOR = /\b(?:color|lab|lch|oklab|oklch|rgba?)\([^)]*\)/g
 
@@ -29,20 +37,33 @@ export async function pointAt(target: Locator): Promise<void> {
   await settle(target.page())
 }
 
-// Launches one browser per test file. Each `visit` opens its route in a new
-// context at the given color scheme and viewport width, and resolves once the
+// Launches each engine's browser once per test file, on the first visit that
+// opens a page in it. Each `visit` opens its route in a new context at the given engine,
+// motion preference, color scheme, and viewport width, and resolves once the
 // page's root has hydrated.
 export const renderTest = base
   // oxlint-disable-next-line no-empty-pattern -- vitest fixtures require object destructuring
-  .extend('browser', { scope: 'file' }, async ({}, { onCleanup }) => {
-    const browser = await chromium.launch()
-    onCleanup(() => browser.close())
-    return browser
+  .extend('browsers', { scope: 'file' }, ({}, { onCleanup }) => {
+    const launched = {} as Partial<Record<Engine, Promise<Browser>>>
+    onCleanup(async () => {
+      await Promise.all(Object.values(launched).map(async browser => (await browser).close()))
+    })
+    return (engine: Engine): Promise<Browser> => (launched[engine] ??= ENGINES[engine].launch())
   })
-  .extend('visit', ({ browser }, { onCleanup }) => {
-    onCleanup(async () => { await Promise.all(browser.contexts().map(context => context.close())) })
-    return async (route: string, { scheme = 'light', width = PAGE_WIDTH }: Visit = {}): Promise<Page> => {
-      const context = await browser.newContext({ colorScheme: scheme, viewport: { height: 900, width } })
+  .extend('visit', ({ browsers }, { onCleanup }) => {
+    const contexts = [] as BrowserContext[]
+    onCleanup(async () => { await Promise.all(contexts.map(context => context.close())) })
+    return async (
+      route: string,
+      { engine = 'chromium', motion = 'no-preference', scheme = 'light', width = PAGE_WIDTH }: Visit = {}
+    ): Promise<Page> => {
+      const browser = await browsers(engine)
+      const context = await browser.newContext({
+        colorScheme   : scheme,
+        reducedMotion : motion,
+        viewport      : { height: 900, width }
+      })
+      contexts.push(context)
       context.setDefaultTimeout(10_000)
       const page  = await context.newPage()
       const reply = await page.goto(new URL(route, inject('siteUrl')).href)

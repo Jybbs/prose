@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Run `clippy` across every target"
+#MISE description = "Run `clippy` across every target and over the build without the `native` feature"
 
 cargo clippy --all-targets --locked -- -D warnings
+cargo clippy --locked --no-default-features --package prose -- -D warnings

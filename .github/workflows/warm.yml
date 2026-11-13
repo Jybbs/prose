@@ -21,6 +21,7 @@ on:
       - Cargo.toml
       - corpus/Cargo.toml
       - crate/Cargo.toml
+      - harness/Cargo.toml
       - wasm/Cargo.toml
 
   workflow_dispatch:

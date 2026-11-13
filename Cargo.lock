@@ -1299,6 +1299,7 @@ dependencies = [
  "mimalloc",
  "postcard",
  "proptest",
+ "prose_harness",
  "rayon",
  "rstest",
  "ruff_diagnostics",
@@ -1344,6 +1345,23 @@ dependencies = [
  "serde",
  "serde_json",
  "tabled",
+]
+
+[[package]]
+name = "prose_harness"
+version = "0.0.0"
+dependencies = [
+ "fs-err",
+ "ignore",
+ "insta",
+ "itertools",
+ "prose",
+ "rayon",
+ "rstest",
+ "ruff_python_ast",
+ "serde",
+ "similar 3.2.1",
+ "toml",
 ]
 
 [[package]]

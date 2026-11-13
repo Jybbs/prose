@@ -12,7 +12,6 @@ on:
       - .mise/config.toml
       - .mise/mise.lock
       - .mise/lib/wasm.bash
-      - .mise/tasks/wasm/build
       - .mise/tasks/wasm/pack
       - Cargo.lock
       - Cargo.toml

@@ -12,22 +12,6 @@ use super::{Source, Target};
 use crate::primitives::slots::item_holding;
 
 impl Source {
-    /// Builds the concatenated source of a parsed notebook, attaching its
-    /// cell boundaries and each code cell's notebook position. The caller
-    /// keeps `notebook` to re-emit the document after formatting.
-    pub(crate) fn from_notebook(
-        notebook: &Notebook,
-        name: impl Into<Box<str>>,
-    ) -> Result<Self, ParseError> {
-        Self::build(
-            notebook.source_code().to_owned(),
-            name,
-            PySourceType::Ipynb,
-            notebook.cell_offsets().clone(),
-        )
-        .map(|source| source.numbered(notebook))
-    }
-
     /// Builds the concatenated source of a parsed notebook the way
     /// [`read`](Self::read) reads a module at `target`, attaching each
     /// code cell's notebook position.
@@ -44,17 +28,6 @@ impl Source {
             target,
         )
         .map(|source| source.numbered(notebook))
-    }
-
-    /// Returns this source carrying the notebook position of each of
-    /// `notebook`'s code cells.
-    fn numbered(mut self, notebook: &Notebook) -> Self {
-        self.cell_numbers = notebook
-            .index()
-            .iter()
-            .map(|cell| cell.cell_index())
-            .collect();
-        self
     }
 
     /// Returns the notebook cell holding `offset` short of the synthetic
@@ -126,6 +99,17 @@ impl Source {
     /// one cell boundary. Always `false` for an ordinary module.
     pub(crate) fn is_notebook(&self) -> bool {
         !self.cell_offsets.is_empty()
+    }
+
+    /// Returns this source carrying the notebook position of each of
+    /// `notebook`'s code cells.
+    pub(super) fn numbered(mut self, notebook: &Notebook) -> Self {
+        self.cell_numbers = notebook
+            .index()
+            .iter()
+            .map(|cell| cell.cell_index())
+            .collect();
+        self
     }
 
     /// Recuts `offsets` onto the statement boundaries `body` and `text`
