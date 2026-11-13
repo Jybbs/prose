@@ -187,3 +187,20 @@ fn emitted_runs(emitter: &dyn Emitter, runs: &[Run<'_>], summary: &EmitterSummar
     emitter.emit(&mut buf, runs, summary).expect("emits");
     buf
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::module(None, "unused import")]
+    #[case::notebook(Some(OneIndexed::from_zero_indexed(2)), "cell 3: unused import")]
+    fn cell_message_prefixes_a_notebook_cell_number(
+        #[case] cell: Option<OneIndexed>,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(cell_message("unused import", cell), expected);
+    }
+}

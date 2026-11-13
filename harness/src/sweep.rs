@@ -1,4 +1,4 @@
-//! The corpus-sweep surface the settle and subset probes share.
+//! The corpus-sweep surface the settle, subset, and import probes share.
 
 use std::{
     cmp::Reverse,
@@ -87,12 +87,12 @@ impl Drop for Slot {
     }
 }
 
-/// The `.py` files a sweep reads, under the directory [`CORPUS`] names or
+/// The Python sources a sweep reads, under the directory [`CORPUS`] names or
 /// under `fixtures` where it is unset, with the runaway watchdog opened
 /// and an empty corpus failing the sweep outright.
 pub fn corpus(fixtures: &Path) -> Vec<PathBuf> {
     let files = walked(fixtures);
-    assert!(!files.is_empty(), "the corpus holds no `.py` files");
+    assert!(!files.is_empty(), "the corpus holds no Python sources");
     watch_for_a_runaway();
     files
 }

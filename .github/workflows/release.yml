@@ -16,8 +16,11 @@ on:
       - .mise/mise.lock
       - .mise/lib/**
       - .mise/tasks/gha/**
+      - Cargo.lock
+      - Cargo.toml
       - crate/Cargo.toml
       - crate/pyproject.toml
+      - harness/Cargo.toml
 
   push:
     tags: ['[0-9]*']
