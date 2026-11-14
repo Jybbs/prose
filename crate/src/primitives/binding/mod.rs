@@ -328,6 +328,20 @@ impl BindingAnalysis {
     pub(crate) fn unpack_target(&self, binding: BindingId) -> Option<UnpackKind> {
         self.unpack_targets.get(&binding).copied()
     }
+
+    /// Returns the offset of every write of each binding in the local
+    /// scope of `stmt` that is read inside `range`. `stmt` must be a
+    /// `Stmt::FunctionDef`, and any other statement yields nothing.
+    pub(crate) fn writes_of_names_read_within(
+        &self,
+        stmt: &Stmt,
+        range: TextRange,
+    ) -> impl Iterator<Item = TextSize> + use<'_> {
+        self.bindings_in_scope(stmt)
+            .map(|id| self.binding(id))
+            .filter(move |binding| binding.read_offsets.iter().any(|&at| range.contains(at)))
+            .flat_map(|binding| binding.write_offsets.iter().copied())
+    }
 }
 
 /// Stable handle to a binding in `BindingAnalysis`. Cheap to copy.

@@ -1,4 +1,4 @@
-//! The points of a function body that run code or rebind a name as the
+//! The points of a function body that run code or delete a name as the
 //! body executes, which an inline moving a value past them would
 //! reorder.
 
@@ -28,9 +28,15 @@ impl<'src> Effects<'src> {
     }
 
     /// Returns `true` when a statement running after `value` and before
-    /// the statement holding `read` runs code, or rebinds a name `value`
-    /// reads.
-    pub(super) fn between(&self, value: TextRange, read: TextSize) -> bool {
+    /// the statement holding `read` runs code, deletes a name `value`
+    /// reads, or holds one of `rebinds`, the writes of the names
+    /// `value` reads.
+    pub(super) fn between(
+        &self,
+        value: TextRange,
+        read: TextSize,
+        mut rebinds: impl Iterator<Item = TextSize>,
+    ) -> bool {
         let end = self
             .statements
             .iter()
@@ -38,16 +44,19 @@ impl<'src> Effects<'src> {
             .map(|statement| statement.start())
             .max()
             .unwrap_or(read);
-        self.sites
-            .iter()
-            .filter(|(site, _)| site.start() >= value.end() && site.end() <= end)
-            .any(|(_, effect)| match effect {
-                Effect::Rebinds(name) => self
-                    .loads
-                    .iter()
-                    .any(|(at, read)| value.contains(*at) && read == name),
-                Effect::Runs => true,
-            })
+        let window = TextRange::new(value.end(), end.max(value.end()));
+        rebinds.any(|write| window.contains(write))
+            || self
+                .sites
+                .iter()
+                .filter(|(site, _)| window.contains_range(*site))
+                .any(|(_, effect)| match effect {
+                    Effect::Deletes(name) => self
+                        .loads
+                        .iter()
+                        .any(|(at, read)| value.contains(*at) && read == name),
+                    Effect::Runs => true,
+                })
     }
 }
 
@@ -67,9 +76,9 @@ impl<'src> Visitor<'src> for Effects<'src> {
             Expr::Name(name) if name.ctx.is_load() => {
                 self.loads.push((name.start(), name.id.as_str()));
             }
-            Expr::Name(name) => self
+            Expr::Name(name) if name.ctx.is_del() => self
                 .sites
-                .push((name.range, Effect::Rebinds(name.id.as_str()))),
+                .push((name.range, Effect::Deletes(name.id.as_str()))),
             _ if runs_code(expr) => self.sites.push((expr.range(), Effect::Runs)),
             _ => {}
         }
@@ -79,6 +88,7 @@ impl<'src> Visitor<'src> for Effects<'src> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.statements.push(stmt.range());
         match stmt {
+            Stmt::Import(_) | Stmt::ImportFrom(_) => self.sites.push((stmt.range(), Effect::Runs)),
             Stmt::For(node) if node.is_async => self.sites.push((node.iter.range(), Effect::Runs)),
             Stmt::FunctionDef(node) => {
                 for decorator in &node.decorator_list {
@@ -104,7 +114,7 @@ impl<'src> Visitor<'src> for Effects<'src> {
 
 /// The effect one point of a function body has as it runs.
 enum Effect<'src> {
-    Rebinds(&'src str),
+    Deletes(&'src str),
     Runs,
 }
 
@@ -118,13 +128,18 @@ mod tests {
     fn effect_between(src: &str) -> bool {
         let source = parse(src);
         let body = &first_def(&source).body;
-        let assign = body[0]
+        let value = body[0]
             .as_assign_stmt()
-            .expect("each case opens on an assignment");
+            .expect("each case opens on an assignment")
+            .value
+            .range();
         let read = src.rfind('x').expect("the read names `x`");
         Effects::read(body).between(
-            assign.value.range(),
+            value,
             TextSize::try_from(read).expect("the offset fits"),
+            source
+                .binding_analysis()
+                .writes_of_names_read_within(&source.ast().body[0], value),
         )
     }
 
@@ -144,11 +159,24 @@ mod tests {
     #[case::await_expression("await g()", true)]
     #[case::call("g()", true)]
     #[case::class_body_call("class C:\n        y = g()", true)]
+    #[case::class_rebinding_a_name_the_value_reads("class n:\n        pass", true)]
     #[case::comprehension("ys = [i for i in m]", true)]
+    #[case::delete_of_a_name_the_value_reads("del n", true)]
+    #[case::delete_of_another_name("del m", false)]
+    #[case::except_rebinding_a_name_the_value_reads(
+        "try:\n        pass\n    except E as n:\n        pass",
+        true
+    )]
+    #[case::import("import json", true)]
+    #[case::import_from("from os import path", true)]
     #[case::lambda_body_call("h = lambda: g()", false)]
     #[case::lambda_default_call("h = lambda a=g(): a", true)]
     #[case::loop_holding_a_call("for i in xs:\n        g(i)", true)]
     #[case::loop_without_a_call("for i in xs:\n        y = i", false)]
+    #[case::match_capture_rebinding_a_name_the_value_reads(
+        "match m:\n        case n:\n            pass",
+        true
+    )]
     #[case::nested_def_body_call("def h():\n        g()", false)]
     #[case::nested_def_decorator_call("@g()\n    def h():\n        pass", true)]
     #[case::nested_def_default_call("def h(a=g()):\n        pass", true)]

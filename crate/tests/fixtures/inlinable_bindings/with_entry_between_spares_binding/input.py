@@ -1,4 +1,5 @@
-def snapshot(lock, ledger):
+def snapshot(lock, ledger, entry):
     balance = ledger.balance
     with lock:
-        return balance
+        latest = entry
+    return balance, latest

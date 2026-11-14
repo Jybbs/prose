@@ -4,11 +4,11 @@
 //! A candidate is declined where no replacement text resolves, where
 //! the value spans rows, where the read sits inside a region `guards`
 //! names that the write sits outside of, where a statement between the
-//! value and the read runs code or rebinds a name the value reads, and
-//! where the swap carries the read's row past `code_line_length`. Names matching
-//! `allow_pattern`, names a `del` statement targets, a function
-//! declaring `global` or `nonlocal`, and every write kind but
-//! `Assignment` and `Walrus` are skipped.
+//! value and the read runs code or rebinds or deletes a name the value
+//! reads, and where the swap carries the read's row past
+//! `code_line_length`. Names matching `allow_pattern`, names a `del`
+//! statement targets, a function declaring `global` or `nonlocal`, and
+//! every write kind but `Assignment` and `Walrus` are skipped.
 
 use ruff_python_ast::statement_visitor::StatementVisitor;
 

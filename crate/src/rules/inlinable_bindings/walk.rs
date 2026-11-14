@@ -26,6 +26,7 @@ impl Visitor<'_> {
         binding: BindingId,
         effects: &Effects,
         guards: &[TextRange],
+        scope: &Stmt,
     ) -> Option<Diagnostic> {
         if !matches!(
             self.analysis.binding_kinds(binding),
@@ -51,7 +52,8 @@ impl Visitor<'_> {
             return None;
         }
         let (range, value) = self.replacement(binding, write)?;
-        if effects.between(range, read) || self.overflows(read, name, &value) {
+        let rebinds = self.analysis.writes_of_names_read_within(scope, range);
+        if effects.between(range, read, rebinds) || self.overflows(read, name, &value) {
             return None;
         }
         Some(Diagnostic::lint(
@@ -70,7 +72,7 @@ impl Visitor<'_> {
         let effects = Effects::read(body);
         let guards = guarded_regions(body);
         for binding in self.analysis.bindings_in_scope(stmt) {
-            if let Some(diagnostic) = self.candidate(binding, &effects, &guards) {
+            if let Some(diagnostic) = self.candidate(binding, &effects, &guards, stmt) {
                 self.diagnostics.push(diagnostic);
             }
         }

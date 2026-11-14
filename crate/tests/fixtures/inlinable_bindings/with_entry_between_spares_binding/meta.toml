@@ -3,5 +3,5 @@ previewable = false
 title       = "A `with` Entered Between the Write and the Read Is Not Reported"
 
 description = '''
-`balance` reads `ledger.balance` before a `with lock:` whose body returns it. **The binding is not reported**, because entering the `with` runs the lock's `__enter__`, and the inline would read `ledger.balance` after it runs rather than before.
+`balance` reads `ledger.balance` before a `with lock:` block and is returned once the block closes, while `latest` is written inside the block and read outside it, which the `with` arm already exempts. **`balance` is not reported**, because entering the `with` runs the lock's `__enter__`, and the inline would read `ledger.balance` after it runs rather than before.
 '''
