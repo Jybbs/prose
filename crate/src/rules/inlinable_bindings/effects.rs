@@ -31,16 +31,17 @@ impl<'src> Effects<'src> {
         effects
     }
 
-    /// Returns `true` when `at` sits in an arm that a sibling arm
-    /// holding `read` excludes, where `value` sits outside every arm of
-    /// the set.
+    /// Returns `true` when `at` sits in an arm that closes before `read`
+    /// inside the `if`, `match`, or conditional expression that also
+    /// holds `read`, so the path reaching `read` skips that arm, where
+    /// `value` sits outside every arm of the set.
     fn exclusive(&self, value: TextRange, read: TextSize, at: TextRange) -> bool {
         self.arms.iter().any(|arms| {
             arms.iter().all(|arm| !arm.contains_range(value))
-                && arms.iter().any(|arm| arm.contains(read))
+                && arms.last().is_some_and(|last| read < last.end())
                 && arms
                     .iter()
-                    .any(|arm| arm.contains_range(at) && !arm.contains(read))
+                    .any(|arm| arm.contains_range(at) && arm.end() <= read)
         })
     }
 
@@ -72,6 +73,10 @@ impl<'src> Effects<'src> {
         mut rebinds: impl Iterator<Item = TextSize>,
     ) -> bool {
         let reached = self.position(read);
+        let settled = self
+            .points
+            .iter()
+            .rposition(|point| matches!(point, Point::Name(at, ..) if value.contains(*at)));
         let statement = self
             .statements
             .iter()
@@ -80,8 +85,11 @@ impl<'src> Effects<'src> {
             .max()
             .unwrap_or(read);
         let ahead = |order: Option<usize>, at: TextRange| {
-            at.start() >= value.end()
-                && !at.contains(read)
+            !at.contains(read)
+                && match order.zip(settled) {
+                    Some((order, settled)) => order > settled && !value.contains_range(at),
+                    None => at.start() >= value.end(),
+                }
                 && !self.exclusive(value, read, at)
                 && match order.zip(reached) {
                     Some((order, reached)) => order < reached,
@@ -131,7 +139,7 @@ impl<'src> Visitor<'src> for Effects<'src> {
     fn visit_stmt(&mut self, stmt: &'src Stmt) {
         self.statements.push(stmt.range());
         match stmt {
-            Stmt::AugAssign(node) => {
+            Stmt::AugAssign(node) if !node.target.is_name_expr() => {
                 self.visit_expr(&node.target);
                 self.visit_expr(&node.value);
                 return;
@@ -186,11 +194,11 @@ mod tests {
     fn effect_between(src: &str) -> bool {
         let source = parse(src);
         let body = &first_def(&source).body;
-        let value = body[0]
-            .as_assign_stmt()
-            .expect("each case opens on an assignment")
-            .value
-            .range();
+        let value = TextRange::at(
+            TextSize::try_from(src.find("n.size").expect("each case writes `n.size`"))
+                .expect("the offset fits"),
+            TextSize::of("n.size"),
+        );
         let read = src.rfind('x').expect("the read names `x`");
         Effects::read(body).between(
             value,
@@ -241,6 +249,20 @@ mod tests {
     }
 
     #[test]
+    fn between_counts_a_sibling_arm_once_the_write_sits_in_an_arm() {
+        assert!(effect_between(
+            "def f(n, xs):\n    for i in xs:\n        if i:\n            x = n.size\n        elif i == 1:\n            g()\n        else:\n            return x\n"
+        ));
+    }
+
+    #[test]
+    fn between_reads_a_store_target_ahead_of_the_value() {
+        assert!(effect_between(
+            "def f(n, d):\n    d[g()] = x = n.size\n    return x\n"
+        ));
+    }
+
+    #[test]
     fn between_reads_the_header_of_the_block_holding_the_read() {
         assert!(effect_between(
             "def f(n):\n    x = n.size\n    if g():\n        return x\n"
@@ -252,6 +274,7 @@ mod tests {
         "if c:\n        pass\n    elif g():\n        return x",
         true
     )]
+    #[case::elif_test_holding_the_read("if c:\n        g()\n    elif x:\n        pass", false)]
     #[case::else_beside_a_call("if c:\n        g()\n    else:\n        return x", false)]
     #[case::except_after_a_try_body("try:\n        g()\n    except E:\n        return x", true)]
     #[case::for_else_after_the_loop("for i in xs:\n        g()\n    else:\n        return x", true)]
@@ -274,6 +297,7 @@ mod tests {
     }
 
     #[rstest]
+    #[case::augmented_rebinding_after_the_read("n += x", false)]
     #[case::augmented_store_after_the_read("d[x] += g()", false)]
     #[case::branch_beside_the_read("return g() if c else x", false)]
     #[case::call_ahead_of_the_read("return g() + x", true)]
