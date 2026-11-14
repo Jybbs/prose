@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/sibling_arm_call_still_flags/input.py
+---
+def settle(ledger, closed):
+    balance = ledger.total
+    if closed:
+        ledger.archive()
+    else:
+        return balance

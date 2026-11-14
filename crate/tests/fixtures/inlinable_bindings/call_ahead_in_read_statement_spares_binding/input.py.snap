@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/call_ahead_in_read_statement_spares_binding/input.py
+---
+def finish(self):
+    loss = self.novelty.wait()
+    return self.consolidate() or loss
+
+
+def store(table, key_of, row):
+    key = key_of(row)
+    table[key] = row.refresh()
