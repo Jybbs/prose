@@ -363,9 +363,9 @@ def test_requests_toggle_an_endpoint_by_method(rulesets: ModuleType, on: bool):
     )
 
 
-@mark.parametrize("declared", [False, True], ids=["sorted", "reversed"])
+@mark.parametrize("reverse", [False, True], ids=["sorted", "reversed"])
 def test_requests_send_the_dependabot_alerts_first(
-    declared : bool,
+    reverse  : bool,
     rulesets : ModuleType
 ):
     """
@@ -376,7 +376,7 @@ def test_requests_send_the_dependabot_alerts_first(
         "Dependabot",
         sorted(
             ((field.name, field.type) for field in fields(rulesets.Dependabot)),
-            reverse = declared
+            reverse = reverse
         ),
         bases     = (rulesets.Endpoints,),
         frozen    = True,
@@ -400,6 +400,28 @@ def test_requests_send_every_setting_in_order(rulesets: ModuleType):
     assert parsed(rulesets).requests(from_toml(PROJECT)["project"]) == [
         (endpoint, method, body) for method, endpoint, body in SENT
     ]
+
+
+def test_requests_send_the_first_fields_then_the_rest(rulesets: ModuleType):
+    """
+    Pins that an `Endpoints` record sends the fields `first` names in that
+    order, then every other field in the order the record declares it.
+    """
+    record = make_dataclass(
+        "Probe",
+        [("gamma", bool), ("alpha", bool), ("delta", bool), ("beta", bool)],
+        bases     = (rulesets.Endpoints,),
+        frozen    = True,
+        namespace = {"first": ("delta", "alpha")}
+    )
+    assert [
+        endpoint for endpoint, _, _ in record(
+            alpha = True,
+            beta  = True,
+            delta = True,
+            gamma = True
+        ).requests()
+    ] == [f"{BASE}/{name}" for name in ("delta", "alpha", "gamma", "beta")]
 
 
 def test_tracked_files_send_the_about_box(rulesets: ModuleType):
