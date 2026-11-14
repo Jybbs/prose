@@ -23,6 +23,16 @@ pub(crate) fn classify_field(stmt: &Stmt) -> Option<(u8, &str)> {
     Some((u8::from(has_default(ann)), name))
 }
 
+/// True when a class's field run is a layout read beyond its constructor,
+/// covering a class with a `NamedTuple` base, whose run is the tuple that
+/// indexing, unpacking, iteration, and comparison read, and a `Struct`
+/// whose header declares `array_like=True`, whose run is the array order
+/// msgspec encodes and decodes.
+pub(crate) fn field_order_is_layout(class: &StmtClassDef) -> bool {
+    names_base(class, "NamedTuple")
+        || (names_base(class, "Struct") && declares_true(class.arguments.as_deref(), "array_like"))
+}
+
 /// The offset from which a class's annotated fields bind by name rather
 /// than by position. A field starting below it holds its source slot.
 /// Returns the class start where the header names no field-ordered
@@ -56,10 +66,7 @@ pub(crate) fn positional_fields(class: &StmtClassDef) -> impl Iterator<Item = (&
 /// a decorator. Each name resolves on its tail segment, so a dotted or
 /// aliased import matches alike.
 fn generates_positional_init(class: &StmtClassDef) -> bool {
-    let based = class
-        .bases()
-        .iter()
-        .any(|base| matches!(type_head_identifier(base), Some("NamedTuple" | "Struct")));
+    let based = names_base(class, "NamedTuple") || names_base(class, "Struct");
     (based && !declares_true(class.arguments.as_deref(), "kw_only"))
         || class.decorator_list.iter().any(|decorator| {
             matches!(
@@ -89,6 +96,15 @@ fn has_default(ann: &StmtAnnAssign) -> bool {
 /// it keyword-only.
 fn is_kw_only_sentinel(ann: &StmtAnnAssign) -> bool {
     tail_identifier(&ann.annotation) == Some("KW_ONLY")
+}
+
+/// True when a base class names `name`, resolved on its tail segment, so
+/// a dotted import such as `typing.NamedTuple` matches alike.
+fn names_base(class: &StmtClassDef, name: &str) -> bool {
+    class
+        .bases()
+        .iter()
+        .any(|base| type_head_identifier(base) == Some(name))
 }
 
 #[cfg(test)]
@@ -126,6 +142,20 @@ mod tests {
     ) {
         let source = parse(src);
         assert_eq!(classify_field(&source.ast().body[0]), expected);
+    }
+
+    #[rstest]
+    #[case("class C(NamedTuple): pass\n", true)]
+    #[case("class C(typing.NamedTuple): pass\n", true)]
+    #[case("class C(Generic[T], NamedTuple): pass\n", true)]
+    #[case("class C(msgspec.Struct, array_like=True): pass\n", true)]
+    #[case("class C(msgspec.Struct, array_like=False): pass\n", false)]
+    #[case("class C(msgspec.Struct): pass\n", false)]
+    #[case("class C(namedtuple(\"P\", \"x y\")): pass\n", false)]
+    #[case("@dataclass\nclass C: pass\n", false)]
+    fn field_order_is_layout_reads_the_class_header(#[case] src: &str, #[case] expected: bool) {
+        let source = parse(src);
+        assert_eq!(field_order_is_layout(first_class(&source)), expected);
     }
 
     #[test]

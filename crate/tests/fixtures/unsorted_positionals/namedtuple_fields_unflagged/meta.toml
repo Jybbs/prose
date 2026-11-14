@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `NamedTuple` Field Run Is Not Reported"
+
+description = '''
+`Box(NamedTuple)` declares `west`, `south`, `east`, then `north`. **The lint reports nothing**, because a `NamedTuple` base makes the field run the tuple's own layout. `box[0]`, the unpacking `west, south, east, north = box`, iteration, and comparison all read that layout as the constructor does, so the order carries meaning at sites no search for the constructor finds. A `@dataclass` declaring the same run stays under the lint.
+'''
