@@ -5,10 +5,12 @@
 //! Lint-only, emits no edits.
 //!
 //! A positional-binding-decorated function is skipped whole, as is the
-//! field run of a class whose header carries `# prose: keep`. `self` /
-//! `cls`, the positional-only parameters, a `ClassVar` declaration, and
-//! the `KW_ONLY` sentinel drop from the run, leaving the rest of it
-//! still evaluated.
+//! field run of a class whose header carries `# prose: keep`, of a class
+//! with a `NamedTuple` base, whose field order is the tuple's layout, and
+//! of a `Struct` declaring `array_like=True`, whose field order is the
+//! encoded array's layout. `self` / `cls`, the positional-only
+//! parameters, a `ClassVar` declaration, and the `KW_ONLY` sentinel drop
+//! from the run, leaving the rest of it still evaluated.
 
 use ruff_python_ast::{Stmt, StmtClassDef};
 use ruff_text_size::{Ranged, TextRange};
@@ -18,7 +20,7 @@ use crate::{
     diagnostics::Diagnostic,
     primitives::{
         comments::class_keeps_order,
-        constructor::positional_fields,
+        constructor::{field_order_is_layout, positional_fields},
         params::{params_unsorted, pins_positional_params},
         range::blocks_span,
         walk::filter_map_over_stmts,
@@ -71,11 +73,16 @@ fn unsorted_field_run(class: &StmtClassDef) -> Option<TextRange> {
 /// The extent of the positional run `stmt` declares, returned only where
 /// sorting that run would change its order. `None` for a statement
 /// declaring no run, for a decorator-bound signature, for the field run
-/// of a class whose header carries `# prose: keep`, and for a run
-/// already in order.
+/// of a class whose header carries `# prose: keep` or whose field order
+/// is a layout, meaning it names a `NamedTuple` base or an `array_like`
+/// `Struct`, and for a run already in order.
 fn unsorted_run(source: &Source, stmt: &Stmt) -> Option<TextRange> {
     match stmt {
-        Stmt::ClassDef(class) if class_keeps_order(source, class) => None,
+        Stmt::ClassDef(class)
+            if class_keeps_order(source, class) || field_order_is_layout(class) =>
+        {
+            None
+        }
         Stmt::ClassDef(class) => unsorted_field_run(class),
         Stmt::FunctionDef(f) => (!pins_positional_params(f) && params_unsorted(&f.parameters))
             .then(|| f.parameters.range()),
@@ -86,6 +93,7 @@ fn unsorted_run(source: &Source, stmt: &Stmt) -> Option<TextRange> {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
 
     use super::*;
     use crate::{diagnostics::Severity, testing::parse};
@@ -127,6 +135,19 @@ mod tests {
     }
 
     #[test]
+    fn flags_a_method_inside_a_named_tuple() {
+        let src = indoc! {"
+            class Box(NamedTuple):
+                west: float
+                south: float
+
+                def scaled(self, y, x): pass
+        "};
+        let source = parse(src);
+        assert_eq!(flagged(&source), vec!["(self, y, x)"]);
+    }
+
+    #[test]
     fn flags_an_unsorted_free_function() {
         let source = parse("def merge(target, source): pass\n");
         let diagnostics = UnsortedPositionals.lint(&source);
@@ -148,9 +169,39 @@ mod tests {
         assert_eq!(flagged(&source), vec!["width: int\n    height: int"]);
     }
 
+    #[rstest]
+    fn flags_the_field_run_of_a_struct_encoded_by_name(
+        #[values("msgspec.Struct", "msgspec.Struct, array_like=False")] header: &str,
+    ) {
+        let source = parse(&format!(
+            "class Point({header}):\n    y: float\n    x: float\n"
+        ));
+        assert_eq!(flagged(&source), vec!["y: float\n    x: float"]);
+    }
+
+    #[rstest]
+    fn leaves_a_named_tuple_field_run_quiet(
+        #[values("NamedTuple", "typing.NamedTuple")] base: &str,
+    ) {
+        let source = parse(&format!(
+            "class Box({base}):\n    west: float\n    south: float\n"
+        ));
+        assert!(flagged(&source).is_empty());
+    }
+
     #[test]
     fn leaves_a_sorted_free_function_quiet() {
         let source = parse("def merge(source, target): pass\n");
+        assert!(flagged(&source).is_empty());
+    }
+
+    #[rstest]
+    fn leaves_an_array_like_struct_field_run_quiet(
+        #[values("msgspec.Struct, array_like=True", "Struct, array_like=True")] header: &str,
+    ) {
+        let source = parse(&format!(
+            "class Point({header}):\n    y: float\n    x: float\n"
+        ));
         assert!(flagged(&source).is_empty());
     }
 
