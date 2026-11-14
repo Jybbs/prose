@@ -4,7 +4,7 @@ them from, and what it rejects before sending any.
 """
 
 from collections.abc   import Callable, Iterator
-from dataclasses       import FrozenInstanceError
+from dataclasses       import FrozenInstanceError, fields, make_dataclass
 from functools         import reduce
 from json              import dumps, loads
 from pathlib           import Path
@@ -361,6 +361,33 @@ def test_requests_toggle_an_endpoint_by_method(rulesets: ModuleType, on: bool):
         "PUT" if on else "DELETE",
         None
     )
+
+
+@mark.parametrize("declared", [False, True], ids=["sorted", "reversed"])
+def test_requests_send_the_dependabot_alerts_first(
+    declared : bool,
+    rulesets : ModuleType
+):
+    """
+    Pins that the alerts call goes out before the automated-fixes call
+    whichever order the `Dependabot` record declares its fields in.
+    """
+    record = make_dataclass(
+        "Dependabot",
+        sorted(
+            ((field.name, field.type) for field in fields(rulesets.Dependabot)),
+            reverse = declared
+        ),
+        bases     = (rulesets.Endpoints,),
+        frozen    = True,
+        namespace = {"first": rulesets.Dependabot.first}
+    )
+    assert [
+        endpoint for endpoint, _, _ in record(
+            automated_security_fixes = True,
+            vulnerability_alerts     = True
+        ).requests()
+    ] == [f"{BASE}/vulnerability-alerts", f"{BASE}/automated-security-fixes"]
 
 
 def test_requests_send_every_setting_in_order(rulesets: ModuleType):
