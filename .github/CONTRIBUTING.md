@@ -16,6 +16,7 @@ This page walks a change through each step in the order a contributor takes it, 
 | Tasks | A command runs through its mise task rather than the `cargo`, `bun`, or `maturin` call the task wraps, because the task carries the flags CI runs with. `mise tasks` lists them all, and most developer tasks also run under a one-word alias (*`mise ci` for `repo:ci`, `mise review` for `rust:review`*) |
 | Virtualenv | The first mise command in a clone creates `crate/.venv`, and `mise wheel` builds the extension into it through `maturin develop` |
 | Lockfiles | An edit to any manifest in the `manifests` input group of `.mise/config.toml`, meaning a `Cargo.toml`, `crate/pyproject.toml`, `site/package.json`, or the config itself, takes a `mise relock` in the same commit, since the `🪵 Lockfile` row (*a row being one of the jobs a workflow runs*) fails a pull request whose lockfile lags its manifest |
+| Between edits | `mise affected` runs the docs-site test files that the changes since `origin/main`, committed or not, reach through their imports, and runs all of them once a change reaches the Rust sources of `prose`, its fixture tree, or a stylesheet, page, icon, or other asset the tests read from disk. An edit to a `.ts`, `.tsx`, or `.vue` source runs only the tests that import it, whereas `mise ci` and CI run every test |
 | Local sweep | `mise ci` runs what the `🪻 CI` and `🪻 Deploy` workflows run, short of uploading coverage |
 
 ---
