@@ -1,6 +1,6 @@
 import { GIFEncoder } from 'gifenc'
 
-import { LoopEncoder } from '../../lib/readme/encode'
+import { LoopEncoder, maskUnchanged } from '../../lib/readme/encode'
 
 import { readGif } from '../gif'
 
@@ -50,9 +50,33 @@ describe('LoopEncoder', () => {
     expect(LoopEncoder.palette(FRAMES)).toStrictEqual(expect.arrayContaining([GROUND, INK]))
   })
 
+  it('marks only the pixels the frame before it shares as transparent', () => {
+    const index = Uint8Array.of(0, 1, 2, 3)
+    maskUnchanged(index, 255, Uint8Array.of(0, 9, 2, 9))
+    expect(index).toStrictEqual(Uint8Array.of(255, 1, 255, 3))
+  })
+
+  it('quantizes to at most 255 colors, leaving the last index for transparency', () => {
+    const ramp = Uint8Array.from({ length: 4096 * 4 }, (_, at) => at % 4 === 3 ? 255 : (at >> 2 >> 4 * (at % 4) & 15) << 4)
+    expect(LoopEncoder.palette([ramp]).length).toBeLessThanOrEqual(255)
+  })
+
   it('writes the header the gifenc encoder writes', () => {
     const gif = GIFEncoder()
     gif.writeFrame(new Uint8Array(WIDTH * HEIGHT), WIDTH, HEIGHT, { palette: [GROUND] })
     expect(encode(FRAMES).subarray(0, 10)).toStrictEqual(gif.bytesView().subarray(0, 10))
+  })
+})
+
+describe('readGif', () => {
+  it('reports no delay for a frame no graphic control block precedes', () => {
+    const image = [0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 0]
+    const gif   = Uint8Array.of(
+      ...Buffer.from('GIF89a', 'latin1'), 1, 0, 1, 0, 0, 0, 0,
+      0x21, 0xf9, 4, 1, 2, 0, 0, 0, ...image,
+      ...image,
+      0x3b
+    )
+    expect(readGif(gif).frames.map(({ delay }) => delay)).toStrictEqual([2, 0])
   })
 })

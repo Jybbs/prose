@@ -48,13 +48,12 @@ export class LoopEncoder {
       })
       return
     }
-    const clear = this.#palette.length
-    index.forEach((value, at) => { if (value === previous[at]) index[at] = clear })
+    maskUnchanged(index, this.#palette.length, previous)
     this.#gif.writeFrame(index, this.width, this.height, {
       delay            : this.delay,
       dispose          : KEEP,
       transparent      : true,
-      transparentIndex : clear
+      transparentIndex : this.#palette.length
     })
   }
 
@@ -62,4 +61,10 @@ export class LoopEncoder {
     this.#gif.finish()
     return this.#gif.bytesView()
   }
+}
+
+// Replaces each entry of `index` matching `previous` at the same pixel with
+// `clear`, the palette's transparent index.
+export function maskUnchanged(index: Uint8Array, clear: number, previous: Uint8Array): void {
+  index.forEach((value, at) => { if (value === previous[at]) index[at] = clear })
 }

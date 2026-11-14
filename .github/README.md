@@ -61,7 +61,7 @@ prose server                   # language server over stdio
 </p>
 
 - Turn a rule off for a whole project, or set its facets, in `prose.toml` or `[tool.prose]` with the [**configuration reference**](https://prose.fyi/reference/configuration)
-- Keep a hand-shaped block exactly as written with `# fmt: off` or `# fmt: skip` from the [**suppression directives**](https://prose.fyi/reference/suppression-directives)
+- Keep a hand-shaped region or statement exactly as written with `# fmt: off` or `# fmt: skip` from the [**suppression directives**](https://prose.fyi/reference/suppression-directives)
 - Gate CI on formatting with the codes `prose check` returns in the [**exit-code matrix**](https://prose.fyi/reference/exit-codes)
 - Format on save, in pre-commit, or in CI through the [**integrations**](https://prose.fyi/integrations/)
 - Run ***Prose*** beside Ruff with the `extend-ignore` codes on the [**Ruff page**](https://prose.fyi/integrations/ruff)

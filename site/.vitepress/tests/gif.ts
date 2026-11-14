@@ -56,6 +56,7 @@ export function readGif(bytes: Uint8Array): Gif {
     else if (block === IMAGE) {
       const packed = bytes[at + 9]!
       gif.frames.push({ ...control, local: (packed & 0x80) !== 0 })
+      control = { delay: 0, fields: 0, transparent: 0 }
       at += 11 + table(packed)
       skip()
     }

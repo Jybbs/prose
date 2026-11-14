@@ -13,7 +13,7 @@ import { readmeDir, siteDir }   from '../shared/paths'
 // Holds the frame the GIF steps by and the frame counts each phase takes, the
 // lead before the first rule, the hover over a tag before its click, the least
 // a rule's change runs, the frames with no live animation that end it, the
-// linger after it, and the hold on the result.
+// linger after it, and the hold on the result, beside the viewport's width.
 const RECORDING = {
   frameMs : 20,
   hold    : 130,
@@ -50,7 +50,7 @@ async function recordSandbox(outDir: string, vitepressDir: string): Promise<void
     fs.mkdirSync(outDir, { recursive: true })
     for (const scheme of SCHEMES) {
       using scratch = fs.mkdtempDisposableSync(path.join(os.tmpdir(), 'prose-readme-'))
-      await recordScheme(browser, url, scheme, scratch.path)
+      await recordScheme(browser, scratch.path, scheme, url)
       fs.writeFileSync(path.join(outDir, `sandbox-${scheme}.gif`), await encodeFrames(decoder, scratch.path))
     }
   }
@@ -88,9 +88,9 @@ async function encodeFrames(decoder: Page, frameDir: string): Promise<Uint8Array
 
 async function recordScheme(
   browser : Browser,
-  url     : string,
+  outDir  : string,
   scheme  : Scheme,
-  outDir  : string
+  url     : string
 ): Promise<void> {
   const context = await browser.newContext({
     colorScheme       : scheme,
