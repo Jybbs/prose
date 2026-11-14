@@ -25,12 +25,12 @@ it is `false`, and `[actions]` and `[workflow]` are the bodies of
 `actions/permissions` and `actions/permissions/workflow`.
 """
 
-from dataclasses  import asdict, dataclass, is_dataclass
+from dataclasses  import asdict, dataclass, fields, is_dataclass
 from json         import dumps, loads
 from pathlib      import Path
 from subprocess   import check_output
 from tomllib      import loads as from_toml
-from typing       import Self, get_type_hints
+from typing       import ClassVar, Self
 from urllib.parse import urlsplit
 
 PROJECT    = "crate/pyproject.toml"
@@ -54,8 +54,7 @@ class Record:
         not declare, a key it declares that is missing, or a value of the
         wrong type.
         """
-        hints = get_type_hints(cls)
-        keys  = {cls.spelled(name): name for name in hints}
+        keys  = {cls.spelled(field.name): field for field in fields(cls)}
         where = f"[{path}]" if path else SETTINGS
 
         if not isinstance(table, dict):
@@ -67,12 +66,12 @@ class Record:
 
         values = {}
         for key, value in table.items():
-            hint = hints[name := keys[key]]
+            hint = (field := keys[key]).type
             if is_dataclass(hint):
                 value = hint.from_table(value, f"{path}.{key}" if path else key)
             elif not isinstance(value, hint):
                 raise SystemExit(f"{where} key {key!r} is not a {hint.__name__}")
-            values[name] = value
+            values[field.name] = value
         return cls(**values)
 
     @staticmethod
@@ -97,17 +96,26 @@ class Actions(Record):
 class Endpoints(Record):
     """
     Holds one flag per endpoint, each named for the endpoint's last path
-    segment with underscores for hyphens.
+    segment with underscores for hyphens, and the fields whose calls are
+    sent ahead of the rest.
     """
+
+    first: ClassVar[tuple[str, ...]] = ()
 
     def requests(self) -> list[tuple[str, str, None]]:
         """
         Returns the call toggling each endpoint, `PUT` where its flag is
-        `true` and `DELETE` where it is `false`.
+        `true` and `DELETE` where it is `false`, the fields `first` names
+        sent in that order and the rest after them in declared order.
         """
+        flags = asdict(self)
         return [
-            (f"{REPOSITORY}/{self.spelled(key)}", "PUT" if on else "DELETE", None)
-            for key, on in asdict(self).items()
+            (
+                f"{REPOSITORY}/{self.spelled(key)}",
+                "PUT" if flags[key] else "DELETE",
+                None
+            )
+            for key in dict.fromkeys((*self.first, *flags))
         ]
 
     @staticmethod
@@ -131,12 +139,13 @@ class Advisories(Endpoints):
 @dataclass(frozen=True)
 class Dependabot(Endpoints):
     """
-    Holds one flag per Dependabot endpoint in the order the calls are sent,
-    the alerts first.
+    Holds one flag per Dependabot endpoint, the alerts call sent first.
     """
 
-    vulnerability_alerts     : bool  # prose: ignore[unsorted-positionals]
+    first = ("vulnerability_alerts",)
+
     automated_security_fixes : bool
+    vulnerability_alerts     : bool
 
 
 @dataclass(frozen=True)
