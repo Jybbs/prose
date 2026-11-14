@@ -1,7 +1,7 @@
 //! Classifies whether evaluating a value runs code when it binds. An
 //! inert value only reads names and builds the result, whereas an
-//! effectful one carries a call, a comprehension, an `await`, or a
-//! notebook escape command somewhere in its tree.
+//! effectful one carries a call, a comprehension, an `await`, a
+//! `yield`, or a notebook escape command somewhere in its tree.
 
 use ruff_python_ast::{
     Expr,
@@ -11,10 +11,10 @@ use ruff_python_ast::{
 use crate::primitives::tiering::walk_lambda_defaults;
 
 /// Walks the evaluation-time surface of a value, skipping each lambda
-/// body, and sets `effectful` on a call, comprehension, `await`, or
-/// notebook escape command. `ruff_python_ast::helpers::contains_effect`
-/// also classifies a subscript, an operator expression, and a walrus as
-/// effectful and walks lambda bodies, a wider split than this one.
+/// body, and sets `effectful` on each node [`runs_code`] names.
+/// `ruff_python_ast::helpers::contains_effect` also classifies a
+/// subscript, an operator expression, and a walrus as effectful and
+/// walks lambda bodies, a wider split than this one.
 struct EffectVisitor {
     effectful: bool,
 }
@@ -22,22 +22,33 @@ struct EffectVisitor {
 impl<'src> Visitor<'src> for EffectVisitor {
     fn visit_expr(&mut self, expr: &'src Expr) {
         match expr {
-            Expr::Await(_)
-            | Expr::Call(_)
-            | Expr::DictComp(_)
-            | Expr::Generator(_)
-            | Expr::IpyEscapeCommand(_)
-            | Expr::ListComp(_)
-            | Expr::SetComp(_) => self.effectful = true,
             Expr::Lambda(lambda) => walk_lambda_defaults(self, lambda),
+            _ if runs_code(expr) => self.effectful = true,
             _ => walk_expr(self, expr),
         }
     }
 }
 
+/// True when evaluating `expr` itself runs code, without reading its
+/// children, meaning it is a call, a comprehension, an `await`, a `yield`,
+/// a `yield from`, or a notebook escape command.
+pub(crate) fn runs_code(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::Await(_)
+            | Expr::Call(_)
+            | Expr::DictComp(_)
+            | Expr::Generator(_)
+            | Expr::IpyEscapeCommand(_)
+            | Expr::ListComp(_)
+            | Expr::SetComp(_)
+            | Expr::Yield(_)
+            | Expr::YieldFrom(_)
+    )
+}
+
 /// True when evaluating `value` runs code beyond reading names, meaning
-/// it carries a call, a comprehension, an `await`, or a notebook escape
-/// command outside a lambda body.
+/// it carries a node [`runs_code`] names outside a lambda body.
 pub(crate) fn value_is_effectful(value: &Expr) -> bool {
     let mut visitor = EffectVisitor { effectful: false };
     visitor.visit_expr(value);
@@ -66,6 +77,8 @@ mod tests {
     #[case("{k: v for k in seq}", true)]
     #[case("(n for n in seq)", true)]
     #[case("lambda k=make(): k", true)]
+    #[case("(yield)", true)]
+    #[case("(yield from seq)", true)]
     #[case("42", false)]
     #[case("value", false)]
     #[case("obj.attr", false)]

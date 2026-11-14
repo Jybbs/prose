@@ -8,7 +8,7 @@ use ruff_python_ast::{
 };
 use ruff_text_size::{TextRange, TextSize};
 
-use super::{guards::guarded_regions, *};
+use super::{effects::Effects, guards::guarded_regions, *};
 use crate::primitives::{inline::rows_within, walk::any_over_stmts};
 
 pub(super) struct Visitor<'a> {
@@ -21,7 +21,12 @@ pub(super) struct Visitor<'a> {
 }
 
 impl Visitor<'_> {
-    fn candidate(&self, binding: BindingId, guards: &[TextRange]) -> Option<Diagnostic> {
+    fn candidate(
+        &self,
+        binding: BindingId,
+        effects: &Effects,
+        guards: &[TextRange],
+    ) -> Option<Diagnostic> {
         if !matches!(
             self.analysis.binding_kinds(binding),
             [BindingKind::Assignment | BindingKind::Walrus],
@@ -45,8 +50,8 @@ impl Visitor<'_> {
         {
             return None;
         }
-        let value = self.replacement(binding, write)?;
-        if self.overflows(read, name, &value) {
+        let (range, value) = self.replacement(binding, write)?;
+        if effects.between(range, read) || self.overflows(read, name, &value) {
             return None;
         }
         Some(Diagnostic::lint(
@@ -62,9 +67,10 @@ impl Visitor<'_> {
         if body_uses_scope_modifier(body) {
             return;
         }
+        let effects = Effects::read(body);
         let guards = guarded_regions(body);
         for binding in self.analysis.bindings_in_scope(stmt) {
-            if let Some(diagnostic) = self.candidate(binding, &guards) {
+            if let Some(diagnostic) = self.candidate(binding, &effects, &guards) {
                 self.diagnostics.push(diagnostic);
             }
         }
@@ -83,9 +89,10 @@ impl Visitor<'_> {
         )
     }
 
-    /// Returns the text replacing the binding at its read, `None` where
-    /// no value resolves or the value spans rows.
-    fn replacement(&self, binding: BindingId, write: TextSize) -> Option<String> {
+    /// Returns the range of the value the binding holds beside the text
+    /// replacing the binding at its read, `None` where no value resolves
+    /// or the value spans rows.
+    fn replacement(&self, binding: BindingId, write: TextSize) -> Option<(TextRange, String)> {
         let (value, index) = match self.analysis.unpack_target(binding) {
             Some(UnpackKind::Suggested(range, index)) => (range, Some(index)),
             Some(UnpackKind::Unresolved) => return None,
@@ -95,10 +102,11 @@ impl Visitor<'_> {
             return None;
         }
         let text = self.source.slice(value);
-        Some(match index {
+        let replacement = match index {
             Some(index) => format!("{text}[{index}]"),
             None => text.to_owned(),
-        })
+        };
+        Some((value, replacement))
     }
 }
 

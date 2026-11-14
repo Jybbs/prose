@@ -14,6 +14,7 @@ The rule reads the per-`Source` [[binding-analysis]] table to count writes and r
 
 - A value that already spans rows stays as written, because the replacement would carry those rows into the read.
 - A read inside a region the write sits outside of stays as written, covering a loop body, a `while` test, a `try` or `with` arm, an `except` clause naming the exception class, a nested function, a lambda body, and the per-item part of a comprehension, because the inline would change how often the value is computed, what guards it, or what a closure captures.
+- A read that follows a statement able to have effects stays as written, covering a call, an `await`, a `yield`, a store or `del` through an attribute or subscript, a `with` entered, and a loop or other block whose body holds one of these, along with a statement binding a name the value reads again, because the inline would move the value past code that can change what it reads or that must run after it. A nested function's body runs nothing where it is written, so a call inside it still leaves the finding standing.
 - A swap that pushes the read's own row past `code-line-length` stays as written, because the layout rules would then break the call across rows and the file would grow for a name removed.
 - A candidate for which no replacement text resolves is withheld rather than reported bare, so every finding names the expression that would stand in the binding's place.
 

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Loop Holding a Call Between the Write and the Read Is Not Reported"
+
+description = '''
+`start` records `device.position, device.tiles` before a loop whose body calls `device.press(button)`, and is read once in the comparison after it. **The binding is not reported**, because the inline would read the position after the presses, comparing the device's state with itself.
+'''

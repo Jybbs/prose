@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A `with` Entered Between the Write and the Read Is Not Reported"
+
+description = '''
+`balance` reads `ledger.balance` before a `with lock:` whose body returns it. **The binding is not reported**, because entering the `with` runs the lock's `__enter__`, and the inline would read `ledger.balance` after it runs rather than before.
+'''
