@@ -14,6 +14,10 @@
 
 ***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries, calls, and signatures, alphabetizes methods and fields within their groups, removes padding that lines up with nothing, and treats code like prose rather than minified text.
 
+<p>
+<picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/sandbox-dark.gif"><img src="../site/public/readme/sandbox-light.gif" alt="The docs site's Sandbox with every rule switched off on a short Pydantic retry policy, then each rule tag along the top switched on in turn as the model fields align on one colon and one equals column, the keywords and the dict keys sort, the constructor call breaks to one keyword per line, and the logging dict breaks to one entry per line, before the loop restarts." width="100%"></picture>
+</p>
+
 > [!NOTE]
 > ***Prose*** is still pre-1.0. The rule catalog and configuration facets continue to grow across release lines.
 
@@ -48,18 +52,20 @@ prose server                   # language server over stdio
 
 ---
 
-## 📰 Further Reading
+## 📰 Start Here
 
-The full edition lives at [prose.fyi](https://prose.fyi/):
+<p align="center">
+<a href="https://prose.fyi/guide/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/read-dark.svg"><img src="../site/public/readme/read-light.svg" alt="Read the guide" width="260"></picture></a>
+<a href="https://prose.fyi/rules/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/browse-dark.svg"><img src="../site/public/readme/browse-light.svg" alt="Browse the rules" width="260"></picture></a>
+<a href="https://prose.fyi/sandbox/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/try-dark.svg"><img src="../site/public/readme/try-light.svg" alt="Try the Sandbox" width="260"></picture></a>
+</p>
 
-- The [**interactive sandbox**](https://prose.fyi/sandbox/) formats Python live in the browser, so a reader can watch a snippet settle into shape without installing anything.
-- The [**rule catalog**](https://prose.fyi/rules/) walks every rule with before/after fixtures and per-facet configuration.
-- The [**configuration reference**](https://prose.fyi/reference/configuration) covers the `prose.toml`, `.config/prose.toml`, and `pyproject.toml` config files, the top-level and `[imports]` keys, and the `[rules]` facets.
-- The [**cache reference**](https://prose.fyi/reference/cache) covers the cache directory, `--no-cache`, the `[cache]` table, and the `prose cache` subcommands.
-- The [**exit-code matrix**](https://prose.fyi/reference/exit-codes) is the contract a CI gate or a pre-commit hook reads.
-- [**Suppression directives**](https://prose.fyi/reference/suppression-directives) cover `# prose: off`, `# prose: skip`, and the rest of the directive surface.
-- The [**Ruff integration**](https://prose.fyi/integrations/ruff) covers running *Prose* in a project that already runs Ruff.
-- [**Editor, pre-commit, and CI integrations**](https://prose.fyi/integrations/) wire *Prose* into the development loop.
+- Turn a rule off for a whole project, or set its facets, in `prose.toml` or `[tool.prose]` with the [**configuration reference**](https://prose.fyi/reference/configuration)
+- Keep a hand-shaped region or statement exactly as written with `# fmt: off` or `# fmt: skip` from the [**suppression directives**](https://prose.fyi/reference/suppression-directives)
+- Gate CI on formatting with the codes `prose check` returns in the [**exit-code matrix**](https://prose.fyi/reference/exit-codes)
+- Format on save, in pre-commit, or in CI through the [**integrations**](https://prose.fyi/integrations/)
+- Run ***Prose*** beside Ruff with the `extend-ignore` codes on the [**Ruff page**](https://prose.fyi/integrations/ruff)
+- Start a run with nothing stored through `--no-cache` or `prose cache clean` from the [**cache reference**](https://prose.fyi/reference/cache)
 
 ---
 

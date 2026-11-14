@@ -35,6 +35,10 @@ export function proseBinaryPath(root: string): string {
   return path.join(targetDir(root), 'debug', 'prose')
 }
 
+export function readmeDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'public', 'readme')
+}
+
 export function repoRoot(metaUrl: string): string {
   let dir = path.dirname(fileURLToPath(metaUrl))
   while (!fs.existsSync(path.join(dir, '.git'))) {

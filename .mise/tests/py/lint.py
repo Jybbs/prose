@@ -8,6 +8,7 @@ from subprocess      import CompletedProcess
 
 FIXTURES = [
     "crate/tests/fixtures/align_equals/case/input.py",
+    "site/.vitepress/lib/readme/retry.py",
     "site/.vitepress/tests/rules/fixtures/stand_in.py"
 ]
 
