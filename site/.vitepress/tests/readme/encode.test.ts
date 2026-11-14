@@ -50,6 +50,14 @@ describe('LoopEncoder', () => {
     expect(LoopEncoder.palette(FRAMES)).toStrictEqual(expect.arrayContaining([GROUND, INK]))
   })
 
+  it('maps one color to one palette entry whatever shares its rgb565 bin', () => {
+    const ground  = [36, 41, 46]
+    const encoder = new LoopEncoder(20, HEIGHT, WIDTH, [frame(ground, [41, 42, 46], 0, 1)])
+    const plain   = encoder.index(frame(ground, ground))
+    const binMate = encoder.index(frame(ground, [39, 42, 47], 0, 1))
+    expect(binMate.subarray(1)).toStrictEqual(plain.subarray(1))
+  })
+
   it('marks only the pixels the frame before it shares as transparent', () => {
     const index = Uint8Array.of(0, 1, 2, 3)
     maskUnchanged(index, 255, Uint8Array.of(0, 9, 2, 9))

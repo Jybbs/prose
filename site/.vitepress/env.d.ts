@@ -17,6 +17,6 @@ declare module 'gifenc' {
     writeFrame : (index: Uint8Array, width: number, height: number, options?: FrameOptions) => void
   }
   export function GIFEncoder(): Encoder
-  export function applyPalette(rgba: Uint8Array | Uint8ClampedArray, palette: Palette): Uint8Array
+  export function nearestColorIndex(colors: Palette, pixel: number[]): number
   export function quantize(rgba: Uint8Array | Uint8ClampedArray, maxColors: number): Palette
 }

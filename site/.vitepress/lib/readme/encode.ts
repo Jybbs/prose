@@ -1,4 +1,4 @@
-import { applyPalette, GIFEncoder, quantize } from 'gifenc'
+import { GIFEncoder, nearestColorIndex, quantize } from 'gifenc'
 
 const COLORS      = 255
 const KEEP        = 1
@@ -10,6 +10,7 @@ const TRANSPARENT = [0, 0, 0]
 // in place.
 export class LoopEncoder {
   readonly #gif     = GIFEncoder()
+  readonly #nearest = new Map<number, number>()
   readonly #palette : number[][]
   #previous         : Uint8Array | null = null
 
@@ -36,8 +37,26 @@ export class LoopEncoder {
     return quantize(sheet, COLORS)
   }
 
+  // Maps each pixel to its nearest palette entry, caching the entry by the
+  // pixel's exact color. gifenc's `applyPalette` caches one entry per rgb565
+  // bin, filled by whichever pixel of the bin a frame reaches first, so one
+  // color could take a different entry from one frame to the next.
+  index(rgba: Uint8Array): Uint8Array {
+    const pixels = new Uint32Array(rgba.buffer, rgba.byteOffset, rgba.length / 4)
+    return Uint8Array.from(pixels, pixel => {
+      const color = pixel & 0xffffff
+      return this.#nearest.get(color) ?? this.#nearestTo(color)
+    })
+  }
+
+  #nearestTo(color: number): number {
+    const at = nearestColorIndex(this.#palette, [color & 0xff, color >> 8 & 0xff, color >> 16 & 0xff])
+    this.#nearest.set(color, at)
+    return at
+  }
+
   add(rgba: Uint8Array): void {
-    const index    = applyPalette(rgba, this.#palette)
+    const index    = this.index(rgba)
     const previous = this.#previous
     this.#previous = index.slice()
     if (previous === null) {
