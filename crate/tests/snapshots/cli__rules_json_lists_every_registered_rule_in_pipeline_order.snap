@@ -378,7 +378,7 @@ expression: "serde_json::to_string_pretty(&rules).expect(\"renders\")"
   },
   {
     "after": [],
-    "imperative": "inline a binding read once, where the value inlines with nothing recomputed, moved under a guard, or pushed past the line budget",
+    "imperative": "inline a binding read once, where the value inlines with nothing recomputed, moved past an effect, moved under a guard, or pushed past the line budget",
     "position": 38,
     "preserves_tree": true,
     "slug": "inlinable-bindings"

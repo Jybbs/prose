@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/call_between_spares_binding/input.py
+---
+def finish(self):
+    loss = self.novelty.wait()
+    self.consolidate()
+    return loss
+
+
+def tick(counter, clock):
+    before = counter.value
+    clock.advance()
+    return counter.value != before

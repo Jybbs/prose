@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/nested_def_between_still_flags/input.py
+---
+inlinable-bindings@24..29

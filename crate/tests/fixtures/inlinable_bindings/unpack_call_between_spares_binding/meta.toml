@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Unpack Target Read After a Call Is Not Reported"
+
+description = '''
+`left` and `right` unpack `pair`, and each is read once after `log.flush()`. **Neither target is reported**, because the subscript rewrite would read `pair[0]` and `pair[1]` after the call, which can change what `pair` holds.
+'''

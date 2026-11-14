@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An `await`, a `yield`, or a `yield from` Between the Write and the Read Is Not Reported"
+
+description = '''
+Each `head` reads `queue.head` and is returned after an `await`, a `yield`, or a `yield from`. **None of the three is reported**, because each of those suspends the function and lets other code run against `queue` before the read.
+'''

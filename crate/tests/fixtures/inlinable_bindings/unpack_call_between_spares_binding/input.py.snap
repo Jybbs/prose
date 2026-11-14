@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/unpack_call_between_spares_binding/input.py
+---
+def swap(pair, log):
+    left, right = pair
+    log.flush()
+    return right, left

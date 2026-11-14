@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Call Inside a Nested `def` Between the Write and the Read Is Still Reported"
+
+description = '''
+`count` is written from `len(jobs)`, then a nested `run` whose body calls `jobs.clear()` is defined before `count` is read. **The binding is reported**, because defining `run` does not run its body, so nothing between the write and the read changes `jobs`.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call in a Sibling Arm Is Still Reported"
+
+description = '''
+`balance` is read in the `else` arm, and `ledger.archive()` runs only in the `if` arm beside it. **The binding is reported**, because the path reaching the read never runs the call, so the inline reads `ledger.total` with nothing run between.
+'''
