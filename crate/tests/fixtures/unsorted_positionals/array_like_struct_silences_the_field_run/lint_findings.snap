@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/array_like_struct_silences
       "column": 5,
       "row": 10
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   }
 ]

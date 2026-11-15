@@ -67,7 +67,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 15,
       "row": 51
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "unsorted-positionals",
@@ -80,7 +80,7 @@ input_file: crate/tests/fixtures/thematic/async_client_legacy_typing_cleanup/inp
       "column": 13,
       "row": 76
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "signature-annotations",

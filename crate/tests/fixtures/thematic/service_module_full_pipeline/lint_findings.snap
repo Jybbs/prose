@@ -36,7 +36,7 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
       "column": 5,
       "row": 15
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "unsorted-positionals",
@@ -49,7 +49,7 @@ input_file: crate/tests/fixtures/thematic/service_module_full_pipeline/input.py
       "column": 18,
       "row": 33
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "signature-annotations",

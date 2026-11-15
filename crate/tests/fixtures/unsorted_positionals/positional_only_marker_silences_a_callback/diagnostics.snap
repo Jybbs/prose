@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/unsorted_positionals/positional_only_marker_silences_a_callback/input.py
+---
+unsorted-positionals@23..49

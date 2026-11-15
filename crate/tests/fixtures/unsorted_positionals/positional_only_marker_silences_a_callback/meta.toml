@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A `/` Silences a Callback Whose Caller Fixes the Order"
+
+description = '''
+`lazily` and `outside_tests` are filters passed to `sys.set_lazy_imports_filter`, which calls each with the importing module, the imported module, and the fromlist, in that order. Both list `importer`, `name`, then `fromlist`, and only `outside_tests` ends its parameters with `/`. **The lint reports the run of `lazily` and passes over `outside_tests`**, because the `/` makes its parameters positional-only, which states that the caller sets their order, whereas a sort by hand would rebind every call the caller makes.
+'''

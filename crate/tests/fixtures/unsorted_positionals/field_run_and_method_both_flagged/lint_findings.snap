@@ -15,7 +15,7 @@ input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_
       "column": 5,
       "row": 6
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "unsorted-positionals",
@@ -28,6 +28,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/field_run_and_method_both_
       "column": 15,
       "row": 9
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   }
 ]

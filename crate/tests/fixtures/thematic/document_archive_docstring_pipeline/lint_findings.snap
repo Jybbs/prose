@@ -41,7 +41,7 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
       "column": 17,
       "row": 23
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "unsorted-positionals",
@@ -54,7 +54,7 @@ input_file: crate/tests/fixtures/thematic/document_archive_docstring_pipeline/in
       "column": 19,
       "row": 53
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "signature-annotations",
