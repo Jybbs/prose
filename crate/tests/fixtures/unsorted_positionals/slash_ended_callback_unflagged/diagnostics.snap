@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/unsorted_positionals/slash_ended_callback_unflagged/input.py
+---
+unsorted-positionals@23..49

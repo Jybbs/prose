@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
 expression: json
-input_file: crate/tests/fixtures/unsorted_positionals/positional_only_marker_silences_a_callback/input.py
+input_file: crate/tests/fixtures/unsorted_positionals/slash_ended_callback_unflagged/input.py
 ---
 [
   {
