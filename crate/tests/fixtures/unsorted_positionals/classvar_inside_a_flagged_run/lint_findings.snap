@@ -15,6 +15,6 @@ input_file: crate/tests/fixtures/unsorted_positionals/classvar_inside_a_flagged_
       "column": 5,
       "row": 7
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   }
 ]

@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/slash_ended_callback_unflagged/input.py
+---
+import sys
+
+
+def lazily(importer, name, fromlist):
+    return importer != "__main__"
+
+
+def outside_tests(importer, name, fromlist, /):
+    return not importer.startswith("tests.")
+
+
+sys.set_lazy_imports_filter(lazily)
+sys.set_lazy_imports_filter(outside_tests)

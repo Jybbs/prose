@@ -33,7 +33,7 @@ use crate::{
 pub(crate) struct UnsortedPositionals;
 
 impl UnsortedPositionals {
-    pub(crate) const MESSAGE: &'static str = "sort a positional run alphabetically by hand, since reordering rebinds every positional call site";
+    pub(crate) const MESSAGE: &'static str = "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 
