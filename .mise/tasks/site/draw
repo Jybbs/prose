@@ -1,0 +1,7 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "draw"
+#MISE depends     = ["site:bake"]
+#MISE description = "Draw the README's Start Here cards in each color scheme as SVG with `satori`"
+#MISE dir         = "site"
+
+bun .vitepress/lib/readme/cards.ts

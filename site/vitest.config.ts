@@ -102,6 +102,7 @@ export default defineConfig({
         '.vitepress/lib/og/render/build.ts',
         '.vitepress/lib/og/render/pool.ts',
         '.vitepress/lib/og/render/resvg-worker.mjs',
+        '.vitepress/lib/readme/record.ts',
         '.vitepress/lib/sandbox/load-module.ts'
       ],
 

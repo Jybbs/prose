@@ -6,18 +6,25 @@
 """
 Rewrites the README's relative `site/` paths to absolute raw URLs.
 
-Handles both Markdown link form `](../site/...)` and HTML attribute form
-`src="../site/..."`.
+Handles the Markdown link form `](../site/...)` and the HTML attribute forms
+`src="../site/..."` and `srcset="../site/..."`.
 """
 
 from pathlib import Path
 from re      import sub
 
+PREFIX = "https://github.com/Jybbs/prose/raw/main/"
+
+
+def absolute(readme: str) -> str:
+    """
+    Returns `readme` with every relative `site/` path in a Markdown link, a
+    `src`, or a `srcset` rewritten under `PREFIX`.
+    """
+    return sub(r'(\]\(|src="|srcset=")\.\./(?=site/)', rf"\g<1>{PREFIX}", readme)
+
+
 if __name__ == "__main__":
 
-    PREFIX = "https://github.com/Jybbs/prose/raw/main/"
     readme = Path(".github/README.md")
-
-    content = readme.read_text(encoding="utf-8")
-    content = sub(r'(\]\(|src=")\.\./(?=site/)', rf"\g<1>{PREFIX}", content)
-    readme.write_text(content, encoding="utf-8")
+    readme.write_text(absolute(readme.read_text(encoding="utf-8")), encoding="utf-8")

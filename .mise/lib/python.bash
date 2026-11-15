@@ -1,6 +1,7 @@
 PYTHON_PATHSPEC=(
   '*.py'
   ':!crate/tests/fixtures'
+  ':!site/.vitepress/lib/readme/retry.py'
   ':!site/.vitepress/tests/rules/fixtures'
 )
 

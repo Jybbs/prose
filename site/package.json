@@ -49,6 +49,7 @@
     "axe-core"                            : "4.14.0",
     "cacache"                             : "21.0.2",
     "culori"                              : "4.0.2",
+    "gifenc"                              : "1.0.3",
     "gray-matter"                         : "4.0.3",
     "happy-dom"                           : "21.0.4",
     "jsdom"                               : "31.0.1",
