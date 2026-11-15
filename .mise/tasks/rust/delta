@@ -15,8 +15,6 @@ if [[ -z "${PROSE_DELTA_STAGE:-}" ]]; then
   base_bin=$(baseline_binary "$base_tree")
 fi
 
-lock_task "$@"
-
 if [[ -n "${PROSE_DELTA_STAGE:-}" ]]; then
   stage="$PROSE_DELTA_STAGE"
 else
