@@ -101,7 +101,7 @@ input_file: crate/tests/fixtures/thematic/severity_ladder_expands_guards_align/i
       "column": 9,
       "row": 37
     },
-    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site"
+    "message": "sort a positional run alphabetically by hand, since reordering rebinds every positional call site, or end a signature's run with `/` where a caller outside the module fixes the order"
   },
   {
     "code": "signature-annotations",
