@@ -6,7 +6,7 @@ import { readmeDir } from '../../lib/shared/paths'
 import { readGif }   from '../gif'
 
 const LIMIT  = 6_000_000
-const SHAPE  = { frames: 540, height: 972, width: 1216 }
+const SHAPE  = { frames: 233, height: 1246, width: 1756 }
 
 describe.each(SCHEMES)('the %s Sandbox recording', scheme => {
   const bytes = fs.readFileSync(path.join(readmeDir(import.meta.url), `sandbox-${scheme}.gif`))
@@ -16,9 +16,9 @@ describe.each(SCHEMES)('the %s Sandbox recording', scheme => {
     expect({ frames: gif.frames.length, height: gif.height, width: gif.width }).toStrictEqual(SHAPE)
   })
 
-  it('loops forever and holds every frame for 20 ms', () => {
+  it('loops forever and holds every frame for 40 ms', () => {
     expect(gif.loops).toBe(0)
-    expect(new Set(gif.frames.map(({ delay }) => delay))).toStrictEqual(new Set([2]))
+    expect(new Set(gif.frames.map(({ delay }) => delay))).toStrictEqual(new Set([4]))
   })
 
   it('draws every frame from one shared palette', () => {
