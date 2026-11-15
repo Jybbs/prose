@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/attribute_store_between_spares_binding/input.py
+---
+def evict(cache, key):
+    entry = cache[key]
+    del cache[key]
+    return entry
+
+
+def reset(counter):
+    before        = counter.value
+    counter.value = 0
+    return before

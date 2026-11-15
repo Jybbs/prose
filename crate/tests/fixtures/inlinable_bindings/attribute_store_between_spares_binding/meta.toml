@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Store or Delete Through an Attribute or Subscript Between the Write and the Read Is Not Reported"
+
+description = '''
+`before` reads `counter.value` ahead of an assignment to that attribute, and `entry` reads `cache[key]` ahead of a `del` of that item. **Neither binding is reported**, because the inline would read the attribute after it was reset and the item after it was deleted.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Plain Assignment Between the Write and the Read Is Still Reported"
+
+description = '''
+`total` is written from `sum(rows)`, then `label` takes a literal and `marker` takes a name before all three are returned. **Every binding is reported**, because binding a literal or a name to a new local runs no code and changes nothing `sum(rows)` reads.
+'''

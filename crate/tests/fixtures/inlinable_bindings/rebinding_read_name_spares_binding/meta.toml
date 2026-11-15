@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Rebinding of a Name the Value Reads Is Not Reported"
+
+description = '''
+`start` holds `step`, and `step` is bound again before `start` is read. **The binding is not reported**, because inlining `step` at the read would return the new value rather than the one `start` held.
+'''
