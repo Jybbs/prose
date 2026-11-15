@@ -1,0 +1,7 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "affected"
+#MISE depends     = ["rust:build", "site:bake"]
+#MISE description = "Run the docs-site `vitest` files the changes since `origin/main` reach"
+#MISE dir         = "site"
+
+vitest run --project docs --changed origin/main "$@"

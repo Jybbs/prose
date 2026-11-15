@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/array_like_struct_silences_the_field_run/input.py
+---
+import msgspec
+
+
+class Point(msgspec.Struct, array_like=True):
+    y: float
+    x: float
+
+
+class Pair(msgspec.Struct):
+    y: float
+    x: float

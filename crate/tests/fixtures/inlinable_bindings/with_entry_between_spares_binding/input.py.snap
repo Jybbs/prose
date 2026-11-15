@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/with_entry_between_spares_binding/input.py
+---
+def snapshot(lock, ledger, entry):
+    balance = ledger.balance
+    with lock:
+        latest = entry
+    return balance, latest

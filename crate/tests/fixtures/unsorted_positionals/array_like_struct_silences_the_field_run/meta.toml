@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "An `array_like` `Struct` Field Run Is Not Reported"
+
+description = '''
+`Point` and `Pair` are `msgspec.Struct` classes declaring `y` then `x`, and only `Point` sets `array_like=True` on its header. **The lint reports the field run of `Pair` and passes over `Point`**, because an `array_like` `Struct` encodes and decodes as an array in field order, so the run is the layout of every message already encoded, which a reorder by hand would read into the wrong fields.
+'''

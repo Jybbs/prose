@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Ahead of the Read in Its Own Statement Is Not Reported"
+
+description = '''
+`loss` is read after `self.consolidate()` in the same `or`, and `key` is read in the target of an assignment whose value calls `row.refresh()`. **Neither binding is reported**, because Python evaluates the left operand of `or` first and an assignment's value before its target, so inlining `loss` would run `wait()` after `consolidate()` and inlining `key` would run `key_of(row)` after `refresh()`.
+'''

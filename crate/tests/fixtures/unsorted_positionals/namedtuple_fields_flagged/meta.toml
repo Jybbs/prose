@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A `NamedTuple` Field Run Is Reported"
-
-description = '''
-`ModelSpec(NamedTuple)` declares `display` then `build`, and **the lint reports the field run**, because a `NamedTuple` base generates the same positional constructor a `@dataclass` decorator does, so moving `build` ahead of `display` would leave a call like `ModelSpec("Baseline", BaselineAE)` binding the type where the label belongs.
-'''

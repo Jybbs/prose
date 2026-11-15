@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
@@ -12,10 +14,19 @@ const BUNDLE = {
 
 const FIT = '.vitepress/tests/pages/fit.test.ts'
 
+const ROOT = paths.repoRoot(import.meta.url)
+
+const READ_FROM_DISK = [
+  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**',
+  'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/assets/**',
+  'site/.vitepress/tests/**/fixtures/**', 'site/{bun.lock,patches/**}', 'site/public/**'
+].map(glob => path.join(ROOT, glob))
+
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
   test     : {
     environment         : 'node',
+    forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...READ_FROM_DISK],
     globals             : true,
     pool                : 'threads',
     reporters           : process.env.GITHUB_ACTIONS
@@ -82,7 +93,7 @@ export default defineConfig({
     coverage: {
       provider         : 'v8',
       reporter         : ['text', 'lcovonly'],
-      reportsDirectory : paths.cacheDirFrom(paths.repoRoot(import.meta.url), 'coverage/site'),
+      reportsDirectory : paths.cacheDirFrom(ROOT, 'coverage/site'),
       include          : ['.vitepress/kit/**', '.vitepress/lib/**', 'prototypes/**/*.{ts,tsx}'],
 
       exclude: [
@@ -91,6 +102,7 @@ export default defineConfig({
         '.vitepress/lib/og/render/build.ts',
         '.vitepress/lib/og/render/pool.ts',
         '.vitepress/lib/og/render/resvg-worker.mjs',
+        '.vitepress/lib/readme/record.ts',
         '.vitepress/lib/sandbox/load-module.ts'
       ],
 

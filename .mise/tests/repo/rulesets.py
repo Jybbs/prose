@@ -4,7 +4,7 @@ them from, and what it rejects before sending any.
 """
 
 from collections.abc   import Callable, Iterator
-from dataclasses       import FrozenInstanceError
+from dataclasses       import FrozenInstanceError, fields, make_dataclass
 from functools         import reduce
 from json              import dumps, loads
 from pathlib           import Path
@@ -363,6 +363,33 @@ def test_requests_toggle_an_endpoint_by_method(rulesets: ModuleType, on: bool):
     )
 
 
+@mark.parametrize("reverse", [False, True], ids=["sorted", "reversed"])
+def test_requests_send_the_dependabot_alerts_first(
+    reverse  : bool,
+    rulesets : ModuleType
+):
+    """
+    Pins that the alerts call goes out before the automated-fixes call
+    whichever order the `Dependabot` record declares its fields in.
+    """
+    record = make_dataclass(
+        "Dependabot",
+        sorted(
+            ((field.name, field.type) for field in fields(rulesets.Dependabot)),
+            reverse = reverse
+        ),
+        bases     = (rulesets.Endpoints,),
+        frozen    = True,
+        namespace = {"first": rulesets.Dependabot.first}
+    )
+    assert [
+        endpoint for endpoint, _, _ in record(
+            automated_security_fixes = True,
+            vulnerability_alerts     = True
+        ).requests()
+    ] == [f"{BASE}/vulnerability-alerts", f"{BASE}/automated-security-fixes"]
+
+
 def test_requests_send_every_setting_in_order(rulesets: ModuleType):
     """
     Pins the endpoint, method, and body of every call, the repository
@@ -373,6 +400,28 @@ def test_requests_send_every_setting_in_order(rulesets: ModuleType):
     assert parsed(rulesets).requests(from_toml(PROJECT)["project"]) == [
         (endpoint, method, body) for method, endpoint, body in SENT
     ]
+
+
+def test_requests_send_the_first_fields_then_the_rest(rulesets: ModuleType):
+    """
+    Pins that an `Endpoints` record sends the fields `first` names in that
+    order, then every other field in the order the record declares it.
+    """
+    record = make_dataclass(
+        "Probe",
+        [("gamma", bool), ("alpha", bool), ("delta", bool), ("beta", bool)],
+        bases     = (rulesets.Endpoints,),
+        frozen    = True,
+        namespace = {"first": ("delta", "alpha")}
+    )
+    assert [
+        endpoint for endpoint, _, _ in record(
+            alpha = True,
+            beta  = True,
+            delta = True,
+            gamma = True
+        ).requests()
+    ] == [f"{BASE}/{name}" for name in ("delta", "alpha", "gamma", "beta")]
 
 
 def test_tracked_files_send_the_about_box(rulesets: ModuleType):

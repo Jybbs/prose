@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Call Between the Write and the Read Is Not Reported"
+
+description = '''
+`loss` holds the result of `self.novelty.wait()` and `before` reads `counter.value`, and a call runs between each write and its read. **Neither binding is reported**, because inlining `loss` would run `wait()` after `consolidate()` rather than before it, and inlining `before` would read `counter.value` after `clock.advance()` has had the chance to change it, so the comparison could never report a change.
+'''

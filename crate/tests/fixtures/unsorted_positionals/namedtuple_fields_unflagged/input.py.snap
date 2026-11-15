@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/unsorted_positionals/namedtuple_fields_unflagged/input.py
+---
+from typing import NamedTuple
+
+
+class Box(NamedTuple):
+    west: float
+    south: float
+    east: float
+    north: float

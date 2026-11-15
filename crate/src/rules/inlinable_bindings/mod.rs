@@ -3,10 +3,12 @@
 //!
 //! A candidate is declined where no replacement text resolves, where
 //! the value spans rows, where the read sits inside a region `guards`
-//! names that the write sits outside of, and where the swap carries
-//! the read's row past `code_line_length`. Names matching
-//! `allow_pattern`, names a `del` statement targets, a function
-//! declaring `global` or `nonlocal`, and every write kind but
+//! names that the write sits outside of, where code Python evaluates
+//! after the value and before the read, on the path reaching the read,
+//! runs code or rebinds or deletes a name the value reads, and where
+//! the swap carries the read's row past `code_line_length`. Names
+//! matching `allow_pattern`, names a `del` statement targets, a
+//! function declaring `global` or `nonlocal`, and every write kind but
 //! `Assignment` and `Walrus` are skipped.
 
 use ruff_python_ast::statement_visitor::StatementVisitor;
@@ -19,6 +21,7 @@ use crate::{
     source::Source,
 };
 
+mod effects;
 mod guards;
 mod walk;
 
@@ -31,7 +34,7 @@ pub(crate) struct InlinableBindings {
 }
 
 impl InlinableBindings {
-    pub(crate) const MESSAGE: &'static str = "inline a binding read once, where the value inlines with nothing recomputed, moved under a guard, or pushed past the line budget";
+    pub(crate) const MESSAGE: &'static str = "inline a binding read once, where the value inlines with nothing recomputed, moved past an effect, moved under a guard, or pushed past the line budget";
 
     pub(crate) const PRESERVES_BINDINGS: bool = true;
 

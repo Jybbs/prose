@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "An Import Between the Write and the Read Is Not Reported"
+
+description = '''
+`start` holds the result of `clock.now()`, and `import heavy` runs before `start` is read. **The binding is not reported**, because the first import of a module runs its top-level code, and the inline would read the clock after that code runs rather than before.
+'''

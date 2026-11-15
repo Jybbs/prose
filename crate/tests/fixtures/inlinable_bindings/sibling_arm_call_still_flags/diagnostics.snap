@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/inlinable_bindings/sibling_arm_call_still_flags/input.py
+---
+inlinable-bindings@32..39

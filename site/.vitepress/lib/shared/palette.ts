@@ -20,7 +20,7 @@ const oklchMix = (base: string, toward: 'black' | 'white', share: number): strin
   formatHex(interpolate([base, toward], 'oklch')(share / 100))
 
 // Blends `hue` into `base` the way `color-mix(in srgb, hue pct%, base)` does
-const srgbMix = (base: string, hue: string, share: number): string =>
+export const srgbMix = (base: string, hue: string, share: number): string =>
   formatHex(interpolate([base, hue], 'rgb')(share / 100))
 
 export const HUES = {

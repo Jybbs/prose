@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/inlinable_bindings/nested_def_between_still_flags/input.py
+---
+def schedule(jobs):
+    count = len(jobs)
+
+    def run():
+        jobs.clear()
+
+    return count, run

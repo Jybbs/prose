@@ -1,0 +1,8 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "record"
+#MISE depends     = ["site:press"]
+#MISE description = "Record the Sandbox on the README source as a GIF in each color scheme with `gifenc`"
+#MISE dir         = "site"
+
+playwright install --only-shell chromium
+bun .vitepress/lib/readme/record.ts
