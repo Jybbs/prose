@@ -8,12 +8,9 @@ from pytest          import mark, param
 from subprocess      import CompletedProcess
 
 PYTEST = "uv run --locked --only-group test --project crate pytest"
-SUITE = (
-    ".mise/tests/conftest.py",
-    ".mise/tests/py/conftest.py",
-    ".mise/tests/py/format.py",
-    ".mise/tests/py/lint.py",
-    ".mise/tests/repo/audit.py"
+SUITE  = (
+    ".mise/tests/conftest.py", ".mise/tests/py/conftest.py", ".mise/tests/py/format.py",
+    ".mise/tests/py/lint.py", ".mise/tests/repo/audit.py"
 )
 
 
@@ -21,12 +18,17 @@ SUITE = (
     ("changed", "modules"),
     [
         param(".mise/tasks/py/format", ".mise/tests/py/format.py", id = "bash task"),
-        param(".mise/tasks/repo/audit.py", ".mise/tests/repo/audit.py", id = "python task"),
+        param(
+            ".mise/tasks/repo/audit.py",
+            ".mise/tests/repo/audit.py",
+            id = "python task"
+        ),
         param(".mise/tests/py/lint.py", ".mise/tests/py/lint.py", id = "test module"),
         param(".mise/tests/py/conftest.py", ".mise/tests/py", id = "group fixture"),
         param(".mise/tests/conftest.py", ".mise/tests", id = "suite fixture"),
         param(".mise/tests/pytest.toml", ".mise/tests", id = "suite config"),
         param(".mise/lib/python.bash", ".mise/tests", id = "library"),
+        param(".mise/config.toml", ".mise/tests", id = "tool pins"),
         param("crate/pyproject.toml", ".mise/tests", id = "test group"),
         param("crate/uv.lock", ".mise/tests", id = "test lockfile")
     ]
@@ -37,8 +39,8 @@ def test_affected_runs_the_modules_a_change_reaches(
     modules  : str
 ):
     """
-    Pins that a task file runs the module named for it, a test module runs
-    itself, a group's fixture runs its group, and a shared fixture, a
+    Pins that a task file runs the module named for it, a test module
+    runs itself, a group's fixture runs its group, and a shared fixture, a
     library, or the suite's configuration runs the whole suite.
     """
     finished = affected(changed, "edited", group="repo", tracked=SUITE)
@@ -60,8 +62,8 @@ def test_affected_runs_nothing_where_no_change_reaches_a_module(
     changed  : str
 ):
     """
-    Pins that a task file with no module of its own and a change outside
-    the task scripts run no `pytest` and exit zero on a line saying so.
+    Pins that a task file with no module of its own and a change outside the
+    task scripts run no `pytest` and exit zero on a line saying so.
     """
     finished = affected(changed, "edited", group="repo", tracked=SUITE)
 
@@ -77,7 +79,12 @@ def test_affected_hands_its_arguments_to_pytest_ahead_of_the_modules(
     modules it selects.
     """
     finished = affected(
-        ".mise/tests/py/lint.py", "edited", "-k", "lint", group="repo", tracked=SUITE
+        ".mise/tests/py/lint.py",
+        "edited",
+        "-k",
+        "lint",
+        group   = "repo",
+        tracked = SUITE
     )
 
     assert finished.stdout == f"{PYTEST} -k lint .mise/tests/py/lint.py\n"
@@ -89,12 +96,23 @@ def test_affected_reads_committed_and_untracked_changes(
     how      : str
 ):
     """
-    Pins that a committed change and a file git does not yet track reach
-    the task, as the edit in place every other case makes does.
+    Pins that a committed change and a file git does not yet track reach the
+    task, as the edit in place every other case makes does.
     """
     finished = affected(".mise/tests/py/lint.py", how, group="repo", tracked=SUITE)
 
     assert finished.stdout.splitlines() == [f"{PYTEST} .mise/tests/py/lint.py"]
+
+
+def test_affected_runs_the_module_named_for_a_renamed_task(
+    affected: Callable[..., CompletedProcess]
+):
+    """
+    Pins that renaming a task runs the module named for the path it leaves.
+    """
+    finished = affected(".mise/tasks/py/format", "renamed", group="repo", tracked=SUITE)
+
+    assert finished.stdout == f"{PYTEST} .mise/tests/py/format.py\n"
 
 
 @mark.parametrize(
@@ -109,6 +127,11 @@ def test_affected_reads_committed_and_untracked_changes(
             (".mise/tasks/repo/audit.py",),
             ".mise/tests/py/format.py .mise/tests/repo/audit.py",
             id = "tasks in two groups"
+        ),
+        param(
+            (".mise/tasks/repo/audit.py", ".mise/tests/py/lint.py"),
+            ".mise/tests/py/format.py .mise/tests/py/lint.py .mise/tests/repo/audit.py",
+            id = "modules out of path order"
         )
     ]
 )
@@ -118,11 +141,15 @@ def test_affected_runs_each_module_several_changes_reach_once(
     modules   : str
 ):
     """
-    Pins that the modules several changes reach run together, sorted, with
-    a module two changes reach named once.
+    Pins that the modules several changes reach run together, sorted, with a
+    module two changes reach named once.
     """
     finished = affected(
-        ".mise/tasks/py/format", "edited", alongside=alongside, group="repo", tracked=SUITE
+        ".mise/tasks/py/format",
+        "edited",
+        alongside = alongside,
+        group     = "repo",
+        tracked   = SUITE
     )
 
     assert finished.stdout == f"{PYTEST} {modules}\n"
@@ -152,6 +179,36 @@ def test_affected_runs_the_modules_a_deletion_leaves(
     Pins that deleting a task still runs the module named for it, whereas a
     deleted module drops out of the run.
     """
-    finished = affected(changed, "deleted", group="repo", tracked=SUITE)
+    assert affected(changed, "deleted", group="repo", tracked=SUITE).stdout == expected
 
-    assert finished.stdout == expected
+
+@mark.parametrize(
+    ("reading", "modules"),
+    [
+        param(
+            ".mise/tests/gha/brief.py",
+            ".mise/tests/gha/brief.py",
+            id = "test module"
+        ),
+        param(".mise/tasks/gha/brief.py", ".mise/tests/gha/brief.py", id = "task"),
+        param(".mise/tests/gha/conftest.py", ".mise/tests/gha", id = "group fixture")
+    ]
+)
+def test_affected_runs_what_a_file_naming_a_changed_path_reaches(
+    affected : Callable[..., CompletedProcess],
+    reading  : str,
+    modules  : str
+):
+    """
+    Pins that a change to a file a test module, a task, or a group's fixture
+    names by its path runs the modules a change to the naming file would.
+    """
+    finished = affected(
+        ".github/workflows/deploy.yml",
+        "edited",
+        group   = "repo",
+        reading = (reading,),
+        tracked = (".mise/tests/gha/brief.py",)
+    )
+
+    assert finished.stdout == f"{PYTEST} {modules}\n"

@@ -8,18 +8,17 @@ cargo_test() {
   cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
 }
 
+forwarded=("$@")
+members=$(workspace_members)
 changed=$(
   changed_paths \
     .cargo/config.toml \
+    .mise/config.toml \
     Cargo.lock \
     Cargo.toml \
     clippy.toml \
-    corpus \
-    crate \
-    harness \
-    wasm
+    $members
 )
-forwarded=("$@")
 
 if [[ -z $changed ]]; then
   echo "No Rust file changed since origin/main"
