@@ -47,8 +47,6 @@ corpus=$(corpus_root "${1:-}")
 budget="${2:-60}"
 binary=$(built_binary)
 target=$(corpus_target)
-corpus_build
-lock_task "$@"
 
 mutations="${PROSE_SETTLE_MUTATIONS:-}"
 if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then

@@ -1,0 +1,47 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Run the `.mise/tests` modules the changes since `origin/main` reach"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/changes.bash"
+
+naming() {
+  [[ -n $changed ]] || return 0
+  git grep --files-with-matches --fixed-strings --untracked -f - \
+    -- .mise/tasks .mise/tests <<<"$changed" || (($? == 1))
+}
+
+reached() {
+  local path
+  while IFS= read -r path; do
+    case $path in
+      .mise/config.toml | .mise/lib/* | .mise/tests/conftest.py \
+        | .mise/tests/pytest.toml | crate/pyproject.toml | crate/uv.lock)
+        echo .mise/tests
+        ;;
+      .mise/tasks/*)
+        path=.mise/tests/${path#.mise/tasks/}
+        echo "${path%.py}.py"
+        ;;
+      .mise/tests/*/conftest.py)
+        echo "${path%/conftest.py}"
+        ;;
+      .mise/tests/*)
+        echo "$path"
+        ;;
+    esac
+  done
+}
+
+changed=$(changed_paths)
+modules=()
+readers=$(naming)
+while IFS= read -r module; do
+  if [[ -e $module ]]; then
+    modules+=("$module")
+  fi
+done < <(reached <<<"$changed"$'\n'"$readers" | sort -u)
+
+if ((${#modules[@]} == 0)); then
+  echo "No task script or task test changed since origin/main"
+else
+  uv run --locked --only-group test --project crate pytest "$@" "${modules[@]}"
+fi
