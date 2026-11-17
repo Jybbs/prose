@@ -35,7 +35,6 @@ describe('a relabeled section', () => {
 describe('sectionOf', () => {
   it.each([
     ['index.md',                        null],
-    ['prototypes/icons/index.md',       null],
     ['reference/cli.md',                'reference'],
     ['rules/alignment/align-equals.md', 'rules'],
     ['sandbox/index.md',                'sandbox']
