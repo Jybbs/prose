@@ -14,19 +14,16 @@ url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580
 
 [tools."aqua:WebAssembly/binaryen"."platforms.linux-x64-baseline"]
 checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
-checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
 
 [tools."aqua:WebAssembly/binaryen"."platforms.linux-x64-musl"]
 checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
-checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
 
 [tools."aqua:WebAssembly/binaryen"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
-checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
 
@@ -42,7 +39,6 @@ url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580
 
 [tools."aqua:WebAssembly/binaryen"."platforms.macos-x64-baseline"]
 checksum = "sha256:13a9b90be775c6389ce3d1f879cb8627bea56708ba8c122983941d53a8199b95"
-checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-macos.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580039734"
 
@@ -58,7 +54,6 @@ url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580
 
 [tools."aqua:WebAssembly/binaryen"."platforms.windows-x64-baseline"]
 checksum = "sha256:17a2cbeac6b5693c5fbafab3838d3c65fd9c1eb38b05f5baec6c657e8c84995b"
-checksum_source = "mise-versions"
 url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-windows.tar.gz"
 url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050907"
 
@@ -151,7 +146,6 @@ url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/40995
 
 [tools."aqua:lycheeverse/lychee"."platforms.linux-arm64-musl"]
 checksum = "sha256:5d0b0e3aeab240f41920c633a6eaf97599be6eedda034b36e858ede7dba5e535"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409958602"
 
@@ -162,19 +156,16 @@ url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/40995
 
 [tools."aqua:lycheeverse/lychee"."platforms.linux-x64-baseline"]
 checksum = "sha256:1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409959156"
 
 [tools."aqua:lycheeverse/lychee"."platforms.linux-x64-musl"]
 checksum = "sha256:73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409959271"
 
 [tools."aqua:lycheeverse/lychee"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409959271"
 
@@ -190,7 +181,6 @@ url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/40995
 
 [tools."aqua:lycheeverse/lychee"."platforms.macos-x64-baseline"]
 checksum = "sha256:887503a9cff667d322b8d0892b40bf49976eb9507af8483220a3706cdad55978"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409957687"
 
@@ -206,7 +196,6 @@ url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/40995
 
 [tools."aqua:lycheeverse/lychee"."platforms.windows-x64-baseline"]
 checksum = "sha256:32975d1493ee1a975d6bb41e4fb56fe419cb442ded628bb772ba2e614acfacad"
-checksum_source = "mise-versions"
 url = "https://github.com/lycheeverse/lychee/releases/download/lychee-v0.24.2/lychee-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/lycheeverse/lychee/releases/assets/409959491"
 
@@ -222,19 +211,16 @@ url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/60686001
 
 [tools."aqua:mitsuhiko/insta"."platforms.linux-x64-baseline"]
 checksum = "sha256:18879f4e7280c2eb87bb1037ddb9d48af697511fb0d8113edfc39ab8bade4d4e"
-checksum_source = "mise-versions"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606860016"
 
 [tools."aqua:mitsuhiko/insta"."platforms.linux-x64-musl"]
 checksum = "sha256:cc64ead688107cdf2577101e26b6323795c9850456b9c62846bab30ff6db23d8"
-checksum_source = "mise-versions"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-unknown-linux-musl.tar.xz"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606860022"
 
 [tools."aqua:mitsuhiko/insta"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:cc64ead688107cdf2577101e26b6323795c9850456b9c62846bab30ff6db23d8"
-checksum_source = "mise-versions"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-unknown-linux-musl.tar.xz"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606860022"
 
@@ -250,7 +236,6 @@ url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/60685999
 
 [tools."aqua:mitsuhiko/insta"."platforms.macos-x64-baseline"]
 checksum = "sha256:e47d3d529de4eaf85c074b718af38be49a04578ff07ef0aa5765f22688095273"
-checksum_source = "mise-versions"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859990"
 
@@ -266,7 +251,6 @@ url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/60685999
 
 [tools."aqua:mitsuhiko/insta"."platforms.windows-x64-baseline"]
 checksum = "sha256:bf6374b054f596d75b5bb203010394a340cdb44d4150cd03560564fbc35d8156"
-checksum_source = "mise-versions"
 url = "https://github.com/mitsuhiko/insta/releases/download/1.49.0/cargo-insta-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/mitsuhiko/insta/releases/assets/606859993"
 
@@ -510,7 +494,6 @@ url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/6858
 
 [tools."github:codecov/codecov-cli"."platforms.linux-arm64-musl"]
 checksum = "sha256:a4b71cac685742e272e7cfd4a390cafc3736f57ebc3cf7ba2e24010f19c7f23f"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_linux_arm64"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685805974"
 
@@ -521,19 +504,16 @@ url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/6858
 
 [tools."github:codecov/codecov-cli"."platforms.linux-x64-baseline"]
 checksum = "sha256:8e1bfb71661378530f6ea21e82b414095899e565cbb4cf555c613064be17b973"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_linux"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685805448"
 
 [tools."github:codecov/codecov-cli"."platforms.linux-x64-musl"]
 checksum = "sha256:8e1bfb71661378530f6ea21e82b414095899e565cbb4cf555c613064be17b973"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_linux"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685805448"
 
 [tools."github:codecov/codecov-cli"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:8e1bfb71661378530f6ea21e82b414095899e565cbb4cf555c613064be17b973"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_linux"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685805448"
 
@@ -549,7 +529,6 @@ url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/6858
 
 [tools."github:codecov/codecov-cli"."platforms.macos-x64-baseline"]
 checksum = "sha256:c7957a4c7a0f80eee58f53cd8ec7ec6cbdacffdbabb427bdfc2ce2a23f794164"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_macos"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685806008"
 
@@ -565,7 +544,6 @@ url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/6858
 
 [tools."github:codecov/codecov-cli"."platforms.windows-x64-baseline"]
 checksum = "sha256:0ed5e32ac608d32e75d20ecfcb0b4a533a038ca3344285e715677bd91ae9a5f4"
-checksum_source = "mise-versions"
 url = "https://github.com/codecov/codecov-cli/releases/download/v11.3.2/codecovcli_windows.exe"
 url_api = "https://api.github.com/repos/codecov/codecov-cli/releases/assets/685806330"
 
@@ -584,7 +562,6 @@ url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379066
 
 [tools."github:mstange/samply"."platforms.linux-arm64-musl"]
 checksum = "sha256:aa465162b62830168775b7ff4804bc35049436dcbc29bb3d1ea9f580380ea06a"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-aarch64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379066"
 
@@ -595,19 +572,16 @@ url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379074
 
 [tools."github:mstange/samply"."platforms.linux-x64-baseline"]
 checksum = "sha256:61875daad67888798690dea3cb2748279df6ac299c5c6a857d67eed7642473d9"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-gnu.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379074"
 
 [tools."github:mstange/samply"."platforms.linux-x64-musl"]
 checksum = "sha256:691f48f3b3ece38d6fc0d93ce2143fd8ca5621fe627ebc4c13f1f0081fcb6480"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-musl.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379076"
 
 [tools."github:mstange/samply"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:691f48f3b3ece38d6fc0d93ce2143fd8ca5621fe627ebc4c13f1f0081fcb6480"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-unknown-linux-musl.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379076"
 
@@ -623,7 +597,6 @@ url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379070
 
 [tools."github:mstange/samply"."platforms.macos-x64-baseline"]
 checksum = "sha256:a57f05f9162d06c36df6d51425d976ac774a8cd6dbd84050e6303fa8bf813998"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-apple-darwin.tar.xz"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379070"
 
@@ -634,7 +607,6 @@ url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379071
 
 [tools."github:mstange/samply"."platforms.windows-x64-baseline"]
 checksum = "sha256:8fed74dac18197bbb2520125b0199255e09709bed7903a7672a06225a5d7e976"
-checksum_source = "mise-versions"
 url = "https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/mstange/samply/releases/assets/225379071"
 
@@ -650,7 +622,6 @@ url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619832
 
 [tools."github:sharkdp/hyperfine"."platforms.linux-arm64-musl"]
 checksum = "sha256:f0591c2cb8f66f2d2624d23979cf96dc99a67cb935f9925c82b9a4e3ffe5b2e1"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-aarch64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619832413"
 
@@ -661,19 +632,16 @@ url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619831
 
 [tools."github:sharkdp/hyperfine"."platforms.linux-x64-baseline"]
 checksum = "sha256:ae2beda2ac99c098427e4f755244552daf20e514422889cca6d44421e2d93c87"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-gnu.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619831673"
 
 [tools."github:sharkdp/hyperfine"."platforms.linux-x64-musl"]
 checksum = "sha256:38e59087bd65520930a13cf513d8a493b7043741e8ad62349a8a9929eb61bc5c"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619832904"
 
 [tools."github:sharkdp/hyperfine"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:38e59087bd65520930a13cf513d8a493b7043741e8ad62349a8a9929eb61bc5c"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619832904"
 
@@ -689,7 +657,6 @@ url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619836
 
 [tools."github:sharkdp/hyperfine"."platforms.macos-x64-baseline"]
 checksum = "sha256:8afe204926afefa406ad320cef0672b739e5f676c623fbd6d43d779bacd684e3"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619836081"
 
@@ -705,7 +672,6 @@ url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619834
 
 [tools."github:sharkdp/hyperfine"."platforms.windows-x64-baseline"]
 checksum = "sha256:3dec51acee1060908e67948838d6bc0a7aacde0774acebfa4afb220dcf0bc078"
-checksum_source = "mise-versions"
 url = "https://github.com/sharkdp/hyperfine/releases/download/v2.0.0/hyperfine-v2.0.0-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/sharkdp/hyperfine/releases/assets/619834237"
 
