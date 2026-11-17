@@ -1,0 +1,4 @@
+["repo:changed"]
+alias       = "affected"
+description = "Run the tests the changes since `origin/main` reach on every surface"
+run         = [{ tasks = ["repo:affected", "rust:affected", "site:affected"] }]
