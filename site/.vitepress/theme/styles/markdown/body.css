@@ -1,3 +1,14 @@
+/* Numbers every fixture card a page shows in one run, single-rule and
+   multi-rule cards alike, so every folio shares one column. */
+@counter-style prose-fixture-folio {
+  system : extends decimal;
+  pad    : 3 "0";
+}
+
+.vp-doc {
+  counter-reset : prose-fixture-folio;
+}
+
 /* A line break takes the whole chip to the next line, since a break after a
    hyphen would otherwise split `--color` and strand one dash in a sliced chip.
    A chip wider than the column still wraps inside its own box. */

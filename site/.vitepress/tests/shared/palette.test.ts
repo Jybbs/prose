@@ -243,7 +243,7 @@ describe('the sheets reading the roles and shades', () => {
   const code = '.vp-doc .custom-block:is(.tip, .info, .warning, .danger) code'
 
   it.each([
-    ['components/fixtures/styles/lint-findings.css', '.lint-flag',                    '--lint-color',    'var(--prose-shade-apricot-code-35)'],
+    ['styles/tailwind/fixtures.css',                '.lint-flag',                    '--lint-color',    'var(--prose-shade-apricot-code-35)'],
     ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.danger',  '--callout-mark',  'var(--prose-shade-apricot-page-45)'],
     ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.tip',     '--callout-mark',  'var(--color-link)'],
     ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.warning', '--callout-mark',  'var(--prose-shade-eureka-page-45)'],

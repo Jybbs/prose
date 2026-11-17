@@ -49,7 +49,7 @@ export const IdentityRoles = defineComponent({
               </Tabs>
             ),
             default : () => (
-              <div class="identity-roles">
+              <div class="identity-roles grid">
                 <div {...mark('page')} class="bg-bg p-20 text-text-1" style={data.passage[scheme.value]}>
                   <p class="m-0 leading-1-65">
                     <span {...mark('text-1')}>Body text sits on the page ground, </span>
@@ -65,7 +65,7 @@ export const IdentityRoles = defineComponent({
                   <ScrollRegion as="pre" {...mark('code-block')} class="mt-16 mb-0 overflow-auto rounded-sm bg-code-block px-16 py-12 font-mono text-code text-code-ink">
                     {{ default: () => 'prose check --output-format sarif .' }}
                   </ScrollRegion>
-                  <table class="identity-table mt-16 mb-0 w-full">
+                  <table class="table mt-16 mb-0 w-full">
                     <thead>
                       <tr><th {...mark('soft')}>Format</th><th {...mark('text-2')}>Output</th></tr>
                     </thead>
@@ -94,7 +94,7 @@ export const IdentityRoles = defineComponent({
                       {data.roles.filter(role => role.group === group).map(role => (
                         <button
                           aria-pressed={pinned.value === role.id}
-                          class="identity-pick identity-legend"
+                          class="identity-pick identity-legend grid items-center gap-x-10 px-14 py-5 aria-pressed:bg-chip-ground"
                           key={role.id}
                           type="button"
                           {...on(role.id)}

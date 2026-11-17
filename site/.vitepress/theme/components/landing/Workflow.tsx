@@ -17,10 +17,10 @@ export const Workflow = defineComponent({
       <LandingSection centered heading={"<em>Open</em> with these few lines."} kicker="The Workflow">
         {{
           default: () => (
-            <article class="landing-workflow mt-24 flex flex-col panel bg-bg-soft">
+            <article class="mt-24 workflow-accent-celadon flex flex-col panel bg-bg-soft">
                 {chapters.value.map(chapter => (
                   <section
-                    class="landing-workflow-section relative grid grid-cols-72-1fr gap-24 border-b-1 border-dashed border-b-workflow-accent-24-divider px-28 py-14 before:absolute before:inset-y-14 before:w-1 before:bg-workflow-accent-28-divider last:border-b-0 max-card-stack:grid-cols-64-1fr max-card-stack:gap-18 max-card-stack:px-22 max-card-stack:pt-22 max-card-stack:pb-24 max-card-stack:before:top-22 max-card-stack:before:bottom-24"
+                    class="relative grid grid-cols-72-1fr gap-24 border-b-1 border-dashed border-b-workflow-accent-24-divider px-28 py-14 before:absolute before:inset-y-14 before:w-1 before:left-workflow-rule before:bg-workflow-accent-28-divider last:border-b-0 max-card-stack:grid-cols-64-1fr max-card-stack:gap-18 max-card-stack:px-22 max-card-stack:pt-22 max-card-stack:pb-24 max-card-stack:before:left-workflow-rule-stacked max-card-stack:before:top-22 max-card-stack:before:bottom-24"
                     key={chapter.number}
                   >
                     <aside

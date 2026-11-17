@@ -21,3 +21,51 @@
   --scope-mark : var(--prose-shade-celadon-wash-35);
   --scope-tint : var(--color-celadon);
 }
+
+[data-domain="cli-flag"]      { --domain-color : var(--color-ube);      }
+[data-domain="config-key"]    { --domain-color : var(--color-celadon);  }
+[data-domain="exit-code"]     { --domain-color : var(--color-chambray); }
+[data-domain="output-format"] { --domain-color : var(--color-whiskey);  }
+[data-domain="subcommand"]    { --domain-color : var(--color-eureka);   }
+[data-domain="suppression"]   { --domain-color : var(--color-apricot);  }
+
+:root {
+  --az-index-band : var(--prose-tint-18);
+}
+
+.dark {
+  --az-index-band : var(--prose-tint-22);
+}
+
+[data-outcome="success"] {
+  --outcome-ink  : var(--prose-shade-celadon-page-45);
+  --outcome-mark : var(--prose-shade-celadon-page-35);
+}
+
+[data-outcome="findings"] {
+  --outcome-ink  : var(--prose-shade-eureka-page-45);
+  --outcome-mark : var(--prose-shade-eureka-page-35);
+}
+
+[data-outcome="error"] {
+  --outcome-ink  : var(--prose-shade-apricot-page-45);
+  --outcome-mark : var(--prose-shade-apricot-page-35);
+}
+
+[data-hue="ube"] {
+  --knob-figure : var(--prose-shade-ube-page-45);
+  --knob-guide  : var(--prose-shade-ube-code-35);
+  --knob-tether : var(--prose-shade-ube-soft-35);
+}
+
+[data-hue="dexter"] {
+  --knob-figure : var(--prose-shade-dexter-page-45);
+  --knob-guide  : var(--prose-shade-dexter-code-35);
+  --knob-tether : var(--prose-shade-dexter-soft-35);
+}
+
+[data-hue="whiskey"] {
+  --knob-figure : var(--prose-shade-whiskey-page-45);
+  --knob-guide  : var(--prose-shade-whiskey-code-35);
+  --knob-tether : var(--prose-shade-whiskey-soft-35);
+}

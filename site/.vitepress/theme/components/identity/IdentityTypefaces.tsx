@@ -79,12 +79,12 @@ export const IdentityTypefaces = defineComponent({
               <Tabs label="Typographic roles" modelValue={chosen.value} onUpdate:modelValue={(next: TypeRoleId) => { chosen.value = next }} orientation="vertical">
                 {{
                   default: ({ content, list, trigger }: TabsScope<TypeRoleId>) => (
-                    <div class="identity-faces">
-                      <div {...list} class="identity-face-index grid content-start py-12">
+                    <div class="identity-faces grid">
+                      <div {...list} class="identity-face-index grid content-start py-12 max-mobile:grid-cols-2 max-mobile:border-b-1 max-mobile:border-b-divider">
                         {faces.value.map(([face, roles]) => [
                           <span aria-hidden="true" class="mx-18 mt-8 mb-4 block kicker" key={face}>{face}</span>,
                           ...roles!.map(each => (
-                            <button key={each.id} {...trigger(each.id)} aria-controls={undefined} class="identity-pick identity-face-tab">
+                            <button key={each.id} {...trigger(each.id)} aria-controls={undefined} class="identity-pick grid gap-2 px-18 py-6">
                               <span class="font-mono text-kicker-sm tracking-kicker uppercase tabular-nums">{folio(each.id)}</span>
                               <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{each.label}</span>
                             </button>
@@ -119,7 +119,7 @@ export const IdentityTypefaces = defineComponent({
                             {place('h3')}
                             {place('body', ' ', place('aside'), ' ', place('code'))}
                             <div class="flex flex-wrap items-baseline gap-x-12">
-                              <table class="identity-table m-0 w-max"><thead><tr>{place('th')}</tr></thead></table>
+                              <table class="table m-0 w-max"><thead><tr>{place('th')}</tr></thead></table>
                               {place('callout')}
                               {place('folio')}
                             </div>
