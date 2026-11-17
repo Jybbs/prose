@@ -58,6 +58,16 @@ static POST_RUFF: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
          set `[harness] skip_ruff_coexistence = true` in the sidecar of the fixture each `<domain>.<case>.py` names to opt it out",
         String::from_utf8_lossy(&output.stderr),
     );
+    let summary = String::from_utf8_lossy(&output.stdout);
+    let counted: usize = summary
+        .split(", ")
+        .filter_map(|part| part.split_whitespace().next()?.parse::<usize>().ok())
+        .sum();
+    assert_eq!(
+        counted,
+        names.len(),
+        "ruff format reported {counted} of the swept copies:\n{summary}",
+    );
     names
         .into_iter()
         .map(|name| {
