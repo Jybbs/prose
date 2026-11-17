@@ -188,6 +188,30 @@ mod tests {
     }
 
     #[test]
+    fn drain_in_order_writes_blocks_landing_last_first_in_slot_order() {
+        let (sender, receiver) = mpsc::channel();
+        for slot in (0..4usize).rev() {
+            let block = slot.to_string().into_bytes();
+            sender
+                .send((
+                    slot,
+                    Ok(Some((FileOutcome::Failed(ExitStatus::Clean), block))),
+                ))
+                .expect("queues the block");
+        }
+        let (mut outcomes, mut written) = (Vec::new(), Vec::new());
+
+        drain_in_order(&receiver, 4, &mut outcomes, &mut |block: &[u8]| {
+            written.push(String::from_utf8(block.to_vec()).expect("the block is UTF-8"));
+            Ok(())
+        })
+        .expect("the queue drains");
+
+        assert_eq!(written, ["0", "1", "2", "3"]);
+        assert_eq!(outcomes.len(), 4);
+    }
+
+    #[test]
     fn process_paths_fails_a_rejected_path_and_runs_the_rest() {
         let dir = TempDir::new().expect("a temporary directory");
 
@@ -276,19 +300,12 @@ mod tests {
     fn stream_paths_writes_each_block_in_walker_order() {
         let dir = TempDir::new().expect("a temporary directory");
         let order = seeded(&dir, &["a.py", "b.py", "c.py", "d.py"]);
-        let first = order.first().expect("the walk found a module").clone();
         let mut written = Vec::new();
 
         let outcomes = stream_paths(
             &[dir.path().to_path_buf()],
             CHECK,
             |path, _| {
-                // Holding the block the walk yields first behind every
-                // other one forces the driver to reorder rather than
-                // write in completion order.
-                if path == first {
-                    std::thread::sleep(std::time::Duration::from_millis(50));
-                }
                 Ok((
                     FileOutcome::Failed(ExitStatus::Clean),
                     path.display().to_string().into_bytes(),

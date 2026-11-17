@@ -123,7 +123,7 @@ fn finalize(result: anyhow::Result<ExitStatus>) -> ExitStatus {
         Ok(status) => status,
         Err(err) if is_broken_pipe(&err) => ExitStatus::Clean,
         Err(err) => {
-            log_error_chain(&err);
+            log_error_chain(&err, io::stderr().lock());
             ExitStatus::ConfigError
         }
     }
@@ -140,7 +140,7 @@ fn is_broken_pipe(err: &anyhow::Error) -> bool {
 /// per-file walk reloads the same config.
 fn load_config_or_status(dedup: &NoticeDedup) -> Result<Config, ExitStatus> {
     let fail = |e: anyhow::Error| {
-        log_error_chain(&e);
+        log_error_chain(&e, io::stderr().lock());
         ExitStatus::ConfigError
     };
     let cwd = std::env::current_dir()
@@ -151,10 +151,11 @@ fn load_config_or_status(dedup: &NoticeDedup) -> Result<Config, ExitStatus> {
         .map_err(fail)
 }
 
-fn log_error_chain(err: &anyhow::Error) {
-    let mut stderr = io::stderr().lock();
+/// Writes one `error:` line to `out` for `err` and each cause beneath
+/// it, outermost first.
+fn log_error_chain(err: &anyhow::Error, mut out: impl Write) {
     for cause in err.chain() {
-        let _ = writeln!(stderr, "error: {cause}");
+        let _ = writeln!(out, "error: {cause}");
     }
 }
 
@@ -227,7 +228,8 @@ mod tests {
 
     #[test]
     fn log_error_chain_walks_each_cause() {
-        let err = anyhow::Error::msg("root").context("ctx");
-        log_error_chain(&err);
+        let mut out = Vec::new();
+        log_error_chain(&anyhow::Error::msg("root").context("ctx"), &mut out);
+        assert_eq!(out, b"error: ctx\nerror: root\n");
     }
 }

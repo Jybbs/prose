@@ -91,14 +91,11 @@ mod tests {
         assert_eq!(status as u8, expected);
     }
 
-    #[test]
-    fn from_severity_format_is_format_change() {
-        assert_eq!(ExitStatus::from(Severity::Format), ExitStatus::FormatChange);
-    }
-
-    #[test]
-    fn from_severity_lint_is_lint_violation() {
-        assert_eq!(ExitStatus::from(Severity::Lint), ExitStatus::LintViolation);
+    #[rstest]
+    #[case(Severity::Format, ExitStatus::FormatChange)]
+    #[case(Severity::Lint, ExitStatus::LintViolation)]
+    fn from_severity_names_its_status(#[case] severity: Severity, #[case] status: ExitStatus) {
+        assert_eq!(ExitStatus::from(severity), status);
     }
 
     #[test]

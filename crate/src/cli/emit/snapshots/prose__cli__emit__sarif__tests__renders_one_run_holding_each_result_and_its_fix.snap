@@ -1,0 +1,70 @@
+---
+source: crate/src/cli/emit/sarif.rs
+expression: "serde_json::to_string_pretty(&document).expect(\"renders\").replace(env!(\"CARGO_PKG_VERSION\"),\n\"<version>\")"
+---
+{
+  "runs": [
+    {
+      "results": [
+        {
+          "fixes": [
+            {
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "<source>"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "endColumn": 2,
+                        "endLine": 1,
+                        "startColumn": 1,
+                        "startLine": 1
+                      },
+                      "insertedContent": {
+                        "text": "y"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "<source>"
+                },
+                "region": {
+                  "endColumn": 2,
+                  "endLine": 1,
+                  "startColumn": 1,
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "message": {
+            "text": "rewrite x to y"
+          },
+          "ruleId": "rewrite-x"
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "prose",
+          "rules": [
+            {
+              "id": "rewrite-x"
+            }
+          ],
+          "version": "<version>"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}
