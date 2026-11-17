@@ -6,14 +6,11 @@
   --color-celadon-code-45          : var(--prose-shade-celadon-code-45);
   --color-celadon-selected-45      : var(--prose-shade-celadon-selected-45);
   --color-celadon-soft-45          : var(--prose-shade-celadon-soft-45);
-  --color-emblem-ink               : var(--emblem-ink);
-  --color-emblem-paint             : var(--emblem-paint);
   --color-ube-page-45              : var(--prose-shade-ube-page-45);
   --color-ube-soft-45              : var(--prose-shade-ube-soft-45);
 
   --grid-template-columns-232-1fr  : var(--prose-width-232) 1fr;
   --grid-template-columns-fill-260 : repeat(auto-fill, minmax(var(--prose-width-260), 1fr));
-  --grid-template-columns-fill-96  : repeat(auto-fill, minmax(var(--prose-size-96), 1fr));
 
   --text-decoration-thickness-2    : var(--prose-border-2);
 }

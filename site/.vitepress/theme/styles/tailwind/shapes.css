@@ -272,8 +272,8 @@
 
 @utility glyph {
   @apply glyph-stroke;
-  width  : var(--glyph-size, var(--prose-size-14));
-  height : var(--glyph-size, var(--prose-size-14));
+  width  : var(--prose-size-14);
+  height : var(--prose-size-14);
 }
 
 @utility glyph-stroke {

@@ -50,6 +50,7 @@ describe('pageHead', () => {
     expect(content(tags, 'og:title')).toBe('Prose')
     expect(content(tags, 'og:type')).toBe('website')
     expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
+    expect(content(tags, 'og:image:alt')).toBe(SITE_ALT)
     expect(jsonLd(tags)).toMatchObject({ '@graph': [
       { '@type': 'WebSite' },
       { '@type': 'SoftwareApplication', softwareVersion: '0.1.0' }
@@ -67,6 +68,7 @@ describe('pageHead', () => {
     expect(content(tags, 'og:title')).toBe('Prose')
     expect(content(tags, 'og:type')).toBe('website')
     expect(content(tags, 'og:image')).toBe(`${SITE_HOSTNAME}/og.png`)
+    expect(content(tags, 'og:image:alt')).toBe(SITE_ALT)
     expect(content(tags, 'og:description')).toBe(SITE_TAGLINE)
     expect(content(tags, 'og:url')).toBeUndefined()
     expect(jsonLd(tags)).toBeUndefined()
