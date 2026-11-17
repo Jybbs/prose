@@ -1,0 +1,27 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE description = "Run `rust:suite` once the changes since `origin/main` reach the Rust workspace or its build configuration"
+
+source "$MISE_PROJECT_ROOT/.mise/lib/changes.bash"
+source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
+
+cargo_test() {
+  cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
+}
+
+forwarded=("$@")
+members=$(workspace_members)
+changed=$(
+  changed_paths \
+    .cargo/config.toml \
+    .mise/config.toml \
+    Cargo.lock \
+    Cargo.toml \
+    clippy.toml \
+    $members
+)
+
+if [[ -z $changed ]]; then
+  echo "No Rust file changed since origin/main"
+else
+  split_suite cargo_test
+fi
