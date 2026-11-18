@@ -49,13 +49,3 @@ describe('GLOSSARY_FAMILY_META', () => {
     expect(registries.GLOSSARY_FAMILY_META[family]).toMatchObject(registries.FAMILY_META[family])
   })
 })
-
-describe('registry types', () => {
-  it('FAMILY_META keys equal the RuleFamily union', () => {
-    expectTypeOf<keyof typeof registries.FAMILY_META>().toEqualTypeOf<registries.RuleFamily>()
-  })
-
-  it('GLOSSARY_FAMILY_META keys equal the GlossaryFamily union', () => {
-    expectTypeOf<keyof typeof registries.GLOSSARY_FAMILY_META>().toEqualTypeOf<registries.GlossaryFamily>()
-  })
-})

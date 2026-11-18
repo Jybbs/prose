@@ -24,7 +24,7 @@ describe('SOURCES', () => {
   it.each(SOURCES.map(source => [source.code, source] as const))(
     'states every fact for code %i',
     (_code, source) => {
-      expect(source.facts.every(fact => fact.length > 0)).toBe(true)
+      expect(source.facts).not.toContain('')
     }
   )
 
@@ -50,12 +50,17 @@ describe('exitCodesFrom', () => {
 })
 
 describe('exitCodes', () => {
+  const entries = exitCodes(repoRoot(import.meta.url))
+
   it('labels every code from the built binary', () => {
-    const entries = exitCodes(repoRoot(import.meta.url))
     expect(entries.map(entry => entry.code)).toStrictEqual(SOURCES.map(source => source.code))
-    for (const entry of entries) {
-      expect(entry.label.length).toBeGreaterThan(0)
+  })
+
+  it.each(entries.map(entry => [entry.code, entry] as const))(
+    'labels code %i and states its summary as a sentence',
+    (_code, entry) => {
+      expect(entry.label).not.toBe('')
       expect(entry.summary).toMatch(/^[A-Z].*\.$/)
     }
-  })
+  )
 })

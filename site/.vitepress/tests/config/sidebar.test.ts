@@ -47,10 +47,10 @@ describe('buildSidebar', () => {
   it.each(['guide', 'integrations', 'reference'])('covers every %s content page', section => {
     const links = sidebar[`/${section}/`].flatMap(group => group.items ?? []).map(item => item.link)
     const pages = fs.readdirSync(path.join(src, section)).filter(isContentPage)
-    expect(pages.length).toBeGreaterThan(0)
-    for (const page of pages) {
-      expect(links).toContain(`/${section}/${path.basename(page, '.md')}`)
-    }
+    expect(pages).not.toHaveLength(0)
+    expect(links).toStrictEqual(
+      expect.arrayContaining(pages.map(page => `/${section}/${path.basename(page, '.md')}`))
+    )
   })
 
   it('throws on a flat-section page with no H1', () => {
