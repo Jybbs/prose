@@ -45,6 +45,8 @@ jobs:
             tools      : zizmor
           - command    : mise run rust:unused
             name       : 🪓 Unused
+          - command    : mise run rust:deny
+            name       : 🛂 Crates
           - command    : mise run rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy

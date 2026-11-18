@@ -1,7 +1,0 @@
-[pytest]
-addopts                  = ["--import-mode=importlib", "-ra"]
-cache_dir                = "${MISE_PROJECT_ROOT}/.cache/pytest"
-empty_parameter_set_mark = "fail_at_collect"
-filterwarnings           = ["error"]
-python_files             = ["*.py"]
-strict                   = true

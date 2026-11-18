@@ -1,2 +1,5 @@
+[env]
+CLIPPY_CONF_DIR = { value = ".cargo", relative = true }
+
 [registry]
 global-min-publish-age = "24 hours"
