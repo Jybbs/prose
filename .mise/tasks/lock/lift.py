@@ -1060,18 +1060,34 @@ def passing(holds: set[str], logs: Path, named: str) -> bool:
     return passed
 
 
-def waiting(held: list[Held]) -> str:
+def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     """
-    Returns the Markdown table listing each release in `held` beside when
-    the `minimum_release_age` cutoff clears it, under a sentence naming
-    the cutoff.
+    Returns the holds a trial settles on, which are `holds` where the
+    attempt moving every other lift passes. An attempt holding back every
+    major lift follows, and the task stops where it fails or no major lift
+    is left to hold back. Otherwise the first attempt to pass holding back
+    one major lift gives the holds, or every major lift stays held back
+    where none does.
     """
-    header = ["**Pin**", "**Release**", "**Clears**"]
-    listed = padded([header, *(each.cells() for each in held)])
-    return (
-        "The `minimum_release_age` cutoff holds these releases back from every "
-        f"write until each clears:\n\n{listed}"
-    )
+    logs     = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    majors   = [lift.name for lift in lifts if lift.major and lift.name not in holds]
+    withheld = holds.union(majors)
+    logs.mkdir(parents=True)
+
+    if passing(holds, logs, "with every lift"):
+        return holds
+    if len(majors) == 1 and passing(withheld, logs, f"holding back {majors[0]}"):
+        return withheld
+    if len(majors) < 2 or not passing(withheld, logs, "holding back every major lift"):
+        raise SystemExit(
+            "the failure remains with every major lift held back, so nothing is written"
+        )
+
+    for major in majors:
+        if passing(held := holds | {major}, logs, f"holding back {major}"):
+            return held
+    print("no single hold passed, so every major lift stays held back")
+    return withheld
 
 
 def site_pins() -> list[Pin]:
@@ -1109,6 +1125,20 @@ def site_pins() -> list[Pin]:
     ]
 
 
+def waiting(held: list[Held]) -> str:
+    """
+    Returns the Markdown table listing each release in `held` beside when
+    the `minimum_release_age` cutoff clears it, under a sentence naming
+    the cutoff.
+    """
+    header = ["**Pin**", "**Release**", "**Clears**"]
+    listed = padded([header, *(each.cells() for each in held)])
+    return (
+        "The `minimum_release_age` cutoff holds these releases back from every "
+        f"write until each clears:\n\n{listed}"
+    )
+
+
 def workflow_pins() -> Iterator[Pin]:
     """
     Yields the pin of every third-party action a workflow or composite
@@ -1125,36 +1155,6 @@ def workflow_pins() -> Iterator[Pin]:
             for match in finditer(rf'\b{key}\s*:\s*"?v?(\d[^"\s]*)"?', text):
                 home = Home(path, pattern=rf"\b{key}\s*:\s*\S+")
                 yield Pin(home, name, name, source, match[1])
-
-
-def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
-    """
-    Returns the holds a trial settles on, which are `holds` where the
-    attempt moving every other lift passes. An attempt holding back every
-    major lift follows, and the task stops where it fails or no major lift
-    is left to hold back. Otherwise the first attempt to pass holding back
-    one major lift gives the holds, or every major lift stays held back
-    where none does.
-    """
-    logs     = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    majors   = [lift.name for lift in lifts if lift.major and lift.name not in holds]
-    withheld = holds.union(majors)
-    logs.mkdir(parents=True)
-
-    if passing(holds, logs, "with every lift"):
-        return holds
-    if len(majors) == 1 and passing(withheld, logs, f"holding back {majors[0]}"):
-        return withheld
-    if len(majors) < 2 or not passing(withheld, logs, "holding back every major lift"):
-        raise SystemExit(
-            "the failure remains with every major lift held back, so nothing is written"
-        )
-
-    for major in majors:
-        if passing(held := holds | {major}, logs, f"holding back {major}"):
-            return held
-    print("no single hold passed, so every major lift stays held back")
-    return withheld
 
 
 def write(lifts: list[Lift]):
