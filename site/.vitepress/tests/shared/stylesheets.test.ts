@@ -128,7 +128,7 @@ describe('tokens.css', () => {
   })
 
   it('declares no token the site leaves unread', () => {
-    const sources = fs.globSync(['.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', 'prototypes/**/*.{ts,tsx}'], { cwd: vocabulary.SITE })
+    const sources = fs.globSync('.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', { cwd: vocabulary.SITE })
       .map(vocabulary.read)
     for (const { root } of STYLESHEETS) {
       const sheet = root.clone()

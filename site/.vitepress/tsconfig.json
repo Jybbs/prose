@@ -8,9 +8,7 @@
   },
   "include"         : [
     "**/*.ts",
-    "**/*.tsx",
-    "../prototypes/**/*.ts",
-    "../prototypes/**/*.tsx"
+    "**/*.tsx"
   ],
   "exclude"         : ["tests/wasm/**"]
 }

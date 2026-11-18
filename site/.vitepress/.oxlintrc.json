@@ -40,7 +40,7 @@
 
   "overrides": [
     {
-      "files" : ["**/prototypes/*/**", "theme/components/**"],
+      "files" : ["theme/components/**"],
       "rules" : {
         "no-restricted-imports" : ["error", {
           "patterns" : [
