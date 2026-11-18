@@ -12,6 +12,9 @@ them fails.
 
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
+    exact      Every `devDependencies` and `overrides` entry in
+               `site/package.json` pins one exact version, and each range
+               `bun add` writes fails the audit, named by its package.
     labels     Every label `release.yml`, an issue template, or the label
                table in `CONTRIBUTING.md` names is declared in
                `.github/labels.toml` and described the same way there. Every
@@ -85,6 +88,10 @@ CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
 ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
+EXACT = (
+    r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
+    r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+)
 PROPERTY_ESCAPES : dict[int, str] = ESCAPES | str.maketrans({",": "%2C", ":": "%3A"})
 READ             : set[str]       = set()
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
@@ -276,6 +283,30 @@ def dependencies(task: str) -> list[str]:
     ]
 
 
+def exact() -> int:
+    """
+    Reports every `devDependencies` or `overrides` entry in
+    `site/package.json` whose version is a range rather than one version in
+    the grammar https://semver.org/ sets, which `EXACT` spells, naming each
+    by its package.
+    """
+    package = json_loads(read("site/package.json"))
+    return flagged(
+        findings = [
+            (
+                {
+                    f"{name}@{version}"
+                    for table in ("devDependencies", "overrides")
+                    for name, version in package.get(table, {}).items()
+                    if not fullmatch(EXACT, version)
+                },
+                "site/package.json dependencies written as a range rather than an "
+                "exact version"
+            )
+        ]
+    )
+
+
 def extract(message: str, pattern: str, text: str) -> str:
     """
     Returns the first capture of `pattern` in `text`.
@@ -326,7 +357,7 @@ def families() -> dict[str, tuple[str, str | None]]:
         )
         if tints.get(family) not in hues:
             fail(f"FAMILIES in palette.ts gives the {family} family no palette hue")
-        if not (page := Path(f"site/rules/{family}/index.md")).exists():
+        if not (page := Path(f"site/pages/rules/{family}/index.md")).exists():
             fail(f"the {family} family has no rule-index page at {page}")
         described = (
             yaml(page)["description"]
@@ -1470,6 +1501,7 @@ if __name__ == "__main__":
 
     raise SystemExit(
         parity()
+        | exact()
         | labels()
         | forms()
         | manifests()

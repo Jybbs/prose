@@ -5,4 +5,4 @@
 #MISE dir         = "site"
 
 playwright install --only-shell --with-deps chromium webkit
-vitest run --project render "$@"
+vitest run --config .vitepress/vitest.config.ts --project render "$@"

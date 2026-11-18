@@ -3,11 +3,11 @@ import path from 'node:path'
 
 import type { JSXNode } from 'satori/jsx'
 
-import { loadBrandAssets }              from '../og/render/assets'
-import { el, FONT, toSvg }              from '../og/render/parts'
-import { discoverRuleIndex }            from '../rules/discovery'
-import * as palette                     from '../shared/palette'
-import { readmeDir, rulesDir, siteDir } from '../shared/paths'
+import { loadBrandAssets }               from '../og/render/assets'
+import { el, FONT, toSvg }               from '../og/render/parts'
+import { discoverRuleIndex }             from '../rules/discovery'
+import * as palette                      from '../shared/palette'
+import { pagesDir, readmeDir, rulesDir } from '../shared/paths'
 
 interface Card {
   hue      : keyof typeof palette.HUES
@@ -61,7 +61,7 @@ const CARD_STYLE = {
 // Draws every card in each scheme with the brand fonts, keyed
 // `<label>-<scheme>` in lowercase.
 export async function drawCards(): Promise<Record<string, string>> {
-  const { fonts } = loadBrandAssets(siteDir(import.meta.url))
+  const { fonts } = loadBrandAssets(pagesDir(import.meta.url))
   const rules     = discoverRuleIndex(rulesDir(import.meta.url))
   const drawn     = CARDS.flatMap(card => palette.SCHEMES.map(async scheme => [
     `${card.label.toLowerCase()}-${scheme}`,

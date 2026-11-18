@@ -4,16 +4,16 @@ import path from 'node:path'
 import matter     from 'gray-matter'
 import MarkdownIt from 'markdown-it'
 
-import { siteDir }    from '../../lib/shared/paths'
+import { pagesDir }   from '../../lib/shared/paths'
 import { TOOL_SEEDS } from '../../lib/shared/tools'
 
 const CHIP = /<Tool slug="([a-z]+)"/g
 
-const SITE = siteDir(import.meta.url)
+const SRC_DIR = pagesDir(import.meta.url)
 
 const md = new MarkdownIt({ html: true })
 
-const PAGES = fs.globSync('**/*.md', { cwd: SITE, exclude: name => /^(\.vitepress|node_modules|prototypes)$/.test(name) }).sort()
+const PAGES = fs.globSync('**/*.md', { cwd: SRC_DIR }).sort()
 
 const TOOLS = Object.entries(TOOL_SEEDS)
   .filter(([, seed]) => !('language' in seed))
@@ -32,7 +32,7 @@ function unchipped(page: string): string[] {
   const mark  = (slug: string) => seen.add(slug)
 
   let heading = false
-  for (const block of md.parse(matter.read(path.join(SITE, page)).content, {})) {
+  for (const block of md.parse(matter.read(path.join(SRC_DIR, page)).content, {})) {
     if (block.type === 'heading_open') heading = true
     if (block.type === 'heading_close') heading = false
     if (block.type === 'html_block') for (const [, slug] of block.content.matchAll(CHIP)) mark(slug!)

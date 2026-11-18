@@ -7,12 +7,10 @@
     "types"  : ["node", "vite/client", "vitest/globals"]
   },
   "include"         : [
-    ".vitepress/**/*.ts",
-    ".vitepress/**/*.tsx",
-    "prototypes/**/*.ts",
-    "prototypes/**/*.tsx",
-    "vitest.config.ts",
-    "knip.ts"
+    "**/*.ts",
+    "**/*.tsx",
+    "../prototypes/**/*.ts",
+    "../prototypes/**/*.tsx"
   ],
-  "exclude"         : [".vitepress/tests/wasm/**"]
+  "exclude"         : ["tests/wasm/**"]
 }

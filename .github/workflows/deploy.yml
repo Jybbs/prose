@@ -139,7 +139,7 @@ jobs:
         uses : &cache-save actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           key  : ${{ steps.wasm-module.outputs.key }}
-          path : site/public/wasm
+          path : site/pages/public/wasm
 
       - name : Save the OG card cache
         if   : ${{ github.event_name != 'pull_request' && steps.og-cards.outputs.cache-hit != 'true' }}

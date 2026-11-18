@@ -7,7 +7,7 @@ import type { DiscoveredPrimitive } from '../../lib/architecture/discovery'
 import { buildSidebar }             from '../../lib/config/sidebar'
 import type { DiscoveredRule }      from '../../lib/rules/discovery'
 import { isContentPage }            from '../../lib/shared/content-page'
-import { siteDir }                  from '../../lib/shared/paths'
+import { pagesDir }                 from '../../lib/shared/paths'
 import { fixtureDir }               from '../support'
 
 const rules: readonly DiscoveredRule[] = [
@@ -36,7 +36,7 @@ const primitives: readonly Pick<DiscoveredPrimitive, 'slug' | 'stability' | 'tit
   { slug: 'pipeline', stability: 'internal', title: 'The Pipeline Type'  }
 ]
 
-const src     = siteDir(import.meta.url)
+const src     = pagesDir(import.meta.url)
 const sidebar = buildSidebar(primitives, rules, src) as Record<string, DefaultTheme.SidebarItem[]>
 
 describe('buildSidebar', () => {

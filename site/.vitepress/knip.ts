@@ -12,6 +12,8 @@ export default defineConfig({
   compilers          : { md: pageScript },
   include            : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
   rules              : { cycles: 'error' },
+  typescript         : { config: ['.vitepress/tsconfig.json'] },
+  vitest             : { config: ['.vitepress/vitest.config.ts'] },
   ignoreDependencies : [
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',

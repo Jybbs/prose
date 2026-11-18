@@ -50,6 +50,7 @@ import * as version                                   from './lib/shared/version
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const siteDirectory        = paths.siteDir(import.meta.url)
+const pagesDirectory       = paths.pagesDir(import.meta.url)
 const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
@@ -114,9 +115,10 @@ export default defineConfig({
     theme             : constants.SHIKI_THEMES
   },
   sitemap: { hostname: constants.SITE_HOSTNAME },
+  srcDir        : pagesDirectory,
   themeConfig: {
     editLink: {
-      pattern : `${constants.REPO_URL}/edit/main/site/:path`,
+      pattern : `${constants.REPO_URL}/edit/main/site/pages/:path`,
       text    : 'Suggest an edit to this page'
     },
     logo      : { alt: '', src: '/logo.svg' },
@@ -127,7 +129,7 @@ export default defineConfig({
     ],
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
-    sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, siteDirectory),
+    sidebar   : buildSidebar(discoveredPrimitives, discoveredRules, pagesDirectory),
     siteTitle : constants.SITE_NAME,
     socialLinks: [
       { icon: 'github', link: constants.REPO_URL }
@@ -173,7 +175,7 @@ export default defineConfig({
       transform : (code, id) => id.split('?')[0] === tailwindEntry ? code + themeCss() : undefined
     },
     fixtureReloadPlugin(fixturesRoot),
-    serveWasmPlugin(path.join(siteDirectory, 'public')),
+    serveWasmPlugin(paths.publicDir(import.meta.url)),
     stylesheetLayer.stylesheetLayerPlugin(tailwindEntry),
     tailwindcss(),
     groupIconVitePlugin({

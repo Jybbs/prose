@@ -1,5 +1,5 @@
 {
-  "$schema" : "./node_modules/oxlint/configuration_schema.json",
+  "$schema" : "../node_modules/oxlint/configuration_schema.json",
 
   "categories": {
     "correctness" : "deny",
@@ -40,7 +40,7 @@
 
   "overrides": [
     {
-      "files" : [".vitepress/theme/components/**", "prototypes/**"],
+      "files" : ["**/prototypes/*/**", "theme/components/**"],
       "rules" : {
         "no-restricted-imports" : ["error", {
           "patterns" : [

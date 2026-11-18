@@ -3,17 +3,17 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { KINDS }                              from '../markdown/callout-plugin'
-import { discoverRuleSlugs }                  from '../rules/discovery'
-import { groupByMember }                      from '../shared/group-by-member'
-import * as palette                           from '../shared/palette'
-import { rulesDir, siteDir, VITEPRESS_THEME } from '../shared/paths'
-import { FAMILY_ORDER }                       from '../shared/registries'
-import { toTitleCase }                        from '../shared/title-case'
-import { Cascade }                            from './cascade'
-import { readMarks }                          from './mark-files'
-import { PASSAGE_TOKENS, ROLES }              from './roles'
-import * as swatchSet                         from './swatches'
+import { KINDS }                                         from '../markdown/callout-plugin'
+import { discoverRuleSlugs }                             from '../rules/discovery'
+import { groupByMember }                                 from '../shared/group-by-member'
+import * as palette                                      from '../shared/palette'
+import { publicDir, rulesDir, siteDir, VITEPRESS_THEME } from '../shared/paths'
+import { FAMILY_ORDER }                                  from '../shared/registries'
+import { toTitleCase }                                   from '../shared/title-case'
+import { Cascade }                                       from './cascade'
+import { readMarks }                                     from './mark-files'
+import { PASSAGE_TOKENS, ROLES }                         from './roles'
+import * as swatchSet                                    from './swatches'
 
 import type { Scheme }                      from '../shared/palette'
 import type { GlossaryFamily, RuleFamily }  from '../shared/registries'
@@ -42,6 +42,7 @@ const site      = siteDir(import.meta.url)
 const VITEPRESS = path.join(site, VITEPRESS_THEME, 'styles/vars.css')
 const TOKENS    = path.join(site, '.vitepress/theme/styles/tokens.css')
 const CALLOUTS  = path.join(site, '.vitepress/theme/styles/markdown/callouts.css')
+const PUBLIC    = publicDir(import.meta.url)
 
 // Reads every file `patterns` match under the site's `.vitepress` directory,
 // named by its path there.
@@ -57,7 +58,7 @@ function ruleCounts(): Record<RuleFamily, number> {
 }
 
 export default defineLoader({
-  watch: ['../../{kit,lib,theme}/**/*.{css,ts,tsx}', '../../../public/*.svg'],
+  watch: ['../../{kit,lib,theme}/**/*.{css,ts,tsx}', '../../../pages/public/*.svg'],
   load(): Identity {
     const cascade = Cascade.read([fs.readFileSync(VITEPRESS, 'utf8'), palette.themeCss(), palette.paletteCss(), fs.readFileSync(TOKENS, 'utf8')])
     const uses    = swatchSet.scanUses(
@@ -86,7 +87,7 @@ export default defineLoader({
       inkRatio   : palette.ACCENT_RATIOS.nib,
       inks       : Object.fromEntries(Object.keys(palette.FAMILIES).map(family => [family, palette.perScheme(scheme =>
         palette.SCHEME_SHADES[scheme][palette.shadeName(family, 'page', palette.ACCENT_RATIOS.nib)]!)])) as Identity['inks'],
-      marks      : readMarks(file => fs.readFileSync(path.join(site, 'public', file), 'utf8')),
+      marks      : readMarks(file => fs.readFileSync(path.join(PUBLIC, file), 'utf8')),
       page,
       passage    : palette.perScheme(scheme => Object.fromEntries([...tokens].map(token => [token, cascade.value(token)[scheme]]))),
       roles,

@@ -3,8 +3,8 @@ import path from 'node:path'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { VUE_JSX } from './.vitepress/lib/shared/constants.ts'
-import * as paths  from './.vitepress/lib/shared/paths.ts'
+import { VUE_JSX } from './lib/shared/constants.ts'
+import * as paths  from './lib/shared/paths.ts'
 
 const BUNDLE = {
   globalSetup : ['./.vitepress/tests/serve.ts'],
@@ -18,8 +18,8 @@ const ROOT = paths.repoRoot(import.meta.url)
 
 const READ_FROM_DISK = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**',
-  'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/assets/**',
-  'site/.vitepress/tests/**/fixtures/**', 'site/{bun.lock,patches/**}', 'site/public/**'
+  'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/{assets,patches}/**',
+  'site/.vitepress/tests/**/fixtures/**', 'site/bun.lock', 'site/pages/public/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
@@ -35,7 +35,7 @@ export default defineConfig({
                         : ['default'],
     resolveSnapshotPath : (testPath, extension) => testPath + extension,
     restoreMocks        : true,
-    root                : import.meta.dirname,
+    root                : path.dirname(import.meta.dirname),
     unstubEnvs          : true,
     unstubGlobals       : true,
 

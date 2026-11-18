@@ -3,10 +3,11 @@ import path from 'node:path'
 
 import { slugify } from '@mdit-vue/shared'
 
-import * as scopes from '../../lib/suppression/scopes'
+import { pagesDir } from '../../lib/shared/paths'
+import * as scopes  from '../../lib/suppression/scopes'
 
 const page    = fs.readFileSync(
-  path.join(import.meta.dirname, '../../../reference/suppression-directives.md'), 'utf8'
+  path.join(pagesDir(import.meta.url), 'reference', 'suppression-directives.md'), 'utf8'
 )
 const anchors = [...page.matchAll(/^## (.+)$/gm)].map(([, heading]) => slugify(heading))
 

@@ -5,8 +5,9 @@ import { loadBrandAssets }       from '../../lib/og/render/assets'
 import { iconSvg }               from '../../lib/og/render/icon'
 import { landingSvg }            from '../../lib/og/render/landing'
 import { fitTitleSize, pageSvg } from '../../lib/og/render/template'
+import { pagesDir }              from '../../lib/shared/paths'
 
-const brand = loadBrandAssets(path.resolve(import.meta.dirname, '../../..'))
+const brand = loadBrandAssets(pagesDir(import.meta.url))
 
 const CARD_MODULES = import.meta.glob<{ page: OgPage }>('./cards/*/page.ts', { eager: true })
 
