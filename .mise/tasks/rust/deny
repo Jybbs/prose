@@ -1,0 +1,19 @@
+#!/usr/bin/env -S bash -euo pipefail
+#MISE alias       = "deny"
+#MISE description = "Audit the crates `Cargo.lock` resolves against `.cargo/deny.toml` for advisories, bans, and sources, warn on each unmaintained one, and audit the release targets' crates for licenses"
+
+targets=$(
+  python -c '
+import tomllib
+with open(".github/scripts/platforms.toml", "rb") as file:
+    platforms = tomllib.load(file)["platforms"]
+print(*("--target=" + platform["target"] for platform in platforms if "target" in platform))
+'
+)
+
+cargo deny --locked check advisories bans sources
+cargo deny \
+  --config <(sed 's/^unmaintained .*/unmaintained = "all"/' .cargo/deny.toml) \
+  --locked \
+  check --warn unmaintained advisories
+cargo deny --locked $targets --target=wasm32-unknown-unknown check licenses
