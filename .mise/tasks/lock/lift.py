@@ -1061,9 +1061,10 @@ def table() -> tuple[list[Lift], list[Held]]:
     """
     Returns one row per name whose pins trail their newest release, sorted
     by name, each carrying the open Dependabot alerts its lift clears,
-    beside each newer release mise's `minimum_release_age` cutoff holds back
-    from a tool or Cargo's `global-min-publish-age` holds back from a crate,
-    sorted by name and version.
+    beside each newer release mise's `minimum_release_age` cutoff holds
+    back from a tool or Cargo's `global-min-publish-age` holds back from a
+    crate, sorted by name and version, one entry per row and release at the
+    earliest time any of its pins clears.
     """
     found   = pins()
     reports = Reports.read(sorted({pin.script for pin in found} - {None}))
@@ -1075,7 +1076,14 @@ def table() -> tuple[list[Lift], list[Held]]:
     with ThreadPoolExecutor() as pool:
         newer = pool.map(lambda pin: pin.held(reports), cooled.values())
         held  = sorted(
-            set(chain.from_iterable(newer)),
+            {
+                (each.name, each.version): each
+                for each in sorted(
+                    chain.from_iterable(newer),
+                    key = lambda each: each.clears or datetime.max.replace(tzinfo=UTC),
+                    reverse = True
+                )
+            }.values(),
             key = lambda each: (each.name, ordered(each.version))
         )
 

@@ -1769,6 +1769,49 @@ def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
     assert [(each.name, each.newest) for each in lifts] == [("rust", "1.99.0")]
 
 
+def test_table_holds_back_one_release_of_several_crates_once(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    workdir     : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that the `ruff_*` crates, published seconds apart, list a release
+    Cargo's cooldown holds back once under the row's name, at the earliest
+    time any of them clears, beside the release `[package.metadata.ruff]`
+    names, which no cooldown covers.
+    """
+    workdir({".cargo/config.toml": '[registry]\nglobal-min-publish-age = "24 hours"\n'})
+    published = {
+        "ruff_python_ast"    : WHEN + timedelta(seconds=2),
+        "ruff_python_parser" : WHEN + timedelta(seconds=9),
+        "ruff_text_size"     : WHEN
+    }
+    crates = [lift.Pin(
+        None,
+        "ruff",
+        package,
+        "cargo",
+        "0.0.22"
+    ) for package in published]
+    release = lift.Pin(None, "ruff", "ruff", "", "0.15.0")
+    monkeypatch.setattr(lift, "pins", lambda: [*crates, release])
+    monkeypatch.setattr(
+        lift.Pin,
+        "released",
+        lambda holder, version: lift.Release(version, published[holder.package])
+    )
+    monkeypatch.setattr(
+        lift.Reports,
+        "read",
+        lambda scripts: lift.Reports({}, {crate.reported: "0.0.23" for crate in crates})
+    )
+
+    assert lift.table() == (
+        [],
+        [lift.Held(WHEN + timedelta(hours=24), "ruff", "0.0.23")]
+    )
+
+
 def test_table_lists_the_held_releases_where_no_pin_trails(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch
