@@ -16,11 +16,11 @@ SUITE = [
 @mark.parametrize(
     "changed",
     [
+        param(".cargo/clippy.toml", id = "clippy config"),
         param(".cargo/config.toml", id = "cargo config"),
         param(".mise/config.toml", id = "tool pins"),
         param("Cargo.lock", id = "workspace lockfile"),
         param("Cargo.toml", id = "workspace manifest"),
-        param("clippy.toml", id = "clippy config"),
         param("corpus/src/lib.rs", id = "corpus"),
         param("crate/src/lib.rs", id = "crate"),
         param("crate/tests/fixtures/case/input.py", id = "fixture"),
@@ -47,6 +47,7 @@ def test_affected_runs_the_suite_once_a_change_reaches_a_rust_path(
 @mark.parametrize(
     "changed",
     [
+        param(".cargo/deny.toml", id = "dependency policy"),
         param(".mise/tasks/py/format", id = "task"),
         param("crates/src/lib.rs", id = "prefix"),
         param("site/index.md", id = "site"),
@@ -58,9 +59,10 @@ def test_affected_skips_the_suite_where_no_change_reaches_a_rust_path(
     changed  : str
 ):
     """
-    Pins that a change outside every Rust path, a folder sharing a Rust
-    folder's prefix and a manifest outside the workspace root included, runs
-    no `cargo` and exits zero on a line saying so.
+    Pins that a change outside every Rust path, the `cargo-deny` policy
+    beside the build configuration, a folder sharing a Rust folder's prefix,
+    and a manifest outside the workspace root included, runs no `cargo` and
+    exits zero on a line saying so.
     """
     finished = affected(changed, "edited", group="rust")
 

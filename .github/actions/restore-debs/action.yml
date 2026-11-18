@@ -1,0 +1,22 @@
+name        : Restore WebKit deb cache
+description : Restore `.cache/apt`, the `.deb` files of the system packages WebKit needs and the runner image lacks, under an exact key hashed from `.mise/mise.lock`. `site:provision` installs only the files whose SHA256 matches the signed package index, guarding against a stale or corrupt entry, and downloads the rest. The save is left to the caller, and `warm.yml` alone writes the entry under the key this action reports.
+
+outputs:
+  cache-hit:
+    description : Whether the packages restored under an exact key match.
+    value       : ${{ steps.entry.outputs.cache-hit }}
+
+  key:
+    description : The key the restore attempted, which a later `actions/cache/save` writes under.
+    value       : ${{ steps.entry.outputs.cache-primary-key }}
+
+runs:
+  using: composite
+
+  steps:
+    - name : Restore the WebKit system packages
+      id   : entry
+      uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key  : webkit-debs-${{ runner.os }}-${{ hashFiles('.mise/mise.lock') }}
+        path : .cache/apt

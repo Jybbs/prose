@@ -13,8 +13,8 @@ reached() {
   local path
   while IFS= read -r path; do
     case $path in
-      .mise/config.toml | .mise/lib/* | .mise/tests/conftest.py \
-        | .mise/tests/pytest.toml | crate/pyproject.toml | crate/uv.lock)
+      .mise/config.toml | .mise/lib/* | .mise/tests/conftest.py | crate/pyproject.toml \
+        | crate/uv.lock)
         echo .mise/tests
         ;;
       .mise/tasks/*)

@@ -1,8 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "render"
-#MISE depends     = ["site:press"]
+#MISE depends     = ["site:press", "site:provision"]
 #MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
 #MISE dir         = "site"
 
-playwright install --only-shell --with-deps chromium webkit
 vitest run --config .vitepress/vitest.config.ts --project render "$@"

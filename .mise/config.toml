@@ -1,9 +1,31 @@
 min_version = "2026.9.18"
 
+[doctor.checks.clone]
+description = "The clone is not shallow, since a depth-limited fetch from any worktree turns every worktree shallow"
+hint        = "Run `git fetch --unshallow origin`, which restores the full history to every worktree at once."
+run         = '''test "$(git rev-parse --is-shallow-repository)" = false'''
+
+[doctor.checks.linker]
+description = "The Command Line Tools are installed, supplying the linker `rustc` calls on macOS"
+hint        = "Run `xcode-select --install` and finish the installer it opens."
+os          = ["macos"]
+run         = '''test -d "$(xcode-select --print-path)"'''
+
+[doctor.checks.token]
+description = "mise holds a GitHub token for downloading the releases its `aqua:` and `github:` tools install from"
+hint        = '''Run `mise settings set github.credential_command "gh auth token"` where `gh` is signed in, or `mise token github --oauth` to sign in through GitHub's device flow, or export `GITHUB_TOKEN`.'''
+run         = '''mise token github --raw > /dev/null'''
+
+[doctor.checks.venv]
+description = "`crate/.venv` was built on the `python` this config pins"
+hint        = "Remove `crate/.venv`, which mise recreates on the pinned `python` the next time it loads this config, then run `mise wheel`."
+run         = '''test "$("$VIRTUAL_ENV/bin/python" -c 'import sys; print(sys.base_prefix)')" = "$(mise where python)"'''
+
 [env]
 _.path = { path = ".mise/bin", tools = true }
 _.python.venv = { path = "crate/.venv", create = true }
 NODE_COMPILE_CACHE = "{{config_root}}/.cache/node"
+PYTEST_ADDOPTS = "--import-mode=importlib --rootdir={{config_root}}/.mise/tests --strict -W error -o cache_dir={{config_root}}/.cache/pytest -o empty_parameter_set_mark=fail_at_collect -o python_files=*.py -ra"
 PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 
 [settings]
@@ -55,6 +77,7 @@ wasm      = [
 locked = true
 
 [tools]
+"aqua:EmbarkStudios/cargo-deny"    = { version = "0.21.0", os = ["linux", "macos/arm64", "windows"] }
 "aqua:WebAssembly/binaryen"        = "133"
 "aqua:jqlang/jq"                   = "1.8.2"
 "aqua:lycheeverse/lychee"          = "0.24.2"
@@ -64,7 +87,7 @@ bun                                = "1.4.4"
 "cargo:cargo-bloat"                = { version = "0.12.1", lazy = true, lazy_bins = ["cargo-bloat"] }
 "cargo:cargo-llvm-lines"           = { version = "0.4.48", lazy = true, lazy_bins = ["cargo-llvm-lines"] }
 "cargo:twiggy"                     = { version = "0.8.0", lazy = true, lazy_bins = ["twiggy"] }
-"github:Boshen/cargo-shear"        = { version = "1.14.0", matching_regex = "^cargo-shear-(aarch64|x86_64)-(apple-darwin|pc-windows-msvc|unknown-linux-musl)\\.tar\\.gz$" }
+"github:Boshen/cargo-shear"        = { version = "1.14.1", matching_regex = "^cargo-shear-(aarch64|x86_64)-(apple-darwin|pc-windows-msvc|unknown-linux-musl)\\.tar\\.gz$" }
 "github:codecov/codecov-cli"       = { version = "11.3.2", matching_regex = "^codecovcli_(linux|macos|windows)" }
 "github:mstange/samply"            = { version = "0.13.1", lazy = true, lazy_bins = ["samply"], version_prefix = "samply-v" }
 "github:sharkdp/hyperfine"         = { version = "2.0.0", lazy = true, lazy_bins = ["hyperfine"] }

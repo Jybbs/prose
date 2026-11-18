@@ -173,10 +173,14 @@ jobs:
         uses : &download actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with : { name: *bundle, path: *dist }
 
+      - name : Restore the WebKit system packages
+        uses : $/.github/actions/restore-debs
+
       - name : Read the values the browser computes
         env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
         run  : |
           mise run site:bake
+          mise run site:provision
           mise run site:render
 
   deploy:
@@ -198,7 +202,7 @@ jobs:
           accountId       : ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           apiToken        : ${{ secrets.CLOUDFLARE_TOKEN }}
           command         : pages deploy site/.vitepress/dist --project-name=prose --branch=${{ env.REF }} --commit-dirty=true
-          wranglerVersion : "4.162.0"
+          wranglerVersion : "4.164.0"
 
   prune:
     name            : 🍂 Prune
