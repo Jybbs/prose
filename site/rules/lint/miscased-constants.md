@@ -21,6 +21,22 @@ A name draws the report when it is longer than one character, has no leading und
 7. A binding inside an `if TYPE_CHECKING:` block is declared for the type checker alone.
 8. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, in each case [[prune-inert-imports]] lists under [**Imports That Hold Their Line**](/rules/formatting/prune-inert-imports#imports-that-hold-their-line).
 
+A tool that reads a module-level name by its exact spelling breaks under the rename the same way an importer does, as [pytest](https://docs.pytest.org/en/stable/reference/reference.html#global-variables) reads `collect_ignore` and `pytest_plugins` in a `conftest.py`, [Alembic](https://alembic.sqlalchemy.org/en/latest/branches.html) reads `revision` and `down_revision` in every migration, and [Sphinx](https://www.sphinx-doc.org/en/master/usage/configuration.html) reads every setting in its `conf.py` by name. The rule keeps no list of such names, so a project names the files a tool reads through [**Per-Pattern Overrides**](/reference/configuration#per-pattern-overrides), turning the rule off for a file that holds little beside the names its tool reads, as a Sphinx `conf.py` or a migration does, and setting `allow-pattern` where a file such as a `conftest.py` keeps other constants the rule still checks.
+
+```toml config
+[[overrides]]
+paths = ["docs/conf.py", "migrations/**"]
+
+[overrides.rules]
+miscased-constants = false
+
+[[overrides]]
+paths = ["**/conftest.py"]
+
+[overrides.rules.miscased-constants]
+allow-pattern = "{collect_ignore*,pytest_plugins}"
+```
+
 A notebook is skipped whole, because a cell's top-level assignments are working variables.
 
 A type alias is never renamed, because `SCREAMING_CASE` is the one casing an alias must not take, and a target annotated `TypeAlias` is exempt outright. Otherwise the rule tells an alias from a constant by the value rather than the name, so a value that points at something already built is an alias (*`Pen = Turtle`, `open = TarFile.open`, `Interval = Union[int, float]`*), and PEP 604's `Interval = int | float` reads the same way on both sides of the `|`. A value choosing through `or` or `and` evaluates to one of its operands, so it is an alias wherever every operand is one (*`scanstring = c_scanstring or py_scanstring`*), whereas `encoding = preferred or "utf-8"` builds its fallback and stays a constant. A value that builds something new is a constant and still draws the rename, covering a literal, an f-string, a collection display, and an arithmetic expression.

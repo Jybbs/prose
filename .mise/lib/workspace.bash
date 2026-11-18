@@ -25,3 +25,12 @@ suite_targets() {
         | "--test=" + .name' \
       "${PROOF_TARGETS[@]}"
 }
+
+workspace_members() {
+  cargo metadata --format-version 1 --no-deps \
+    | jq -r '
+        .workspace_root as $root
+        | .packages[].manifest_path
+        | ltrimstr($root + "/")
+        | rtrimstr("/Cargo.toml")'
+}

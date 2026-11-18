@@ -1,0 +1,97 @@
+// @vitest-environment happy-dom
+import { mount }              from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
+
+import { provideAriaHidden } from '../../../lib/composables/use-aria-hidden'
+import { GlossaryTerm }      from '../../../theme/components/glossary/GlossaryTerm'
+import { InlineProse }       from '../../../theme/components/base/InlineProse'
+import { InlineRuleLink }    from '../../../theme/components/rules/InlineRuleLink'
+
+import type { InlineNode } from '../../../lib/markdown/inline-nodes'
+
+vi.mock('../../../lib/glossary/glossary.data', () => ({ data: { entries: [] } }))
+vi.mock('../../../lib/rules/rules.data', async () =>
+  (await import('../../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
+
+const STUBS = { global: { stubs: { GlossaryTerm: true, InlineRuleLink: true } } }
+
+const render = (nodes: InlineNode[]) => mount(InlineProse, { ...STUBS, props: { nodes } })
+
+const renderHidden = (nodes: InlineNode[]) => mount(
+  defineComponent({
+    setup: () => { provideAriaHidden(true); return () => h(InlineProse, { nodes }) }
+  }),
+  STUBS
+)
+
+describe('InlineProse', () => {
+  it('renders every node kind, so no branch silently drops out of the v-if chain', () => {
+    const html = render([
+      { kind: 'text', text: 'A ' },
+      { kind: 'code', text: 'x' },
+      { kind: 'el', tag: 'strong', attrs: {}, children: [{ kind: 'text', text: 'bold' }] },
+      { kind: 'primitive', display: 'Source', slug: 'source' }
+    ]).html()
+
+    expect(html).toContain('<code>x</code>')
+    expect(html).toContain('<strong>bold</strong>')
+    expect(html).toContain('href="/architecture/source"')
+    expect(html).toContain('A')
+  })
+
+  it('mounts a term as a real component rather than inert markup', () => {
+    const w = render([{ kind: 'term', slug: 'atomic', text: 'atom' }])
+    expect(w.findComponent(GlossaryTerm).props('slug')).toBe('atomic')
+  })
+
+  it('mounts a rule chip as a real component', () => {
+    const w = render([{ kind: 'rule', slug: 'align-equals' }])
+    expect(w.findComponent(InlineRuleLink).props('slug')).toBe('align-equals')
+  })
+
+  it('recurses so a term nested inside an element still mounts', () => {
+    const w = render([{
+      kind     : 'el',
+      tag      : 'strong',
+      attrs    : {},
+      children : [{ kind: 'term', slug: 'atomic', text: 'atom' }]
+    }])
+    expect(w.findComponent(GlossaryTerm).props('slug')).toBe('atomic')
+  })
+
+  it('drops a primitive link out of the tab order inside an aria-hidden subtree', () => {
+    const nodes: InlineNode[] = [{ kind: 'primitive', display: 'Source', slug: 'source' }]
+    expect(renderHidden(nodes).get('a').attributes('tabindex')).toBe('-1')
+    expect(render(nodes).get('a').attributes('tabindex')).toBeUndefined()
+  })
+
+  it('drops an element anchor out of the tab order inside an aria-hidden subtree', () => {
+    const nodes: InlineNode[] = [{
+      kind     : 'el',
+      tag      : 'a',
+      attrs    : { href: '/guide/' },
+      children : [{ kind: 'text', text: 'Guide' }]
+    }]
+    expect(renderHidden(nodes).get('a').attributes('tabindex')).toBe('-1')
+  })
+
+  it('leaves an element\'s own tabindex alone outside an aria-hidden subtree', () => {
+    const w = render([{
+      kind     : 'el',
+      tag      : 'a',
+      attrs    : { href: '/guide/', tabindex: '0' },
+      children : [{ kind: 'text', text: 'Guide' }]
+    }])
+    expect(w.get('a').attributes('tabindex')).toBe('0')
+  })
+
+  it('carries an element attribute through to the rendered tag', () => {
+    const w = render([{
+      kind     : 'el',
+      tag      : 'a',
+      attrs    : { class: 'body-link', href: '/guide/' },
+      children : [{ kind: 'text', text: 'Guide' }]
+    }])
+    expect(w.get('a').attributes()).toMatchObject({ class: 'body-link', href: '/guide/' })
+  })
+})

@@ -85,11 +85,21 @@ fn alphabetize_siblings_facet_false_in_sub_table_leaves_siblings_default() {
     assert!(rules.sort_dunder_lists);
 }
 
-#[test]
-fn docstring_line_length_defaults_to_76_when_field_absent() {
-    let config = parsed_defaults();
-
-    assert_eq!(config.docstring_line_length, NonZeroUsize::new(76));
+#[rstest]
+#[case::docstring_line_length(|c: &Config| assert_eq!(
+    c.docstring_line_length,
+    NonZeroUsize::new(76)
+))]
+#[case::docstring_structured_policy(|c: &Config| assert_eq!(
+    c.docstring_structured_policy,
+    DocstringStructuredPolicy::CodeLineLength
+))]
+#[case::import_line_length(|c: &Config| assert_eq!(c.import_line_length, NonZeroUsize::new(120)))]
+#[case::imports_first_party(|c: &Config| assert_eq!(c.imports.first_party, Vec::<String>::new()))]
+#[case::max_shift(|c: &Config| assert_eq!(c.rules.align_equals.max_shift, cap(16)))]
+#[case::target_version(|c: &Config| assert_eq!(c.target_version, None))]
+fn an_absent_field_takes_its_documented_default(#[case] holds: fn(&Config)) {
+    holds(&parsed_defaults());
 }
 
 #[test]
@@ -98,16 +108,6 @@ fn docstring_line_length_explicit_override_takes_effect() {
         Config::from_pyproject_str("[tool.prose]\ndocstring-line-length = 100\n").expect("parses");
 
     assert_eq!(config.docstring_line_length, NonZeroUsize::new(100));
-}
-
-#[test]
-fn docstring_structured_policy_defaults_to_code_line_length_when_field_absent() {
-    let config = parsed_defaults();
-
-    assert_eq!(
-        config.docstring_structured_policy,
-        DocstringStructuredPolicy::CodeLineLength
-    );
 }
 
 #[test]
@@ -225,13 +225,6 @@ fn from_pyproject_str_with_unknown_key_warns_and_returns_config() {
 }
 
 #[test]
-fn import_line_length_defaults_to_120_when_field_absent() {
-    let config = parsed_defaults();
-
-    assert_eq!(config.import_line_length, NonZeroUsize::new(120));
-}
-
-#[test]
 fn import_line_length_explicit_override_takes_effect() {
     let config =
         Config::from_pyproject_str("[tool.prose]\nimport-line-length = 100\n").expect("parses");
@@ -264,13 +257,6 @@ fn import_width_uses_import_line_length_when_set() {
         Config::from_pyproject_str("[tool.prose]\nimport-line-length = 100\n").expect("parses");
 
     assert_eq!(config.import_width(), 100);
-}
-
-#[test]
-fn imports_first_party_defaults_to_empty_when_absent() {
-    let config = parsed_defaults();
-
-    assert!(config.imports.first_party.is_empty());
 }
 
 #[test]
@@ -363,13 +349,6 @@ fn inline_budget_round_trips_through_toml(
 #[case::target_version_invalid("[tool.prose]\ntarget-version = \"py310\"\n")]
 fn invalid_value_returns_toml_error(#[case] toml: &str) {
     assert_toml_error(toml);
-}
-
-#[test]
-fn max_shift_default_is_sixteen() {
-    let config = parsed_defaults();
-
-    assert_eq!(config.rules.align_equals.max_shift, cap(16));
 }
 
 #[rstest]
@@ -497,20 +476,16 @@ fn target_version_accepts_unrecognized_minor() {
 }
 
 #[test]
-fn target_version_defaults_to_none_when_field_absent() {
-    let config = parsed_defaults();
-
-    assert_eq!(config.target_version, None);
-}
-
-#[test]
 fn target_version_every_variant_round_trips_through_serde() {
-    for version in PythonVersion::iter() {
-        let toml = format!("[tool.prose]\ntarget-version = \"{version}\"\n");
-        let config = Config::from_pyproject_str(&toml).expect("parses");
-
-        assert_eq!(config.target_version, Some(version));
-    }
+    let parsed: Vec<Option<PythonVersion>> = PythonVersion::iter()
+        .map(|version| {
+            let toml = format!("[tool.prose]\ntarget-version = \"{version}\"\n");
+            Config::from_pyproject_str(&toml)
+                .expect("parses")
+                .target_version
+        })
+        .collect();
+    assert_eq!(parsed, PythonVersion::iter().map(Some).collect::<Vec<_>>());
 }
 
 #[test]

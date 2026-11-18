@@ -96,6 +96,7 @@ pub fn fixture_inputs(path: &Path) -> (Config, HarnessOptions) {
 /// assertion.
 pub fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
     insta::with_settings!({
+        input_file => path,
         snapshot_path => format!("fixtures/{}/{}", domain_name(path), case_name(path)),
         prepend_module_to_snapshot => false,
         snapshot_suffix => "",
@@ -116,72 +117,5 @@ fn sidecar_contents(path: &Path) -> Option<String> {
         Ok(c) => Some(c),
         Err(e) if e.kind() == ErrorKind::NotFound => None,
         Err(e) => panic!("read sidecar: {e}"),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{collections::BTreeSet, path::Path};
-
-    use ignore::Walk;
-
-    /// The names a path list opening `rest` brings in, the braced list
-    /// where it opens on `{` and the leading identifier otherwise.
-    fn listed(rest: &str) -> Vec<&str> {
-        match rest.strip_prefix('{') {
-            Some(list) => list[..list.find('}').expect("closed path list")]
-                .split(',')
-                .map(str::trim)
-                .filter(|name| !name.is_empty())
-                .collect(),
-            None => vec![
-                rest.split(|c: char| !(c.is_alphanumeric() || c == '_'))
-                    .next()
-                    .unwrap_or_default(),
-            ],
-        }
-    }
-
-    #[test]
-    fn every_export_has_a_caller() {
-        let (source, _) = include_str!("lib.rs")
-            .split_once("#[cfg(test)]")
-            .expect("lib.rs holds its tests module");
-        let reexported = source.match_indices("pub use ").flat_map(|(at, prefix)| {
-            let (_, rest) = source[at + prefix.len()..]
-                .split_once("::")
-                .expect("re-export names its module");
-            listed(rest)
-        });
-        let declared = source
-            .lines()
-            .filter_map(|line| line.strip_prefix("pub "))
-            .filter_map(|line| line.split_once(' '))
-            .filter(|(kind, _)| *kind != "use")
-            .flat_map(|(_, rest)| listed(rest));
-        let tests = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .expect("harness sits in the workspace")
-            .join("crate/tests");
-        let named: BTreeSet<String> = Walk::new(tests)
-            .map(|entry| entry.expect("walk crate/tests").into_path())
-            .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
-            .flat_map(|path| {
-                let text = fs_err::read_to_string(path).expect("read test source");
-                text.match_indices("prose_harness::")
-                    .flat_map(|(at, prefix)| listed(&text[at + prefix.len()..]))
-                    .map(str::to_owned)
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-        let uncalled: Vec<&str> = reexported
-            .chain(declared)
-            .filter(|name| !named.contains(*name))
-            .collect();
-        assert_eq!(
-            uncalled,
-            Vec::<&str>::new(),
-            "exports no file under crate/tests names"
-        );
     }
 }

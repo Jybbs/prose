@@ -204,16 +204,14 @@ describe('SCHEME_SHADES', () => {
         wash : [over(palette.GROUNDS.page[scheme], palette.VITEPRESS['bg-alt'][scheme], 30)]
       }[ground!]!
       const ratio = Number(digits) / 10
-      for (const each of grounds) expect(wcagContrast(hex, each)).toBeGreaterThanOrEqual(ratio)
+      expect(grounds.filter(each => wcagContrast(hex, each) < ratio)).toStrictEqual([])
     }
   )
 
-  it('shades every family on every ground a nib or an edge reads on', () => {
-    for (const family of Object.keys(palette.FAMILIES)) {
-      for (const name of ['card', 'chip', 'page', 'soft'].flatMap(ground => [`${ground}-34`, `${ground}-45`])) {
-        expect(palette.SCHEME_SHADES.light).toHaveProperty(`${family}-${name}`)
-      }
-    }
+  it.each(Object.keys(palette.FAMILIES))('shades %s on every ground a nib or an edge reads on', family => {
+    expect(Object.keys(palette.SCHEME_SHADES.light)).toStrictEqual(expect.arrayContaining(
+      ['card', 'chip', 'page', 'soft'].flatMap(ground => [`${family}-${ground}-34`, `${family}-${ground}-45`])
+    ))
   })
 })
 
