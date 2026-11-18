@@ -12,27 +12,35 @@ const BUNDLE = {
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
+const CRATE   = 'crate/src/**/*.rs'
 const FIT     = '.vitepress/tests/pages/fit.test.ts'
 const PAGES   = 'site/pages/**/*.md'
 const ROOT    = paths.repoRoot(import.meta.url)
 const RULES   = 'crate/src/rules/**/*.rs'
 const STYLES  = 'site/.vitepress/{kit,theme}/**/*.css'
 const READERS = {
-  'site/.vitepress/lib/identity/identity.data.ts'          : [STYLES],
-  'site/.vitepress/lib/reference/section-glance.data.ts'   : [PAGES],
-  'site/.vitepress/lib/rules/discovery.ts'                 : [RULES],
-  'site/.vitepress/lib/shared/content-page.ts'             : [PAGES],
-  'site/.vitepress/lib/tokens/destinations.ts'             : [PAGES],
-  'site/.vitepress/tests/config/edit-link.test.ts'         : [PAGES],
-  'site/.vitepress/tests/config/head.test.ts'              : [PAGES],
-  'site/.vitepress/tests/reference/section-glance.test.ts' : [PAGES],
-  'site/.vitepress/tests/shared/palette.test.ts'           : [STYLES],
-  'site/.vitepress/tests/shared/parity.test.ts'            : [PAGES, STYLES],
-  'site/.vitepress/tests/shared/tool-chips.test.ts'        : [PAGES],
-  'site/.vitepress/tests/suppression/scopes.test.ts'       : [PAGES],
-  'site/.vitepress/tests/support.ts'                       : [STYLES],
-  'site/.vitepress/tests/tailwind.ts'                      : ['site/pages/index.md', STYLES],
-  'site/.vitepress/tests/vocabulary.ts'                    : [STYLES]
+  'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
+  'site/.vitepress/lib/fixtures/variants.ts'                : [CRATE],
+  'site/.vitepress/lib/identity/identity.data.ts'           : [STYLES],
+  'site/.vitepress/lib/landing/landing-typing-demo.data.ts' : [CRATE],
+  'site/.vitepress/lib/reference/cli-help.ts'               : [CRATE],
+  'site/.vitepress/lib/reference/output-samples.data.ts'    : [CRATE],
+  'site/.vitepress/lib/reference/section-glance.data.ts'    : [PAGES],
+  'site/.vitepress/lib/rules/discovery.ts'                  : [RULES],
+  'site/.vitepress/lib/rules/pipeline.ts'                   : [CRATE],
+  'site/.vitepress/lib/shared/content-page.ts'              : [PAGES],
+  'site/.vitepress/lib/shared/rule-schema.ts'               : [CRATE],
+  'site/.vitepress/lib/tokens/destinations.ts'              : [PAGES],
+  'site/.vitepress/tests/config/edit-link.test.ts'          : [PAGES],
+  'site/.vitepress/tests/config/head.test.ts'               : [PAGES],
+  'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
+  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
+  'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
+  'site/.vitepress/tests/shared/tool-chips.test.ts'         : [PAGES],
+  'site/.vitepress/tests/support.ts'                        : [STYLES],
+  'site/.vitepress/tests/suppression/scopes.test.ts'        : [PAGES],
+  'site/.vitepress/tests/tailwind.ts'                       : ['site/pages/index.md', STYLES],
+  'site/.vitepress/tests/vocabulary.ts'                     : [STYLES]
 }
 const RERUN_TRIGGERS = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
