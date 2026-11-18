@@ -17,7 +17,6 @@
 @source "../**/*.tsx";
 @source "../../../index.md";
 @source "../../kit/**/*.{ts,tsx}";
-@source "../../../prototypes/**/*.tsx";
 @source "../../lib/**/*.ts";
 @source not inline("border container filter fixed inline lowercase resize ring static transform transition");
 

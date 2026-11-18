@@ -9,8 +9,6 @@
   "include"         : [
     ".vitepress/**/*.ts",
     ".vitepress/**/*.tsx",
-    "prototypes/**/*.ts",
-    "prototypes/**/*.tsx",
     "vitest.config.ts",
     "knip.ts"
   ],

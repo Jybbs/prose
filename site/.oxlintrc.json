@@ -40,7 +40,7 @@
 
   "overrides": [
     {
-      "files" : [".vitepress/theme/components/**", "prototypes/**"],
+      "files" : [".vitepress/theme/components/**"],
       "rules" : {
         "no-restricted-imports" : ["error", {
           "patterns" : [

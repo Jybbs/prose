@@ -13,7 +13,7 @@ const SITE = siteDir(import.meta.url)
 
 const md = new MarkdownIt({ html: true })
 
-const PAGES = fs.globSync('**/*.md', { cwd: SITE, exclude: name => /^(\.vitepress|node_modules|prototypes)$/.test(name) }).sort()
+const PAGES = fs.globSync('**/*.md', { cwd: SITE, exclude: name => /^(\.vitepress|node_modules)$/.test(name) }).sort()
 
 const TOOLS = Object.entries(TOOL_SEEDS)
   .filter(([, seed]) => !('language' in seed))

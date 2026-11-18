@@ -68,7 +68,7 @@ const DECLARED = new Set(
 // so every class a selector names passes as a hook, and so does a file
 // extension or a domain label such as `json` or `org`.
 const HOOKS = new Set(
-  fs.globSync(['.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}', 'prototypes/**/*.{ts,tsx}'], { cwd: vocabulary.SITE })
+  fs.globSync('.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}', { cwd: vocabulary.SITE })
     .flatMap(file => [...vocabulary.read(file).matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
     .flatMap(([, , text]) => [...text.matchAll(CLASS_NAME)].map(([, name]) => name))
 )
