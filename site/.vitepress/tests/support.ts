@@ -21,11 +21,11 @@ export function expectSlugIndex(
   expect([...index(dir).keys()]).toStrictEqual(list(dir).map(entry => entry.slug))
 }
 
-// Parses every stylesheet under the theme and the prototypes in path order,
-// each beside its path within the site.
+// Parses every stylesheet under the kit and the theme in path order, each
+// beside its path within the site.
 export function siteSheets(): { file: string, root: Root }[] {
   const site  = new URL('../../', import.meta.url)
-  const files = fs.globSync(['.vitepress/{kit,theme}/**/*.css', 'prototypes/**/*.css'], { cwd: site })
+  const files = fs.globSync('.vitepress/{kit,theme}/**/*.css', { cwd: site })
   return files.toSorted().map(file => ({
     file : file,
     root : parseCss(fs.readFileSync(new URL(file, site), 'utf8'))
