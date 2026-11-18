@@ -2,7 +2,12 @@
 
 @import "./tailwind/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "./tailwind/architecture.css";
 @import "./tailwind/base.css";
+@import "./tailwind/fixtures.css";
+@import "./tailwind/glossary.css";
+@import "./tailwind/identity.css";
+@import "./tailwind/integrations.css";
 @import "./tailwind/landing.css";
 @import "./tailwind/reference.css";
 @import "./tailwind/rules.css";

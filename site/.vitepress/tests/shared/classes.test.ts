@@ -235,20 +235,24 @@ function effectOf(name: string): { properties: Set<string>, variants: string } |
   if (!css) return undefined
   const properties = new Set<string>()
   parse(css).walkDecls(decl => {
-    if (!decl.value.startsWith('var(--tw-') && decl.parent?.type === 'rule' && !styledElsewhere(decl)) {
+    if (!decl.value.startsWith('var(--tw-') && decl.parent?.type === 'rule' && !styledElsewhere(decl, name)) {
       properties.add(decl.prop)
     }
   })
   return { properties, variants: candidate.variants.map(variant => DESIGN.printVariant(variant)).join(':') }
 }
 
-// Reports whether a declaration sits in a nested rule whose subject, the last
-// compound of its selector, is a box other than the element `&` names.
-function styledElsewhere(decl: Declaration): boolean {
+// Reports whether a declaration sits in a rule whose subject, the last compound
+// of its selector, is a box other than the element the class names, either as
+// `&` in a nested rule or as the escaped class once Tailwind flattens a nested
+// `@utility` rule onto its own selector.
+function styledElsewhere(decl: Declaration, name: string): boolean {
+  const own = `.${name.replaceAll(/[^\w-]/g, char => `\\${char}`)}`
   for (let node = decl.parent; node?.type === 'rule'; node = node.parent) {
     const { selector } = node as Rule
     const subject      = selector.split(/[\s>+~]+(?![^(]*\))/).at(-1)!
-    if (selector.includes('&') && (!subject.includes('&') || subject.includes('::'))) return true
+    const named        = selector.includes('&') ? '&' : selector.includes(own) ? own : undefined
+    if (named && (!subject.includes(named) || subject.includes('::'))) return true
   }
   return false
 }
@@ -364,6 +368,26 @@ describe('the classes a template writes', () => {
     {
       case      : 'a utility styling a descendant beside one setting that property on the element',
       classes   : [{ alt: 0, name: 'fixture-card-body-inner', slot: 0 }, { alt: 0, name: 'm-14', slot: 0 }],
+      conflicts : []
+    },
+    {
+      case      : 'a utility whose nested rules Tailwind flattens onto descendants',
+      classes   : [{ alt: 0, name: 'flush-ends', slot: 0 }, { alt: 0, name: 'mb-14', slot: 0 }],
+      conflicts : []
+    },
+    {
+      case      : 'a variant of a utility whose nested rules Tailwind flattens onto descendants',
+      classes   : [{ alt: 0, name: 'max-mobile:flush-ends', slot: 0 }, { alt: 0, name: 'max-mobile:mb-14', slot: 0 }],
+      conflicts : []
+    },
+    {
+      case      : 'a utility whose nested rule styles its own element',
+      classes   : [{ alt: 0, name: 'rules-plate-letter', slot: 0 }, { alt: 0, name: 'hidden', slot: 0 }],
+      conflicts : ['rules-plate-letter and hidden both set display']
+    },
+    {
+      case      : 'a utility whose nested rule styles its own pseudo-element',
+      classes   : [{ alt: 0, name: 'composition-cards-ticks', slot: 0 }, { alt: 0, name: 'relative', slot: 0 }],
       conflicts : []
     },
     {

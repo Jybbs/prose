@@ -103,7 +103,7 @@ export const LintFlagPopup = defineComponent({
     return () => (
       <Popup
         anchor={target.value}
-        class="lint-popover"
+        class="lint-popover rule-card-popup"
         gutter={6}
         label={active.value?.rule.name ?? ''}
         onDismiss={hide}

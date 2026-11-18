@@ -89,7 +89,7 @@ describe('Surfaces', () => {
   domTest('links each family card to its rules', ({ reducedMotion }) => {
     reducedMotion(true)
     const first = mountSurfaces().findAll('.surface-card')[0]
-    expect(first.get('.surface-card-cover-link').attributes('href')).toBe('/rules/alignment/')
+    expect(first.get('.cover-link').attributes('href')).toBe('/rules/alignment/')
     expect(first.get('.surface-pip').attributes('href')).toBe('/rules/alignment/align-equals')
   })
 
