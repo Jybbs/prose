@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "Attribute Docstrings Travel With Their Fields"
+
+description = '''
+`zeta` and `alpha` each carry the string literal written directly below them, the attribute docstring that documentation tools and Pydantic read as each field's description, whereas `mid` carries none. **The fields sort to `alpha`, `mid`, `zeta`, and each docstring moves with the field above it**, so every description still sits under the field it documents and `mid` takes none from a neighbor.
+'''

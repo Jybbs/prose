@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy Annotation a Class Header Reads Keeps the Class Below Its Type"
+
+description = '''
+At `target-version` 3.14 an annotation runs only when something reads it, and a base, a decorator, or a keyword in a class header runs code as the class is created that can read the class's annotations, as `BaseModel`'s metaclass does. **`Beta` stays below `Zed`**, whereas `Alpha`, whose method annotations nothing reads at creation, sorts above `Zed`.
+'''

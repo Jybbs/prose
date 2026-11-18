@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/lazy_annotation_leaves_its_referent_free/input.py
+---
+class Beta:
+    reference: Zed
+
+
+class Zed:
+    pass
+
+
+def beta(reference: zed):
+    pass
+
+
+def zed():
+    pass

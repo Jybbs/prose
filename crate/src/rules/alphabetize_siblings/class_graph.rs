@@ -38,9 +38,12 @@ impl<'a, 'src> ClassAssigns<'a, 'src> {
         range: Range<usize>,
         evaluation: Evaluation<'a, 'src>,
     ) -> Option<Self> {
-        let keys = def_run_tier_keys(&body[range.clone()], evaluation, |stmt| {
-            class_assign_member(stmt).map(|(name, _)| (name, name))
-        })?;
+        let keys = def_run_tier_keys(
+            &body[range.clone()],
+            evaluation,
+            |stmt| class_assign_member(stmt).map(|(name, _)| (name, name)),
+            |_| (),
+        )?;
         if keys.len() < 2 {
             return None;
         }

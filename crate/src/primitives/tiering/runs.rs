@@ -21,16 +21,18 @@ pub(crate) struct DefRun<'a, 'src, K> {
 }
 
 impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
-    /// Prepares the `member`-selected definitions within `range`, `None`
+    /// Prepares the `member`-selected definitions within `range`, each
+    /// tiered past the dependencies its `band` shares or precedes, `None`
     /// where the run cannot reorder because a name repeats or the
     /// reference graph carries a cycle.
-    pub(crate) fn of(
+    pub(crate) fn banded<B: Ord>(
         body: &'src [Stmt],
         range: Range<usize>,
         evaluation: Evaluation<'a, 'src>,
         member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+        band: impl Fn(K) -> B,
     ) -> Option<Self> {
-        let keys = def_run_tier_keys(&body[range.clone()], evaluation, &member)?;
+        let keys = def_run_tier_keys(&body[range.clone()], evaluation, &member, band)?;
         let strands = Strands::of(body, &range, evaluation, |stmt| {
             member(stmt).map(|(name, _)| name)
         });
@@ -39,6 +41,17 @@ impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
             range,
             strands,
         })
+    }
+
+    /// Prepares the `member`-selected definitions within `range` as one
+    /// band, per [`DefRun::banded`].
+    pub(crate) fn of(
+        body: &'src [Stmt],
+        range: Range<usize>,
+        evaluation: Evaluation<'a, 'src>,
+        member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+    ) -> Option<Self> {
+        Self::banded(body, range, evaluation, member, |_| ())
     }
 
     /// Holds each member above every later constant it anchors, per
@@ -81,11 +94,14 @@ impl<'a, 'src, K: Copy> DefRun<'a, 'src, K> {
 /// start offset, or `None` where two members share a name or the
 /// intra-run reference graph carries a cycle. A member depends on every
 /// other sibling it names in its evaluation-time surface, and `tier` is
-/// its Kahn-style topological tier over those dependencies.
-pub(crate) fn def_run_tier_keys<'src, K: Copy>(
+/// its Kahn-style topological tier over those dependencies, leaving out
+/// each one whose `band` sorts ahead of the member's own, since the band
+/// order already seats it above.
+pub(crate) fn def_run_tier_keys<'src, K: Copy, B: Ord>(
     body: &'src [Stmt],
     evaluation: Evaluation<'_, 'src>,
     member: impl Fn(&'src Stmt) -> Option<(&'src str, K)>,
+    band: impl Fn(K) -> B,
 ) -> Option<FxHashMap<TextSize, (usize, K)>> {
     let members: Vec<(&'src Stmt, &'src str, K)> = body
         .iter()
@@ -114,7 +130,18 @@ pub(crate) fn def_run_tier_keys<'src, K: Copy>(
                 .collect()
         })
         .collect();
-    let tiers = tier_levels(&dep_sets)?;
+    tier_levels(&dep_sets)?;
+    let in_band: Vec<FxHashSet<usize>> = dep_sets
+        .iter()
+        .zip(&members)
+        .map(|(deps, &(_, _, key))| {
+            deps.iter()
+                .copied()
+                .filter(|&dep| band(members[dep].2) >= band(key))
+                .collect()
+        })
+        .collect();
+    let tiers = tier_levels(&in_band)?;
     Some(
         members
             .into_iter()
@@ -441,7 +468,8 @@ mod tests {
             def_run_tier_keys(
                 &source.ast().body,
                 evaluated(&source, &source.ast().body).evaluation(),
-                class_member
+                class_member,
+                |_| ()
             )
             .is_none()
         );
@@ -454,7 +482,8 @@ mod tests {
             def_run_tier_keys(
                 &source.ast().body,
                 evaluated(&source, &source.ast().body).evaluation(),
-                class_member
+                class_member,
+                |_| ()
             )
             .is_none()
         );
@@ -468,6 +497,7 @@ mod tests {
             body,
             evaluated(&source, &source.ast().body).evaluation(),
             class_member,
+            |_| (),
         )
         .expect("self-reference does not decline");
         assert_eq!(keys[&body[0].start()].0, 0);
@@ -481,6 +511,7 @@ mod tests {
             body,
             evaluated(&source, &source.ast().body).evaluation(),
             class_member,
+            |_| (),
         )
         .expect("acyclic run tiers");
         let tier = |i: usize| keys[&body[i].start()].0;

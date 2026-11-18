@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Attribute Docstrings Hold at a Section Wall"
+
+description = '''
+In `Walled` a section marker sits between `zeta` and the string literal, so the literal opens the section below the marker rather than documenting `zeta`, and **it holds its slot while `alpha` and `beta` sort beneath it**. In `Pinned` the skip directive walls `zeta` into a section of its own, so its docstring stays in place, whereas `"Beta count."` moves with `beta` below `alpha`.
+'''
