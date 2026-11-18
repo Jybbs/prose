@@ -1010,8 +1010,9 @@ def test_exact_reports_each_range_by_its_package(
     workdir : Callable[[dict[str, str]], Path]
 ):
     """
-    Pins that `exact` fails on a range written into any table of
-    `site/package.json`, naming the package beside the range.
+    Pins that `exact` fails on a range written into a dependency table,
+    `overrides`, or `resolutions` of `site/package.json`, naming the package
+    beside the range.
     """
     package = {
         "dependencies"         : {"vue": "3.5.45"},
