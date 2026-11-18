@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Function Naming a Class Keeps Its Alphabetical Slot"
+
+description = '''
+`beta` annotates its parameter with `Zed`, and Python evaluates that annotation when the `def` runs, so `Zed` has to bind first. The class band already seats `Zed` above every function, so **`beta` sorts between `alpha` and `gamma`** rather than dropping to the end of the function band.
+'''

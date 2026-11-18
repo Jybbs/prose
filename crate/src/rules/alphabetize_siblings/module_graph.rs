@@ -1,7 +1,7 @@
 //! Module-scope definition banding. Sorts the classes and the functions
 //! of a section as one run keyed by band, tier, method group, and name,
-//! the classes seating above the functions, each band tiering through
-//! the dependency graph the whole run shares, and the function band
+//! the classes seating above the functions, each member tiering past the
+//! dependencies in its own band or a later one, and the function band
 //! keeping the method-group order.
 
 use std::ops::Range;
@@ -32,17 +32,22 @@ pub(super) fn module_def_run<'a, 'src>(
     evaluation: Evaluation<'a, 'src>,
     group_methods: bool,
 ) -> Option<ModuleDefs<'a, 'src>> {
-    DefRun::of(body, range, evaluation, |stmt| {
-        banded_member(stmt, group_methods)
-    })
+    DefRun::banded(
+        body,
+        range,
+        evaluation,
+        |stmt| banded_member(stmt, group_methods),
+        |(band, _, _)| band,
+    )
     .map(|run| run.anchor_observers(body, evaluation))
 }
 
 /// Permutes a prepared module-definition run, rewriting `order` in place
-/// with the classes seating above the functions and each band tiering
-/// through the graph the whole run shares. A member `holds` selects keeps
-/// its source slot, and a member the permutation would seat across a
-/// binding it evaluates holds its slot while the rest of the run sorts.
+/// with the classes seating above the functions and each member tiering
+/// past the dependencies in its own band or a later one. A member
+/// `holds` selects keeps its source slot, and a member the permutation
+/// would seat across a binding it evaluates holds its slot while the
+/// rest of the run sorts.
 pub(super) fn permute_module_run<'src>(
     run: &ModuleDefs<'_, 'src>,
     order: &mut [usize],
@@ -215,6 +220,28 @@ mod tests {
             module_order(src),
             vec![1, 3, 2, 0],
             "Widget tiers behind Gadget inside the class band rather than behind the functions"
+        );
+    }
+
+    #[test]
+    fn module_defs_seats_a_function_naming_a_class_by_its_name() {
+        let src = indoc! {"
+            class Zed:
+                pass
+
+            def beta(x: Zed):
+                pass
+
+            def alpha():
+                pass
+
+            def gamma():
+                pass
+        "};
+        assert_eq!(
+            module_order(src),
+            vec![0, 2, 1, 3],
+            "the class band seats Zed above beta, so beta takes no tier past alpha and gamma"
         );
     }
 

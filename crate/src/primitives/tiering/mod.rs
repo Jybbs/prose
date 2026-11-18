@@ -8,6 +8,7 @@ use ruff_python_ast::Stmt;
 use ruff_text_size::{Ranged, TextSize};
 use rustc_hash::{FxHashMap, FxHashSet};
 
+mod annotations;
 mod fences;
 mod reach;
 mod refs;
@@ -15,6 +16,7 @@ mod runs;
 mod strands;
 mod tiers;
 
+pub(crate) use annotations::Annotations;
 pub(crate) use fences::fenced_slots;
 pub(crate) use reach::{CallReach, call_reachable};
 use reach::{called_names, calls_a_name};
@@ -109,11 +111,11 @@ pub(crate) fn definition_names(body: &[Stmt]) -> FxHashSet<&str> {
 /// by start offset, each list holding a name once.
 pub(crate) fn eval_time_refs_of(
     body: &[Stmt],
-    defer_annotations: bool,
+    annotations: Annotations,
 ) -> FxHashMap<TextSize, Vec<&str>> {
     body.iter()
         .map(|stmt| {
-            let refs = eval_time_refs(stmt, defer_annotations)
+            let refs = eval_time_refs(stmt, annotations)
                 .into_iter()
                 .unique()
                 .collect();

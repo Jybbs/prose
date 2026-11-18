@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy Annotation a Method Decorator Reads Keeps Its Type Above"
+
+description = '''
+At `target-version` 3.14 an annotation runs only when something reads it, and a decorator runs as the method binds, as `functools.singledispatchmethod`'s `register` does when it reads the annotation of `value` to pick the type it dispatches on. **`Zed` stays above `Handler`**, though its class header is bare, while `Alpha` sorts to the top of the run.
+'''

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy Annotation a Function Decorator Reads Keeps Its Type Above"
+
+description = '''
+At `target-version` 3.14 an annotation runs only when something reads it, and a decorator runs as the function binds, as `functools.singledispatch`'s `register` does when it reads the annotation of `value` to pick the type it dispatches on. **`Zed` stays above the registered function**, so `Alpha` holds its slot below it rather than sorting past `Zed`.
+'''

@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/attribute_docstrings_travel_with_plain_assignments/input.py
+---
+class Color:
+    alpha = 2
+    """Alpha shade."""
+    zeta = 1
+    """Zeta shade."""

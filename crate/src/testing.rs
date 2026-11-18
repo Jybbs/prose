@@ -21,7 +21,7 @@ use crate::{
         comments::Settling,
         edit::apply_edits_mapped,
         padding::Stranding,
-        tiering::{Evaluated, call_reachable, eval_time_refs_of},
+        tiering::{Annotations, Evaluated, call_reachable, eval_time_refs_of},
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -189,7 +189,7 @@ pub(crate) fn evaluated<'src>(source: &'src Source, body: &'src [Stmt]) -> Evalu
     Evaluated::of(
         body,
         &call_reachable(source.binding_analysis(), body),
-        eval_time_refs_of(body, false),
+        eval_time_refs_of(body, Annotations::Eager),
     )
 }
 

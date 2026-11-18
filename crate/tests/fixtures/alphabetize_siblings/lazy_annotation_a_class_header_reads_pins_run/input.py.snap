@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/lazy_annotation_a_class_header_reads_pins_run/input.py
+---
+from pydantic import BaseModel
+
+
+class Alpha:
+    def run(self, reference: Zed) -> Zed: ...
+
+
+class Zed:
+    pass
+
+
+class Beta(BaseModel):
+    reference: Zed
