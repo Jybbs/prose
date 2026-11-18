@@ -28,9 +28,9 @@ Subcommands:
               `validate`, and `publish` results plus the GitHub-runner
               defaults. Exits 0 when every required job succeeded, where
               `publish` is required on a tag run alone.
-    warm    : Renders the Warm gate summary. Reads the `checks` and `wheels`
-              results plus the GitHub-runner defaults. Exits 0 when both
-              succeeded.
+    warm    : Renders the Warm gate summary. Reads the `checks`, `packages`,
+              and `wheels` results plus the GitHub-runner defaults. Exits 0
+              when all three succeeded.
 
 Each subcommand renders into `$GITHUB_STEP_SUMMARY` when it is set, stdout
 otherwise.
@@ -222,7 +222,7 @@ class Summary:
         """
         Renders the Warm gate summary and exits with the cache-warm verdict.
         """
-        self._gate("warm", "checks", "wheels")
+        self._gate("warm", "checks", "packages", "wheels")
 
 
 if __name__ == "__main__":
