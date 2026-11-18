@@ -48,12 +48,15 @@ describe('proseBinaryPath', () => {
 })
 
 describe('directory helpers', () => {
-  it('resolve the crate, site, rules, architecture, and cache directories under the repo', () => {
+  it('resolve the crate, site, pages, public, rules, architecture, readme, and cache directories under the repo', () => {
     const root = paths.repoRoot(meta)
     expect(paths.crateDir(meta)).toBe(path.join(root, 'crate'))
     expect(paths.siteDir(meta)).toBe(path.join(root, 'site'))
-    expect(paths.rulesDir(meta)).toBe(path.join(root, 'site', 'rules'))
-    expect(paths.architectureDir(meta)).toBe(path.join(root, 'site', 'architecture'))
+    expect(paths.pagesDir(meta)).toBe(path.join(root, 'site', 'pages'))
+    expect(paths.rulesDir(meta)).toBe(path.join(root, 'site', 'pages', 'rules'))
+    expect(paths.architectureDir(meta)).toBe(path.join(root, 'site', 'pages', 'architecture'))
+    expect(paths.publicDir(meta)).toBe(path.join(root, 'site', 'public'))
+    expect(paths.readmeDir(meta)).toBe(path.join(root, 'site', 'public', 'readme'))
     expect(paths.cacheDirFrom(root, 'og')).toBe(path.join(root, '.cache', 'og'))
     expect(paths.fetchCacheDir(meta)).toBe(path.join(root, '.cache', 'fetch'))
     expect(paths.highlightCacheDir(meta)).toBe(path.join(root, '.cache', 'highlight'))

@@ -14,7 +14,7 @@ import { sectionHeadingPlugin }          from '../../lib/markdown/section-headin
 import type { DiscoveredRule }           from '../../lib/rules/discovery'
 import { ruleLinkPlugin }                from '../../lib/rules/link-plugin'
 import { emblemsOf }                     from '../../lib/shared/emblems'
-import { siteDir }                       from '../../lib/shared/paths'
+import { pagesDir }                      from '../../lib/shared/paths'
 import { SECTIONS }                      from '../../lib/shared/registries'
 
 const render = (configure: (md: MarkdownIt) => void, src: string, env: Env = {}): string => {
@@ -25,7 +25,7 @@ const render = (configure: (md: MarkdownIt) => void, src: string, env: Env = {})
 
 describe('calloutPlugin', () => {
   const callout = async (src: string): Promise<string> => {
-    const md = await createMarkdownRenderer(siteDir(import.meta.url), {
+    const md = await createMarkdownRenderer(pagesDir(import.meta.url), {
       config: renderer => { renderer.use(calloutPlugin) }
     })
     return md.render(src)

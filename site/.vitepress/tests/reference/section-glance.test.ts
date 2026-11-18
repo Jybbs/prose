@@ -2,12 +2,12 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import loader, { continuing }     from '../../lib/reference/section-glance.data'
-import { siteDir }                from '../../lib/shared/paths'
+import { pagesDir }               from '../../lib/shared/paths'
 import { FAMILY_ORDER, SECTIONS } from '../../lib/shared/registries'
 import { familyRoute }            from '../../lib/shared/routes'
 
 const data      = await loader.load([])
-const site      = siteDir(import.meta.url)
+const pages     = pagesDir(import.meta.url)
 const withPages = SECTIONS.filter(({ slug }) => data[slug].length > 0)
 
 describe('section glance data', () => {
@@ -39,7 +39,7 @@ describe('section glance data', () => {
   })
 
   it.each(withPages)('$slug opens its index page on its glance', ({ slug }) => {
-    const index = fs.readFileSync(path.join(site, slug, 'index.md'), 'utf8')
+    const index = fs.readFileSync(path.join(pages, slug, 'index.md'), 'utf8')
     expect(index.split('\n').find(line => line.startsWith('## '))).toBe('## The Section at a Glance')
     expect(index).toContain(`<SectionGlance section="${slug}" />`)
   })

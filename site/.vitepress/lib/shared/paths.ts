@@ -8,7 +8,7 @@ import { fileURLToPath }           from 'node:url'
 export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
 
 export function architectureDir(metaUrl: string): string {
-  return path.join(siteDir(metaUrl), 'architecture')
+  return path.join(pagesDir(metaUrl), 'architecture')
 }
 
 export function cacheDirFrom(root: string, name: string): string {
@@ -31,12 +31,20 @@ export function fixturesDirFrom(crate: string): string {
   return path.join(crate, 'tests', 'fixtures')
 }
 
+export function pagesDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'pages')
+}
+
 export function proseBinaryPath(root: string): string {
   return path.join(targetDir(root), 'debug', 'prose')
 }
 
+export function publicDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'public')
+}
+
 export function readmeDir(metaUrl: string): string {
-  return path.join(siteDir(metaUrl), 'public', 'readme')
+  return path.join(publicDir(metaUrl), 'readme')
 }
 
 export function repoRoot(metaUrl: string): string {
@@ -50,7 +58,7 @@ export function repoRoot(metaUrl: string): string {
 }
 
 export function rulesDir(metaUrl: string): string {
-  return path.join(siteDir(metaUrl), 'rules')
+  return path.join(pagesDir(metaUrl), 'rules')
 }
 
 function resolveProseBinary(root: string): string {

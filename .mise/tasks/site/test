@@ -4,4 +4,4 @@
 #MISE dir         = "site"
 #MISE sources     = ["@group:crate", "@group:site"]
 
-vitest run --project docs "$@"
+vitest run --config .vitepress/vitest.config.ts --project docs "$@"

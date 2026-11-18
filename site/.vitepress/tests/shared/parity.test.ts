@@ -91,7 +91,7 @@ describe('suppression scope registry and stylesheet parity', () => {
 
 describe('primitive registry and page parity', () => {
   const primitives = discoverPrimitives(paths.architectureDir(import.meta.url))
-  const reference  = matterPages(path.join(paths.siteDir(import.meta.url), 'reference'))
+  const reference  = matterPages(path.join(paths.pagesDir(import.meta.url), 'reference'))
     .map(page => markdownH1(page.content)!)
 
   it('every PRIMITIVE_SLUGS entry has a page, with no orphans', () => {

@@ -3,4 +3,8 @@
 #MISE description = "Run the docs-site `vitest` files the changes since `origin/main` reach"
 #MISE dir         = "site"
 
-vitest run --project docs --changed origin/main "$@"
+vitest run \
+  --changed origin/main \
+  --config .vitepress/vitest.config.ts \
+  --project docs \
+  "$@"
