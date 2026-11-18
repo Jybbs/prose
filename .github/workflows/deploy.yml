@@ -173,11 +173,31 @@ jobs:
         uses : &download actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with : { name: *bundle, path: *dist }
 
+      - name : Key the WebKit system packages
+        id   : debs-key
+        run  : |
+          pin=$(jq -r .devDependencies.playwright site/package.json)
+          echo "key=webkit-debs-$ImageOS-${ImageVersion}_$pin" >> "$GITHUB_OUTPUT"
+
+      - name : Restore the WebKit system packages
+        id   : debs
+        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : ${{ steps.debs-key.outputs.key }}
+          path : &debs-path .cache/apt/*.deb
+
       - name : Read the values the browser computes
         env  : { MISE_TASK_SKIP_DEPENDS: 'true' }
         run  : |
           mise run site:bake
           mise run site:render
+
+      - name : Save the WebKit system packages
+        if   : ${{ !cancelled() && steps.debs.outputs.cache-hit != 'true' && hashFiles('.cache/apt/*.deb') != '' }}
+        uses : *cache-save
+        with:
+          key  : ${{ steps.debs-key.outputs.key }}
+          path : *debs-path
 
   deploy:
     name            : 🪁 Deploy

@@ -4,5 +4,27 @@
 #MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
 #MISE dir         = "site"
 
-playwright install --only-shell --with-deps chromium webkit
+shopt -s nullglob
+
+browsers=(chromium webkit)
+cache="$MISE_PROJECT_ROOT/.cache/apt"
+
+playwright install --only-shell "${browsers[@]}"
+
+if ! report=$(playwright install-deps --dry-run "${browsers[@]}"); then
+  echo "$report"
+  debs=("$cache"/*.deb)
+  if (( ${#debs[@]} )); then
+    sudo apt-get install --no-download --no-install-recommends --yes "${debs[@]}"
+  else
+    mkdir -p "$cache/partial"
+    sudo apt-get update
+    sed -n 's/^  //p' <<< "$report" \
+      | xargs sudo apt-get install \
+        --no-install-recommends \
+        -o "Dir::Cache::archives=$cache" \
+        --yes
+  fi
+fi
+
 vitest run --project render "$@"
