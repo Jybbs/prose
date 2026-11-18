@@ -988,14 +988,17 @@ def test_parity_stops_on_a_side_holding_no_pin(
 @mark.parametrize(
     ("table", "version"),
     [
-        param("devDependencies", "^8.3.5",       id = "caret"),
-        param("devDependencies", "~8.3.5",       id = "tilde"),
-        param("devDependencies", ">=8.3.5",      id = "comparator"),
-        param("devDependencies", "8.3.x",        id = "wildcard-patch"),
-        param("devDependencies", "8.3",          id = "partial"),
-        param("devDependencies", "latest",       id = "tag"),
-        param("devDependencies", "workspace:*",  id = "protocol"),
-        param("overrides",       "^8.5.32",      id = "override")
+        param("devDependencies",      "^8.3.5",      id = "caret"),
+        param("devDependencies",      "~8.3.5",      id = "tilde"),
+        param("devDependencies",      ">=8.3.5",     id = "comparator"),
+        param("devDependencies",      "8.3.x",       id = "wildcard-patch"),
+        param("devDependencies",      "8.3",         id = "partial"),
+        param("devDependencies",      "latest",      id = "tag"),
+        param("devDependencies",      "workspace:*", id = "protocol"),
+        param("overrides",            "^8.5.32",     id = "override"),
+        param("dependencies",         "^3.5.45",     id = "bun-add"),
+        param("optionalDependencies", "^2.3.3",      id = "bun-add-optional"),
+        param("peerDependencies",     "^3.5.45",     id = "bun-add-peer")
     ]
 )
 def test_exact_reports_each_range_by_its_package(
@@ -1006,10 +1009,16 @@ def test_exact_reports_each_range_by_its_package(
     workdir : Callable[[dict[str, str]], Path]
 ):
     """
-    Pins that `exact` fails on a range written into either table of
+    Pins that `exact` fails on a range written into any table of
     `site/package.json`, naming the package beside the range.
     """
-    package = {"devDependencies": {"vite": "8.3.5"}, "overrides": {"postcss": "8.5.32"}}
+    package = {
+        "dependencies"         : {"vue": "3.5.45"},
+        "devDependencies"      : {"vite": "8.3.5"},
+        "optionalDependencies" : {"fsevents": "2.3.3"},
+        "overrides"            : {"postcss": "8.5.32"},
+        "peerDependencies"     : {"vue": "3.5.45"}
+    }
     name                 = next(iter(package[table]))
     package[table][name] = version
     workdir({"site/package.json": dumps(package)})
