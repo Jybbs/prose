@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE depends     = ["site:bake"]
-#MISE description = "Install the browsers `site:render` drives and the system packages they need, reusing the cached `.deb` files that match the signed index"
+#MISE description = "Install the browsers `site:render` drives and the system packages they need, moving any EC2 Ubuntu mirror behind `archive.ubuntu.com` in the runner's apt mirrorlist and reusing the cached `.deb` files that match the signed index"
 #MISE dir         = "site"
 
 shopt -s nullglob

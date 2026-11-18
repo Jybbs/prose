@@ -1,7 +1,7 @@
 """
-Pins the Deploy gate `gha:brief` renders, reading the jobs it judges from
-the `gate` job's `needs` in `deploy.yml`, so a row the workflow waits on and
-the verdict leaves out fails here.
+Pins the Deploy and Warm gates `gha:brief` renders, reading the jobs each
+judges from the `gate` job's `needs` in `deploy.yml` and `warm.yml`, so a
+row the workflow waits on and the verdict leaves out fails here.
 """
 
 from collections.abc import Callable
@@ -14,6 +14,7 @@ from yaml            import safe_load
 ROOT = Path(__file__).resolve().parents[3]
 JOBS = safe_load((ROOT / ".github/workflows/deploy.yml").read_text())["jobs"]
 URL  = "https://preview.example.test"
+WARM = safe_load((ROOT / ".github/workflows/warm.yml").read_text())["jobs"]
 
 
 @fixture
@@ -94,3 +95,23 @@ def test_every_job_passing_passes_the_gate(gate: Callable[..., tuple[int, str]])
     code, summary = gate()
     assert code == 0
     assert URL in summary
+
+
+@mark.parametrize("job", WARM["gate"]["needs"])
+def test_a_failed_job_fails_the_warm_gate(
+    gate        : Callable[..., tuple[int, str]],
+    job         : str,
+    monkeypatch : MonkeyPatch,
+    task        : Callable[[str], ModuleType]
+):
+    """
+    Asserts that each job the Warm gate waits on fails it alone, reading the
+    jobs from the `gate` job's `needs` in `warm.yml`.
+    """
+    needs = {need: {
+        "result": "failure" if need == job else "success"
+    } for need in WARM["gate"]["needs"]}
+    monkeypatch.setenv("NEEDS", dumps(needs))
+    with raises(SystemExit) as stopped:
+        task("gha/brief").Summary().warm()
+    assert stopped.value.code == 1
