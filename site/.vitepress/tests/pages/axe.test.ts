@@ -31,7 +31,7 @@ it('finds the built pages', () => {
 })
 
 describe.each(SCHEMES)('the built pages in the %s scheme', scheme => {
-  it.concurrent.each(PAGES)('%s has no axe violations', async file => {
+  it.concurrent.for(PAGES)('%s has no axe violations', async (file, { expect }) => {
     await expect(audited(file)[scheme]).resolves.toStrictEqual([])
   })
 })

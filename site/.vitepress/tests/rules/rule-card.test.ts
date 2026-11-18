@@ -27,11 +27,11 @@ describe('RuleCard', () => {
   })
 
   it('covers a clickable card with a link to its rule page', () => {
-    expect(card().get('.rule-card-cover').attributes('href')).toBe('/rules/layout/reflow-calls')
+    expect(card().get('.cover-link').attributes('href')).toBe('/rules/layout/reflow-calls')
   })
 
   it('leaves the hover card a popup shows with no link of its own', () => {
-    expect(card(false).find('.rule-card-cover').exists()).toBe(false)
+    expect(card(false).find('.cover-link').exists()).toBe(false)
   })
 
   rendersAccessibly(() => card().html())

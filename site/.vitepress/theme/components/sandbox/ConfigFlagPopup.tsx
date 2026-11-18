@@ -77,6 +77,7 @@ export const ConfigFlagPopup = defineComponent({
     return () => (
       <Popup
         anchor={target.value}
+        class="glossary-popup"
         label={path.value}
         open={path.value !== ''}
         overflowPadding={16}

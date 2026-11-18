@@ -40,8 +40,8 @@ describe('the theme cascade', () => {
 
   it('keeps every outline out of the glossary and rule-card sheets', () => {
     const popups = new Set([
-      '.vitepress/theme/components/glossary/styles/glossary.css',
-      '.vitepress/theme/components/rules/styles/specimen-callout.css'
+      '.vitepress/theme/styles/tailwind/glossary.css',
+      '.vitepress/theme/styles/tailwind/rules.css'
     ])
     const declared = SHEETS.filter(({ file }) => popups.has(file)).flatMap(({ file, root }) => {
       const lines = [] as string[]

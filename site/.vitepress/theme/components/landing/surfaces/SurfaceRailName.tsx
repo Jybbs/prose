@@ -6,11 +6,20 @@ import type { RenderedRule } from '../../../../lib/rules/rules.data'
 import { familyEmblem }      from '../../../../lib/shared/emblems'
 import { NibBadge }          from '../../../../kit'
 
+type Swap = keyof typeof SWAP_CLASSES
+
+// Names the classes that slide a rule's name in from the side it travels from
+// and out toward the side it travels to.
+const SWAP_CLASSES = {
+  back : { enterFromClass: 'opacity-0 -translate-x-5', leaveToClass: 'opacity-0 translate-x-5' },
+  fwd  : { enterFromClass: 'opacity-0 translate-x-5', leaveToClass: 'opacity-0 -translate-x-5' }
+}
+
 export const SurfaceRailName = defineComponent({
   name  : 'SurfaceRailName',
   props : {
     rule : { required: true, type: null as unknown as PropType<RenderedRule | undefined> },
-    swap : { required: true, type: String }
+    swap : { required: true, type: String as PropType<Swap> }
   },
   setup(props) {
     const tabindex = useHiddenTabindex()
@@ -27,7 +36,12 @@ export const SurfaceRailName = defineComponent({
             tabindex={tabindex.value}
           >
             <NibBadge emblem={familyEmblem(rule.family)} size={14} />
-            <Transition mode="out-in" name={props.swap}>
+            <Transition
+              {...SWAP_CLASSES[props.swap]}
+              enterActiveClass="surface-rail-swap"
+              leaveActiveClass="surface-rail-swap"
+              mode="out-in"
+            >
               {{ default: () => <span class="font-mono" key={rule.slug}>{rule.slug}</span> }}
             </Transition>
           </a>

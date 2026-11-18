@@ -131,7 +131,7 @@ describe('IdentityMarks', () => {
     expect(holder.html()).toContain('height="24"')
     const thumb = wrapper.get('[role="slider"]')
     expect([thumb.attributes('aria-valuemin'), thumb.attributes('aria-valuemax')]).toStrictEqual(['12', '64'])
-    expect(wrapper.get('.identity-diamond').attributes('style')).toBe(`left: ${(24 - 12) / (64 - 12) * 100}%;`)
+    expect(wrapper.get('.diamond-tilt').attributes('style')).toBe(`left: ${(24 - 12) / (64 - 12) * 100}%;`)
     wrapper.findComponent(Slider).emit('change', 40)
     await flushPromises()
     expect(holder.html()).toContain('height="40"')

@@ -122,7 +122,7 @@ export const RulesPlate = defineComponent({
           </div>
           <span class="rules-plate-census-cap font-mono text-xs whitespace-nowrap text-text-2 tabular-nums">{counted.value ? `${counted.value.count} of ${rules.list.length}` : rules.list.length} rules </span>
           <button
-            class={['rules-plate-all cursor-pointer rounded-sm border-1 border-divider bg-chip-ground px-6 py-0 font-mono text-xs leading-24 whitespace-nowrap text-text-2 transition-colors hover:border-text-2 hover:text-text-1 focus-visible:focus-ring focus-visible:outline-offset-2', { 'is-idle': !pinned.value }]}
+            class={['rules-plate-all cursor-pointer rounded-sm border-1 border-divider bg-chip-ground px-6 py-0 font-mono text-xs leading-24 whitespace-nowrap text-text-2 transition-colors hover:border-text-2 hover:text-text-1 focus-visible:focus-ring focus-visible:outline-offset-2', { invisible: !pinned.value }]}
             onClick={releaseAll}
             type="button"
           > All families </button>

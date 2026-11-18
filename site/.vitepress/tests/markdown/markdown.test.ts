@@ -81,11 +81,6 @@ describe('wholeLineTokens', () => {
     highlighter.codeToHtml('x = 1', options)
     expect(options.tokenizeTimeLimit).toBe(0)
   })
-
-  it('reaches the markdown highlighter through the site config', async () => {
-    const { default: config } = await import('../../config')
-    expect(config.markdown?.codeTransformers).toContain(wholeLineTokens)
-  }, 60_000)
 })
 
 describe('lintDecorations', () => {

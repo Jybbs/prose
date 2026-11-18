@@ -58,7 +58,7 @@ export const GlossaryTerm = defineComponent({
     })
 
     return () => (
-      <Popup label={entry.slug} placement="top" theme="glossary">
+      <Popup class="glossary-popup" label={entry.slug} placement="top" theme="glossary">
         {{
           default: () => <div innerHTML={tooltipHtml.value} />,
           trigger: ({ props: trigger }: PopupTriggerScope) => (

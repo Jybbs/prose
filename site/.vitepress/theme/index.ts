@@ -21,6 +21,7 @@ import 'virtual:prose-palette.css'
 import 'virtual:prose-tokens.css'
 import './styles/tokens.css'
 import './styles/accents.css'
+import './styles/config-forms.css'
 import './styles/globals.css'
 import './styles/markdown/body.css'
 import './styles/markdown/callouts.css'
@@ -32,10 +33,9 @@ import './styles/underline-draw.css'
 import './styles/vitepress-chrome.css'
 
 // The base and markdown sheets above stay explicit imports because their
-// cascade order is load-bearing, whereas the component layer's sheets are
-// order-free and load through one glob in path order. A sheet beside a base
-// component loads with that component alone, which only some pages render.
-import.meta.glob(['./components/**/*.css', '!./components/base/*.css', '../kit/styles/*.css'], { eager: true })
+// cascade order is load-bearing, whereas the kit's sheets are order-free and
+// load through one glob in path order.
+import.meta.glob('../kit/styles/*.css', { eager: true })
 
 // A component carrying data that one page alone reads loads in a chunk of its
 // own, registered under its file name through the deferred glob.

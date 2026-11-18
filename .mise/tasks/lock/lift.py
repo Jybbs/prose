@@ -452,14 +452,6 @@ class Lift:
     alerts    : tuple[int, ...] = ()
 
     @property
-    def days(self) -> str:
-        """
-        Returns how many whole days ago the newest release was published, or
-        nothing where its registry reports no time.
-        """
-        return str((datetime.now(UTC) - self.published).days) if self.published else ""
-
-    @property
     def edits(self) -> set[tuple[Home, str, str]]:
         """
         Returns each home this row moves beside the text its written version
@@ -512,16 +504,18 @@ class Lift:
             targets   = {commit: tags[latest.version]}
         )
 
-    def cells(self) -> list[str]:
+    def cells(self, now: datetime) -> list[str]:
         """
-        Returns the cells of this row in the table's column order.
+        Lists the cells of this row in the table's column order, counting
+        the whole days between the newest release's publication and `now`,
+        and leaving that cell empty where its registry reports no time.
         """
         return [
             f"`{self.name}`",
             f"`{self.current}`",
             f"`{self.newest}`",
             "yes" if self.major else "no",
-            self.days,
+            str((now - self.published).days) if self.published else "",
             ", ".join(f"#{number}" for number in self.alerts)
         ]
 
@@ -797,7 +791,7 @@ def main():
     flags = parser.parse_args()
 
     lifts, held = table()
-    print(rendered(lifts))
+    print(rendered(lifts, datetime.now(UTC)))
     if held:
         print(f"\n{waiting(held)}")
     if unknown := sorted(set(flags.hold) - {lift.name for lift in lifts}):
@@ -993,10 +987,10 @@ def padded(rows: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
-def rendered(lifts: list[Lift]) -> str:
+def rendered(lifts: list[Lift], now: datetime) -> str:
     """
-    Returns the Markdown table listing `lifts`, or a sentence saying no pin
-    trails its newest release.
+    Renders `lifts` as a Markdown table giving each release's age at `now`,
+    or as a sentence saying no pin trails its newest release.
     """
     if not lifts:
         return "Every pin stands at its newest release."
@@ -1005,7 +999,7 @@ def rendered(lifts: list[Lift]) -> str:
         "**Pin**", "**Current**", "**Newest**",
         "**Major**", "**Days Old**", "**Alerts Cleared**"
     ]
-    return padded([header, *(lift.cells() for lift in lifts)])
+    return padded([header, *(lift.cells(now) for lift in lifts)])
 
 
 def python_pins() -> Iterator[Pin]:

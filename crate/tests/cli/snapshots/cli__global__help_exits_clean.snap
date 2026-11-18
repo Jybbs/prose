@@ -1,0 +1,40 @@
+---
+source: crate/tests/cli/global.rs
+expression: stdout_utf8(&assert)
+---
+A Python typesetter for the reader.
+
+Usage: prose [OPTIONS] <COMMAND>
+
+Commands:
+  cache        Manage the user-level cache
+  check        Report pending rewrites and lint findings without writing, exiting non-zero on either
+  completions  Print a shell-completion script for the named shell to stdout
+  format       Rewrite files in place to conform to the Prose style
+  rules        List the registered rules in pipeline order
+  schema       Print the configuration's JSON Schema to stdout, every key with its type, its default, and any bound on its value
+  server       Run the language server over stdio, giving an editor format-on-save and live diagnostics
+  help         Print this message or the help of the given subcommand(s)
+
+Options:
+      --color <WHEN>
+          When to use colored output
+          
+          [default: auto]
+          [possible values: auto, always, never]
+
+      --verbose
+          Print one line of cache hit and miss counts to stderr ahead of the closing summary of each `check` or `format` run
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+Exit codes:
+  0    Clean: no findings, no rewrite pending, or a stdin run wrote the formatted source
+  1    Format would change: at least one rewrite is pending
+  2    Lint violation: at least one lint finding was reported, unless a stdin run wrote the formatted source
+  3    Parse error: input is not valid Python for the target version
+  4    Config error: the config, the arguments, a path, or a rewrite failed validation

@@ -50,7 +50,7 @@ export const RuleCard = defineComponent({
         data-family={props.rule.family}
         ref={article}
       >
-        {props.clickable ? <a aria-label={props.rule.name} class="rule-card-cover" href={props.rule.href} /> : null}
+        {props.clickable ? <a aria-label={props.rule.name} class="cover-link" href={props.rule.href} /> : null}
         {slots.header ? (
           <div class="rule-card-header pointer-events-none relative z-2">
             {slots.header?.()}
