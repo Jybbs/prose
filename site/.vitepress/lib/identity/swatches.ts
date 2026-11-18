@@ -1,6 +1,6 @@
-import { converter, wcagContrast } from 'culori'
-import { parse }                   from 'postcss'
-import type { Rule }               from 'postcss'
+import { converter, wcagContrast }        from 'culori'
+import { parse }                          from 'postcss'
+import type { AtRule, Declaration, Rule } from 'postcss'
 
 import * as palette    from '../shared/palette'
 import { toTitleCase } from '../shared/title-case'
@@ -104,6 +104,28 @@ function groupsOf(states: ReadonlyMap<string, string>): Map<string, GroupId> {
   return groups
 }
 
+// Returns the selector a declaration applies under, reading an `@utility`
+// block as its class and an `@variant dark` block as `.dark &`, and putting
+// each selector of an enclosing list in place of the `&` a nested selector
+// writes, or before a nested selector that writes none.
+function selectorOf(decl: Declaration): string {
+  const levels: string[][] = []
+  for (let node = decl.parent; node && node.type !== 'root'; node = node.parent) {
+    const at  = node as AtRule
+    const own = node.type === 'rule' ? (node as Rule).selectors
+      : node.type !== 'atrule' ? undefined
+      : at.name === 'utility' ? [`.${at.params}`]
+      : at.name === 'variant' && at.params === 'dark' ? ['.dark &']
+      : undefined
+    if (own === undefined) continue
+    levels.push(own)
+  }
+  return levels
+    .reduce((selectors, own) => own.flatMap(outer => selectors.map(inner =>
+      inner === '' ? outer : inner.includes('&') ? inner.replaceAll('&', outer) : `${outer} ${inner}`)), [''])
+    .join(', ')
+}
+
 // Lists the uses `palette.ts` declares itself, meaning the family, section,
 // and role colors its theme block writes and the grounds it measures against.
 function declaredUses(): Map<string, Use[]> {
@@ -139,7 +161,7 @@ export function scanUses(sheets: readonly SourceFile[], sources: readonly Source
 
   for (const { file, text } of sheets) {
     parse(text).walkDecls(decl => {
-      const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : ''
+      const selector = selectorOf(decl)
       const schemes  = /\.dark\b/.test(selector) ? ['dark'] as const : palette.SCHEMES
       for (const [, whole, shade] of decl.value.matchAll(property)) {
         add((whole ?? shade)!, { schemes, token: decl.prop, where: `${file} ${selector}`.trim() })

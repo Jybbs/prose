@@ -29,14 +29,14 @@ export const SettingGauge = defineComponent({
     return () => (
       <div
         aria-label={`${props.gauge.setting} values`}
-        class="fixture-gauge relative mb-1rem select-none"
+        class="fixture-gauge @container relative mb-1rem select-none"
         id={trackId}
         role="group"
       >
         <span class="fixture-gauge-ticks absolute inset-x-0 text-text-3" innerHTML={ticks.value} />
         <span
           aria-hidden="true"
-          class="fixture-gauge-default absolute size-6 bg-bg-soft"
+          class="fixture-gauge-default diamond-tilt absolute size-6 bg-bg-soft"
           style={{ left: pct(props.gauge.default) }}
         />
         {marks.value.map((mark, at) => (
@@ -60,11 +60,11 @@ export const SettingGauge = defineComponent({
             default: ({ thumb }: SliderScope) => (
               <div
                 {...thumb}
-                class="fixture-gauge-stop group absolute w-0 cursor-ew-resize touch-none outline-none"
+                class="fixture-gauge-stop pin-to-pct group absolute top-0 w-0 cursor-ew-resize touch-none outline-none"
                 style={{ '--pct': gauge.gaugePct(props.gauge.steps, value.value) }}
               >
-                <span aria-hidden="true" class="fixture-gauge-marker absolute bg-text-2 group-hover:bg-text-1" />
-                <span class="fixture-gauge-chip ruler-chip group-focus-visible:focus-ring absolute group-hover:border-text-2">
+                <span aria-hidden="true" class="fixture-gauge-marker absolute bottom-0 w-1 bg-text-2 group-hover:bg-text-1" />
+                <span class="fixture-gauge-chip clamp-to-pct ruler-chip top-0 left-0 group-focus-visible:focus-ring absolute group-hover:border-text-2">
                   <span class="font-mono text-meta tracking-0-05em text-text-2">{props.gauge.setting}</span>
                   <span class="font-mono text-0-68rem tabular-nums text-text-1">{value.value}</span>
                 </span>

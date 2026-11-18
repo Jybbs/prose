@@ -105,21 +105,21 @@ it('finds the built pages', () => {
 })
 
 describe.each([WIDE.width, NARROW.width])('the built pages at %d px', width => {
-  it.concurrent.each(PAGES)('%s holds each inline code chip in one box inside the page', async file => {
+  it.concurrent.for(PAGES)('%s holds each inline code chip in one box inside the page', async (file, { expect }) => {
     expect((await survey(file)).layout[width]!.split).toStrictEqual([])
   })
 
-  it.concurrent.each(PAGES)('%s fits the viewport\'s width', async file => {
+  it.concurrent.for(PAGES)('%s fits the viewport\'s width', async (file, { expect }) => {
     expect((await survey(file)).layout[width]!.overflow).toBeLessThanOrEqual(0)
   })
 
-  it.concurrent.each(PAGES)('%s holds the punctuation after a chip on its line', async file => {
+  it.concurrent.for(PAGES)('%s holds the punctuation after a chip on its line', async (file, { expect }) => {
     expect((await survey(file)).layout[width]!.stranded).toStrictEqual([])
   })
 })
 
 describe('the scrolling regions at a forced overflow', () => {
-  it.concurrent.each(PAGES)('%s gives each a tab stop', async file => {
+  it.concurrent.for(PAGES)('%s gives each a tab stop', async (file, { expect }) => {
     const { regions, unreachable } = (await survey(file)).overflow
     expect(unreachable).toStrictEqual([])
     expect(regions).toStrictEqual([])

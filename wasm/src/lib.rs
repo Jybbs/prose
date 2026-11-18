@@ -117,6 +117,8 @@ fn start() {
 mod tests {
     use std::assert_matches;
 
+    use rstest::rstest;
+
     use super::*;
 
     /// Already-formatted source, whose bare `import os` draws one
@@ -140,54 +142,51 @@ mod tests {
         assert!(!probe.fired_rules.is_empty());
     }
 
-    #[test]
-    fn honors_a_rule_toggle() {
-        let aligned = formatted("", "aa = 1\nb = 2\n");
-        assert_eq!(aligned.formatted.text(), "aa = 1\nb  = 2\n");
-        let toggled = formatted("rules.align-equals = false", "aa = 1\nb = 2\n");
-        assert_eq!(toggled.formatted.text(), "aa = 1\nb = 2\n");
-    }
-
-    #[test]
-    fn leaves_config_notices_empty_for_a_known_key() {
-        let result = formatted("code-line-length = 100", "x = 1\n");
-        assert!(result.config_notices.is_empty());
-    }
-
-    #[test]
-    fn leaves_fired_rules_empty_when_none_fire() {
-        let result = formatted("", "x = 1\n");
-        assert!(result.fired_rules.is_empty());
-    }
-
-    #[test]
-    fn leaves_lint_records_empty_when_none_fire() {
-        let result = formatted("", "x = 1\n");
-        assert!(result.record().diagnostics.is_empty());
-    }
-
-    #[test]
-    fn leaves_unstable_rules_empty_for_a_settled_rewrite() {
-        let result = formatted("", "alpha = 1\nb = 22\n");
-        assert!(result.unstable_rules.is_empty());
-    }
-
-    #[test]
-    fn rejects_a_lazy_import_below_its_target_version() {
-        assert_matches!(
-            run("target-version = \"3.14\"", "lazy import os\n", true),
-            Err(error) if error.to_string().ends_with(" at byte range 0..4")
+    #[rstest]
+    #[case::aligned_by_default("", "aa = 1\nb  = 2\n")]
+    #[case::left_alone_when_toggled_off("rules.align-equals = false", "aa = 1\nb = 2\n")]
+    fn honors_a_rule_toggle(#[case] config_toml: &str, #[case] expected: &str) {
+        assert_eq!(
+            formatted(config_toml, "aa = 1\nb = 2\n").formatted.text(),
+            expected
         );
     }
 
-    #[test]
-    fn rejects_an_invalid_config() {
-        assert_matches!(run("code-line-length = \"wide\"", "x = 1\n", true), Err(_));
+    #[rstest]
+    #[case::config_notices_for_a_known_key(
+        "code-line-length = 100",
+        "x = 1\n",
+        |r: &Run| r.config_notices.is_empty()
+    )]
+    #[case::fired_rules_when_none_fire("", "x = 1\n", |r: &Run| r.fired_rules.is_empty())]
+    #[case::lint_records_when_none_fire("", "x = 1\n", |r: &Run| r.record().diagnostics.is_empty())]
+    #[case::unstable_rules_for_a_settled_rewrite(
+        "",
+        "alpha = 1\nb = 22\n",
+        |r: &Run| r.unstable_rules.is_empty()
+    )]
+    fn leaves_a_field_empty(
+        #[case] config_toml: &str,
+        #[case] source: &str,
+        #[case] is_empty: fn(&Run) -> bool,
+    ) {
+        assert!(is_empty(&formatted(config_toml, source)));
     }
 
-    #[test]
-    fn rejects_unparseable_python() {
-        assert_matches!(run("", "def (\n", true), Err(_));
+    #[rstest]
+    #[case::a_lazy_import_below_its_target_version(
+        "target-version = \"3.14\"",
+        "lazy import os\n",
+        " at byte range 0..4"
+    )]
+    #[case::an_invalid_config("code-line-length = \"wide\"", "x = 1\n", "expected a nonzero usize")]
+    #[case::unparseable_python("", "def (\n", "Expected an identifier")]
+    fn rejects(#[case] config_toml: &str, #[case] source: &str, #[case] fragment: &str) {
+        assert_matches!(
+            run(config_toml, source, true),
+            Err(error) if error.to_string().contains(fragment),
+            "the error names {fragment:?}"
+        );
     }
 
     #[test]

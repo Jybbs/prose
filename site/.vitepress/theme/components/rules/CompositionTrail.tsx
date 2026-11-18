@@ -44,7 +44,7 @@ export const CompositionTrail = defineComponent({
           {{
             default: (tabs: TabsScope<string>) => (
               <div {...tabs.list} class="mb-12 toggle-row flex-wrap items-center gap-2">
-                <button {...tabs.trigger(WRITTEN)} aria-controls={undefined} class="composition-trail-step toggle-pill" type="button">
+                <button {...tabs.trigger(WRITTEN)} aria-controls={undefined} class="composition-trail-step toggle-pill data-still:line-through" type="button">
                   As written
                 </button>
                 {trail.value.rules.map((slug, at) => {
@@ -54,7 +54,7 @@ export const CompositionTrail = defineComponent({
                       key={slug}
                       {...tabs.trigger(String(at + 1))}
                       aria-controls={undefined}
-                      class="composition-trail-step toggle-pill inline-flex items-center gap-4"
+                      class="composition-trail-step toggle-pill data-still:line-through inline-flex items-center gap-4"
                       data-family={family}
                       data-still={!changes.value.has(at + 1) || undefined}
                       type="button"

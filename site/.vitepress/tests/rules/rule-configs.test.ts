@@ -9,20 +9,19 @@ describe('derived rule configs', () => {
   })
 
   it.each(Object.keys(RULE_DEFS))('%s mirrors its schema keys and defaults', slug => {
-    const rows = configs[slug]
-    expect(rows.map(row => row.key).toSorted())
-      .toStrictEqual(Object.keys(RULE_DEFS[slug].default).toSorted())
-    for (const row of rows) {
-      expect(JSON.parse(row.default)).toStrictEqual(RULE_DEFS[slug].default[row.key])
-    }
+    expect(Object.fromEntries(configs[slug].map(row => [row.key, JSON.parse(row.default) as unknown])))
+      .toStrictEqual(RULE_DEFS[slug].default)
   })
 
-  it.each(Object.keys(RULE_DEFS))('%s leads with enabled and walks every meaning', slug => {
-    const rows = configs[slug]
-    expect(rows[0].key).toBe('enabled')
-    for (const row of rows) {
-      expect(row.meaningNodes.length).toBeGreaterThan(0)
-      expect(row.typeNodes.length).toBeGreaterThan(0)
-    }
+  it.each(Object.keys(RULE_DEFS))('%s leads with enabled', slug => {
+    expect(configs[slug][0].key).toBe('enabled')
   })
+
+  it.each(Object.entries(configs).flatMap(([slug, rows]) => rows.map(row => [slug, row.key, row] as const)))(
+    '%s %s renders its meaning and its type',
+    (_slug, _key, row) => {
+      expect(row.meaningNodes).not.toHaveLength(0)
+      expect(row.typeNodes).not.toHaveLength(0)
+    }
+  )
 })

@@ -36,6 +36,12 @@
   }
 }
 
+/* Centers a chip on the share `--pct` of its container's width, held inside the
+   container at either end. */
+@utility clamp-to-pct {
+  transform : translateX(clamp(calc(var(--pct) * -1cqw), -50%, calc((100 - var(--pct)) * 1cqw - 100%)));
+}
+
 @utility code-caret {
   display             : inline-block;
   width               : var(--prose-size-0-5em);
@@ -104,6 +110,22 @@
   column-rule : var(--prose-border-1) solid var(--vp-c-divider);
 }
 
+@utility cover-link {
+  position             : absolute;
+  inset                : 0;
+  z-index              : 0;
+  border-radius        : var(--prose-radius);
+  text-indent          : 100%;
+  white-space          : nowrap;
+  overflow             : hidden;
+  text-decoration-line : none;
+}
+
+/* Turns a square on its center into a diamond hung on the point it sits at. */
+@utility diamond-tilt {
+  transform : translate(-50%, -50%) rotate(45deg);
+}
+
 @utility family-chip {
   gap            : var(--prose-space-10);
   padding        : var(--prose-space-6) var(--prose-space-14) var(--prose-space-6) var(--prose-space-10);
@@ -163,6 +185,16 @@
   border-top  : var(--prose-border-1) solid var(--vp-c-divider);
   color       : var(--vp-c-text-2);
   font-size   : var(--prose-text-sm);
+
+  & ul {
+    margin       : var(--prose-space-0-4em) 0 0;
+    padding-left : var(--prose-space-1-1em);
+    line-height  : 1.5;
+  }
+
+  & li {
+    margin : var(--prose-space-0-1em) 0;
+  }
 }
 
 @utility fixture-card-num {
@@ -384,6 +416,11 @@
   }
 }
 
+/* Sets the left edge at the share `--pct` of the containing block's width. */
+@utility pin-to-pct {
+  left : calc(var(--pct) * 1%);
+}
+
 @utility pip {
   display         : inline-flex;
   align-items     : center;
@@ -393,6 +430,15 @@
   font-family     : var(--prose-font-display);
   font-style      : italic;
   font-weight     : 500;
+}
+
+/* Draws the box a popup's arrow joins, edged in the `--popup-border` the arrow
+   tip takes and grounded in the arrow's background. */
+@utility popup-surface {
+  border        : var(--prose-border-1) solid var(--popup-border);
+  border-radius : var(--prose-radius);
+  background    : var(--vp-c-bg);
+  box-shadow    : var(--prose-shadow-tooltip);
 }
 
 @utility rule-chip {

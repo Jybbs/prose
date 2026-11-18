@@ -68,11 +68,11 @@ export const IdentityBadges = defineComponent({
                   {{
                     default: ({ content, list, trigger }: TabsScope<GlossaryFamily>) => (
                       <div class="px-18 pb-16">
-                        <div class="identity-badges">
+                        <div class="identity-badges grid border-t-1 border-t-divider">
                           <div {...content(chosen.value)} class="grid place-content-center justify-items-center gap-10 p-16" data-family={chosen.value}>
                             <svg
                               aria-label={`${meta.label} badge, the ${label.toLowerCase()}`}
-                              class="identity-badge overflow-visible"
+                              class="overflow-visible text-family-nib"
                               height={BADGE_PX}
                               key={chosen.value}
                               role="img"
@@ -102,7 +102,7 @@ export const IdentityBadges = defineComponent({
                             {GROUPS.map(group => [
                               <span aria-hidden="true" class="mx-14 mt-8 mb-4 block kicker" key={group.title}>{group.title}</span>,
                               ...group.families.map(family => (
-                                <button key={family} {...trigger(family)} aria-controls={undefined} class="identity-pick identity-badge-row" data-family={family}>
+                                <button key={family} {...trigger(family)} aria-controls={undefined} class="identity-pick identity-badge-row grid items-center gap-x-10 px-14 py-5" data-family={family}>
                                   <NibBadge emblem={familyEmblem(family)} size={18} />
                                   <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{GLOSSARY_FAMILY_META[family].label}</span>
                                   <span aria-hidden="true" class="text-0-84rem">{GLOSSARY_FAMILY_META[family].badge}</span>

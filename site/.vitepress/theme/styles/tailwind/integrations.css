@@ -1,0 +1,18 @@
+@utility int-body {
+  .int-card & a,
+  .int-card & .glossary-anchor {
+    position : relative;
+    z-index  : 1;
+  }
+}
+
+@utility shell-card-modal-code {
+  .shell-card-modal & > div[class*='language-'] > pre {
+    padding-bottom : var(--prose-space-22);
+  }
+}
+
+@utility shell-card-tab {
+  top   : calc(var(--prose-space-23) + var(--idx) * var(--prose-space-44));
+  right : calc(var(--prose-size-132) * -1);
+}

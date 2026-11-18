@@ -221,49 +221,11 @@ mod tests {
         assert!(args.common.stdin);
     }
 
-    #[test]
-    fn check_rejects_dash_alongside_other_paths() {
-        let mut cli = Cli::try_parse_from(["prose", "check", "-", "a.py"]).expect("parses");
-        let err = normalize_stdin_dash(&mut cli).expect("dash + path surfaces error");
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-    }
-
-    #[test]
-    fn check_rejects_dash_with_stdin_flag() {
-        let err = Cli::try_parse_from(["prose", "check", "-", "--stdin"]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-    }
-
-    #[test]
-    fn check_rejects_empty_output_format_value() {
-        let err = Cli::try_parse_from(["prose", "check", "--output-format="]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::InvalidValue);
-    }
-
-    #[test]
-    fn check_rejects_empty_select_value() {
-        let err = Cli::try_parse_from(["prose", "check", "--select="]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::InvalidValue);
-    }
-
-    #[test]
-    fn check_rejects_paths_with_stdin() {
-        let err = Cli::try_parse_from(["prose", "check", "--stdin", "a.py"]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-    }
-
-    #[test]
-    fn check_rejects_unknown_ignore_slug_with_known_list() {
-        let err = Cli::try_parse_from(["prose", "check", "--ignore", "not-a-rule"]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::InvalidValue);
-        let rendered = err.to_string();
-        assert!(rendered.contains("not-a-rule"));
-        assert!(rendered.contains("align-equals"));
-    }
-
-    #[test]
-    fn check_rejects_unknown_select_slug_with_known_list() {
-        let err = Cli::try_parse_from(["prose", "check", "--select", "not-a-rule"]).unwrap_err();
+    #[rstest]
+    fn check_rejects_an_unknown_slug_with_the_known_list(
+        #[values("--ignore", "--select")] flag: &str,
+    ) {
+        let err = Cli::try_parse_from(["prose", "check", flag, "not-a-rule"]).unwrap_err();
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
         let rendered = err.to_string();
         assert!(rendered.contains("not-a-rule"));
@@ -344,23 +306,18 @@ mod tests {
         assert_eq!(clap_error_status(err.kind()), ExitStatus::Clean);
     }
 
-    #[test]
-    fn color_defaults_to_auto() {
-        let cli = Cli::try_parse_from(["prose", "check", "."]).expect("parses");
-        assert_eq!(cli.color, ColorChoice::Auto);
-    }
-
-    #[test]
-    fn color_parses_always_before_subcommand() {
-        let cli =
-            Cli::try_parse_from(["prose", "--color", "always", "check", "."]).expect("parses");
-        assert_eq!(cli.color, ColorChoice::Always);
-    }
-
-    #[test]
-    fn color_parses_never_after_subcommand() {
-        let cli = Cli::try_parse_from(["prose", "check", "--color", "never", "."]).expect("parses");
-        assert_eq!(cli.color, ColorChoice::Never);
+    #[rstest]
+    #[case::before_the_subcommand(
+        &["prose", "--color", "always", "check", "."],
+        ColorChoice::Always
+    )]
+    #[case::after_the_subcommand(&["prose", "check", "--color", "never", "."], ColorChoice::Never)]
+    #[case::by_default(&["prose", "check", "."], ColorChoice::Auto)]
+    fn color_parses_on_either_side_of_the_subcommand(
+        #[case] args: &[&str],
+        #[case] color: ColorChoice,
+    ) {
+        assert_eq!(Cli::try_parse_from(args).expect("parses").color, color);
     }
 
     #[test]
@@ -430,49 +387,16 @@ mod tests {
         assert!(args.common.stdin);
     }
 
-    #[test]
-    fn format_rejects_dash_alongside_other_paths() {
-        let mut cli = Cli::try_parse_from(["prose", "format", "-", "a.py"]).expect("parses");
-        let err = normalize_stdin_dash(&mut cli).expect("dash + path surfaces error");
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-    }
-
-    #[test]
-    fn format_rejects_dash_with_stdin_flag() {
-        let err = Cli::try_parse_from(["prose", "format", "-", "--stdin"]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
-    }
-
-    #[test]
-    fn format_rejects_diff_with_output_format_github() {
-        let cli = Cli::try_parse_from([
-            "prose",
-            "format",
-            "--diff",
-            "--output-format",
-            "github",
-            ".",
-        ])
-        .expect("parses");
-        let err = validate_diff_format_combination(&cli)
-            .expect("conflict between --diff and --output-format github fires");
-        assert_eq!(err.kind(), ErrorKind::InvalidValue);
-    }
-
-    #[test]
-    fn format_rejects_diff_with_output_format_json() {
+    #[rstest]
+    fn format_rejects_diff_with_a_structured_output_format(
+        #[values("github", "json")] output: &str,
+    ) {
         let cli =
-            Cli::try_parse_from(["prose", "format", "--diff", "--output-format", "json", "."])
+            Cli::try_parse_from(["prose", "format", "--diff", "--output-format", output, "."])
                 .expect("parses");
         let err = validate_diff_format_combination(&cli)
-            .expect("conflict between --diff and --output-format json fires");
+            .expect("conflict between --diff and a structured --output-format fires");
         assert_eq!(err.kind(), ErrorKind::InvalidValue);
-    }
-
-    #[test]
-    fn format_rejects_paths_with_stdin() {
-        let err = Cli::try_parse_from(["prose", "format", "--stdin", "a.py"]).unwrap_err();
-        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
     }
 
     #[rstest]
@@ -495,6 +419,29 @@ mod tests {
         let args = command_args!(cli, Check);
         assert_eq!(args.paths, [PathBuf::from("a.py"), PathBuf::from("b/")]);
         assert!(!args.common.stdin);
+    }
+
+    #[rstest]
+    fn normalize_stdin_dash_rejects_dash_alongside_other_paths(
+        #[values("check", "format")] subcommand: &str,
+    ) {
+        let mut cli = Cli::try_parse_from(["prose", subcommand, "-", "a.py"]).expect("parses");
+        let err = normalize_stdin_dash(&mut cli).expect("dash + path surfaces error");
+        assert_eq!(err.kind(), ErrorKind::ArgumentConflict);
+    }
+
+    #[rstest]
+    #[case::dash_with_stdin(&["-", "--stdin"], ErrorKind::ArgumentConflict)]
+    #[case::empty_output_format(&["--output-format="], ErrorKind::InvalidValue)]
+    #[case::empty_select(&["--select="], ErrorKind::InvalidValue)]
+    #[case::paths_with_stdin(&["--stdin", "a.py"], ErrorKind::ArgumentConflict)]
+    fn parse_rejects_each_conflicting_or_empty_argument(
+        #[values("check", "format")] subcommand: &str,
+        #[case] args: &[&str],
+        #[case] kind: ErrorKind,
+    ) {
+        let err = Cli::try_parse_from(["prose", subcommand].iter().chain(args)).unwrap_err();
+        assert_eq!(err.kind(), kind);
     }
 
     #[test]

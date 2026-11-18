@@ -25,16 +25,18 @@ describe('kit catalog', () => {
     expect([...declarations.keys()].filter(name => !(name in kit))).toStrictEqual([])
   })
 
-  it('gives each piece a use and an example', () => {
-    for (const { examples, use } of declarations.values()) {
-      expect(use).not.toBe('')
-      expect(examples).not.toHaveLength(0)
-    }
+  it.each([...declarations])('gives %s a use and an example', (_name, { examples, use }) => {
+    expect(use).not.toBe('')
+    expect(examples).not.toHaveLength(0)
   })
 
-  it.each([...declarations])('renders the examples of %s', (_name, { examples }) => {
-    for (const { render } of examples) mount(defineComponent({ render }))
-  })
+  it.each([...declarations].flatMap(([name, { examples }]) =>
+    examples.map(({ render }, index) => [`${name} ${index + 1}`, render] as const)))(
+    'renders example %s into markup',
+    (_name, render) => {
+      expect(mount(defineComponent({ render })).html()).not.toBe('')
+    }
+  )
 
   it('renders a section for each declaration beside its source', () => {
     const wrapper = mount(KitCatalog)

@@ -26,6 +26,7 @@ export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
   test     : {
     environment         : 'node',
+    expect              : { requireAssertions: true },
     forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...READ_FROM_DISK],
     globals             : true,
     pool                : 'threads',

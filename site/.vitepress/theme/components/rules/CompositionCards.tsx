@@ -96,7 +96,7 @@ export const CompositionCards = defineComponent({
                   <div class="fixture-card-summary-row max-mobile:group-data-open/fixture:gap-y-0">
                     <span
                       aria-hidden="true"
-                      class="composition-cards-slot col-1 row-1 mt-7 ml-8 h-20 self-start w-32"
+                      class="col-1 row-1 mt-7 ml-8 h-20 self-start w-32"
                       style={{ '--deck-count': row.segments.length }}
                     />
                     <button
@@ -110,7 +110,7 @@ export const CompositionCards = defineComponent({
                     <div class="contents">
                       <ol
                         aria-label={`${row.segments.length} rules in pipeline order`}
-                        class="composition-cards-ticks m-0 list-none p-0 z-2 flex"
+                        class="composition-cards-ticks absolute left-12 m-0 list-none p-0 z-2 flex"
                         style={{ '--deck-count': row.segments.length }}
                       >
                         {row.segments.map((seg, at) => (

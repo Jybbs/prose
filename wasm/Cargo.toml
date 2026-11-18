@@ -18,5 +18,8 @@ serde              = { workspace = true }
 serde-wasm-bindgen = "0.6.5"
 wasm-bindgen       = "=0.2.130"
 
+[dev-dependencies]
+rstest = { workspace = true }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.7"
