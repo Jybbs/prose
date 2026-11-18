@@ -41,7 +41,7 @@ export const SurfaceCardBase = defineComponent({
       >
         <a
           aria-label={`See all ${meta.value.label.toLowerCase()} rules`}
-          class="surface-card-cover-link"
+          class="cover-link"
           href={href.value}
           tabindex={tabindex.value}
         />

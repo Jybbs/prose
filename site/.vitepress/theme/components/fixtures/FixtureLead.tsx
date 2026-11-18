@@ -13,7 +13,7 @@ export const FixtureLead = defineComponent({
   },
   setup(props) {
     return () => props.nodes ? (
-      <div class="fixture-lead mb-1rem">
+      <div class="mb-1rem flush-ends">
         <InlineProse nodes={props.nodes} />
       </div>
     ) : null

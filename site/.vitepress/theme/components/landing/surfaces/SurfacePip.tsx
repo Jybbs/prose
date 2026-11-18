@@ -20,7 +20,7 @@ export const SurfacePip = defineComponent({
     return () => (
       <a
         aria-label={props.rule.slug}
-        class="surface-pip group/pip relative grid place-items-center focus-visible:rounded-pill focus-visible:outline-offset-1"
+        class="surface-pip group/pip relative grid flex-none place-items-center focus-visible:rounded-pill focus-visible:outline-offset-1"
         data-active={props.active || undefined}
         href={props.rule.href}
         onFocus={() => emit('select')}

@@ -151,7 +151,7 @@ export const SurfaceRail = defineComponent({
       releaseJump()
     }
 
-    const swap = computed(() => (heading.value < 0 ? 'surface-rail-back' : 'surface-rail-fwd'))
+    const swap = computed(() => heading.value < 0 ? 'back' : 'fwd')
 
     const railStyle = computed(() => ({
       '--rail-inset' : pinned.value ? `${SLOT_PX}px` : '0px',

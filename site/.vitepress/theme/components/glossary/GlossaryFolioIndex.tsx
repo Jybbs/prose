@@ -11,7 +11,8 @@ import { stripSuffix }      from '../../../lib/shared/strip-suffix'
 export const GlossaryFolioIndex = defineComponent({
   name  : 'GlossaryFolioIndex',
   props : {
-    forceRender : Boolean
+    forceRender : Boolean,
+    narrow      : Boolean
   },
   setup(props) {
     const { page } = useData()
@@ -36,7 +37,7 @@ export const GlossaryFolioIndex = defineComponent({
 
     return () => (
       visible.value && (
-        <aside aria-label="Glossary index" class="mt-20 flex flex-col gap-12">
+        <aside aria-label="Glossary index" class={['mt-20 flex flex-col gap-12', { 'wide:hidden': props.narrow }]}>
           <div class="flex flex-col gap-4">
             <span class="ml-auto font-mono text-meta tracking-meta whitespace-nowrap text-text-3 uppercase">{filtered.value.length} of {ordered.length}</span>
             <div class="flex items-center gap-10 panel bg-bg-soft px-14 py-6 transition-colors hover:bg-bg focus-within:border-link focus-within:inset-ring-1 focus-within:inset-ring-link">
@@ -67,7 +68,7 @@ export const GlossaryFolioIndex = defineComponent({
               </div>
             )
             : (
-            <div class="glossary-folio-list overflow-y-auto" onKeydown={move}>
+            <div class={['overflow-y-auto', { 'glossary-folio-list': !props.narrow }]} onKeydown={move}>
               {grouped.value.map(([initial, entries]) => (
                 <div class="not-first:mt-14" key={initial}>
                   <p class="mt-0 mb-4 border-b-1 border-b-divider px-4 pb-4 font-mono text-meta font-500 tracking-label text-text-3 uppercase opacity-70">{initial}</p>

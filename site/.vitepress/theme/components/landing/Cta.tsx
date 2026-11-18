@@ -25,10 +25,11 @@ export const Cta = defineComponent({
             default: (disclosure: DisclosureScope) => (
               <aside class="relative min-h-200 overflow-hidden border-r-1 border-r-panel-edge bg-panel-bg max-card-stack:border-b-1 max-card-stack:border-r-0 max-card-stack:border-r-current max-card-stack:border-b-panel-edge">
                 <Transition
+                  enterActiveClass="landing-cta-swap"
                   enterFromClass="translate-y-8 opacity-0"
+                  leaveActiveClass="landing-cta-swap"
                   leaveToClass="translate-y-8 opacity-0"
                   mode="out-in"
-                  name="landing-cta-swap"
                 >
                   {{
                     default: () => (

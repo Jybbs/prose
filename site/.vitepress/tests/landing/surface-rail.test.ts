@@ -138,10 +138,10 @@ describe('SurfaceRail', () => {
     const pips    = wrapper.findAll('.surface-pip')
 
     await pips[3].trigger('mouseenter')
-    expect(wrapper.findComponent({ name: 'SurfaceRailName' }).props('swap')).toBe('surface-rail-fwd')
+    expect(wrapper.findComponent({ name: 'SurfaceRailName' }).props('swap')).toBe('fwd')
 
     await pips[1].trigger('mouseenter')
-    expect(wrapper.findComponent({ name: 'SurfaceRailName' }).props('swap')).toBe('surface-rail-back')
+    expect(wrapper.findComponent({ name: 'SurfaceRailName' }).props('swap')).toBe('back')
   })
 
   domTest('offers a chevron to each limit only while the window travels', async ({ reducedMotion }) => {

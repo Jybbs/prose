@@ -79,7 +79,12 @@ export const PrimitivesCompositionGrid = defineComponent({
                   >
                     <span class="font-display text-xs leading-1-15 text-text-1">{entry.name}</span>
                   </a>
-                  <Transition name="primitives-composition-port">
+                  <Transition
+                    enterActiveClass="transition-opacity duration-160 ease-emphasized motion-reduce:transition-none"
+                    enterFromClass="opacity-0"
+                    leaveActiveClass="transition-opacity duration-160 ease-emphasized motion-reduce:transition-none"
+                    leaveToClass="opacity-0"
+                  >
                     {{
                       default: () => (
                         tileState(entry.slug) === 'related' && (

@@ -48,7 +48,7 @@ export const IdentityCopy = defineComponent({
     return () => (
       <button
         aria-label={copied.value ? `Copied ${props.label}` : `Copy ${props.label}`}
-        class="identity-copy cursor-copy font-mono text-xs whitespace-nowrap text-text-1 tabular-nums focus-visible:focus-ring focus-visible:outline-offset-2"
+        class="identity-copy m-0 inline-grid max-w-full cursor-copy justify-items-start rounded-sm tracking-normal normal-case font-mono text-xs whitespace-nowrap text-text-1 tabular-nums focus-visible:focus-ring focus-visible:outline-offset-2"
         data-copied={copied.value || undefined}
         data-variant={props.variant}
         onClick={() => copy(props.value)}
@@ -78,10 +78,10 @@ export const IdentityRow = defineComponent({
         {{
           default: ({ content, trigger }: DisclosureScope) => (
             <div class="border-t-1 border-t-divider">
-              <button {...trigger} class="identity-row-summary group w-full cursor-pointer border-none bg-transparent px-0 py-9 text-left focus-visible:focus-ring focus-visible:outline-offset-2">
+              <button {...trigger} class="identity-row-summary group grid w-full items-baseline gap-x-12 cursor-pointer border-none bg-transparent px-0 py-9 text-left focus-visible:focus-ring focus-visible:outline-offset-2">
                 <span class="kicker">{props.label}</span>
                 <span class="min-w-0 truncate font-mono text-xs text-text-1 tabular-nums group-aria-expanded:text-text-3">{props.summary}</span>
-                <span aria-hidden="true" class="identity-chevron" />
+                <span aria-hidden="true" class="identity-caret identity-chevron justify-self-center text-text-3" />
               </button>
               <div {...content} class="identity-row-body pb-12">{slots.default?.()}</div>
             </div>
@@ -105,7 +105,7 @@ export const IdentityPlain = defineComponent({
           default: ({ content, trigger }: DisclosureScope) => (
             <div class="mt-14">
               <button {...trigger} class="group inline-flex cursor-pointer items-center gap-9 border-none bg-transparent px-0 py-4 kicker focus-visible:focus-ring focus-visible:outline-offset-2">
-                <span aria-hidden="true" class="identity-plain-mark" />
+                <span aria-hidden="true" class="identity-caret identity-plain-mark" />
                 {props.label}
               </button>
               <div {...content} class="mt-8 text-xs leading-1-6 text-text-2">{slots.default?.()}</div>

@@ -1,0 +1,163 @@
+@utility fixture-gauge {
+  --fixture-gauge-chip-h    : var(--prose-size-20);
+  --fixture-gauge-nums-h    : var(--prose-size-14);
+  --fixture-gauge-track-h   : var(--prose-size-16);
+  --fixture-gauge-track-top : calc(var(--fixture-gauge-chip-h) + var(--prose-space-5));
+  height                    : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h) + var(--fixture-gauge-nums-h));
+}
+
+@utility fixture-gauge-chip {
+  height : var(--fixture-gauge-chip-h);
+}
+
+/* Hangs the setting's hollow default diamond on the track, as the sandbox
+   ruler marks a line length's default. */
+@utility fixture-gauge-default {
+  top        : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h));
+  box-shadow : inset 0 0 0 var(--prose-space-1-5) var(--vp-c-text-2);
+}
+
+@utility fixture-gauge-marker {
+  top  : var(--fixture-gauge-chip-h);
+  left : calc(var(--prose-size-1) / -2);
+}
+
+@utility fixture-gauge-num {
+  top       : calc(var(--fixture-gauge-track-top) + var(--fixture-gauge-track-h) + var(--prose-space-5));
+  transform : translateX(-50%);
+
+  &[data-end='start'] {
+    transform : none;
+  }
+
+  &[data-end='end'] {
+    transform : translateX(-100%);
+  }
+}
+
+@utility fixture-gauge-stop {
+  bottom : var(--fixture-gauge-nums-h);
+}
+
+@utility fixture-gauge-ticks {
+  top    : var(--fixture-gauge-track-top);
+  height : var(--fixture-gauge-track-h);
+
+  & svg {
+    display : block;
+    width   : 100%;
+    height  : 100%;
+  }
+
+  & line {
+    stroke-width : var(--prose-size-1);
+  }
+
+  & line[data-change='true'] {
+    stroke       : var(--vp-c-text-1);
+    stroke-width : calc(2 * var(--prose-size-1));
+  }
+}
+
+@utility fixture-pair-doc {
+  & .fixture-pair-panel > div[class*='language-'] {
+    background : transparent;
+  }
+
+  & .shiki-magic-move-container {
+    margin      : 0;
+    padding     : var(--prose-space-14) var(--prose-space-16);
+    background  : transparent;
+    font-family : var(--vp-font-family-mono);
+    font-size   : var(--prose-text-code);
+    line-height : 1.55;
+    overflow-x  : auto;
+  }
+}
+
+/* Underlines a finding with a masked wave rather than `text-decoration`, which
+   cannot scaleX-draw on settle the way `.fixture-card-rule` does. */
+@utility lint-flag {
+  --lint-color : var(--prose-shade-apricot-code-35);
+  --lint-wave  : url('../../../assets/lint-wave.svg');
+
+  cursor   : help;
+  position : relative;
+
+  &::after {
+    content          : "";
+    position         : absolute;
+    inset-inline     : 0;
+    bottom           : calc(var(--prose-space-3) * -1);
+    height           : var(--prose-size-4);
+    background       : var(--lint-color);
+    -webkit-mask     : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
+    mask             : var(--lint-wave) left center / var(--prose-size-8) var(--prose-size-4) repeat-x;
+    transform        : scaleX(1);
+    transform-origin : left;
+    transition       : transform calc(var(--prose-rule-draw-ms) * 1ms) ease, opacity var(--prose-transition);
+  }
+
+  .lint-undrawn &::after,
+  &.lint-undrawn::after {
+    transform : scaleX(0);
+  }
+
+  /* Draws a straight line in from the left through the wave's center under
+     the pointer or the focus, as the wave fades, so the two share one offset
+     and one thickness. */
+  &:not(.lint-flag-line)::before {
+    content          : "";
+    position         : absolute;
+    inset-inline     : 0;
+    bottom           : calc(var(--prose-space-3) * -1);
+    height           : var(--prose-size-4);
+    background       : linear-gradient(var(--lint-color), var(--lint-color)) left center / 100% var(--prose-space-1-5) no-repeat;
+    transform        : scaleX(0);
+    transform-origin : left;
+    transition       : transform var(--prose-transition-slow);
+    pointer-events   : none;
+  }
+
+  &:not(.lint-flag-line):is(:hover, :focus-visible)::before {
+    transform : scaleX(1);
+  }
+
+  &:not(.lint-flag-line):is(:hover, :focus-visible)::after {
+    opacity : 0;
+  }
+
+  &.lint-flag-line {
+    isolation : isolate;
+  }
+
+  /* A span reaching a whole row underlines nothing in particular, so the wave
+     gives way to a bar in the code's left padding, the full height of each
+     row the finding names. */
+  &.lint-flag-line::after {
+    inset-inline  : calc((var(--prose-space-8) + var(--prose-size-3)) * -1) auto;
+    inset-block   : calc((100% - var(--vp-code-line-height) * var(--prose-size-1em)) / 2);
+    width         : var(--prose-size-3);
+    height        : auto;
+    border-radius : var(--prose-radius-1);
+    -webkit-mask  : none;
+    mask          : none;
+  }
+
+  /* An unrecognized key is not a lint finding, so the wave takes the warning
+     hue rather than the lint's. */
+  .sandbox-toml & {
+    --lint-color : var(--vp-c-warning-1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lint-undrawn &::after,
+    &.lint-undrawn::after {
+      transform : scaleX(1);
+    }
+
+    &::before {
+      transition : none;
+    }
+  }
+}
