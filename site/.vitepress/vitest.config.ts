@@ -12,13 +12,13 @@ const BUNDLE = {
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
-const CRATE   = 'crate/src/**/*.rs'
-const FIT     = '.vitepress/tests/pages/fit.test.ts'
-const PAGES   = 'site/pages/**/*.md'
-const ROOT    = paths.repoRoot(import.meta.url)
-const RULES   = 'crate/src/rules/**/*.rs'
-const STYLES  = 'site/.vitepress/{kit,theme}/**/*.css'
-const READERS = {
+export const CRATE   = 'crate/src/**/*.rs'
+const FIT            = '.vitepress/tests/pages/fit.test.ts'
+const PAGES          = 'site/pages/**/*.md'
+const ROOT           = paths.repoRoot(import.meta.url)
+const RULES          = 'crate/src/rules/**/*.rs'
+const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
+export const READERS = {
   'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
   'site/.vitepress/lib/fixtures/variants.ts'                : [CRATE],
   'site/.vitepress/lib/identity/identity.data.ts'           : [STYLES],
