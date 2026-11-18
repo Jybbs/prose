@@ -9,4 +9,4 @@ rm -rf "$pkg"
 cp -R public/wasm "$pkg"
 
 playwright install --only-shell chromium
-vitest run --project wasm "$@"
+vitest run --config .vitepress/vitest.config.ts --project wasm "$@"

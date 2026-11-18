@@ -2,10 +2,11 @@
 Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
 it finds a filter leaving out across a task and the tasks it depends on,
 and the trigger it reports for each. Also pins the label `parity` reports
-a pin under once either side of its pair drifts, the annotation a `fail` in
-a helper of `parity` stops the audit on, the task source and workflow path
-entries `patterns` reports for selecting no tracked file, and the cache
-restores `stamps` reports for leaving a task's outputs unstamped.
+a pin under once either side of its pair drifts, the annotation a `fail`
+in a helper of `parity` stops the audit on, the task source and workflow
+path entries `patterns` reports for selecting no tracked file, the cache
+restores `stamps` reports for leaving a task's outputs unstamped, and the
+`site/package.json` ranges `exact` reports by package.
 """
 
 from collections.abc   import Callable
@@ -982,3 +983,76 @@ def test_parity_stops_on_a_side_holding_no_pin(
         audit.parity()
 
     assert capsys.readouterr().out == f"::error::{reported}\n"
+
+
+@mark.parametrize(
+    ("table", "version"),
+    [
+        param("devDependencies",      "^8.3.5",      id = "caret"),
+        param("devDependencies",      "~8.3.5",      id = "tilde"),
+        param("devDependencies",      ">=8.3.5",     id = "comparator"),
+        param("devDependencies",      "8.3.x",       id = "wildcard-patch"),
+        param("devDependencies",      "8.3",         id = "partial"),
+        param("devDependencies",      "latest",      id = "tag"),
+        param("devDependencies",      "workspace:*", id = "protocol"),
+        param("overrides",            "^8.5.32",     id = "override"),
+        param("dependencies",         "^3.5.45",     id = "dependency"),
+        param("optionalDependencies", "^2.3.3",      id = "optional-dependency"),
+        param("peerDependencies",     "^3.5.45",     id = "peer-dependency"),
+        param("resolutions",          "^1.2.19",     id = "resolution")
+    ]
+)
+def test_exact_reports_each_range_by_its_package(
+    audit   : ModuleType,
+    capsys  : CaptureFixture[str],
+    table   : str,
+    version : str,
+    workdir : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that `exact` fails on a range written into a dependency table,
+    `overrides`, or `resolutions` of `site/package.json`, naming the package
+    beside the range.
+    """
+    package = {
+        "dependencies"         : {"vue": "3.5.45"},
+        "devDependencies"      : {"vite": "8.3.5"},
+        "optionalDependencies" : {"fsevents": "2.3.3"},
+        "overrides"            : {"postcss": "8.5.32"},
+        "peerDependencies"     : {"vue": "3.5.45"},
+        "resolutions"          : {"rolldown": "1.2.19"}
+    }
+    name                 = next(iter(package[table]))
+    package[table][name] = version
+    workdir({"site/package.json": dumps(package)})
+
+    assert audit.exact() == 1
+    assert capsys.readouterr().out == (
+        "::error::site/package.json dependencies written as a range rather than an "
+        f"exact version: ['{name}@{version}']\n"
+    )
+
+
+@mark.parametrize(
+    "version",
+    [
+        param("8.3.5",          id = "release"),
+        param("7.1.0-beta",     id = "prerelease"),
+        param("2.0.0-alpha.21", id = "dotted-prerelease"),
+        param("1.0.0+build.7",  id = "build-metadata")
+    ]
+)
+def test_exact_passes_each_exact_version(
+    audit   : ModuleType,
+    capsys  : CaptureFixture[str],
+    version : str,
+    workdir : Callable[[dict[str, str]], Path]
+):
+    """
+    Asserts that `exact` reports nothing for a manifest whose every entry is
+    one version, prerelease and build metadata included.
+    """
+    workdir({"site/package.json": dumps({"devDependencies": {"vite": version}})})
+
+    assert audit.exact() == 0
+    assert capsys.readouterr().out == ""

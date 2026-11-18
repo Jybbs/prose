@@ -1,7 +1,7 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { siteDir }                             from '../../lib/shared/paths'
+import { pagesDir }                            from '../../lib/shared/paths'
 import { configKeySources, facetDestinations } from '../../lib/tokens/config-keys'
 import { destinations, headingsOf }            from '../../lib/tokens/destinations'
 import { SCHEMA }                              from '../schema'
@@ -44,7 +44,7 @@ describe('destinations', () => {
 
 describe('facetDestinations', () => {
   it('resolves every configuration key a token names, through a heading or a facet anchor', () => {
-    const destinationOf = destinations(siteDir(import.meta.url), facetDestinations(SCHEMA))
+    const destinationOf = destinations(pagesDir(import.meta.url), facetDestinations(SCHEMA))
     for (const { href } of configKeySources(SCHEMA)) expect(() => destinationOf(href)).not.toThrow()
   })
 

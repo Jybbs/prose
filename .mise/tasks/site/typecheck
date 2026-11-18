@@ -5,4 +5,9 @@
 #MISE dir         = "site"
 #MISE sources     = ["@group:site"]
 
-tsc --runExternalCode --incremental --noEmit --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo
+tsc \
+  --incremental \
+  --noEmit \
+  -p .vitepress \
+  --runExternalCode \
+  --tsBuildInfoFile ../.cache/tsc/site.tsbuildinfo

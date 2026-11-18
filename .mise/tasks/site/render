@@ -4,4 +4,4 @@
 #MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
 #MISE dir         = "site"
 
-vitest run --project render "$@"
+vitest run --config .vitepress/vitest.config.ts --project render "$@"
