@@ -13,7 +13,9 @@ pub(crate) enum Annotations {
     /// Each annotation runs as the statement holding it runs.
     Eager,
     /// Each annotation runs on first access under PEP 649 and PEP 749,
-    /// which a class reads at creation only where its header runs code.
+    /// which a definition reads as it binds only where its header runs
+    /// code, a decorator on a function or a class and a base or keyword
+    /// on a class.
     Lazy,
     /// `from __future__ import annotations` stores each annotation as a
     /// string.

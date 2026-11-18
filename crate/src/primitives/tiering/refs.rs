@@ -75,8 +75,9 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                 if let Some(type_params) = &func.type_params {
                     self.visit_type_params(type_params);
                 }
-                let eager = self.annotations == Annotations::Eager;
-                self.visit_evaluating(eager, |visitor| {
+                let reads = self.annotations == Annotations::Eager
+                    || (self.annotations == Annotations::Lazy && !func.decorator_list.is_empty());
+                self.visit_evaluating(reads, |visitor| {
                     walk_parameters(visitor, &func.parameters);
                     if let Some(returns) = &func.returns {
                         visitor.visit_annotation(returns);
@@ -221,9 +222,17 @@ mod tests {
         "class Probe(BaseRef):\n    class Inner:\n        field: AnnotRef\n",
         &["BaseRef"],
     )]
+    #[case::field_after_a_method_under_a_based_class(
+        "class Probe(BaseRef):\n    def method(self): ...\n    field: AnnotRef\n",
+        &["AnnotRef", "BaseRef"],
+    )]
     #[case::function_signature("def probe(p: ParamRef) -> ReturnRef: ...\n", &[])]
+    #[case::decorated_function(
+        "@DecoRef\ndef probe(p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
     #[case::module_annotation("field: AnnotRef = ValueRef\n", &["ValueRef"])]
-    fn eval_time_refs_reads_a_lazy_annotation_only_under_a_class_header_running_code(
+    fn eval_time_refs_reads_a_lazy_annotation_only_under_a_header_running_code(
         #[case] src: &str,
         #[case] expected: &[&str],
     ) {

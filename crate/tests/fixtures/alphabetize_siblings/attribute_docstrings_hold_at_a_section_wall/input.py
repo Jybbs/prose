@@ -1,5 +1,6 @@
 class Walled:
     zeta: int = 1
+    delta: int = 4
     # =====
     """Opens the section below the marker."""
     beta: int = 2
