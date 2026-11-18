@@ -329,6 +329,20 @@ impl BindingAnalysis {
         self.unpack_targets.get(&binding).copied()
     }
 
+    /// Returns the range of every value a direct `name = value` or
+    /// `name: T = value` write binds to a name, for each binding read at
+    /// one of `offsets`.
+    pub(crate) fn values_read_at<'a>(
+        &'a self,
+        offsets: &'a FxHashSet<TextSize>,
+    ) -> impl Iterator<Item = TextRange> + use<'a> {
+        self.bindings
+            .iter()
+            .filter(|binding| binding.read_at_any(offsets))
+            .flat_map(|binding| &binding.write_offsets)
+            .filter_map(|offset| self.assignment_value_range(*offset))
+    }
+
     /// Returns the offset of every write of each binding in the local
     /// scope of `stmt` that is read inside `range`. `stmt` must be a
     /// `Stmt::FunctionDef`, and any other statement yields nothing.

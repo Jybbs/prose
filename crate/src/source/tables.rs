@@ -10,6 +10,7 @@ use std::{
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashSet;
 
 use super::{
     Source,
@@ -25,6 +26,7 @@ use crate::{
     },
     rules::{
         RuleId,
+        alphabetize_siblings::order_read_values,
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
@@ -225,6 +227,14 @@ impl Source {
         self.binding_analysis = inherited(rule, BINDINGS, preserves, bindings, |analysis| {
             analysis.forwarded(map)
         });
+    }
+
+    /// Returns the ranges of the values whose iteration order this
+    /// source reads, per [`order_read_values`], walking the tree on the
+    /// first read.
+    pub(crate) fn order_read_values(&self) -> &FxHashSet<TextRange> {
+        self.order_read_values
+            .get_or_init(|| order_read_values(self))
     }
 
     /// Fills the padding walk over this text from the one `previous`

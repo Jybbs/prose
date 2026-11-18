@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_call_keeps_its_order/input.py
+---
+ordered = dict(zeta=1, alpha=2)
+sorted_keys = {"alpha": 1, "zeta": 2}
+read = {"zeta": 1, "alpha": 2}
+names = list(read)

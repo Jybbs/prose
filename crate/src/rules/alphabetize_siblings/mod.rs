@@ -38,6 +38,7 @@ use crate::{
     source::Source,
 };
 pub(crate) use dict::sets_dividers;
+pub(crate) use order_reads::order_read_values;
 pub(crate) use reorders::{Reorders, Sorted};
 
 mod class_graph;
@@ -47,6 +48,7 @@ mod enums;
 mod leaves;
 mod members;
 mod module_graph;
+mod order_reads;
 mod reorders;
 mod rewrite;
 mod section_runs;

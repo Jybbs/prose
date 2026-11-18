@@ -54,6 +54,7 @@ pub(crate) struct ReflowParentheses {
     reservations: reserve::Reservations,
     sheds_super_args: bool,
     simplifies_comprehensions: bool,
+    simplify_comprehensions: SimplifyComprehensions,
     stranding: padding::Stranding,
 }
 
@@ -73,6 +74,7 @@ impl ReflowParentheses {
             reservations: config.equals_reservations(),
             sheds_super_args: config.rules.shed_super_args.enabled,
             simplifies_comprehensions: config.rules.simplify_comprehensions.enabled,
+            simplify_comprehensions: SimplifyComprehensions::from_config(config),
             stranding: config.stranded_padding(),
         }
     }
@@ -86,7 +88,10 @@ impl ReflowParentheses {
     fn rewrites(&self, source: &Source) -> Vec<Edit> {
         let later: [(bool, &dyn Rule); 2] = [
             (self.sheds_super_args, &ShedSuperArgs),
-            (self.simplifies_comprehensions, &SimplifyComprehensions),
+            (
+                self.simplifies_comprehensions,
+                &self.simplify_comprehensions,
+            ),
         ];
         outermost(
             later

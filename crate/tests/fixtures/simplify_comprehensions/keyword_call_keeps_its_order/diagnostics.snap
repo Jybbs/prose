@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_call_keeps_its_order/input.py
+---
+simplify-comprehensions@46..67
+simplify-comprehensions@75..96

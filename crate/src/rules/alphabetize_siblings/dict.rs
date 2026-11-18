@@ -7,7 +7,7 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{DictItem, ExprDict};
+use ruff_python_ast::{DictItem, Expr, ExprDict};
 use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -38,28 +38,39 @@ pub(super) fn dict_sort_key<'a>(
     source: &'a Source,
     item: &DictItem,
 ) -> Option<(bool, Cow<'a, str>)> {
-    let key = item
-        .key
-        .as_ref()
-        .filter(|_| !value_is_effectful(&item.value))?;
-    Some((is_layoutable(&item.value), joined_key(source, key)))
+    entry_sort_key(&item.value, joined_key(source, item.key.as_ref()?))
+}
+
+/// Returns the sort key of an entry binding `value` under `key`, the
+/// partition flag beside `key`, or `None` where `value` runs code and
+/// so pins the entry in its slot.
+pub(super) fn entry_sort_key<K>(value: &Expr, key: K) -> Option<(bool, K)> {
+    (!value_is_effectful(value)).then(|| (is_layoutable(value), key))
+}
+
+/// True where `mapping`, a dict literal or a `dict(...)` call, keeps the
+/// order written, under `# prose: keep` or where the module reads its
+/// iteration order per [`Source::order_read_values`].
+pub(super) fn keeps_order(source: &Source, mapping: impl Ranged) -> bool {
+    has_keep_marker(source, &mapping) || source.order_read_values().contains(&mapping.range())
 }
 
 /// Rewrites a dict literal's items span. Returns `Some((span, text))`
 /// when reordering, partition, or any nested reorder folded from `edits`
 /// produces text different from the source slice. Returns `None` for
-/// empty dicts, dicts marked `# prose: keep`, single-item dicts, and any
-/// already-canonical case. `edits` are the leaf edits collected from the
-/// dict's descendants, folded into each item block. A multi-line dict the
-/// sort reorders takes its blank lines from [`partition_divider_slots`],
-/// whereas one it leaves in order keeps the gaps its source writes.
+/// empty dicts, single-item dicts, a dict [`keeps_order`] holds, and
+/// any already-canonical case. `edits` are the leaf edits collected
+/// from the dict's descendants, folded into each item block. A
+/// multi-line dict the sort reorders takes its blank lines from
+/// [`partition_divider_slots`], whereas one it leaves in order keeps the
+/// gaps its source writes.
 pub(super) fn rewrite_dict_text(
     source: &Source,
     d: &ExprDict,
     edits: &[Edit],
     code_width: usize,
 ) -> Option<(TextRange, String)> {
-    if d.len() < 2 || has_keep_marker(source, d) {
+    if d.len() < 2 || keeps_order(source, d) {
         return None;
     }
     // A multi-line dict packing entries onto a shared row, or one whose
