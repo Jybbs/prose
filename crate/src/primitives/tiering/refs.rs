@@ -231,6 +231,10 @@ mod tests {
         "@DecoRef\ndef probe(p: ParamRef) -> ReturnRef: ...\n",
         &["DecoRef", "ParamRef", "ReturnRef"],
     )]
+    #[case::decorated_method_under_a_bare_class(
+        "class Probe:\n    @DecoRef\n    def method(self, p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
     #[case::module_annotation("field: AnnotRef = ValueRef\n", &["ValueRef"])]
     fn eval_time_refs_reads_a_lazy_annotation_only_under_a_header_running_code(
         #[case] src: &str,
