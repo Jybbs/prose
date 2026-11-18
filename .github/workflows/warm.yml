@@ -96,6 +96,34 @@ jobs:
         env  : { CODECOV_TOKEN: "${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}" }
         run  : ${{ matrix.command }}
 
+  packages:
+    name            : 🧰 Packages
+    runs-on         : *ubuntu
+    timeout-minutes : *timeout
+
+    steps:
+      - *checkout
+
+      - name : Restore the WebKit system packages
+        id   : debs
+        uses : $/.github/actions/restore-debs
+
+      - name : Provision Bun and Node
+        if   : ${{ steps.debs.outputs.cache-hit != 'true' }}
+        uses : $/.github/actions/provision-cargo
+        with : { shared-key: '', tools: bun node }
+
+      - name : Install the browsers and their system packages
+        if   : ${{ steps.debs.outputs.cache-hit != 'true' }}
+        run  : mise run site:provision
+
+      - name : Save the WebKit system packages
+        if   : ${{ steps.debs.outputs.cache-hit != 'true' }}
+        uses : actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          key  : ${{ steps.debs.outputs.key }}
+          path : .cache/apt
+
   wheels:
     name            : 🔥 ${{ matrix.name }}
     needs           : plan
@@ -124,7 +152,7 @@ jobs:
   gate:
     name            : 🗞️ Brief
     if              : always()
-    needs           : [checks, wheels]
+    needs           : [checks, packages, wheels]
     permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
     timeout-minutes : *timeout
