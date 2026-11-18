@@ -5,17 +5,12 @@ import config                 from '../../config'
 import { REPO_URL }           from '../../lib/shared/constants'
 import { pagesDir, repoRoot } from '../../lib/shared/paths'
 
-const EDIT    = `${REPO_URL}/edit/main/`
-const PAGES   = fs.globSync('**/*.md', { cwd: pagesDir(import.meta.url) }).sort()
+const PAGES   = pagesDir(import.meta.url)
 const PATTERN = config.themeConfig?.editLink?.pattern
 
 describe('the edit link', () => {
-  it('opens on the repository edit URL for main', () => {
-    expect(String(PATTERN).startsWith(EDIT)).toBe(true)
-  })
-
-  it.each(PAGES)('maps %s to a tracked file', page => {
-    const file = String(PATTERN).slice(EDIT.length).replace(':path', page)
-    expect(fs.existsSync(path.join(repoRoot(import.meta.url), file))).toBe(true)
+  it.each(fs.globSync('**/*.md', { cwd: PAGES }).sort())('maps %s to its file on main', page => {
+    const file = path.relative(repoRoot(import.meta.url), path.join(PAGES, page))
+    expect(String(PATTERN).replaceAll(':path', page)).toBe(`${REPO_URL}/edit/main/${file}`)
   })
 })

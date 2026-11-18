@@ -996,9 +996,10 @@ def test_parity_stops_on_a_side_holding_no_pin(
         param("devDependencies",      "latest",      id = "tag"),
         param("devDependencies",      "workspace:*", id = "protocol"),
         param("overrides",            "^8.5.32",     id = "override"),
-        param("dependencies",         "^3.5.45",     id = "bun-add"),
-        param("optionalDependencies", "^2.3.3",      id = "bun-add-optional"),
-        param("peerDependencies",     "^3.5.45",     id = "bun-add-peer")
+        param("dependencies",         "^3.5.45",     id = "dependency"),
+        param("optionalDependencies", "^2.3.3",      id = "optional-dependency"),
+        param("peerDependencies",     "^3.5.45",     id = "peer-dependency"),
+        param("resolutions",          "^1.2.19",     id = "resolution")
     ]
 )
 def test_exact_reports_each_range_by_its_package(
@@ -1017,7 +1018,8 @@ def test_exact_reports_each_range_by_its_package(
         "devDependencies"      : {"vite": "8.3.5"},
         "optionalDependencies" : {"fsevents": "2.3.3"},
         "overrides"            : {"postcss": "8.5.32"},
-        "peerDependencies"     : {"vue": "3.5.45"}
+        "peerDependencies"     : {"vue": "3.5.45"},
+        "resolutions"          : {"rolldown": "1.2.19"}
     }
     name                 = next(iter(package[table]))
     package[table][name] = version

@@ -12,9 +12,10 @@ them fails.
 
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
-    exact      Every dependency table and `overrides` entry in
-               `site/package.json` pins one exact version, so each range
-               `bun add` writes fails the audit, named by its package.
+    exact      Every entry of a dependency table, `overrides`, or
+               `resolutions` in `site/package.json` pins one exact version,
+               so each range `bun add` writes fails the audit, named by its
+               package.
     labels     Every label `release.yml`, an issue template, or the label
                table in `CONTRIBUTING.md` names is declared in
                `.github/labels.toml` and described the same way there. Every
@@ -285,10 +286,10 @@ def dependencies(task: str) -> list[str]:
 
 def exact() -> int:
     """
-    Reports every entry in a dependency table or in `overrides` of
-    `site/package.json` whose version is a range rather than one version in
-    the grammar https://semver.org/ sets, which `EXACT` spells, naming each
-    by its package.
+    Reports every entry of a dependency table, `overrides`, or `resolutions`
+    in `site/package.json` whose version is a range rather than one version
+    in the grammar https://semver.org/ sets, which `EXACT` spells, naming
+    each by its package.
     """
     package = json_loads(read("site/package.json"))
     return flagged(
@@ -298,7 +299,7 @@ def exact() -> int:
                     f"{name}@{version}"
                     for table in (
                         "dependencies", "devDependencies", "optionalDependencies",
-                        "overrides", "peerDependencies"
+                        "overrides", "peerDependencies", "resolutions"
                     )
                     for name, version in package.get(table, {}).items()
                     if not fullmatch(EXACT, version)
