@@ -10,6 +10,7 @@ run         = [
     "repo:lint",
     "rust:check",
     "rust:cruft",
+    "rust:deny",
     "rust:lint",
     "rust:proof",
     "rust:suite",
