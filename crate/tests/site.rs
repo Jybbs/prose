@@ -132,7 +132,7 @@ fn subdirs(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn every_binding_reader_is_listed_on_the_primitive_page() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let page = fs_err::read_to_string(root.join("../site/architecture/binding-analysis.md"))
+    let page = fs_err::read_to_string(root.join("../site/pages/architecture/binding-analysis.md"))
         .expect("the primitive page reads");
     let listed = page
         .lines()
@@ -291,11 +291,11 @@ fn every_fixture_invocation_resolves() {
 
 #[test]
 fn every_registered_rule_has_a_page() {
-    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/pages/rules");
     for id in Pipeline::known_ids() {
         assert!(
             rule_page(&rules, id.as_str()).is_some(),
-            "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
+            "rule `{id}` registered in `KNOWN_IDS` has no page under `site/pages/rules/<family>/{id}.md`"
         );
     }
 }
@@ -303,7 +303,7 @@ fn every_registered_rule_has_a_page() {
 #[test]
 fn miscased_constants_override_example_spares_only_its_globs() {
     let slug = "miscased-constants";
-    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/pages/rules");
     let page = rule_page(&rules, slug).expect("the rule has a page");
     let page = fs_err::read_to_string(page).expect("the rule page reads");
     let (_, after) = page

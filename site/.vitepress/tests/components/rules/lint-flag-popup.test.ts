@@ -141,7 +141,7 @@ describe('LintFlagPopup', () => {
     const popup  = mountPopup()
     press(popup, { message: 'm', rule: 'signature-annotations', suggested: ': int' }, 'count')
     await flushPromises()
-    popup.getComponent({ name: 'Popup' }).vm.$emit('dismiss')
+    popup.getComponent({ name: 'Popup' }).emit('dismiss')
     await flushPromises()
     expect(popup.find('.rule-card').exists()).toBe(false)
   })

@@ -6,18 +6,19 @@
 # dependencies = ["packaging==26.3", "tomlkit==0.15.2"]
 # ///
 """
-Lists every pin behind its newest release as one Markdown table, then tries
-the lifts in a scratch clone under `--try` and writes them under `--write`.
-A second table lists each newer tool release mise's `minimum_release_age`
-cutoff holds back, beside the time the cutoff clears it.
+Lists every pin behind its newest release as one Markdown table,
+then tries the lifts in a scratch clone under `--try` and writes them
+under `--write`. A second table lists each newer tool release mise's
+`minimum_release_age` cutoff holds back and each newer crate release Cargo's
+`global-min-publish-age` holds back, beside the time each clears.
 
 A pin is read from each home it is written in. Pins sharing a name, which
 covers every set `repo:audit` holds equal, take one row and move together,
 and so do the `ruff_*` crates with the `ruff` tool and the release
 `[package.metadata.ruff]` names. The reports of mise, Cargo, uv, and bun
-give the newest release of the pins they cover, and a registry gives it for
-every other pin. A release the cutoff holds back stays out of mise's report,
-so no row or write takes one until it clears.
+give the newest release of the pins they cover, and a registry gives it
+for every other pin. A release either cooldown holds back stays out of the
+newest release a row lifts to, so no row or write takes one until it clears.
 
 `--try` lifts every pin in a scratch clone carrying the checkout's
 uncommitted and untracked files and runs `mise ci` there, logging each
@@ -40,7 +41,7 @@ from argparse           import ArgumentParser
 from collections        import defaultdict
 from collections.abc    import Iterator
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses        import dataclass, replace
+from dataclasses        import dataclass, field, replace
 from datetime           import UTC, datetime, timedelta
 from functools          import cache, partial, reduce
 from gzip               import decompress
@@ -92,14 +93,8 @@ LOGS   = Path(".cache/lift")
 PYPI   = "https://pypi.org/pypi"
 RUFF   = "ruff"
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?P<content>(?:^#(?:| .*)$\s)+)^# ///$"
-SPANS        = {
-    "d" : "days",
-    "h" : "hours",
-    "m" : "minutes",
-    "s" : "seconds",
-    "w" : "weeks"
-}
-USES = (
+SPANS        = ("days", "hours", "minutes", "seconds", "weeks")
+USES         = (
     r"uses\s*:\s*(?:&[\w-]+\s+)?(?P<repo>[\w.-]+/[\w.-]+)(?:/[\w./-]*)?"
     r"@(?P<written>[0-9a-f]{40})\b"
 )
@@ -179,6 +174,14 @@ class Pin:
         return ECOSYSTEMS.get(self.source)
 
     @property
+    def reported(self) -> tuple[str, str, str]:
+        """
+        Keys this pin as a manager's report lists it, by its source, its
+        package's canonical name, and its written version.
+        """
+        return self.source, canonicalize_name(self.package), self.written
+
+    @property
     def script(self) -> str | None:
         """
         Returns the task script whose PEP 723 block holds this pin, or
@@ -207,13 +210,25 @@ class Pin:
             written = version
         )
 
-    def held(self, newest: str) -> list["Held"]:
+    def held(self, reports: "Reports") -> list["Held"]:
         """
-        Returns each stable release of this tool newer than `newest`, the
-        release mise's report gives under its `minimum_release_age` cutoff,
-        beside the time the cutoff clears it.
+        Lists each release a cooldown holds back from this pin, beside the
+        time it clears. A crate's is the release Cargo's report names under
+        `global-min-publish-age`, and a tool's is each stable release newer
+        than the one mise's report gives under `minimum_release_age`.
         """
-        floor = ordered(newest)
+        if self.source == "cargo":
+            if not (version := reports.withheld.get(self.reported)):
+                return []
+            return [Held(
+                self.released(version).cleared(publish_age()),
+                self.name,
+                version
+            )]
+        if self.source != "mise":
+            return []
+
+        floor = ordered(reports.newest(self))
         newer = [
             release for release in self.releases()
             if (version := ordered(release.version)) > floor
@@ -288,22 +303,29 @@ class Release:
 
     def cleared(self, age: str) -> datetime | None:
         """
-        Returns when a cutoff of `age`, a count of seconds, minutes, hours,
-        days, or weeks such as `24h`, stops holding this release back, or
-        `None` where the release reports no time or `age` takes another
-        form, such as a date, a span of months or years, or a compound span
-        like `1h30m`.
+        Returns when a cooldown of `age` stops holding this release back,
+        or `None` where the release reports no time or `age` is no count of
+        seconds, minutes, hours, days, or weeks. A count takes the unit's
+        initial, as mise writes `24h`, or its name, as Cargo writes `24
+        hours`, so a date, a span of months, or a compound span like `1h30m`
+        clears at no known time.
         """
-        if self.published is None or not (span := fullmatch(r"(\d+)([dhmsw])", age)):
+        span = fullmatch(r"(\d+) ?([a-z]+)", age)
+        unit = span and next(
+            (name for name in SPANS if span[2] in {name, name[0], name[:-1]}),
+            None
+        )
+        if self.published is None or not unit:
             return None
-        return self.published + timedelta(**{SPANS[span[2]]: int(span[1])})
+        return self.published + timedelta(**{unit: int(span[1])})
 
 
 @dataclass(frozen=True)
 class Held:
     """
-    Holds a release mise's `minimum_release_age` cutoff keeps out of its
-    report, beside the row it belongs to and when the cutoff clears it.
+    Holds a release mise's `minimum_release_age` cutoff or Cargo's
+    `global-min-publish-age` keeps out of its report, beside the row it
+    belongs to and when the cooldown clears it.
     """
 
     clears  : datetime | None
@@ -323,10 +345,13 @@ class Reports:
     """
     Holds the newest release each manager's report gives for the packages it
     covers, keyed by the manager, the package, and the version it resolves
-    today. A package a report omits stands at its newest release.
+    today, beside each newer crate release Cargo's report names as held
+    back by `global-min-publish-age`. A package a report omits stands at its
+    newest release.
     """
 
-    releases: dict[tuple[str, str, str], str]
+    releases : dict[tuple[str, str, str], str]
+    withheld : dict[tuple[str, str, str], str] = field(default_factory=dict)
 
     def newest(self, pin: Pin) -> str:
         """
@@ -338,18 +363,19 @@ class Reports:
         """
         if pin.source == "bun" and ordered(pin.written).is_prerelease:
             return max(packument(pin.package)["versions"], key=ordered)
-        reported = (pin.source, canonicalize_name(pin.package), pin.written)
-        return self.releases.get(reported, pin.written)
+        return self.releases.get(pin.reported, pin.written)
 
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
         """
         Returns the reports that `bun outdated`, `cargo update --dry-run`,
-        `mise outdated`, and `uv tree --outdated` print, the last over the
-        project and each of `scripts`, run side by side. Cargo's resolves
-        the whole lockfile, which refreshes the registry index, and
+        `mise outdated`, and `uv tree --outdated` print, the last over
+        the project and each of `scripts`, run side by side. Cargo's
+        resolves the whole lockfile, which refreshes the registry index,
         lists a crate whose newest release needs a newer Rust beside that
-        requirement.
+        requirement, and lists a crate whose newest release is younger than
+        `global-min-publish-age` beside the time it was published, leaving
+        that crate at the release it resolves to under the cooldown.
         """
         with ThreadPoolExecutor() as pool:
             bun   = pool.submit(output, "bun", "outdated", cwd="site")
@@ -369,16 +395,20 @@ class Reports:
         )
         cargo_line = (
             r"(?m)^\s*(?:Updating|Unchanged) (\S+) v([^\s+]+)\S*"
-            r"(?: -> v(\S+))?(?: \(available: v([^\s,)]+)[^)]*\))?$"
+            r"(?: -> v(\S+))?(?: \(available: v([^\s,)]+)(, published)?[^)]*\))?$"
         )
         uv_line = r"(?m)^[\s│├└─]*(\S+) v(\S+)\b.*\(latest: v(\S+)\)$"
-        found   = [
+        crates  = [
+            (name, old, new, available, bool(published))
+            for name, old, new, available, published in (
+                match.groups() for match in finditer(cargo_line, cargo.result())
+            )
+        ]
+        found = [
             *(("bun", *match.groups()) for match in finditer(bun_row, bun.result())),
             *(
-                ("cargo", name, old, available or new)
-                for name, old, new, available in (
-                    match.groups() for match in finditer(cargo_line, cargo.result())
-                )
+                ("cargo", name, old, new if young else available or new)
+                for name, old, new, available, young in crates
             ),
             *(
                 ("mise", key, tool["requested"], tool["latest"])
@@ -391,10 +421,15 @@ class Reports:
             )
         ]
         return cls(
-            {
+            releases = {
                 (source, canonicalize_name(name), current): newest
                 for source, name, current, newest in found
                 if newest and newest != current
+            },
+            withheld = {
+                ("cargo", canonicalize_name(name), old): available
+                for name, old, _, available, young in crates
+                if young
             }
         )
 
@@ -639,6 +674,17 @@ def carry(clone: Path, root: Path):
             copy2(root / path, target, follow_symlinks=False)
         else:
             target.unlink(missing_ok=True)
+
+
+@cache
+def publish_age() -> str:
+    """
+    Reads the `global-min-publish-age` the `[registry]` table of
+    `.cargo/config.toml` sets, empty where it sets none.
+    """
+    return (
+        nested(("registry", "global-min-publish-age"), toml(".cargo/config.toml")) or ""
+    )
 
 
 @cache
@@ -1009,8 +1055,10 @@ def table() -> tuple[list[Lift], list[Held]]:
     """
     Returns one row per name whose pins trail their newest release, sorted
     by name, each carrying the open Dependabot alerts its lift clears,
-    beside each newer release mise's `minimum_release_age` cutoff holds back
-    from a tool, sorted by name and version.
+    beside each newer release mise's `minimum_release_age` cutoff holds
+    back from a tool or Cargo's `global-min-publish-age` holds back from a
+    crate, sorted by name and version, one entry per row and release at the
+    earliest time any of its pins clears.
     """
     found   = pins()
     reports = Reports.read(sorted({pin.script for pin in found} - {None}))
@@ -1018,11 +1066,18 @@ def table() -> tuple[list[Lift], list[Held]]:
     for pin in found:
         grouped[pin.name].append(pin)
 
-    tools = [pin for pin in found if pin.source == "mise"]
+    cooled = {pin.reported: pin for pin in found if pin.source in {"cargo", "mise"}}
     with ThreadPoolExecutor() as pool:
-        newer = pool.map(lambda tool: tool.held(reports.newest(tool)), tools)
+        newer = pool.map(lambda pin: pin.held(reports), cooled.values())
         held  = sorted(
-            chain.from_iterable(newer),
+            {
+                (each.name, each.version): each
+                for each in sorted(
+                    chain.from_iterable(newer),
+                    key = lambda each: each.clears or datetime.max.replace(tzinfo=UTC),
+                    reverse = True
+                )
+            }.values(),
             key = lambda each: (each.name, ordered(each.version))
         )
 
@@ -1128,14 +1183,13 @@ def site_pins() -> list[Pin]:
 def waiting(held: list[Held]) -> str:
     """
     Returns the Markdown table listing each release in `held` beside when
-    the `minimum_release_age` cutoff clears it, under a sentence naming
-    the cutoff.
+    its cooldown clears it, under a sentence naming both cooldowns.
     """
     header = ["**Pin**", "**Release**", "**Clears**"]
     listed = padded([header, *(each.cells() for each in held)])
     return (
-        "The `minimum_release_age` cutoff holds these releases back from every "
-        f"write until each clears:\n\n{listed}"
+        "mise's `minimum_release_age` and Cargo's `global-min-publish-age` hold "
+        f"these releases back from every write until each clears:\n\n{listed}"
     )
 
 

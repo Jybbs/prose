@@ -5,24 +5,24 @@ import { inlineNodes }                        from '../markdown/inline-nodes'
 import { getRenderer }                        from '../markdown/renderer'
 import * as help                              from '../reference/cli-help'
 import { readPipeline }                       from '../rules/pipeline'
-import { proseBinaryPath, repoRoot, siteDir } from '../shared/paths'
+import { pagesDir, proseBinaryPath, repoRoot } from '../shared/paths'
 import { proseSchema }                        from '../shared/rule-schema'
 import * as configKeys                        from './config-keys'
 import { destinations }                       from './destinations'
 import * as sources                           from './sources'
 
-const root = repoRoot(import.meta.url)
-const site = siteDir(import.meta.url)
+const root   = repoRoot(import.meta.url)
+const srcDir = pagesDir(import.meta.url)
 
 declare const data: readonly sources.Token[]
 export { data }
 
 export default defineLoader({
-  watch: [proseBinaryPath(root), `${site}/reference/*.md`],
+  watch: [proseBinaryPath(root), `${srcDir}/reference/*.md`],
   async load(): Promise<readonly sources.Token[]> {
     const md            = await getRenderer()
     const schema        = proseSchema(root)
-    const destinationOf = destinations(site, configKeys.facetDestinations(schema))
+    const destinationOf = destinations(srcDir, configKeys.facetDestinations(schema))
     const pages         = help.readHelp(root)
     const slugs         = new Set(readPipeline(import.meta.url).map(entry => entry.slug))
     const fromHelp      = (domain: sources.HelpDomain): readonly sources.TokenSource[] =>

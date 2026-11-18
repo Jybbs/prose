@@ -2,6 +2,61 @@
 
 lockfile_version = 3
 
+[[tools."aqua:EmbarkStudios/cargo-deny"]]
+version = "0.21.0"
+backend = "aqua:EmbarkStudios/cargo-deny"
+specifiers = ["0.21.0"]
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-arm64"]
+checksum = "sha256:47cc5d88d43cd568028080fece02d729f56f0ff8e6c168563ce6589e3c0f4738"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755169459"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-arm64-musl"]
+checksum = "sha256:47cc5d88d43cd568028080fece02d729f56f0ff8e6c168563ce6589e3c0f4738"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755169459"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64"]
+checksum = "sha256:a2170b854ff697e79e39c4c538981c9c1bdd803addbae6719a4cb66b4585a903"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755168773"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64-baseline"]
+checksum = "sha256:a2170b854ff697e79e39c4c538981c9c1bdd803addbae6719a4cb66b4585a903"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755168773"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64-musl"]
+checksum = "sha256:a2170b854ff697e79e39c4c538981c9c1bdd803addbae6719a4cb66b4585a903"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755168773"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.linux-x64-musl-baseline"]
+checksum = "sha256:a2170b854ff697e79e39c4c538981c9c1bdd803addbae6719a4cb66b4585a903"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755168773"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.macos-arm64"]
+checksum = "sha256:c99a789160775ada8cb54aed72cfdae5a9b72e27434f8868d17c9634c3f52425"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755174277"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.windows-arm64"]
+checksum = "sha256:8c445ef95217269d3cee234b18e2f543f8f1653f4a9801d9439df24bfcef4824"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755173869"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.windows-x64"]
+checksum = "sha256:8c445ef95217269d3cee234b18e2f543f8f1653f4a9801d9439df24bfcef4824"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755173869"
+
+[tools."aqua:EmbarkStudios/cargo-deny"."platforms.windows-x64-baseline"]
+checksum = "sha256:8c445ef95217269d3cee234b18e2f543f8f1653f4a9801d9439df24bfcef4824"
+url = "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.21.0/cargo-deny-0.21.0-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/EmbarkStudios/cargo-deny/releases/assets/755173869"
+
 [[tools."aqua:WebAssembly/binaryen"]]
 version = "133"
 backend = "aqua:WebAssembly/binaryen"
@@ -400,83 +455,83 @@ backend = "cargo:twiggy"
 specifiers = ["0.8.0"]
 
 [[tools."github:Boshen/cargo-shear"]]
-version = "1.14.0"
+version = "1.14.1"
 backend = "github:Boshen/cargo-shear"
-specifiers = ["1.14.0"]
+specifiers = ["1.14.1"]
 
 [tools."github:Boshen/cargo-shear".options]
 matching_regex = '^cargo-shear-(aarch64|x86_64)-(apple-darwin|pc-windows-msvc|unknown-linux-musl)\.tar\.gz$'
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-arm64"]
-checksum = "sha256:d83f7c5b02c4c237d0454697c12df041df0bd83ffecc1aba46c6e06315fd47e1"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851819"
+checksum = "sha256:7b8c61cca4f2628cbc847ba4dfda37924b8dd2dba8ba19fe4107797f87e6b3ea"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156829"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-arm64-musl"]
-checksum = "sha256:d83f7c5b02c4c237d0454697c12df041df0bd83ffecc1aba46c6e06315fd47e1"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851819"
+checksum = "sha256:7b8c61cca4f2628cbc847ba4dfda37924b8dd2dba8ba19fe4107797f87e6b3ea"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156829"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64"]
-checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+checksum = "sha256:7b4cec5ec12e22717670721ace1edbd97a65cb9e08864466d292a3009bb85d1a"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156892"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64-baseline"]
-checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+checksum = "sha256:7b4cec5ec12e22717670721ace1edbd97a65cb9e08864466d292a3009bb85d1a"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156892"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64-musl"]
-checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+checksum = "sha256:7b4cec5ec12e22717670721ace1edbd97a65cb9e08864466d292a3009bb85d1a"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156892"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:9004df4eb031a456026c4326ae0d0ce545321527a67be90f4524c1be729dc40e"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851857"
+checksum = "sha256:7b4cec5ec12e22717670721ace1edbd97a65cb9e08864466d292a3009bb85d1a"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156892"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.macos-arm64"]
-checksum = "sha256:e50b9375b1e93d2293c803819c118337f1e8fce519e4188a93bb0f5e08041ca3"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851820"
+checksum = "sha256:925a8e005a4966ce1e3f63d70743dbc68dd16e3369eea9aa91cfcb3ba61727cf"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156822"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.macos-x64"]
-checksum = "sha256:ea0df899fecd1ae8116d588c97ebdeef8c1ed487ac7df2701ab39d05063a7930"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851834"
+checksum = "sha256:c414e63bdc08205c19b276456fc8ac5af6e33c3f2b40086a782fedb7c13e5567"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156852"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.macos-x64-baseline"]
-checksum = "sha256:ea0df899fecd1ae8116d588c97ebdeef8c1ed487ac7df2701ab39d05063a7930"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851834"
+checksum = "sha256:c414e63bdc08205c19b276456fc8ac5af6e33c3f2b40086a782fedb7c13e5567"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156852"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.windows-arm64"]
-checksum = "sha256:53a537d97d2f46efcb0798e3e1b4759e55bd1df96e90caadc1bf7ee16d6f11d8"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-aarch64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851814"
+checksum = "sha256:7e8b26f44161450c8a8e172bd963e0d9e68c52de891e195aed5b924b15819a24"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-aarch64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156821"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.windows-x64"]
-checksum = "sha256:2d3a25cb97cd13bcf57d8f0517e2049e179dec9a9f94b6486a787ca51c8f97e5"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851839"
+checksum = "sha256:2e87bf0f9fa80c66ded35864ae288d2568ecc8c976bbbca98cfaea34737a194d"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156854"
 provenance = "github-attestations"
 
 [tools."github:Boshen/cargo-shear"."platforms.windows-x64-baseline"]
-checksum = "sha256:2d3a25cb97cd13bcf57d8f0517e2049e179dec9a9f94b6486a787ca51c8f97e5"
-url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.0/cargo-shear-x86_64-pc-windows-msvc.tar.gz"
-url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/580851839"
+checksum = "sha256:2e87bf0f9fa80c66ded35864ae288d2568ecc8c976bbbca98cfaea34737a194d"
+url = "https://github.com/Boshen/cargo-shear/releases/download/v1.14.1/cargo-shear-x86_64-pc-windows-msvc.tar.gz"
+url_api = "https://api.github.com/repos/Boshen/cargo-shear/releases/assets/742156854"
 provenance = "github-attestations"
 
 [[tools."github:codecov/codecov-cli"]]

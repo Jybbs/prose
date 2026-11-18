@@ -18,15 +18,13 @@ describe('ProseSandbox', () => {
   it('marks its root while the surface reports an edit in progress', async () => {
     const wrapper = mountSandbox()
     expect(wrapper.attributes('data-editing')).toBeUndefined()
-    await wrapper.findComponent({ name: 'ProseSandboxSurface' }).vm.$emit('update:editing', true)
-    await wrapper.vm.$nextTick()
+    await wrapper.findComponent({ name: 'ProseSandboxSurface' }).emit('update:editing', true)
     expect(wrapper.attributes('data-editing')).toBe('true')
   })
 
   it('hides the copy, refresh, and link buttons while the surface reports an edit in progress', async () => {
     const wrapper = mountSandbox()
-    await wrapper.findComponent({ name: 'ProseSandboxSurface' }).vm.$emit('update:editing', true)
-    await wrapper.vm.$nextTick()
+    await wrapper.findComponent({ name: 'ProseSandboxSurface' }).emit('update:editing', true)
     const styles = wrapper.findAll('.sandbox-py > button').map(button => button.attributes('style'))
     expect(styles).toStrictEqual(Array.from({ length: 3 }, () => 'display: none;'))
   })

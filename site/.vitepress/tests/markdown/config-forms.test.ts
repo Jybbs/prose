@@ -1,9 +1,9 @@
 import { createMarkdownRenderer } from 'vitepress'
 
 import { configFormsPlugin, pyprojectForm } from '../../lib/markdown/config-forms-plugin'
-import { siteDir }                          from '../../lib/shared/paths'
+import { pagesDir }                         from '../../lib/shared/paths'
 
-const md = await createMarkdownRenderer(siteDir(import.meta.url), {
+const md = await createMarkdownRenderer(pagesDir(import.meta.url), {
   config: renderer => { renderer.use(configFormsPlugin) }
 })
 
