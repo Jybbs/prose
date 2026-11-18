@@ -3,23 +3,49 @@ import path from 'node:path'
 import { playwright }                   from '@vitest/browser-playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import { VUE_JSX } from './lib/shared/constants.ts'
-import * as paths  from './lib/shared/paths.ts'
+import { readFromDiskPlugin } from './lib/config/read-from-disk.ts'
+import { VUE_JSX }            from './lib/shared/constants.ts'
+import * as paths             from './lib/shared/paths.ts'
 
 const BUNDLE = {
   globalSetup : ['./.vitepress/tests/serve.ts'],
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
-
-const FIT = '.vitepress/tests/pages/fit.test.ts'
-
-const ROOT = paths.repoRoot(import.meta.url)
-
-const READ_FROM_DISK = [
-  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**',
-  'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/{assets,patches}/**',
-  'site/.vitepress/tests/**/fixtures/**', 'site/bun.lock', 'site/public/**'
+export const CRATE   = 'crate/src/**/*.rs'
+const FIT            = '.vitepress/tests/pages/fit.test.ts'
+const PAGES          = 'site/pages/**/*.md'
+const ROOT           = paths.repoRoot(import.meta.url)
+const RULES          = 'crate/src/rules/**/*.rs'
+const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
+export const READERS = {
+  'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
+  'site/.vitepress/lib/fixtures/variants.ts'                : [CRATE],
+  'site/.vitepress/lib/identity/identity.data.ts'           : [STYLES],
+  'site/.vitepress/lib/landing/landing-typing-demo.data.ts' : [CRATE],
+  'site/.vitepress/lib/reference/cli-help.ts'               : [CRATE],
+  'site/.vitepress/lib/reference/output-samples.data.ts'    : [CRATE],
+  'site/.vitepress/lib/reference/section-glance.data.ts'    : [PAGES],
+  'site/.vitepress/lib/rules/discovery.ts'                  : [RULES],
+  'site/.vitepress/lib/rules/pipeline.ts'                   : [CRATE],
+  'site/.vitepress/lib/shared/content-page.ts'              : [PAGES],
+  'site/.vitepress/lib/shared/rule-schema.ts'               : [CRATE],
+  'site/.vitepress/lib/tokens/destinations.ts'              : [PAGES],
+  'site/.vitepress/tests/config/edit-link.test.ts'          : [PAGES],
+  'site/.vitepress/tests/config/head.test.ts'               : [PAGES],
+  'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
+  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
+  'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
+  'site/.vitepress/tests/shared/tool-chips.test.ts'         : [PAGES],
+  'site/.vitepress/tests/support.ts'                        : [STYLES],
+  'site/.vitepress/tests/suppression/scopes.test.ts'        : [PAGES],
+  'site/.vitepress/tests/tailwind.ts'                       : ['site/pages/index.md', STYLES],
+  'site/.vitepress/tests/vocabulary.ts'                     : [STYLES]
+}
+const RERUN_TRIGGERS = [
+  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
+  'crate/tests/fixtures/**', 'site/.vitepress/{assets,patches}/**', 'site/.vitepress/tests/**/fixtures/*/**',
+  'site/bun.lock', 'site/public/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
@@ -27,7 +53,7 @@ export default defineConfig({
   test     : {
     environment         : 'node',
     expect              : { requireAssertions: true },
-    forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...READ_FROM_DISK],
+    forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...RERUN_TRIGGERS],
     globals             : true,
     pool                : 'threads',
     reporters           : process.env.GITHUB_ACTIONS
@@ -41,8 +67,9 @@ export default defineConfig({
 
     projects: [
       {
-        oxc  : { jsx: VUE_JSX },
-        test : {
+        oxc     : { jsx: VUE_JSX },
+        plugins : [readFromDiskPlugin(READERS, ROOT)],
+        test    : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
           name       : 'docs',
