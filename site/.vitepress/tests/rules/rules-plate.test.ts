@@ -63,7 +63,7 @@ describe('RulesPlate', () => {
     expect(letters(w)).toStrictEqual([['gathered', ['alphabetize-siblings']], ['a', ['align-equals']], ['b', ['bare-imports']]])
     expect(w.get('.rules-plate-gathered .rules-plate-cap').attributes('data-family')).toBe('ordering')
     expect(w.get('.rules-plate-live').text()).toBe('1 Ordering rules moved above the list.')
-    expect(w.get('.rules-plate-all').classes()).not.toContain('is-idle')
+    expect(w.get('.rules-plate-all').classes()).not.toContain('invisible')
     await chip.trigger('click')
     await w.vm.$nextTick()
     expect(letters(w)).toStrictEqual([['a', ['align-equals', 'alphabetize-siblings']], ['b', ['bare-imports']]])

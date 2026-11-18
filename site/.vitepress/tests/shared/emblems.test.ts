@@ -1,3 +1,4 @@
+import { Scanner }                                        from '@tailwindcss/oxide'
 import { differenceCiede2000, interpolate, wcagContrast } from 'culori'
 import { parse as parseCss }                              from 'postcss'
 
@@ -110,14 +111,14 @@ describe('the badge ink', () => {
   })
 
   it('paints no ground under a hovered Pipeline Order row, whose badges stand on the page', async () => {
-    const design  = await tailwind.designSystem()
-    const painted = [] as string[]
-    parseCss(vocabulary.read('.vitepress/theme/components/rules/styles/pipeline-order.css')).walkRules(rule => {
-      if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
-    })
-    const template = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.tsx')
-    for (const [name] of template.matchAll(/[\w/-]*hover(?:\/[\w-]+)?:[\w/-]+/g)) {
-      if (/background/.test(design.candidatesToCss([name])[0] ?? '')) painted.push(name)
+    const design     = await tailwind.designSystem()
+    const painted    = [] as string[]
+    const template   = vocabulary.read('.vitepress/theme/components/rules/PipelineOrder.tsx')
+    const candidates = new Scanner({}).scanFiles([{ content: template, extension: 'tsx' }])
+    for (const css of design.candidatesToCss(candidates)) {
+      parseCss(css ?? '').walkRules(rule => {
+        if (rule.selector.includes(':hover')) rule.walkDecls(/^background/, () => { painted.push(rule.selector) })
+      })
     }
     expect(painted).toStrictEqual([])
   })

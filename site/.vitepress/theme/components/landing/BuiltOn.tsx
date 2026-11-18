@@ -34,7 +34,7 @@ export const BuiltOn = defineComponent({
       <LandingSection centered heading={"Standing on <em>giants</em>."} kicker="The Lineage">
         {{
           default: () => (
-            <div class="built-on-grid mt-24 grid grid-cols-5 overflow-hidden panel bg-bg-soft max-medium:grid-cols-3 max-tiny:grid-cols-1fr">
+            <div class="built-on-grid mt-24 stack-accent-ube grid grid-cols-5 overflow-hidden panel bg-bg-soft max-medium:grid-cols-3 max-tiny:grid-cols-1fr">
                 {entries.map(entry => (
                   <a
                     href={entry.tool.href}

@@ -1,0 +1,37 @@
+@utility primitives-composition {
+  & [data-layer='analysis'] {
+    --layer-hue : var(--color-ube);
+    --layer-ink : var(--prose-shade-ube-page-45);
+  }
+
+  & [data-layer='base'] {
+    --layer-hue : var(--color-celadon);
+    --layer-ink : var(--prose-shade-celadon-page-45);
+  }
+
+  & [data-layer='orchestration'] {
+    --layer-hue : var(--color-whiskey);
+    --layer-ink : var(--prose-shade-whiskey-page-45);
+  }
+
+  & [data-layer='empty'] {
+    --layer-ink : var(--vp-c-divider);
+  }
+
+  & a {
+    font-weight     : inherit;
+    text-decoration : none;
+  }
+}
+
+/* Glides one wash of the focused tile's layer hue behind it, cross-fading the
+   hue as it crosses a band. */
+@utility primitives-composition-wash {
+  background : color-mix(in srgb, var(--layer-hue) var(--prose-tint-22), transparent);
+  transition :
+    transform        var(--prose-transition-morph),
+    width            var(--prose-transition-morph),
+    height           var(--prose-transition-morph),
+    background-color var(--prose-transition-morph),
+    opacity          var(--prose-transition-slow);
+}

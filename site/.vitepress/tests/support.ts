@@ -35,12 +35,18 @@ export function siteSheets(): { file: string, root: Root }[] {
 export const fixtureDir = (metaDir: string, ...parts: string[]): string =>
   path.join(metaDir, 'fixtures', ...parts)
 
-// Reads each declaration a stylesheet makes under `selector`.
+// Reads each declaration a stylesheet makes under `selector`, an `@utility`
+// block counting as its class selector for the declarations directly inside it.
 export function declared(file: string | URL, selector: string): Record<string, string> {
   const props: Record<string, string> = {}
-  parseCss(fs.readFileSync(file, 'utf8')).walkRules(rule => {
+  const root  = parseCss(fs.readFileSync(file, 'utf8'))
+  root.walkRules(rule => {
     if (rule.selector !== selector) return
     rule.walkDecls(decl => { props[decl.prop] = decl.value })
+  })
+  root.walkAtRules('utility', rule => {
+    if (`.${rule.params}` !== selector) return
+    rule.each(node => { if (node.type === 'decl') props[node.prop] = node.value })
   })
   return props
 }

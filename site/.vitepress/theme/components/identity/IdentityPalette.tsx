@@ -100,7 +100,7 @@ function contrast(swatch: Swatch) {
 function uses(swatch: Swatch) {
   if (swatch.uses.length === 0) return <p class="m-0 text-xs text-text-3 italic">No family, role, or section takes it.</p>
   return (
-    <table class="identity-table identity-uses text-xs">
+    <table class="table identity-uses m-0 w-full border-collapse text-xs">
       <thead><tr><th class="kicker">Token</th><th class="kicker">Where</th><th class="kicker">Scheme</th></tr></thead>
       <tbody>
         {swatch.uses.map(use => (
@@ -178,7 +178,7 @@ export const IdentityPalette = defineComponent({
                           <button
                             aria-checked={each.name === held.value}
                             aria-label={`${each.title}, ${each.hex}`}
-                            class="identity-strip"
+                            class="identity-strip identity-proof min-w-0 cursor-pointer p-0"
                             data-lead={each === lead || undefined}
                             key={each.name}
                             onKeydown={(event: KeyboardEvent) => move(event, strips.indexOf(each))}
@@ -198,7 +198,7 @@ export const IdentityPalette = defineComponent({
                   onMouseenter={hold}
                   onMouseleave={() => { if (!shown.value) letGo() }}
                 >
-                  <div class="identity-entry-head items-center gap-x-12 pb-12">
+                  <div class="identity-entry-head grid items-center gap-x-12 pb-12">
                     <span aria-hidden="true" class="identity-proof block h-44 w-full" style={{ background: `var(${swatch.value.token})` }} />
                     <div>
                       <p class="m-0 font-display text-1-4rem leading-1-1 font-500 text-text-1 italic">{swatch.value.title}</p>

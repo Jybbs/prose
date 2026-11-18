@@ -37,6 +37,9 @@
 
   --grid-template-rows-64-28-18                           : var(--prose-size-64) var(--prose-size-28) var(--prose-size-18);
 
+  --inset-workflow-rule                                   : calc(var(--prose-space-28) + var(--prose-size-72));
+  --inset-workflow-rule-stacked                           : calc(var(--prose-space-22) + var(--prose-size-64));
+
   --text-404                                              : clamp(var(--prose-text-2-4rem), 5.4vw, var(--prose-text-3-4rem));
   --text-landing-h2                                       : clamp(var(--prose-text-2rem), 3.6vw, var(--prose-text-2-8rem));
 
@@ -46,4 +49,230 @@
   --transition-property-mask-image                        : mask-image;
 
   --width-wordmark                                        : min(var(--prose-width-640), 72vw);
+}
+
+@property --rotation {
+  syntax        : '<angle>';
+  initial-value : 0deg;
+  inherits      : false;
+}
+
+@keyframes watermark-align {
+  to { --rotation : 0deg; }
+}
+
+@utility built-on-card {
+  & + & {
+    border-left : var(--prose-border-1) solid var(--vp-c-divider);
+  }
+
+  @variant max-medium {
+    &:nth-child(3n + 1) {
+      border-left : none;
+    }
+    &:nth-child(n + 4) {
+      border-top : var(--prose-border-1) solid var(--vp-c-divider);
+    }
+  }
+}
+
+@utility landing-cta {
+  --stamp-accent : var(--color-whiskey);
+  --stamp-ink    : color-mix(in srgb, var(--prose-shade-whiskey-page-45) var(--prose-tint-65), var(--vp-c-text-1));
+  --panel-bg     : var(--vp-c-bg);
+  --panel-edge   : var(--vp-c-divider);
+}
+
+@utility landing-cta-cmd {
+  & > button.copy {
+    top       : 50%;
+    right     : var(--prose-space-6);
+    transform : translateY(-50%);
+  }
+}
+
+@utility landing-cta-scroll {
+  width     : calc(100% + var(--prose-space-10));
+  direction : rtl;
+
+  &::-webkit-scrollbar {
+    width : var(--prose-size-6);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background    : color-mix(in srgb, var(--color-ube) var(--prose-tint-60), var(--panel-edge));
+    border-radius : var(--prose-radius-3);
+  }
+
+  & > * {
+    direction : ltr;
+  }
+}
+
+@utility landing-cta-swap {
+  transition-property        : opacity, translate;
+  transition-duration        : 240ms;
+  transition-timing-function : cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@utility landing-hero-watermark {
+  transform : translate(-50%, -50%) rotate(var(--rotation));
+
+  @supports (animation-timeline: view()) {
+    animation          : watermark-align linear both;
+    animation-timeline : view();
+    animation-range    : cover 15% cover 55%;
+  }
+}
+
+@utility landing-section {
+  & h2 {
+    font-variation-settings : 'opsz' 144;
+  }
+
+  & h2 strong {
+    font-weight : 600;
+  }
+
+  & p {
+    color : var(--vp-c-text-2);
+  }
+}
+
+@utility landing-workflow-code {
+  & > div[class*='language-'] {
+    border-radius : var(--prose-radius-sm);
+    background    : var(--vp-code-block-bg);
+    overflow      : hidden;
+  }
+}
+
+@utility landing-workflow-prose {
+  & :is(code, em) {
+    font-family : var(--vp-font-family-mono);
+    font-size   : var(--prose-text-0-85em);
+    font-style  : normal;
+    color       : var(--vp-c-text-1);
+  }
+}
+
+@utility landing-workflow-title {
+  writing-mode : vertical-rl;
+
+  @variant max-card-stack {
+    writing-mode : horizontal-tb;
+  }
+}
+
+@utility stack-accent-ube {
+  --stack-accent : var(--color-ube);
+}
+
+@utility workflow-accent-celadon {
+  --workflow-accent : var(--color-celadon);
+}
+
+@utility surface-card-blurb {
+  & .glossary-anchor {
+    position       : relative;
+    z-index        : 2;
+    pointer-events : auto;
+  }
+}
+
+@utility surface-card-icon {
+  & .nib-badge {
+    color : var(--family-nib-soft);
+  }
+}
+
+@utility surface-pip {
+  height   : var(--rail-height);
+  --ripple : min(70ms, calc(var(--d) * 9ms));
+
+  &:is(:hover, [data-active]) .surface-pip-mark {
+    width   : var(--circle);
+    height  : var(--circle);
+    scale   : 1;
+    opacity : 1;
+  }
+}
+
+@utility surface-pip-folio {
+  transition : color     200ms linear var(--ripple),
+               opacity   170ms linear var(--ripple),
+               translate 240ms var(--prose-ease-emphasized) var(--ripple);
+}
+
+@utility surface-pip-mark {
+  width      : var(--prose-size-7);
+  height     : var(--prose-size-7);
+  scale      : max(0.55, calc(1 - var(--d) * 0.06));
+  opacity    : max(0.22, calc(1 - var(--d) * 0.16));
+  transition : background 240ms linear var(--ripple),
+               height     240ms var(--prose-ease-emphasized) var(--ripple),
+               opacity    240ms linear var(--ripple),
+               scale      240ms var(--prose-ease-emphasized) var(--ripple),
+               width      240ms var(--prose-ease-emphasized) var(--ripple);
+}
+
+@utility surface-rail {
+  --ripple : 0ms;
+}
+
+@utility surface-rail-chevron {
+  height     : var(--rail-height);
+  opacity    : calc(0.26 + 0.4 * var(--reach));
+  transition : opacity   220ms linear,
+               scale     140ms var(--prose-ease-emphasized),
+               translate 220ms var(--prose-ease-emphasized);
+
+  &[data-side='start'] {
+    left : var(--rail-inset);
+  }
+
+  &[data-side='end'] {
+    right : var(--rail-inset);
+  }
+}
+
+@utility surface-rail-row {
+  --circle      : calc(var(--slot) - var(--prose-size-4));
+  --rail-height : calc(var(--slot) + var(--prose-size-8));
+
+  & > .surface-rail-end {
+    flex : 0 0 var(--slot);
+  }
+
+  & > .surface-rail-end::before {
+    width  : var(--circle);
+    height : var(--circle);
+  }
+}
+
+@utility surface-rail-swap {
+  transition : opacity 110ms linear, translate 180ms var(--prose-ease-emphasized);
+}
+
+@utility surface-rail-track {
+  & .surface-pip {
+    width : var(--slot);
+  }
+}
+
+@utility surface-rail-window {
+  height             : var(--rail-height);
+  --rail-mask        : linear-gradient(
+    90deg,
+    transparent 0,
+    var(--vp-c-black) var(--fade-start),
+    var(--vp-c-black) calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  -webkit-mask-image : var(--rail-mask);
+          mask-image : var(--rail-mask);
+
+  &::-webkit-scrollbar {
+    display : none;
+  }
 }
