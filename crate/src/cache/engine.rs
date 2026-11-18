@@ -412,3 +412,367 @@ fn remove_into(report: &mut CleanReport, entry: &DirEntry) {
         report.record(bytes);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use tempfile::TempDir;
+
+    use super::*;
+    use crate::{
+        cache::{
+            NotebookCells, NotebookCellsRef, Rewrite,
+            key::tests::{CONFIG_A, key, rules},
+        },
+        diagnostics::Diagnostic,
+        rules::align_equals::AlignEquals,
+        testing::{format_diagnostic, range},
+        unstable::UnstableRewrite,
+    };
+
+    /// Backdates the file or directory at `path` past the sweep's grace
+    /// window.
+    fn age(path: &Path) {
+        let stale = SystemTime::now() - Duration::from_hours(24);
+        fs_err::File::open(path)
+            .expect("opens the path")
+            .set_modified(stale)
+            .expect("backdates the path");
+    }
+
+    fn cache_in(tmp: &TempDir, max_mib: u32) -> Cache {
+        Cache {
+            max_size_bytes: u64::from(max_mib) * 1024 * 1024,
+            ..Cache::in_store(tmp.path().join("cache"))
+        }
+    }
+
+    /// Builds a fresh temp dir beside a 100 MiB cache rooted inside it.
+    fn cached() -> (TempDir, Cache) {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 100);
+        (tmp, cache)
+    }
+
+    fn entry(formatted: &str) -> CacheEntry {
+        CacheEntry {
+            // The rule must be a registered slug, because `RuleId`
+            // deserializes through the registry and an unknown slug
+            // fails the entry's round-trip.
+            diagnostics: vec![Diagnostic {
+                rule: AlignEquals::SLUG,
+                ..format_diagnostic(range(0, 1))
+            }],
+            notebook: None,
+            rewrite: Rewrite::text(formatted.to_owned()),
+            unstable: None,
+        }
+    }
+
+    /// Writes a generation directory beside the cache's own, holding one
+    /// entry-shaped file.
+    fn generation_beside(cache: &Cache, name: &str) -> std::path::PathBuf {
+        let dir = cache.store.join(name);
+        fs_err::create_dir_all(&dir).expect("creates");
+        fs_err::write(dir.join("cafebabe"), b"an earlier build's entry").expect("writes");
+        dir
+    }
+
+    /// Writes `entry` under `key` the way the run path does, borrowing
+    /// the diagnostics and rewrite.
+    fn insert(cache: &Cache, key: &CacheKey, entry: &CacheEntry) {
+        cache.insert(
+            key,
+            &CacheEntryRef {
+                diagnostics: &entry.diagnostics,
+                notebook: entry.notebook.as_ref().map(|cells| NotebookCellsRef {
+                    code: &cells.code,
+                    index: cells.index.as_ref(),
+                }),
+                rewrite: &entry.rewrite,
+                unstable: entry.unstable.as_deref(),
+            },
+        );
+    }
+
+    #[test]
+    fn clean_clears_every_entry_and_returns_report() {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        insert(&cache, &key, &entry("y = 1\n"));
+        let report = cache.clean().expect("cleans");
+        assert_eq!(report.entries, 1);
+        assert!(report.bytes > 0);
+        assert!(cache.lookup(&key).is_none());
+    }
+
+    #[test]
+    fn clean_returns_zeros_on_empty_cache() {
+        let (_tmp, cache) = cached();
+        assert_eq!(cache.clean().expect("cleans"), CleanReport::default());
+    }
+
+    #[test]
+    fn compact_evicts_below_the_low_water_mark() {
+        let (_tmp, cache) = cached();
+        for i in 0..10 {
+            insert(
+                &cache,
+                &key(format!("x = {i}\n").as_bytes(), CONFIG_A, rules()),
+                &entry("a = 1\n"),
+            );
+        }
+
+        let capped = Cache {
+            max_entries: 5,
+            ..cache
+        };
+        capped.compact();
+
+        // A pass that stopped at the cap would leave five, putting the
+        // next insert back over it.
+        assert_eq!(capped.info().entries, 4);
+    }
+
+    #[test]
+    fn compact_evicts_until_under_cap() {
+        let (_tmp, cache) = cached();
+        insert(
+            &cache,
+            &key(b"x = 1\n", CONFIG_A, rules()),
+            &entry("a = 1\n"),
+        );
+        insert(
+            &cache,
+            &key(b"y = 2\n", CONFIG_A, rules()),
+            &entry("b = 2\n"),
+        );
+
+        let tightened = Cache {
+            max_size_bytes: 0,
+            ..cache
+        };
+        let report = tightened.compact();
+
+        assert_eq!(report.entries, 2);
+        assert!(report.bytes > 0);
+        assert_eq!(tightened.info().entries, 0);
+    }
+
+    #[test]
+    fn compact_holds_a_generation_touched_inside_the_grace_window() {
+        let (_tmp, cache) = cached();
+        let live = generation_beside(&cache, "live");
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 0);
+        assert!(live.exists());
+    }
+
+    #[test]
+    fn compact_holds_one_entry_at_the_smallest_cap() {
+        let (_tmp, cache) = cached();
+        let key_old = key(b"x = 1\n", CONFIG_A, rules());
+        let key_new = key(b"y = 2\n", CONFIG_A, rules());
+        insert(&cache, &key_old, &entry("a = 1\n"));
+        insert(&cache, &key_new, &entry("b = 2\n"));
+        age(&cache.path_for(&key_old));
+
+        let capped = Cache {
+            max_entries: 1,
+            ..cache
+        };
+        let report = capped.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(capped.lookup(&key_old).is_none());
+        assert!(capped.lookup(&key_new).is_some());
+    }
+
+    #[test]
+    fn compact_prunes_a_generation_past_the_grace_window() {
+        let (_tmp, cache) = cached();
+        let dead = generation_beside(&cache, "dead");
+        age(&dead);
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!dead.exists());
+    }
+
+    #[test]
+    fn compact_removes_an_entry_left_directly_in_the_store() {
+        let (_tmp, cache) = cached();
+        let flat = cache.store.join("deadbeef");
+        fs_err::write(&flat, b"a pre-generation entry").expect("writes");
+
+        let report = cache.compact();
+
+        assert_eq!(report.entries, 1);
+        assert!(!flat.exists());
+    }
+
+    #[test]
+    fn compact_returns_zeros_when_under_cap() {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        insert(&cache, &key, &entry("y = 1\n"));
+        assert_eq!(cache.compact(), CleanReport::default());
+    }
+
+    #[test]
+    fn info_and_compact_leave_the_own_output_ledger_alone() {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        cache.record_own_output(&key);
+
+        assert_eq!(cache.info().entries, 0);
+        assert_eq!(cache.compact(), CleanReport::default());
+        assert!(cache.owns_output(&key));
+    }
+
+    #[test]
+    fn info_counts_entries_across_generations() {
+        let (_tmp, cache) = cached();
+        insert(
+            &cache,
+            &key(b"x = 1\n", CONFIG_A, rules()),
+            &entry("a = 1\n"),
+        );
+        generation_beside(&cache, "older");
+
+        assert_eq!(cache.info().entries, 2);
+    }
+
+    #[test]
+    fn info_counts_entries_and_byte_total() {
+        let (_tmp, cache) = cached();
+        insert(
+            &cache,
+            &key(b"x = 1\n", CONFIG_A, rules()),
+            &entry("y = 1\n"),
+        );
+        insert(
+            &cache,
+            &key(b"x = 2\n", CONFIG_A, rules()),
+            &entry("y = 2\n"),
+        );
+        let info = cache.info();
+        assert_eq!(info.entries, 2);
+        assert!(info.bytes > 0);
+        assert!(info.oldest_mtime.is_some());
+        assert!(info.newest_mtime.is_some());
+    }
+
+    #[test]
+    fn info_reports_zeros_on_empty_cache() {
+        let (_tmp, cache) = cached();
+        let info = cache.info();
+        assert_eq!(info.entries, 0);
+        assert_eq!(info.bytes, 0);
+        assert!(info.oldest_mtime.is_none());
+        assert!(info.newest_mtime.is_none());
+    }
+
+    #[test]
+    fn info_skips_tmp_sidecars() {
+        let (_tmp, cache) = cached();
+        fs_err::write(cache.root.join("orphan.123.tmp"), b"in flight").expect("writes");
+        let info = cache.info();
+        assert_eq!(info.entries, 0);
+        assert_eq!(info.bytes, 0);
+    }
+
+    #[test]
+    fn insert_holds_an_over_cap_entry_until_compact_runs() {
+        let tmp = TempDir::new().expect("tempdir");
+        let cache = cache_in(&tmp, 0);
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+
+        insert(&cache, &key, &entry("y = 1\n"));
+
+        assert!(cache.lookup(&key).is_some());
+        cache.compact();
+        assert!(cache.lookup(&key).is_none());
+    }
+
+    #[test]
+    fn insert_leaves_no_tmp_sidecar_on_success() {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        insert(&cache, &key, &entry("y = 1\n"));
+        let tmp_count = fs_err::read_dir(&cache.root)
+            .expect("read_dir")
+            .flatten()
+            .filter(|e| e.path().extension().is_some_and(|ext| ext == "tmp"))
+            .count();
+        assert_eq!(tmp_count, 0);
+    }
+
+    #[rstest]
+    #[case::the_entry(entry("y = 1\n"))]
+    #[case::a_notebook_rewrite(CacheEntry {
+        diagnostics: Vec::new(),
+        notebook: Some(NotebookCells {
+            code: "x = 1\n".to_owned(),
+            index: None,
+        }),
+        rewrite: Rewrite::notebook(
+            vec!["x = 1\n".to_owned()],
+            vec!["x  = 1\n".to_owned()],
+            "{}\n".to_owned(),
+        ),
+        unstable: None,
+    })]
+    #[case::a_settle_report(CacheEntry {
+        unstable: Some(Box::new(UnstableRewrite {
+            config_toml: CONFIG_A.to_owned(),
+            first: "yy = 1\n".to_owned(),
+            rules: vec![AlignEquals::SLUG],
+            second: "yyy = 1\n".to_owned(),
+        })),
+        ..entry("yy = 1\n")
+    })]
+    #[case::a_skipped_rewrite(CacheEntry {
+        diagnostics: Vec::new(),
+        notebook: None,
+        rewrite: Rewrite::Skipped,
+        unstable: None,
+    })]
+    fn insert_then_lookup_round_trips(#[case] original: CacheEntry) {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        insert(&cache, &key, &original);
+        assert_eq!(cache.lookup(&key).expect("hit"), original);
+    }
+
+    #[rstest]
+    #[case::a_corrupt_entry(Some(b"not postcard bytes".as_slice()))]
+    #[case::a_missing_entry(None)]
+    fn lookup_returns_none_for(#[case] written: Option<&[u8]>) {
+        let (_tmp, cache) = cached();
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        if let Some(bytes) = written {
+            fs_err::write(cache.path_for(&key), bytes).expect("writes");
+        }
+        assert!(cache.lookup(&key).is_none());
+    }
+
+    #[test]
+    fn own_output_marker_round_trips_across_instances() {
+        let (tmp, cache) = cached();
+        let marked = key(b"y = 1\n", CONFIG_A, rules());
+        let unmarked = key(b"z = 2\n", CONFIG_A, rules());
+        cache.record_own_output(&marked);
+
+        let reopened = Cache {
+            inserted: std::sync::atomic::AtomicBool::new(false),
+            ..cache_in(&tmp, 100)
+        };
+
+        assert!(reopened.owns_output(&marked));
+        assert!(!reopened.owns_output(&unmarked));
+    }
+}

@@ -124,3 +124,123 @@ fn generation_for(prose_version: &str, format_version: &str) -> String {
     framed(&mut hasher, format_version.as_bytes());
     hasher.finalize().to_hex()[..GENERATION_LEN].to_owned()
 }
+
+#[cfg(test)]
+pub(super) mod tests {
+    use std::collections::HashSet;
+
+    use rstest::rstest;
+
+    use super::*;
+    use crate::rules::{align_equals::AlignEquals, alphabetize_siblings::AlphabetizeSiblings};
+
+    pub(in crate::cache) const CONFIG_A: &str = "code-line-length = 88\n";
+
+    const CONFIG_B: &str = "code-line-length = 100\n";
+
+    /// Draws the key `mod.py` takes under `config_toml` and `selection`,
+    /// joining the two steps the run path splits across a whole directory.
+    pub(in crate::cache) fn key(
+        source_bytes: &[u8],
+        config_toml: &str,
+        selection: impl IntoIterator<Item = RuleId>,
+    ) -> CacheKey {
+        CacheKeyPrefix::new(config_toml, selection, Anchor::AsWritten).key_for(
+            "mod.py",
+            source_bytes,
+            PySourceType::Python,
+        )
+    }
+
+    pub(in crate::cache) fn rules() -> [RuleId; 2] {
+        [AlignEquals::SLUG, AlphabetizeSiblings::SLUG]
+    }
+
+    /// Draws the key `prefix` gives `x = 1` in `mod.py`.
+    fn module_key(prefix: &CacheKeyPrefix) -> CacheKey {
+        prefix.key_for("mod.py", b"x = 1\n", PySourceType::Python)
+    }
+
+    /// Builds the prefix `CONFIG_A` and `rules()` take under the given
+    /// versions.
+    fn versioned(prose_version: &str, format_version: &str) -> CacheKeyPrefix {
+        CacheKeyPrefix::with_versions(
+            CONFIG_A,
+            rules(),
+            Anchor::AsWritten,
+            prose_version,
+            format_version,
+        )
+    }
+
+    /// Each pair differs in one input the key reads, the last pair in
+    /// selections whose ids would feed the hasher the same `abc` bytes
+    /// without the per-id delimiter.
+    #[rstest]
+    #[case::anchor(
+        module_key(&CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten)),
+        module_key(&CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::Rewritten))
+    )]
+    #[case::cache_format_version(
+        module_key(&versioned(env!("CARGO_PKG_VERSION"), "1")),
+        module_key(&versioned(env!("CARGO_PKG_VERSION"), "2"))
+    )]
+    #[case::config(key(b"x = 1\n", CONFIG_A, rules()), key(b"x = 1\n", CONFIG_B, rules()))]
+    #[case::file_name(
+        CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten).key_for(
+            "pkg/__init__.py",
+            b"x = 1\n",
+            PySourceType::Python
+        ),
+        key(b"x = 1\n", CONFIG_A, rules())
+    )]
+    #[case::prose_version(
+        module_key(&versioned("0.2.3", CACHE_FORMAT_VERSION)),
+        module_key(&versioned("0.3.0", CACHE_FORMAT_VERSION))
+    )]
+    #[case::rule_selection(
+        key(b"x = 1\n", CONFIG_A, [AlignEquals::SLUG]),
+        key(b"x = 1\n", CONFIG_A, [AlphabetizeSiblings::SLUG])
+    )]
+    #[case::source(key(b"x = 1\n", CONFIG_A, rules()), key(b"x = 2\n", CONFIG_A, rules()))]
+    #[case::selections_that_concatenate_alike(
+        key(b"x = 1\n", CONFIG_A, [RuleId::from("ab"), RuleId::from("c")]),
+        key(b"x = 1\n", CONFIG_A, [RuleId::from("a"), RuleId::from("bc")])
+    )]
+    fn cache_key_differs_when_one_input_changes(#[case] one: CacheKey, #[case] other: CacheKey) {
+        assert_ne!(one, other);
+    }
+
+    #[test]
+    fn cache_key_hex_renders_64_lowercase_chars() {
+        let key = key(b"x = 1\n", CONFIG_A, rules());
+        let hex = key.0.to_hex();
+        assert_eq!(hex.len(), 64);
+        assert!(
+            hex.chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        );
+    }
+
+    #[test]
+    fn cache_key_is_stable_across_runs() {
+        assert_eq!(
+            key(b"x = 1\n", CONFIG_A, rules()),
+            key(b"x = 1\n", CONFIG_A, rules()),
+        );
+    }
+
+    #[test]
+    fn key_for_separates_every_source_type_of_the_same_bytes() {
+        let prefix = CacheKeyPrefix::new(CONFIG_A, rules(), Anchor::AsWritten);
+        let keys: HashSet<CacheKey> = [
+            PySourceType::Python,
+            PySourceType::Stub,
+            PySourceType::Ipynb,
+        ]
+        .map(|source_type| prefix.key_for("mod.py", b"x = 1\n", source_type))
+        .into_iter()
+        .collect();
+        assert_eq!(keys.len(), 3);
+    }
+}

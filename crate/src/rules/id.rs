@@ -171,9 +171,13 @@ mod tests {
 
     #[test]
     fn rule_id_round_trips_through_display_and_from_str() {
-        for id in KNOWN_IDS {
-            let parsed: RuleId = id.to_string().parse().expect("known id parses");
-            assert_eq!(parsed, *id);
-        }
+        let parsed: Vec<Result<RuleId, String>> = KNOWN_IDS
+            .iter()
+            .map(|id| id.to_string().parse().map_err(|e: ParseRuleIdError| e.0))
+            .collect();
+        assert_eq!(
+            parsed,
+            KNOWN_IDS.iter().copied().map(Ok).collect::<Vec<_>>()
+        );
     }
 }

@@ -5,6 +5,8 @@ import { bundleContext } from './bundle'
 
 const OPEN_CARD = '[role="dialog"]:visible'
 
+const activeRole = (page: Page) => page.evaluate(() => document.activeElement?.getAttribute('role'))
+
 describe('the cards under touch emulation at a phone width', () => {
   let browser : Browser
   let context : BrowserContext
@@ -27,20 +29,20 @@ describe('the cards under touch emulation at a phone width', () => {
   it('opens a glossary card from a tap and moves focus to its link', async () => {
     await page.locator('.glossary-anchor[role="button"]').first().tap()
     await page.locator(OPEN_CARD).waitFor()
-    await page.waitForFunction(() => document.activeElement?.textContent.includes('Read more'))
+    await expect.poll(() => page.evaluate(() => document.activeElement?.textContent)).toContain('Read more')
   })
 
   it('opens a lint card from a tap and moves focus into it', async () => {
     await page.locator('.lint-flag').first().tap()
     await page.locator(OPEN_CARD).waitFor()
-    await page.waitForFunction(() => document.activeElement?.getAttribute('role') === 'dialog')
+    await expect.poll(() => activeRole(page)).toBe('dialog')
   })
 
   it('closes a lint card from a tap outside it', async () => {
     await page.locator('.lint-flag').first().tap()
     await page.locator(OPEN_CARD).waitFor()
     await page.locator('h1').tap()
-    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    await expect.poll(() => page.locator(OPEN_CARD).count()).toBe(0)
   })
 })
 
@@ -85,7 +87,7 @@ describe('the lint cards from a keyboard at a desktop width', () => {
     await page.locator('[data-probe="flag"]').click()
     await page.locator(OPEN_CARD).waitFor()
     await page.locator('[data-probe="flag"]').click()
-    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    await expect.poll(() => page.locator(OPEN_CARD).count()).toBe(0)
   })
 
   it('moves Tab out of a card to the tabbable after its flag', async () => {

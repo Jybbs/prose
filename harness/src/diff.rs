@@ -85,51 +85,24 @@ mod tests {
         assert!(excerpt("before", "after", &before, &after, 9..=9).is_empty());
     }
 
-    #[test]
-    fn excerpt_counts_both_the_lines_and_the_hunks_past_its_cap() {
-        let before = numbered("line", 60);
-        let after: String = (1..=60)
-            .map(|n| {
-                if n <= 30 || n == 55 {
-                    format!("row {n}\n")
-                } else {
-                    format!("line {n}\n")
-                }
-            })
+    #[rstest]
+    #[case::lines(40, |_| true, " more lines")]
+    #[case::lines_and_hunks(60, |n| n <= 30 || n == 55, " more lines and 1 more hunk")]
+    #[case::one_line_in_the_singular(20, |n| (6..=10).contains(&n), "\n... 1 more line")]
+    fn excerpt_counts_what_falls_past_its_cap(
+        #[case] count: usize,
+        #[case] renamed: fn(usize) -> bool,
+        #[case] ending: &str,
+    ) {
+        let before = numbered("line", count);
+        let after: String = (1..=count)
+            .map(|n| format!("{} {n}\n", if renamed(n) { "row" } else { "line" }))
             .collect();
-
-        let shown = excerpt("before", "after", &before, &after, ..);
-
-        assert!(shown.ends_with(" more lines and 1 more hunk"), "{shown}");
-    }
-
-    #[test]
-    fn excerpt_counts_one_line_past_its_cap_in_the_singular() {
-        let before = numbered("line", 20);
-        let after: String = (1..=20)
-            .map(|n| {
-                if (6..=10).contains(&n) {
-                    format!("row {n}\n")
-                } else {
-                    format!("line {n}\n")
-                }
-            })
-            .collect();
-
-        let shown = excerpt("before", "after", &before, &after, ..);
-
-        assert!(shown.ends_with("\n... 1 more line"), "{shown}");
-    }
-
-    #[test]
-    fn excerpt_counts_the_lines_past_its_cap() {
-        let before = numbered("line", 40);
-        let after = numbered("row", 40);
 
         let shown = excerpt("before", "after", &before, &after, ..);
 
         assert_eq!(shown.lines().count(), 2 + EXCERPT + 1, "{shown}");
-        assert!(shown.ends_with(" more lines"), "{shown}");
+        assert!(shown.ends_with(ending), "{shown}");
     }
 
     #[test]

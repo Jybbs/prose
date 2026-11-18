@@ -45,8 +45,12 @@ const mountListbox = () => mount(Listbox<{ id: string }>, {
 
 const popupsIn = (theme: string) => document.querySelectorAll(`[data-popup="${theme}"] .z-10000`)
 
-// Waits past the frames the machine focuses and dismisses on.
-const nextFrames = () => new Promise(resolve => { setTimeout(resolve, 60) })
+// Fakes the clock for each test in the calling `describe`, so `vi.runAllTimersAsync`
+// runs the frames and timeouts the machine focuses and dismisses on.
+const holdClock = (): void => {
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => { vi.useRealTimers() })
+}
 
 describe('Tabs', () => {
   it.each(['click', 'focus', 'mouseenter'])('selects a tab on %s', async event => {
@@ -64,6 +68,8 @@ describe('Tabs', () => {
 })
 
 describe('Disclosure', () => {
+  holdClock()
+
   it('opens and closes its body from the trigger', async () => {
     const wrapper = mount(DisclosureHost, { attachTo: document.body })
     const trigger = wrapper.get('.trigger')
@@ -76,7 +82,8 @@ describe('Disclosure', () => {
     expect(wrapper.get('.body').attributes('hidden')).toBeUndefined()
 
     await trigger.trigger('click')
-    await vi.waitFor(() => { expect(trigger.attributes('aria-expanded')).toBe('false') })
+    await vi.runAllTimersAsync()
+    expect(trigger.attributes('aria-expanded')).toBe('false')
     expect(wrapper.get('.body').attributes('hidden')).toBeDefined()
     wrapper.unmount()
   })
@@ -163,6 +170,8 @@ describe('Listbox', () => {
 })
 
 describe('Popup', () => {
+  holdClock()
+
   const mountPopup = (theme: string, props: { anchor?: HTMLElement, open?: boolean, passive?: boolean } = {}) => mount(Popup, {
     attachTo : document.body,
     props    : { label: 'A note', theme, ...props },
@@ -173,7 +182,8 @@ describe('Popup', () => {
   })
 
   const focused = async (selector: string) => {
-    await vi.waitFor(() => { expect(document.activeElement?.matches(selector)).toBe(true) })
+    await vi.runAllTimersAsync()
+    expect(document.activeElement?.matches(selector)).toBe(true)
   }
 
   it('teleports nothing until it first opens', () => {
@@ -223,10 +233,9 @@ describe('Popup', () => {
     const wrapper = mountPopup('escaped')
     await wrapper.get('.anchor').trigger('click')
     await focused('[data-popup="escaped"] .more')
-    await vi.waitFor(() => {
-      document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
-      expect(popupsIn('escaped')).toHaveLength(0)
-    })
+    document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
+    await vi.runAllTimersAsync()
+    expect(popupsIn('escaped')).toHaveLength(0)
     await focused('.anchor')
     wrapper.unmount()
   })
@@ -237,12 +246,12 @@ describe('Popup', () => {
     outside.focus()
     const wrapper = mountPopup('passive', { anchor: outside, open: false, passive: true })
     await wrapper.setProps({ open: true })
-    await nextFrames()
+    await vi.runAllTimersAsync()
     expect(popupsIn('passive')).toHaveLength(1)
     expect(document.activeElement).toBe(outside)
     outside.blur()
     await wrapper.setProps({ open: false })
-    await nextFrames()
+    await vi.runAllTimersAsync()
     expect(document.activeElement).toBe(document.body)
     wrapper.unmount()
     outside.remove()
@@ -255,16 +264,18 @@ describe('Popup', () => {
     await wrapper.setProps({ open: true })
     await focused('[data-popup="delegated"] .more')
     await wrapper.setProps({ open: false })
-    await vi.waitFor(() => { expect(document.activeElement).toBe(flag) })
+    await vi.runAllTimersAsync()
+    expect(document.activeElement).toBe(flag)
     wrapper.unmount()
     flag.remove()
   })
 
   it('reports a dismissal to a caller holding its open state, staying open', async () => {
     const wrapper = mountPopup('dismissed', { anchor: document.body, open: true })
-    await nextFrames()
+    await vi.runAllTimersAsync()
     document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
-    await vi.waitFor(() => { expect(wrapper.emitted('dismiss')).toHaveLength(1) })
+    await vi.runAllTimersAsync()
+    expect(wrapper.emitted('dismiss')).toHaveLength(1)
     expect(popupsIn('dismissed')).toHaveLength(1)
     wrapper.unmount()
   })

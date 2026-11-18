@@ -683,7 +683,7 @@ def test_main_lists_the_held_releases_apart_from_the_lifts(
     lift.main()
 
     tail = f"\n{lift.waiting(waiting)}\n" if waiting else ""
-    assert capsys.readouterr().out == f"{lift.rendered([])}\n{tail}"
+    assert capsys.readouterr().out == f"{lift.rendered([], WHEN)}\n{tail}"
 
 
 def test_main_exits_2_on_a_hold_the_table_omits(
@@ -1382,7 +1382,7 @@ def test_rendered_pads_every_column_to_one_width(lift: ModuleType):
             lift      = lift,
             name      = "uv",
             newest    = "0.13.0",
-            published = datetime.now(UTC) - timedelta(days=4)
+            published = WHEN - timedelta(days=4)
         ),
         row(
             current   = "3.14.6",
@@ -1393,7 +1393,7 @@ def test_rendered_pads_every_column_to_one_width(lift: ModuleType):
         )
     ]
 
-    assert lift.rendered(lifted).splitlines() == [
+    assert lift.rendered(lifted, WHEN).splitlines() == [
         "| **Pin**  | **Current** | **Newest** | **Major** "
         "| **Days Old** | **Alerts Cleared** |",
         "|----------|-------------|------------|-----------"
@@ -1403,7 +1403,7 @@ def test_rendered_pads_every_column_to_one_width(lift: ModuleType):
         "| `python` | `3.14.6`    | `3.15.0`   | no        "
         "|              |                    |"
     ]
-    assert lift.rendered([]) == "Every pin stands at its newest release."
+    assert lift.rendered([], WHEN) == "Every pin stands at its newest release."
 
 
 def test_reports_read_the_newest_release_each_manager_prints(
