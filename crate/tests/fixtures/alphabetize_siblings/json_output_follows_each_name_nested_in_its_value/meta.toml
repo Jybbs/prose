@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Name Inside What JSON Writes Keeps Its Order"
+
+description = '''
+`json.dumps` writes each dict nested in its argument in the order its keys were inserted, including a dict a name inside the argument binds, so `DEPS` inside the manifest and `ROW` inside the list `rows` writes both keep the order written. `SETTINGS` is only ever looked up by key, so **it sorts to `"mode"`, `"width"` while each dict a name carries into the JSON output holds its order**.
+'''

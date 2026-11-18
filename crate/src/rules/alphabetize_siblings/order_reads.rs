@@ -3,13 +3,14 @@
 //! `.keys()`, `.values()`, or `.items()` on it, `iter`, `list`, `tuple`,
 //! `reversed`, or `enumerate` over it, and `*` or `**` unpacking it.
 //! `json.dumps` and `json.dump` read the order of every dict literal
-//! nested in the value they take as well. The value is the expression
-//! the form takes, or, where that expression is a name, each value a
+//! nested in the value they take as well, following each name nested
+//! in it as a name read is followed. The value is the expression the
+//! form takes, or, where that expression is a name, each value a
 //! `name = value`, `name: T = value`, `name := value`, or augmented
 //! `name |= value` write binds to the binding that read resolves to,
-//! and both branches of a conditional value. A name reached through an
-//! alias, an attribute, a subscript, or another function's parameter is
-//! not followed.
+//! both branches of a conditional value, and each operand of an `or`
+//! or `and`. A name reached through an alias, an attribute, a
+//! subscript, or another function's parameter is not followed.
 
 use ruff_python_ast::{
     Comprehension, Expr, Stmt,
@@ -53,9 +54,11 @@ impl<'a> OrderReads<'a> {
     }
 
     fn read_deep(&mut self, subject: &'a Expr) {
-        if let Expr::Name(name) = subject {
-            self.deep_names.insert(name.start());
-        } else {
+        NestedNames {
+            found: &mut self.deep_names,
+        }
+        .visit_expr(subject);
+        if !subject.is_name_expr() {
             self.deep.push(subject);
         }
     }
@@ -151,6 +154,20 @@ impl<'a> Visitor<'a> for NestedDicts<'_> {
     }
 }
 
+/// The offset of every name a walk reaches, added to `found`.
+struct NestedNames<'f> {
+    found: &'f mut FxHashSet<TextSize>,
+}
+
+impl<'a> Visitor<'a> for NestedNames<'_> {
+    fn visit_expr(&mut self, expr: &'a Expr) {
+        if let Expr::Name(name) = expr {
+            self.found.insert(name.start());
+        }
+        walk_expr(self, expr);
+    }
+}
+
 /// How far a call reads the order of its first argument.
 enum OrderRead {
     Nested,
@@ -171,13 +188,18 @@ impl OrderRead {
     }
 }
 
-/// Adds the range of `value` to `held`, or, for a conditional value or
-/// a walrus, the range of each value it yields.
+/// Adds the range of `value` to `held`, or, for a conditional value, an
+/// `or` or `and`, or a walrus, the range of each value it yields.
 fn hold(value: &Expr, held: &mut FxHashSet<TextRange>) {
     match value {
         Expr::If(conditional) => {
             hold(&conditional.body, held);
             hold(&conditional.orelse, held);
+        }
+        Expr::BoolOp(operation) => {
+            for operand in &operation.values {
+                hold(operand, held);
+            }
         }
         Expr::Named(named) => hold(&named.value, held),
         _ => {
@@ -213,9 +235,11 @@ mod tests {
     #[rstest]
     #[case::annotated("D: dict = {'b': 1, 'a': 2}\nfor k in D:\n    pass\n")]
     #[case::augmented("D = {}\nD |= {'b': 1, 'a': 2}\nprint(list(D))\n")]
+    #[case::boolean_default("D = given or {'b': 1, 'a': 2}\nprint(list(D))\n")]
+    #[case::chained("D = E = {'b': 1, 'a': 2}\nprint(list(E))\n")]
+    #[case::comprehension("D = {'b': 1, 'a': 2}\nx = [k for k in D]\n")]
     #[case::conditional_body("D = {'b': 1, 'a': 2} if x else {}\nprint(list(D))\n")]
     #[case::conditional_orelse("D = {} if x else {'b': 1, 'a': 2}\nprint(list(D))\n")]
-    #[case::comprehension("D = {'b': 1, 'a': 2}\nx = [k for k in D]\n")]
     #[case::direct_items("x = {'b': 1, 'a': 2}.items()\n")]
     #[case::double_star("D = {'b': 1, 'a': 2}\nx = {**D}\n")]
     #[case::double_star_call("D = {'b': 1, 'a': 2}\nf(**D)\n")]
@@ -225,8 +249,10 @@ mod tests {
     #[case::json_dump("import json\nD = {'b': 1, 'a': 2}\njson.dump(D, out)\n")]
     #[case::json_dumps("import json\nD = {'b': 1, 'a': 2}\njson.dumps(D)\n")]
     #[case::json_list_of_dicts("import json\njson.dumps([{'b': 1, 'a': 2}])\n")]
+    #[case::json_name_in_list("import json\nROW = {'b': 1, 'a': 2}\njson.dumps([ROW])\n")]
     #[case::json_nested("import json\nD = {'deps': {'b': 1, 'a': 2}}\njson.dumps(D)\n")]
     #[case::json_nested_direct("import json\njson.dump({'deps': {'b': 1, 'a': 2}}, out)\n")]
+    #[case::json_nested_name("import json\nDEPS = {'b': 1, 'a': 2}\njson.dumps({'deps': DEPS})\n")]
     #[case::keys("D = {'b': 1, 'a': 2}\nD.keys()\n")]
     #[case::next_iter("D = {'b': 1, 'a': 2}\nnext(iter(D))\n")]
     #[case::read_in_a_function(
@@ -237,6 +263,7 @@ mod tests {
     #[case::tuple("D = {'b': 1, 'a': 2}\nx = tuple(D)\n")]
     #[case::values("D = {'b': 1, 'a': 2}\nx = D.values()\n")]
     #[case::walrus("if (D := {'b': 1, 'a': 2}):\n    print(list(D))\n")]
+    #[case::walrus_subject("x = list(D := {'b': 1, 'a': 2})\n")]
     fn order_read_values_holds_a_dict_an_order_reading_form_takes(#[case] src: &str) {
         let source = parse(src);
         let dict = at(source.text(), "{'b': 1, 'a': 2}");

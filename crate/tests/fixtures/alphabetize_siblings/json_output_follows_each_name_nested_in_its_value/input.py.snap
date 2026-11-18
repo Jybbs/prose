@@ -1,0 +1,22 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/json_output_follows_each_name_nested_in_its_value/input.py
+---
+import json
+
+DEPS = {"ruff": "0.9", "insta": "1.4"}
+ROW = {"name": "a", "kind": "rule"}
+SETTINGS = {"mode": "check", "width": 88}
+
+
+def manifest():
+    return json.dumps({"name": "prose", "deps": DEPS})
+
+
+def rows():
+    return json.dumps([ROW])
+
+
+def width():
+    return SETTINGS["width"]
