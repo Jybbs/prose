@@ -230,27 +230,6 @@ mod tests {
     }
 
     #[test]
-    fn emits_a_single_sarif_run_per_invocation() {
-        let source = parse("x = 1\n");
-        let diag = diag();
-        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
-        assert_eq!(v["version"], "2.1.0");
-        assert_eq!(v["runs"].as_array().expect("runs array").len(), 1);
-        let run = &v["runs"][0];
-        assert_eq!(run["tool"]["driver"]["name"], "prose");
-        assert_eq!(run["tool"]["driver"]["rules"][0]["id"], "rewrite-x");
-        let result = &run["results"][0];
-        assert_eq!(result["ruleId"], "rewrite-x");
-        assert_eq!(result["level"], "warning");
-        assert_eq!(result["message"]["text"], "rewrite x to y");
-        let region = &result["locations"][0]["physicalLocation"]["region"];
-        assert_eq!(region["startLine"], 1);
-        assert_eq!(region["startColumn"], 1);
-        assert_eq!(region["endLine"], 1);
-        assert_eq!(region["endColumn"], 2);
-    }
-
-    #[test]
     fn encodes_the_absolute_artifact_uri() {
         let file = SourceFileBuilder::new("/tmp/My Project/mod.py", "x = 1\n").finish();
         let v = emit_value(&file, std::slice::from_ref(&diag()));
@@ -290,29 +269,16 @@ mod tests {
         assert!(v["runs"][0]["results"][0]["fixes"].is_null());
     }
 
+    /// Pins the whole document one diagnostic carrying an edit renders
+    /// to, with the crate version written as `<version>`.
     #[test]
-    fn passes_the_stdin_placeholder_name_through_unchanged() {
+    fn renders_one_run_holding_each_result_and_its_fix() {
         let source = parse("x = 1\n");
-        let v = emit_value(source.source_file(), std::slice::from_ref(&diag()));
-        let uri = &v["runs"][0]["results"][0]["locations"][0]["physicalLocation"]["artifactLocation"]
-            ["uri"];
-        assert_eq!(uri, "<source>");
-    }
-
-    #[test]
-    fn populates_fixes_payload_when_diagnostic_carries_an_edit() {
-        let source = parse("x = 1\n");
-        let diag = diag();
-        let v = emit_value(source.source_file(), std::slice::from_ref(&diag));
-        let fix = &v["runs"][0]["results"][0]["fixes"][0];
-        let change = &fix["artifactChanges"][0];
-        assert_eq!(change["artifactLocation"]["uri"], "<source>");
-        let replacement = &change["replacements"][0];
-        assert_eq!(replacement["insertedContent"]["text"], "y");
-        let region = &replacement["deletedRegion"];
-        assert_eq!(region["startLine"], 1);
-        assert_eq!(region["startColumn"], 1);
-        assert_eq!(region["endLine"], 1);
-        assert_eq!(region["endColumn"], 2);
+        let document = emit_value(source.source_file(), &[diag()]);
+        insta::assert_snapshot!(
+            serde_json::to_string_pretty(&document)
+                .expect("renders")
+                .replace(env!("CARGO_PKG_VERSION"), "<version>")
+        );
     }
 }

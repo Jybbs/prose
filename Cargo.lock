@@ -1370,6 +1370,7 @@ version = "0.0.0"
 dependencies = [
  "console_error_panic_hook",
  "prose",
+ "rstest",
  "ruff_text_size",
  "serde",
  "serde-wasm-bindgen",

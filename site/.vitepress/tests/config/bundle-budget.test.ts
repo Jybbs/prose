@@ -54,6 +54,13 @@ describe('checkBundleBudget', () => {
   })
 })
 
+describe('the markdown highlighter the config runs', () => {
+  it('passes the lint flags, the whole-line tokens, and the token classes', () => {
+    expect(config.markdown?.codeTransformers?.map(transformer => transformer.name))
+      .toStrictEqual(['prose:lint-flag', 'prose:whole-line-tokens', 'prose:token-classes'])
+  })
+})
+
 describe('the build end the config runs', () => {
   supportTest('layers the icon sheet and throws on a bundle past its budget', async ({ tmpDir }) => {
     write(tmpDir, 'assets/vp-icons.a1.css', 5)

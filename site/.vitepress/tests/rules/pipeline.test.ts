@@ -31,19 +31,19 @@ describe('parsePipelineJson', () => {
 })
 
 describe('readPipeline', () => {
+  const pipeline = readPipeline(import.meta.url)
+  const position = new Map(pipeline.map(rule => [rule.slug, rule.position]))
+
   it('reads the built binary registry in pipeline order', () => {
-    const pipeline = readPipeline(import.meta.url)
     expect(pipeline.length).toBeGreaterThan(0)
     expect(pipeline[0].position).toBe(1)
   })
 
-  it('carries the declared dependencies, each naming an earlier rule', () => {
-    const pipeline = readPipeline(import.meta.url)
-    const position = new Map(pipeline.map((rule) => [rule.slug, rule.position]))
-    for (const rule of pipeline) {
-      for (const dependency of rule.after) {
-        expect(position.get(dependency)).toBeLessThan(rule.position)
-      }
+  it.each(pipeline.flatMap(rule =>
+    rule.after.map(dependency => [rule.slug, dependency, rule.position] as const)))(
+    '%s runs after the %s it declares',
+    (_slug, dependency, at) => {
+      expect(position.get(dependency)).toBeLessThan(at)
     }
-  })
+  )
 })

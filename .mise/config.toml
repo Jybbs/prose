@@ -7,16 +7,8 @@ NODE_COMPILE_CACHE = "{{config_root}}/.cache/node"
 PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 
 [settings]
-auto_install       = false
-experimental       = true
-lockfile_platforms = [
-  "linux-arm64",
-  "linux-x64",
-  "macos-arm64",
-  "macos-x64",
-  "windows-arm64",
-  "windows-x64"
-]
+auto_install = false
+experimental = true
 
 [task_config.input_groups]
 crate     = [

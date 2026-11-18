@@ -23,15 +23,14 @@ import { readPlatforms }                              from './lib/guide/platform
 import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
 import { calloutPlugin }                              from './lib/markdown/callout-plugin'
 import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
+import { codeTransformers }                           from './lib/markdown/code-transformers'
 import { configFormsPlugin }                          from './lib/markdown/config-forms-plugin'
 import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
 import { HighlightCache }                             from './lib/markdown/highlight-cache'
-import { lintDecorationTransformer }                  from './lib/markdown/lint-decorations'
 import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
 import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
 import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
 import { TokenClasses }                               from './lib/markdown/token-classes'
-import { wholeLineTokens }                            from './lib/markdown/whole-line-tokens'
 import { compositionDir, readCompositionData }        from './lib/rules/composition'
 import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
 import { assertCorpusIntegrity }                      from './lib/rules/integrity'
@@ -66,11 +65,6 @@ const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const tokenClasses         = await TokenClasses.read()
 const lintFindings         = corpusLintFindings(crate)
-const codeTransformers     = [
-  lintDecorationTransformer(lintFindings),
-  wholeLineTokens,
-  tokenClasses.transformer()
-]
 const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
   data              : Object.fromEntries(lintFindings),
@@ -100,7 +94,7 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers,
+    codeTransformers: codeTransformers(lintFindings, tokenClasses),
     config: md => {
       md.use(highlightCache.plugin)
       md.use(configFormsPlugin)

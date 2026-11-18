@@ -1,16 +1,22 @@
 //! Coverage checks pairing the docs site at `site/` with the live rule
 //! registry and the per-case fixture tree, so a drifted `<Fixture>`
-//! pointer or a malformed `meta.toml` fails a test rather than a build.
+//! pointer or a malformed `meta.toml` fails a test rather than a build,
+//! and running a page's config example through the binary, so an
+//! example the binary no longer honors fails a test as well.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
+use assert_cmd::Command;
 use ignore::{WalkBuilder, types::TypesBuilder};
+use indoc::indoc;
 use itertools::Itertools;
 use prose::pipeline::Pipeline;
 use serde::Deserialize;
+use serde_json::{Deserializer, Value};
+use tempfile::TempDir;
 
 const INPUT_SNAPS: [(&str, &str); 3] = [
     ("input.py", "input.py.snap"),
@@ -292,4 +298,73 @@ fn every_registered_rule_has_a_page() {
             "rule `{id}` registered in `KNOWN_IDS` has no page under `site/rules/<family>/{id}.md`"
         );
     }
+}
+
+#[test]
+fn miscased_constants_override_example_spares_only_its_globs() {
+    let slug = "miscased-constants";
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/rules");
+    let page = rule_page(&rules, slug).expect("the rule has a page");
+    let page = fs_err::read_to_string(page).expect("the rule page reads");
+    let (_, after) = page
+        .split_once("```toml config\n")
+        .expect("the page carries a config example");
+    let (example, _) = after.split_once("```").expect("the example fence closes");
+    let project = TempDir::new().expect("tempdir");
+    let files = [
+        ("prose.toml", example),
+        (
+            "conftest.py",
+            indoc! {r#"
+                pytest_plugins = ["myapp.testsupport.myplugin"]
+                collect_ignore = ["setup.py"]
+                collect_ignore_glob = ["*_ignore.py"]
+                timeout = 30
+            "#},
+        ),
+        ("docs/conf.py", "project = \"Thermidor\"\n"),
+        (
+            "migrations/versions/ae1027a6acf_add_account.py",
+            "revision = \"ae1027a6acf\"\ndown_revision = None\n",
+        ),
+        ("src/settings.py", "project = \"Thermidor\"\n"),
+        (
+            "tests/integration/conftest.py",
+            "collect_ignore_glob = [\"*_slow.py\"]\n",
+        ),
+    ];
+    for (path, contents) in files {
+        let path = project.path().join(path);
+        fs_err::create_dir_all(path.parent().expect("a parent")).expect("dirs create");
+        fs_err::write(path, contents).expect("writes");
+    }
+
+    let output = Command::cargo_bin("prose")
+        .expect("prose binary")
+        .args(["check", "--no-cache", "--output-format", "json", "."])
+        .current_dir(project.path())
+        .output()
+        .expect("prose runs");
+    let reported: BTreeSet<(String, String)> = Deserializer::from_slice(&output.stdout)
+        .into_iter::<Value>()
+        .map(|record| record.expect("a JSON record"))
+        .filter(|record| record["code"] == slug)
+        .map(|record| {
+            let file = record["filename"].as_str().expect("a filename");
+            let name = record["fix"]["edits"][0]["before"]
+                .as_str()
+                .expect("a name");
+            (file.trim_start_matches("./").to_owned(), name.to_owned())
+        })
+        .collect();
+
+    assert_eq!(
+        reported,
+        BTreeSet::from([
+            ("conftest.py".to_owned(), "timeout".to_owned()),
+            ("src/settings.py".to_owned(), "project".to_owned()),
+        ]),
+        "{}",
+        String::from_utf8_lossy(&output.stderr),
+    );
 }
