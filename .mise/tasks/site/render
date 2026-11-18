@@ -4,51 +4,11 @@
 #MISE description = "Read the values the browser computes on the pressed docs site with `vitest`"
 #MISE dir         = "site"
 
-shopt -s nullglob
+mirrors=/etc/apt/apt-mirrors.txt
 
-browsers=(chromium webkit)
-cache="$MISE_PROJECT_ROOT/.cache/apt"
-
-playwright install --only-shell "${browsers[@]}"
-
-if ! report=$(playwright install-deps --dry-run "${browsers[@]}"); then
-  echo "$report"
-  mapfile -t missing < <(sed -n 's/^  //p' <<< "$report")
-  if (( ! ${#missing[@]} )); then
-    echo "the dry run failed without naming a missing package" >&2
-    exit 1
-  fi
-  mkdir -p "$cache"
-  stage=$(mktemp -d)
-  chmod 755 "$stage"
-  mkdir "$stage/partial"
-  sudo apt-get update
-  sums=$(
-    apt-get install \
-      --no-install-recommends \
-      -o Acquire::ForceHash=sha256 \
-      -o "Dir::Cache::archives=$stage" \
-      --print-uris \
-      -qq \
-      "${missing[@]}" \
-      | sed -n "s/^'[^']*' \([^ ]*\) [0-9]* SHA256:\([0-9a-f]*\)$/\2  \1/p"
-  )
-  checked=$(cd "$cache" && sha256sum --check <<< "$sums" 2> /dev/null || true)
-  mapfile -t verified < <(sed -n 's/: OK$//p' <<< "$checked")
-  if grep -q ': FAILED$' <<< "$checked"; then
-    echo "a cached package fails its SHA256 check, so every package downloads" >&2
-  elif (( ${#verified[@]} )); then
-    cp -t "$stage" "${verified[@]/#/$cache/}"
-  fi
-  echo "${#verified[@]} of $(grep -c . <<< "$sums") packages match the signed index"
-  sudo apt-get install \
-    --no-install-recommends \
-    -o "Dir::Cache::archives=$stage" \
-    --yes \
-    "${missing[@]}"
-  rm -rf "$cache"
-  mkdir "$cache"
-  mv "$stage"/*.deb "$cache"
+if [[ -f $mirrors ]]; then
+  sudo sed -i '/\.ec2\.archive\.ubuntu\.com/s/priority:1$/priority:4/' "$mirrors"
 fi
 
+playwright install --only-shell --with-deps chromium webkit
 vitest run --project render "$@"
