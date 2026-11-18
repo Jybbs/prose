@@ -105,18 +105,25 @@ function groupsOf(states: ReadonlyMap<string, string>): Map<string, GroupId> {
 }
 
 // Returns the selector a declaration applies under, reading an `@utility`
-// block as its class and putting each enclosing selector in place of the `&`
-// a nested rule writes, or before a nested selector that writes none.
+// block as its class and an `@variant dark` block as `.dark &`, and putting
+// each selector of an enclosing list in place of the `&` a nested selector
+// writes, or before a nested selector that writes none.
 function selectorOf(decl: Declaration): string {
-  let selector = ''
+  const levels: string[][] = []
   for (let node = decl.parent; node && node.type !== 'root'; node = node.parent) {
-    const own = node.type === 'rule' ? (node as Rule).selector
-      : node.type === 'atrule' && (node as AtRule).name === 'utility' ? `.${(node as AtRule).params}`
+    const at  = node as AtRule
+    const own = node.type === 'rule' ? (node as Rule).selectors
+      : node.type !== 'atrule' ? undefined
+      : at.name === 'utility' ? [`.${at.params}`]
+      : at.name === 'variant' && at.params === 'dark' ? ['.dark &']
       : undefined
     if (own === undefined) continue
-    selector = selector === '' ? own : selector.includes('&') ? selector.replaceAll('&', own) : `${own} ${selector}`
+    levels.push(own)
   }
-  return selector
+  return levels
+    .reduce((selectors, own) => own.flatMap(outer => selectors.map(inner =>
+      inner === '' ? outer : inner.includes('&') ? inner.replaceAll('&', outer) : `${outer} ${inner}`)), [''])
+    .join(', ')
 }
 
 // Lists the uses `palette.ts` declares itself, meaning the family, section,
