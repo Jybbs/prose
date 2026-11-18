@@ -1,6 +1,6 @@
-import { converter, wcagContrast } from 'culori'
-import { parse }                   from 'postcss'
-import type { Rule }               from 'postcss'
+import { converter, wcagContrast }        from 'culori'
+import { parse }                          from 'postcss'
+import type { AtRule, Declaration, Rule } from 'postcss'
 
 import * as palette    from '../shared/palette'
 import { toTitleCase } from '../shared/title-case'
@@ -104,6 +104,21 @@ function groupsOf(states: ReadonlyMap<string, string>): Map<string, GroupId> {
   return groups
 }
 
+// Returns the selector a declaration applies under, reading an `@utility`
+// block as its class and putting each enclosing selector in place of the `&`
+// a nested rule writes, or before a nested selector that writes none.
+function selectorOf(decl: Declaration): string {
+  let selector = ''
+  for (let node = decl.parent; node && node.type !== 'root'; node = node.parent) {
+    const own = node.type === 'rule' ? (node as Rule).selector
+      : node.type === 'atrule' && (node as AtRule).name === 'utility' ? `.${(node as AtRule).params}`
+      : undefined
+    if (own === undefined) continue
+    selector = selector === '' ? own : selector.includes('&') ? selector.replaceAll('&', own) : `${own} ${selector}`
+  }
+  return selector
+}
+
 // Lists the uses `palette.ts` declares itself, meaning the family, section,
 // and role colors its theme block writes and the grounds it measures against.
 function declaredUses(): Map<string, Use[]> {
@@ -139,7 +154,7 @@ export function scanUses(sheets: readonly SourceFile[], sources: readonly Source
 
   for (const { file, text } of sheets) {
     parse(text).walkDecls(decl => {
-      const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : ''
+      const selector = selectorOf(decl)
       const schemes  = /\.dark\b/.test(selector) ? ['dark'] as const : palette.SCHEMES
       for (const [, whole, shade] of decl.value.matchAll(property)) {
         add((whole ?? shade)!, { schemes, token: decl.prop, where: `${file} ${selector}`.trim() })

@@ -22,12 +22,12 @@
   --scope-tint : var(--color-celadon);
 }
 
-[data-domain="cli-flag"]      { --domain-color : var(--color-ube);      }
-[data-domain="config-key"]    { --domain-color : var(--color-celadon);  }
-[data-domain="exit-code"]     { --domain-color : var(--color-chambray); }
-[data-domain="output-format"] { --domain-color : var(--color-whiskey);  }
-[data-domain="subcommand"]    { --domain-color : var(--color-eureka);   }
-[data-domain="suppression"]   { --domain-color : var(--color-apricot);  }
+[data-domain='cli-flag']      { --domain-color : var(--color-ube);      }
+[data-domain='config-key']    { --domain-color : var(--color-celadon);  }
+[data-domain='exit-code']     { --domain-color : var(--color-chambray); }
+[data-domain='output-format'] { --domain-color : var(--color-whiskey);  }
+[data-domain='subcommand']    { --domain-color : var(--color-eureka);   }
+[data-domain='suppression']   { --domain-color : var(--color-apricot);  }
 
 :root {
   --az-index-band : var(--prose-tint-18);

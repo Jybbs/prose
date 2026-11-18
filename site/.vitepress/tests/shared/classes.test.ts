@@ -376,6 +376,11 @@ describe('the classes a template writes', () => {
       conflicts : []
     },
     {
+      case      : 'a variant of a utility whose nested rules Tailwind flattens onto descendants',
+      classes   : [{ alt: 0, name: 'max-mobile:flush-ends', slot: 0 }, { alt: 0, name: 'max-mobile:mb-14', slot: 0 }],
+      conflicts : []
+    },
+    {
       case      : 'a utility whose nested rule styles its own element',
       classes   : [{ alt: 0, name: 'rules-plate-letter', slot: 0 }, { alt: 0, name: 'hidden', slot: 0 }],
       conflicts : ['rules-plate-letter and hidden both set display']

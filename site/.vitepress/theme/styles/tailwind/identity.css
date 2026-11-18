@@ -179,8 +179,7 @@
   }
 }
 
-/* Resets each row of a specimen's index as a bare button, its name turning to
-   the body color under the pointer or once chosen, a chosen tab's name
+/* Resets each row of a specimen's index as a bare button, a chosen tab's name
    underlined in the brand color. */
 @utility identity-pick {
   width      : 100%;

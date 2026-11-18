@@ -59,6 +59,14 @@ describe('scanUses', () => {
     expect(uses.get('ube-pale')).toStrictEqual([{ schemes: palette.SCHEMES, token: 'PALETTE.ube-pale', where: 'b.tsx' }])
     expect(uses.get('whiskey')).toStrictEqual([{ schemes: palette.SCHEMES, token: 'PALETTE.whiskey', where: 'b.tsx' }])
   })
+
+  it('reads a declaration inside an `@utility` block under the class it names', () => {
+    const nested = swatches.scanUses([{ file: 'c.css', text: '@utility w { --mark: var(--color-dexter); & .v { color: var(--color-eureka); } .dark & { color: var(--color-chambray); } .u { color: var(--color-whiskey); } }' }], [])
+    expect(nested.get('dexter')).toStrictEqual([{ schemes: palette.SCHEMES, token: '--mark', where: 'c.css .w' }])
+    expect(nested.get('eureka')).toStrictEqual([{ schemes: palette.SCHEMES, token: 'color', where: 'c.css .w .v' }])
+    expect(nested.get('chambray')).toStrictEqual([{ schemes: ['dark'], token: 'color', where: 'c.css .dark .w' }])
+    expect(nested.get('whiskey')).toStrictEqual([{ schemes: palette.SCHEMES, token: 'color', where: 'c.css .w .u' }])
+  })
 })
 
 describe('swatches', () => {
