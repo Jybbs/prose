@@ -32,12 +32,12 @@ def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
     platforms = loads(
         (ROOT / ".github/scripts/platforms.toml").read_text(encoding="utf-8")
     )["platforms"]
-    targets   = [
+    targets = [
         f"--target={platform['target']}"
         for platform in platforms
         if "target" in platform
     ]
-    finished  = run(
+    finished = run(
         [ROOT / ".mise/tasks/rust/deny"],
         capture_output = True,
         check          = True,
@@ -47,10 +47,8 @@ def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
     )
 
     assert finished.stdout.splitlines() == [
-        "--locked", "check", "advisories", "bans", "sources",
-        'unmaintained = "all"',
-        "--locked", "check", "--warn", "unmaintained", "advisories",
-        "--locked",
+        "--locked", "check", "advisories", "bans", "sources", 'unmaintained = "all"',
+        "--locked", "check", "--warn", "unmaintained", "advisories", "--locked",
         *targets,
         "--target=wasm32-unknown-unknown", "check", "licenses"
     ]
