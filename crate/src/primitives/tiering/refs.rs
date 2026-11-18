@@ -1,23 +1,48 @@
 //! Collects the names an expression reads at evaluation time.
 
+use std::mem;
+
 use ruff_python_ast::{
     Expr, ExprLambda, Stmt,
     visitor::{Visitor as AstVisitor, walk_expr, walk_parameters},
 };
 use rustc_hash::FxHashMap;
 
+use super::Annotations;
 use crate::primitives::walk::walk_stmt;
 
 /// Accumulates load-context names through `eval_time_refs`, pruning
-/// function and lambda bodies and skipping deferred annotations.
+/// function and lambda bodies and skipping each annotation `evaluates`
+/// leaves unread.
 struct EvalRefVisitor<'src> {
-    defer_annotations: bool,
+    annotations: Annotations,
+    evaluates: bool,
     names: Vec<&'src str>,
+}
+
+impl EvalRefVisitor<'_> {
+    /// A visitor under `annotations`, reading the annotations outside any
+    /// definition only under [`Annotations::Eager`].
+    fn new(annotations: Annotations) -> Self {
+        Self {
+            annotations,
+            evaluates: annotations == Annotations::Eager,
+            names: Vec::new(),
+        }
+    }
+
+    /// Runs `visit` with `evaluates` set as given, restoring the outer
+    /// setting after.
+    fn visit_evaluating(&mut self, evaluates: bool, visit: impl FnOnce(&mut Self)) {
+        let outer = mem::replace(&mut self.evaluates, evaluates);
+        visit(self);
+        self.evaluates = outer;
+    }
 }
 
 impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
     fn visit_annotation(&mut self, annotation: &'src Expr) {
-        if !self.defer_annotations {
+        if self.evaluates {
             self.visit_expr(annotation);
         }
     }
@@ -38,6 +63,11 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                     self.visit_expr(value);
                 }
             }
+            Stmt::ClassDef(class) => {
+                self.visit_evaluating(self.annotations.read_by(class), |visitor| {
+                    walk_stmt(visitor, stmt);
+                });
+            }
             Stmt::FunctionDef(func) => {
                 for decorator in &func.decorator_list {
                     self.visit_expr(&decorator.expression);
@@ -45,10 +75,14 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                 if let Some(type_params) = &func.type_params {
                     self.visit_type_params(type_params);
                 }
-                walk_parameters(self, &func.parameters);
-                if let Some(returns) = &func.returns {
-                    self.visit_annotation(returns);
-                }
+                let reads = self.annotations == Annotations::Eager
+                    || (self.annotations == Annotations::Lazy && !func.decorator_list.is_empty());
+                self.visit_evaluating(reads, |visitor| {
+                    walk_parameters(visitor, &func.parameters);
+                    if let Some(returns) = &func.returns {
+                        visitor.visit_annotation(returns);
+                    }
+                });
             }
             _ => walk_stmt(self, stmt),
         }
@@ -80,10 +114,7 @@ impl<'src> AstVisitor<'src> for ObservedRefVisitor<'src> {
 /// and lambda body, the reference set a module constant's value or
 /// annotation contributes to the hoist graph.
 pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
-    let mut visitor = EvalRefVisitor {
-        defer_annotations: true,
-        names: Vec::new(),
-    };
+    let mut visitor = EvalRefVisitor::new(Annotations::Stringified);
     visitor.visit_expr(expr);
     visitor.names
 }
@@ -92,13 +123,10 @@ pub(crate) fn eval_refs(expr: &Expr) -> Vec<&str> {
 /// surface: its decorators, base classes and class keywords, parameter
 /// defaults, non-deferred annotations, and the top level of a class
 /// body, descending into nested definitions but pruning every function
-/// and lambda body. Annotation positions are skipped when
-/// `defer_annotations` holds.
-pub(super) fn eval_time_refs(stmt: &Stmt, defer_annotations: bool) -> Vec<&str> {
-    let mut visitor = EvalRefVisitor {
-        defer_annotations,
-        names: Vec::new(),
-    };
+/// and lambda body. Each annotation counts only where `annotations`
+/// runs it as the definition binds.
+pub(super) fn eval_time_refs(stmt: &Stmt, annotations: Annotations) -> Vec<&str> {
+    let mut visitor = EvalRefVisitor::new(annotations);
     visitor.visit_stmt(stmt);
     visitor.names
 }
@@ -148,6 +176,7 @@ pub(crate) fn walk_lambda_defaults<'a>(visitor: &mut impl AstVisitor<'a>, lambda
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
+    use rstest::rstest;
     use rustc_hash::FxHashSet;
 
     use super::*;
@@ -162,7 +191,7 @@ mod tests {
                 def method(self, p: ParamRef = DefaultRef) -> ReturnRef:
                     return BodyRef
         "});
-        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], false)
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], Annotations::Eager)
             .into_iter()
             .collect();
         assert_eq!(
@@ -174,10 +203,48 @@ mod tests {
     #[test]
     fn eval_time_refs_prunes_a_lambda_body() {
         let source = parse("class Probe:\n    factory = lambda seed=SeedRef: BodyRef\n");
-        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], false)
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], Annotations::Eager)
             .into_iter()
             .collect();
         assert_eq!(collected, FxHashSet::from_iter(["SeedRef"]));
+    }
+
+    #[rstest]
+    #[case::bare_class("class Probe:\n    field: AnnotRef\n", &[])]
+    #[case::decorated_class("@DecoRef\nclass Probe:\n    field: AnnotRef\n", &["AnnotRef", "DecoRef"])]
+    #[case::keyword_class("class Probe(metaclass=MetaRef):\n    field: AnnotRef\n", &["AnnotRef", "MetaRef"])]
+    #[case::empty_parentheses("class Probe():\n    field: AnnotRef\n", &[])]
+    #[case::nested_under_a_bare_class(
+        "class Probe:\n    class Inner(BaseRef):\n        field: AnnotRef\n",
+        &["AnnotRef", "BaseRef"],
+    )]
+    #[case::bare_class_nested_under_a_based_one(
+        "class Probe(BaseRef):\n    class Inner:\n        field: AnnotRef\n",
+        &["BaseRef"],
+    )]
+    #[case::field_after_a_method_under_a_based_class(
+        "class Probe(BaseRef):\n    def method(self): ...\n    field: AnnotRef\n",
+        &["AnnotRef", "BaseRef"],
+    )]
+    #[case::function_signature("def probe(p: ParamRef) -> ReturnRef: ...\n", &[])]
+    #[case::decorated_function(
+        "@DecoRef\ndef probe(p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
+    #[case::decorated_method_under_a_bare_class(
+        "class Probe:\n    @DecoRef\n    def method(self, p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
+    #[case::module_annotation("field: AnnotRef = ValueRef\n", &["ValueRef"])]
+    fn eval_time_refs_reads_a_lazy_annotation_only_under_a_header_running_code(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+    ) {
+        let source = parse(src);
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], Annotations::Lazy)
+            .into_iter()
+            .collect();
+        assert_eq!(collected, expected.iter().copied().collect());
     }
 
     #[test]
@@ -192,7 +259,7 @@ mod tests {
             .ast()
             .body
             .iter()
-            .flat_map(|stmt| eval_time_refs(stmt, false))
+            .flat_map(|stmt| eval_time_refs(stmt, Annotations::Eager))
             .collect();
         assert_eq!(
             collected,
@@ -200,17 +267,22 @@ mod tests {
         );
     }
 
-    #[test]
-    fn eval_time_refs_skips_annotations_when_deferred() {
+    #[rstest]
+    #[case::stringified(Annotations::Stringified, &["BaseRef", "DefaultRef"])]
+    #[case::lazy_under_a_base(Annotations::Lazy, &["AnnotRef", "BaseRef", "DefaultRef"])]
+    fn eval_time_refs_skips_annotations_the_class_creation_leaves_unread(
+        #[case] annotations: Annotations,
+        #[case] expected: &[&str],
+    ) {
         let source = parse(indoc! {"
             class Probe(BaseRef):
                 field: AnnotRef
 
                 def method(self, p: ParamRef = DefaultRef) -> ReturnRef: ...
         "});
-        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], true)
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], annotations)
             .into_iter()
             .collect();
-        assert_eq!(collected, FxHashSet::from_iter(["BaseRef", "DefaultRef"]));
+        assert_eq!(collected, expected.iter().copied().collect());
     }
 }

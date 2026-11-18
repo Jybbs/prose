@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Attribute Docstrings Travel With Plain Assignments"
+
+description = '''
+`zeta` and `alpha` are assignments with no annotation, and each carries the string literal written directly below it. **The fields sort to `alpha`, `zeta`, and each docstring moves with the field above it.**
+'''

@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/function_naming_a_class_keeps_its_alphabetical_slot/input.py
+---
+alphabetize-siblings@26..69
