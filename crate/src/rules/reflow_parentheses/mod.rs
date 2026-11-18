@@ -208,3 +208,29 @@ impl Shedder<'_> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::parse;
+
+    #[rstest]
+    #[case::sorting(true, false)]
+    #[case::not_sorting(false, true)]
+    fn rewrites_forecast_the_keyword_call_the_configured_rule_rewrites(
+        #[case] sort_dict_keys: bool,
+        #[case] expected: bool,
+    ) {
+        let source = parse("x = dict(zeta=1, alpha=2)\n");
+        let mut config = Config::default();
+        config.rules.alphabetize_siblings.sort_dict_keys = sort_dict_keys;
+        assert_eq!(
+            !ReflowParentheses::from_config(&config)
+                .rewrites(&source)
+                .is_empty(),
+            expected
+        );
+    }
+}

@@ -12,7 +12,7 @@ layout  : doc
 
 The brace form is written only where it is unambiguous. An empty `set()` stays a call because `{}` names an empty dict rather than an empty set, so `set([])` becomes `set()` and never `{}`. A `dict(...)` call becomes the brace form only where its argument carries key-value pairs a literal or a dict comprehension can express, so `dict(**defaults)` and `dict(defaults, extra=1)` stay as written.
 
-Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, so the call keeps its form wherever [[alphabetize-siblings]] would sort the literal it becomes into another order. It becomes the brace form where its keys already sit in sorted order, where the module reads the order of the mapping so that the literal keeps it, and where `sort-dict-keys` is off or `# prose: keep` holds the call.
+Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, so the call keeps its form wherever [[alphabetize-siblings]] would sort the literal it becomes into another order. It becomes the brace form where its keys already sit in sorted order, where the module reads the order of the mapping so that the literal keeps it, where [[alphabetize-siblings]] or its `sort-dict-keys` facet is off, and where a `# prose: keep`, or a `# prose: skip` covering [[alphabetize-siblings]], holds the call.
 
 <FixtureCards rule="simplify_comprehensions" cases="keyword_call_keeps_its_order" />
 

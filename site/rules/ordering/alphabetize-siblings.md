@@ -56,9 +56,9 @@ At a call site, keyword arguments in `name=value` form sort on any callee while 
 
 <FixtureCards rule="alphabetize_siblings" cases="call_kwargs_trailing_comments_travel mapping_constructor_keywords_keep_their_order" />
 
-A dict literal keeps the order written where the module reads that order, through a `for` loop or a comprehension over it, `.keys()`, `.values()`, or `.items()` on it, `iter`, `list`, `tuple`, `reversed`, `enumerate`, `json.dumps`, or `json.dump` over it, or `*` or `**` unpacking it. The read holds the literal it takes and each literal a direct assignment binds to the name it takes, at module scope, inside a function, or from a function reading a module-level name, whereas a name reached through an alias, an attribute, a subscript, or another function's parameter is not followed. A `dict(...)` call keeps its keyword order the same way, since [[simplify-comprehensions]] leaves it a call wherever the literal it would write sorts into another order.
+A dict literal keeps the order written where the module reads that order, through a `for` loop or a comprehension over it, `.keys()`, `.values()`, or `.items()` on it, `iter`, `list`, `tuple`, `reversed`, `enumerate`, `json.dumps`, or `json.dump` over it, or `*` or `**` unpacking it. `json.dumps` and `json.dump` also hold each dict literal nested in what they take, since the JSON they write keeps every nested order. The read holds the literal it takes and each literal an assignment, an annotated assignment, a `:=`, or a `|=` binds to the name it takes, both branches of a conditional value included, at module scope, inside a function, or from a function reading a module-level name, whereas a name reached through an alias, an attribute, a subscript, or another function's parameter is not followed. A `dict(...)` call keeps its keyword order the same way, since [[simplify-comprehensions]] leaves it a call wherever the literal it would write sorts into another order.
 
-<FixtureCards rule="alphabetize_siblings" cases="dict_read_in_order_keeps_its_order" />
+<FixtureCards rule="alphabetize_siblings" cases="dict_read_in_order_keeps_its_order json_output_keeps_nested_dict_order" />
 
 <template #facets>
 
