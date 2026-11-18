@@ -8,7 +8,7 @@ const pageScript = (text: string): string => {
 
 export default defineConfig({
   entry              : ['**/*.md', '.vitepress/**/*.data.ts', '.vitepress/kit/**/*.catalog.tsx', '.vitepress/lib/readme/{cards,record}.ts'],
-  project            : ['.vitepress/**/*.{ts,tsx,mjs}', 'prototypes/**/*.{ts,tsx}', '**/*.md'],
+  project            : ['.vitepress/**/*.{ts,tsx,mjs}', '**/*.md'],
   compilers          : { md: pageScript },
   include            : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
   rules              : { cycles: 'error' },

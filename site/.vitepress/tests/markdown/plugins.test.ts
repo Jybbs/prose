@@ -189,7 +189,7 @@ describe('sectionHeadingPlugin', () => {
 
   it.each([
     ['a page beneath a section index', 'guide/quick-start.md'],
-    ['a page outside every section',   'prototypes/icons/index.md']
+    ['the landing page',               'index.md']
   ])('leaves %s alone', (_where, relativePath) => {
     expect(heading('Body.', { relativePath })).toBe('<p>Body.</p>\n')
   })
