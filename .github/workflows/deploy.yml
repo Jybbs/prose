@@ -177,7 +177,7 @@ jobs:
         id   : debs-key
         run  : |
           pin=$(jq -r .devDependencies.playwright site/package.json)
-          echo "key=webkit-debs-$ImageOS-${ImageVersion}_$pin" >> "$GITHUB_OUTPUT"
+          echo "key=webkit-debs-$pin-$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
 
       - name : Restore the WebKit system packages
         id   : debs
