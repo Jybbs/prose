@@ -389,11 +389,11 @@ describe('ProseSandboxSurface', () => {
     // The first morph's force-resolved end lands on the live panel, so the
     // successor keeps animating until its own end arrives.
     const panel = wrapper.findComponent({ name: 'ShikiMagicMovePrecompiled' })
-    panel.vm.$emit('end')
+    panel.emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(false)
 
-    panel.vm.$emit('end')
+    panel.emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
     expect(isHidden(wrapper.get('.sandbox-surface-display'))).toBe(false)
@@ -412,13 +412,13 @@ describe('ProseSandboxSurface', () => {
     // morph's `end` lands while the successor still sits at its rest state.
     sandbox.formatted.value = 'x = 3'
     await flushPromises()
-    panel().vm.$emit('end')
+    panel().emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(false)
 
     await nextPaint()
     await flushPromises()
-    panel().vm.$emit('end')
+    panel().emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
   })
@@ -431,20 +431,20 @@ describe('ProseSandboxSurface', () => {
     await flushPromises()
     await nextPaint()
     await flushPromises()
-    panel().vm.$emit('end')
+    panel().emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
 
     // A settled surface still taking an `end` must not drive the count
     // negative, which would leave the next morph unable to reach zero.
-    panel().vm.$emit('end')
+    panel().emit('end')
     await flushPromises()
 
     sandbox.formatted.value = 'x = 3'
     await flushPromises()
     await nextPaint()
     await flushPromises()
-    panel().vm.$emit('end')
+    panel().emit('end')
     await flushPromises()
     expect(isHidden(wrapper.get('.mm'))).toBe(true)
   })

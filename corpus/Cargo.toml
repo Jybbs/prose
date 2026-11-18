@@ -12,7 +12,7 @@ fs-err             = { workspace = true }
 ignore             = { workspace = true }
 itertools          = { workspace = true }
 libcst             = { version = "1.9.0", default-features = false }
-rand               = "0.10.3"
+rand               = "0.10.4"
 rayon              = { workspace = true }
 ruff_python_ast    = { workspace = true }
 ruff_python_parser = { workspace = true }
