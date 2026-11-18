@@ -15,7 +15,7 @@ if ! report=$(playwright install-deps --dry-run "${browsers[@]}"); then
   echo "$report"
   mapfile -t missing < <(sed -n 's/^  //p' <<< "$report")
   if (( ! ${#missing[@]} )); then
-    echo "the dry run named no missing package, so there is nothing to install" >&2
+    echo "the dry run failed without naming a missing package" >&2
     exit 1
   fi
   mkdir -p "$cache"
@@ -40,7 +40,7 @@ if ! report=$(playwright install-deps --dry-run "${browsers[@]}"); then
   elif (( ${#verified[@]} )); then
     cp -t "$stage" "${verified[@]/#/$cache/}"
   fi
-  echo "${#verified[@]} of $(wc -l <<< "$sums") packages match the signed index"
+  echo "${#verified[@]} of $(grep -c . <<< "$sums") packages match the signed index"
   sudo apt-get install \
     --no-install-recommends \
     -o "Dir::Cache::archives=$stage" \
