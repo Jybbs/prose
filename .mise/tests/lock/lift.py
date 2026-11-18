@@ -1783,8 +1783,8 @@ def test_table_holds_back_one_release_of_several_crates_once(
     workdir({".cargo/config.toml": '[registry]\nglobal-min-publish-age = "24 hours"\n'})
     published = {
         "ruff_python_ast"    : WHEN + timedelta(seconds=2),
-        "ruff_python_parser" : WHEN + timedelta(seconds=9),
-        "ruff_text_size"     : WHEN
+        "ruff_python_parser" : WHEN,
+        "ruff_text_size"     : WHEN + timedelta(seconds=9)
     }
     crates = [lift.Pin(
         None,
