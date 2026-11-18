@@ -259,7 +259,7 @@ REPORT  = "::error::{}.yml {} paths omit sources {} reads: ['wasm/**']\n"
 RESTORE = ".github/actions/restore-wasm/action.yml"
 STAMP   = {
     "if"  : "${{ steps.entry.outputs.cache-hit == 'true' }}",
-    "run" : "find site/pages/public/wasm -type f -exec touch {} +"
+    "run" : "find site/public/wasm -type f -exec touch {} +"
 }
 TASKS = [
     {
@@ -327,7 +327,7 @@ TREE = {
 }
 UNSTAMPED = (
     "::error::cache restores leaving task outputs older than the checkout: "
-    "['{}: site/pages/public/wasm']\n"
+    "['{}: site/public/wasm']\n"
 )
 
 
@@ -622,24 +622,24 @@ def test_patterns_reports_each_entry_selecting_no_tracked_file(
 @mark.parametrize(
     ("home", "path", "stamp", "reported"),
     [
-        param(RESTORE, "site/pages/public/wasm", [STAMP], "", id="stamped"),
+        param(RESTORE, "site/public/wasm", [STAMP], "", id="stamped"),
         param(
             RESTORE,
-            "site/pages/public/wasm",
+            "site/public/wasm",
             [],
             UNSTAMPED.format(RESTORE),
             id = "stamp-absent"
         ),
         param(
             RESTORE,
-            "site/pages/public/wasm",
+            "site/public/wasm",
             [STAMP | {"if": STAMP["if"].replace("==", "!=")}],
             UNSTAMPED.format(RESTORE),
             id = "stamp-on-a-miss"
         ),
         param(
             RESTORE,
-            "site/pages/public/wasm",
+            "site/public/wasm",
             [STAMP | {"run": STAMP["run"].replace("wasm", "other")}],
             UNSTAMPED.format(RESTORE),
             id = "stamp-on-another-path"
@@ -647,7 +647,7 @@ def test_patterns_reports_each_entry_selecting_no_tracked_file(
         param(RESTORE, ".cache/og", [], "", id="no-task-output"),
         param(
             ".github/workflows/deploy.yml",
-            "site/pages/public/wasm",
+            "site/public/wasm",
             [],
             UNSTAMPED.format(".github/workflows/deploy.yml"),
             id = "workflow-job"
@@ -685,7 +685,7 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
                 "dir"     : "{root}",
                 "name"    : "wasm:pack",
                 "depends" : [],
-                "outputs" : ["site/pages/public/wasm/*"],
+                "outputs" : ["site/public/wasm/*"],
                 "sources" : []
             }
         ]

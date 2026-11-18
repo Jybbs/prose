@@ -24,5 +24,5 @@ node_modules/
 site/.vitepress/dist/
 site/.vitepress/.temp/
 site/.vitepress/tests/wasm/pkg/
-site/pages/public/wasm/
+site/public/wasm/
 **/*.timestamp-*.mjs

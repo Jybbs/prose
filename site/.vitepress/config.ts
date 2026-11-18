@@ -51,6 +51,7 @@ const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const siteDirectory        = paths.siteDir(import.meta.url)
 const pagesDirectory       = paths.pagesDir(import.meta.url)
+const publicDirectory      = paths.publicDir(import.meta.url)
 const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
 const proseVersion         = version.readCargoVersion(crate)
 const requiresPython       = version.readRequiresPython(crate)
@@ -175,7 +176,7 @@ export default defineConfig({
       transform : (code, id) => id.split('?')[0] === tailwindEntry ? code + themeCss() : undefined
     },
     fixtureReloadPlugin(fixturesRoot),
-    serveWasmPlugin(paths.publicDir(import.meta.url)),
+    serveWasmPlugin(publicDirectory),
     stylesheetLayer.stylesheetLayerPlugin(tailwindEntry),
     tailwindcss(),
     groupIconVitePlugin({
@@ -183,6 +184,7 @@ export default defineConfig({
         ...Object.fromEntries(Object.entries(TOOL_SEEDS).map(([slug, { icon }]) => [slug, icon])),
         gha: TOOL_SEEDS.github.icon
       }
-    }) as never]
+    }) as never],
+    publicDir: publicDirectory
   }
 })

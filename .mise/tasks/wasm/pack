@@ -1,12 +1,12 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "pack"
-#MISE description = "Build `prose_wasm` under `wasm-release`, then emit its web module into `site/pages/public/wasm` and optimize it"
-#MISE outputs     = ["site/pages/public/wasm/*"]
+#MISE description = "Build `prose_wasm` under `wasm-release`, then emit its web module into `site/public/wasm` and optimize it"
+#MISE outputs     = ["site/public/wasm/*"]
 #MISE sources     = ["@group:wasm"]
 
 source "$MISE_PROJECT_ROOT/.mise/lib/wasm.bash"
 
-out=site/pages/public/wasm
+out=site/public/wasm
 target=$(cargo metadata --format-version 1 --no-deps | jq -r .target_directory)
 trap 'rm -rf "$out"' ERR
 

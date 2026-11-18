@@ -1,10 +1,10 @@
 <div align="center">
-<img src="../site/pages/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="640">
+<img src="../site/public/title-with-tagline.svg" alt="Prose, a Python typesetter for the reader." width="640">
 
-[![Rust](../site/pages/public/badges/rust.svg)![1.100+](https://img.shields.io/badge/1.100+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
-[![Python](../site/pages/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
-[![Coverage](../site/pages/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
-[![Documentation](../site/pages/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
+[![Rust](../site/public/badges/rust.svg)![1.100+](https://img.shields.io/badge/1.100+-8a80cb?style=for-the-badge)](https://www.rust-lang.org/)
+[![Python](../site/public/badges/python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb?style=for-the-badge)](https://www.python.org/)
+[![Coverage](../site/public/badges/coverage.svg)![percent](https://img.shields.io/codecov/c/github/Jybbs/prose?style=for-the-badge&label=&color=8a80cb)](https://codecov.io/gh/Jybbs/prose)
+[![Documentation](../site/public/badges/docs.svg)![Docs](https://img.shields.io/badge/Docs-8a80cb?style=for-the-badge)](https://prose.fyi/)
 
 </div>
 
@@ -15,7 +15,7 @@
 ***Prose*** formats Python source to be *legible at a glance*. It aligns equals signs and colons vertically across consecutive lines, places one entry per line in dictionaries, calls, and signatures, alphabetizes methods and fields within their groups, removes padding that lines up with nothing, and treats code like prose rather than minified text.
 
 <p>
-<picture><source media="(prefers-color-scheme: dark)" srcset="../site/pages/public/readme/sandbox-dark.gif"><img src="../site/pages/public/readme/sandbox-light.gif" alt="The docs site's Sandbox with every rule switched off on a short Pydantic retry policy, then each rule tag along the top switched on in turn as the model fields align on one colon and one equals column, the keywords and the dict keys sort, the constructor call breaks to one keyword per line, and the logging dict breaks to one entry per line, before the loop restarts." width="100%"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/sandbox-dark.gif"><img src="../site/public/readme/sandbox-light.gif" alt="The docs site's Sandbox with every rule switched off on a short Pydantic retry policy, then each rule tag along the top switched on in turn as the model fields align on one colon and one equals column, the keywords and the dict keys sort, the constructor call breaks to one keyword per line, and the logging dict breaks to one entry per line, before the loop restarts." width="100%"></picture>
 </p>
 
 > [!NOTE]
@@ -55,9 +55,9 @@ prose server                   # language server over stdio
 ## 📰 Start Here
 
 <p align="center">
-<a href="https://prose.fyi/guide/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/pages/public/readme/read-dark.svg"><img src="../site/pages/public/readme/read-light.svg" alt="Read the guide" width="260"></picture></a>
-<a href="https://prose.fyi/rules/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/pages/public/readme/browse-dark.svg"><img src="../site/pages/public/readme/browse-light.svg" alt="Browse the rules" width="260"></picture></a>
-<a href="https://prose.fyi/sandbox/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/pages/public/readme/try-dark.svg"><img src="../site/pages/public/readme/try-light.svg" alt="Try the Sandbox" width="260"></picture></a>
+<a href="https://prose.fyi/guide/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/read-dark.svg"><img src="../site/public/readme/read-light.svg" alt="Read the guide" width="260"></picture></a>
+<a href="https://prose.fyi/rules/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/browse-dark.svg"><img src="../site/public/readme/browse-light.svg" alt="Browse the rules" width="260"></picture></a>
+<a href="https://prose.fyi/sandbox/"><picture><source media="(prefers-color-scheme: dark)" srcset="../site/public/readme/try-dark.svg"><img src="../site/public/readme/try-light.svg" alt="Try the Sandbox" width="260"></picture></a>
 </p>
 
 - Turn a rule off for a whole project, or set its facets, in `prose.toml` or `[tool.prose]` with the [**configuration reference**](https://prose.fyi/reference/configuration)

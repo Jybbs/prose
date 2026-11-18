@@ -4,7 +4,7 @@ description: "Sets out the palette, the color roles, the typefaces, the marks, a
 
 # Visual Identity
 
-Every color, face, mark, and badge the site draws with is declared in `palette.ts`, the stylesheets, `emblems.ts`, and the files under `site/pages/public`. Each specimen below reads its values from those declarations as the site builds or as the page loads, so a change to a declaration reaches this page in the same change.
+Every color, face, mark, and badge the site draws with is declared in `palette.ts`, the stylesheets, `emblems.ts`, and the files under `site/public`. Each specimen below reads its values from those declarations as the site builds or as the page loads, so a change to a declaration reaches this page in the same change.
 
 ## Palette
 

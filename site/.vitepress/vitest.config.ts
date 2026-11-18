@@ -19,7 +19,7 @@ const ROOT = paths.repoRoot(import.meta.url)
 const READ_FROM_DISK = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml', 'crate/src/**',
   'crate/tests/fixtures/**', 'site/**/*.{css,md}', 'site/.vitepress/{assets,patches}/**',
-  'site/.vitepress/tests/**/fixtures/**', 'site/bun.lock', 'site/pages/public/**'
+  'site/.vitepress/tests/**/fixtures/**', 'site/bun.lock', 'site/public/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({

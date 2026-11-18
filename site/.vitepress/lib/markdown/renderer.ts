@@ -3,7 +3,7 @@ import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 import { codeUnitPlugin }                         from './code-operators'
 import { inlineNodes, type InlineNode }           from './inline-nodes'
 import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
-import { pagesDir }                               from '../shared/paths'
+import { pagesDir, publicDir }                    from '../shared/paths'
 import { plainTermsEnv }                          from './inert-env'
 import { TokenClasses }                           from './token-classes'
 
@@ -21,7 +21,7 @@ export async function getRenderer(): Promise<MarkdownRenderer> {
     codeTransformers  : [(await TokenClasses.read()).transformer()],
     colorReplacements : SHIKI_COLOR_REPLACEMENTS,
     theme             : SHIKI_THEMES
-  })
+  }, undefined, undefined, publicDir(import.meta.url))
   md.use(codeUnitPlugin)
   return md
 }

@@ -1,12 +1,12 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "smoke"
 #MISE depends     = ["site:bake", "wasm:pack"]
-#MISE description = "Copy the packed web module out of `pages/public/` and run the browser smoke test against it"
+#MISE description = "Copy the packed web module out of `public/` and run the browser smoke test against it"
 #MISE dir         = "site"
 
 pkg=.vitepress/tests/wasm/pkg
 rm -rf "$pkg"
-cp -R pages/public/wasm "$pkg"
+cp -R public/wasm "$pkg"
 
 playwright install --only-shell chromium
 vitest run --config .vitepress/vitest.config.ts --project wasm "$@"

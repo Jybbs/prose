@@ -58,7 +58,7 @@ function ruleCounts(): Record<RuleFamily, number> {
 }
 
 export default defineLoader({
-  watch: ['../../{kit,lib,theme}/**/*.{css,ts,tsx}', '../../../pages/public/*.svg'],
+  watch: ['../../{kit,lib,theme}/**/*.{css,ts,tsx}', '../../../public/*.svg'],
   load(): Identity {
     const cascade = Cascade.read([fs.readFileSync(VITEPRESS, 'utf8'), palette.themeCss(), palette.paletteCss(), fs.readFileSync(TOKENS, 'utf8')])
     const uses    = swatchSet.scanUses(

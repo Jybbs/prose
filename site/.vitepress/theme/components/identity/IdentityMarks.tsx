@@ -213,7 +213,7 @@ export const IdentityMarks = defineComponent({
                   <span class="kicker">In the nav bar</span>
                   <span class="text-xs text-text-2">
                     {composed.value && <span class="font-mono text-text-1 tabular-nums">{`${Math.round(height.value)} px tall · ${wide.value} px wide`}</span>}
-                    {composed.value && !file.value && <em class="ml-8">no file under site/pages/public/ draws these parts alone</em>}
+                    {composed.value && !file.value && <em class="ml-8">no file under site/public/ draws these parts alone</em>}
                   </span>
                 </div>
                 <div class="relative">

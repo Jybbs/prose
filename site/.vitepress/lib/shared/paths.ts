@@ -40,7 +40,7 @@ export function proseBinaryPath(root: string): string {
 }
 
 export function publicDir(metaUrl: string): string {
-  return path.join(pagesDir(metaUrl), 'public')
+  return path.join(siteDir(metaUrl), 'public')
 }
 
 export function readmeDir(metaUrl: string): string {

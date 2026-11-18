@@ -35,9 +35,9 @@ const FONT_FACES: readonly Omit<Font, 'data'>[] = [
   { name: FONT.body,    style: 'normal', weight: 400 }
 ]
 
-export function loadBrandAssets(srcDir: string): BrandAssets {
+export function loadBrandAssets(publicDirectory: string): BrandAssets {
   const fonts = FONT_FACES.map(face => ({ ...face, data: fs.readFileSync(fontFile(face)) }))
-  const read  = (file: string): Buffer => fs.readFileSync(path.join(srcDir, 'public', file))
+  const read  = (file: string): Buffer => fs.readFileSync(path.join(publicDirectory, file))
   return {
     fonts            : fonts,
     glyph            : dataUri(read('logo.svg')),
