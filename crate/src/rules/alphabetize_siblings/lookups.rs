@@ -46,6 +46,7 @@ impl Lookups<'_> {
                         .is_some_and(|func| {
                             matches!(func.id.as_str(), "len" | "sorted")
                                 && !self.bindings.binds_name(&func.id)
+                                && !self.bindings.binds_name("*")
                         })
             }
             AnyNodeRef::ExprAttribute(attribute) => attribute.attr.as_str() == "get",
@@ -168,6 +169,7 @@ mod tests {
     #[case::chained("D = E = {'b': 1, 'a': 2}\nx = D['a']\n")]
     #[case::class_body("class K:\n    D = {'b': 1, 'a': 2}\n")]
     #[case::compared("D = {'b': 1, 'a': 2}\nx = D == {}\n")]
+    #[case::compared_on_the_right("D = {'b': 1, 'a': 2}\nx = other == D\n")]
     #[case::comprehended("D = {'b': 1, 'a': 2}\nx = [k for k in D]\n")]
     #[case::deleted("D = {'b': 1, 'a': 2}\ndel D\n")]
     #[case::double_star("D = {'b': 1, 'a': 2}\nf(**D)\n")]
@@ -198,6 +200,7 @@ mod tests {
     #[case::reversed("D = {'b': 1, 'a': 2}\nx = reversed(D)\n")]
     #[case::sorted_beside_another("D = {'b': 1, 'a': 2}\nx = sorted(xs, D)\n")]
     #[case::sorted_items("D = {'b': 1, 'a': 2}\nx = sorted(D.items())\n")]
+    #[case::sorted_under_a_star_import("from m import *\nD = {'b': 1, 'a': 2}\nx = sorted(D)\n")]
     #[case::starred("D = {'b': 1, 'a': 2}\nx = [*D]\n")]
     #[case::subscript_key("D = {'b': 1, 'a': 2}\nx = E[D]\n")]
     #[case::tupled("D = {'b': 1, 'a': 2}\nx = tuple(D)\n")]
