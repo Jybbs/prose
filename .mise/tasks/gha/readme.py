@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --script
-# MISE description="Rewrite the README's site/ paths to the release tag's raw URLs"
+# MISE description="Rewrite README site/ paths to raw URLs at the release tag or main"
 # /// script
 # requires-python = ">=3.11"
 # ///
@@ -29,6 +29,18 @@ def absolute(readme: str, ref: str) -> str:
     return sub(r'(\]\(|src="|srcset=")\.\./(?=site/)', rf"\g<1>{RAW}{ref}/", readme)
 
 
+def main():
+    """
+    Rewrites `.github/README.md` in place under the raw URL of the run's
+    ref.
+    """
+    readme = Path(".github/README.md")
+    readme.write_text(
+        absolute(readme.read_text(encoding="utf-8"), ref()),
+        encoding = "utf-8"
+    )
+
+
 def ref() -> str:
     """
     Reads the ref the image addresses pin to from the run's environment.
@@ -45,8 +57,4 @@ def ref() -> str:
 
 if __name__ == "__main__":
 
-    readme = Path(".github/README.md")
-    readme.write_text(
-        absolute(readme.read_text(encoding="utf-8"), ref()),
-        encoding = "utf-8"
-    )
+    main()

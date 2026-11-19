@@ -1,11 +1,12 @@
 """
 Pins the paths `gha:readme` rewrites for PyPI, covering each form a README
-cites a `site/` asset in, leaving every other relative path in place, and
-the ref those paths pin to in a run that publishes a tag and one that does
-not.
+cites a `site/` asset in, leaving every other relative path in place. Pins
+the ref those paths take in a run that publishes a tag and one that does
+not, and the README a tag run rewrites in place.
 """
 
 from collections.abc import Callable
+from pathlib         import Path
 from pytest          import MonkeyPatch, mark, param
 from types           import ModuleType
 
@@ -71,3 +72,25 @@ def test_ref_pins_a_tag_run_to_its_tag_and_any_other_run_to_main(
     readme = task("gha/readme")
     monkeypatch.setattr(readme, "environ", environment)
     assert readme.ref() == ref
+
+
+def test_main_rewrites_the_readme_at_the_tag_a_tag_run_publishes(
+    monkeypatch : MonkeyPatch,
+    task        : Callable[[str], ModuleType],
+    workdir     : Callable[[dict[str, str]], Path]
+):
+    """
+    Asserts a tag run rewrites `.github/README.md` in place under the raw
+    URL of the tag it publishes.
+    """
+    readme = task("gha/readme")
+    tree   = workdir({".github/README.md": "![logo](../site/public/logo.svg)"})
+    monkeypatch.setattr(
+        readme,
+        "environ",
+        {"GITHUB_REF_NAME": TAG, "GITHUB_REF_TYPE": "tag"}
+    )
+    readme.main()
+    assert (tree / ".github/README.md").read_text(encoding="utf-8") == (
+        f"![logo]({RAW}public/logo.svg)"
+    )

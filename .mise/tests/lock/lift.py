@@ -115,8 +115,8 @@ def logs(
     tmp_path    : Path
 ) -> list[Path]:
     """
-    Records each attempt's log in a list, faking `attempt` to pass exactly
-    where it holds back every name in `breaking`.
+    Fakes `attempt` to record its log in the list the case reads, passing
+    exactly where it holds back every name in `breaking`.
     """
     recorded = []
     monkeypatch.setattr(lift, "LOGS", tmp_path)
@@ -131,8 +131,9 @@ def logs(
 @fixture
 def released(lift: ModuleType, monkeypatch: MonkeyPatch) -> list[tuple]:
     """
-    Records each registry lookup of a release in a list, every lookup
-    answering the version it was asked for, published at `WHEN`.
+    Fakes the registry lookup to record each package and version it is
+    asked for in the list the case reads, answering that version, published
+    at `WHEN`.
     """
     asked = []
 

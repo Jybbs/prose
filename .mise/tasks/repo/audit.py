@@ -1103,8 +1103,9 @@ def restores(step: dict, uncached: bool = False) -> bool:
 
 def rooted(base: str, entry: str) -> str:
     """
-    Rebases a `sources` or `outputs` entry, which mise resolves against the
-    `base` directory, onto the project root, keeping any leading `!`.
+    Rewrites a `sources` or `outputs` entry, which mise resolves against the
+    `base` directory, as a path relative to the project root, keeping any
+    leading `!`.
     """
     bare = entry.removeprefix("!")
     return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())

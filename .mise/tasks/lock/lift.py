@@ -168,7 +168,7 @@ class Pin:
     def ecosystem(self) -> str | None:
         """
         Names the ecosystem a Dependabot alert files this pin's package
-        under, or `None` for a source Dependabot does not read.
+        under, giving `None` for a source Dependabot does not read.
         """
         return ECOSYSTEMS.get(self.source)
 
@@ -183,8 +183,8 @@ class Pin:
     @property
     def script(self) -> str | None:
         """
-        Names the task script whose PEP 723 block holds this pin, or `None`
-        where another home or the lockfile alone holds it.
+        Names the task script whose PEP 723 block holds this pin, giving
+        `None` where another home or the lockfile alone holds it.
         """
         return self.home.path if self.home and self.home.path.endswith(".py") else None
 
@@ -192,7 +192,7 @@ class Pin:
     def from_requirement(cls, path: str, requirement: str, source: str) -> "Pin | None":
         """
         Reads the pin a Python `requirement` written in the file at `path`
-        holds, or `None` where no `==` specifier pins it to one release.
+        holds, giving `None` where no `==` specifier pins it to one release.
         """
         parsed  = Requirement(requirement)
         version = next(
@@ -544,7 +544,7 @@ class Lift:
     @classmethod
     def of(cls, name: str, pins: list[Pin], reports: Reports) -> "Lift | None":
         """
-        Builds the row lifting `pins` to their newest release, or `None`
+        Builds the row lifting `pins` to their newest release, giving `None`
         where they already stand at it. The pins carrying a source of their
         own agree on the version they stand at, and where a report covers
         any of them, the reports alone give the newest release.
@@ -815,7 +815,7 @@ def matched(path: str, pattern: str) -> str:
 
 def nested(keys: tuple[str, ...], mapping: dict) -> object:
     """
-    Looks up the value `keys` reach in `mapping`, or `None` where one of
+    Looks up the value `keys` reach in `mapping`, giving `None` where one of
     them is missing.
     """
     return reduce(
@@ -1043,7 +1043,7 @@ def python_pins() -> Iterator[Pin]:
 def stamp(text: str | None) -> datetime | None:
     """
     Parses the time an ISO 8601 `text` names as a UTC time, reading a time
-    that names no zone as UTC already, or `None` where there is no text.
+    that names no zone as UTC already, giving `None` where there is no text.
     """
     if not text:
         return None
