@@ -23,6 +23,7 @@ For code inside the *Prose* crate, the table records per binding:
 
 - `assignment_count(binding: BindingId) -> usize` counts every write site, the introducing assignment included.
 - `assignment_value_range(offset: TextSize) -> Option<TextRange>` returns the source range of the value bound at a direct `name = value` or `name: T = value` write, or `None` for a tuple or list target. [[inlinable-bindings]] reads it to name the inline candidate.
+- `at_module_scope(binding: BindingId) -> bool` reports whether a binding sits in the module scope, which [[alphabetize-siblings]] reads to hold a dict bound to a name `__all__` lists.
 - `binding_kinds(binding: BindingId) -> &[BindingKind]` returns each kind of write that produced this binding *(one binding may carry several kinds where shadowing or augmented assignment is involved)*.
 - `binding_name(binding: BindingId) -> &str` returns the bound name.
 - `bindings_in_scope(stmt: &Stmt) -> impl Iterator<Item = BindingId>` lists every binding declared directly inside the local scope of the `def` at `stmt`, and yields nothing for any other statement.
@@ -45,6 +46,7 @@ For code inside the *Prose* crate, the table records per binding:
 - `module_used_bare(name: &str) -> bool` reports whether a module-scope name is ever read without an attribute access *(the namespace object itself is used)*, which [[bare-imports]] reads before suggesting a `from` import.
 - `read_offsets(binding: BindingId) -> &[TextSize]` returns every offset at which a binding is read, ascending, which [[inlinable-bindings]] reads to locate the single read it measures the inline against. A walrus target counts its own value as one of them.
 - `scope_binds(stmt: &Stmt, name: &str) -> bool` reports whether the local scope of a `def` binds a name, which [[shed-super-args]] reads to leave a call as written when its first argument names a local rather than the enclosing class.
+- `sole_writes() -> impl Iterator<Item = (TextSize, BindingId)>` yields each binding written exactly once outside a class body beside the offset of that write, which [[alphabetize-siblings]] matches against the dict literals a `name = {...}` or `name: T = {...}` binds to find each one whose every read is a lookup.
 - `unpack_target(binding: BindingId) -> Option<UnpackKind>` returns the unpack disposition of a binding whose sole write is a multi-name tuple or list target, which [[inlinable-bindings]] reads to either name a subscript rewrite or withhold the finding.
 
 `BindingId`, `BindingKind`, and `UnpackKind` are `pub(crate)`, whereas `ScopeId`, `ScopeKind`, `Binding`, and `Scope` are private to the module. `BindingKind` enumerates the categories of write event the table records: `Assignment`, `AugAssign`, `ClassDef`, `Comprehension`, `ExceptHandler`, `For`, `FunctionDef`, `Import`, `Parameter`, `Walrus`, `With`. `ScopeKind` covers `Class`, `Comprehension`, `Function`, `Module`, matching Python's lexical-scope categories. `UnpackKind` covers `Suggested` and `Unresolved`, the dispositions `unpack_target` reports for a multi-name unpack target.

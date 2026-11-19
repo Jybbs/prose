@@ -12,9 +12,9 @@ QUEUE_CEILING   = 10000
 SAMPLE_FLOOR    = 20
 SEVERITY_LADDER = {
     "critical" : 0.40,
-    "info"     : 0.01,
     "major"    : 0.15,
-    "warning"  : 0.05
+    "warning"  : 0.05,
+    "info"     : 0.01
 }
 poll_interval_seconds = 30
 LATENCY_CEILING_MS    = 250

@@ -10,10 +10,10 @@ CONFIG = {
     "timeout" : 30,
     "verbose" : True,
     "limits"  : {
+        "requests_per_minute" : 600,
         "burst_capacity"      : 1200,
         "concurrent_streams"  : 8,
-        "queue_depth"         : 256,
-        "requests_per_minute" : 600
+        "queue_depth"         : 256
     },
     "tags"    : ["staging", "ingest"]
 }

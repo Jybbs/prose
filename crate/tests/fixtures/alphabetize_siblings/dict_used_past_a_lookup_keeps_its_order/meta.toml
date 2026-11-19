@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Used Past a Lookup Keeps Its Order"
+
+description = '''
+`first_failed` walks `STAGES` through `.items()`, `headers` passes `COLUMNS` to a call and returns a literal, and each of those uses can reach the order the keys were inserted in, whereas `LABELS` is only ever looked up by key. **`STAGES`, `COLUMNS`, and the returned literal keep the order written while `LABELS` sorts to `"alpha"`, `"zeta"`**, because sorting a dict whose order a use can reach would change what the program returns.
+'''

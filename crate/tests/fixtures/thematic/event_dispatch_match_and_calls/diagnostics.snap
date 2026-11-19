@@ -4,7 +4,7 @@ expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/event_dispatch_match_and_calls/input.py
 ---
 align-match-case@335..440
-alphabetize-siblings@0..631
+alphabetize-siblings@0..410
 band-constants@0..39
 bare-imports@32..39
 expand-docstrings@90..120

@@ -39,7 +39,7 @@ A statement that needs both its layout kept and its lint silenced carries one of
 
 ### Pinning a Dict or a Class Body
 
-`# prose: keep` is the one directive tied to a single construct. It holds a dict literal's entries in the order written, for a dict whose order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*, and it does the same for an `__all__` or `__slots__` list.
+`# prose: keep` is the one directive tied to a single construct. It holds a dict literal's entries in the order written, for a dict whose order carries meaning *(a pipeline whose stages run in the order written, a state machine whose transitions read top to bottom, a dispatch table where the first match wins)*, and it does the same for an `__all__` or `__slots__` list. [[alphabetize-siblings]] sorts a dict literal only where every use of it in the file is a lookup, so a dict the module iterates, passes to a call, or returns keeps its order without the marker.
 
 <Fixture rule="alphabetize_siblings" case="dict_keep_marker_vs_sorted" />
 

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Nested Dict Expands and Aligns at Every Depth"
 
 description = '''
-`DEPLOY` is one long single-line dict nesting through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`. **At every depth the entries sort and align a `:` column, and where a level holds more than one nested collection, at the top level with `services` and `telemetry` and inside `api` with `endpoints` and `headers`, the scalar entries partition ahead of the collections behind a blank line with each group aligning its own column**, whereas `gateway`, `telemetry`, and `logs` keep their single nested dict directly under their scalars in the same column, so the expansion, the sort, the partition, and the per-group alignment are all visible in one literal.
+`DEPLOY` is one long single-line dict nesting through `services`, `api`, `endpoints`, `headers`, `gateway`, `worker`, and `telemetry`. **Every depth expands to one entry per line and aligns a `:` column, while only the top level sorts**, its scalar entries partitioning ahead of `services` and `telemetry` behind a blank line with each group aligning its own column. `DEPLOY` is bound once and never read, so every use of it is a lookup, whereas each nested dict keeps the order written, since it is neither looked up in place nor bound to a name.
 '''

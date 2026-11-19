@@ -171,7 +171,7 @@ class Summary:
             "sweep"  : "Axe",
             "fit"    : "Squeeze",
             "deploy" : "Publish"
-        }  # prose: skip
+        }
 
         self._gate(
             "deploy",

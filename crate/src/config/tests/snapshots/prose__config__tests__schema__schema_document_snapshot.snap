@@ -58,7 +58,7 @@ expression: "serde_json::to_string_pretty(&schema).expect(\"renders\")"
         },
         "sort-dict-keys": {
           "default": true,
-          "description": "Sorts the entries of a dict literal, scalar values before\ncollection values and alphabetical by key within each. `false`\nkeeps the order as written, which iteration, `.items()`, and `**`\nunpacking all follow.",
+          "description": "Sorts the entries of each dict literal whose every use in the\nfile is a lookup, scalar values before collection values and\nalphabetical by key within each. `false` keeps every dict in the\norder written.",
           "type": "boolean"
         },
         "sort-docstring-entries": {

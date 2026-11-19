@@ -3,6 +3,7 @@ config = {
         "timeout": 30,
         "retries": 5,
     },
+    "cache": "memory",
     **load_defaults(
         primary_source,
         fallback_source,

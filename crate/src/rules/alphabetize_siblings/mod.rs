@@ -37,6 +37,7 @@ use crate::{
     source::Source,
 };
 pub(crate) use dict::sets_dividers;
+pub(crate) use lookups::lookup_dicts;
 pub(crate) use reorders::{Reorders, Sorted};
 
 mod class_graph;
@@ -44,6 +45,7 @@ mod dict;
 mod docstring_entries;
 mod enums;
 mod leaves;
+mod lookups;
 mod members;
 mod module_graph;
 mod reorders;

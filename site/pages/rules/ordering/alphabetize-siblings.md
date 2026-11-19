@@ -18,7 +18,7 @@ layout  : doc
 | Pydantic `BaseModel` and `TypedDict` fields | Required before optional |
 | Dataclass and `NamedTuple` fields | Source order kept |
 | Parameters and keyword arguments | Keyword-only parameters and call keywords alphabetical, positional kept in place |
-| Dict literal keys | Scalar entries before collection entries, alphabetical within each |
+| Dict literal keys | Scalar entries before collection entries, alphabetical within each, wherever every use of the dict is a lookup |
 | Imports | Alphabetical within each [[group-imports]] section |
 | Docstring entries | Parameter entries follow the signature order, all else alphabetical |
 
@@ -53,9 +53,13 @@ Positional-or-keyword parameters never reorder, since a slot is part of the call
 
 <FixtureCards rule="alphabetize_siblings" cases="method_positional_params_keep_order head_sharing_keyword_only_params_swap_in_place" />
 
-At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots, except in a `dict(...)` or `frozendict(...)` call, whose keywords set the mapping's iteration order and so keep the order written. A `dict(...)` call that [[simplify-comprehensions]] rewrites as a literal sorts as a literal's keys do. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless. A multi-line dict the sort reorders takes a blank line on either side of each entry spanning rows once two do, in place of the blank lines its source wrote, whereas a dict already in order keeps its blank lines as written.
+At a call site, keyword arguments in `name=value` form sort on any callee while positional arguments keep their slots, except in a `dict(...)` or `frozendict(...)` call, whose keywords set the mapping's iteration order and so keep the order written. In both a call and a dict, an entry whose value runs code (*a call, a comprehension, an `await`*) keeps its slot, and set literals sort regardless. A multi-line dict the sort reorders takes a blank line on either side of each entry spanning rows once two do, in place of the blank lines its source wrote, whereas a dict already in order keeps its blank lines as written.
 
 <FixtureCards rule="alphabetize_siblings" cases="call_kwargs_trailing_comments_travel mapping_constructor_keywords_keep_their_order" />
+
+A dict literal's keys sort only where every use of it is a lookup, the literal subscripted, read through `.get`, or tested with `in` or `not in` where it stands, or bound once to a name whose every reference in the file is a subscript load, store, or delete, `.get`, `in` or `not in`, `len`, or `sorted`. Every other literal keeps the order written, since a dict passed to a call, returned, yielded, aliased, iterated, unpacked, bound to an attribute, rebound, or bound to a name `__all__` lists can reach the order its keys were inserted in. A dict nested inside another keeps its order too, unless it is looked up where it stands, and a `dict(...)` call that [[simplify-comprehensions]] rewrites as a literal takes the same test.
+
+<FixtureCards rule="alphabetize_siblings" cases="dict_used_only_for_lookups_sorts dict_used_past_a_lookup_keeps_its_order" />
 
 <template #facets>
 
@@ -75,7 +79,7 @@ Each sort switches off on its own, so a project can keep its methods grouped whi
 
 ### `sort-dict-keys`
 
-`sort-dict-keys` sorts a dict literal's entries, the scalar values ahead of the collection values and alphabetical by key within each. Insertion order is observable through iteration, `.items()`, and `**` unpacking, so a project relying on that order sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
+`sort-dict-keys` sorts the entries of each dict literal whose every use is a lookup, the scalar values ahead of the collection values and alphabetical by key within each. The uses are read in the file alone, so a project whose lookup tables another module iterates sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
 
 <FixtureCards rule="alphabetize_siblings" cases="sort_dict_keys_false_keeps_order" />
 

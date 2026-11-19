@@ -7,7 +7,7 @@ use std::{borrow::Cow, ops::Range};
 use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange};
 
-use super::dict::{dict_holds_as_laid_out, dict_sort_key};
+use super::dict::{dict_holds_as_laid_out, dict_sort_key, keeps_order};
 use super::{AlphabetizeSiblings, builds_mapping, dunder_list};
 use crate::{
     config::Config,
@@ -72,7 +72,8 @@ impl Reorders {
     /// of `node` sorts: the rule off or skip-held over `node`, a node of
     /// another kind, the arguments of a call building a mapping, a list or tuple bound to nothing the rule sorts under
     /// `parent`, a dict or dunder list held by `# prose: keep` or the
-    /// config, or fewer than two entries.
+    /// config, a dict a use reaches past a lookup, or fewer than two
+    /// entries.
     pub(crate) fn sorted(
         self,
         source: &Source,
@@ -97,7 +98,7 @@ impl Reorders {
                         .filter(|_| !value_is_effectful(arg.value()))
                 })
             }
-            AnyNodeRef::ExprDict(dict) if self.sort_dict_keys && !has_keep_marker(source, dict) => {
+            AnyNodeRef::ExprDict(dict) if self.sort_dict_keys && !keeps_order(source, dict) => {
                 let keyed = runs_where(&dict.items, |item| item.key.is_some());
                 sorted_entries(&dict.items, keyed, |item| dict_sort_key(source, item))
             }
@@ -231,4 +232,30 @@ fn sorted_order<K: Ord>(
 /// One run covering every slot of `items`.
 fn whole<T>(items: &[T]) -> Option<Range<usize>> {
     Some(0..items.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{first_value, parse};
+
+    #[rstest]
+    #[case::looked_up("x = {'b': 1, 'a': 2}\ny = x['a']\n", true)]
+    #[case::passed("x = {'b': 1, 'a': 2}\nf(x)\n", false)]
+    fn sorted_forecasts_a_dict_only_where_every_use_is_a_lookup(
+        #[case] src: &str,
+        #[case] expected: bool,
+    ) {
+        let source = parse(src);
+        let dict = first_value(&source);
+        let parent = &source.ast().body[0];
+        assert_eq!(
+            Reorders::from_config(&Config::default())
+                .sorted(&source, dict.into(), parent.into())
+                .is_some(),
+            expected
+        );
+    }
 }
