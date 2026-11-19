@@ -1,0 +1,24 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/lazy_annotation_a_method_decorator_reads_pins_run/input.py
+---
+from functools import singledispatchmethod
+
+
+class Alpha:
+    pass
+
+
+class Zed:
+    pass
+
+
+class Handler:
+    @singledispatchmethod
+    def show(self, value):
+        return repr(value)
+
+    @show.register
+    def _(self, value: Zed):
+        return "zed"

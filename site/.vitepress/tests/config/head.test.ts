@@ -7,13 +7,13 @@ import { createTitle, notFoundPageData } from 'vitepress/dist/client/shared.js'
 import * as head                                 from '../../lib/config/head'
 import { SITE_ALT, SITE_HOSTNAME, SITE_TAGLINE } from '../../lib/shared/constants'
 import { frontmatterDescription }                from '../../lib/shared/content-page'
-import { siteDir }                               from '../../lib/shared/paths'
+import { pagesDir }                              from '../../lib/shared/paths'
 import { SECTIONS }                              from '../../lib/shared/registries'
 
 import type { HeadConfig, PageData, SiteData } from 'vitepress'
 
-const site  = siteDir(import.meta.url)
-const files = fs.globSync('**/*.md', { cwd: site, exclude: ['node_modules/**'] })
+const srcDir = pagesDir(import.meta.url)
+const files  = fs.globSync('**/*.md', { cwd: srcDir })
 
 function page(overrides: Partial<PageData>): PageData {
   return { description: '', frontmatter: {}, relativePath: '', title: '', ...overrides } as PageData
@@ -160,7 +160,7 @@ describe('every page', () => {
 
 describe('every page but the landing', () => {
   it.each(files.filter(file => file !== 'index.md'))('%s declares a description field', file => {
-    const { data } = matter.read(path.join(site, file))
+    const { data } = matter.read(path.join(srcDir, file))
     expect(frontmatterDescription(data)).toBeTypeOf('string')
   })
 })

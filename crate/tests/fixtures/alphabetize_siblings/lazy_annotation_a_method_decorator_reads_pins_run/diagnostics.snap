@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/lazy_annotation_a_method_decorator_reads_pins_run/input.py
+---
+alphabetize-siblings@51..255

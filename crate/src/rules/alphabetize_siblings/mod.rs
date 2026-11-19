@@ -15,7 +15,7 @@
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::{
-    ExprCall, Stmt, StmtAssign,
+    ExprCall, PythonVersion, Stmt, StmtAssign,
     statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_text_size::{Ranged, TextSize};
@@ -31,8 +31,7 @@ use self::{
 use crate::{
     config::Config,
     primitives::{
-        binding::single_name_target, imports::defers_annotations, orderer::Seatings,
-        scope::BodyScope,
+        binding::single_name_target, orderer::Seatings, scope::BodyScope, tiering::Annotations,
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -63,6 +62,7 @@ pub(crate) struct AlphabetizeSiblings {
     sort_dict_keys: bool,
     sort_docstring_entries: bool,
     sort_dunder_lists: bool,
+    target_version: Option<PythonVersion>,
 }
 
 impl AlphabetizeSiblings {
@@ -83,6 +83,7 @@ impl AlphabetizeSiblings {
             sort_dict_keys: alphabetize_siblings.sort_dict_keys,
             sort_docstring_entries: alphabetize_siblings.sort_docstring_entries,
             sort_dunder_lists: alphabetize_siblings.sort_dunder_lists,
+            target_version: config.target_version,
         }
     }
 
@@ -95,7 +96,7 @@ impl AlphabetizeSiblings {
         leaf_edits: &'a [Edit],
     ) -> RewriteCtx<'a> {
         RewriteCtx {
-            defer_annotations: defers_annotations(&source.ast().body),
+            annotations: Annotations::of(&source.ast().body, self.target_version),
             enumerations,
             first_party: &self.first_party,
             group_imports: self.group_imports,

@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Lazy Annotation Leaves the Definition It Names Free to Sort"
+
+description = '''
+At `target-version` 3.14, Python evaluates an annotation only when something first reads it, per [PEP 649](https://peps.python.org/pep-0649/) and [PEP 749](https://peps.python.org/pep-0749/). `Beta` names `Zed` only in a field annotation, and `beta` names `zed` only in a parameter annotation. **`Beta` sorts above `Zed` and `beta` above `zed`**, because neither reference runs while the module imports.
+'''

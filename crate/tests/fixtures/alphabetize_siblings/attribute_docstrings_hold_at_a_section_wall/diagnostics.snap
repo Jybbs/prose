@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/attribute_docstrings_hold_at_a_section_wall/input.py
+---
+alphabetize-siblings@18..275

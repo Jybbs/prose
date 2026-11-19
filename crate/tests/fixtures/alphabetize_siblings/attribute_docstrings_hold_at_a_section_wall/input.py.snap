@@ -1,0 +1,20 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/attribute_docstrings_hold_at_a_section_wall/input.py
+---
+class Walled:
+    delta: int = 4
+    zeta: int = 1
+    # =====
+    """Opens the section below the marker."""
+    alpha: int = 3
+    beta: int = 2
+
+
+class Pinned:
+    zeta: int = 1  # prose: skip
+    """Zeta count."""
+    alpha: int = 3
+    beta: int = 2
+    """Beta count."""

@@ -5,10 +5,13 @@
 //! seats, beside the rows a class body's sort seats, which a rule
 //! forecasting the sort reads.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, iter};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Stmt, helpers::is_compound_statement};
+use ruff_python_ast::{
+    Stmt,
+    helpers::{is_compound_statement, is_docstring_stmt},
+};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -31,8 +34,8 @@ use crate::{
         scope::{BodyScope, scoped_body, splice_compound_arms, sub_bodies, sub_bodies_keep_order},
         sections::Sections,
         tiering::{
-            CallReach, Evaluated, call_reachable, consults_call_graph, definition_names,
-            eval_time_refs_of, fenced_slots,
+            Annotations, CallReach, Evaluated, call_reachable, consults_call_graph,
+            definition_names, eval_time_refs_of, fenced_slots,
         },
     },
     source::Source,
@@ -73,7 +76,7 @@ impl<'a> BodyLayout<'a> {
 /// body it opens and for every arm nested inside it.
 #[derive(Clone, Copy)]
 pub(super) struct RewriteCtx<'a> {
-    pub(super) defer_annotations: bool,
+    pub(super) annotations: Annotations,
     pub(super) enumerations: &'a Enumerations<'a>,
     pub(super) first_party: &'a [String],
     pub(super) group_imports: bool,
@@ -318,6 +321,30 @@ fn scoped_ctx<'a>(ctx: RewriteCtx<'a>, stmt: &Stmt) -> RewriteCtx<'a> {
     })
 }
 
+/// Seats each attribute docstring of `body` in the slot below the
+/// assignment it documents, wherever the sort carried that assignment.
+/// Per PEP 257 an attribute docstring is a string literal statement
+/// directly after a simple assignment, here one `sections` keeps in the
+/// assignment's section. The permutations hold each docstring in its
+/// slot, so the members around them keep their sorted order.
+fn seat_attribute_docstrings(order: &mut Vec<usize>, body: &[Stmt], sections: &Sections) {
+    let documents = |i: usize| {
+        body.get(i).is_some_and(is_docstring_stmt)
+            && i.checked_sub(1)
+                .is_some_and(|above| matches!(body[above], Stmt::Assign(_) | Stmt::AnnAssign(_)))
+            && !sections.is_boundary(i)
+    };
+    if !(0..body.len()).any(documents) {
+        return;
+    }
+    *order = order
+        .iter()
+        .copied()
+        .filter(|&i| !documents(i))
+        .flat_map(|i| iter::once(i).chain(documents(i + 1).then_some(i + 1)))
+        .collect();
+}
+
 /// Permutes `order`, seeded to source order over `body`'s member
 /// `blocks`, within each section by the family sorts and import grouping
 /// that `scope` enables, and returns the new-order slots whose import
@@ -336,7 +363,7 @@ fn seat_body<'a>(
     pinned_starts: &[TextSize],
 ) -> ImportRunSlots {
     let RewriteCtx {
-        defer_annotations,
+        annotations,
         first_party,
         group_imports,
         group_methods,
@@ -355,7 +382,7 @@ fn seat_body<'a>(
         let import_sections = Sections::pinning(source, blocks, AlphabetizeSiblings::SLUG);
         if !keeps_order && scope != BodyScope::Function {
             let holds = |stmt: &Stmt| (!in_class && is_decorated(stmt)) || pinned(stmt);
-            let refs = eval_time_refs_of(body, defer_annotations);
+            let refs = eval_time_refs_of(body, annotations);
             let defined = definition_names(body);
             let reachable = if consults_call_graph(body, &refs, &defined) {
                 call_reachable(source.binding_analysis(), body)
@@ -397,6 +424,7 @@ fn seat_body<'a>(
                     break;
                 }
             }
+            seat_attribute_docstrings(order, body, &import_sections);
         }
         if !keeps_order {
             permute_runs(

@@ -1,0 +1,19 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/function_naming_a_class_keeps_its_alphabetical_slot/input.py
+---
+class Zed:
+    pass
+
+
+def alpha():
+    pass
+
+
+def beta(reference: Zed):
+    pass
+
+
+def gamma():
+    pass

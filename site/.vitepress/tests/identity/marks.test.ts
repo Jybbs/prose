@@ -1,11 +1,13 @@
-import fs from 'node:fs'
+import fs   from 'node:fs'
+import path from 'node:path'
 
 import { readDrawing, readMarks, splitLockup } from '../../lib/identity/mark-files'
 import { fileDrawing, MARK_FILES, PARTS }      from '../../lib/identity/marks'
+import { publicDir }                           from '../../lib/shared/paths'
 
 import type { MarkFile, PartId } from '../../lib/identity/marks'
 
-const read  = (file: MarkFile): string => fs.readFileSync(new URL(`../../../public/${file}`, import.meta.url), 'utf8')
+const read  = (file: MarkFile): string => fs.readFileSync(path.join(publicDir(import.meta.url), file), 'utf8')
 const marks = readMarks(read)
 
 describe('the mark files', () => {

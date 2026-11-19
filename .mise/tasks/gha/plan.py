@@ -23,7 +23,7 @@ outside a registered rule's module. When every watched change sits under
 `crate/src/rules/<module>/` instead, the probe narrows to one row per family
 those rules belong to, scoped through `PROSE_SETTLE_RULES`. A row is named
 by its family's badge and label, read off the docs site's `FAMILY_META`,
-with membership read off the rule pages under `site/rules/<family>/`.
+with membership read off the rule pages under `site/pages/rules/<family>/`.
 
 Lines land in `$GITHUB_OUTPUT` when it is set, stdout otherwise.
 """
@@ -116,17 +116,17 @@ def emit(*lines: str):
 def families() -> dict[str, list[str]]:
     """
     Maps each rule family to its registered slugs, read off the rule pages
-    under `site/rules/<family>/`, failing on a registered rule no page
-    places.
+    under `site/pages/rules/<family>/`, failing on a registered rule no
+    page places.
     """
     known = set(registry().values())
     pages = {
         d.name: sorted(p.stem for p in d.glob("*.md") if p.stem in known)
-        for d in sorted(Path("site/rules").iterdir()) if d.is_dir()
+        for d in sorted(Path("site/pages/rules").iterdir()) if d.is_dir()
     }
     if unplaced := known - {slug for slugs in pages.values() for slug in slugs}:
         raise SystemExit(
-            "::error::no page under site/rules/<family>/ places "
+            "::error::no page under site/pages/rules/<family>/ places "
             f"{', '.join(sorted(unplaced))}"
         )
     return {family: slugs for family, slugs in pages.items() if slugs}
