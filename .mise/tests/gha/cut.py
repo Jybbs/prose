@@ -24,9 +24,9 @@ PREVIOUS = ["git", "show", "HEAD~1:crate/Cargo.toml"]
 @fixture
 def cut(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `gha:cut` script with the `stderr` it binds on
-    loading replaced by a buffer the case reads, since pytest closes the
-    stream `capsys` installs for setup once setup ends.
+    Loads the `gha:cut` script, replacing the `stderr` it binds on loading
+    with a buffer the case reads, since pytest closes the stream `capsys`
+    installs for setup once setup ends.
     """
     module        = task("gha/cut")
     module.stderr = StringIO()
@@ -36,7 +36,7 @@ def cut(task: Callable[[str], ModuleType]) -> ModuleType:
 @fixture
 def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
-    Returns a working tree whose `crate/Cargo.toml` carries version `1.2.3`
+    Writes a working tree whose `crate/Cargo.toml` carries version `1.2.3`
     and makes it the current directory. The environment names `owner/repo`,
     no event, and no output file, so the outputs print to stdout.
     """
@@ -48,8 +48,7 @@ def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) ->
 
 def release(tag: str, draft: bool = False) -> dict:
     """
-    Returns the fields `gha:cut` reads from one entry of the release
-    listing.
+    Builds the fields `gha:cut` reads from one entry of the release listing.
     """
     return {"draft": draft, "html_url": f"https://example.test/{tag}", "tag_name": tag}
 

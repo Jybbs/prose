@@ -24,7 +24,7 @@ def gate(
     task        : Callable[[str], ModuleType]
 ) -> Callable[..., tuple[int, str]]:
     """
-    Returns a function running the Deploy gate with each job the workflow's
+    Builds a function running the Deploy gate with each job the workflow's
     gate needs passing unless named, and returning the exit code and the
     summary it printed.
     """

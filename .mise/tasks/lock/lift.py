@@ -116,9 +116,8 @@ class Home:
 
     def rewrite(self, new: str, old: str, text: str) -> str:
         """
-        Returns `text` with the pin this home holds moved from `old` to
-        `new`, keeping any operator ahead of the version and every other
-        byte as it stood.
+        Moves the pin this home holds in `text` from `old` to `new`, keeping
+        any operator ahead of the version and every other byte as it stood.
         """
         if not self.keys:
             bounded = rf"(?<![\d.]){escape(old)}(?![\d.])"
@@ -134,7 +133,7 @@ class Home:
 
     def shown(self, version: str) -> str:
         """
-        Returns `version` as this home writes it, without build metadata and
+        Formats `version` as this home writes it, without build metadata and
         cut to its first `parts` components where `parts` is set.
         """
         plain = version.partition("+")[0]
@@ -161,15 +160,15 @@ class Pin:
     @property
     def covered(self) -> bool:
         """
-        Returns whether a manager's report covers this pin.
+        Checks whether a manager's report covers this pin.
         """
         return self.source in COVERED
 
     @property
     def ecosystem(self) -> str | None:
         """
-        Returns the ecosystem a Dependabot alert names this pin's package
-        under, or `None` for a source Dependabot does not read.
+        Names the ecosystem a Dependabot alert files this pin's package
+        under, giving `None` for a source Dependabot does not read.
         """
         return ECOSYSTEMS.get(self.source)
 
@@ -184,7 +183,7 @@ class Pin:
     @property
     def script(self) -> str | None:
         """
-        Returns the task script whose PEP 723 block holds this pin, or
+        Names the task script whose PEP 723 block holds this pin, giving
         `None` where another home or the lockfile alone holds it.
         """
         return self.home.path if self.home and self.home.path.endswith(".py") else None
@@ -192,8 +191,8 @@ class Pin:
     @classmethod
     def from_requirement(cls, path: str, requirement: str, source: str) -> "Pin | None":
         """
-        Returns the pin a Python `requirement` written in the file at `path`
-        holds, or `None` where no `==` specifier pins it to one release.
+        Reads the pin a Python `requirement` written in the file at `path`
+        holds, giving `None` where no `==` specifier pins it to one release.
         """
         parsed  = Requirement(requirement)
         version = next(
@@ -246,7 +245,7 @@ class Pin:
 
     def released(self, version: str | None = None) -> "Release":
         """
-        Returns the release of this pin's package at `version`, or its
+        Looks up the release of this pin's package at `version`, or its
         newest release where no version is given, beside when its registry
         says it was published. A tool's time is the `created_at` mise lists
         for it, a crate's comes from crates.io, an npm package's from its
@@ -273,7 +272,7 @@ class Pin:
     @cache
     def releases(self) -> list["Release"]:
         """
-        Returns every release mise lists for this tool beside its
+        Reads every release mise lists for this tool beside its
         `created_at`, read with the `minimum_release_age` cutoff off so the
         releases it holds back are listed too.
         """
@@ -303,9 +302,9 @@ class Release:
 
     def cleared(self, age: str) -> datetime | None:
         """
-        Returns when a cooldown of `age` stops holding this release back,
-        or `None` where the release reports no time or `age` is no count of
-        seconds, minutes, hours, days, or weeks. A count takes the unit's
+        Computes when a cooldown of `age` stops holding this release back,
+        giving `None` where the release reports no time or `age` is no count
+        of seconds, minutes, hours, days, or weeks. A count takes the unit's
         initial, as mise writes `24h`, or its name, as Cargo writes `24
         hours`, so a date, a span of months, or a compound span like `1h30m`
         clears at no known time.
@@ -334,7 +333,8 @@ class Held:
 
     def cells(self) -> list[str]:
         """
-        Returns the cells of this release in the held table's column order.
+        Lays this release out as the cells of the held table, in its column
+        order.
         """
         cleared = f"{self.clears:%Y-%m-%d %H:%M} UTC" if self.clears else ""
         return [f"`{self.name}`", f"`{self.version}`", cleared]
@@ -355,7 +355,7 @@ class Reports:
 
     def newest(self, pin: Pin) -> str:
         """
-        Returns the newest release the report covering `pin` gives, which
+        Reads the newest release the report covering `pin` gives, which
         is its written version where the report omits it. A docs-site pin
         standing on a prerelease takes the highest PEP 440 version its
         registry lists, because `bun outdated` reads only the `latest`
@@ -368,9 +368,9 @@ class Reports:
     @classmethod
     def read(cls, scripts: list[str]) -> "Reports":
         """
-        Returns the reports that `bun outdated`, `cargo update --dry-run`,
-        `mise outdated`, and `uv tree --outdated` print, the last over
-        the project and each of `scripts`, run side by side. Cargo's
+        Runs `bun outdated`, `cargo update --dry-run`, `mise outdated`, and
+        `uv tree --outdated` side by side, the last over the project and
+        each of `scripts`, and reads the reports they print. Cargo's run
         resolves the whole lockfile, which refreshes the registry index,
         lists a crate whose newest release needs a newer Rust beside that
         requirement, and lists a crate whose newest release is younger than
@@ -454,7 +454,7 @@ class Lift:
     @property
     def edits(self) -> set[tuple[Home, str, str]]:
         """
-        Returns each home this row moves beside the text its written version
+        Lists each home this row moves beside the text its written version
         becomes and that version.
         """
         return {
@@ -466,7 +466,7 @@ class Lift:
     @property
     def major(self) -> bool:
         """
-        Returns whether the lift changes the left-most non-zero part of the
+        Checks whether the lift changes the left-most non-zero part of the
         version, which is the minor part of a `0.x.y` release, the patch
         part of a `0.0.z` release, and the year of a calendar version.
         """
@@ -480,7 +480,7 @@ class Lift:
     @classmethod
     def action(cls, pins: list[Pin], repo: str) -> "Lift | None":
         """
-        Returns the row moving every home of the `repo` action from the
+        Builds the row moving every home of the `repo` action from the
         commit it pins to the commit its latest release tags, each shown as
         the most specific tag naming it.
         """
@@ -521,7 +521,7 @@ class Lift:
 
     def clearing(self, alerts: list[dict]) -> "Lift":
         """
-        Returns this row carrying each of `alerts` it clears, meaning an
+        Copies this row carrying each of `alerts` it clears, meaning an
         alert on one of its packages whose first patched version the newest
         release reaches.
         """
@@ -544,7 +544,7 @@ class Lift:
     @classmethod
     def of(cls, name: str, pins: list[Pin], reports: Reports) -> "Lift | None":
         """
-        Returns the row lifting `pins` to their newest release, or `None`
+        Builds the row lifting `pins` to their newest release, giving `None`
         where they already stand at it. The pins carrying a source of their
         own agree on the version they stand at, and where a report covers
         any of them, the reports alone give the newest release.
@@ -580,7 +580,7 @@ class Lift:
     @classmethod
     def ruff(cls, pins: list[Pin], reports: Reports) -> "Lift | None":
         """
-        Returns the row moving the `ruff_*` crates to their newest release
+        Builds the row moving the `ruff_*` crates to their newest release
         beside the `ruff` tool and the release `[package.metadata.ruff]`
         names, both of which move to the tag on the commit the newest crate
         was published from. A tag mise's `minimum_release_age` cutoff holds
@@ -616,7 +616,7 @@ class Lift:
 
 def alerts() -> list[dict]:
     """
-    Returns every open Dependabot alert on the repository `gh` resolves,
+    Fetches every open Dependabot alert on the repository `gh` resolves,
     warning and returning none where `gh` cannot read them.
     """
     read = run(
@@ -635,7 +635,7 @@ def alerts() -> list[dict]:
 
 def attempt(holds: set[str], log: Path) -> bool:
     """
-    Returns whether `mise ci` passes in a scratch clone of the checkout
+    Checks whether `mise ci` passes in a scratch clone of the checkout
     once every lift but `holds` is written there, logging each command the
     attempt runs and all it prints to `log`.
     """
@@ -653,7 +653,7 @@ def attempt(holds: set[str], log: Path) -> bool:
 
 def bare(tool: str) -> str:
     """
-    Returns the name of the mise `tool` without its backend and owner, so
+    Strips the backend and owner from the name of the mise `tool`, so
     `aqua:mitsuhiko/insta` reads as `insta`.
     """
     return tool.rpartition(":")[2].rpartition("/")[2]
@@ -690,7 +690,7 @@ def publish_age() -> str:
 @cache
 def cutoff() -> str:
     """
-    Returns the `minimum_release_age` mise's settings name, or mise's own
+    Reads the `minimum_release_age` mise's settings name, or mise's own
     `24h` default where no setting names one.
     """
     read = run(
@@ -703,8 +703,8 @@ def cutoff() -> str:
 
 def downloaded(url: str) -> bytes:
     """
-    Returns the body at `url`, requested under the user agent crates.io asks
-    every API client to send and decompressed where the server gzipped it.
+    Downloads the body at `url` under the user agent crates.io asks every
+    API client to send, decompressing it where the server gzipped it.
     """
     request = Request(url, headers={"Accept-Encoding": "gzip", "User-Agent": AGENT})
     with urlopen(request, timeout=120) as response:
@@ -715,14 +715,14 @@ def downloaded(url: str) -> bytes:
 
 def fetched(url: str) -> dict:
     """
-    Returns the JSON document at `url`.
+    Fetches the JSON document at `url`.
     """
     return from_json(downloaded(url))
 
 
 def flagged(option: str, values: set[str]) -> list[str]:
     """
-    Returns `option` ahead of each of `values` in sorted order, the way a
+    Places `option` ahead of each of `values` in sorted order, the way a
     command takes a flag once per value.
     """
     return [each for value in sorted(values) for each in (option, value)]
@@ -730,7 +730,7 @@ def flagged(option: str, values: set[str]) -> list[str]:
 
 def isolated(clone: Path, root: Path) -> dict[str, str]:
     """
-    Returns the environment a command in `clone` runs under, which is this
+    Builds the environment a command in `clone` runs under, which is this
     task's own without the variables the checkout's mise config and its
     task runner set and without each `PATH` entry inside the checkout, so
     mise sets the clone's own in their place. The clone's config is trusted
@@ -767,7 +767,7 @@ def logged(
     out         : TextIO
 ) -> bool:
     """
-    Returns whether `command` passes in `clone` under `environment`, writing
+    Checks whether `command` passes in `clone` under `environment`, writing
     the command and everything it prints to `out`.
     """
     print(f"$ {join(command)}", file=out, flush=True)
@@ -806,7 +806,7 @@ def main():
 
 def matched(path: str, pattern: str) -> str:
     """
-    Returns the first capture of `pattern` in the file at `path`.
+    Finds the first capture of `pattern` in the file at `path`.
     """
     if found := search(pattern, read(path)):
         return found[1]
@@ -815,8 +815,8 @@ def matched(path: str, pattern: str) -> str:
 
 def nested(keys: tuple[str, ...], mapping: dict) -> object:
     """
-    Returns the value `keys` reach in `mapping`, or `None` where one of them
-    is missing.
+    Looks up the value `keys` reach in `mapping`, giving `None` where one of
+    them is missing.
     """
     return reduce(
         lambda node, key: node.get(key) if isinstance(node, dict) else None,
@@ -827,7 +827,7 @@ def nested(keys: tuple[str, ...], mapping: dict) -> object:
 
 def ordered(version: str) -> Version:
     """
-    Returns a key ordering `version` among the releases of its package,
+    Builds a key ordering `version` among the releases of its package,
     reading anything that is no PEP 440 version, such as an untagged commit,
     as `0`.
     """
@@ -839,8 +839,8 @@ def ordered(version: str) -> Version:
 
 def output(*command: str, cwd: str | Path | None = None) -> str:
     """
-    Returns everything `command` prints, stderr included, stopping the task
-    with that output where the command exits nonzero.
+    Runs `command` and captures everything it prints, stderr included,
+    stopping the task with that output where the command exits nonzero.
     """
     ran = run([*command], cwd=cwd, stderr=STDOUT, stdout=PIPE, text=True)
     if ran.returncode:
@@ -850,14 +850,14 @@ def output(*command: str, cwd: str | Path | None = None) -> str:
 
 def packument(name: str) -> dict:
     """
-    Returns the npm registry's document for the package `name`.
+    Fetches the npm registry's document for the package `name`.
     """
     return fetched(f"https://registry.npmjs.org/{quote(name, safe='@')}")
 
 
 def published_commit(crate: str, version: str) -> str:
     """
-    Returns the commit the crate `version` was published from, which cargo
+    Reads the commit the crate `version` was published from, which cargo
     records in `.cargo_vcs_info.json` inside the archive it uploads.
     """
     archive = f"https://static.crates.io/crates/{crate}/{crate}-{version}.crate"
@@ -868,21 +868,21 @@ def published_commit(crate: str, version: str) -> str:
 
 def read(path: str) -> str:
     """
-    Returns the text of the file at `path`.
+    Reads the text of the file at `path`.
     """
     return Path(path).read_text(encoding="utf-8")
 
 
 def toml(path: str) -> dict:
     """
-    Returns the parsed TOML mapping at `path`.
+    Parses the TOML file at `path` into its mapping.
     """
     return from_toml(read(path))
 
 
 def release(repo: str) -> Release:
     """
-    Returns the latest GitHub release of `repo`, its version being the tag
+    Fetches the latest GitHub release of `repo`, its version being the tag
     the release names.
     """
     latest = from_json(output("gh", "api", f"repos/{repo}/releases/latest"))
@@ -891,7 +891,7 @@ def release(repo: str) -> Release:
 
 def agreed(name: str, pins: list[Pin]) -> str:
     """
-    Returns the version every one of `pins` is written at, stopping the task
+    Reads the version every one of `pins` is written at, stopping the task
     where two homes of the `name` row disagree.
     """
     if len(written := {pin.written for pin in pins}) != 1:
@@ -934,8 +934,8 @@ def cargo_pins() -> Iterator[Pin]:
 
 def mise_pins() -> list[Pin]:
     """
-    Returns the pin of every tool the mise config declares, named without
-    its backend and owner.
+    Reads the pin of every tool the mise config declares, named without its
+    backend and owner.
     """
     return [
         Pin(
@@ -951,7 +951,7 @@ def mise_pins() -> list[Pin]:
 
 def pins() -> list[Pin]:
     """
-    Returns every pin the checkout writes, read from the mise config, the
+    Collects every pin the checkout writes, read from the mise config, the
     Cargo manifests, the docs site's manifest, the Python project and each
     task script's PEP 723 block, the workflows and composite actions, and
     the README's Rust badge.
@@ -975,7 +975,7 @@ def pins() -> list[Pin]:
 
 def padded(rows: list[list[str]]) -> str:
     """
-    Returns `rows` as a Markdown table headed by its first row, each column
+    Renders `rows` as a Markdown table headed by its first row, each column
     padded to its widest cell.
     """
     widths = [max(map(len, column)) for column in zip(*rows)]
@@ -1042,8 +1042,8 @@ def python_pins() -> Iterator[Pin]:
 
 def stamp(text: str | None) -> datetime | None:
     """
-    Returns the time an ISO 8601 `text` names as a UTC time, reading a time
-    that names no zone as UTC already, or `None` where there is no text.
+    Parses the time an ISO 8601 `text` names as a UTC time, reading a time
+    that names no zone as UTC already, giving `None` where there is no text.
     """
     if not text:
         return None
@@ -1053,12 +1053,12 @@ def stamp(text: str | None) -> datetime | None:
 
 def table() -> tuple[list[Lift], list[Held]]:
     """
-    Returns one row per name whose pins trail their newest release, sorted
-    by name, each carrying the open Dependabot alerts its lift clears,
-    beside each newer release mise's `minimum_release_age` cutoff holds
-    back from a tool or Cargo's `global-min-publish-age` holds back from a
-    crate, sorted by name and version, one entry per row and release at the
-    earliest time any of its pins clears.
+    Builds one row per name whose pins trail their newest release, sorted by
+    name, each carrying the open Dependabot alerts its lift clears, beside
+    each newer release mise's `minimum_release_age` cutoff holds back from a
+    tool or Cargo's `global-min-publish-age` holds back from a crate, sorted
+    by name and version, one entry per row and release at the earliest time
+    any of its pins clears.
     """
     found   = pins()
     reports = Reports.read(sorted({pin.script for pin in found} - {None}))
@@ -1105,7 +1105,7 @@ def tagged(repo: str) -> dict[str, str]:
 
 def passing(holds: set[str], logs: Path, named: str) -> bool:
     """
-    Returns whether the attempt holding back `holds` passes, logging it to
+    Checks whether the attempt holding back `holds` passes, logging it to
     a file under `logs` that takes its name from `named` and printing the
     result beside that file's path.
     """
@@ -1117,12 +1117,12 @@ def passing(holds: set[str], logs: Path, named: str) -> bool:
 
 def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
     """
-    Returns the holds a trial settles on, which are `holds` where the
-    attempt moving every other lift passes. An attempt holding back every
-    major lift follows, and the task stops where it fails or no major lift
-    is left to hold back. Otherwise the first attempt to pass holding back
-    one major lift gives the holds, or every major lift stays held back
-    where none does.
+    Finds the holds a trial settles on, which are `holds` where the attempt
+    moving every other lift passes. An attempt holding back every major lift
+    follows, and the task stops where it fails or no major lift is left to
+    hold back. Otherwise the first attempt to pass holding back one major
+    lift gives the holds, or every major lift stays held back where none
+    does.
     """
     logs     = LOGS / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     majors   = [lift.name for lift in lifts if lift.major and lift.name not in holds]
@@ -1147,7 +1147,7 @@ def tried(holds: set[str], lifts: list[Lift]) -> set[str]:
 
 def site_pins() -> list[Pin]:
     """
-    Returns the pin of every package the docs site's manifest declares,
+    Reads the pin of every package the docs site's manifest declares,
     of each `overrides` entry, which no report covers where it names no
     declared package, and of each `patchedDependencies` key.
     """
@@ -1182,7 +1182,7 @@ def site_pins() -> list[Pin]:
 
 def waiting(held: list[Held]) -> str:
     """
-    Returns the Markdown table listing each release in `held` beside when
+    Renders the Markdown table listing each release in `held` beside when
     its cooldown clears it, under a sentence naming both cooldowns.
     """
     header = ["**Pin**", "**Release**", "**Clears**"]
