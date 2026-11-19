@@ -26,7 +26,7 @@ use crate::{
     },
     rules::{
         RuleId,
-        alphabetize_siblings::order_read_values,
+        alphabetize_siblings::lookup_dicts,
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
@@ -229,12 +229,11 @@ impl Source {
         });
     }
 
-    /// Returns the ranges of the values whose iteration order this
-    /// source reads, per [`order_read_values`], walking the tree on the
-    /// first read.
-    pub(crate) fn order_read_values(&self) -> &FxHashSet<TextRange> {
-        self.order_read_values
-            .get_or_init(|| order_read_values(self))
+    /// Returns the ranges of the dict literals in this source whose
+    /// every use is a lookup, per [`lookup_dicts`], walking the tree on
+    /// the first read.
+    pub(crate) fn lookup_dicts(&self) -> &FxHashSet<TextRange> {
+        self.lookup_dicts.get_or_init(|| lookup_dicts(self))
     }
 
     /// Fills the padding walk over this text from the one `previous`

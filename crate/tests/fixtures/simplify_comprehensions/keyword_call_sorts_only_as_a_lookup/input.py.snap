@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_call_sorts_only_as_a_lookup/input.py
+---
+ordered = {"zeta": 1, "alpha": 2}
+looked_up = {"alpha": 2, "zeta": 1}
+names = list(ordered)
+first = looked_up["alpha"]

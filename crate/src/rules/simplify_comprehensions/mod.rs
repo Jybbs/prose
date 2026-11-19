@@ -3,21 +3,18 @@
 //! input unchanged. `set([x for x in xs])` reaches `set(xs)`, `dict()`
 //! reaches `{}`, and `tuple([1])` reaches `(1,)`. An empty sequence
 //! reaches `set()` rather than a brace form, because `{}` names an empty
-//! dict. A keyword `dict(...)` call keeps its call form where
-//! `alphabetize-siblings` would sort the literal into another order. A
-//! constructor name the module binds itself leaves every call to it
-//! alone. The walk reads expressions in source order, so an enclosing
+//! dict. A constructor name the module binds itself leaves every call to
+//! it alone. The walk reads expressions in source order, so an enclosing
 //! rewrite is recorded first and a nested candidate whose edits
 //! overlap it is dropped.
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::Expr;
 use ruff_text_size::{Ranged, TextRange};
 
 use crate::{
     config::Config,
     primitives::walk::{Interpolations, filter_map_over_exprs},
-    rules::{Rule, RuleId, alphabetize_siblings::Reorders},
+    rules::{Rule, RuleId},
     source::Source,
 };
 
@@ -25,16 +22,10 @@ mod constructor;
 mod plan;
 mod render;
 
-use self::{
-    constructor::Constructor,
-    plan::{Plan, plan_for},
-    render::{edits_for, quoted_key},
-};
+use self::{constructor::Constructor, plan::plan_for, render::edits_for};
 
 #[derive(Debug)]
-pub(crate) struct SimplifyComprehensions {
-    reorders: Reorders,
-}
+pub(crate) struct SimplifyComprehensions;
 
 impl SimplifyComprehensions {
     pub(crate) const MESSAGE: &'static str = "remove a redundant collection constructor";
@@ -43,10 +34,8 @@ impl SimplifyComprehensions {
 
     pub(crate) const PRESERVES_TREE: bool = false;
 
-    pub(crate) fn from_config(config: &Config) -> Self {
-        Self {
-            reorders: Reorders::from_config(config),
-        }
+    pub(crate) fn from_config(_: &Config) -> Self {
+        Self
     }
 }
 
@@ -60,17 +49,6 @@ impl Rule for SimplifyComprehensions {
         let mut claimed: Vec<TextRange> = Vec::new();
         filter_map_over_exprs(&source.ast().body, Interpolations::Skip, |expr| {
             let plan = plan_for(expr, &rebound)?;
-            if let (Plan::Keywords(keywords), Expr::Call(call)) = (&plan, expr)
-                && self.reorders.reorders_mapping_call(
-                    source,
-                    call,
-                    keywords.iter().filter_map(|keyword| {
-                        Some((quoted_key(keyword.arg.as_ref()?), &keyword.value))
-                    }),
-                )
-            {
-                return None;
-            }
             let edits = edits_for(source, expr, &plan)?;
             if edits.iter().any(|edit| overlaps(&claimed, edit.range())) {
                 return None;

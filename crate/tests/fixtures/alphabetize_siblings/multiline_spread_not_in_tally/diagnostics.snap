@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/alphabetize_siblings/multiline_spread_not_in_tally/input.py
 ---
-alphabetize-siblings@36..70
+alphabetize-siblings@16..100

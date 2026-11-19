@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/simplify_comprehensions/keyword_call_sorts_only_as_a_lookup/input.py
+---
+simplify-comprehensions@10..31
+simplify-comprehensions@44..65

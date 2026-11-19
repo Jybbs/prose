@@ -39,11 +39,6 @@ pub(super) fn edits_for(source: &Source, expr: &Expr, plan: &Plan) -> Option<Vec
         .then_some(edits)
 }
 
-/// Quotes `name`, a `dict(...)` keyword, as the key the brace form writes.
-pub(super) fn quoted_key(name: &str) -> String {
-    format!("\"{name}\"")
-}
-
 /// The byte width of the delimiter opening and closing `inner`, `0` for
 /// a generator the enclosing call's own parentheses bound.
 fn delimiter(inner: &Expr) -> TextSize {
@@ -77,7 +72,7 @@ fn keyword_edits(source: &Source, call: &Expr, keywords: &[Keyword]) -> Vec<Edit
         };
         let value = source.paren_aware_range((&keyword.value).into(), keyword.into());
         edits.push(Edit::range_replacement(
-            format!("{}: ", quoted_key(name)),
+            format!("\"{}\": ", name.as_str()),
             TextRange::new(keyword.start(), value.start()),
         ));
     }

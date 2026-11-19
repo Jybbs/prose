@@ -1,6 +1,6 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/alphabetize_siblings/head_shared_dict_sorts_in_place/input.py
 ---
-alphabetize-siblings@17..102
+alphabetize-siblings@11..84

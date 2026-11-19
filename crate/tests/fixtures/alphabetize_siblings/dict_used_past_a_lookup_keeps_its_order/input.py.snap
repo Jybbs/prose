@@ -1,8 +1,9 @@
 ---
 source: crate/tests/integration.rs
 expression: snapshot
-input_file: crate/tests/fixtures/alphabetize_siblings/dict_read_in_order_keeps_its_order/input.py
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_used_past_a_lookup_keeps_its_order/input.py
 ---
+COLUMNS = {"name": "Name", "kind": "Kind"}
 LABELS = {"alpha": "A", "zeta": "Z"}
 STAGES = {"checks": "Checks", "press": "Press", "deploy": "Publish"}
 
@@ -11,9 +12,9 @@ def first_failed(failed):
     return next((label for job, label in STAGES.items() if failed(job)), "")
 
 
-def headers():
-    columns = {"name": "Name", "kind": "Kind"}
-    return list(columns)
+def headers(write):
+    write(COLUMNS)
+    return {"b": 2, "a": 1}
 
 
 def label(key):

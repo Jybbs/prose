@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Dict the Module Reads in Order Keeps Its Order"
-
-description = '''
-`first_failed` walks `STAGES` through `.items()` and `headers` passes `columns` to `list()`, so each reads the order its keys were inserted in, whereas `LABELS` is only ever looked up by key. **`STAGES` and `columns` keep the order written while `LABELS` sorts to `"alpha"`, `"zeta"`**, because sorting a dict whose order the module reads would change what the program returns.
-'''

@@ -1638,9 +1638,13 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
     asked  = []
     alerts = [
         {
-            "number"     : 7,
-            "dependency" : {"package": {"ecosystem": "npm", "name": "vite"}},
-            "security_vulnerability": {"first_patched_version": {"identifier": "8.3.1"}}
+            "number"                 : 7,
+            "dependency"             : {
+                "package": {"ecosystem": "npm", "name": "vite"}
+            },
+            "security_vulnerability" : {
+                "first_patched_version": {"identifier": "8.3.1"}
+            }
         }
     ]
     found = [

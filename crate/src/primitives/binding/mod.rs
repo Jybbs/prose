@@ -89,6 +89,11 @@ impl BindingAnalysis {
         self.assignment_values.get(&offset).copied()
     }
 
+    /// Returns `true` when `binding` sits in the module scope.
+    pub(crate) fn at_module_scope(&self, binding: BindingId) -> bool {
+        self.binding(binding).scope == ScopeId(0)
+    }
+
     /// Returns the recorded write kinds for `binding`, in insertion
     /// order and without duplicates.
     pub(crate) fn binding_kinds(&self, binding: BindingId) -> &[BindingKind] {
@@ -323,22 +328,23 @@ impl BindingAnalysis {
             .any(|id| self.binding_name(id) == name)
     }
 
+    /// Returns each binding written exactly once outside a class body,
+    /// beside the offset of that write.
+    pub(crate) fn sole_writes(&self) -> impl Iterator<Item = (TextSize, BindingId)> + use<'_> {
+        self.bindings.iter().zip(0..).filter_map(|(binding, id)| {
+            match binding.write_offsets.as_slice() {
+                [write] if self.scopes[binding.scope.0 as usize].kind != ScopeKind::Class => {
+                    Some((*write, BindingId(id)))
+                }
+                _ => None,
+            }
+        })
+    }
+
     /// Returns the unpack disposition of `binding` when its sole write
     /// is a multi-name tuple or list unpack target, `None` otherwise.
     pub(crate) fn unpack_target(&self, binding: BindingId) -> Option<UnpackKind> {
         self.unpack_targets.get(&binding).copied()
-    }
-
-    /// Returns the offset of every write of each binding read at one of
-    /// `offsets`.
-    pub(crate) fn writes_read_at<'a>(
-        &'a self,
-        offsets: &'a FxHashSet<TextSize>,
-    ) -> impl Iterator<Item = TextSize> + use<'a> {
-        self.bindings
-            .iter()
-            .filter(|binding| binding.read_at_any(offsets))
-            .flat_map(|binding| binding.write_offsets.iter().copied())
     }
 
     /// Returns the offset of every write of each binding in the local

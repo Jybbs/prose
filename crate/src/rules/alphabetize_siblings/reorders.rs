@@ -7,7 +7,7 @@ use std::{borrow::Cow, ops::Range};
 use ruff_python_ast::{AnyNodeRef, ArgOrKeyword, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange};
 
-use super::dict::{dict_holds_as_laid_out, dict_sort_key, entry_sort_key, keeps_order};
+use super::dict::{dict_holds_as_laid_out, dict_sort_key, keeps_order};
 use super::{AlphabetizeSiblings, builds_mapping, dunder_list};
 use crate::{
     config::Config,
@@ -68,31 +68,11 @@ impl Reorders {
         }
     }
 
-    /// True where the literal a `dict(...)` `call` rewrites to would sort
-    /// into another order, `entries` holding each key the literal writes
-    /// beside its value. `false` where the rule is off, skip-held, or not
-    /// sorting dict keys, and where `# prose: keep` or a read of the
-    /// module holds the order of `call`.
-    pub(crate) fn reorders_mapping_call<'a>(
-        self,
-        source: &Source,
-        call: &ExprCall,
-        entries: impl Iterator<Item = (String, &'a Expr)>,
-    ) -> bool {
-        if !self.sort_dict_keys || !self.sorts(source, call) || keeps_order(source, call) {
-            return false;
-        }
-        let keys: Vec<Option<(bool, String)>> = entries
-            .map(|(key, value)| entry_sort_key(value, key))
-            .collect();
-        sorted_order(&keys, whole(&keys)).is_some_and(|order| !order.is_sorted())
-    }
-
     /// Returns the sort over `node`'s entries, or `None` where no entry
     /// of `node` sorts: the rule off or skip-held over `node`, a node of
     /// another kind, the arguments of a call building a mapping, a list or tuple bound to nothing the rule sorts under
     /// `parent`, a dict or dunder list held by `# prose: keep` or the
-    /// config, a dict whose order the module reads, or fewer than two
+    /// config, a dict a use reaches past a lookup, or fewer than two
     /// entries.
     pub(crate) fn sorted(
         self,
@@ -262,41 +242,9 @@ mod tests {
     use crate::testing::{first_value, parse};
 
     #[rstest]
-    #[case::effectful_pin("x = dict(b=make(), a=1)\n", true, false)]
-    #[case::kept("x = dict(b=1, a=2)  # prose: keep\n", true, false)]
-    #[case::read("x = dict(b=1, a=2)\ny = list(x)\n", true, false)]
-    #[case::scalar_before_collection("x = dict(b=1, a=[2])\n", true, false)]
-    #[case::skipped(
-        "x = dict(b=1, a=2)  # prose: skip[alphabetize-siblings]\n",
-        true,
-        false
-    )]
-    #[case::sort_dict_keys_off("x = dict(b=1, a=2)\n", false, false)]
-    #[case::sorted("x = dict(a=1, b=2)\n", true, false)]
-    #[case::unsorted("x = dict(b=1, a=2)\n", true, true)]
-    fn reorders_mapping_call_reads_the_order_the_literal_sorts_into(
-        #[case] src: &str,
-        #[case] sort_dict_keys: bool,
-        #[case] expected: bool,
-    ) {
-        let source = parse(src);
-        let mut config = Config::default();
-        config.rules.alphabetize_siblings.sort_dict_keys = sort_dict_keys;
-        let call = first_value(&source).as_call_expr().expect("call value");
-        let entries = call.arguments.keywords.iter().map(|keyword| {
-            let name = keyword.arg.as_ref().expect("named keyword");
-            (format!("\"{name}\""), &keyword.value)
-        });
-        assert_eq!(
-            Reorders::from_config(&config).reorders_mapping_call(&source, call, entries),
-            expected
-        );
-    }
-
-    #[rstest]
     #[case::looked_up("x = {'b': 1, 'a': 2}\ny = x['a']\n", true)]
-    #[case::read("x = {'b': 1, 'a': 2}\ny = list(x)\n", false)]
-    fn sorted_forecasts_a_dict_only_where_the_module_reads_no_order(
+    #[case::passed("x = {'b': 1, 'a': 2}\nf(x)\n", false)]
+    fn sorted_forecasts_a_dict_only_where_every_use_is_a_lookup(
         #[case] src: &str,
         #[case] expected: bool,
     ) {

@@ -3,5 +3,5 @@ previewable = false
 title       = "A Dict Whose First Entry Shares the Opening Line Sorts in Place"
 
 description = '''
-The dict's first entry, `'name': opt_name`, shares its row with the opening `{` of `options.append({`. **The sort swaps the entry texts in place rather than moving rows, so `'default': def_str` takes the first place** while every separator, every indent, and the closing `})` on its own line stay exactly where the source put them, because no whole row can move without dragging `options.append({` along with it.
+The dict's first entry, `'name': opt_name`, shares its row with the opening `{` of `option = {`. **The sort swaps the entry texts in place rather than moving rows, so `'default': def_str` takes the first place** while every separator, every indent, and the closing `}` on its own line stay exactly where the source put them, because no whole row can move without dragging `option = {` along with it.
 '''

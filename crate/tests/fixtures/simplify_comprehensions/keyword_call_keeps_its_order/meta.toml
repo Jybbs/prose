@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Keyword `dict()` Call Keeps Its Order"
-
-description = '''
-Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, and [[alphabetize-siblings]] sorts the keys of a literal. **`sorted_keys` and `read` become literals while `ordered` stays a call**, because the keys of `sorted_keys` already sit in sorted order and the module reads the order of `read` through `list()`, whereas a literal for `ordered` would sort `"alpha"` ahead of `"zeta"`.
-'''

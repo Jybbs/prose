@@ -7,7 +7,7 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{DictItem, Expr, ExprDict};
+use ruff_python_ast::{DictItem, ExprDict};
 use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -38,21 +38,17 @@ pub(super) fn dict_sort_key<'a>(
     source: &'a Source,
     item: &DictItem,
 ) -> Option<(bool, Cow<'a, str>)> {
-    entry_sort_key(&item.value, joined_key(source, item.key.as_ref()?))
+    let key = item
+        .key
+        .as_ref()
+        .filter(|_| !value_is_effectful(&item.value))?;
+    Some((is_layoutable(&item.value), joined_key(source, key)))
 }
 
-/// Returns the sort key of an entry binding `value` under `key`, the
-/// partition flag beside `key`, or `None` where `value` runs code and
-/// so pins the entry in its slot.
-pub(super) fn entry_sort_key<K>(value: &Expr, key: K) -> Option<(bool, K)> {
-    (!value_is_effectful(value)).then(|| (is_layoutable(value), key))
-}
-
-/// True where `mapping`, a dict literal or a `dict(...)` call, keeps the
-/// order written, under `# prose: keep` or where the module reads its
-/// iteration order per [`Source::order_read_values`].
-pub(super) fn keeps_order(source: &Source, mapping: impl Ranged) -> bool {
-    has_keep_marker(source, &mapping) || source.order_read_values().contains(&mapping.range())
+/// True where `dict` keeps the order written, under `# prose: keep` or
+/// where a use of it reaches past a lookup per [`Source::lookup_dicts`].
+pub(super) fn keeps_order(source: &Source, dict: &ExprDict) -> bool {
+    has_keep_marker(source, dict) || !source.lookup_dicts().contains(&dict.range())
 }
 
 /// Rewrites a dict literal's items span. Returns `Some((span, text))`

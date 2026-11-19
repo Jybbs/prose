@@ -18,7 +18,7 @@ layout  : doc
 | Pydantic `BaseModel` and `TypedDict` fields | Required before optional |
 | Dataclass and `NamedTuple` fields | Source order kept |
 | Parameters and keyword arguments | Keyword-only parameters and call keywords alphabetical, positional kept in place |
-| Dict literal keys | Scalar entries before collection entries, alphabetical within each, kept as written where the module reads their order |
+| Dict literal keys | Scalar entries before collection entries, alphabetical within each, wherever every use of the dict is a lookup |
 | Imports | Alphabetical within each [[group-imports]] section |
 | Docstring entries | Parameter entries follow the signature order, all else alphabetical |
 
@@ -56,9 +56,9 @@ At a call site, keyword arguments in `name=value` form sort on any callee while 
 
 <FixtureCards rule="alphabetize_siblings" cases="call_kwargs_trailing_comments_travel mapping_constructor_keywords_keep_their_order" />
 
-A dict literal keeps the order written where the module reads that order, through a `for` loop or a comprehension over it, `.keys()`, `.values()`, or `.items()` on it, `iter`, `list`, `tuple`, `reversed`, `enumerate`, `json.dumps`, or `json.dump` over it, or `*` or `**` unpacking it. `json.dumps` and `json.dump` also hold each dict literal nested in what they take, and in the value each name inside it binds, since the JSON they write keeps every nested order. The read holds the literal it takes and each literal an assignment, an annotated assignment, a `:=`, or a `|=` binds to the name it takes, both branches of a conditional value and each operand of an `or` or `and` included, at module scope, inside a function, or from a function reading a module-level name, whereas a name reached through an alias, an attribute, a subscript, or another function's parameter is not followed. A `dict(...)` call keeps its keyword order the same way, since [[simplify-comprehensions]] leaves it a call wherever the literal it would write sorts into another order.
+A dict literal's keys sort only where every use of it is a lookup, the literal subscripted, read through `.get`, or tested with `in` or `not in` where it stands, or bound once to a name whose every reference in the file is a subscript load, store, or delete, `.get`, `in` or `not in`, `len`, or `sorted`. Every other literal keeps the order written, since a dict passed to a call, returned, yielded, aliased, iterated, unpacked, bound to an attribute, rebound, or bound to a name `__all__` lists can reach the order its keys were inserted in. A dict nested inside another keeps its order too, unless it is looked up where it stands, and a `dict(...)` call that [[simplify-comprehensions]] rewrites as a literal takes the same test.
 
-<FixtureCards rule="alphabetize_siblings" cases="dict_read_in_order_keeps_its_order json_output_keeps_nested_dict_order" />
+<FixtureCards rule="alphabetize_siblings" cases="dict_used_only_for_lookups_sorts dict_used_past_a_lookup_keeps_its_order" />
 
 <template #facets>
 
@@ -78,7 +78,7 @@ Each sort switches off on its own, so a project can keep its methods grouped whi
 
 ### `sort-dict-keys`
 
-`sort-dict-keys` sorts a dict literal's entries, the scalar values ahead of the collection values and alphabetical by key within each. A literal the module reads in order keeps that order under either setting, so a project relying on insertion order beyond what the module reads (*a dict another module iterates*) sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
+`sort-dict-keys` sorts the entries of each dict literal whose every use is a lookup, the scalar values ahead of the collection values and alphabetical by key within each. The uses are read in the file alone, so a project whose lookup tables another module iterates sets the facet to `false`, and one literal keeps the order written under `# prose: keep`.
 
 <FixtureCards rule="alphabetize_siblings" cases="sort_dict_keys_false_keeps_order" />
 

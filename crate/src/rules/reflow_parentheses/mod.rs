@@ -54,7 +54,6 @@ pub(crate) struct ReflowParentheses {
     reservations: reserve::Reservations,
     sheds_super_args: bool,
     simplifies_comprehensions: bool,
-    simplify_comprehensions: SimplifyComprehensions,
     stranding: padding::Stranding,
 }
 
@@ -74,7 +73,6 @@ impl ReflowParentheses {
             reservations: config.equals_reservations(),
             sheds_super_args: config.rules.shed_super_args.enabled,
             simplifies_comprehensions: config.rules.simplify_comprehensions.enabled,
-            simplify_comprehensions: SimplifyComprehensions::from_config(config),
             stranding: config.stranded_padding(),
         }
     }
@@ -88,10 +86,7 @@ impl ReflowParentheses {
     fn rewrites(&self, source: &Source) -> Vec<Edit> {
         let later: [(bool, &dyn Rule); 2] = [
             (self.sheds_super_args, &ShedSuperArgs),
-            (
-                self.simplifies_comprehensions,
-                &self.simplify_comprehensions,
-            ),
+            (self.simplifies_comprehensions, &SimplifyComprehensions),
         ];
         outermost(
             later
@@ -206,31 +201,5 @@ impl Shedder<'_> {
                 self.folds.push(pair);
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use rstest::rstest;
-
-    use super::*;
-    use crate::testing::parse;
-
-    #[rstest]
-    #[case::sorting(true, false)]
-    #[case::not_sorting(false, true)]
-    fn rewrites_forecast_the_keyword_call_the_configured_rule_rewrites(
-        #[case] sort_dict_keys: bool,
-        #[case] expected: bool,
-    ) {
-        let source = parse("x = dict(zeta=1, alpha=2)\n");
-        let mut config = Config::default();
-        config.rules.alphabetize_siblings.sort_dict_keys = sort_dict_keys;
-        assert_eq!(
-            !ReflowParentheses::from_config(&config)
-                .rewrites(&source)
-                .is_empty(),
-            expected
-        );
     }
 }

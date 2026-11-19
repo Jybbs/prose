@@ -12,9 +12,9 @@ layout  : doc
 
 The brace form is written only where it is unambiguous. An empty `set()` stays a call because `{}` names an empty dict rather than an empty set, so `set([])` becomes `set()` and never `{}`. A `dict(...)` call becomes the brace form only where its argument carries key-value pairs a literal or a dict comprehension can express, so `dict(**defaults)` and `dict(defaults, extra=1)` stay as written.
 
-Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, so the call keeps its form wherever [[alphabetize-siblings]] would sort the literal it becomes into another order. It becomes the brace form where its keys already sit in sorted order, where the module reads the order of the mapping so that the literal keeps it, where [[alphabetize-siblings]] or its `sort-dict-keys` facet is off, and where a `# prose: keep`, or a `# prose: skip` covering [[alphabetize-siblings]], holds the call.
+Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, so the literal the call becomes sorts only where every use of it is a lookup, the test [[alphabetize-siblings]] applies to every dict literal. A call bound to a name the module only subscripts sorts its keys as it becomes a literal, whereas one whose name `list()` reads keeps the keyword order, and the `sort-dict-keys` facet and `# prose: keep` still decline the sort outright.
 
-<FixtureCards rule="simplify_comprehensions" cases="keyword_call_keeps_its_order" />
+<FixtureCards rule="simplify_comprehensions" cases="keyword_call_sorts_only_as_a_lookup" />
 
 A comprehension whose element repeats its target unchanged spells a copy, so `[row for row in rows]` becomes `list(rows)` and `{key: value for key, value in rows}` becomes `dict(rows)`. A guard or a second generator makes the comprehension do work no constructor call does, and both forms stay as written. Where a wrapper and a copy meet, the rewrite settles in one step, so `list(row for row in rows)` becomes `list(rows)` directly rather than passing through an intermediate comprehension. It stops short of `list(list(rows))`, since a doubled constructor reads no better than the comprehension it would replace. An f-string or t-string replacement field is not visited, so a call written inside one keeps whatever form its author gave it.
 

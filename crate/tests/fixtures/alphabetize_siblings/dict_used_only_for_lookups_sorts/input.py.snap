@@ -1,0 +1,16 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_used_only_for_lookups_sorts/input.py
+---
+LABELS = {"alpha": "A", "zeta": "Z"}
+WEIGHTS: dict[str, int] = {"alpha": 1, "zeta": 2}
+
+
+def describe(key, keys):
+    if key not in LABELS or len(LABELS) < 2:
+        return LABELS.get(key, "")
+    del WEIGHTS[key]
+    WEIGHTS[key] = 3
+    ranked = sorted(keys, key=WEIGHTS.get)
+    return LABELS[key] + sorted(LABELS)[0] + {"alpha": "A", "zeta": "Z"}[ranked[0]]

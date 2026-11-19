@@ -1,7 +1,0 @@
-[docs]
-previewable = true
-title       = "A Dict JSON Writes Keeps Every Nested Order"
-
-description = '''
-`json.dump` and `json.dumps` write each dict in the order its keys were inserted, nested dicts included, so `MANIFEST`, the `deps` table inside it, and each row in the list `rows` writes all keep the order written. `SETTINGS` is only ever looked up by key, so **it sorts to `"mode"`, `"width"` while every dict the JSON output reads holds its order**.
-'''

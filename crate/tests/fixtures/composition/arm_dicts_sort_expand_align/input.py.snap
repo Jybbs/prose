@@ -1,9 +1,9 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/composition/arm_dicts_sort_expand_align/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/arm_dicts_sort_expand_align/input.py
 ---
-def dispatch(kind):
+def dispatch(kind, field):
     match kind:
         case "alpha":
             return {
@@ -11,12 +11,12 @@ def dispatch(kind):
                 "extra"        : True,
                 "name"         : "alpha",
                 "weight"       : 1
-            }
+            }.get(field)
         case "beta":
             return {
                 "comment_text" : "secondary",
                 "extra"        : False,
                 "name"         : "beta",
                 "weight"       : 2
-            }
+            }.get(field)
         case _: return None

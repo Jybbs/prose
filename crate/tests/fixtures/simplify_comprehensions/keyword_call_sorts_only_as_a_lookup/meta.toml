@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Keyword `dict()` Call Sorts Only as a Lookup"
+
+description = '''
+Each keyword of a `dict(...)` call sets where its key falls in the mapping's iteration order, and the literal it becomes takes the test [[alphabetize-siblings]] applies to every dict literal. **Both calls become literals, `looked_up` sorting to `"alpha"`, `"zeta"` while `ordered` keeps the order written**, because `looked_up` is only subscripted whereas `list()` reads the order of `ordered`.
+'''

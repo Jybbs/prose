@@ -4,5 +4,5 @@ previewable = true
 title       = "A Dict Entry Is Measured Where the Sort Puts It"
 
 description = '''
-The dict passed to `self.call_exception_handler` lists `'message'`, `'exception'`, and `'loop'`, each with a trailing comma, and the sort moves `'message'` last. [[alphabetize-siblings]] settles which entry ends the dict, so **[[reflow-collections]] measures each entry with the separator that order leaves after it**, and the `'message'` entry, last after the sort, drops its comma, fits its row within the 79-column budget, and the layout settles once the sort is written.
+The `context` dict, read only through subscripts, lists `'message'`, `'exception'`, and `'loop'`, each with a trailing comma, and the sort moves `'message'` last. [[alphabetize-siblings]] settles which entry ends the dict, so **[[reflow-collections]] measures each entry with the separator that order leaves after it**, and the `'message'` entry, last after the sort, drops its comma, fits its row within the 79-column budget, and the layout settles once the sort is written.
 '''

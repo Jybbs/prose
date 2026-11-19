@@ -1,7 +1,7 @@
 ---
 source: crate/tests/integration.rs
-expression: render(&diagnostics)
+expression: render(diagnostics)
 input_file: crate/tests/fixtures/thematic/deep_nested_dict_per_level/input.py
 ---
-alphabetize-siblings@11..685
+alphabetize-siblings@11..78
 reflow-collections@10..688
