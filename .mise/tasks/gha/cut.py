@@ -33,7 +33,7 @@ MANIFEST = "crate/Cargo.toml"
 
 def annotation(level: str, message: str) -> str:
     """
-    Returns the workflow command raising a `level` annotation for
+    Formats the workflow command raising a `level` annotation for
     `message`, with each `%`, carriage return, and newline escaped the way
     `@actions/core` escapes a command's message, which the runner reverses
     when it reads the annotation.
@@ -73,7 +73,7 @@ def emit(**outputs: str):
 
 def existing_release(repo: str, version: str) -> dict | None:
     """
-    Returns the first release in the repository's listing whose tag is the
+    Finds the first release in the repository's listing whose tag is the
     version, or `None` when no release in the listing carries it.
     """
     listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
@@ -139,14 +139,14 @@ def main():
 
 def package_version(manifest: str) -> str:
     """
-    Returns `[package].version` from the text of a `crate/Cargo.toml`.
+    Reads `[package].version` from the text of a `crate/Cargo.toml`.
     """
     return from_toml(manifest)["package"]["version"]
 
 
 def previous_version() -> str | None:
     """
-    Returns `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
+    Reads `[package].version` from `crate/Cargo.toml` at HEAD~1, or `None`
     when HEAD~1 lacks the manifest or carries no parseable version.
     """
     try:

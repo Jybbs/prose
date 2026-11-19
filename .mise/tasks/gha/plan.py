@@ -57,8 +57,8 @@ def badges() -> dict[str, tuple[str, str]]:
 
 def changed() -> list[str]:
     """
-    Returns the paths the checked-out merge changes against `PARENT` on a
-    pull request, and none on any other event.
+    Lists the paths the checked-out merge changes against `PARENT` on a pull
+    request, and none on any other event.
     """
     if environ.get("GITHUB_EVENT_NAME") != "pull_request":
         return []
@@ -152,7 +152,7 @@ def registry() -> dict[str, str]:
 
 def scoped(paths: list[str]) -> list[str]:
     """
-    Returns the slugs of the rule modules `paths` touch, empty when a path
+    Collects the slugs of the rule modules `paths` touch, empty when a path
     the corpus workflow watches sits outside a registered rule's module.
     """
     globs   = watched()
@@ -188,8 +188,8 @@ def verify_tag():
 
 def watched() -> list[str]:
     """
-    Returns the path globs the corpus workflow's pull-request trigger
-    filters on.
+    Reads the path globs the corpus workflow's pull-request trigger filters
+    on.
     """
     text = Path(".github/workflows/corpus.yml").read_text(encoding="utf-8")
     return load(text, Loader=BaseLoader)["on"]["pull_request"]["paths"]

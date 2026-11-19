@@ -112,7 +112,7 @@ SENT = [
 @fixture
 def rulesets(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `repo:rulesets` script.
+    Loads the `repo:rulesets` script.
     """
     return task("repo/rulesets")
 
@@ -120,7 +120,7 @@ def rulesets(task: Callable[[str], ModuleType]) -> ModuleType:
 @fixture
 def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
-    Returns a working tree holding the sample settings, the sample project
+    Writes a working tree holding the sample settings, the sample project
     table, and two rulesets, one named `kept` and one named `fresh`, and
     makes it the current directory.
     """
@@ -136,7 +136,7 @@ def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
 
 def argv(body: dict | None, endpoint: str, method: str) -> list[str]:
     """
-    Returns the command `gh` is run with for a call.
+    Builds the command `gh` is run with for a call.
     """
     return [
         "gh", "api", "--method", method, endpoint,
@@ -146,7 +146,7 @@ def argv(body: dict | None, endpoint: str, method: str) -> list[str]:
 
 def parsed(rulesets: ModuleType, text: str = SETTINGS) -> Any:
     """
-    Returns the record the settings `text` parses to.
+    Parses the settings `text` into its record.
     """
     return rulesets.Settings.from_table(from_toml(text))
 
@@ -440,6 +440,6 @@ def test_tracked_files_send_the_about_box(rulesets: ModuleType):
 
 def tracked(path: str) -> str:
     """
-    Returns the text of the tracked file at `path` under the worktree root.
+    Reads the text of the tracked file at `path` under the worktree root.
     """
     return (ROOT / path).read_text(encoding="utf-8")

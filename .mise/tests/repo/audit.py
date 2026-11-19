@@ -334,7 +334,7 @@ UNSTAMPED = (
 @fixture
 def audit(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `repo:audit` script.
+    Loads the `repo:audit` script.
     """
     return task("repo/audit")
 
@@ -345,7 +345,7 @@ def drifted(
     workdir : Callable[[dict[str, str]], Path]
 ) -> Callable[[str, str, str], None]:
     """
-    Returns a function making the current directory a tree holding `PINS`,
+    Builds a function making the current directory a tree holding `PINS`,
     with `mise` faked to list `TASKS`, after one edit to a pin.
     """
     def write(home: str, pin: str, stray: str):
@@ -373,9 +373,9 @@ def repository(
     workdir     : Callable[[dict[str, str]], Path]
 ) -> Callable[[dict[str, str], list[dict]], Path]:
     """
-    Returns a function making the current directory a git repository
-    tracking the files it is given, with `mise` faked to list the tasks it
-    is given and every `git` call run as given.
+    Builds a function making the current directory a git repository tracking
+    the files it is given, with `mise` faked to list the tasks it is given
+    and every `git` call run as given.
     """
     for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
         monkeypatch.delenv(variable, raising=False)

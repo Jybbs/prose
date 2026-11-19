@@ -117,7 +117,7 @@ class Report:
 
 def action_pin(action: str, key: str) -> str:
     """
-    Returns the `key` input pinned in the `action` composite action.
+    Reads the `key` input pinned in the `action` composite action.
     """
     return matched(
         message = f"no {key} pin in {action}/action.yml",
@@ -128,8 +128,8 @@ def action_pin(action: str, key: str) -> str:
 
 def action_pins() -> list[tuple[str, str, str]]:
     """
-    Returns one parity pair per repeat of a third-party action pin, with
-    or without a YAML anchor before it, comparing every later home's commit
+    Builds one parity pair per repeat of a third-party action pin, with or
+    without a YAML anchor before it, comparing every later home's commit
     against the first home's.
     """
     homes = defaultdict(list)
@@ -162,8 +162,8 @@ def annotate(message: str, level: str = "error", **location):
 
 def badge(svg: str) -> str:
     """
-    Returns the `<major>.<minor>` token from the README badge line whose
-    link target carries `svg`.
+    Reads the `<major>.<minor>` token from the README badge line whose link
+    target carries `svg`.
     """
     return matched(
         message = f"no README.md badge line carries {svg!r}",
@@ -174,8 +174,8 @@ def badge(svg: str) -> str:
 
 def build_requirement(name: str) -> str:
     """
-    Returns the exact version `crate/pyproject.toml` pins for the `name`
-    build requirement.
+    Reads the exact version `crate/pyproject.toml` pins for the `name` build
+    requirement.
     """
     for requirement in toml("crate/pyproject.toml")["build-system"]["requires"]:
         if requirement.startswith(name):
@@ -189,7 +189,7 @@ def build_requirement(name: str) -> str:
 
 def cargo_lock_version(name: str) -> str:
     """
-    Returns the version `Cargo.lock` resolves for the `name` package.
+    Reads the version `Cargo.lock` resolves for the `name` package.
     """
     for package in toml("Cargo.lock")["package"]:
         if package["name"] == name:
@@ -199,7 +199,7 @@ def cargo_lock_version(name: str) -> str:
 
 def cargo_manifests(paths: list[str]) -> list[str]:
     """
-    Returns every member manifest among `paths`, sorted.
+    Selects every member manifest among `paths`, sorted.
     """
     return sorted(path for path in paths if path.endswith("/Cargo.toml"))
 
@@ -275,7 +275,7 @@ def checks() -> int:
 
 def dependencies(task: str) -> list[str]:
     """
-    Returns the name of every task `task` depends on, reducing an entry that
+    Lists the name of every task `task` depends on, reducing an entry that
     passes arguments to the name of the task it runs.
     """
     return [
@@ -313,7 +313,7 @@ def exact() -> int:
 
 def extract(message: str, pattern: str, text: str) -> str:
     """
-    Returns the first capture of `pattern` in `text`.
+    Finds the first capture of `pattern` in `text`.
     """
     if match := search(pattern, text):
         return match[1]
@@ -330,7 +330,7 @@ def fail(message: str) -> NoReturn:
 
 def families() -> dict[str, tuple[str, str | None]]:
     """
-    Returns the color and the description the docs site gives each rule
+    Reads the color and the description the docs site gives each rule
     family, keyed by the GitHub label that family carries, its badge
     from `FAMILY_META` followed by its name. The color is the palette
     hue `FAMILIES` maps the family to, and the description is the one its
@@ -379,9 +379,9 @@ def families() -> dict[str, tuple[str, str | None]]:
 
 def filled(entry: dict, template: str) -> str:
     """
-    Returns `template` with each `${{ matrix.<key> }}` expression replaced
-    by the value `entry` gives that key, or by nothing where `entry` gives
-    none, and with its surrounding whitespace stripped.
+    Fills each `${{ matrix.<key> }}` expression in `template` with the value
+    `entry` gives that key, or with nothing where `entry` gives none, and
+    strips the whitespace around the result.
     """
     return sub(
         r"\$\{\{\s*matrix\.([\w-]+)\s*\}\}",
@@ -392,7 +392,7 @@ def filled(entry: dict, template: str) -> str:
 
 def filtered(path: str, patterns: list[str]) -> bool:
     """
-    Returns whether a GitHub `paths` filter made of `patterns` selects
+    Checks whether a GitHub `paths` filter made of `patterns` selects
     `path`, the last pattern to match it deciding. A `**` matches across `/`
     and a `**/` matches zero or more whole directories, whereas `*` never
     matches `/`. A `?` takes the character before it zero or one times, a
@@ -523,8 +523,7 @@ def gates() -> int:
 
 def hashed_paths(action: str) -> list[str]:
     """
-    Returns the file paths listed in the `action` manifest's `hashFiles`
-    call.
+    Reads the file paths listed in the `action` manifest's `hashFiles` call.
     """
     return findall(
         r"'([^']+)'",
@@ -538,7 +537,7 @@ def hashed_paths(action: str) -> list[str]:
 
 def invoked(text: str) -> list[str]:
     """
-    Returns every task a `mise run` in `text` names.
+    Collects every task a `mise run` in `text` names.
     """
     return findall(r"\bmise run ([\w:-]+)", text)
 
@@ -626,14 +625,14 @@ def located(findings: list[tuple[str, Path, int]]) -> int:
 
 def major_minor(value: str) -> str:
     """
-    Returns `<major>.<minor>` from any string carrying a SemVer head.
+    Extracts `<major>.<minor>` from any string carrying a SemVer head.
     """
     return extract(f"cannot parse major.minor from {value!r}", r"(\d+\.\d+)", value)
 
 
 def manifest(action: str) -> str:
     """
-    Returns the path of the `action` composite action's manifest.
+    Builds the path of the `action` composite action's manifest.
     """
     return f".github/actions/{action}/action.yml"
 
@@ -659,14 +658,14 @@ def manifests() -> int:
 
 def matched(message: str, path: str, pattern: str) -> str:
     """
-    Returns the first capture of `pattern` in the file at `path`.
+    Finds the first capture of `pattern` in the file at `path`.
     """
     return extract(message, pattern, read(path))
 
 
 def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
     """
-    Returns one parity pair per list that restates the workspace members,
+    Builds one parity pair per list that restates the workspace members,
     comparing the manifests that list names against the ones the members
     own.
     """
@@ -682,7 +681,7 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
 
 def misdirected(script: Path) -> bool:
     """
-    Returns whether a copy of `script` in a scratch tree hands its
+    Checks whether a copy of `script` in a scratch tree hands its
     stand-in target an argument other than as given, one holding
     a space included, runs a target other than the scratch tree's
     `site/node_modules/.bin/<tool>` once both paths are resolved, or runs
@@ -720,7 +719,7 @@ def misdirected(script: Path) -> bool:
 
 def mise_json(*args: str) -> dict | list:
     """
-    Returns the report mise prints for the `args` subcommand run with
+    Parses the report mise prints for the `args` subcommand run with
     `--json`, failing when the subcommand prints none.
     """
     report = run(["mise", *args, "--json"], capture_output=True, text=True)
@@ -742,9 +741,9 @@ def mise_pins(config: dict) -> dict[str, str]:
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
-    Returns one parity pair per `overrides` entry the manifest also pins
-    as a `devDependencies` entry, leaving an override of an undeclared
-    transitive alone.
+    Builds one parity pair per `overrides` entry the manifest also pins as a
+    `devDependencies` entry, leaving an override of an undeclared transitive
+    alone.
     """
     return [
         (
@@ -772,7 +771,7 @@ def parity() -> int:
 
 def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
     """
-    Returns each pair of cross-config pins or shared declarations `parity`
+    Collects each pair of cross-config pins or shared declarations `parity`
     compares, beside the label it reports a mismatch under.
     """
     cargo   = toml("Cargo.toml")
@@ -861,7 +860,7 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
 
 def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
     """
-    Returns every file in `folder` matching one of `patterns` beside its
+    Collects every file in `folder` matching one of `patterns` beside its
     parsed YAML, sorted by path.
     """
     return [
@@ -872,7 +871,7 @@ def parsed(folder: str, *patterns: str) -> list[tuple[Path, dict]]:
 
 def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     """
-    Returns one parity pair per `patchedDependencies` key, matching the
+    Builds one parity pair per `patchedDependencies` key, matching the
     version the key targets against the version the manifest pins for that
     package.
     """
@@ -929,7 +928,7 @@ def patterns() -> int:
 
 def planned(flow: dict, matrix: str) -> list[dict]:
     """
-    Returns the entries of the matrix the `matrix` expression reads off
+    Lists the entries of the matrix the `matrix` expression reads off
     another job of `flow`, by running the step that sets that job's output.
     The step runs with every `GITHUB_` variable unset, so it prints the plan
     a run outside GitHub emits.
@@ -983,7 +982,7 @@ def privileges() -> int:
 
 def proof_rows() -> list[tuple[str, list[str]]]:
     """
-    Returns each check of a pull-request workflow whose steps name test
+    Collects each check of a pull-request workflow whose steps name test
     binaries to `mise run rust:proof`, beside those binaries.
     """
     return [
@@ -1005,22 +1004,22 @@ def proof_rows() -> list[tuple[str, list[str]]]:
 
 def pull_request_workflows() -> list[tuple[Path, dict]]:
     """
-    Returns every workflow a `pull_request` event triggers beside its parsed
-    mapping.
+    Collects every workflow a `pull_request` event triggers beside its
+    parsed mapping.
     """
     return [(path, flow) for path, flow in workflows() if "pull_request" in flow["on"]]
 
 
 def quoted(cell: str) -> list[str]:
     """
-    Returns every backticked span in a table `cell`.
+    Extracts every backticked span in a table `cell`.
     """
     return findall(r"`([^`]+)`", cell)
 
 
 def read(path: str | Path) -> str:
     """
-    Returns the text of the file at `path`, recording the path in `READ` for
+    Reads the text of the file at `path`, recording the path in `READ` for
     `filters` to check.
     """
     READ.add(Path(path).as_posix())
@@ -1029,7 +1028,7 @@ def read(path: str | Path) -> str:
 
 def referenced(expression: str, scope: str) -> list[str]:
     """
-    Returns the job or step under `scope` whose output an `expression` such
+    Resolves the job or step under `scope` whose output an `expression` such
     as `needs.plan.outputs.matrix` reads, followed by the output's name.
     """
     return extract(
@@ -1041,7 +1040,7 @@ def referenced(expression: str, scope: str) -> list[str]:
 
 def repeated(values: list[str]) -> set[str]:
     """
-    Returns every value `values` holds more than once.
+    Finds every value `values` holds more than once.
     """
     return {value for value, count in Counter(values).items() if count > 1}
 
@@ -1049,7 +1048,7 @@ def repeated(values: list[str]) -> set[str]:
 @cache
 def reported(path: Path) -> list[Report]:
     """
-    Returns a `Report` for each check the jobs of the workflow at `path`
+    Builds a `Report` for each check the jobs of the workflow at `path`
     report. A row covers a planned matrix's checks together, by naming one
     of them or the job name's text outside its matrix expressions.
     """
@@ -1083,7 +1082,7 @@ def reported(path: Path) -> list[Report]:
 
 def restores(step: dict, uncached: bool = False) -> bool:
     """
-    Returns whether the `step` restores a cache, directly or through a step
+    Checks whether the `step` restores a cache, directly or through a step
     of a composite it calls from this repository by a `./` or `$/` path.
     A `jdx/mise-action` step restores nothing when it passes `cache` as
     `false`, or when it passes `inputs.cache` on as is or compared against
@@ -1104,9 +1103,8 @@ def restores(step: dict, uncached: bool = False) -> bool:
 
 def rooted(base: str, entry: str) -> str:
     """
-    Returns a `sources` or `outputs` entry, which mise resolves against the
-    `base` directory, as a path relative to the project root, keeping any
-    leading `!`.
+    Rebases a `sources` or `outputs` entry, which mise resolves against the
+    `base` directory, onto the project root, keeping any leading `!`.
     """
     bare = entry.removeprefix("!")
     return entry.replace(bare, Path(base, bare).relative_to(Path.cwd()).as_posix())
@@ -1167,8 +1165,8 @@ def scripts() -> int:
 
 def shadowed(tool: str) -> bool:
     """
-    Returns whether `mise x` run from `site/` resolves `tool` to anything
-    but its script under `.mise/bin`.
+    Checks whether `mise x` run from `site/` resolves `tool` to anything but
+    its script under `.mise/bin`.
     """
     printed = run(
         ["mise", "x", "--", "sh", "-c", f"command -v {tool}"],
@@ -1259,7 +1257,7 @@ def suffixes() -> int:
 
 def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
     """
-    Returns the parity pairs holding `mise ci` to its statement in
+    Builds the parity pairs holding `mise ci` to its statement in
     `CONTRIBUTING.md`, comparing the workflows the statement names
     against the workflows carrying those names, each task those workflows
     run against the ones `mise ci` reaches, and the dependencies of
@@ -1314,7 +1312,7 @@ def sweep_pairs() -> list[tuple[str, list[str], list[str]]]:
 
 def swept(names: list[str]) -> set[str]:
     """
-    Returns `names` and every task they depend on, directly or through
+    Expands `names` with every task they depend on, directly or through
     another task.
     """
     listed   = tasks_listed()
@@ -1332,7 +1330,7 @@ def swept(names: list[str]) -> set[str]:
 
 def table(header: str) -> list[list[str]]:
     """
-    Returns the cells of each body row of the `CONTRIBUTING.md` table whose
+    Reads the cells of each body row of the `CONTRIBUTING.md` table whose
     first column is headed `header`.
     """
     body = matched(
@@ -1348,7 +1346,7 @@ def table(header: str) -> list[list[str]]:
 
 def task_paths(task: str, *keys: str) -> list[str]:
     """
-    Returns every path the `task` declares under `keys`, sorted and
+    Collects every path the `task` declares under `keys`, sorted and
     deduplicated, with every `@group:` reference expanded by mise.
     """
     spec = tasks_listed()[task]
@@ -1378,14 +1376,14 @@ def tasks() -> int:
 @cache
 def tasks_listed() -> dict[str, dict]:
     """
-    Returns every task `mise tasks ls --json` lists, keyed by name.
+    Reads every task `mise tasks ls --json` lists, keyed by name.
     """
     return {task["name"]: task for task in mise_json("tasks", "ls")}
 
 
 def templates() -> list[tuple[Path, dict]]:
     """
-    Returns every issue template beside its parsed form, which for a
+    Collects every issue template beside its parsed form, which for a
     Markdown template is its frontmatter.
     """
     return parsed(".github/ISSUE_TEMPLATE", "*.y*ml", "*.md")
@@ -1393,14 +1391,14 @@ def templates() -> list[tuple[Path, dict]]:
 
 def toml(path: str | Path) -> dict:
     """
-    Returns the parsed TOML mapping at `path`.
+    Parses the TOML file at `path` into its mapping.
     """
     return loads(read(path))
 
 
 def tracked(*paths: str) -> list[str]:
     """
-    Returns every file git tracks that `paths` select as glob pathspecs, or
+    Lists every file git tracks that `paths` select as glob pathspecs, or
     every tracked file when no path is given.
     """
     listing = ["git", "--glob-pathspecs", "ls-files", "-z", *paths]
@@ -1447,7 +1445,7 @@ def triggers() -> int:
 
 def unfiltered(paths: list[str], task: str) -> set[str]:
     """
-    Returns every `sources` pattern of `task`, or of a task it depends on,
+    Finds every `sources` pattern of `task`, or of a task it depends on,
     that selects a tracked file the path filter `paths` does not, leaving
     out every file one of the task's own `!` patterns selects.
     """
@@ -1468,7 +1466,7 @@ def unfiltered(paths: list[str], task: str) -> set[str]:
 
 def workflow_paths(event: str, name: str) -> list[str]:
     """
-    Returns the paths the `name` workflow's `event` trigger filters on.
+    Reads the paths the `name` workflow's `event` trigger filters on.
     """
     flow = yaml(f".github/workflows/{name}.yml")
     if (paths := (flow["on"].get(event) or {}).get("paths")) is None:
@@ -1478,14 +1476,14 @@ def workflow_paths(event: str, name: str) -> list[str]:
 
 def workflows() -> list[tuple[Path, dict]]:
     """
-    Returns every workflow beside its parsed mapping.
+    Collects every workflow beside its parsed mapping.
     """
     return parsed(".github/workflows", "*.y*ml")
 
 
 def writes(granted: dict | str) -> bool:
     """
-    Returns whether the `granted` permissions, a mapping from scope to
+    Checks whether the `granted` permissions, a mapping from scope to
     level or one level for every scope, grant write access to any scope,
     `id-token` included.
     """
@@ -1495,8 +1493,8 @@ def writes(granted: dict | str) -> bool:
 
 def yaml(path: str | Path) -> dict:
     """
-    Returns the first YAML document in the file at `path`, every scalar in
-    it read as a string, which for a Markdown file is its frontmatter.
+    Reads the first YAML document in the file at `path`, every scalar in it
+    read as a string, which for a Markdown file is its frontmatter.
     """
     return next(load_all(read(path), Loader=BaseLoader))
 
