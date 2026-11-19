@@ -142,10 +142,10 @@ pub struct AlphabetizeSiblingsConfig {
     /// below any sibling it names at evaluation time. `false` keeps
     /// definitions in source order while everything else still sorts.
     pub sort_definitions: bool,
-    /// Sorts the entries of a dict literal, scalar values before
-    /// collection values and alphabetical by key within each. `false`
-    /// keeps the order as written, which iteration, `.items()`, and `**`
-    /// unpacking all follow.
+    /// Sorts the entries of each dict literal whose every use in the
+    /// file is a lookup, scalar values before collection values and
+    /// alphabetical by key within each. `false` keeps every dict in the
+    /// order written.
     pub sort_dict_keys: bool,
     /// Sorts the `name: description` entries of a Title-case-headed
     /// docstring section, parameter entries in the signature's order as

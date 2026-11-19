@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Dict Used Only for Lookups Sorts"
+
+description = '''
+Every use of `LABELS` and `WEIGHTS` looks a key up through a subscript, `.get`, `in`, or `not in`, writes or deletes a key through a subscript, or reads the dict's size or sorted keys through `len` or `sorted`, and the literal in the `return` is only subscripted. **All three sort to `"alpha"`, `"zeta"`**, because none of those uses reads the order the keys were inserted in.
+'''

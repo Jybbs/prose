@@ -10,45 +10,41 @@ DEPLOY = {
     "version" : 12,
 
     "services": {
-        "api": {
-            "port"    : 8080,
-            "retries" : 3,
-            "timeout" : 30,
-
-            "endpoints": {
+        "api"     : {
+            "timeout"   : 30,
+            "retries"   : 3,
+            "port"      : 8080,
+            "endpoints" : {
                 "health"    : "/health",
                 "metrics"   : "/metrics",
                 "readiness" : "/ready",
                 "version"   : "/v"
             },
-
-            "headers": {
-                "request_id" : "x-req",
+            "headers"   : {
                 "trace_id"   : "x-trace",
-                "user_agent" : "deploy/1"
+                "user_agent" : "deploy/1",
+                "request_id" : "x-req"
             }
         },
-
-        "gateway": {
-            "rate_limit" : 1000,
+        "worker"  : {"concurrency": 8, "queue": "tasks"},
+        "gateway" : {
             "timeout"    : 5,
-            "upstream"   : {"fallback": "api.backup", "primary": "api.internal"}
-        },
-
-        "worker": {"concurrency": 8, "queue": "tasks"}
+            "rate_limit" : 1000,
+            "upstream"   : {"primary": "api.internal", "fallback": "api.backup"}
+        }
     },
 
     "telemetry": {
-        "interval" : 30,
         "sink"     : "datadog",
+        "interval" : 30,
         "logs"     : {
-            "format"       : "json",
             "level"        : "info",
+            "format"       : "json",
             "destinations" : {
                 "file"        : "/var/log/app",
-                "remote_sink" : "logserver",
                 "stdout"      : True,
-                "syslog"      : False
+                "syslog"      : False,
+                "remote_sink" : "logserver"
             }
         }
     }

@@ -1,0 +1,36 @@
+[advisories]
+unmaintained = "workspace"
+yanked       = "deny"
+
+[bans]
+allow-wildcard-paths          = true
+multiple-versions             = "deny"
+multiple-versions-include-dev = true
+skip                          = [
+  "annotate-snippets@0.11.5",
+  "bitflags@1.3.2",
+  "fluent-uri@0.1.4",
+  "similar@2.7.0",
+  "syn@1.0.109",
+  "syn@2.0.119"
+]
+wildcards                     = "deny"
+
+[licenses]
+allow = [
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "PSF-2.0",
+  "Unicode-3.0",
+  "Unicode-DFS-2016"
+]
+
+[licenses.private]
+ignore = true
+
+[sources]
+unknown-git      = "deny"
+unknown-registry = "deny"

@@ -1,5 +1,5 @@
 class Pipeline:  # prose: keep
-    stages = {"parse": 2, "fetch": 1}
+    stages = {"parse", "fetch"}
 
     def run(self):
         emit(stage="run", level=2)

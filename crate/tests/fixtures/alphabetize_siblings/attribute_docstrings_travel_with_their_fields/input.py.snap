@@ -1,0 +1,14 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/attribute_docstrings_travel_with_their_fields/input.py
+---
+from pydantic import BaseModel
+
+
+class Settings(BaseModel):
+    alpha: str = "a"
+    """Alpha name."""
+    mid: float = 0.5
+    zeta: int = 1
+    """Zeta count."""

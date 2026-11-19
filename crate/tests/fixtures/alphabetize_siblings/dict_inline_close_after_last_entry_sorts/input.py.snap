@@ -1,8 +1,8 @@
 ---
-source: tests/integration.rs
-expression: output
-input_file: tests/fixtures/alphabetize_siblings/dict_inline_close_after_last_entry_sorts/input.py
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/dict_inline_close_after_last_entry_sorts/input.py
 ---
-config = collect({
+config = {
     "a": 2,
-    "b": 1})
+    "b": 1}

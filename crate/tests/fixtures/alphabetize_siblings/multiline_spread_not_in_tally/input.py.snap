@@ -1,12 +1,13 @@
 ---
 source: crate/tests/integration.rs
-expression: output
+expression: snapshot
 input_file: crate/tests/fixtures/alphabetize_siblings/multiline_spread_not_in_tally/input.py
 ---
 config = {
+    "cache": "memory",
     "limits": {
-        "retries": 5,
         "timeout": 30,
+        "retries": 5,
     },
     **load_defaults(
         primary_source,

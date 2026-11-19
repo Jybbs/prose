@@ -3,5 +3,5 @@ previewable = false
 title       = "`explode = false` Keeps a Dict Argument on One Line"
 
 description = '''
-With the `explode` facet of `reflow-collections` set to `false`, the `configure` call overflows with a four-entry dict in its `settings` keyword. **`reflow-calls` still explodes the call to one keyword per row, `alphabetize-siblings` sorts the keywords and the dict keys, and `align-equals` pads the `=` column, while the dict stays inline** as `{"alpha": 1, "beta": 2, "delta": 4, "gamma": 3}` on its keyword row, because the facet turns off only the dict's explode.
+With the `explode` facet of `reflow-collections` set to `false`, the `configure` call overflows with a four-entry dict in its `settings` keyword. **`reflow-calls` still explodes the call to one keyword per row, `alphabetize-siblings` sorts the keywords, and `align-equals` pads the `=` column, while the dict stays inline** as `{"alpha": 1, "beta": 2, "gamma": 3, "delta": 4}` on its keyword row, because the facet turns off only the dict's explode and a dict passed to a call keeps the order written.
 '''

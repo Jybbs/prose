@@ -6,7 +6,7 @@ import { markdownH1 }                   from '../markdown/h1'
 import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
 import { getRenderer }                  from '../markdown/renderer'
 import { matterPages }                  from '../shared/content-page'
-import { siteDir }                      from '../shared/paths'
+import { pagesDir }                     from '../shared/paths'
 import { requireString }                from '../shared/require-string'
 
 interface IntegrationCard {
@@ -19,7 +19,7 @@ interface IntegrationCard {
 declare const data: readonly IntegrationCard[]
 export { data }
 
-const directory = path.join(siteDir(import.meta.url), 'integrations')
+const directory = path.join(pagesDir(import.meta.url), 'integrations')
 
 const fieldMessage = (slug: string, key: string): string =>
   `integrations/${slug}.md is missing the ${key} frontmatter its index card reads`

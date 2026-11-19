@@ -26,7 +26,6 @@ SUITE  = (
         param(".mise/tests/py/lint.py", ".mise/tests/py/lint.py", id = "test module"),
         param(".mise/tests/py/conftest.py", ".mise/tests/py", id = "group fixture"),
         param(".mise/tests/conftest.py", ".mise/tests", id = "suite fixture"),
-        param(".mise/tests/pytest.toml", ".mise/tests", id = "suite config"),
         param(".mise/lib/python.bash", ".mise/tests", id = "library"),
         param(".mise/config.toml", ".mise/tests", id = "tool pins"),
         param("crate/pyproject.toml", ".mise/tests", id = "test group"),

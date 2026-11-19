@@ -1,8 +1,8 @@
 """
 Pins the pins `lock:lift` reads from each home, the reports and registries
-it reads their newest releases from, the releases mise's cutoff holds back,
-the rows and the tables it prints, the holds it accepts, the attempts its
-trial runs, and what its write changes.
+it reads their newest releases from, the releases mise's cutoff and Cargo's
+cooldown hold back, the rows and the tables it prints, the holds it accepts,
+the attempts its trial runs, and what its write changes.
 """
 
 from collections.abc   import Callable
@@ -343,7 +343,10 @@ def test_a_prerelease_pin_takes_the_highest_version_its_registry_lists(
         param("2w", WHEN, WHEN + timedelta(weeks=2), id = "weeks"),
         param("90s", WHEN, WHEN + timedelta(seconds=90), id = "seconds"),
         param("30m", WHEN, WHEN + timedelta(minutes=30), id = "minutes"),
+        param("24 hours", WHEN, WHEN + timedelta(hours=24), id = "named"),
+        param("1 day", WHEN, WHEN + timedelta(days=1), id = "singular"),
         param("6mo", WHEN, None, id = "months"),
+        param("3 months", WHEN, None, id = "named months"),
         param("1y", WHEN, None, id = "year"),
         param("1h30m", WHEN, None, id = "compound"),
         param("2024-06-01", WHEN, None, id = "date"),
@@ -357,10 +360,11 @@ def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
     published : datetime | None
 ):
     """
-    Pins that a cutoff counted in seconds, minutes, hours, days, or weeks
-    clears a release that long after it was published, and that a cutoff
-    given as a date, a span of months or years, or a compound span, or a
-    release reporting no time, has no clearing time.
+    Pins that a cutoff counted in seconds, minutes, hours, days, or weeks,
+    by the unit's initial or its name, clears a release that long after
+    it was published, and that a cutoff given as a date, a span of months
+    or years, or a compound span, or a release reporting no time, has no
+    clearing time.
     """
     assert lift.Release("1.99.1", published).cleared(age) == cleared
 
@@ -498,7 +502,7 @@ def test_held_lists_each_stable_release_newer_than_the_report(
         written = "1.98.1"
     )
 
-    assert tool.held("1.99.0") == [
+    assert tool.held(lift.Reports({("mise", "rust", "1.98.1"): "1.99.0"})) == [
         lift.Held(WHEN + age, "rust", "1.99.1"),
         lift.Held(None, "rust", "1.99.2")
     ]
@@ -570,7 +574,58 @@ def test_held_lists_nothing_at_the_newest_stable_release(
         written = "1.99.1"
     )
 
-    assert tool.held("1.99.1") == []
+    assert tool.held(lift.Reports({})) == []
+
+
+@mark.parametrize(
+    ("source", "config", "withheld", "held"),
+    [
+        param(
+            "cargo",
+            '[registry]\nglobal-min-publish-age = "24 hours"\n',
+            {("cargo", "clap", "4.6.7"): "4.6.8"},
+            [("4.6.8", WHEN + timedelta(hours=24))],
+            id = "held"
+        ),
+        param(
+            "cargo",
+            "[registry]\n",
+            {("cargo", "clap", "4.6.7"): "4.6.8"},
+            [("4.6.8", None)],
+            id = "unset"
+        ),
+        param("cargo", "", {}, [], id = "clear"),
+        param("bun", "", {("cargo", "clap", "4.6.7"): "4.6.8"}, [], id = "other source")
+    ]
+)
+def test_held_lists_the_crate_release_cargo_holds_back(
+    config   : str,
+    held     : list[tuple],
+    lift     : ModuleType,
+    released : list[tuple],
+    source   : str,
+    withheld : dict,
+    workdir  : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a crate holds back the release Cargo's report names as younger
+    than `global-min-publish-age`, clearing at its crates.io publication
+    plus the age `.cargo/config.toml` sets or at no known time where it sets
+    none, and that a crate the report leaves unheld and a pin no cooldown
+    covers hold nothing back.
+    """
+    workdir({".cargo/config.toml": config})
+    crate = pin(
+        lift    = lift,
+        name    = "clap",
+        source  = source,
+        written = "4.6.7"
+    )
+
+    assert crate.held(lift.Reports({}, withheld)) == [
+        lift.Held(clears, "clap", version) for version, clears in held
+    ]
+    assert released == [("clap", version) for version, _ in held]
 
 
 def test_isolated_drops_what_the_checkout_set(
@@ -1415,7 +1470,10 @@ def test_reports_read_the_newest_release_each_manager_prints(
     `Latest` column, the release Cargo updates to or names as available
     with its version's build metadata dropped from the key, every tool
     `mise outdated` lists past its requested version, and uv's `latest`
-    annotation, a script's tree included.
+    annotation, a script's tree included. A release Cargo names beside its
+    publication time is held back by `global-min-publish-age`, so the crate
+    takes the release Cargo updates to, or none, and the held release is
+    listed apart.
     """
     tree     = ["uv", "tree", "--depth", "1", "--outdated"]
     outdated = {
@@ -1440,6 +1498,9 @@ def test_reports_read_the_newest_release_each_manager_prints(
             "   Unchanged toml v1.1.6+spec-1.1.0 (available: v1.1.8+spec-1.1.0)\n"
             "   Unchanged ruff_python_ast v0.0.5 (available: v0.0.17)\n"
             "   Unchanged similar v3.2.0 (available: v3.2.1, requires Rust 1.100)\n"
+            "   Unchanged clap_lex v1.1.1 (available: v1.1.2, published 16 hours ago)\n"
+            "    Updating log v0.4.3 -> v0.4.4 "
+            "(available: v0.4.5, published 9 hours ago)\n"
         )
     )
     fp.register(["mise", "outdated", "--bump", "--json"], stdout=dumps(outdated))
@@ -1452,10 +1513,17 @@ def test_reports_read_the_newest_release_each_manager_prints(
         stdout = "Resolved 1 package in 5ms\nmarkupsafe v3.0.3 (latest: v3.0.4)\n"
     )
 
-    assert lift.Reports.read(["a.py"]).releases == {
+    reports = lift.Reports.read(["a.py"])
+
+    assert reports.withheld == {
+        ("cargo", "clap-lex", "1.1.1") : "1.1.2",
+        ("cargo", "log", "0.4.3")      : "0.4.5"
+    }
+    assert reports.releases == {
         ("bun", "vite", "8.3.0")              : "8.3.4",
         ("cargo", "clap", "4.6.7")            : "5.0.0",
         ("cargo", "insta", "1.48.0")          : "1.49.0",
+        ("cargo", "log", "0.4.3")             : "0.4.4",
         ("cargo", "ruff-python-ast", "0.0.5") : "0.0.17",
         ("cargo", "similar", "3.2.0")         : "3.2.1",
         ("cargo", "toml", "1.1.6")            : "1.1.8+spec-1.1.0",
@@ -1570,9 +1638,13 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
     asked  = []
     alerts = [
         {
-            "number"     : 7,
-            "dependency" : {"package": {"ecosystem": "npm", "name": "vite"}},
-            "security_vulnerability": {"first_patched_version": {"identifier": "8.3.1"}}
+            "number"                 : 7,
+            "dependency"             : {
+                "package": {"ecosystem": "npm", "name": "vite"}
+            },
+            "security_vulnerability" : {
+                "first_patched_version": {"identifier": "8.3.1"}
+            }
         }
     ]
     found = [
@@ -1620,9 +1692,11 @@ def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
     released    : list[tuple]
 ):
     """
-    Pins that the table asks each tool for the releases held back past the
-    newest release its report gives, or past its written version where the
-    report omits it, and lists them by name and then by version.
+    Pins that the table asks each tool and each crate, once for every home
+    of one release, for the releases its cooldown holds back past the newest
+    release its report gives, or past its written version where the report
+    omits it, and lists them by name and then by version, leaving out a pin
+    no cooldown covers.
     """
     asked = []
     found = [
@@ -1641,19 +1715,37 @@ def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
             path    = ".mise/config.toml",
             source  = "mise",
             written = "1.98.1"
+        ),
+        *(
+            pin(
+                keys    = ("dependencies", "clap"),
+                lift    = lift,
+                name    = "clap",
+                path    = path,
+                source  = "cargo",
+                written = "4.6.7"
+            )
+            for path in ["corpus/Cargo.toml", "crate/Cargo.toml"]
+        ),
+        pin(
+            lift    = lift,
+            name    = "vite",
+            source  = "bun",
+            written = "8.3.0"
         )
     ]
     holding = {
+        "clap"   : [("clap", "4.6.8")],
         "rust"   : [("rust", "1.99.10"), ("rust", "1.99.2")],
         "zizmor" : [("zizmor", "1.32.0")]
     }
 
-    def held(holder: object, newest: str) -> list:
+    def held(holder: object, reports: object) -> list:
         """
-        Records the newest release the pin `holder` is held back past and
+        Records the newest release the report gives the pin `holder` and
         returns the releases `holding` names for it.
         """
-        asked.append((holder.name, newest))
+        asked.append((holder.name, reports.newest(holder)))
         return [lift.Held(None, *each) for each in holding[holder.name]]
 
     monkeypatch.setattr(lift, "pins", lambda: found)
@@ -1667,13 +1759,61 @@ def test_table_holds_back_each_tool_past_the_newest_its_report_gives(
 
     lifts, waiting = lift.table()
 
-    assert sorted(asked) == [("rust", "1.99.0"), ("zizmor", "1.31.0")]
+    assert sorted(asked) == [
+        ("clap", "4.6.7"),
+        ("rust", "1.99.0"),
+        ("zizmor", "1.31.0")
+    ]
     assert [(each.name, each.version) for each in waiting] == [
+        ("clap", "4.6.8"),
         ("rust", "1.99.2"),
         ("rust", "1.99.10"),
         ("zizmor", "1.32.0")
     ]
     assert [(each.name, each.newest) for each in lifts] == [("rust", "1.99.0")]
+
+
+def test_table_holds_back_one_release_of_several_crates_once(
+    lift        : ModuleType,
+    monkeypatch : MonkeyPatch,
+    workdir     : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that the `ruff_*` crates, published seconds apart, list a release
+    Cargo's cooldown holds back once under the row's name, at the earliest
+    time any of them clears, beside the release `[package.metadata.ruff]`
+    names, which no cooldown covers.
+    """
+    workdir({".cargo/config.toml": '[registry]\nglobal-min-publish-age = "24 hours"\n'})
+    published = {
+        "ruff_python_ast"    : WHEN + timedelta(seconds=2),
+        "ruff_python_parser" : WHEN,
+        "ruff_text_size"     : WHEN + timedelta(seconds=9)
+    }
+    crates = [lift.Pin(
+        None,
+        "ruff",
+        package,
+        "cargo",
+        "0.0.22"
+    ) for package in published]
+    release = lift.Pin(None, "ruff", "ruff", "", "0.15.0")
+    monkeypatch.setattr(lift, "pins", lambda: [*crates, release])
+    monkeypatch.setattr(
+        lift.Pin,
+        "released",
+        lambda holder, version: lift.Release(version, published[holder.package])
+    )
+    monkeypatch.setattr(
+        lift.Reports,
+        "read",
+        lambda scripts: lift.Reports({}, {crate.reported: "0.0.23" for crate in crates})
+    )
+
+    assert lift.table() == (
+        [],
+        [lift.Held(WHEN + timedelta(hours=24), "ruff", "0.0.23")]
+    )
 
 
 def test_table_lists_the_held_releases_where_no_pin_trails(
@@ -1694,7 +1834,7 @@ def test_table_lists_the_held_releases_where_no_pin_trails(
     )
     waiting = [lift.Held(None, "zizmor", "1.31.1")]
     monkeypatch.setattr(lift, "pins", lambda: [zizmor])
-    monkeypatch.setattr(lift.Pin, "held", lambda holder, newest: waiting)
+    monkeypatch.setattr(lift.Pin, "held", lambda holder, reports: waiting)
     monkeypatch.setattr(lift.Reports, "read", lambda scripts: lift.Reports({}))
 
     assert lift.table() == ([], waiting)
@@ -1786,10 +1926,10 @@ def test_tried_stops_where_the_failure_remains_with_every_major_lift_held_back(
     assert [log.stem for log in logs] == attempts
 
 
-def test_waiting_lists_each_held_release_under_the_cutoff(lift: ModuleType):
+def test_waiting_lists_each_held_release_under_both_cooldowns(lift: ModuleType):
     """
-    Pins the sentence naming the cutoff above the held table, and each row
-    beside the time its release clears, empty where no time is known.
+    Pins the sentence naming both cooldowns above the held table, and each
+    row beside the time its release clears, empty where no time is known.
     """
     held = [
         lift.Held(WHEN + timedelta(hours=24), "rust", "1.99.1"),
@@ -1797,8 +1937,8 @@ def test_waiting_lists_each_held_release_under_the_cutoff(lift: ModuleType):
     ]
 
     assert lift.waiting(held).splitlines() == [
-        "The `minimum_release_age` cutoff holds these releases back from every "
-        "write until each clears:",
+        "mise's `minimum_release_age` and Cargo's `global-min-publish-age` hold "
+        "these releases back from every write until each clears:",
         "",
         "| **Pin**  | **Release** | **Clears**           |",
         "|----------|-------------|----------------------|",

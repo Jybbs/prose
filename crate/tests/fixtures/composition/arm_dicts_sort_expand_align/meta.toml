@@ -3,5 +3,5 @@ previewable = true
 title       = "Match-Arm Dicts Explode, Sort Their Keys, and Align Their Colons"
 
 description = '''
-The `"alpha"` and `"beta"` arms of `dispatch` each return a long inline dict, and the wildcard arm returns `None`. **Each dict explodes to one entry per line, its keys sort so `"comment_text"` leads, and the `:` of each entry pads into one column within its arm**, while `align-match-case` joins the wildcard's `return None` onto its `case _:` line.
+The `"alpha"` and `"beta"` arms of `dispatch` each look a field up in a long inline dict through `.get`, and the wildcard arm returns `None`. **Each dict explodes to one entry per line, its keys sort so `"comment_text"` leads, and the `:` of each entry pads into one column within its arm**, while `align-match-case` joins the wildcard's `return None` onto its `case _:` line.
 '''

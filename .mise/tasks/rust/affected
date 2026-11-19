@@ -12,11 +12,11 @@ forwarded=("$@")
 members=$(workspace_members)
 changed=$(
   changed_paths \
+    .cargo/clippy.toml \
     .cargo/config.toml \
     .mise/config.toml \
     Cargo.lock \
     Cargo.toml \
-    clippy.toml \
     $members
 )
 

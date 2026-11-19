@@ -19,8 +19,8 @@ const CARRIAGE_RETURN_MODULE: &str = concat!(
     "VALUES = {\"b\": 1, \"a\": 2}\r",
     "def beta() -> tuple:\r",
     "    return Path, sys, os\r",
-    "def alpha() -> dict:\r",
-    "    return VALUES\r",
+    "def alpha() -> int:\r",
+    "    return VALUES[\"a\"]\r",
 );
 
 /// The CRLF module as `format` rewrites it, every seam the rewrite
@@ -34,8 +34,8 @@ const CRLF_FORMATTED: &str = concat!(
     "VALUES = {\"a\": 2, \"b\": 1}\r\n",
     "\r\n",
     "\r\n",
-    "def alpha() -> dict:\r\n",
-    "    return VALUES\r\n",
+    "def alpha() -> int:\r\n",
+    "    return VALUES[\"a\"]\r\n",
     "\r\n",
     "\r\n",
     "def beta() -> tuple:\r\n",
@@ -53,8 +53,8 @@ const CRLF_MODULE: &str = concat!(
     "VALUES = {\"b\": 1, \"a\": 2}\r\n",
     "def beta() -> tuple:\r\n",
     "    return Path, sys, os\r\n",
-    "def alpha() -> dict:\r\n",
-    "    return VALUES\r\n",
+    "def alpha() -> int:\r\n",
+    "    return VALUES[\"a\"]\r\n",
 );
 
 /// The aligned rewrite of `ESCAPE_IN_LITERAL`, its `U+001B` intact.
@@ -72,8 +72,8 @@ const MIXED_ENDING_MODULE: &str = concat!(
     "VALUES = {\"b\": 1, \"a\": 2}\r\n",
     "def beta() -> tuple:\n",
     "    return Path, sys, os\n",
-    "def alpha() -> dict:\n",
-    "    return VALUES\n",
+    "def alpha() -> int:\n",
+    "    return VALUES[\"a\"]\n",
 );
 
 #[test]
@@ -399,8 +399,8 @@ fn module_format_holds_each_line_ending_of_a_mixed_source() {
             "VALUES = {\"a\": 2, \"b\": 1}\r\n",
             "\r\n",
             "\r\n",
-            "def alpha() -> dict:\n",
-            "    return VALUES\r\n",
+            "def alpha() -> int:\n",
+            "    return VALUES[\"a\"]\r\n",
             "\r\n",
             "\r\n",
             "def beta() -> tuple:\n",

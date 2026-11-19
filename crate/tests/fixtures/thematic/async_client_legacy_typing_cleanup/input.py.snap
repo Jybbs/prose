@@ -25,10 +25,10 @@ USER_AGENT     = "atlas-client/0.4"
 _handlers: dict[Text, Callable] = {}
 
 DEFAULT_HEADERS = {
+    "User-Agent"      : USER_AGENT,
     "Accept"          : "application/json",
     "Accept-Encoding" : "gzip",
-    "Connection"      : "keep-alive",
-    "User-Agent"      : USER_AGENT
+    "Connection"      : "keep-alive"
 }
 
 

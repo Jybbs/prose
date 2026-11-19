@@ -23,7 +23,10 @@ use crate::{
         comments::{has_keep_marker, leading_comment_block, noqa_names, trailing_width},
         effect::value_is_effectful,
         group_map,
-        tiering::{eval_refs, eval_time_refs_of, observed_refs, tier_levels, type_alias_values},
+        tiering::{
+            Annotations, eval_refs, eval_time_refs_of, observed_refs, tier_levels,
+            type_alias_values,
+        },
     },
     source::Source,
 };
@@ -179,7 +182,12 @@ pub(super) fn module_band_plan<'src>(
             .flat_map(|&name| reads_through(name))
             .collect();
     }
-    let refs = eval_time_refs_of(body, defer_annotations);
+    let annotations = if defer_annotations {
+        Annotations::Stringified
+    } else {
+        Annotations::Eager
+    };
+    let refs = eval_time_refs_of(body, annotations);
     let refs_of = |stmt: &Stmt| {
         refs.get(&stmt.start())
             .into_iter()

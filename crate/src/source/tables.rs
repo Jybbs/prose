@@ -10,6 +10,7 @@ use std::{
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_text_size::{Ranged, TextRange};
+use rustc_hash::FxHashSet;
 
 use super::{
     Source,
@@ -25,6 +26,7 @@ use crate::{
     },
     rules::{
         RuleId,
+        alphabetize_siblings::lookup_dicts,
         expand_docstrings::ExpandDocstrings,
         frame_docstrings::FrameDocstrings,
         prefer_fstring::PreferFstring,
@@ -225,6 +227,13 @@ impl Source {
         self.binding_analysis = inherited(rule, BINDINGS, preserves, bindings, |analysis| {
             analysis.forwarded(map)
         });
+    }
+
+    /// Returns the ranges of the dict literals in this source whose
+    /// every use is a lookup, per [`lookup_dicts`], walking the tree on
+    /// the first read.
+    pub(crate) fn lookup_dicts(&self) -> &FxHashSet<TextRange> {
+        self.lookup_dicts.get_or_init(|| lookup_dicts(self))
     }
 
     /// Fills the padding walk over this text from the one `previous`

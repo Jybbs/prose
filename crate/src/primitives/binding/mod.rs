@@ -89,6 +89,11 @@ impl BindingAnalysis {
         self.assignment_values.get(&offset).copied()
     }
 
+    /// Returns `true` when `binding` sits in the module scope.
+    pub(crate) fn at_module_scope(&self, binding: BindingId) -> bool {
+        self.binding(binding).scope == ScopeId(0)
+    }
+
     /// Returns the recorded write kinds for `binding`, in insertion
     /// order and without duplicates.
     pub(crate) fn binding_kinds(&self, binding: BindingId) -> &[BindingKind] {
@@ -321,6 +326,19 @@ impl BindingAnalysis {
     pub(crate) fn scope_binds(&self, stmt: &Stmt, name: &str) -> bool {
         self.bindings_in_scope(stmt)
             .any(|id| self.binding_name(id) == name)
+    }
+
+    /// Returns each binding written exactly once outside a class body,
+    /// beside the offset of that write.
+    pub(crate) fn sole_writes(&self) -> impl Iterator<Item = (TextSize, BindingId)> + use<'_> {
+        self.bindings.iter().zip(0..).filter_map(|(binding, id)| {
+            match binding.write_offsets.as_slice() {
+                [write] if self.scopes[binding.scope.0 as usize].kind != ScopeKind::Class => {
+                    Some((*write, BindingId(id)))
+                }
+                _ => None,
+            }
+        })
     }
 
     /// Returns the unpack disposition of `binding` when its sole write

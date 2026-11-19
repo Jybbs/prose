@@ -7,7 +7,7 @@ foo(
     {
         "alpha" : 1,
         "beta"  : 2,
-        "delta" : 4,
-        "gamma" : 3
+        "gamma" : 3,
+        "delta" : 4
     }
 )
