@@ -21,7 +21,7 @@ A name draws the report when it is longer than one character, has no leading und
 7. A binding inside an `if TYPE_CHECKING:` block is declared for the type checker alone.
 8. A name the module's own `__all__` lists is the spelling importers use, so a rename would break them (*`project` under `__all__ = ["project"]`*). Every name stays quiet where the module's `__all__` cannot be listed from the source, in each case [[prune-inert-imports]] lists under [**Imports That Hold Their Line**](/rules/formatting/prune-inert-imports#imports-that-hold-their-line).
 
-A tool that reads a module-level name by its exact spelling breaks under the rename the same way an importer does, as [pytest](https://docs.pytest.org/en/stable/reference/reference.html#global-variables) reads `collect_ignore` and `pytest_plugins` in a `conftest.py`, [Alembic](https://alembic.sqlalchemy.org/en/latest/branches.html) reads `revision` and `down_revision` in every migration, and [Sphinx](https://www.sphinx-doc.org/en/master/usage/configuration.html) reads every setting in its `conf.py` by name. The rule keeps no list of such names, so a project names the files a tool reads through [**Per-Pattern Overrides**](/reference/configuration#per-pattern-overrides), turning the rule off for a file that holds little beside the names its tool reads, as a Sphinx `conf.py` or a migration does, and setting `allow-pattern` where a file such as a `conftest.py` keeps other constants the rule still checks.
+A tool that reads a module-level name by its exact spelling breaks under the rename the same way an importer does. The [pytest](https://docs.pytest.org/en/stable/reference/reference.html#global-variables) runner reads `collect_ignore` in a `conftest.py`, `pytestmark` in a test module, and `pytest_plugins` in both, while [Django](https://docs.djangoproject.com/en/stable/topics/http/urls/) reads `app_name` in an included URLconf and `handler400`, `handler403`, `handler404`, and `handler500` in the root one. [Alembic](https://alembic.sqlalchemy.org/en/latest/branches.html) reads `revision` and `down_revision` in every migration, and [Sphinx](https://www.sphinx-doc.org/en/master/usage/configuration.html) reads every setting in its `conf.py` by name. The rule keeps no list of such names, so a project names the files a tool reads through [**Per-Pattern Overrides**](/reference/configuration#per-pattern-overrides), turning the rule off for a file that holds little beside the names its tool reads, as a Sphinx `conf.py` or a migration does, and setting `allow-pattern` where a file such as a `conftest.py`, a test module, or a `urls.py` keeps other constants the rule still checks. The test-module entry matches the `test_*.py` and `*_test.py` files pytest [collects by default](https://docs.pytest.org/en/stable/reference/reference.html#confval-python_files).
 
 ```toml config
 [[overrides]]
@@ -35,6 +35,18 @@ paths = ["**/conftest.py"]
 
 [overrides.rules.miscased-constants]
 allow-pattern = "{collect_ignore*,pytest_plugins}"
+
+[[overrides]]
+paths = ["**/test_*.py", "**/*_test.py"]
+
+[overrides.rules.miscased-constants]
+allow-pattern = "{pytest_plugins,pytestmark}"
+
+[[overrides]]
+paths = ["**/urls.py"]
+
+[overrides.rules.miscased-constants]
+allow-pattern = "{app_name,handler400,handler403,handler404,handler500}"
 ```
 
 A notebook is skipped whole, because a cell's top-level assignments are working variables.
