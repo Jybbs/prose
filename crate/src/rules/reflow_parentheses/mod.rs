@@ -291,6 +291,21 @@ mod tests {
         true,
         "value = (lambda: compute(alpha_argument, beta_argument, gamma_argument, delta_argumentxxxx))()\n"
     )]
+    #[case::dict_call_whose_literal_opens_inside_the_budget(
+        &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(76)),
+        true,
+        &format!("value_{0} = dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n", "k".repeat(76))
+    )]
+    #[case::opened_row_at_the_budget(
+        &format!("value_{0} = (\n    loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n)\n", "k".repeat(63)),
+        true,
+        &format!("value_{0} = loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n", "k".repeat(63))
+    )]
+    #[case::pair_past_the_budget_behind_a_call_reflow_calls_explodes(
+        "table[resolve(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxxxxxxxxx)] = (\n    loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n)\n",
+        true,
+        "table[resolve(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxxxxxxxxx)] = loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n"
+    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -379,6 +394,14 @@ mod tests {
         "value = (\n    [compute(\n        a,\n        b,\n    )]\n)\n",
         true
     )]
+    #[case::exploded_chain_past_the_budget_with_reflow_calls_off(
+        &format!("value_{0} = (\n    compute(alpha).transform_everything_now(\n        beta,\n        gamma,\n    )\n)\n", "k".repeat(50)),
+        false
+    )]
+    #[case::opened_row_one_past_the_budget(
+        &format!("value_{0} = (\n    loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n)\n", "k".repeat(64)),
+        true
+    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
@@ -418,6 +441,10 @@ mod tests {
     )]
     #[case::one_row_dict_call_with_reflow_collections_off(
         "value = (\n    dict(alpha_value_long_name=1, delta_value_long_name=2, epsilon_value_name_xxxxx=3)\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::dict_receiver_past_the_budget_with_reflow_collections_off(
+        &format!("value_{0} = (\n    {{\"alpha\": 1, \"beta\": 2}}.get(key_argument_long_enough, default_value_long_enough_xxxxxxxxxxxx)\n)\n", "k".repeat(52)),
         |config: &mut Config| config.rules.reflow_collections.enabled = false
     )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(

@@ -163,18 +163,25 @@ impl Shedder<'_> {
 
     /// True where `candidate`'s opened form `text` leaves a statement row
     /// past the budget. That row runs from the column the pair opens at
-    /// through the first row of `text`, cut at the first argument list or
-    /// literal on that row that a layout rule explodes.
+    /// through the first row of `text`, cut at the first argument list
+    /// `reflow-calls` can explode or literal `reflow-collections` can
+    /// expand on that row while that rule runs, and through the opening
+    /// bracket of the literal a call `simplify-comprehensions` rewrites to.
     pub(super) fn opens_past_the_budget(&self, candidate: &Candidate, text: &str) -> bool {
         let column = self.shifted_column(candidate.pair.start());
+        if let Expr::Call(call) = candidate.expr
+            && self.simplified_form(call.range()).is_some()
+        {
+            return column + TextSize::of('{').to_usize() > self.code_line_length;
+        }
         let range = candidate.expr.range();
         let written = display_width(text.lines().next().unwrap_or_default());
-        let head = starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .chain(starting_within(
-                self.source.expandable_literals(),
-                range,
-                Ranged::start,
-            ))
+        let calls = starting_within(self.source.explodable_arguments(), range, Ranged::start)
+            .filter(|_| self.one_row.closes());
+        let literals = starting_within(self.source.expandable_literals(), range, Ranged::start)
+            .filter(|_| self.one_row.expands_literals());
+        let head = calls
+            .chain(literals)
             .map(|opener| TextRange::new(range.start(), opener.start() + TextSize::of('(')))
             .filter(|head| !self.source.contains_line_break(*head))
             .map(|head| display_width(self.source.slice(head)))
