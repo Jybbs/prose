@@ -241,15 +241,15 @@ describe('the sheets reading the roles and shades', () => {
   const code = '.vp-doc .custom-block:is(.tip, .info, .warning, .danger) code'
 
   it.each([
-    ['styles/tailwind/fixtures.css',                '.lint-flag',                    '--lint-color',    'var(--prose-shade-apricot-code-35)'],
-    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.danger',  '--callout-mark',  'var(--prose-shade-apricot-page-45)'],
-    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.tip',     '--callout-mark',  'var(--color-link)'],
-    ['styles/markdown/callouts.css',                 '.vp-doc .custom-block.warning', '--callout-mark',  'var(--prose-shade-eureka-page-45)'],
-    ['styles/markdown/callouts.css',                 code,                            'color',           'var(--vp-code-color)'],
-    ['styles/tokens.css',                            ':root',                         '--vp-code-bg',    'var(--color-code-ground)'],
-    ['styles/tokens.css',                            ':root',                         '--vp-code-color', 'var(--vp-c-text-1)']
+    ['tailwind/fixtures.css', '.lint-flag',                    '--lint-color',    'var(--prose-shade-apricot-code-35)'],
+    ['markdown/callouts.css', '.vp-doc .custom-block.danger',  '--callout-mark',  'var(--prose-shade-apricot-page-45)'],
+    ['markdown/callouts.css', '.vp-doc .custom-block.tip',     '--callout-mark',  'var(--color-link)'],
+    ['markdown/callouts.css', '.vp-doc .custom-block.warning', '--callout-mark',  'var(--prose-shade-eureka-page-45)'],
+    ['markdown/callouts.css', code,                            'color',           'var(--vp-code-color)'],
+    ['tokens.css',            ':root',                         '--vp-code-bg',    'var(--color-code-ground)'],
+    ['tokens.css',            ':root',                         '--vp-code-color', 'var(--vp-c-text-1)']
   ])('%s sets %s %s to %s', (file, selector, prop, value) => {
-    expect(support.declared(new URL(`../../theme/${file}`, import.meta.url), selector)[prop]).toBe(value)
+    expect(support.declared(new URL(`../../theme/styles/${file}`, import.meta.url), selector)[prop]).toBe(value)
   })
 })
 
