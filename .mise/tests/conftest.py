@@ -2,9 +2,11 @@
 Defines the `task` fixture, which loads a task script under
 `.mise/tasks/` as a module so a case calls its functions in process, where
 pytest-subprocess's `fp` fakes every command the script runs, the `workdir`
-fixture, which writes the files a script reads into a scratch tree, and the
-`affected` fixture, which runs an `affected` task in a scratch repository
-changed since its `origin/main`.
+fixture, which writes the files a script reads into a scratch tree, the
+`scratch` fixture, which makes a directory a git repository isolated from
+the session running the suite, and the `affected` fixture, which runs an
+`affected` task in a scratch repository changed since its `origin/main`.
+Each session writes under a base temporary directory of its own.
 """
 
 from collections.abc import Callable, Iterable
@@ -13,23 +15,52 @@ from importlib.util  import module_from_spec, spec_from_file_location
 from json            import dumps
 from os              import environ
 from pathlib         import Path
-from pytest          import MonkeyPatch, fixture
-from shlex           import quote
-from subprocess      import CompletedProcess, run
-from types           import ModuleType
+from pytest          import (
+    Config, ExitCode, MonkeyPatch, Session, StashKey, fixture, hookimpl
+)
+from shlex      import quote
+from shutil     import rmtree
+from subprocess import CompletedProcess, run
+from tempfile   import mkdtemp
+from types      import ModuleType
 
 MEMBERS = ("corpus", "crate", "harness", "tools/bench", "wasm")
+OWNED   = StashKey[Path]()
 TASKS   = Path(__file__).resolve().parents[1] / "tasks"
 
 
-@fixture
-def affected(tmp_path: Path) -> Callable[..., CompletedProcess]:
+@hookimpl(tryfirst=True)
+def pytest_configure(config: Config):
     """
-    Builds stand-in `cargo` and `uv` commands, each printing the command
-    it receives on a line of its own, with `cargo metadata` printing a
-    workspace of `MEMBERS` with no test target, and an environment where git
-    reads neither the configuration nor the `GIT_` variables of the session
-    running the suite.
+    Points `--basetemp` at a fresh directory under the system temporary
+    folder where the command line names none, outside the `pytest-of-<user>`
+    root whose older directories each session prunes as it exits.
+    """
+    if config.option.basetemp is None:
+        config.option.basetemp = config.stash[OWNED] = Path(mkdtemp(prefix="pytest-"))
+
+
+@hookimpl(trylast=True)
+def pytest_sessionfinish(exitstatus: int, session: Session):
+    """
+    Removes the directory `pytest_configure` made once every case passed,
+    keeping it after a failure for the failing cases' files.
+    """
+    if exitstatus == ExitCode.OK and (root := session.config.stash.get(OWNED, None)):
+        rmtree(root, ignore_errors=True)
+
+
+@fixture
+def affected(
+    monkeypatch : MonkeyPatch,
+    scratch     : Callable[[Path], Path],
+    tmp_path    : Path
+) -> Callable[..., CompletedProcess]:
+    """
+    Builds stand-in `cargo`, `uv`, and `vitest` commands, each printing the
+    command it receives on a line of its own, with `cargo metadata` printing
+    a workspace of `MEMBERS` with no test target, and puts them first on
+    `PATH`.
 
     Returns:
         A function running the `affected` task of `group` with `args` in a
@@ -54,24 +85,12 @@ def affected(tmp_path: Path) -> Callable[..., CompletedProcess]:
         encoding = "utf-8"
     )
     stand_in.chmod(0o755)
-    (stand_in.parent / "uv").symlink_to(stand_in)
+    for name in ("uv", "vitest"):
+        (stand_in.parent / name).symlink_to(stand_in)
+    monkeypatch.setenv("MISE_PROJECT_ROOT", str(TASKS.parents[1]))
+    monkeypatch.setenv("PATH", f"{stand_in.parent}:{environ['PATH']}")
     repo = tmp_path / "repo"
-    git  = partial(
-        run,
-        check = True,
-        cwd   = repo,
-        env   = {
-            **{name: text for name, text in environ.items() if name[:4] != "GIT_"},
-            "GIT_AUTHOR_EMAIL"    : "author@example.com",
-            "GIT_AUTHOR_NAME"     : "author",
-            "GIT_COMMITTER_EMAIL" : "author@example.com",
-            "GIT_COMMITTER_NAME"  : "author",
-            "GIT_CONFIG_GLOBAL"   : "/dev/null",
-            "GIT_CONFIG_NOSYSTEM" : "1",
-            "MISE_PROJECT_ROOT"   : str(TASKS.parents[1]),
-            "PATH"                : f"{stand_in.parent}:{environ['PATH']}"
-        }
-    )
+    git  = partial(run, check=True, cwd=repo)
 
     def write(files: Iterable[str], text: str):
         """
@@ -110,15 +129,14 @@ def affected(tmp_path: Path) -> Callable[..., CompletedProcess]:
         changes = {changed, *alongside}
         write({"seed", *changes, *tracked}, "x = 1\n")
         write(reading, f'ROOT / "{changed}"\n')
-        git(["git", "init", "-q"])
+        scratch(repo)
+        if how in {"ignored", "untracked"}:
+            git(["git", "rm", "--cached", "-q", *changes])
         if how == "ignored":
             (repo / ".git/info/exclude").write_text(
                 "\n".join(changes),
                 encoding = "utf-8"
             )
-        git(["git", "add", "."])
-        if how == "untracked":
-            git(["git", "rm", "--cached", "-q", *changes])
         git(["git", "commit", "-qm", "main"])
         if upstream:
             git(["git", "switch", "-q", "-c", "upstream"])
@@ -147,6 +165,40 @@ def affected(tmp_path: Path) -> Callable[..., CompletedProcess]:
         )
 
     return run_task
+
+
+@fixture
+def scratch(monkeypatch: MonkeyPatch) -> Callable[[Path], Path]:
+    """
+    Builds an environment where git reads neither the configuration nor the
+    `GIT_` variables of the session running the suite, and commits under a
+    fixed author and committer.
+
+    Returns:
+        A function running `git init` in `root` and staging every file
+        under it, which returns `root`.
+    """
+    for name in [name for name in environ if name.startswith("GIT_")]:
+        monkeypatch.delenv(name)
+    for name, value in {
+        "GIT_AUTHOR_EMAIL"    : "author@example.com",
+        "GIT_AUTHOR_NAME"     : "author",
+        "GIT_COMMITTER_EMAIL" : "author@example.com",
+        "GIT_COMMITTER_NAME"  : "author",
+        "GIT_CONFIG_GLOBAL"   : "/dev/null",
+        "GIT_CONFIG_NOSYSTEM" : "1"
+    }.items():
+        monkeypatch.setenv(name, value)
+
+    def init(root: Path) -> Path:
+        """
+        Makes `root` a git repository tracking every file under it.
+        """
+        for command in (["init", "-q"], ["add", "."]):
+            run(["git", *command], check=True, cwd=root)
+        return root
+
+    return init
 
 
 @fixture(scope="session")
