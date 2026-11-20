@@ -340,6 +340,11 @@ struct Probes {
     /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
     /// this run claims that subset against the rules it reports.
     joint: Option<Pipeline>,
+    /// The seats in `singles` of each rule declaring `PRESERVES_TREE` as
+    /// `false` as the pairs touching it construct it, apart from its solo
+    /// seat, which a sweep over the fixture tree runs over each file for
+    /// every rule it reports.
+    paired: BTreeMap<RuleId, BTreeSet<usize>>,
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
     pairs: Vec<Pair>,
@@ -384,12 +389,26 @@ impl Probes {
                     singles.len() - 1
                 })
         };
-        let solo = Pipeline::known_ids()
+        let solo: BTreeMap<RuleId, usize> = Pipeline::known_ids()
             .iter()
             .map(|&rule| {
                 let [(_, alone)] = seated(&config, [rule]);
                 (rule, seat(rule, alone))
             })
+            .collect();
+        let changing = |rule: &RuleId| !preserves_tree(rule.as_str());
+        let paired = Pipeline::known_ids()
+            .iter()
+            .copied()
+            .array_combinations()
+            .filter(|pair: &[RuleId; 2]| pair.iter().any(changing))
+            .flat_map(|pair| seated(&config, pair))
+            .filter(|(rule, _)| changing(rule))
+            .map(|(rule, pipeline)| (rule, seat(rule, pipeline)))
+            .filter(|(rule, at)| solo[rule] != *at)
+            .into_grouping_map()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
             .collect();
         let pairs = Pipeline::known_ids()
             .iter()
@@ -432,6 +451,7 @@ impl Probes {
             joint: claim
                 .claims(&preserving, |rule| reported.contains(rule))
                 .then(|| subset(&config, &preserving)),
+            paired,
             pairs,
             reader: Pipeline::with_defaults(&config),
             reported,
@@ -650,6 +670,16 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             ),
         );
     }
+    if probes.fixtures {
+        for &seat in probes
+            .reported
+            .iter()
+            .filter_map(|rule| probes.paired.get(rule))
+            .flatten()
+        {
+            memo.apply(seat, &text);
+        }
+    }
     check_trees(probes, &memo, solo, memo.source(&text), path, &mut findings);
     findings
 }
@@ -753,6 +783,27 @@ fn verify_pair(
         );
     }
     note_verified();
+}
+
+#[rstest]
+#[case::reflow_collections("reflow-collections")]
+#[case::reflow_signatures("reflow-signatures")]
+fn build_seats_each_changing_rule_as_its_pairs_construct_it_apart_from_its_solo(
+    probes: Probes,
+    #[case] slug: &str,
+) {
+    let rule = rule(slug);
+
+    let seats = &probes.paired[&rule];
+
+    assert!(!seats.contains(&probes.solo[&rule]));
+    assert_eq!(
+        seats
+            .iter()
+            .map(|&seat| probes.singles[seat].rule)
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([rule]),
+    );
 }
 
 #[rstest]
@@ -959,4 +1010,19 @@ fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes)
     let findings = probes.sweep(&[]);
 
     assert_eq!(findings.kept().collect_vec(), [&rule("reflow-calls")]);
+}
+
+#[rstest]
+fn sweep_reads_a_changing_rule_over_a_seat_only_a_pair_in_another_share_constructs(
+    mut probes: Probes,
+) {
+    probes.fixtures = true;
+    probes.pairs.clear();
+    probes.reported = BTreeSet::from([rule("reflow-signatures")]);
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/reflow_signatures/default_call_takes_keyword_form/input.py");
+
+    let findings = probes.sweep(&[fixture]);
+
+    assert_eq!(findings.kept().count(), 0);
 }
