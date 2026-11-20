@@ -37,7 +37,7 @@
     color : var(--vp-c-text-1);
   }
 
-  &:is([aria-pressed="true"], [aria-selected="true"]) {
+  &:is([aria-pressed='true'], [aria-selected='true']) {
     font-weight : 600;
     color       : var(--vp-c-text-1);
   }
@@ -50,7 +50,7 @@
 @utility fixture-nochange-ghost {
   @apply invisible toggle-row;
 
-  .fixture-card[data-edits="false"]:not([data-lint="true"], [data-open]) & {
+  .fixture-card[data-edits='false']:not([data-lint='true'], [data-open]) & {
     display : none;
   }
 }
@@ -58,7 +58,7 @@
 @utility fixture-nochange-label {
   @apply pointer-events-none absolute inset-0 flex items-center justify-center change-chip;
 
-  .fixture-card[data-edits="false"]:not([data-lint="true"], [data-open]) & {
+  .fixture-card[data-edits='false']:not([data-lint='true'], [data-open]) & {
     position     : static;
     border-color : transparent;
     background   : none;
@@ -67,12 +67,11 @@
   }
 }
 
-@utility hairline-ube {
-  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 var(--color-ube);
-}
-
-@utility hairline-ube-38 {
-  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 color-mix(in srgb, var(--color-ube) var(--prose-tint-38), transparent);
+/* Draws a hairline under the element in the color its value names, at the
+   opacity its modifier names. */
+@utility hairline-* {
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 --value(--color-*);
+  box-shadow : inset 0 calc(var(--prose-border-1) * -1) 0 --alpha(--value(--color-*) / calc(--modifier(integer) * 1%));
 }
 
 @utility ruler-chip {
@@ -85,7 +84,7 @@
   letter-spacing : var(--prose-label-tracking-loose);
   text-transform : uppercase;
 
-  &[aria-selected="true"][data-side="after"] {
+  &[aria-selected='true'][data-side='after'] {
     color : var(--prose-shade-celadon-page-65);
   }
 }
@@ -114,7 +113,7 @@
   background              : color-mix(in srgb, var(--domain-color) var(--az-index-band), var(--vp-c-bg));
 
   &::before {
-    content    : "";
+    content    : '';
     position   : absolute;
     background : inherit;
   }
@@ -181,7 +180,7 @@
   }
 
   &::before {
-    content          : "";
+    content          : '';
     position         : absolute;
     inset            : 0 auto 0 0;
     width            : var(--prose-border-2);

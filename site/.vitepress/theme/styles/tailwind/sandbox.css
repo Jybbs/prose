@@ -148,7 +148,7 @@
   }
 
   & > span[data-flagged]::before {
-    content     : "▲";
+    content     : '▲';
     display     : block;
     color       : var(--vp-c-warning-1);
     font-size   : var(--prose-text-0-58rem);

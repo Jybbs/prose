@@ -251,7 +251,7 @@
   --color-code-block                       : var(--vp-code-block-bg);
   --color-code-ink                         : var(--vp-code-color);
 
-  --content-middot                         : "·";
+  --content-middot                         : '·';
 
   --grid-template-columns-1fr              : 1fr;
 

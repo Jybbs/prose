@@ -9,5 +9,5 @@
 }
 
 .vp-code-group .tabs label::before {
-  margin-right: var(--prose-space-6);
+  margin-right : var(--prose-space-6);
 }

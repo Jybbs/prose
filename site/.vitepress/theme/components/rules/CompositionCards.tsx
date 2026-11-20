@@ -5,9 +5,8 @@ import { computed, defineComponent, nextTick, ref, shallowRef } from 'vue'
 
 import { Disclosure }           from '../../../kit'
 import type { DisclosureScope } from '../../../kit'
-import { FixtureNoChange }      from '../fixtures/FixtureNoChange'
 import { FixturePairDoc }       from '../fixtures/FixturePairDoc'
-import { FixtureToggle }        from '../fixtures/FixtureToggle'
+import { FixtureToggleSlot }    from '../fixtures/FixtureToggleSlot'
 import { RuleSegmentChip }      from './RuleSegmentChip'
 
 import { useHashOpen }                            from '../../../lib/composables/use-hash-open'
@@ -124,15 +123,13 @@ export const CompositionCards = defineComponent({
                           </li>
                         ))}
                       </ol>
-                      <div
-                        class="col-3 row-1 inline-flex items-center max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-2 max-mobile:group-data-open/fixture:-col-end-1 max-mobile:group-data-open/fixture:min-h-0 max-mobile:group-data-open/fixture:justify-start max-mobile:group-data-open/fixture:justify-self-start max-mobile:group-data-open/fixture:p-0 max-mobile:group-data-open/fixture:pb-8"
-                        onClick={event => event.stopPropagation()}
+                      <FixtureToggleSlot
+                        class="col-3 row-1 inline-flex items-center"
+                        hasToggle={row.hasToggle}
+                        modelValue={activeTab.value}
+                        onUpdate:modelValue={next => { activeTab.value = next }}
                         style={{ display: activeCase.value === row.case ? undefined : 'none' }}
-                      >
-                        {row.hasToggle
-                          ? <FixtureToggle modelValue={activeTab.value} onUpdate:modelValue={next => { activeTab.value = next }} />
-                          : <FixtureNoChange />}
-                      </div>
+                      />
                     </div>
                   </div>
                   <div

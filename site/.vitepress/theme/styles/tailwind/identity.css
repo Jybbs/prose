@@ -9,9 +9,9 @@
 /* Stacks a copied value and the word confirming its copy in one cell, so the
    confirmation replaces the value without moving the line. */
 @utility identity-copy {
-  padding        : 0;
-  border         : 0;
-  background     : none;
+  padding    : 0;
+  border     : 0;
+  background : none;
 
   & > span {
     grid-area     : 1 / 1;
@@ -70,7 +70,7 @@
 }
 
 @utility identity-chevron {
-  transform    : translateY(calc(var(--prose-space-2) * -1)) rotate(45deg);
+  transform : translateY(calc(var(--prose-space-2) * -1)) rotate(45deg);
 
   [aria-expanded='true'] > & {
     transform : translateY(var(--prose-space-1)) rotate(-135deg);
@@ -113,9 +113,9 @@
 /* Sets the palette's strips, the brand hue at twice a shade's width and the
    chosen strip outlined clear of its neighbors. */
 @utility identity-strip {
-  flex             : 1 1 0;
-  border           : 0;
-  background       : var(--chip);
+  flex       : 1 1 0;
+  border     : 0;
+  background : var(--chip);
 
   &[data-lead] {
     flex-grow : 2;
@@ -136,7 +136,7 @@
 
 @utility identity-uses {
   & tr {
-    border     : 0;
+    border : 0;
   }
 
   & th {
@@ -179,7 +179,8 @@
   }
 }
 
-/* Resets each row of a specimen's index as a bare button, a chosen tab's name
+/* Resets each row of a specimen's index as a bare button, its name raised to
+   the primary text on hover and on selection and a chosen tab's name
    underlined in the brand color. */
 @utility identity-pick {
   width      : 100%;
@@ -187,6 +188,10 @@
   background : none;
   text-align : left;
   cursor     : pointer;
+
+  &:is(:hover, [aria-selected='true'], [aria-pressed='true']) .identity-pick-name {
+    color : var(--vp-c-text-1);
+  }
 
   &[aria-selected='true'] .identity-pick-name {
     text-decoration       : underline var(--prose-border-1) var(--vp-c-brand-1);
@@ -209,7 +214,7 @@
   padding-left : calc(var(--prose-size-24) + var(--prose-space-4));
 
   & .custom-block {
-    color   : var(--vp-c-text-1);
+    color : var(--vp-c-text-1);
   }
 
   & .custom-block p:not(.custom-block-title) {
@@ -248,7 +253,7 @@
   border-right : var(--prose-border-1) solid var(--vp-c-divider);
 
   @variant max-mobile {
-    border-right          : 0;
+    border-right : 0;
 
     & > .kicker {
       grid-column : 1 / -1;
@@ -278,8 +283,8 @@
 /* Draws the lockup's guides in hairlines whatever the file's units. */
 @utility identity-guides {
   & :is(rect, line) {
-    fill           : none;
-    vector-effect  : non-scaling-stroke;
+    fill          : none;
+    vector-effect : non-scaling-stroke;
   }
 
   & .identity-guide-ink {
@@ -287,10 +292,10 @@
   }
 
   & text {
-    stroke             : none;
-    font-family        : var(--vp-font-family-mono);
-    text-anchor        : middle;
-    dominant-baseline  : auto;
+    stroke            : none;
+    font-family       : var(--vp-font-family-mono);
+    text-anchor       : middle;
+    dominant-baseline : auto;
   }
 
   & text:is([data-side='top'], [data-side='bottom']) {
