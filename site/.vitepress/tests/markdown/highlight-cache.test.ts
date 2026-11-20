@@ -6,7 +6,7 @@ import { supportTest }    from '../support'
 
 type Highlight = (code: string, lang: string, attrs: string) => string
 
-const INPUTS = { colorReplacements: {}, data: {}, graph: { modules: {}, packages: {} }, theme: 'github-dark' }
+const INPUTS = { data: {}, graph: { modules: {}, packages: {} }, lockfile: '', options: { theme: 'github-dark' } } as const
 
 // Builds a renderer stub whose highlighter files the block's HTML as a pending
 // placeholder, the way the async renderer does, wrapped in the cache `dir`
@@ -66,15 +66,28 @@ describe('HighlightCache', () => {
   })
 
   supportTest.for<{ field: string, inputs: Parameters<typeof HighlightCache.read>[1] }>([
-    { field: 'themes',             inputs: { ...INPUTS, theme: 'github-light' } },
-    { field: 'color replacements', inputs: { ...INPUTS, colorReplacements: { '#24292e': '#000000' } } },
+    { field: 'themes',             inputs: { ...INPUTS, options: { theme: 'github-light' } } },
+    { field: 'color replacements', inputs: { ...INPUTS, options: { ...INPUTS.options, colorReplacements: { '#24292e': '#000000' } } } },
+    { field: 'language aliases',   inputs: { ...INPUTS, options: { ...INPUTS.options, languageAlias: { py: 'python' } } } },
+    { field: 'transformers',       inputs: { ...INPUTS, options: { ...INPUTS.options, codeTransformers: [{ code() {}, name: 'a' }] } } },
     { field: 'module sources',     inputs: { ...INPUTS, graph: { modules: { 'a.ts': 'export {}' }, packages: {} } } },
-    { field: 'package versions',   inputs: { ...INPUTS, graph: { modules: {}, packages: { shiki: '4.6.0' } } } }
+    { field: 'package versions',   inputs: { ...INPUTS, graph: { modules: {}, packages: { shiki: '4.6.0' } } } },
+    { field: 'lockfile contents',  inputs: { ...INPUTS, lockfile: '{ "lockfileVersion": 1 }' } }
   ])('highlights every block again once the $field change', async ({ inputs }, { tmpDir }) => {
     const first = await cached(tmpDir)
     first.highlight('x = 1', 'python', '')
     await first.cache.flush()
     const second = await cached(tmpDir, inputs)
+    second.highlight('x = 1', 'python', '')
+    expect(second.inner).toHaveBeenCalledOnce()
+  })
+
+  supportTest('highlights every block again once a transformer\'s source changes', async ({ tmpDir }) => {
+    const options = (code: () => void) => ({ ...INPUTS, options: { ...INPUTS.options, codeTransformers: [{ code, name: 'a' }] } })
+    const first   = await cached(tmpDir, options(() => {}))
+    first.highlight('x = 1', 'python', '')
+    await first.cache.flush()
+    const second = await cached(tmpDir, options(() => { void 0 }))
     second.highlight('x = 1', 'python', '')
     expect(second.inner).toHaveBeenCalledOnce()
   })

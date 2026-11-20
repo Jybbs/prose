@@ -2,7 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import tailwindcss                                from '@tailwindcss/vite'
-import { defineConfig }                           from 'vitepress'
+import { defineConfig, type MarkdownOptions }     from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
 import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery'
@@ -67,11 +67,17 @@ const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const tokenClasses         = await TokenClasses.read()
 const lintFindings         = corpusLintFindings(crate)
-const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+// The Markdown options the fence highlighter reads, which key the highlight cache.
+const highlightOptions     = {
+  codeTransformers  : codeTransformers(lintFindings, tokenClasses),
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
-  data              : Object.fromEntries(lintFindings),
-  graph             : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
   theme             : constants.SHIKI_THEMES
+} satisfies MarkdownOptions
+const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+  data     : Object.fromEntries(lintFindings),
+  graph    : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
+  lockfile : fs.readFileSync(path.join(siteDirectory, 'bun.lock'), 'utf8'),
+  options  : highlightOptions
 })
 const virtualSheets        = new Map([
   ['virtual:prose-palette.css', paletteCss],
@@ -96,7 +102,7 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers: codeTransformers(lintFindings, tokenClasses),
+    ...highlightOptions,
     config: md => {
       md.use(highlightCache.plugin)
       md.use(configFormsPlugin)
@@ -111,9 +117,7 @@ export default defineConfig({
       md.use(codeOperatorPlugin)
       md.use(scrollStopPlugin)
     },
-    colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
-    lineNumbers       : false,
-    theme             : constants.SHIKI_THEMES
+    lineNumbers: false
   },
   sitemap: { hostname: constants.SITE_HOSTNAME },
   srcDir        : pagesDirectory,
