@@ -330,14 +330,19 @@ fn miscased_constants_override_example_spares_only_its_globs() {
         (
             "mysite/urls.py",
             indoc! {r#"
+                handler400 = "mysite.views.bad_request"
+                handler403 = "mysite.views.permission_denied"
                 handler404 = "mysite.views.page_not_found"
                 handler500 = "mysite.views.server_error"
                 admin_header = "Thermidor administration"
             "#},
         ),
-        ("polls/urls.py", "app_name = \"polls\"\n"),
+        ("polls/urls.py", "app_name = \"polls\"\nurlpatterns = []\n"),
         ("src/settings.py", "project = \"Thermidor\"\n"),
-        ("tests/billing_test.py", "pytestmark = [pytest.mark.slow]\n"),
+        (
+            "tests/billing_test.py",
+            "import pytest\npytestmark = [pytest.mark.slow]\n",
+        ),
         (
             "tests/integration/conftest.py",
             "collect_ignore_glob = [\"*_slow.py\"]\n",
