@@ -341,9 +341,9 @@ struct Probes {
     /// this run claims that subset against the rules it reports.
     joint: Option<Pipeline>,
     /// The seats in `singles` of each rule declaring `PRESERVES_TREE` as
-    /// `false` as the pairs touching it construct it, apart from its solo
-    /// seat, which a sweep over the fixture tree runs over each file for
-    /// every rule it reports.
+    /// `false`, one for each construction a pair touching the rule gives it
+    /// other than its solo seat. A sweep over the fixture tree runs each
+    /// over every file for every rule the sweep reports.
     paired: BTreeMap<RuleId, BTreeSet<usize>>,
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
@@ -401,7 +401,7 @@ impl Probes {
             .iter()
             .copied()
             .array_combinations()
-            .filter(|pair: &[RuleId; 2]| pair.iter().any(changing))
+            .filter(|pair: &[RuleId; 2]| fixtures && pair.iter().any(changing))
             .flat_map(|pair| seated(&config, pair))
             .filter(|(rule, _)| changing(rule))
             .map(|(rule, pipeline)| (rule, seat(rule, pipeline)))
@@ -804,6 +804,17 @@ fn build_seats_each_changing_rule_as_its_pairs_construct_it_apart_from_its_solo(
             .collect::<BTreeSet<_>>(),
         BTreeSet::from([rule]),
     );
+}
+
+#[rstest]
+fn build_seats_no_rule_declaring_preserves_tree_beyond_its_solo(probes: Probes) {
+    let preserving = probes
+        .paired
+        .keys()
+        .filter(|rule| preserves_tree(rule.as_str()))
+        .collect_vec();
+
+    assert_eq!(preserving, Vec::<&RuleId>::new());
 }
 
 #[rstest]
