@@ -1,15 +1,18 @@
 """
 Pins the isolation `repo:test` gives each case, a base temporary directory
-the session holds alone and scratch repositories git builds apart from the
-repository and the configuration of the session running the suite.
+the session holds alone and removes once every case passed, and scratch
+repositories git builds apart from the repository and the configuration of
+the session running the suite.
 """
 
 from collections.abc import Callable
 from functools       import partial
 from getpass         import getuser
+from os              import environ
 from pathlib         import Path
-from pytest          import MonkeyPatch, TempPathFactory, fixture
+from pytest          import MonkeyPatch, TempPathFactory, fixture, mark, param
 from subprocess      import run
+from sys             import executable
 from tempfile        import gettempdir
 
 
@@ -40,6 +43,77 @@ def test_scratch_builds_a_repository_apart_from_the_session(
     assert git(["git", "var", "GIT_AUTHOR_IDENT"]).stdout.startswith(
         "author <author@example.com>"
     )
+
+
+def test_scratch_reads_no_configuration_but_its_own(
+    monkeypatch : MonkeyPatch,
+    scratch     : Callable[[Path], Path],
+    tmp_path    : Path
+):
+    """
+    Pins that git in a scratch repository reads its local configuration
+    alone, whatever global configuration the session running the suite
+    holds.
+    """
+    (home := tmp_path / "home").mkdir()
+    (home / ".gitconfig").write_text("[user]\n\tname = leaked\n", encoding="utf-8")
+    monkeypatch.setenv("HOME", str(home))
+    (root := tmp_path / "repo").mkdir()
+    listed = run(
+        ["git", "config", "--list", "--name-only", "--show-scope"],
+        capture_output = True,
+        check          = True,
+        cwd            = scratch(root),
+        text           = True
+    )
+
+    assert {line.split()[0] for line in listed.stdout.splitlines()} == {"local"}
+
+
+@mark.parametrize(
+    "passed",
+    [param(True, id = "passing session"), param(False, id = "failing session")]
+)
+def test_session_owns_a_root_removed_once_every_case_passed(
+    passed   : bool,
+    tmp_path : Path
+):
+    """
+    Pins that each of two sessions writes under a base temporary directory
+    of its own, removed once every case passed and kept after a failure.
+    """
+    (inner := tmp_path / "inner").mkdir()
+    (temp := tmp_path / "temp").mkdir()
+    (inner / "conftest.py").symlink_to(Path(__file__).parents[1] / "conftest.py")
+    (inner / "case.py").write_text(
+        "from os import environ\n"
+        "def test_case(tmp_path_factory):\n"
+        "    with open(environ['REPORT'], 'a') as file:\n"
+        "        print(tmp_path_factory.getbasetemp(), file=file)\n"
+        f"    assert {passed}\n",
+        encoding = "utf-8"
+    )
+    report = tmp_path / "report"
+    for _ in range(2):
+        run(
+            [
+                executable, "-m", "pytest", "-o",
+                "python_files=*.py", "-p", "no:cacheprovider", "-q"
+            ],
+            capture_output = True,
+            cwd            = inner,
+            env            = {
+                **environ,
+                "PYTEST_ADDOPTS" : "",
+                "REPORT"         : str(report),
+                "TMPDIR"         : str(temp)
+            }
+        )
+    roots = [Path(line) for line in report.read_text(encoding="utf-8").splitlines()]
+
+    assert len(set(roots)) == 2
+    assert {root.parent for root in roots} == {temp.resolve()}
+    assert [root.exists() for root in roots] == [not passed] * 2
 
 
 def test_session_writes_outside_the_shared_temporary_root(

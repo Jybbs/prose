@@ -47,7 +47,7 @@ def pytest_sessionfinish(exitstatus: int, session: Session):
     keeping it after a failure for the failing cases' files.
     """
     if exitstatus == ExitCode.OK and (root := session.config.stash.get(OWNED, None)):
-        rmtree(root)
+        rmtree(root, ignore_errors=True)
 
 
 @fixture
