@@ -333,6 +333,7 @@ mod tests {
         &format!("value_{} = (\n    dict(\n        alpha_value_name=1,\n        delta_value_name=2,\n        epsilon_value_xxxxxx=3\n    )\n)\n", "k".repeat(70)),
         true
     )]
+    #[case::call_without_arguments(&format!("value = (\n    module.{}()\n)\n", "k".repeat(80)), true)]
     #[case::subscript(&format!("value = (\n    table[{}]\n)\n", "k".repeat(84)), true)]
     #[case::if_test_column_dict(
         "if (\n    {\n        \"a\": 1,\n        \"b\": 2,\n    }\n):\n    pass\n",

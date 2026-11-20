@@ -172,8 +172,9 @@ impl Shedder<'_> {
     ///   that literal runs past `max_dict_entries`, or its one-row form
     ///   runs past the budget while it spans rows or `reflow-collections`
     ///   expands literals, and with that rule off, where it spans rows
-    /// - any other call, where `reflow-calls` finds no one-row form
-    ///   fitting that row, and with that rule off, where it spans rows
+    /// - any other call carrying arguments, where `reflow-calls` finds no
+    ///   one-row form fitting that row, and with that rule off, any call
+    ///   spanning rows
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
@@ -191,10 +192,13 @@ impl Shedder<'_> {
                     || ((spans || self.one_row.expands_literals())
                         && !self.one_row.fits(column + width))
             }
-            Expr::Call(_) if self.one_row.closes() => self
-                .one_row
-                .fitted(self.source, expr, expr.into(), column, 0)
-                .is_none(),
+            Expr::Call(call) if self.one_row.closes() => {
+                !call.arguments.is_empty()
+                    && self
+                        .one_row
+                        .fitted(self.source, expr, expr.into(), column, 0)
+                        .is_none()
+            }
             Expr::Call(_) => spans,
             _ if is_layoutable(expr) => {
                 if spans {
