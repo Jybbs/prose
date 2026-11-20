@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import { playwright }                   from '@vitest/browser-playwright'
+import { groupIconVitePlugin }          from 'vitepress-plugin-group-icons'
 import { configDefaults, defineConfig } from 'vitest/config'
 
 import { readFromDiskPlugin } from './lib/config/read-from-disk.ts'
@@ -17,11 +18,13 @@ const FIT            = '.vitepress/tests/pages/fit.test.ts'
 const PAGES          = 'site/pages/**/*.md'
 const ROOT           = paths.repoRoot(import.meta.url)
 const RULES          = 'crate/src/rules/**/*.rs'
+const SCRIPTS        = 'site/.vitepress/{kit,lib,theme}/**/*.{ts,tsx}'
 const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
 export const READERS = {
   'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
   'site/.vitepress/lib/fixtures/variants.ts'                : [CRATE],
-  'site/.vitepress/lib/identity/identity.data.ts'           : [STYLES],
+  'site/.vitepress/lib/identity/identity.data.ts'           : [SCRIPTS, STYLES, 'site/.vitepress/config.ts'],
+  'site/.vitepress/lib/kit/catalog.data.ts'                 : ['site/.vitepress/kit/**/*.{ts,tsx}'],
   'site/.vitepress/lib/landing/landing-typing-demo.data.ts' : [CRATE],
   'site/.vitepress/lib/reference/cli-help.ts'               : [CRATE],
   'site/.vitepress/lib/reference/output-samples.data.ts'    : [CRATE],
@@ -33,14 +36,36 @@ export const READERS = {
   'site/.vitepress/lib/tokens/destinations.ts'              : [PAGES],
   'site/.vitepress/tests/config/edit-link.test.ts'          : [PAGES],
   'site/.vitepress/tests/config/head.test.ts'               : [PAGES],
+  'site/.vitepress/tests/config/readers.test.ts'            : ['site/.vitepress/**/*.{mjs,ts,tsx}'],
   'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
   'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
   'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
+  'site/.vitepress/tests/shared/stylesheets.test.ts'        : [SCRIPTS],
   'site/.vitepress/tests/shared/tool-chips.test.ts'         : [PAGES],
   'site/.vitepress/tests/support.ts'                        : [STYLES],
   'site/.vitepress/tests/suppression/scopes.test.ts'        : [PAGES],
-  'site/.vitepress/tests/tailwind.ts'                       : ['site/pages/index.md', STYLES],
-  'site/.vitepress/tests/vocabulary.ts'                     : [STYLES]
+  'site/.vitepress/tests/vocabulary.ts'                     : [STYLES],
+
+  'site/.vitepress/tests/identity/declarations.test.ts': [
+    'site/.vitepress/lib/identity/*.ts', 'site/.vitepress/theme/components/identity/**/*.{css,tsx}'
+  ],
+
+  'site/.vitepress/tests/integrations/hue-limit.test.ts': [
+    'site/.vitepress/theme/components/integrations/**/*.{css,tsx}'
+  ],
+
+  'site/.vitepress/tests/shared/classes.test.ts': [
+    'site/.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}'
+  ],
+
+  'site/.vitepress/tests/shared/emblems.test.ts': [
+    'site/.vitepress/theme/components/rules/PipelineOrder.tsx'
+  ],
+
+  'site/.vitepress/tests/tailwind.ts': [
+    'site/.vitepress/kit/**/*.{ts,tsx}', 'site/.vitepress/lib/**/*.ts', 'site/.vitepress/theme/**/*.tsx',
+    'site/pages/index.md', STYLES
+  ]
 }
 const RERUN_TRIGGERS = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
@@ -68,7 +93,7 @@ export default defineConfig({
     projects: [
       {
         oxc     : { jsx: VUE_JSX },
-        plugins : [readFromDiskPlugin(READERS, ROOT)],
+        plugins : [groupIconVitePlugin(), readFromDiskPlugin(READERS, ROOT)],
         test    : {
           exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
           include    : ['.vitepress/tests/**/*.test.ts'],
