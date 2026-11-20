@@ -21,10 +21,10 @@ use crate::{
         comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         inline::{
-            display_width, run_closes_to_a_space, settled_head_column, settled_width,
-            soft_wrap_runs,
+            collapse_soft_wraps, display_width, run_closes_to_a_space, settled_head_column,
+            settled_width, soft_wrap_runs,
         },
-        layout::{is_column_shaped, is_layoutable, item_indent},
+        layout::{is_layoutable, item_indent},
         range::blocks_span,
         slots::starting_within,
         splice::splice_preserves_tree,
@@ -165,41 +165,44 @@ impl Shedder<'_> {
     /// `indent`, lands across rows once the layout rules take their turn,
     /// which holds for
     ///
-    /// - a collection literal no rejoined form of which fits that row,
-    ///   where it spans rows or `reflow-collections` expands it
-    /// - a call `simplify-comprehensions` rewrites to a literal, where it
-    ///   spans rows or that literal runs past `max_dict_entries` or past
-    ///   the budget while `reflow-collections` expands literals
-    /// - any other call, where `reflow-calls` explodes it by count, holds
-    ///   its flush column, or finds no one-row form fitting that row, or
-    ///   with that rule off, where it spans rows
+    /// - a collection literal written across rows, where
+    ///   `reflow-collections` is off or no rejoined form of it fits that
+    ///   row, and one written on one row that rule expands
+    /// - a call `simplify-comprehensions` rewrites to a literal, where
+    ///   that literal runs past `max_dict_entries`, or its one-row form
+    ///   runs past the budget while it spans rows or `reflow-collections`
+    ///   expands literals, and with that rule off, where it spans rows
+    /// - any other call, where `reflow-calls` finds no one-row form
+    ///   fitting that row, and with that rule off, where it spans rows
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
         match expr {
             Expr::Call(call) if let Some(literal) = self.simplified_form(call.range()) => {
-                spans
-                    || (self.one_row.expands_literals()
-                        && (self.one_row.caps_entries(call.arguments.keywords.len())
-                            || !self.one_row.fits(
-                                column
-                                    + self.one_row.form_width(self.source, &literal, call.range()),
-                            )))
+                if !self.one_row.joins_literals() {
+                    return spans;
+                }
+                let width = self.one_row.form_width(
+                    self.source,
+                    &collapse_soft_wraps(&literal),
+                    call.range(),
+                );
+                self.one_row.caps_entries(call.arguments.keywords.len())
+                    || ((spans || self.one_row.expands_literals())
+                        && !self.one_row.fits(column + width))
             }
-            Expr::Call(call) if self.one_row.closes() => {
-                self.one_row.count_explodes(self.source, call)
-                    || (spans && is_column_shaped(self.source.slice(call.arguments.range())))
-                    || self
-                        .one_row
-                        .fitted(self.source, expr, expr.into(), column, 0)
-                        .is_none()
-            }
+            Expr::Call(_) if self.one_row.closes() => self
+                .one_row
+                .fitted(self.source, expr, expr.into(), column, 0)
+                .is_none(),
             Expr::Call(_) => spans,
             _ if is_layoutable(expr) => {
                 if spans {
-                    self.one_row
-                        .rejoined(self.source, expr, expr.into(), column, 0)
-                        .is_none()
+                    !self.one_row.joins_literals()
+                        || self
+                            .one_row
+                            .rejoined(self.source, expr, expr.into(), column, 0)
+                            .is_none()
                 } else {
                     self.one_row
                         .expands(self.source, expr, expr.into(), column, 0, self.padding)

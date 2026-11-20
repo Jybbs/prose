@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a `dict(...)` Call Whose Literal Runs Past the Budget Opens the Literal on the Assignment's Row"
+
+description = '''
+`value = (` wraps a `dict(...)` call with three keyword arguments that fits the row inside the pair, while the dict literal `simplify-comprehensions` turns it into runs past the budget there, so `reflow-collections` explodes it. **The pair is removed and the literal opens on the assignment's row as `value = {`**, though it holds fewer entries than `max-dict-entries` allows.
+'''

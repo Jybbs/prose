@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/dict_call_literal_past_the_budget_opens_on_the_assignment_row/input.py
+---
+reflow-parentheses@8..98
+simplify-comprehensions@14..96

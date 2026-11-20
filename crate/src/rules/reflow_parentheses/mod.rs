@@ -232,6 +232,7 @@ impl Shedder<'_> {
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use ruff_python_ast::PythonVersion;
 
     use super::*;
     use crate::testing::{applied_text, parse};
@@ -239,8 +240,16 @@ mod tests {
     /// `src` with every edit the rule emits applied, under the default
     /// configuration with `reflow-calls` set to `reflows_calls`.
     fn applied(src: &str, reflows_calls: bool) -> String {
+        configured(src, |config| {
+            config.rules.reflow_calls.enabled = reflows_calls
+        })
+    }
+
+    /// `src` with every edit the rule emits applied, under the default
+    /// configuration as `configure` leaves it.
+    fn configured(src: &str, configure: impl FnOnce(&mut Config)) -> String {
         let mut config = Config::default();
-        config.rules.reflow_calls.enabled = reflows_calls;
+        configure(&mut config);
         let source = parse(src);
         let edits = ReflowParentheses::from_config(&config)
             .apply(&source)
@@ -255,6 +264,11 @@ mod tests {
         "value = (\n    compute(\n        a,\n        b,\n    )\n)\n",
         true,
         "value = compute(\n    a,\n    b,\n)\n"
+    )]
+    #[case::call_past_the_indented_row(
+        "value = (\n    compute_something(alpha_argument, delta_argument, epsilon_argument, gamma_argument_x)\n)\n",
+        true,
+        "value = compute_something(alpha_argument, delta_argument, epsilon_argument, gamma_argument_x)\n"
     )]
     #[case::fractured_call_with_reflow_calls_off(
         "value = (\n    compute(a,\n        b)\n)\n",
@@ -294,6 +308,10 @@ mod tests {
         "def f():\n    return (\n        {\n            \"a\": 1,\n            \"b\": 2,\n        }\n    )\n",
         "def f():\n    return {\n        \"a\": 1,\n        \"b\": 2,\n    }\n"
     )]
+    #[case::call_flush_against_the_keyword(
+        "def f():\n    return(\n        compute(\n            a,\n            b,\n        )\n    )\n",
+        "def f():\n    return compute(\n        a,\n        b,\n    )\n"
+    )]
     fn a_construct_landing_across_rows_opens_on_the_return_row(
         #[case] src: &str,
         #[case] expected: &str,
@@ -303,6 +321,18 @@ mod tests {
 
     #[rstest]
     #[case::fractured_call_rejoining_inside("value = (\n    compute(a,\n        b)\n)\n", true)]
+    #[case::fractured_dict_rejoining_inside(
+        &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(60)),
+        true
+    )]
+    #[case::dict_call_rejoining_inside(
+        &format!("value_{} = (\n    dict(\n        alpha=1,\n        delta=2\n    )\n)\n", "k".repeat(70)),
+        true
+    )]
+    #[case::dict_call_whose_written_rows_outrun_the_row(
+        &format!("value_{} = (\n    dict(\n        alpha_value_name=1,\n        delta_value_name=2,\n        epsilon_value_xxxxxx=3\n    )\n)\n", "k".repeat(70)),
+        true
+    )]
     #[case::subscript(&format!("value = (\n    table[{}]\n)\n", "k".repeat(84)), true)]
     #[case::if_test_column_dict(
         "if (\n    {\n        \"a\": 1,\n        \"b\": 2,\n    }\n):\n    pass\n",
@@ -318,5 +348,45 @@ mod tests {
     )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
+    }
+
+    #[rstest]
+    #[case::fractured_dict_with_reflow_collections_off(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false,
+        "value = {\"alpha\": 1,\n    \"delta\": 2}\n"
+    )]
+    #[case::dict_call_with_reflow_collections_off(
+        &format!("value_{0} = (\n    dict(\n        alpha=1,\n        delta=2\n    )\n)\n", "k".repeat(70)),
+        |config: &mut Config| config.rules.reflow_collections.enabled = false,
+        &format!("value_{0} = dict(\n    alpha=1,\n    delta=2\n)\n", "k".repeat(70))
+    )]
+    #[case::spanning_dict_call_past_the_budget_with_explode_off(
+        "value = (\n    dict(\n        alpha_value_long_name=1,\n        delta_value_long_name=2,\n        epsilon_value_name_xxxxx=3\n    )\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.explode = false,
+        "value = dict(\n    alpha_value_long_name=1,\n    delta_value_long_name=2,\n    epsilon_value_name_xxxxx=3\n)\n"
+    )]
+    fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
+        #[case] src: &str,
+        #[case] configure: fn(&mut Config),
+        #[case] expected: &str,
+    ) {
+        assert_eq!(configured(src, configure), expected);
+    }
+
+    #[rstest]
+    #[case::one_row_dict_call_past_the_budget_with_explode_off(
+        "value = (\n    dict(alpha_value_long_name=1, delta_value_long_name=2, epsilon_value_name_xxxxx=3)\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.explode = false
+    )]
+    #[case::call_an_fstring_rewrite_fits_on_the_indented_row(
+        "value = (\n    compute_something(alpha_argument, delta_argument, epsilon_argument_xy, \"%s\" % (name_x,))\n)\n",
+        |config: &mut Config| config.target_version = Some(PythonVersion::PY310)
+    )]
+    fn a_forecast_reading_each_layout_setting_holds_the_pair(
+        #[case] src: &str,
+        #[case] configure: fn(&mut Config),
+    ) {
+        assert_eq!(configured(src, configure), src);
     }
 }

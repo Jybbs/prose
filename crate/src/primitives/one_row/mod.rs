@@ -38,14 +38,16 @@ use render::{Writer, write_joined};
 /// The terms a one-row form exists under, resolved from configuration.
 /// `rejoin` carries both the argument cap and whether `reflow-calls`
 /// closes a fracture at all, `expands_literals` whether
-/// `reflow-collections` expands a literal, `max_dict_entries` is `None`
-/// where it does not, leaving the entry cap inert, and `rewrites` holds
-/// the f-string rewrites a form is measured through, none until
+/// `reflow-collections` expands a literal, `joins_literals` whether that
+/// rule runs at all, `max_dict_entries` is `None` where it expands none,
+/// leaving the entry cap inert, and `rewrites` holds the f-string
+/// rewrites a form is measured through, none until
 /// [`forecasting`](Self::forecasting) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
     expands_literals: bool,
+    joins_literals: bool,
     keep_multiline_literals: bool,
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
@@ -185,6 +187,7 @@ impl<'a> Settings<'a> {
         Settings {
             code_line_length: self.code_line_length,
             expands_literals: self.expands_literals,
+            joins_literals: self.joins_literals,
             keep_multiline_literals: self.keep_multiline_literals,
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
@@ -335,6 +338,12 @@ impl<'a> Settings<'a> {
         !source.contains_line_break(literal.range()) && self.expands_across_rows(source, literal)
     }
 
+    /// True where `reflow-collections` is enabled, the rule that joins a
+    /// fractured literal onto one row.
+    pub(crate) fn joins_literals(&self) -> bool {
+        self.joins_literals
+    }
+
     /// `param`'s one-row text, each row-spanning annotation and default
     /// spliced back at its own one-row form, keeping the spacing the
     /// source wrote around `:` and `=`. `None` where either reaches no
@@ -472,6 +481,7 @@ impl From<&Config> for Settings<'_> {
         Self {
             code_line_length: config.code_width(),
             expands_literals: config.expands_literals(),
+            joins_literals: collection.enabled,
             keep_multiline_literals: collection.keep_multiline_literals,
             max_dict_entries: collection
                 .max_dict_entries
