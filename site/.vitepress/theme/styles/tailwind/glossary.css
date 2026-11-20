@@ -36,7 +36,7 @@
   }
 
   &.is-stacked::before {
-    content    : "";
+    content    : '';
     position   : absolute;
     inset      : calc(var(--prose-space-2) * -1) 0;
     left       : auto;

@@ -14,9 +14,9 @@ use self::{analysis::module_band_plan, bander::Bander, plan::ImportBand};
 use crate::{
     config::Config,
     primitives::{
-        imports::defers_annotations,
         orderer::{Seatings, any_sibling_shares_line, member_blocks},
         sections::Sections,
+        tiering::Annotations,
     },
     rules::{Rule, RuleId},
     source::Source,
@@ -57,19 +57,25 @@ impl BandConstants {
         }
     }
 
+    /// The timing of the annotations of `source`'s module under the
+    /// rule's target.
+    pub(crate) fn annotations(&self, source: &Source) -> Annotations {
+        Annotations::of(&source.ast().body, self.target_version)
+    }
+
     /// The order the rule seats `body` in, forecast for a rule seated
     /// ahead of it, beside the import bands it sorts and every comment
     /// the banding carries onto another member. A band holds the
     /// imports of one region once the hoist seats every constant
-    /// between two of them below the run, and an annotation reads as
-    /// deferred while `defer_annotations`. `None` when a sibling shares
-    /// a line or the plan declines the body.
+    /// between two of them below the run, each annotation counting at
+    /// the timing `annotations` sets. `None` when a sibling shares a
+    /// line or the plan declines the body.
     pub(crate) fn forecast(
         &self,
         source: &Source,
         body: &[Stmt],
         outer: TextRange,
-        defer_annotations: bool,
+        annotations: Annotations,
     ) -> Option<Bands> {
         if any_sibling_shares_line(source, body) {
             return None;
@@ -78,7 +84,7 @@ impl BandConstants {
         let sections = Sections::of(source, &blocks);
         let order: Vec<usize> = (0..body.len()).collect();
         Some(
-            module_band_plan(source, body, &blocks, self, defer_annotations)?
+            module_band_plan(source, body, &blocks, self, annotations)?
                 .forecast(body, blocks, &sections, self, &order),
         )
     }
@@ -91,12 +97,7 @@ impl BandConstants {
         let body = &source.ast().body;
         let mut seatings = Seatings::default();
         if !body.is_empty() {
-            Bander {
-                defer_annotations: defers_annotations(body),
-                rule: self,
-                source,
-            }
-            .seat(body, source.module_range(), &mut seatings);
+            Bander::of(self, source).seat(body, source.module_range(), &mut seatings);
         }
         seatings
     }
@@ -108,12 +109,7 @@ impl Rule for BandConstants {
         if body.is_empty() {
             return Vec::new();
         }
-        Bander {
-            defer_annotations: defers_annotations(body),
-            rule: self,
-            source,
-        }
-        .band_edits(body, source.module_range())
+        Bander::of(self, source).band_edits(body, source.module_range())
     }
 
     fn id(&self) -> RuleId {
@@ -142,27 +138,28 @@ mod tests {
     fn module_forecast(
         rule: &BandConstants,
         source: &Source,
-        defer_annotations: bool,
+        annotations: Annotations,
     ) -> Option<Bands> {
         rule.forecast(
             source,
             &source.ast().body,
             source.module_range(),
-            defer_annotations,
+            annotations,
         )
     }
 
     #[rstest]
-    #[case::deferred_annotation_frees_the_observed_site(true, vec![2, 1, 0])]
-    #[case::eager_annotation_anchors_the_observed_site(false, vec![0, 1, 2])]
-    fn forecast_reads_annotations_as_eager_unless_deferred(
-        #[case] defer_annotations: bool,
+    #[case::eager_annotation_anchors_the_observed_site(Annotations::Eager, vec![0, 1, 2])]
+    #[case::lazy_annotation_frees_the_observed_site(Annotations::Lazy, vec![2, 1, 0])]
+    #[case::stringified_annotation_frees_the_observed_site(Annotations::Stringified, vec![2, 1, 0])]
+    fn forecast_reads_annotations_at_the_timing_given(
+        #[case] annotations: Annotations,
         #[case] order: Vec<usize>,
     ) {
         let source =
             parse("def f(x: Foo.Bar):\n    pass\n\n\nY = Foo.Bar\n\n\nfrom m import Foo\n");
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, defer_annotations).expect("the body bands");
+        let bands = module_forecast(&rule, &source, annotations).expect("the body bands");
         assert_eq!(bands.order, order);
     }
 
@@ -181,7 +178,7 @@ mod tests {
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, false);
+        let bands = module_forecast(&rule, &source, Annotations::Eager);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -211,7 +208,7 @@ mod tests {
             code_width: 40,
             ..BandConstants::from_config(&Config::default())
         };
-        let bands = module_forecast(&rule, &source, false);
+        let bands = module_forecast(&rule, &source, Annotations::Eager);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -243,7 +240,7 @@ mod tests {
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, false).expect("the body bands");
+        let bands = module_forecast(&rule, &source, Annotations::Eager).expect("the body bands");
         assert_eq!(bands.order, order);
     }
 

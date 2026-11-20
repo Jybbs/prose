@@ -3,5 +3,5 @@ previewable = false
 title       = "An Annotated Constant Sorts Below the Class Its Annotation Names"
 
 description = '''
-`CONFIG: Settings = {}` names `Settings` in its annotation, which Python evaluates when the line runs unless `from __future__ import annotations` is in force, so the constant depends on the class the same way `HANDLER = Settings` does. **Both sort into the trailing band beneath `class Settings`**, by name within it, `CONFIG` above `HANDLER`.
+`CONFIG: Settings = {}` names `Settings` in its annotation, which Python evaluates when the line runs below `target-version` 3.14 unless `from __future__ import annotations` is in force, so the constant depends on the class the same way `HANDLER = Settings` does. **Both sort into the trailing band beneath `class Settings`**, by name within it, `CONFIG` above `HANDLER`.
 '''

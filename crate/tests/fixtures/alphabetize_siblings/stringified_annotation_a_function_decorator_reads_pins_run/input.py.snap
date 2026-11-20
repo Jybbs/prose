@@ -1,0 +1,25 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/alphabetize_siblings/stringified_annotation_a_function_decorator_reads_pins_run/input.py
+---
+from __future__ import annotations
+from functools import singledispatch
+
+
+@singledispatch
+def show(value):
+    return repr(value)
+
+
+class Zed:
+    pass
+
+
+@show.register
+def _(value: Zed):
+    return "zed"
+
+
+class Alpha:
+    pass
