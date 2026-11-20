@@ -26,7 +26,7 @@ impl EvalRefVisitor<'_> {
     fn new(annotations: Annotations) -> Self {
         Self {
             annotations,
-            evaluates: annotations == Annotations::Eager,
+            evaluates: annotations.read_at_module_scope(),
             names: Vec::new(),
         }
     }
@@ -64,7 +64,7 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                 }
             }
             Stmt::ClassDef(class) => {
-                self.visit_evaluating(self.annotations.read_by(class), |visitor| {
+                self.visit_evaluating(self.annotations.read_by_class(class), |visitor| {
                     walk_stmt(visitor, stmt);
                 });
             }
@@ -75,9 +75,7 @@ impl<'src> AstVisitor<'src> for EvalRefVisitor<'src> {
                 if let Some(type_params) = &func.type_params {
                     self.visit_type_params(type_params);
                 }
-                let reads = self.annotations == Annotations::Eager
-                    || (self.annotations == Annotations::Lazy && !func.decorator_list.is_empty());
-                self.visit_evaluating(reads, |visitor| {
+                self.visit_evaluating(self.annotations.read_by_function(func), |visitor| {
                     walk_parameters(visitor, &func.parameters);
                     if let Some(returns) = &func.returns {
                         visitor.visit_annotation(returns);
@@ -210,6 +208,28 @@ mod tests {
     }
 
     #[rstest]
+    #[case::function_signature("def probe(p: ParamRef) -> ReturnRef: ...\n", &[])]
+    #[case::decorated_function(
+        "@DecoRef\ndef probe(p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
+    #[case::decorated_method_under_a_bare_class(
+        "class Probe:\n    @DecoRef\n    def method(self, p: ParamRef) -> ReturnRef: ...\n",
+        &["DecoRef", "ParamRef", "ReturnRef"],
+    )]
+    fn eval_time_refs_reads_a_deferred_function_annotation_only_under_a_decorator(
+        #[case] src: &str,
+        #[case] expected: &[&str],
+        #[values(Annotations::Lazy, Annotations::Stringified)] annotations: Annotations,
+    ) {
+        let source = parse(src);
+        let collected: FxHashSet<&str> = eval_time_refs(&source.ast().body[0], annotations)
+            .into_iter()
+            .collect();
+        assert_eq!(collected, expected.iter().copied().collect());
+    }
+
+    #[rstest]
     #[case::bare_class("class Probe:\n    field: AnnotRef\n", &[])]
     #[case::decorated_class("@DecoRef\nclass Probe:\n    field: AnnotRef\n", &["AnnotRef", "DecoRef"])]
     #[case::keyword_class("class Probe(metaclass=MetaRef):\n    field: AnnotRef\n", &["AnnotRef", "MetaRef"])]
@@ -225,15 +245,6 @@ mod tests {
     #[case::field_after_a_method_under_a_based_class(
         "class Probe(BaseRef):\n    def method(self): ...\n    field: AnnotRef\n",
         &["AnnotRef", "BaseRef"],
-    )]
-    #[case::function_signature("def probe(p: ParamRef) -> ReturnRef: ...\n", &[])]
-    #[case::decorated_function(
-        "@DecoRef\ndef probe(p: ParamRef) -> ReturnRef: ...\n",
-        &["DecoRef", "ParamRef", "ReturnRef"],
-    )]
-    #[case::decorated_method_under_a_bare_class(
-        "class Probe:\n    @DecoRef\n    def method(self, p: ParamRef) -> ReturnRef: ...\n",
-        &["DecoRef", "ParamRef", "ReturnRef"],
     )]
     #[case::module_annotation("field: AnnotRef = ValueRef\n", &["ValueRef"])]
     fn eval_time_refs_reads_a_lazy_annotation_only_under_a_header_running_code(

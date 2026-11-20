@@ -1,7 +1,7 @@
 //! When a module's annotations run, the timing that decides which
 //! annotations count among the names a definition reads as it binds.
 
-use ruff_python_ast::{PythonVersion, Stmt, StmtClassDef};
+use ruff_python_ast::{PythonVersion, Stmt, StmtClassDef, StmtFunctionDef};
 
 use crate::primitives::imports::defers_annotations;
 
@@ -18,7 +18,9 @@ pub(crate) enum Annotations {
     /// on a class.
     Lazy,
     /// `from __future__ import annotations` stores each annotation as a
-    /// string.
+    /// string, which a definition reads as it binds only where a
+    /// decorator on a function resolves it, as `functools.singledispatch`'s
+    /// `register` does.
     Stringified,
 }
 
@@ -28,11 +30,24 @@ impl Annotations {
     pub(crate) fn of(body: &[Stmt], target: Option<PythonVersion>) -> Self {
         if defers_annotations(body) {
             Self::Stringified
-        } else if target.is_some_and(PythonVersion::defers_annotations) {
+        } else {
+            Self::under(target)
+        }
+    }
+
+    /// The timing of a module without the future import under `target`.
+    pub(crate) fn under(target: Option<PythonVersion>) -> Self {
+        if target.is_some_and(PythonVersion::defers_annotations) {
             Self::Lazy
         } else {
             Self::Eager
         }
+    }
+
+    /// True when a module-scope annotation runs as the statement holding
+    /// it runs.
+    pub(crate) fn read_at_module_scope(self) -> bool {
+        self == Self::Eager
     }
 
     /// True when the annotations of `class`'s body run while the class
@@ -40,7 +55,7 @@ impl Annotations {
     /// carries a decorator, a base, or a keyword, through which a
     /// decorator, a metaclass, or an `__init_subclass__` hook can read
     /// `__annotations__`.
-    pub(super) fn read_by(self, class: &StmtClassDef) -> bool {
+    pub(super) fn read_by_class(self, class: &StmtClassDef) -> bool {
         match self {
             Self::Eager => true,
             Self::Lazy => {
@@ -50,6 +65,13 @@ impl Annotations {
             }
             Self::Stringified => false,
         }
+    }
+
+    /// True when the annotations of `func`'s signature run as the
+    /// function binds, which a deferred annotation does only where a
+    /// decorator resolves it.
+    pub(super) fn read_by_function(self, func: &StmtFunctionDef) -> bool {
+        self.read_at_module_scope() || !func.decorator_list.is_empty()
     }
 }
 

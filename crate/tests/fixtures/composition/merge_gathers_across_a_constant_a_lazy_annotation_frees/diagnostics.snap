@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/merge_gathers_across_a_constant_a_lazy_annotation_frees/input.py
+---
+band-constants@27..93
+reflow-imports@26..98
