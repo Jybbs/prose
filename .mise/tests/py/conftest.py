@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[3]
 @fixture
 def ran(tmp_path: Path) -> Callable[..., CompletedProcess]:
     """
-    Returns a function running the `py` task `name` with `args` in a scratch
+    Builds a function running the `py` task `name` with `args` in a scratch
     repository where git tracks each path in `tracked`, `deleted` naming the
     ones removed from the working tree afterward, under a `GITHUB_ACTIONS`
     of `actions` or none. No `GIT_` variable of the session running the
@@ -35,7 +35,7 @@ def ran(tmp_path: Path) -> Callable[..., CompletedProcess]:
         deleted : tuple[str, ...] = ()
     ) -> CompletedProcess:
         """
-        Returns the finished run of the task, its output captured as text.
+        Runs the task to completion, capturing its output as text.
         """
         repo = tmp_path / "repo"
         env  = {

@@ -277,9 +277,9 @@ def main(located: str, name: str, record: str, trees: list):
 
 def missing(exc: BaseException) -> str | None:
     """
-    Returns the name a failed `from … import …` asked for or the name a
-    `NameError` or an `AttributeError` could not find, `None` where the
-    exception names none.
+    Reads the name a failed `from … import …` asked for or the name a
+    `NameError` or an `AttributeError` could not find, giving `None` where
+    the exception names none.
 
     Args:
         exc: The exception to read.
@@ -305,7 +305,7 @@ def spelt(text: str) -> str:
 
 def wrapped(value: object) -> tuple:
     """
-    Returns the functions a value holds, which are the function a
+    Collects the functions a value holds, which are the function a
     `classmethod` or a `staticmethod` wraps, the accessors of a `property`,
     the function a `cached_property` wraps, and the value itself otherwise.
 

@@ -102,7 +102,7 @@ WHEN = datetime(2026, 10, 1, tzinfo=UTC)
 @fixture
 def lift(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `lock:lift` script.
+    Loads the `lock:lift` script.
     """
     return task("lock/lift")
 
@@ -115,8 +115,8 @@ def logs(
     tmp_path    : Path
 ) -> list[Path]:
     """
-    Returns the list each attempt's log is recorded in, faking `attempt` to
-    pass exactly where it holds back every name in `breaking`.
+    Fakes `attempt` to record its log in the list the case reads, passing
+    exactly where it holds back every name in `breaking`.
     """
     recorded = []
     monkeypatch.setattr(lift, "LOGS", tmp_path)
@@ -131,8 +131,9 @@ def logs(
 @fixture
 def released(lift: ModuleType, monkeypatch: MonkeyPatch) -> list[tuple]:
     """
-    Returns the list each registry lookup of a release is recorded in, every
-    lookup answering the version it was asked for, published at `WHEN`.
+    Fakes the registry lookup to record each package and version it is
+    asked for in the list the case reads, answering that version, published
+    at `WHEN`.
     """
     asked = []
 
@@ -151,7 +152,7 @@ def released(lift: ModuleType, monkeypatch: MonkeyPatch) -> list[tuple]:
 @fixture
 def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
-    Returns a working tree holding every kind of home `lock:lift` reads, and
+    Writes a working tree holding every kind of home `lock:lift` reads, and
     makes it the current directory.
     """
     return workdir(TREE)
@@ -159,7 +160,7 @@ def tree(workdir: Callable[[dict[str, str]], Path]) -> Path:
 
 def lifting(lift: ModuleType, names: list[str]) -> list:
     """
-    Returns a row for each of `names`, every one a major lift but `serde`.
+    Builds a row for each of `names`, every one a major lift but `serde`.
     """
     return [
         row(
@@ -180,7 +181,7 @@ def pin(
     **home
 ) -> object:
     """
-    Returns a pin of the package `name` at `written`, whose home is the file
+    Builds a pin of the package `name` at `written`, whose home is the file
     and keys or pattern `home` names, or none where `home` is empty.
     """
     return lift.Pin(lift.Home(**home) if home else None, name, name, source, written)
@@ -195,7 +196,7 @@ def row(
     **fields
 ) -> object:
     """
-    Returns a row lifting the package `name` from `current` to `newest`,
+    Builds a row lifting the package `name` from `current` to `newest`,
     published at `WHEN`.
     """
     return lift.Lift(
@@ -518,7 +519,7 @@ def test_clearing_names_each_alert_the_newest_release_patches(lift: ModuleType):
     """
     def alert(name: str, number: int, patched: str | None) -> dict:
         """
-        Returns the fields of an npm alert `lock:lift` reads.
+        Builds the fields of an npm alert `lock:lift` reads.
         """
         return {
             "number"                 : number,
