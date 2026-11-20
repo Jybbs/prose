@@ -232,6 +232,8 @@ impl Shedder<'_> {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+
     use rstest::rstest;
     use ruff_python_ast::PythonVersion;
 
@@ -305,6 +307,11 @@ mod tests {
         "table[resolve(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxxxxxxxxx)] = (\n    loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n)\n",
         true,
         "table[resolve(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxxxxxxxxx)] = loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n"
+    )]
+    #[case::dict_call_whose_brace_lands_at_the_budget(
+        &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(78)),
+        true,
+        &format!("value_{0} = dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n", "k".repeat(78))
     )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
@@ -402,6 +409,10 @@ mod tests {
         &format!("value_{0} = (\n    loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)\n)\n", "k".repeat(64)),
         true
     )]
+    #[case::dict_call_whose_brace_lands_one_past_the_budget(
+        &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(79)),
+        true
+    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
@@ -413,14 +424,38 @@ mod tests {
         "value = {\"alpha\": 1,\n    \"delta\": 2}\n"
     )]
     #[case::dict_call_with_reflow_collections_off(
-        &format!("value_{0} = (\n    dict(\n        alpha=1,\n        delta=2\n    )\n)\n", "k".repeat(70)),
+        &format!("value_{0} = (\n    dict(\n        alpha=1,\n        delta=2\n    )\n)\n", "k".repeat(60)),
         |config: &mut Config| config.rules.reflow_collections.enabled = false,
-        &format!("value_{0} = dict(\n    alpha=1,\n    delta=2\n)\n", "k".repeat(70))
+        &format!("value_{0} = dict(\n    alpha=1,\n    delta=2\n)\n", "k".repeat(60))
     )]
     #[case::spanning_dict_call_past_the_budget_with_explode_off(
         "value = (\n    dict(\n        alpha_value_long_name=1,\n        delta_value_long_name=2,\n        epsilon_value_name_xxxxx=3\n    )\n)\n",
         |config: &mut Config| config.rules.reflow_collections.explode = false,
         "value = dict(\n    alpha_value_long_name=1,\n    delta_value_long_name=2,\n    epsilon_value_name_xxxxx=3\n)\n"
+    )]
+    #[case::one_row_call_on_an_expanding_dict_with_reflow_calls_off(
+        "value = (\n    {\"alpha\": 1, \"beta\": 2, \"gamma\": 3}.get(key_argument, default_value)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = {\"alpha\": 1, \"beta\": 2, \"gamma\": 3}.get(key_argument, default_value)\n"
+    )]
+    #[case::one_row_items_call_on_an_expanding_dict_with_reflow_calls_off(
+        "value = (\n    {\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4}.items()\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = {\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4}.items()\n"
+    )]
+    #[case::one_row_call_on_a_dict_its_callee_carries_past_the_budget_with_reflow_calls_off(
+        "value = (\n    transform_values({\"alpha\": 1, \"beta\": 22})\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform_values({\"alpha\": 1, \"beta\": 22})\n"
     )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
@@ -442,6 +477,18 @@ mod tests {
     #[case::one_row_dict_call_with_reflow_collections_off(
         "value = (\n    dict(alpha_value_long_name=1, delta_value_long_name=2, epsilon_value_name_xxxxx=3)\n)\n",
         |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::dict_call_whose_literal_row_outruns_the_budget_with_reflow_collections_off(
+        &format!("value_{0} = (\n    dict(\n        alpha=1,\n        delta=2\n    )\n)\n", "k".repeat(70)),
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::one_row_call_on_a_dict_with_both_reflow_rules_off(
+        "value = (\n    {\"alpha\": 1, \"beta\": 2, \"gamma\": 3}.get(key_argument, default_value)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+            config.rules.reflow_collections.enabled = false;
+        }
     )]
     #[case::dict_receiver_past_the_budget_with_reflow_collections_off(
         &format!("value_{0} = (\n    {{\"alpha\": 1, \"beta\": 2}}.get(key_argument_long_enough, default_value_long_enough_xxxxxxxxxxxx)\n)\n", "k".repeat(52)),

@@ -29,6 +29,7 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
+        walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
 };
@@ -165,14 +166,21 @@ impl Shedder<'_> {
     /// past the budget. That row runs from the column the pair opens at
     /// through the first row of `text`, cut at the first argument list
     /// `reflow-calls` can explode or literal `reflow-collections` can
-    /// expand on that row while that rule runs, and through the opening
-    /// bracket of the literal a call `simplify-comprehensions` rewrites to.
+    /// expand on that row while that rule runs. A call
+    /// `simplify-comprehensions` rewrites runs through the opening bracket
+    /// of its literal while `reflow-collections` expands literals, and
+    /// through that literal's first row otherwise.
     pub(super) fn opens_past_the_budget(&self, candidate: &Candidate, text: &str) -> bool {
         let column = self.shifted_column(candidate.pair.start());
         if let Expr::Call(call) = candidate.expr
-            && self.simplified_form(call.range()).is_some()
+            && let Some(literal) = self.simplified_form(call.range())
         {
-            return column + TextSize::of('{').to_usize() > self.code_line_length;
+            let head = if self.one_row.expands_literals() {
+                TextSize::of('{').to_usize()
+            } else {
+                display_width(literal.lines().next().unwrap_or_default())
+            };
+            return column + head > self.code_line_length;
         }
         let range = candidate.expr.range();
         let written = display_width(text.lines().next().unwrap_or_default());
@@ -202,7 +210,8 @@ impl Shedder<'_> {
     ///   expands literals, and with that rule off, where it spans rows
     /// - any other call holding an argument list `reflow-calls` can
     ///   explode, where that rule finds no one-row form fitting that row,
-    ///   and with that rule off, any call spanning rows
+    ///   and with that rule off, any call spanning rows or holding a
+    ///   literal `reflow-collections` expands on that row
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
@@ -233,7 +242,20 @@ impl Shedder<'_> {
                         .fitted(self.source, expr, expr.into(), column, 0)
                         .is_none()
             }
-            Expr::Call(_) => spans,
+            Expr::Call(call) => {
+                let width = |range: TextRange| display_width(self.source.slice(range));
+                spans
+                    || any_over_expr_within(expr, Interpolations::Skip, |inner| {
+                        self.one_row.expands(
+                            self.source,
+                            inner,
+                            inner.into(),
+                            column + width(TextRange::new(call.start(), inner.start())),
+                            width(TextRange::new(inner.end(), call.end())),
+                            self.padding,
+                        )
+                    })
+            }
             _ if is_layoutable(expr) => {
                 if spans {
                     !self.one_row.joins_literals()

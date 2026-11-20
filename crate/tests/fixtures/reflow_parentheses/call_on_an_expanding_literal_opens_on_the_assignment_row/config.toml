@@ -1,0 +1,7 @@
+code-line-length = 40
+
+[rules]
+reflow-calls = { enabled = false }
+
+[harness]
+rules = ["reflow-collections"]
