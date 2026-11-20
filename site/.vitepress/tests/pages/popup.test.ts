@@ -1,9 +1,7 @@
 import { chromium }                           from 'playwright'
 import type { Browser, BrowserContext, Page } from 'playwright'
 
-import { bundleContext } from './bundle'
-
-const OPEN_CARD = '[role="dialog"]:visible'
+import { bundleContext, OPEN_CARD } from './bundle'
 
 const activeRole = (page: Page) => page.evaluate(() => document.activeElement?.getAttribute('role'))
 
@@ -127,6 +125,14 @@ describe('the rule cards from a pointer at a desktop width', () => {
   afterEach(() => page.close())
 
   afterAll(() => browser.close())
+
+  it('closes on Escape and leaves focus where it was', async () => {
+    const probe = () => page.evaluate(() => (document.activeElement as HTMLElement).dataset.probe)
+    await page.evaluate(() => { (document.activeElement as HTMLElement).dataset.probe = 'focused' })
+    await page.keyboard.press('Escape')
+    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    await expect(probe()).resolves.toBe('focused')
+  })
 
   it('opens on a hover and leaves focus on the page', async () => {
     await page.waitForTimeout(200)

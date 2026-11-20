@@ -4,6 +4,7 @@ import type { PropType }                                        from 'vue'
 
 import { Popup } from '../../../kit'
 
+import { useDismissedHover }       from '../../../lib/composables/use-dismissed-hover'
 import { noticeKey, rankedFacets } from '../../../lib/sandbox/config-decorations'
 import type { RuleControl }        from '../../../lib/sandbox/config-schema.data'
 
@@ -23,6 +24,7 @@ export const ConfigFlagPopup = defineComponent({
     apply : (path: string, replacement: string) => typeof path === 'string' && typeof replacement === 'string'
   },
   setup(props, { emit, expose }) {
+    const hover  = useDismissedHover()
     const path   = ref('')
     const target = shallowRef<HTMLElement | null>(null)
 
@@ -43,7 +45,7 @@ export const ConfigFlagPopup = defineComponent({
     // token spans re-fires the delegated hover.
     function show(event: Event): void {
       const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
-      if (!flag) return
+      if (hover.enter(flag) || !flag) return
       hold()
       if (path.value && flag === target.value) return
       const named = noticeKey(flag.dataset.message ?? '')
@@ -55,6 +57,7 @@ export const ConfigFlagPopup = defineComponent({
     // The pointer crosses dead space on its way from the key to a replacement
     // button, so a leave schedules the close and entering the card cancels it.
     function hide(): void {
+      hover.leave()
       if (!closing.isPending.value) closing.start()
     }
 
@@ -65,6 +68,13 @@ export const ConfigFlagPopup = defineComponent({
     function close(): void {
       hold()
       path.value = ''
+    }
+
+    // Closes the card on Escape or an interaction outside it, leaving focus
+    // where it is.
+    function dismiss(): void {
+      close()
+      hover.dismiss()
     }
 
     function apply(replacement: string): void {
@@ -79,6 +89,7 @@ export const ConfigFlagPopup = defineComponent({
         anchor={target.value}
         class="glossary-popup"
         label={path.value}
+        onDismiss={dismiss}
         open={path.value !== ''}
         overflowPadding={16}
         passive
