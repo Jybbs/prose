@@ -113,7 +113,7 @@ paths = ["tests/**"]
 inlinable-bindings = false
 ```
 
-Globs are relative to the directory of the config that declares them, so `tests/**` matches the `tests/` beside the config and not a `tests/` at any depth below it. A `*` or `?` stays within one path segment, as it does in a `.gitignore`, whereas `**` crosses any number of segments. `src/*.py` therefore matches `src/mod.py` and not `src/pkg/mod.py`, while `src/**/*.py` matches both. The array-of-tables form keeps an override with several facets readable across lines, where an inline table keyed by glob would crowd them onto one. When several entries match one file, *Prose* applies their bodies in document order, so the last matching entry wins each facet it sets and the earlier entries' other facets stay in effect.
+Globs are relative to the directory of the config that declares them, so `tests/**` matches the `tests/` beside the config and not a `tests/` at any depth below it. A `*` or `?` stays within one path segment, as it does in a `.gitignore`, whereas a `**` standing as a whole segment crosses any number of them. `src/*.py` therefore matches `src/mod.py` and not `src/pkg/mod.py`, while `src/**/*.py` matches both. A glob holding no `/` matches only beside the config, unlike the same line in a `.gitignore`, so `*_pb2.py` matches `model_pb2.py` and not `api/model_pb2.py`, while `**/*_pb2.py` matches both. The array-of-tables form keeps an override with several facets readable across lines, where an inline table keyed by glob would crowd them onto one. When several entries match one file, *Prose* applies their bodies in document order, so the last matching entry wins each facet it sets and the earlier entries' other facets stay in effect.
 
 ## Subset by Invocation
 

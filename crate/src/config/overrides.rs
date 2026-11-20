@@ -145,6 +145,13 @@ mod tests {
     }
 
     #[test]
+    fn matches_a_separator_through_a_negated_class() {
+        let parsed = overrides("[[overrides]]\npaths = [\"src[!_]mod.py\"]\n").expect("parses");
+
+        assert!(parsed[0].matches(Path::new("/proj/src/mod.py"), Path::new("/proj")));
+    }
+
+    #[test]
     fn matches_anchors_to_the_declaring_directory() {
         let parsed = overrides("[[overrides]]\npaths = [\"tests/**\"]\n").expect("parses");
         let anchor = Path::new("/proj");
@@ -164,6 +171,8 @@ mod tests {
 
     #[rstest]
     #[case("**/*_pb2.py", "api/v1/model_pb2.py", true)]
+    #[case("*_pb2.py", "model_pb2.py", true)]
+    #[case("*_pb2.py", "api/v1/model_pb2.py", false)]
     #[case("**/test_*.py", "tests/test_api.py", true)]
     #[case("**/test_*.py", "test_support/constants.py", false)]
     #[case("generated/**", "generated/api/v1/model_pb2.py", true)]
@@ -174,7 +183,6 @@ mod tests {
     #[case("src/**/*.py", "src/pkg/mod.py", true)]
     #[case("src/?/mod.py", "src/a/mod.py", true)]
     #[case("src?mod.py", "src/mod.py", false)]
-    #[case("src[!_]mod.py", "src/mod.py", true)]
     fn matches_holds_single_wildcards_within_one_segment(
         #[case] pattern: &str,
         #[case] file: &str,
