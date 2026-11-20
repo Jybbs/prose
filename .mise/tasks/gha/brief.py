@@ -112,19 +112,19 @@ class Summary:
 
     def _output(self, job: str, name: str) -> str:
         """
-        Returns the `job`'s `name` output, empty when the job declared none.
+        Reads the `job`'s `name` output, empty when the job declared none.
         """
         return self.needs[job].get("outputs", {}).get(name, "")
 
     def _result(self, job: str) -> str:
         """
-        Returns the result the `job` finished with.
+        Reads the result the `job` finished with.
         """
         return self.needs[job]["result"]
 
     def _row(self, job: str, jobs: dict) -> dict:
         """
-        Returns the mark and the name one corpus row shows.
+        Builds the mark and the name one corpus row shows.
 
         Args:
             job  : The job id whose row to build.

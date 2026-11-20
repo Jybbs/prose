@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/merge_gathers_across_a_constant_a_lazy_annotation_frees/input.py
+---
+from os import path as Foo, sep
+
+Y = Foo.sep
+
+
+def f(x: Foo.sep):
+    return sep

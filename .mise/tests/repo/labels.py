@@ -32,7 +32,7 @@ description = "Cargo.toml, maturin, and dependencies"
 @fixture
 def labels(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `repo:labels` script.
+    Loads the `repo:labels` script.
     """
     return task("repo/labels")
 

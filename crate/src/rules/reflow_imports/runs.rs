@@ -16,8 +16,8 @@ use crate::{
     primitives::{
         comments::comments_held_by,
         imports::{
-            Dropping, ModuleKey, defers_annotations, fold_landing, import_runs, is_star,
-            module_key, prune_import_statements, stands_alone,
+            Dropping, ModuleKey, fold_landing, import_runs, is_star, module_key,
+            prune_import_statements, stands_alone,
         },
         orderer::member_blocks,
     },
@@ -136,9 +136,7 @@ impl MergeRuns {
         let runs = import_runs(body);
         let joined = bands
             .filter(|_| seek(&runs) || repeats_across(source, body, &runs))
-            .and_then(|rule| {
-                rule.forecast(source, body, outer, defers_annotations(&source.ast().body))
-            });
+            .and_then(|rule| rule.forecast(source, body, outer, rule.annotations(source)));
         match joined {
             Some(Bands {
                 blocks,

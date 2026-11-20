@@ -12,9 +12,8 @@ restores `stamps` reports for leaving a task's outputs unstamped, and the
 from collections.abc   import Callable
 from json              import dumps
 from pathlib           import Path
-from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
+from pytest            import CaptureFixture, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
-from subprocess        import run
 from types             import ModuleType
 
 COVERING = ["Cargo.lock", "site/**", "wasm/**"]
@@ -334,7 +333,7 @@ UNSTAMPED = (
 @fixture
 def audit(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `repo:audit` script.
+    Loads the `repo:audit` script.
     """
     return task("repo/audit")
 
@@ -345,7 +344,7 @@ def drifted(
     workdir : Callable[[dict[str, str]], Path]
 ) -> Callable[[str, str, str], None]:
     """
-    Returns a function making the current directory a tree holding `PINS`,
+    Builds a function making the current directory a tree holding `PINS`,
     with `mise` faked to list `TASKS`, after one edit to a pin.
     """
     def write(home: str, pin: str, stray: str):
@@ -368,17 +367,15 @@ def drifted(
 
 @fixture
 def repository(
-    fp          : FakeProcess,
-    monkeypatch : MonkeyPatch,
-    workdir     : Callable[[dict[str, str]], Path]
+    fp      : FakeProcess,
+    scratch : Callable[[Path], Path],
+    workdir : Callable[[dict[str, str]], Path]
 ) -> Callable[[dict[str, str], list[dict]], Path]:
     """
-    Returns a function making the current directory a git repository
-    tracking the files it is given, with `mise` faked to list the tasks it
-    is given and every `git` call run as given.
+    Builds a function making the current directory a git repository tracking
+    the files it is given, with `mise` faked to list the tasks it is given
+    and every `git` call run as given.
     """
-    for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
-        monkeypatch.delenv(variable, raising=False)
     fp.keep_last_process(True)
     fp.pass_command(["git", fp.any()])
 
@@ -387,9 +384,7 @@ def repository(
         Writes and tracks `files`, registers `tasks` as the listing with
         each `{root}` replaced by the tree, and returns the tree.
         """
-        root = workdir(files)
-        run(["git", "init", "-q"], check=True)
-        run(["git", "add", "."], check=True)
+        root = scratch(workdir(files))
         fp.register(
             ["mise", "tasks", "ls", "--json"],
             stdout = dumps(tasks).replace("{root}", str(root))
