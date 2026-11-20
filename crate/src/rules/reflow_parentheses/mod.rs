@@ -275,6 +275,11 @@ mod tests {
         false,
         "value = compute(a,\n    b)\n"
     )]
+    #[case::call_on_a_flush_column_call(
+        "value = (\n    factory(\n        alpha,\n        beta,\n    )()\n)\n",
+        true,
+        "value = factory(\n    alpha,\n    beta,\n)()\n"
+    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -291,6 +296,10 @@ mod tests {
     #[case::augmented_column_list(
         "total += (\n    [\n        first,\n        second,\n    ]\n)\n",
         "total += [\n    first,\n    second,\n]\n"
+    )]
+    #[case::fractured_dict_past_the_indented_row(
+        "value = (\n    {\"alpha_value_name_xxxxxxx\": 1, \"delta_value_name_xxxxxxxx\": 2,\n     \"epsilon_value_name\": 3}\n)\n",
+        "value = {\"alpha_value_name_xxxxxxx\": 1, \"delta_value_name_xxxxxxxx\": 2,\n    \"epsilon_value_name\": 3}\n"
     )]
     fn a_collection_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
@@ -383,6 +392,10 @@ mod tests {
     #[case::call_an_fstring_rewrite_fits_on_the_indented_row(
         "value = (\n    compute_something(alpha_argument, delta_argument, epsilon_argument_xy, \"%s\" % (name_x,))\n)\n",
         |config: &mut Config| config.target_version = Some(PythonVersion::PY310)
+    )]
+    #[case::one_row_dict_call_with_reflow_collections_off(
+        "value = (\n    dict(alpha_value_long_name=1, delta_value_long_name=2, epsilon_value_name_xxxxx=3)\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
     )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
