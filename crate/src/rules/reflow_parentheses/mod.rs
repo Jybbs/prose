@@ -9,13 +9,12 @@
 //! bracket of its own sheds in place. A pair holding the whole value
 //! of a `return` or an assignment that is one bracketed construct
 //! landing across rows comes off, that construct opening on the
-//! statement's row, unless that row then runs past the budget the
-//! pair's own row fits or the construct's rows cannot hang from the
-//! statement's indent. An over-budget boolean chain or
-//! conditional forming a test, a `return` value, an assignment value, or
-//! the last element of a bare tuple standing as one gains a pair the
-//! break adds. Each row is measured as the later rules shortening it
-//! leave it.
+//! statement's row, unless that row then runs past the budget or the
+//! construct's rows cannot hang from the statement's indent. An
+//! over-budget boolean chain or conditional forming a test, a `return`
+//! value, an assignment value, or the last element of a bare tuple
+//! standing as one gains a pair the break adds. Each row is measured as
+//! the later rules shortening it leave it.
 //! `plan` finds the pairs, `chain` divides an interior into operands,
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.

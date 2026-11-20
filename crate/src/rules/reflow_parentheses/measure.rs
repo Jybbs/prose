@@ -162,10 +162,9 @@ impl Shedder<'_> {
     }
 
     /// True where `candidate`'s opened form `text` leaves a statement row
-    /// past the budget while the row ending on the pair's own `(` fits
-    /// it. That row runs from the column the pair opens at through the
-    /// first row of `text`, cut at the first argument list or literal on
-    /// that row that a layout rule explodes.
+    /// past the budget. That row runs from the column the pair opens at
+    /// through the first row of `text`, cut at the first argument list or
+    /// literal on that row that a layout rule explodes.
     pub(super) fn opens_past_the_budget(&self, candidate: &Candidate, text: &str) -> bool {
         let column = self.shifted_column(candidate.pair.start());
         let range = candidate.expr.range();
@@ -180,8 +179,7 @@ impl Shedder<'_> {
             .filter(|head| !self.source.contains_line_break(*head))
             .map(|head| display_width(self.source.slice(head)))
             .fold(written, usize::min);
-        column + TextSize::of('(').to_usize() <= self.code_line_length
-            && column + head > self.code_line_length
+        column + head > self.code_line_length
     }
 
     /// True where `expr`, standing alone on a row one indent step past

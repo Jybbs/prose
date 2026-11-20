@@ -63,7 +63,7 @@ impl Shedder<'_> {
     /// value of a `return` or an assignment and that value is a construct
     /// [`Self::lands_across_rows`] reports, and `None` where the rows
     /// cannot hang from that indent or the opened row runs past the
-    /// budget while the pair's own row fits it.
+    /// budget.
     fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
         if !candidate.value {
             return None;
