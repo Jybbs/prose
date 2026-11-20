@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use globset::{Glob, GlobSet, GlobSetBuilder};
+use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use serde::{
     Deserialize,
     de::{Error as _, IntoDeserializer},
@@ -78,10 +78,12 @@ where
     })
 }
 
+/// Compiles `patterns` with `*` and `?` held within one path segment
+/// and `**` crossing segments.
 fn compile_globs(patterns: &[String]) -> Result<GlobSet, ConfigError> {
     let mut builder = GlobSetBuilder::new();
     for pattern in patterns {
-        builder.add(Glob::new(pattern)?);
+        builder.add(GlobBuilder::new(pattern).literal_separator(true).build()?);
     }
     Ok(builder.build()?)
 }
@@ -90,6 +92,8 @@ fn compile_globs(patterns: &[String]) -> Result<GlobSet, ConfigError> {
 mod tests {
     use std::assert_matches;
     use std::path::Path;
+
+    use rstest::rstest;
 
     use super::*;
 
@@ -156,6 +160,31 @@ mod tests {
 
         assert!(parsed[0].matches(Path::new("/proj/b/mod.py"), anchor));
         assert!(!parsed[0].matches(Path::new("/proj/c/mod.py"), anchor));
+    }
+
+    #[rstest]
+    #[case("**/*_pb2.py", "api/v1/model_pb2.py", true)]
+    #[case("**/test_*.py", "tests/test_api.py", true)]
+    #[case("**/test_*.py", "test_support/constants.py", false)]
+    #[case("generated/**", "generated/api/v1/model_pb2.py", true)]
+    #[case("generated/**", "generated/mod.py", true)]
+    #[case("src/*.py", "src/mod.py", true)]
+    #[case("src/*.py", "src/pkg/mod.py", false)]
+    #[case("src/**/*.py", "src/mod.py", true)]
+    #[case("src/**/*.py", "src/pkg/mod.py", true)]
+    #[case("src/?/mod.py", "src/a/mod.py", true)]
+    #[case("src?mod.py", "src/mod.py", false)]
+    #[case("src[!_]mod.py", "src/mod.py", true)]
+    fn matches_holds_single_wildcards_within_one_segment(
+        #[case] pattern: &str,
+        #[case] file: &str,
+        #[case] expected: bool,
+    ) {
+        let parsed =
+            overrides(&format!("[[overrides]]\npaths = [\"{pattern}\"]\n")).expect("parses");
+        let anchor = Path::new("/proj");
+
+        assert_eq!(parsed[0].matches(&anchor.join(file), anchor), expected);
     }
 
     #[test]

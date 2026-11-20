@@ -103,7 +103,7 @@ A single config can carve out exceptions by path through a `[[tool.prose.overrid
 code-line-length = 88
 
 [[overrides]]
-paths            = ["generated/**", "**/_pb2.py"]
+paths            = ["generated/**", "**/*_pb2.py"]
 code-line-length = 200
 
 [[overrides]]
@@ -113,7 +113,7 @@ paths = ["tests/**"]
 inlinable-bindings = false
 ```
 
-Globs are relative to the directory of the config that declares them, so `tests/**` matches the `tests/` beside the config and not a `tests/` at any depth below it. The array-of-tables form keeps an override with several facets readable across lines, where an inline table keyed by glob would crowd them onto one. When several entries match one file, *Prose* applies their bodies in document order, so the last matching entry wins each facet it sets and the earlier entries' other facets stay in effect.
+Globs are relative to the directory of the config that declares them, so `tests/**` matches the `tests/` beside the config and not a `tests/` at any depth below it. A `*` or `?` stays within one path segment, as it does in a `.gitignore`, whereas `**` crosses any number of segments. `src/*.py` therefore matches `src/mod.py` and not `src/pkg/mod.py`, while `src/**/*.py` matches both. The array-of-tables form keeps an override with several facets readable across lines, where an inline table keyed by glob would crowd them onto one. When several entries match one file, *Prose* applies their bodies in document order, so the last matching entry wins each facet it sets and the earlier entries' other facets stay in effect.
 
 ## Subset by Invocation
 
