@@ -19,9 +19,9 @@ The rule moves a constant into its band, and each band sorts by `(tier, subcateg
 
 A band carries its own order, whereas [[group-imports]] moves an import into its section and leaves the order within it to [[alphabetize-siblings]]. The split follows what each order costs to get wrong, in that import siblings reorder freely whereas a constant's slot binds every reference to it, so the move is only safe under the evaluation analysis this rule already runs.
 
-Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. An annotation is deferred under `from __future__ import annotations` and from `target-version` 3.14, which runs it only when something reads it, so there `LIMIT: Zed = 1` joins the leading band above `class Zed`, and a definition's annotations count by the timing [[alphabetize-siblings]] reads.
+Only an evaluation-time reference binds the order, covering a right-hand side, a decorator, a default argument, a base class, and a non-deferred annotation, so a constant a function reads inside its body still joins the leading band. An annotation is deferred under `from __future__ import annotations`, which stores it as a string, and from `target-version` 3.14, which runs it only when something reads it, so under either `LIMIT: Zed = 1` joins the leading band above `class Zed`, and a definition's annotations count at the timing [[alphabetize-siblings]] reads.
 
-<FixtureCards rule="band_constants" cases="annotated_constant_trails_its_type lazy_annotated_constant_leads_its_type" />
+<FixtureCards rule="band_constants" cases="annotated_constant_trails_its_type lazy_annotated_constant_leads_its_type stringified_annotated_constant_leads_its_type" />
 
 Several cases pin a constant where the author left it:
 

@@ -353,6 +353,13 @@ mod tests {
         true,
         true
     )]
+    #[case::observed_site_an_eager_signature_anchors_stays_unresolved_under_the_band(
+        "def f(x: Foo.Bar):\n    pass\n\n\nY = Foo.Bar\n\n\nfrom m import Foo\n",
+        None,
+        false,
+        true,
+        false
+    )]
     #[case::anchored_constant_stays_unresolved_under_the_band(
         "def convert(value: Alias) -> Alias:\n    return value\n\n\nAlias = build()\n",
         None,
