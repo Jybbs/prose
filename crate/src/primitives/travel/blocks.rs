@@ -107,6 +107,18 @@ pub(crate) fn hung_block_through<'s>(
     edits: &[Edit],
     indent: usize,
 ) -> Cow<'s, str> {
+    hanging_block_through(source, range, edits, indent)
+        .unwrap_or_else(|| apply_inline_edits(source, range, edits))
+}
+
+/// [`hung_block_through`]'s text, `None` where the block's head leaves a
+/// bracket open whose shape [`hanging_travel`] cannot follow.
+pub(crate) fn hanging_block_through<'s>(
+    source: &'s Source,
+    range: TextRange,
+    edits: &[Edit],
+    indent: usize,
+) -> Option<Cow<'s, str>> {
     let block = apply_inline_edits(source, range, edits);
     let mut frozen = frozen_rows(source, range);
     let head = source.line_index(range.start()).get();
@@ -116,7 +128,7 @@ pub(crate) fn hung_block_through<'s>(
         .filter(|edit| range.contains_range(edit.range()))
     {
         if edit.content().is_some_and(spans_rows) {
-            return block;
+            return Some(block);
         }
         let first = source.line_index(edit.start()).get() - head;
         let last = source.line_index(edit.end()).get() - head;
@@ -131,22 +143,17 @@ pub(crate) fn hung_block_through<'s>(
         .next()
         .is_some_and(|head| ends_on_an_opener(row_tokens(head.as_str())));
     let travel = if opens_a_bracket {
-        // A block whose shape [`hanging_travel`] cannot follow holds
-        // where it sits.
-        match hanging_travel(&block, &frozen, landing) {
-            Some(travel) => travel,
-            None => return block,
-        }
+        hanging_travel(&block, &frozen, landing)?
     } else {
         let Some(floor) = movable_floor(&block, &frozen) else {
-            return block;
+            return Some(block);
         };
         Travel::rigid(item_indent(indent).cast_signed() - floor.cast_signed())
     };
     if travel.is_still() {
-        return block;
+        return Some(block);
     }
-    Cow::Owned(shifted_rows(&block, travel, &frozen))
+    Some(Cow::Owned(shifted_rows(&block, travel, &frozen)))
 }
 
 /// `range`'s source text placed per `landing`, its continuation rows

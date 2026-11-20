@@ -9,7 +9,9 @@
 //! bracket of its own sheds in place. A pair holding the whole value
 //! of a `return` or an assignment that is one bracketed construct
 //! landing across rows comes off, that construct opening on the
-//! statement's row. An over-budget boolean chain or
+//! statement's row, unless that row then runs past the budget the
+//! pair's own row fits or the construct's rows cannot hang from the
+//! statement's indent. An over-budget boolean chain or
 //! conditional forming a test, a `return` value, an assignment value, or
 //! the last element of a bare tuple standing as one gains a pair the
 //! break adds. Each row is measured as the later rules shortening it
@@ -280,6 +282,16 @@ mod tests {
         true,
         "value = factory(\n    alpha,\n    beta,\n)()\n"
     )]
+    #[case::call_behind_a_subscript_opener_past_the_indented_row(
+        "value = (\n    handlers[lookup(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxx)]()\n)\n",
+        true,
+        "value = handlers[lookup(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxx)]()\n"
+    )]
+    #[case::call_behind_a_lambda_opener_past_the_indented_row(
+        "value = (\n    (lambda: compute(alpha_argument, beta_argument, gamma_argument, delta_argumentxxxx))()\n)\n",
+        true,
+        "value = (lambda: compute(alpha_argument, beta_argument, gamma_argument, delta_argumentxxxx))()\n"
+    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -355,6 +367,18 @@ mod tests {
     #[case::one_row_call_with_reflow_calls_off(
         &format!("value_{} = (\n    compute(alpha, beta)\n)\n", "k".repeat(80)),
         false
+    )]
+    #[case::call_behind_a_subscript_opener(
+        "value = (\n    handlers[lookup(\n        alpha,\n        beta,\n    )]()\n)\n",
+        true
+    )]
+    #[case::call_behind_a_lambda_opener(
+        "value = (\n    (lambda: compute(\n        alpha,\n        beta,\n    ))()\n)\n",
+        true
+    )]
+    #[case::call_behind_a_list_opener(
+        "value = (\n    [compute(\n        a,\n        b,\n    )]\n)\n",
+        true
     )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);

@@ -25,7 +25,7 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{open_brackets, tokens_within},
-        travel::hung_block_through,
+        travel::{hanging_block_through, hung_block_through},
     },
     source::Source,
 };
@@ -61,7 +61,9 @@ impl Shedder<'_> {
     /// rows hung from the statement's indent, rendered through the pairs
     /// inside it this pass sheds. `None` unless the pair holds the whole
     /// value of a `return` or an assignment and that value is a construct
-    /// [`Self::lands_across_rows`] reports.
+    /// [`Self::lands_across_rows`] reports, and `None` where the rows
+    /// cannot hang from that indent or the opened row runs past the
+    /// budget while the pair's own row fits it.
     fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
         if !candidate.value {
             return None;
@@ -71,9 +73,11 @@ impl Shedder<'_> {
             return None;
         }
         let nested = nested_shed_edits(candidate, candidates);
-        let block = hung_block_through(self.source, candidate.inner, &nested, indent);
+        let block = hanging_block_through(self.source, candidate.inner, &nested, indent)?;
         let text = candidate.flush.padded(&block).into_owned();
-        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
+        (!self.opens_past_the_budget(candidate, &text)
+            && splice_preserves_tree(self.source, candidate.pair, &text))
+        .then_some(text)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
