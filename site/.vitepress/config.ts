@@ -67,7 +67,6 @@ const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const tokenClasses         = await TokenClasses.read()
 const lintFindings         = corpusLintFindings(crate)
-// The Markdown options the fence highlighter reads, which key the highlight cache.
 const highlightOptions     = {
   codeTransformers  : codeTransformers(lintFindings, tokenClasses),
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
