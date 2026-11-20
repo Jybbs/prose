@@ -1,5 +1,5 @@
-import { hash }                  from 'ohash'
-import type { MarkdownRenderer } from 'vitepress'
+import { hash }                                   from 'ohash'
+import type { MarkdownOptions, MarkdownRenderer } from 'vitepress'
 
 import * as cache           from '../shared/cache'
 import type { RenderGraph } from '../shared/render-graph'
@@ -20,15 +20,17 @@ export class HighlightCache {
     private readonly entries : Map<string, string>
   ) {}
 
-  // Keys the cache on the themes and color replacements, `graph`, which holds the
-  // source of every module the renderer's transformers reach and the pinned
-  // version of every package they import, shiki and VitePress among them, and
-  // `data`, which holds whatever a transformer reads beyond those modules.
+  // Keys the cache on `options`, the Markdown options the highlighter reads,
+  // hashed with each function's source text, `graph`, which holds the source of
+  // every module the renderer's transformers reach and the pinned version of
+  // every package they import, `lockfile`, the text of the lockfile resolving
+  // every package those reach in turn, and `data`, which holds whatever a
+  // transformer reads beyond those modules.
   static async read(dir: string, inputs: {
-    colorReplacements : unknown
-    data              : unknown
-    graph             : RenderGraph
-    theme             : unknown
+    data     : unknown
+    graph    : RenderGraph
+    lockfile : string
+    options  : MarkdownOptions
   }): Promise<HighlightCache> {
     const entries = new Map([...await cache.readEntries(dir)].map(([key, data]) => [key, data.toString('utf8')]))
     return new HighlightCache(dir, hash(inputs), entries)

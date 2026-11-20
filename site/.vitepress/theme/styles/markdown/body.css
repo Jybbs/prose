@@ -122,11 +122,11 @@ a.tool-mark code {
 }
 
 .vp-doc tr:last-child td {
-  border-bottom: none;
+  border-bottom : none;
 }
 
 .vp-doc tbody tr {
-  transition: background-color var(--prose-transition);
+  transition : background-color var(--prose-transition);
 }
 
 .vp-doc tbody tr:hover {

@@ -340,6 +340,11 @@ struct Probes {
     /// Every rule declaring `PRESERVES_TREE` in one pipeline, held where
     /// this run claims that subset against the rules it reports.
     joint: Option<Pipeline>,
+    /// The seats in `singles` of each rule declaring `PRESERVES_TREE` as
+    /// `false`, one for each construction a pair touching the rule gives it
+    /// other than its solo seat. A sweep over the fixture tree runs each
+    /// over every file for every rule the sweep reports.
+    paired: BTreeMap<RuleId, BTreeSet<usize>>,
     /// The pairs this run probes, in registry order, narrowed by
     /// [`RULES_VAR`] and [`SHARD_VAR`].
     pairs: Vec<Pair>,
@@ -363,7 +368,7 @@ struct Probes {
 }
 
 impl Probes {
-    fn build(width: usize, target: Option<PythonVersion>) -> Self {
+    fn build(width: usize, target: Option<PythonVersion>, fixtures: bool) -> Self {
         let config = Config {
             code_line_length: NonZeroUsize::new(width),
             target_version: target,
@@ -373,7 +378,6 @@ impl Probes {
         let (share, shares) = shard();
         let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
-        let fixtures = pointed_corpus().is_none();
         let mut singles = Vec::new();
         let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
@@ -384,12 +388,26 @@ impl Probes {
                     singles.len() - 1
                 })
         };
-        let solo = Pipeline::known_ids()
+        let solo: BTreeMap<RuleId, usize> = Pipeline::known_ids()
             .iter()
             .map(|&rule| {
                 let [(_, alone)] = seated(&config, [rule]);
                 (rule, seat(rule, alone))
             })
+            .collect();
+        let changing = |rule: &RuleId| !preserves_tree(rule.as_str());
+        let paired = Pipeline::known_ids()
+            .iter()
+            .copied()
+            .array_combinations()
+            .filter(|pair: &[RuleId; 2]| fixtures && pair.iter().any(changing))
+            .flat_map(|pair| seated(&config, pair))
+            .filter(|(rule, _)| changing(rule))
+            .map(|(rule, pipeline)| (rule, seat(rule, pipeline)))
+            .filter(|(rule, at)| solo[rule] != *at)
+            .into_grouping_map()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
             .collect();
         let pairs = Pipeline::known_ids()
             .iter()
@@ -432,6 +450,7 @@ impl Probes {
             joint: claim
                 .claims(&preserving, |rule| reported.contains(rule))
                 .then(|| subset(&config, &preserving)),
+            paired,
             pairs,
             reader: Pipeline::with_defaults(&config),
             reported,
@@ -650,15 +669,25 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             ),
         );
     }
+    if probes.fixtures {
+        for &seat in probes
+            .reported
+            .iter()
+            .filter_map(|rule| probes.paired.get(rule))
+            .flatten()
+        {
+            memo.apply(seat, &text);
+        }
+    }
     check_trees(probes, &memo, solo, memo.source(&text), path, &mut findings);
     findings
 }
 
-/// The probes one budget builds, at the shipped default width and
-/// `target-version` 3.14.
+/// The probes one budget builds over the fixture tree, at the shipped
+/// default width and `target-version` 3.14.
 #[fixture]
 fn probes() -> Probes {
-    Probes::build(88, Some(PythonVersion::PY314))
+    Probes::build(88, Some(PythonVersion::PY314), true)
 }
 
 /// Parses `slug` into the rule it names.
@@ -756,6 +785,38 @@ fn verify_pair(
 }
 
 #[rstest]
+#[case::reflow_collections("reflow-collections")]
+#[case::reflow_signatures("reflow-signatures")]
+fn build_seats_each_changing_rule_as_its_pairs_construct_it_apart_from_its_solo(
+    probes: Probes,
+    #[case] slug: &str,
+) {
+    let rule = rule(slug);
+
+    let seats = &probes.paired[&rule];
+
+    assert!(!seats.contains(&probes.solo[&rule]));
+    assert_eq!(
+        seats
+            .iter()
+            .map(|&seat| probes.singles[seat].rule)
+            .collect::<BTreeSet<_>>(),
+        BTreeSet::from([rule]),
+    );
+}
+
+#[rstest]
+fn build_seats_no_rule_declaring_preserves_tree_beyond_its_solo(probes: Probes) {
+    let preserving = probes
+        .paired
+        .keys()
+        .filter(|rule| preserves_tree(rule.as_str()))
+        .collect_vec();
+
+    assert_eq!(preserving, Vec::<&RuleId>::new());
+}
+
+#[rstest]
 #[case(None, Claim::Touching)]
 #[case(Some("touching"), Claim::Touching)]
 #[case(Some("owned"), Claim::Owned)]
@@ -794,9 +855,10 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
     let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
     let lengths = lengths();
     let targets = targets_or(TARGETS);
+    let fixtures = pointed_corpus().is_none();
     let mut findings = Findings::default();
     for (&target, &length) in targets.iter().cartesian_product(&lengths) {
-        let probes = Probes::build(length, target);
+        let probes = Probes::build(length, target, fixtures);
         eprintln!(
             "{} single-rule pipelines serve {} solos and {} pairs at width {length} with \
              `target-version` {}",
@@ -808,7 +870,7 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
         findings.absorb(probes.sweep(&files));
     }
     report_verified("chained pairs against the two-rule fold");
-    if pointed_corpus().is_some() {
+    if !fixtures {
         eprintln!("{}", findings.render_sharing());
     }
     let unread = unread(findings.skipped.len(), files.len(), "probe");
@@ -953,10 +1015,23 @@ fn shard_of_rejects_a_share_outside_one_through_n(#[case] spec: &str) {
 
 #[rstest]
 fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes) {
-    probes.fixtures = true;
     probes.reported = BTreeSet::from([rule("reflow-calls")]);
 
     let findings = probes.sweep(&[]);
 
     assert_eq!(findings.kept().collect_vec(), [&rule("reflow-calls")]);
+}
+
+#[rstest]
+fn sweep_reads_a_changing_rule_over_a_seat_only_a_pair_in_another_share_constructs(
+    mut probes: Probes,
+) {
+    probes.pairs.clear();
+    probes.reported = BTreeSet::from([rule("reflow-signatures")]);
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/reflow_signatures/default_call_takes_keyword_form/input.py");
+
+    let findings = probes.sweep(&[fixture]);
+
+    assert_eq!(findings.kept().count(), 0);
 }

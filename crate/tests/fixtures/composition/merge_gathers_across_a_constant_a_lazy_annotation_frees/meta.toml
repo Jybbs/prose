@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "Two Imports Merge Across a Constant a Lazy Annotation Frees"
+
+description = '''
+At `target-version` 3.14 the annotation on `f` runs only when something reads it, so no definition above `Y = Foo.sep` reads `Foo` as it binds, and `band-constants` hoists the constant above `f` with `from os import sep` joining the import band. **`reflow-imports` merges the two `os` imports onto one line in the same run**, since it forecasts the band at the timing `band-constants` applies.
+'''

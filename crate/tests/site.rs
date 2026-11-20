@@ -327,10 +327,32 @@ fn miscased_constants_override_example_spares_only_its_globs() {
             "migrations/versions/ae1027a6acf_add_account.py",
             "revision = \"ae1027a6acf\"\ndown_revision = None\n",
         ),
+        (
+            "mysite/urls.py",
+            indoc! {r#"
+                handler400 = "mysite.views.bad_request"
+                handler403 = "mysite.views.permission_denied"
+                handler404 = "mysite.views.page_not_found"
+                handler500 = "mysite.views.server_error"
+                admin_header = "Thermidor administration"
+            "#},
+        ),
+        ("polls/urls.py", "app_name = \"polls\"\nurlpatterns = []\n"),
         ("src/settings.py", "project = \"Thermidor\"\n"),
+        (
+            "tests/billing_test.py",
+            "import pytest\npytestmark = [pytest.mark.slow]\n",
+        ),
         (
             "tests/integration/conftest.py",
             "collect_ignore_glob = [\"*_slow.py\"]\n",
+        ),
+        (
+            "tests/test_accounts.py",
+            indoc! {r#"
+                pytest_plugins = ["myapp.testsupport.myplugin"]
+                base_url = "https://thermidor.example"
+            "#},
         ),
     ];
     for (path, contents) in files {
@@ -362,7 +384,9 @@ fn miscased_constants_override_example_spares_only_its_globs() {
         reported,
         BTreeSet::from([
             ("conftest.py".to_owned(), "timeout".to_owned()),
+            ("mysite/urls.py".to_owned(), "admin_header".to_owned()),
             ("src/settings.py".to_owned(), "project".to_owned()),
+            ("tests/test_accounts.py".to_owned(), "base_url".to_owned()),
         ]),
         "{}",
         String::from_utf8_lossy(&output.stderr),

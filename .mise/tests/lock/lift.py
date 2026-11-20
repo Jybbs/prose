@@ -373,6 +373,7 @@ def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
 def test_carry_copies_every_change_and_untracked_file(
     lift        : ModuleType,
     monkeypatch : MonkeyPatch,
+    scratch     : Callable[[Path], Path],
     tmp_path    : Path
 ):
     """
@@ -388,12 +389,8 @@ def test_carry_copies_every_change_and_untracked_file(
         "gone"       : "x\n"
     }.items():
         (root / name).write_text(text)
-    for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
-        monkeypatch.delenv(variable, raising=False)
-    monkeypatch.chdir(root)
-    identity = ["-c", "user.email=a@b", "-c", "user.name=a"]
-    for command in [["init", "-q"], ["add", "."], [*identity, "commit", "-qm", "base"]]:
-        run(["git", *command], check=True)
+    monkeypatch.chdir(scratch(root))
+    run(["git", "commit", "-qm", "base"], check=True)
     run(["git", "clone", "-q", str(root), str(clone)], check=True)
     (root / "changed").write_text("new\n")
     (root / "gone").unlink()

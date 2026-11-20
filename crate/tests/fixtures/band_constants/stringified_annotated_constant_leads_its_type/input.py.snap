@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/stringified_annotated_constant_leads_its_type/input.py
+---
+from __future__ import annotations
+
+LIMIT: Zed = 1
+
+
+class Zed:
+    pass

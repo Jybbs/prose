@@ -16,6 +16,7 @@ use crate::{
         binding::{BindingAnalysis, BindingKind},
         scope::sub_bodies,
         slots::{slot_holding, slot_positions},
+        tiering::Annotations,
         walk::for_each_annotation,
     },
     source::Source,
@@ -53,7 +54,14 @@ impl<'a> Resolution<'a> {
             seats: rule
                 .folds
                 .bands()
-                .and_then(|band| band.forecast(source, body, source.module_range(), false))
+                .and_then(|band| {
+                    band.forecast(
+                        source,
+                        body,
+                        source.module_range(),
+                        Annotations::under(rule.target_version),
+                    )
+                })
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
@@ -261,6 +269,13 @@ mod tests {
         true,
         true
     )]
+    #[case::py314_resolves_a_name_the_band_hoists_past_its_annotation(
+        "def convert(value: Alias) -> Alias:\n    return value\n\n\nclass Zed:\n    pass\n\n\nAlias: Zed = int\n",
+        Some(PythonVersion::PY314),
+        false,
+        true,
+        true
+    )]
     #[case::py314_holds_a_class_a_decorated_reader_names_below_it(
         "import inspect\n\n\ndef deco(f):\n    inspect.signature(f)\n    return f\n\n\n@deco\ndef visit(node: Node) -> Node:\n    return node\n\n\nclass Node:\n    pass\n",
         Some(PythonVersion::PY314),
@@ -337,6 +352,13 @@ mod tests {
         false,
         true,
         true
+    )]
+    #[case::observed_site_an_eager_signature_anchors_stays_unresolved_under_the_band(
+        "def f(x: Foo.Bar):\n    pass\n\n\nY = Foo.Bar\n\n\nfrom m import Foo\n",
+        None,
+        false,
+        true,
+        false
     )]
     #[case::anchored_constant_stays_unresolved_under_the_band(
         "def convert(value: Alias) -> Alias:\n    return value\n\n\nAlias = build()\n",

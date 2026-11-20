@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Lazy Annotation Leaves Its Constant Free to Lead the Class It Names"
+
+description = '''
+At `target-version` 3.14 the annotation of a module constant runs only when something reads the module's annotations, so `LIMIT: Zed = 1` reads nothing from `class Zed` as it binds. **`LIMIT` hoists into the leading band above `class Zed`**, where below 3.14 it trails the class its annotation names.
+'''
