@@ -6,6 +6,7 @@ import type { SliderScope }                             from '../../../kit'
 import { data }                                         from '../../../lib/identity/identity.data'
 import * as marks                                       from '../../../lib/identity/marks'
 import { SITE_TAGLINE }                                 from '../../../lib/shared/constants'
+import { Switch }                                       from '../base/Switch'
 import { IdentityCaption, IdentityCopy, IdentityPanel } from './IdentityParts'
 
 const LOCKUP = data.marks.files['title-with-tagline.svg']
@@ -189,16 +190,12 @@ export const IdentityMarks = defineComponent({
                 <div class="flex flex-wrap gap-x-1-5rem gap-y-0-75rem">
                   {marks.PARTS.map(part => (
                     <span class="inline-flex items-center gap-8" key={part.id}>
-                      <button
-                        aria-checked={on.value.includes(part.id)}
-                        aria-label={part.label}
-                        class="group/switch relative h-22 w-40 cursor-pointer rounded-pill border-none bg-text-3/40 transition-colors focus-visible:focus-ring focus-visible:outline-offset-1 aria-checked:bg-text-1"
-                        onClick={() => toggle(part.id)}
-                        role="switch"
-                        type="button"
-                      >
-                        <span class="absolute top-3 left-3 size-16 rounded-half bg-bg transition-transform group-aria-checked/switch:translate-x-18" />
-                      </button>
+                      <Switch
+                        checked={on.value.includes(part.id)}
+                        class="cursor-pointer focus-visible:focus-ring"
+                        label={part.label}
+                        onToggle={() => toggle(part.id)}
+                      />
                       <span aria-hidden="true" class="kicker">{part.label}</span>
                     </span>
                   ))}

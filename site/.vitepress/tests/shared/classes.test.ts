@@ -434,6 +434,15 @@ describe('the Tailwind theme', () => {
     ])
   })
 
+  it('draws a hairline at the opacity its modifier names, and at full strength without one', () => {
+    const shadow = 'box-shadow: inset 0 calc(var(--prose-border-1) * -1) 0'
+    expect(DESIGN.candidatesToCss(['hairline-ube', 'hairline-ube/38'])).toStrictEqual([
+      `.hairline-ube {\n  ${shadow} var(--color-ube);\n}\n`,
+      `.hairline-ube\\/38 {\n  ${shadow} var(--color-ube);\n`
+    + `  ${shadow} color-mix(in oklab, var(--color-ube) calc(38 * 1%), transparent);\n}\n`
+    ])
+  })
+
   it('applies dark under the VitePress class', () => {
     expect(DESIGN.candidatesToCss(['dark:text-ube'])[0]).toContain(':where(.dark, .dark *)')
   })

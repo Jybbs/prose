@@ -1,5 +1,5 @@
 @theme inline {
-  --*: initial;
+  --* : initial;
 
   --color-chip-ground                  : var(--prose-chip-ground);
   --color-bg                           : var(--vp-c-bg);
@@ -251,7 +251,7 @@
   --color-code-block                       : var(--vp-code-block-bg);
   --color-code-ink                         : var(--vp-code-color);
 
-  --content-middot                         : "·";
+  --content-middot                         : '·';
 
   --grid-template-columns-1fr              : 1fr;
 
@@ -272,6 +272,6 @@
   --animate-caret-blink                    : code-caret-blink 1s steps(2) infinite;
 
   @keyframes code-caret-blink {
-    50% { opacity: 0; }
+    50% { opacity : 0; }
   }
 }

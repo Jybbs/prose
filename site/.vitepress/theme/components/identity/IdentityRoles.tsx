@@ -1,12 +1,12 @@
 import { defineComponent, shallowRef } from 'vue'
 
-import { ScrollRegion, Tabs }             from '../../../kit'
-import type { TabsScope }                 from '../../../kit'
-import { useRaised }                      from '../../../lib/composables/use-raised'
-import { data }                           from '../../../lib/identity/identity.data'
-import * as roles                         from '../../../lib/identity/roles'
-import { KINDS }                          from '../../../lib/markdown/callout-plugin'
-import { IdentityCaption, IdentityPanel } from './IdentityParts'
+import { ScrollRegion, Tabs } from '../../../kit'
+import type { TabsScope }     from '../../../kit'
+import { useRaised }          from '../../../lib/composables/use-raised'
+import { data }               from '../../../lib/identity/identity.data'
+import * as roles             from '../../../lib/identity/roles'
+import { KINDS }              from '../../../lib/markdown/callout-plugin'
+import { IdentityCaption, IdentityPanel, IdentityPickName } from './IdentityParts'
 
 import type { Role }   from '../../../lib/identity/roles'
 import type { Scheme } from '../../../lib/shared/palette'
@@ -100,7 +100,7 @@ export const IdentityRoles = defineComponent({
                           {...on(role.id)}
                         >
                           <span aria-hidden="true" class="identity-proof size-12" style={{ background: role.value[scheme.value] }} />
-                          <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{role.label}</span>
+                          <IdentityPickName>{role.label}</IdentityPickName>
                           <span class="font-mono text-xs text-text-1 tabular-nums">{`${role.contrast[scheme.value].ratio.toFixed(2)}:1`}</span>
                           <span class="font-display text-sm text-text-2 italic">{passes(role, scheme.value) ? 'pass' : 'fail'}</span>
                           <span class="sr-only">{`, ${role.token}, ${role.value[scheme.value]}`}</span>
