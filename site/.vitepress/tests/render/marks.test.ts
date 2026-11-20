@@ -1,7 +1,7 @@
 import { formatHex }    from 'culori'
 import type { Locator } from 'playwright'
 
-import { GROUNDS, SCHEME_SHADES, SCHEMES }                  from '../../lib/shared/palette'
+import { GROUNDS, SCHEME_SHADES, SCHEMES, VITEPRESS }       from '../../lib/shared/palette'
 import { PAGE_WIDTH, pointAt, renderTest, settle, styleOf } from './page'
 
 const CALLOUT_WIDTHS = [
@@ -60,6 +60,17 @@ describe('the before-and-after toggle', () => {
     await expect(styleOf(pill, 'color').then(formatHex)).resolves.toBe(SCHEME_SHADES[scheme]['celadon-page-65'])
     await expect(styleOf(pill, 'font-weight')).resolves.toBe('600')
   })
+
+  renderTest.for(['/rules/alignment/align-equals', '/rules/composition/'])('moves under the summary of an open card on a 640px page at %s', async (route, { visit }) => {
+    const page = await visit(route, { width: 640 })
+    const card = page.locator('.fixture-card:has(button[data-side="after"])').first()
+    const slot = card.locator('div:has(> .toggle-row)')
+
+    await card.locator('.fixture-card-summary').click()
+    await settle(page)
+
+    await expect(styleOf(slot, 'grid-row-start')).resolves.toBe('2')
+  })
 })
 
 describe('the callout mark', () => {
@@ -76,6 +87,26 @@ describe('the directive anatomy index', () => {
     const entry = page.locator('.directive-anatomy-thumb').first()
 
     await expect(styleOf(entry, 'background-color').then(formatHex)).resolves.toBe(GROUNDS.page[scheme])
+  })
+})
+
+describe('the identity specimen index', () => {
+  renderTest.for(SCHEMES)('raises a picked name to the primary text color on hover and on selection in the %s scheme', async (scheme, { visit }) => {
+    const page  = await visit('/reference/visual-identity', { scheme })
+    const name  = (row: Locator): Promise<string | undefined> => styleOf(row.locator('.identity-pick-name'), 'color').then(formatHex)
+    const other = page.locator('.identity-pick:not([aria-selected="true"], [aria-pressed="true"])').first()
+    const role  = page.locator('.identity-legend').first()
+
+    await expect(name(page.locator('.identity-pick[aria-selected="true"]').first())).resolves.toBe(VITEPRESS['text-1'][scheme])
+    await expect(name(other)).resolves.toBe(VITEPRESS['text-2'][scheme])
+
+    await pointAt(other)
+    await expect(name(other)).resolves.toBe(VITEPRESS['text-1'][scheme])
+
+    await role.click()
+    await page.mouse.move(0, 0)
+    await settle(page)
+    await expect(name(role)).resolves.toBe(VITEPRESS['text-1'][scheme])
   })
 })
 
