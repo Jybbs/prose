@@ -1,6 +1,7 @@
 import { defineComponent } from 'vue'
 import type { PropType }   from 'vue'
 
+import { Switch }   from '../base/Switch'
 import { RuleCard } from '../rules/RuleCard'
 
 import type { Facet, RuleControl } from '../../../lib/composables/use-chip-panel'
@@ -80,16 +81,12 @@ export const SandboxPlate = defineComponent({
               />
               {facet.kind === 'bool'
                 ? (
-                  <button
-                    aria-checked={boolValue(facet)}
-                    aria-label={facet.label}
-                    class="group/switch relative h-22 w-40 justify-self-end rounded-pill border-none bg-text-3/40 transition-colors focus-visible:outline-offset-1 aria-checked:bg-text-1 max-medium:col-2 max-medium:row-span-2 max-medium:row-start-1"
-                    onClick={() => props.sandbox.setFacet(props.rule.slug, facet, !boolValue(facet))}
-                    role="switch"
-                    type="button"
-                  >
-                    <span class="absolute top-3 left-3 size-16 rounded-half bg-bg transition-transform group-aria-checked/switch:translate-x-18" />
-                  </button>
+                  <Switch
+                    checked={boolValue(facet)}
+                    class="justify-self-end max-medium:col-2 max-medium:row-span-2 max-medium:row-start-1"
+                    label={facet.label}
+                    onToggle={() => props.sandbox.setFacet(props.rule.slug, facet, !boolValue(facet))}
+                  />
                 )
                 : facet.kind === 'int'
                 ? (

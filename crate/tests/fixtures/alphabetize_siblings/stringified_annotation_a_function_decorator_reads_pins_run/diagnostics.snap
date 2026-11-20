@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/alphabetize_siblings/stringified_annotation_a_function_decorator_reads_pins_run/input.py
+---
+

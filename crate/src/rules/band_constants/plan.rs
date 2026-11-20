@@ -402,8 +402,11 @@ fn grouped_head(body: &[Stmt], rule: &BandConstants, imports: &[usize]) -> Optio
 mod tests {
     use super::*;
     use crate::{
-        config::Config, primitives::orderer::member_blocks,
-        rules::band_constants::analysis::module_band_plan, source::Source, testing::parse,
+        config::Config,
+        primitives::{orderer::member_blocks, tiering::Annotations},
+        rules::band_constants::analysis::module_band_plan,
+        source::Source,
+        testing::parse,
     };
 
     /// The banding `source` produces alongside the order it rewrote.
@@ -416,7 +419,7 @@ mod tests {
             max_tiers: None,
             ..BandConstants::from_config(&Config::default())
         };
-        let banding = module_band_plan(source, body, &blocks, &rule, false)
+        let banding = module_band_plan(source, body, &blocks, &rule, Annotations::Eager)
             .expect("acyclic module plans")
             .apply(body, &sections, &rule, &mut order)
             .expect("the band applies");

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Stringified Annotation Leaves Its Constant Free to Lead the Class It Names"
+
+description = '''
+Under `from __future__ import annotations` the annotation of a module constant is stored as a string, so `LIMIT: Zed = 1` reads nothing from `class Zed` as it binds. **`LIMIT` hoists into the leading band above `class Zed`**, as it does at `target-version` 3.14.
+'''
