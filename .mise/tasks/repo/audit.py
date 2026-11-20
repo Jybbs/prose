@@ -294,9 +294,9 @@ def dependencies(task: str) -> list[str]:
 def drafts() -> int:
     """
     Reports every `pull_request` trigger omitting one of the `READY_TYPES`,
-    and every job of a pull-request workflow whose `if` is not the
-    `DRAFT_GUARD` alone or a `||`-free condition ending on `&&` and that
-    guard, locating each to the line its key opens on.
+    and every job of a pull-request workflow whose `if` does not fully match
+    the `DRAFT_GUARD`, the guard alone or a `||`-free condition ending on
+    `&&` and the guard, locating each to the line its key opens on.
     """
     flows = pull_request_workflows()
     return located(
@@ -785,9 +785,12 @@ def mise_pins(config: dict) -> dict[str, str]:
 def opening(key: str, path: Path) -> int:
     """
     Finds the line on which the workflow at `path` opens the two-space
-    indented `key`, a job under `jobs` or a trigger under `on`.
+    indented `key`, a job under `jobs` or a trigger under `on`, or else the
+    line opening `on` where the trigger is a bare name or a list entry.
     """
-    return read(path).splitlines().index(f"  {key}:") + 1
+    text  = read(path)
+    found = search(rf"(?m)^  {escape(key)}\s*:", text) or search(r"(?m)^on\s*:", text)
+    return text.count("\n", 0, found.start() if found else 0) + 1
 
 
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
