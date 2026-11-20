@@ -229,6 +229,13 @@ impl<'a> Settings<'a> {
         Some(out)
     }
 
+    /// True where a dict holding `entries` entries runs past
+    /// `max_dict_entries`, which `reflow-collections` expands whatever its
+    /// width.
+    pub(crate) fn caps_entries(&self, entries: usize) -> bool {
+        self.max_dict_entries.is_some_and(|cap| entries > cap)
+    }
+
     /// True where `reflow-calls` is enabled, read off the rejoin terms
     /// these settings carry.
     pub(crate) fn closes(&self) -> bool {
@@ -390,7 +397,7 @@ impl<'a> Settings<'a> {
             e.as_call_expr()
                 .is_some_and(|call| self.rejoin.explodes(source, call))
                 || e.as_dict_expr()
-                    .is_some_and(|dict| self.max_dict_entries.is_some_and(|cap| dict.len() > cap))
+                    .is_some_and(|dict| self.caps_entries(dict.len()))
         })
     }
 

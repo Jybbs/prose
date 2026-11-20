@@ -1,8 +1,10 @@
 //! Whether a pair breaks and the text it lands as, its brackets alone
 //! on their rows and every operand led by the operator joining it to
-//! the row above, or its interior whole on one row where that fits.
-//! Each operand renders through the pairs this same pass sheds inside
-//! it, and joins its own rows where it fits one.
+//! the row above, or its interior whole on one row where that fits,
+//! and the text a pair around one bracketed construct lands as once
+//! that construct opens on the statement's row. Each operand renders
+//! through the pairs this same pass sheds inside it, and joins its own
+//! rows where it fits one.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -52,6 +54,26 @@ impl Shedder<'_> {
     fn holds_its_breaks_inside(&self, inner: TextRange, nested: &[Edit]) -> bool {
         self.source.contains_line_break(inner)
             && breaks_held_inside(self.source, inner, &covered_by(nested))
+    }
+
+    /// The text replacing `candidate`'s pair with the construct it holds,
+    /// that construct's opening bracket landing on the pair's row and its
+    /// rows hung from the statement's indent, rendered through the pairs
+    /// inside it this pass sheds. `None` unless the pair holds the whole
+    /// value of a `return` or an assignment and that value is a construct
+    /// [`Self::lands_across_rows`] reports.
+    fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
+        if !candidate.value {
+            return None;
+        }
+        let indent = self.statement_indent(candidate.pair);
+        if !self.lands_across_rows(candidate.expr, indent) {
+            return None;
+        }
+        let nested = nested_shed_edits(candidate, candidates);
+        let block = hung_block_through(self.source, candidate.inner, &nested, indent);
+        let text = candidate.flush.padded(&block).into_owned();
+        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
@@ -189,6 +211,17 @@ impl Shedder<'_> {
             );
         }
         true
+    }
+
+    /// Emits the replacement [`Self::opened_form`] writes for
+    /// `candidate`'s pair, where it writes one.
+    pub(super) fn push_opened_edits(&mut self, candidate: &Candidate, candidates: &[Candidate]) {
+        if let Some(text) = self.opened_form(candidate, candidates) {
+            insert_edit(
+                &mut self.edits,
+                Edit::range_replacement(text, candidate.pair),
+            );
+        }
     }
 }
 

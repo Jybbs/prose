@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a Returned Column Dict Opens the Dict on the Return's Row"
+
+description = '''
+`return (` wraps a dict its author wrote one entry per row. **The pair is removed and the dict opens on the return's row as `return {`**, its entries hung one indent past the statement and its `}` closing the statement, because the dict's own braces carry the break.
+'''

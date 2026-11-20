@@ -6,7 +6,10 @@
 //! pair folds onto one line when the bare form fits, one holding an
 //! over-budget operator chain or conditional expression breaks across
 //! rows one operand per row, and one whose interior breaks sit inside a
-//! bracket of its own sheds in place. An over-budget boolean chain or
+//! bracket of its own sheds in place. A pair holding the whole value
+//! of a `return` or an assignment that is one bracketed construct
+//! landing across rows comes off, that construct opening on the
+//! statement's row. An over-budget boolean chain or
 //! conditional forming a test, a `return` value, an assignment value, or
 //! the last element of a bare tuple standing as one gains a pair the
 //! break adds. Each row is measured as the later rules shortening it
@@ -25,9 +28,10 @@ use crate::{
     config::Config,
     pipeline::prepared_groups,
     primitives::{
+        call_keywords::module_call_params,
         edit::{insert_edit, singleton_groups},
         fracture::outermost,
-        padding,
+        one_row, padding,
         reseat::push_reseat_edits,
         reserve,
     },
@@ -50,6 +54,7 @@ use plan::{Candidate, candidates, outermost_calls};
 pub(crate) struct ReflowParentheses {
     code_line_length: usize,
     fstrings: PreferFstring,
+    one_row: one_row::Settings<'static>,
     reflows_calls: bool,
     reservations: reserve::Reservations,
     sheds_super_args: bool,
@@ -69,6 +74,7 @@ impl ReflowParentheses {
         Self {
             code_line_length: config.code_width(),
             fstrings: config.fstrings(),
+            one_row: config.one_row_settings(),
             reflows_calls: config.rules.reflow_calls.enabled,
             reservations: config.equals_reservations(),
             sheds_super_args: config.rules.shed_super_args.enabled,
@@ -79,22 +85,23 @@ impl ReflowParentheses {
 
     /// The edits the rules shortening a row after this one land over
     /// `source`, ascending and disjoint, an edit inside another left
-    /// out. These are the f-strings `prefer-fstring` forecasts and the
-    /// edits of each fix group `shed-super-args` and
-    /// `simplify-comprehensions` emit that no skip directive holds,
-    /// leaving out each of theirs that covers a line break.
-    fn rewrites(&self, source: &Source) -> Vec<Edit> {
-        let later: [(bool, &dyn Rule); 2] = [
-            (self.sheds_super_args, &ShedSuperArgs),
-            (self.simplifies_comprehensions, &SimplifyComprehensions),
-        ];
+    /// out. These are `fstrings`, the f-strings `prefer-fstring`
+    /// forecasts, the edits of each fix group `shed-super-args` emits
+    /// that no skip directive holds, and the edits of `simplified`,
+    /// leaving out each of the latter two that covers a line break.
+    fn rewrites(&self, source: &Source, simplified: &[Vec<Edit>], fstrings: &[Edit]) -> Vec<Edit> {
+        let shed = if self.sheds_super_args {
+            prepared_groups(&ShedSuperArgs, source)
+        } else {
+            Vec::new()
+        };
         outermost(
-            later
-                .into_iter()
-                .filter(|(enabled, _)| *enabled)
-                .flat_map(|(_, rule)| prepared_groups(rule, source).concat())
+            shed.iter()
+                .chain(simplified)
+                .flatten()
                 .filter(|edit| !source.contains_line_break(edit.range()))
-                .chain(source.fstring_rewrites(self.fstrings).iter().cloned())
+                .chain(fstrings)
+                .cloned()
                 .collect(),
         )
     }
@@ -112,17 +119,26 @@ impl Rule for ReflowParentheses {
             Vec::new()
         };
         let stranded = source.stranded_padding(self.stranding);
-        let rewrites = self.rewrites(source);
+        let simplified = if self.simplifies_comprehensions {
+            prepared_groups(&SimplifyComprehensions, source)
+        } else {
+            Vec::new()
+        };
+        let fstrings = source.fstring_rewrites(self.fstrings);
+        let rewrites = self.rewrites(source, &simplified, &fstrings);
         let padding = padding::beside(&stranded, &rewrites);
         let reservations = source.columns(&self.reservations);
+        let targets = module_call_params(source);
         let mut shedder = Shedder {
             breaks: RefCell::default(),
             calls,
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             folds: Vec::new(),
+            one_row: self.one_row.against(&targets).forecasting(&fstrings),
             padding: &padding,
             reservations: &reservations,
+            simplified: &simplified,
             source,
         };
         shedder.shed(&candidates);
@@ -141,16 +157,21 @@ impl Rule for ReflowParentheses {
 /// `strip-stranded-padding` emits over the source beside the
 /// [`ReflowParentheses::rewrites`] later rules land, and `reservations`
 /// the columns `align-equals` shifts each aligned value to, the two
-/// tables every measure settles a row through. `breaks` holds, for the candidate
-/// under test, whether each later pair on its row breaks.
+/// tables every measure settles a row through. `one_row` holds the terms
+/// the layout rules join a bracketed construct onto one row under,
+/// `simplified` the fix groups `simplify-comprehensions` emits, and
+/// `breaks` holds, for the candidate under test, whether each later pair
+/// on its row breaks.
 struct Shedder<'a> {
     breaks: RefCell<FxHashMap<TextRange, bool>>,
     calls: Vec<TextRange>,
     code_line_length: usize,
     edits: Vec<Edit>,
     folds: Vec<TextRange>,
+    one_row: one_row::Settings<'a>,
     padding: &'a [Edit],
     reservations: &'a reserve::Columns,
+    simplified: &'a [Vec<Edit>],
     source: &'a Source,
 }
 
@@ -161,8 +182,11 @@ impl Shedder<'_> {
     /// close the break. A pair whose joined line overflows breaks across
     /// rows where it holds an operator chain or a conditional expression.
     /// Otherwise a pair the source wrote sheds in place where an enclosing
-    /// bracket holds its breaks, re-seating the rows its parens moved, and
-    /// holds where none does, whereas a pair the break adds earns nothing.
+    /// bracket holds its breaks, re-seating the rows its parens moved.
+    /// Where none does, a pair holding the whole value of a `return` or an
+    /// assignment that is one bracketed construct landing across rows
+    /// opens that bracket on the statement's row, and any other pair holds, whereas
+    /// a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let pair = candidate.pair;
@@ -183,6 +207,7 @@ impl Shedder<'_> {
                 candidate.lone_paren_removals()
             } else if folding && !self.fits(candidate, candidates) {
                 let Some((open, close)) = self.shed_in_place_spans(candidate) else {
+                    self.push_opened_edits(candidate, candidates);
                     continue;
                 };
                 folding = false;
@@ -201,5 +226,97 @@ impl Shedder<'_> {
                 self.folds.push(pair);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::testing::{applied_text, parse};
+
+    /// `src` with every edit the rule emits applied, under the default
+    /// configuration with `reflow-calls` set to `reflows_calls`.
+    fn applied(src: &str, reflows_calls: bool) -> String {
+        let mut config = Config::default();
+        config.rules.reflow_calls.enabled = reflows_calls;
+        let source = parse(src);
+        let edits = ReflowParentheses::from_config(&config)
+            .apply(&source)
+            .into_iter()
+            .flatten()
+            .collect();
+        applied_text(&source, edits)
+    }
+
+    #[rstest]
+    #[case::flush_column_call(
+        "value = (\n    compute(\n        a,\n        b,\n    )\n)\n",
+        true,
+        "value = compute(\n    a,\n    b,\n)\n"
+    )]
+    #[case::fractured_call_with_reflow_calls_off(
+        "value = (\n    compute(a,\n        b)\n)\n",
+        false,
+        "value = compute(a,\n    b)\n"
+    )]
+    fn a_call_landing_across_rows_opens_on_the_assignment_row(
+        #[case] src: &str,
+        #[case] reflows_calls: bool,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(applied(src, reflows_calls), expected);
+    }
+
+    #[rstest]
+    #[case::annotated_column_dict(
+        "value: dict = (\n    {\n        \"a\": 1,\n        \"b\": 2,\n    }\n)\n",
+        "value: dict = {\n    \"a\": 1,\n    \"b\": 2,\n}\n"
+    )]
+    #[case::augmented_column_list(
+        "total += (\n    [\n        first,\n        second,\n    ]\n)\n",
+        "total += [\n    first,\n    second,\n]\n"
+    )]
+    fn a_collection_landing_across_rows_opens_on_the_assignment_row(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(applied(src, true), expected);
+    }
+
+    #[rstest]
+    #[case::call(
+        "def f():\n    return (\n        compute(\n            a,\n            b,\n        )\n    )\n",
+        "def f():\n    return compute(\n        a,\n        b,\n    )\n"
+    )]
+    #[case::column_dict(
+        "def f():\n    return (\n        {\n            \"a\": 1,\n            \"b\": 2,\n        }\n    )\n",
+        "def f():\n    return {\n        \"a\": 1,\n        \"b\": 2,\n    }\n"
+    )]
+    fn a_construct_landing_across_rows_opens_on_the_return_row(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        assert_eq!(applied(src, true), expected);
+    }
+
+    #[rstest]
+    #[case::fractured_call_rejoining_inside("value = (\n    compute(a,\n        b)\n)\n", true)]
+    #[case::subscript(&format!("value = (\n    table[{}]\n)\n", "k".repeat(84)), true)]
+    #[case::if_test_column_dict(
+        "if (\n    {\n        \"a\": 1,\n        \"b\": 2,\n    }\n):\n    pass\n",
+        true
+    )]
+    #[case::fitting_dict_under_a_long_target(
+        &format!("value_{} = (\n    {{\"a\": 1}}\n)\n", "k".repeat(80)),
+        true
+    )]
+    #[case::one_row_call_with_reflow_calls_off(
+        &format!("value_{} = (\n    compute(alpha, beta)\n)\n", "k".repeat(80)),
+        false
+    )]
+    fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
+        assert_eq!(applied(src, reflows_calls), src);
     }
 }

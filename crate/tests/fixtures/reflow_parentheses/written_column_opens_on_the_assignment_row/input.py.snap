@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/written_column_opens_on_the_assignment_row/input.py
+---
+def settings():
+    defaults = {
+        "alpha": 1,
+        "delta": 2,
+    }
+    return defaults

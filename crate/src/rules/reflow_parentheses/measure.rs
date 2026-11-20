@@ -4,7 +4,10 @@
 //! shortening rules settle its row, and the spans an in-place shed
 //! removes.
 
+use std::borrow::Cow;
+
 use ruff_diagnostics::Edit;
+use ruff_python_ast::Expr;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -21,6 +24,8 @@ use crate::{
             display_width, run_closes_to_a_space, settled_head_column, settled_width,
             soft_wrap_runs,
         },
+        layout::{is_column_shaped, is_layoutable, item_indent},
+        range::blocks_span,
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
@@ -117,6 +122,15 @@ impl Shedder<'_> {
         column.saturating_sub(shift)
     }
 
+    /// The text `simplify-comprehensions` rewrites the call over `range`
+    /// to, `None` where none of its fix groups spans that call whole.
+    fn simplified_form(&self, range: TextRange) -> Option<Cow<'_, str>> {
+        self.simplified
+            .iter()
+            .find(|group| blocks_span(group) == range)
+            .map(|group| apply_inline_edits(self.source, range, group))
+    }
+
     /// The columns `pair`'s own row carries past its closing paren once
     /// the padding table settles it, narrowed by the parentheses
     /// this pass sheds along that stretch. The measure closes at the
@@ -145,6 +159,54 @@ impl Shedder<'_> {
             return false;
         };
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
+    }
+
+    /// True where `expr`, standing alone on a row one indent step past
+    /// `indent`, lands across rows once the layout rules take their turn,
+    /// which holds for
+    ///
+    /// - a collection literal no rejoined form of which fits that row,
+    ///   where it spans rows or `reflow-collections` expands it
+    /// - a call `simplify-comprehensions` rewrites to a literal, where it
+    ///   spans rows or that literal runs past `max_dict_entries` or past
+    ///   the budget while `reflow-collections` expands literals
+    /// - any other call, where `reflow-calls` explodes it by count, holds
+    ///   its flush column, or finds no one-row form fitting that row, or
+    ///   with that rule off, where it spans rows
+    pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
+        let column = item_indent(indent);
+        let spans = self.source.contains_line_break(expr.range());
+        match expr {
+            Expr::Call(call) if let Some(literal) = self.simplified_form(call.range()) => {
+                spans
+                    || (self.one_row.expands_literals()
+                        && (self.one_row.caps_entries(call.arguments.keywords.len())
+                            || !self.one_row.fits(
+                                column
+                                    + self.one_row.form_width(self.source, &literal, call.range()),
+                            )))
+            }
+            Expr::Call(call) if self.one_row.closes() => {
+                self.one_row.count_explodes(self.source, call)
+                    || (spans && is_column_shaped(self.source.slice(call.arguments.range())))
+                    || self
+                        .one_row
+                        .fitted(self.source, expr, expr.into(), column, 0)
+                        .is_none()
+            }
+            Expr::Call(_) => spans,
+            _ if is_layoutable(expr) => {
+                if spans {
+                    self.one_row
+                        .rejoined(self.source, expr, expr.into(), column, 0)
+                        .is_none()
+                } else {
+                    self.one_row
+                        .expands(self.source, expr, expr.into(), column, 0, self.padding)
+                }
+            }
+            _ => false,
+        }
     }
 
     /// True where joining `candidate` crosses the budget on its row from
