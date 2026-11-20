@@ -1,7 +1,11 @@
 PROOF_TARGETS=(corpus settle)
 
 split_proof() {
-  "$@" --locked --package prose "${PROOF_TARGETS[@]/#/--test=}"
+  "$@" \
+    --locked \
+    --package prose \
+    ${PROSE_PROOF_PROFILE:+--profile "$PROSE_PROOF_PROFILE"} \
+    "${PROOF_TARGETS[@]/#/--test=}"
 }
 
 split_suite() {
@@ -9,7 +13,6 @@ split_suite() {
   targets=$(suite_targets) || return
 
   "$@" --bins --exclude prose_wasm --lib --locked --workspace $targets
-  "$@" --locked --package prose_wasm
 }
 
 split_workspace() {

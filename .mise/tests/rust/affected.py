@@ -7,10 +7,7 @@ from collections.abc import Callable
 from pytest          import mark, param
 from subprocess      import CompletedProcess
 
-SUITE = [
-    "cargo test --bins --exclude prose_wasm --lib --locked --workspace",
-    "cargo test --locked --package prose_wasm"
-]
+SUITE = ["cargo test --bins --exclude prose_wasm --lib --locked --workspace"]
 
 
 @mark.parametrize(
@@ -36,7 +33,7 @@ def test_affected_runs_the_suite_once_a_change_reaches_a_rust_path(
     """
     Pins that a change to a Rust source, a workspace member `cargo metadata`
     lists, or a file configuring the workspace's build or its toolchain runs
-    both halves of `rust:suite`.
+    the one `cargo test` of `rust:suite`.
     """
     finished = affected(changed, "edited", group="rust")
 
@@ -122,12 +119,12 @@ def test_affected_skips_the_suite_for_changes_the_branch_did_not_make(
     assert finished.stdout == "No Rust file changed since origin/main\n"
 
 
-def test_affected_hands_its_arguments_to_each_cargo_test(
+def test_affected_hands_its_arguments_to_cargo_test(
     affected: Callable[..., CompletedProcess]
 ):
     """
-    Pins that the arguments the task is given follow the flags of both
-    `cargo test` runs.
+    Pins that the arguments the task is given follow the flags of the `cargo
+    test` run.
     """
     finished = affected(
         "crate/src/lib.rs",

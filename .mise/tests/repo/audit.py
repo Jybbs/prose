@@ -838,6 +838,13 @@ def test_parity_pairs_each_have_a_drift_row(
             "      - run : mise run gha:brief ci\n",
             [("🥃 Proof · Corpus", ["corpus"]), ("🥃 Proof · Settle", ["settle"])],
             id = "step-after"
+        ),
+        param(
+            "      - run : ${{ matrix.command }}\n",
+            "      - run : ${{ matrix.command }}\n"
+            "      - run : ${{ matrix.command }}\n",
+            [("🥃 Proof · Corpus", ["corpus"]), ("🥃 Proof · Settle", ["settle"])],
+            id = "step-repeated"
         )
     ]
 )
@@ -850,8 +857,8 @@ def test_proof_rows_read_every_binary_a_row_names(
 ):
     """
     Pins that a row running `rust:proof` over several binaries reads as
-    naming each of them, and that a step after the one running it adds no
-    binary.
+    naming each of them, and that a step after the one running it, or a
+    second step running the same binary, adds no binary.
     """
     drifted(".github/workflows/ci.yml", pin, stray)
 

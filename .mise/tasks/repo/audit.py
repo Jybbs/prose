@@ -983,21 +983,24 @@ def privileges() -> int:
 def proof_rows() -> list[tuple[str, list[str]]]:
     """
     Collects each check of a pull-request workflow whose steps name test
-    binaries to `mise run rust:proof`, beside those binaries.
+    binaries to `mise run rust:proof`, beside those binaries, each read once
+    however many of its steps run it.
     """
     return [
         (report.name, binaries)
         for path, _ in pull_request_workflows()
         for report in reported(path)
         if (
-            binaries := [
-                binary
-                for named in findall(
-                    r"\bmise run rust:proof((?:[ \t]+\w+)+)",
-                    report.script
+            binaries := list(
+                dict.fromkeys(
+                    binary
+                    for named in findall(
+                        r"\bmise run rust:proof((?:[ \t]+\w+)+)",
+                        report.script
+                    )
+                    for binary in named.split()
                 )
-                for binary in named.split()
-            ]
+            )
         )
     ]
 

@@ -187,7 +187,7 @@ A fixture case pins one shape, whereas the corpus tasks run the formatter over a
 
 | **Task** | **What It Does** |
 |---|---|
-| `mise run rust:proof` | Sweeps the fixture tree at every line length for a rewrite a second pass would change, a reported fix the output never took, and a rule or ordered rule pair that does not settle alone, which is the settling half of `rust:test`. Given the name of a proof binary, it runs that binary alone, as `🥃 Proof · Corpus` and `🥃 Proof · Settle` each do |
+| `mise run rust:proof` | Sweeps the fixture tree at every line length for a rewrite a second pass would change, a reported fix the output never took, and a rule or ordered rule pair that does not settle alone, which is the settling half of `rust:test`. Given the name of a proof binary, it runs that binary alone, as `🥃 Proof · Corpus` and `🥃 Proof · Settle` each do, and `PROSE_PROOF_PROFILE` names a Cargo profile to build under in place of the default one |
 | `mise run rust:settle` | Sweeps a corpus at every line length for rewrites a second pass would change and fixes the output never took |
 | `mise run rust:mutations` | Formats every mutation of a corpus with the unstable-output notice on, generating the set under a budget into the directory `PROSE_SETTLE_MUTATIONS` names, or a scratch one, when that directory is absent |
 | `mise run rust:subsets` | Probes each rule alone and each ordered rule pair over a corpus for one-pass settling, and holds each rule declaring `PRESERVES_TREE` to its input's tree |
@@ -346,13 +346,13 @@ The table lists each row beside the task that runs the same check locally:
 | `🛂 Crates` | `🪻 CI` | `mise run rust:deny` | `cargo-deny` finds no vulnerable or yanked crate, no unmaintained crate a workspace member lists directly, no license outside the allow list, no source but crates.io, no wildcard requirement, and no second version of a crate unless `.cargo/deny.toml` skips it |
 | `📎 Clippy` | `🪻 CI` | `mise run rust:lint` | `clippy` reports nothing across every target or in the build without the `native` feature |
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
-| `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which the `🥃 Proof` rows run |
+| `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which the `🥃 Proof` rows run, and the `prose_wasm` tests, which `☂️ Coverage` runs against `prose` built without `native` |
 | `🥃 Proof · Corpus` | `🪻 CI` | `mise run rust:proof corpus` | The fixture tree settles in one pass at every line length and budget axis under both `target-version` settings, with every reported fix applied |
 | `🥃 Proof · Settle` | `🪻 CI` | `mise run rust:proof settle` | Each rule alone and each ordered rule pair settles the fixture tree in one pass at every line length under both `target-version` settings, every seating that result rests on is declared in the registry, and each rule declaring `PRESERVES_TREE` keeps its input's tree |
 | `🪻 Prose` | `🪻 CI` | `mise run py:lint` | The checkout's own build of *Prose* reports no rewrite and no lint finding in the repository's Python outside the fixture trees |
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
-| `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |
+| `☂️ Coverage` | `🪻 CI`, `🪻 Deploy` | `mise run rust:coverage`, `mise run site:coverage` | The `prose_wasm` tests pass against `prose` built without `native`, and the Rust and docs-site coverage reports reach Codecov, whose status checks fail below **95%** on the project total and on each patch |
 | `🪡 Typecheck` | `🪻 Deploy` | `mise run site:typecheck` | `tsc` reports no type error in the docs site |
 | `🧶 Lint` | `🪻 Deploy` | `mise run site:lint` | `oxlint` reports nothing in the docs site's TypeScript |
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |

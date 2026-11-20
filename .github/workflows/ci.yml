@@ -61,6 +61,7 @@ jobs:
             shared-key : *debug-key
           - command    : mise run rust:proof settle
             name       : 🥃 Proof · Settle
+            profile    : probe
             shared-key : *debug-key
           - command    : mise run py:lint
             name       : 🪻 Prose
@@ -97,6 +98,16 @@ jobs:
         env:
           CODECOV_TOKEN     : ${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}
           MISE_GITHUB_TOKEN : ${{ matrix.command == 'mise run lock:check' && github.token || '' }}
+        run  : ${{ matrix.command }}
+
+      - name : Restore the ${{ matrix.profile }} Cargo cache
+        if   : ${{ matrix.profile }}
+        uses : Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
+        with : { save-if: 'false', shared-key: "prose-${{ matrix.profile }}" }
+
+      - name : ${{ matrix.command }} under ${{ matrix.profile }}
+        env  : { PROSE_PROOF_PROFILE: "${{ matrix.profile }}" }
+        if   : ${{ matrix.profile }}
         run  : ${{ matrix.command }}
 
   gate:
