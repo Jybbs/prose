@@ -368,7 +368,7 @@ struct Probes {
 }
 
 impl Probes {
-    fn build(width: usize, target: Option<PythonVersion>) -> Self {
+    fn build(width: usize, target: Option<PythonVersion>, fixtures: bool) -> Self {
         let config = Config {
             code_line_length: NonZeroUsize::new(width),
             target_version: target,
@@ -378,7 +378,6 @@ impl Probes {
         let (share, shares) = shard();
         let claim = claim();
         let in_scope = |rule: &RuleId| scope.as_ref().is_none_or(|set| set.contains(rule));
-        let fixtures = pointed_corpus().is_none();
         let mut singles = Vec::new();
         let mut seats = FxHashMap::default();
         let mut seat = |rule: RuleId, pipeline: Pipeline| -> usize {
@@ -684,11 +683,11 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
     findings
 }
 
-/// The probes one budget builds, at the shipped default width and
-/// `target-version` 3.14.
+/// The probes one budget builds over the fixture tree, at the shipped
+/// default width and `target-version` 3.14.
 #[fixture]
 fn probes() -> Probes {
-    Probes::build(88, Some(PythonVersion::PY314))
+    Probes::build(88, Some(PythonVersion::PY314), true)
 }
 
 /// Parses `slug` into the rule it names.
@@ -856,9 +855,10 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
     let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"));
     let lengths = lengths();
     let targets = targets_or(TARGETS);
+    let fixtures = pointed_corpus().is_none();
     let mut findings = Findings::default();
     for (&target, &length) in targets.iter().cartesian_product(&lengths) {
-        let probes = Probes::build(length, target);
+        let probes = Probes::build(length, target, fixtures);
         eprintln!(
             "{} single-rule pipelines serve {} solos and {} pairs at width {length} with \
              `target-version` {}",
@@ -870,7 +870,7 @@ fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() 
         findings.absorb(probes.sweep(&files));
     }
     report_verified("chained pairs against the two-rule fold");
-    if pointed_corpus().is_some() {
+    if !fixtures {
         eprintln!("{}", findings.render_sharing());
     }
     let unread = unread(findings.skipped.len(), files.len(), "probe");
@@ -1015,7 +1015,6 @@ fn shard_of_rejects_a_share_outside_one_through_n(#[case] spec: &str) {
 
 #[rstest]
 fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes) {
-    probes.fixtures = true;
     probes.reported = BTreeSet::from([rule("reflow-calls")]);
 
     let findings = probes.sweep(&[]);
@@ -1027,7 +1026,6 @@ fn sweep_holds_a_changing_rule_that_rewrites_no_file_as_kept(mut probes: Probes)
 fn sweep_reads_a_changing_rule_over_a_seat_only_a_pair_in_another_share_constructs(
     mut probes: Probes,
 ) {
-    probes.fixtures = true;
     probes.pairs.clear();
     probes.reported = BTreeSet::from([rule("reflow-signatures")]);
     let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
