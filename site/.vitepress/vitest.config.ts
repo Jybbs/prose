@@ -15,12 +15,14 @@ const BUNDLE = {
 }
 export const CRATE   = 'crate/src/**/*.rs'
 const FIT            = '.vitepress/tests/pages/fit.test.ts'
+const GRAPH          = 'site/.vitepress/lib/**/*.{mjs,ts}'
 const PAGES          = 'site/pages/**/*.md'
 const ROOT           = paths.repoRoot(import.meta.url)
 const RULES          = 'crate/src/rules/**/*.rs'
 const SCRIPTS        = 'site/.vitepress/{kit,lib,theme}/**/*.{ts,tsx}'
 const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
 export const READERS = {
+  'site/.vitepress/config.ts'                               : [GRAPH],
   'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
   'site/.vitepress/lib/fixtures/variants.ts'                : [CRATE],
   'site/.vitepress/lib/identity/identity.data.ts'           : [SCRIPTS, STYLES, 'site/.vitepress/config.ts'],
@@ -37,9 +39,11 @@ export const READERS = {
   'site/.vitepress/tests/config/edit-link.test.ts'          : [PAGES],
   'site/.vitepress/tests/config/head.test.ts'               : [PAGES],
   'site/.vitepress/tests/config/readers.test.ts'            : ['site/.vitepress/**/*.{mjs,ts,tsx}'],
+  'site/.vitepress/tests/og/render.test.ts'                 : ['site/.vitepress/tests/og/cards/*/page.ts'],
   'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
-  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
+  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES, 'site/.vitepress/theme/**/*.{ts,tsx}'],
   'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
+  'site/.vitepress/tests/shared/render-graph.test.ts'       : [GRAPH],
   'site/.vitepress/tests/shared/stylesheets.test.ts'        : [SCRIPTS],
   'site/.vitepress/tests/shared/tool-chips.test.ts'         : [PAGES],
   'site/.vitepress/tests/support.ts'                        : [STYLES],
