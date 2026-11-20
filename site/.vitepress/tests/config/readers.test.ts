@@ -20,7 +20,7 @@ const TAILWIND = `${SITE}/tests/tailwind.ts`
 const LISTING  = ['ls-files', '-z', '--', '*.mjs', '*.ts', '*.tsx', '*.vue']
 const TRACKED  = execFileSync('git', LISTING, { cwd: ROOT, encoding: 'utf8' })
   .split('\0')
-  .filter(Boolean)
+  .filter(file => file && fs.existsSync(path.join(ROOT, file)))
 const MODULES  = TRACKED
   .filter(file => path.matchesGlob(file, `${SITE}/**/*.{mjs,ts,tsx}`) && !CONFIGS.has(file))
   .map(file => ({ file, text: fs.readFileSync(path.join(ROOT, file), 'utf8') }))
@@ -32,10 +32,10 @@ const RUNNERS = MODULES
   .filter(({ text }) => RUNNER.test(text))
   .map(({ file }) => file)
 
-// Names each string a module writes, and the static prefix of each template
-// literal up to its last slash, leaving out the specifiers of its imports and of
-// `import.meta.glob`, which the module graph follows itself, and the keys and
-// string method arguments that name no file.
+// Names each string a module writes and each template literal, cut after the
+// last slash ahead of its first expression, leaving out the specifiers of its
+// imports and of `import.meta.glob`, which the module graph follows itself, and
+// the keys and string method arguments that name no file.
 function namedPaths(text: string): string[] {
   const named = [] as string[]
   const keys  = new WeakSet<object>()
@@ -46,7 +46,9 @@ function namedPaths(text: string): string[] {
       if (keys.has(node) || node.source || node.type === 'TSImportType') return this.skip()
       if (callee?.type === 'Import' || callee?.object?.type === 'MetaProperty') return this.skip()
       if (node.type === 'MemberExpression' && node.computed) keys.add(node.property)
-      if (Object.hasOwn(String.prototype, callee?.property?.name)) node.arguments.forEach(keys.add, keys)
+      if (callee?.object?.name !== 'path' && Object.hasOwn(String.prototype, callee?.property?.name)) {
+        node.arguments.forEach(keys.add, keys)
+      }
       if (node.type === 'StringLiteral') named.push(node.value)
       if (node.type !== 'TemplateLiteral') return
       const prefix: string = node.quasis[0].value.cooked
@@ -88,18 +90,38 @@ describe('scriptsRead', () => {
   const probe = `${SITE}/tests/shared/probe.ts`
 
   it.each([
-    ['an import', "import { read } from '../../tests/vocabulary.ts'"],
-    ['an `import.meta.glob`', "export const sheets = import.meta.glob('../tailwind.ts')"],
-    ['a computed key', "export const pick = table[`../../theme/${name}.tsx`]"],
-    ['a string method argument', "export const kit = name.startsWith('../../kit/')"]
+    ['an import',                "import { read } from '../../tests/vocabulary.ts'"],
+    ['an `import.meta.glob`',    "export const sheets = import.meta.glob('../tailwind.ts')"],
+    ['a computed key',           "export const pick = table[`../../theme/${name}.tsx`]"],
+    ['a string method argument', "export const kit = name.startsWith('../../kit/')"],
+    ['a type import',            "export type Theme = typeof import('../../theme/index.ts')"]
   ])('reads no script %s names', (_, text) => {
     expect(scriptsRead(probe, text)).toStrictEqual([])
   })
 
   it.each([
-    ['a folder', "read('../../lib/og/render')"],
-    ['the static prefix of a template literal', "read(`../../lib/og/render/${name}`)"]
+    ['the repository',   "read('site/.vitepress/theme/index.ts')"],
+    ['the site',         "read('.vitepress/theme/index.ts')"],
+    ['`.vitepress`',     "read('theme/index.ts')"],
+    ['the module',       "read('../../theme/index.ts')"],
+    ['`path.normalize`', "read(path.normalize('../../theme/index.ts'))"]
+  ])('reads a script path from %s', (_, text) => {
+    expect(scriptsRead(probe, text)).toStrictEqual([`${SITE}/theme/index.ts`])
+  })
+
+  it.each([
+    ['a folder',                                "read('../../lib/og/render')"],
+    ['the static prefix of a template literal', "read(`../../lib/og/render/${name}`)"],
+    ['a prefix ending inside a file name',      "read(`../../lib/og/render/bu${name}`)"]
   ])('reads the scripts under %s', (_, text) => {
     expect(scriptsRead(probe, text)).toContain(`${SITE}/lib/og/render/build.ts`)
+  })
+
+  it('reads a template literal holding no expression as the path it spells', () => {
+    expect(scriptsRead(probe, 'read(`../../theme/notes.md`)')).toStrictEqual([])
+  })
+
+  it('adds the `@source` files to the Tailwind entry', () => {
+    expect(scriptsRead(TAILWIND, '')).toStrictEqual(tailwind.sourceFiles().map(name => `site/${name}`))
   })
 })

@@ -41,7 +41,7 @@ export const READERS = {
   'site/.vitepress/tests/config/readers.test.ts'            : ['site/.vitepress/**/*.{mjs,ts,tsx}'],
   'site/.vitepress/tests/og/render.test.ts'                 : ['site/.vitepress/tests/og/cards/*/page.ts'],
   'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
-  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES, 'site/.vitepress/theme/**/*.{ts,tsx}'],
+  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
   'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
   'site/.vitepress/tests/shared/render-graph.test.ts'       : [GRAPH],
   'site/.vitepress/tests/shared/stylesheets.test.ts'        : [SCRIPTS],
