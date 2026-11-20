@@ -25,7 +25,7 @@ const escape = async (): Promise<void> => {
   await vi.runAllTimersAsync()
 }
 
-const pointer = (target: Element, type: 'mouseout' | 'mouseover'): void => {
+const pointer = (target: Element, type: 'mouseout' | 'mouseover' | 'pointermove'): void => {
   target.dispatchEvent(new MouseEvent(type, { bubbles: true }))
 }
 
@@ -52,17 +52,32 @@ describe('RuleLinkPopup', () => {
     expect(document.activeElement).toBe(document.querySelector('button'))
   })
 
-  it('opens nothing as the pointer crosses the link Escape closed it on until it leaves', async () => {
+  it('opens nothing as the pointer crosses the link Escape closed it on until it moves off it', async () => {
     const { link, wrapper } = await opened()
     await escape()
     pointer(link.querySelector('.badge')!, 'mouseover')
+    pointer(link, 'pointermove')
     pointer(link, 'mouseover')
     await after(DELAY.show)
     expect(cardOf(wrapper).exists()).toBe(false)
-    pointer(document.body, 'mouseover')
+    pointer(document.body, 'pointermove')
     pointer(link, 'mouseover')
     await after(DELAY.show)
     expect(cardOf(wrapper).exists()).toBe(true)
+  })
+
+  it('opens nothing as the page shifts another link under a still pointer and back', async () => {
+    const { link, wrapper } = await opened()
+    await escape()
+    const other = document.createElement('a')
+    other.dataset.rule = 'line-overflow'
+    document.body.append(other)
+    pointer(link, 'mouseout')
+    pointer(other, 'mouseover')
+    pointer(other, 'mouseout')
+    pointer(link, 'mouseover')
+    await after(DELAY.show)
+    expect(cardOf(wrapper).exists()).toBe(false)
   })
 
   it('opens again on the next focus of the link Escape closed it on', async () => {

@@ -126,11 +126,14 @@ describe('the rule cards from a pointer at a desktop width', () => {
 
   afterAll(() => browser.close())
 
-  it('closes on Escape and leaves focus where it was', async () => {
+  it('stays closed after Escape under a still pointer and leaves focus where it was', async () => {
     const probe = () => page.evaluate(() => (document.activeElement as HTMLElement).dataset.probe)
     await page.evaluate(() => { (document.activeElement as HTMLElement).dataset.probe = 'focused' })
     await page.keyboard.press('Escape')
     await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    // Waits past the boundary events the list's own Escape shift sends, measured near 290 ms after the key.
+    await page.waitForTimeout(400)
+    await expect(page.locator(OPEN_CARD).count()).resolves.toBe(0)
     await expect(probe()).resolves.toBe('focused')
   })
 

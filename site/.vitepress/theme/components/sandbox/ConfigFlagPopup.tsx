@@ -1,4 +1,4 @@
-import { useTimeoutFn }                                         from '@vueuse/core'
+import { useEventListener, useTimeoutFn }                       from '@vueuse/core'
 import { computed, defineComponent, Fragment, ref, shallowRef } from 'vue'
 import type { PropType }                                        from 'vue'
 
@@ -39,12 +39,17 @@ export const ConfigFlagPopup = defineComponent({
     const trail = computed(() => path.value.split('.').slice(0, -1))
     const wrote = computed(() => path.value.split('.').at(-1) ?? '')
 
+    function flagFrom(event: Event): HTMLElement | null {
+      const node = event.target
+      return node instanceof Element ? node.closest<HTMLElement>('.lint-flag') : null
+    }
+
     // The anchors sit inside HTML set through `innerHTML`, so event delegation finds the
     // hovered key and the popup takes it as its anchor. A repeat on the flag
     // already shown returns before the read, since crossing between a flag's own
     // token spans re-fires the delegated hover.
     function show(event: Event): void {
-      const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
+      const flag = flagFrom(event)
       if (hover.enter(flag) || !flag) return
       hold()
       if (path.value && flag === target.value) return
@@ -81,6 +86,8 @@ export const ConfigFlagPopup = defineComponent({
       emit('apply', path.value, replacement)
       close()
     }
+
+    useEventListener('pointermove', event => { hover.move(flagFrom(event)) })
 
     expose({ hide, show })
 

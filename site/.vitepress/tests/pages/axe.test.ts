@@ -1,6 +1,7 @@
 import { chromium }                         from 'playwright'
 import type { Browser, BrowserContext, Page } from 'playwright'
 
+import { seedUrl }            from '../../lib/sandbox/session'
 import { perScheme, SCHEMES } from '../../lib/shared/palette'
 import type { Scheme }        from '../../lib/shared/palette'
 
@@ -17,6 +18,23 @@ interface State {
 }
 
 const KICKER_BUTTON = 'button:has(> .kicker)'
+const SANDBOX       = (await seedUrl('[rules.align-equals]\nmax-shfit = 4\n', 'x = 1\n'))!.slice(1)
+
+// Sets `style` on a paragraph over a gradient, a ground `axe-core` leaves unresolved.
+const onGradient = (style: string): string =>
+  `<p style="background: linear-gradient(#fff, #fefefe); ${style}">Text</p>`
+
+const FADED = `<div style="opacity: .25">${onGradient('color: #000')}</div>`
+// Texts the pixel fallback reads, each on a ground `axe-core` leaves unresolved,
+// the two grays holding 4.44:1 and 4.54:1 on white.
+const FALLBACK = [
+  { fails: true,  html: onGradient('color: #777'),                         text: 'gray under the floor' },
+  { fails: false, html: onGradient('color: #767676'),                      text: 'gray at the floor' },
+  { fails: true,  html: FADED,                                             text: 'text at 25% opacity' },
+  { fails: true,  html: onGradient('-webkit-text-fill-color: #ddd'),       text: 'a light text fill' },
+  { fails: true,  html: '<p style="color: #eee">·</p>',                    text: 'a light glyph' },
+  { fails: false, html: '<p aria-hidden="true" style="color: #eee">·</p>', text: 'a hidden glyph' }
+]
 
 // Opens the card the first element `selector` matches, through `act`.
 const opensCard = (selector: string, act: 'click' | 'hover') => async (page: Page): Promise<void> => {
@@ -49,6 +67,12 @@ const STATES: readonly State[] = [
     file  : 'rules/lint/step-narration.html',
     name  : 'a lint card',
     reach : opensCard('.lint-flag', 'click'),
+    scope : OPEN_CARD
+  },
+  {
+    file  : SANDBOX,
+    name  : 'a flag card',
+    reach : opensCard('.sandbox-toml-display .lint-flag', 'hover'),
     scope : OPEN_CARD
   },
   {
@@ -124,5 +148,18 @@ describe.each(SCHEMES)('the opened states in the %s scheme', scheme => {
       await state.reach(page)
       return audit(page, { scope: state.scope })
     })).resolves.toStrictEqual([])
+  })
+})
+
+describe('the pixel fallback', () => {
+  it.concurrent.for(FALLBACK)('reads $text as failing: $fails', async ({ fails, html }, { expect }) => {
+    const page = await (await contexts.light).newPage()
+    try {
+      await page.setContent(`<main>${html}</main>`)
+      expect((await audit(page, { runOnly: ['color-contrast'] })).length > 0).toBe(fails)
+    }
+    finally {
+      await page.close()
+    }
   })
 })

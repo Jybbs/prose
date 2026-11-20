@@ -18,7 +18,7 @@ const escape = async (): Promise<void> => {
 async function opened() {
   vi.useFakeTimers()
   document.body.innerHTML = `<span class="lint-flag" data-message="${MESSAGE}">`
-                          + '<span class="token"></span></span>'
+                          + '<span class="token"></span></span><span class="code"></span>'
   const flag    = document.querySelector<HTMLElement>('.lint-flag')!
   const wrapper = mount(ConfigFlagPopup, {
     attachTo : document.body,
@@ -47,10 +47,29 @@ describe('ConfigFlagPopup', () => {
     const { flag, isOpen, popup } = await opened()
     await escape()
     popup.show({ target: flag.querySelector('.token') } as unknown as Event)
+    flag.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }))
     popup.show({ target: flag } as unknown as Event)
     await nextTick()
     expect(isOpen()).toBe(false)
     popup.hide()
+    popup.show({ target: flag } as unknown as Event)
+    await nextTick()
+    expect(isOpen()).toBe(true)
+  })
+
+  it('opens the flag Escape closed it on once the pointer moves off it inside the pane', async () => {
+    const { flag, isOpen, popup } = await opened()
+    await escape()
+    document.querySelector('.code')!.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }))
+    popup.show({ target: flag } as unknown as Event)
+    await nextTick()
+    expect(isOpen()).toBe(true)
+  })
+
+  it('holds nothing at an Escape pressed with the pointer on code text outside the flag', async () => {
+    const { flag, isOpen, popup } = await opened()
+    popup.show({ target: document.querySelector('.code') } as unknown as Event)
+    await escape()
     popup.show({ target: flag } as unknown as Event)
     await nextTick()
     expect(isOpen()).toBe(true)

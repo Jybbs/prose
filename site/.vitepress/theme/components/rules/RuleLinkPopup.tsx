@@ -72,10 +72,11 @@ export const RuleLinkPopup = defineComponent({
       conceal.start()
     }
 
-    useEventListener('focusin',   show)
-    useEventListener('focusout',  hide)
-    useEventListener('mouseover', show)
-    useEventListener('mouseout',  hide)
+    useEventListener('focusin',     show)
+    useEventListener('focusout',    hide)
+    useEventListener('mouseover',   show)
+    useEventListener('mouseout',    hide)
+    useEventListener('pointermove', event => { hover.move(linkFrom(event)) })
 
     return () => (
       <Popup

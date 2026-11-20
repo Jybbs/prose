@@ -11,8 +11,9 @@ export interface Finding {
 }
 
 interface Ground {
-  ink    : string
-  pixels : string[]
+  ink     : string
+  opacity : number
+  pixels  : string[]
 }
 
 type LineBox = Pick<DOMRectReadOnly, 'height' | 'width' | 'x' | 'y'>
@@ -25,11 +26,15 @@ interface Reach {
 export const AXE_TIMEOUT_MS = 15_000
 const BARE                  = 'data-ground-bare'
 const GROUND                = 'data-ground'
-// The `incomplete` reasons `axe-core` 4.14 gives for a contrast whose ground it
-// could not resolve, leaving out the text it judges too short or not text at all.
+// The `incomplete` reasons `axe-core` 4.14 gives for a lone character or a glyph
+// outside the Basic Multilingual Plane, which reads as decoration where
+// `aria-hidden` hides it.
+const GLYPH_REASONS = ['nonBmp', 'shortTextContent']
+// The `incomplete` reasons `axe-core` 4.14 gives for a contrast it could not
+// resolve on text.
 const GROUND_REASONS = [
   'bgGradient', 'bgImage', 'bgOverlap', 'elmPartiallyObscured', 'elmPartiallyObscuring', 'fgAlpha',
-  'imgNode', 'outsideViewport', 'pseudoContent'
+  'imgNode', 'outsideViewport', 'pseudoContent', ...GLYPH_REASONS
 ]
 // SC 1.4.3 Contrast (Minimum), https://www.w3.org/TR/WCAG22/#contrast-minimum
 const textFloor        = Object.fromEntries(LEVELS).text
@@ -56,12 +61,13 @@ function axeDom(): JSDOM {
   return shared
 }
 
-// Reads the text color of the element and each color the page renders under
-// its ink above the baseline, where a descender crossing an underline cannot
-// reach. The element is captured once as drawn and once with its text
-// transparent, so a pixel the two differ on is one the text covers.
+// Reads the text color of the element, the opacity it and its ancestors
+// multiply to, and each color the page renders under its ink above the
+// baseline, where a descender crossing an underline cannot reach. The element
+// is captured once as drawn and once with its text transparent, so a pixel the
+// two differ on is one the text covers.
 async function groundOf(element: Locator): Promise<Ground> {
-  const { ink, lines } = await element.evaluate(node => {
+  const { ink, lines, opacity } = await element.evaluate(node => {
     const style   = getComputedStyle(node)
     const frame   = node.getBoundingClientRect()
     const range   = document.createRange()
@@ -72,9 +78,14 @@ async function groundOf(element: Locator): Promise<Ground> {
     const { fontBoundingBoxAscent: ascent, fontBoundingBoxDescent: descent } = measure
       .measureText(texts[0]?.textContent ?? '')
     const above = ascent / (ascent + descent)
+    let alpha   = 1
+    for (let at: Element | null = node; at; at = at.parentElement) {
+      alpha *= Number(getComputedStyle(at).opacity)
+    }
     return {
-      ink   : node instanceof SVGElement ? style.fill : style.color,
-      lines : texts.flatMap(text => {
+      ink     : node instanceof SVGElement ? style.fill : style.webkitTextFillColor,
+      opacity : alpha,
+      lines   : texts.flatMap(text => {
         range.selectNodeContents(text)
         return [...range.getClientRects()].map(({ height, width, x, y }) =>
           ({ height: height * above, width, x: x - frame.x, y: y - frame.y }))
@@ -87,14 +98,16 @@ async function groundOf(element: Locator): Promise<Ground> {
   await element.evaluate((node, marker) => { node.removeAttribute(marker) }, BARE)
   const pixels = await element.page()
     .evaluate(underInk, { bare: bare.toString('base64'), lines, shown: shown.toString('base64') })
-  return { ink, pixels }
+  return { ink, opacity, pixels }
 }
 
-// Blends the text color over each ground color and returns the lowest ratio
-// any of them holds, or zero for a text that changed no pixel.
-function lowestContrast({ ink, pixels }: Ground): number {
+// Blends the text color, its alpha scaled by the opacity, over each ground
+// color and returns the lowest ratio any of them holds, or zero for a text that
+// changed no pixel.
+function lowestContrast({ ink, opacity, pixels }: Ground): number {
   const text = parse(ink)
   if (!text || pixels.length === 0) return 0
+  text.alpha = (text.alpha ?? 1) * opacity
   return Math.min(...pixels.map(pixel => wcagContrast(blend([pixel, text]), pixel)))
 }
 
@@ -129,18 +142,26 @@ async function underInk(
 
 // Runs `axe-core` over the page, or over the elements the Playwright selector
 // `scope` matches, limited to the rules `runOnly` names where it names any. A
-// text whose ground `axe-core` leaves unresolved fails unless every color the
-// page renders under its ink holds the text floor `LEVELS` declares against
-// it, the failure naming the lowest ratio.
+// text whose contrast `axe-core` leaves unresolved, a glyph `aria-hidden` hides
+// aside, fails unless every color the page renders under its ink holds the text
+// floor `LEVELS` declares against it, the failure naming the lowest ratio.
 export async function audit(page: Page, { runOnly, scope = 'html' }: Reach = {}): Promise<Finding[]> {
   await page.addScriptTag({ content: axe.source })
-  const options = { marker: GROUND, only: runOnly ? { runOnly } : {}, reasons: GROUND_REASONS }
+  const options = {
+    glyphs  : GLYPH_REASONS,
+    marker  : GROUND,
+    only    : runOnly ? { runOnly } : {},
+    reasons : GROUND_REASONS
+  }
   const { findings, unresolved } = await page.locator(scope).evaluateAll(async (nodes, settings) => {
     const engine  = (window as unknown as { axe: typeof axe }).axe
     const run     = await engine.run(nodes, { ...settings.only, elementRef: true })
     const targets = (results: axe.NodeResult[]) => results.map(node => node.target.join(' '))
+    const decoration = (node: axe.NodeResult, reason: string) =>
+      settings.glyphs.includes(reason) && Boolean(node.element?.closest('[aria-hidden="true"]'))
     const grounds = (run.incomplete.find(result => result.id === 'color-contrast')?.nodes ?? [])
-      .filter(node => node.any.some(check => settings.reasons.includes(check.data?.messageKey)))
+      .filter(node => node.any.some(({ data }) =>
+        settings.reasons.includes(data?.messageKey) && !decoration(node, data.messageKey)))
     grounds.forEach((node, at) => { node.element?.setAttribute(settings.marker, String(at)) })
     return {
       findings   : run.violations.map(result => ({ id: result.id, targets: targets(result.nodes) })),
