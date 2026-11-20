@@ -21,9 +21,9 @@ const styles = (name: string): string =>
 
 const accentKeys = (attribute: string): string[] => {
   const keys    = new Set<string>()
-  const pattern = new RegExp(`\\[data-${attribute}="([a-z]+)"\\]`, 'g')
+  const pattern = new RegExp(`\\[data-${attribute}=(['"])([a-z]+)\\1\\]`, 'g')
   parse(styles('accents.css')).walkRules(rule => {
-    for (const m of rule.selector.matchAll(pattern)) keys.add(m[1])
+    for (const m of rule.selector.matchAll(pattern)) keys.add(m[2])
   })
   return [...keys].sort()
 }

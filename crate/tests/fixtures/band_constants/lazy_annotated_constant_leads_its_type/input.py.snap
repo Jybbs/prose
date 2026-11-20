@@ -1,0 +1,10 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/band_constants/lazy_annotated_constant_leads_its_type/input.py
+---
+LIMIT: Zed = 1
+
+
+class Zed:
+    pass

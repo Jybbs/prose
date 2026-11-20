@@ -223,7 +223,7 @@
   }
 
   .composition-cards-list &,
-  .fixture-card[data-edits="false"]:not([data-lint="true"]) & {
+  .fixture-card[data-edits='false']:not([data-lint='true']) & {
     background : var(--vp-c-text-3);
   }
 }
@@ -264,7 +264,7 @@
   text-transform : uppercase;
   color          : var(--vp-c-text-1);
 
-  .fixture-card[data-edits="false"]:not([data-lint="true"]) & {
+  .fixture-card[data-edits='false']:not([data-lint='true']) & {
     color : var(--vp-c-text-2);
   }
 }
@@ -314,7 +314,7 @@
   stroke-linecap  : round;
   stroke-linejoin : round;
 
-  &[data-terminal="nib"] {
+  &[data-terminal='nib'] {
     stroke-linecap  : butt;
     stroke-linejoin : miter;
   }
@@ -332,17 +332,17 @@
   letter-spacing : var(--prose-kicker-tracking);
   text-transform : uppercase;
 
-  &[data-variant="rule"]::before {
-    content           : "— ";
+  &[data-variant='rule']::before {
+    content           : '— ';
     margin-inline-end : var(--prose-space-4);
   }
 
-  &[data-variant="rule"]::after {
-    content             : " —";
+  &[data-variant='rule']::after {
+    content             : ' —';
     margin-inline-start : var(--prose-space-4);
   }
 
-  &[data-variant="wide"] {
+  &[data-variant='wide'] {
     letter-spacing : var(--prose-display-tracking-wide);
   }
 }

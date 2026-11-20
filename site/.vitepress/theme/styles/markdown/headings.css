@@ -2,7 +2,7 @@
 .vp-doc h2,
 .vp-doc h3,
 .vp-doc h4 {
-  font-family: var(--prose-font-display);
+  font-family : var(--prose-font-display);
 }
 
 /* Draws each heading's permalink as a small § after its last word, in the
