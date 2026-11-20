@@ -742,11 +742,21 @@ def test_workflow_paths_fails_without_a_filter(
         ),
         param(
             "pull_request",
+            "''",
+            GUARD,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=2::the pull_request trigger "
+            "omits the types ['opened', 'ready_for_review', 'reopened', "
+            "'synchronize']\n",
+            id = "types-empty"
+        ),
+        param(
+            "pull_request",
             TYPES,
             "''",
             GUARD,
             "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
-            "draft, its if not ending on the draft guard\n",
+            "draft, its if lacking the draft guard\n",
             id = "job-unguarded"
         ),
         param(
@@ -755,8 +765,17 @@ def test_workflow_paths_fails_without_a_filter(
             GUARD,
             "${{ always() || !github.event.pull_request.draft }}",
             "::error file=.github/workflows/ci.yml,line=9::the gate job runs on a "
-            "draft, its if not ending on the draft guard\n",
+            "draft, its if lacking the draft guard\n",
             id = "guard-disjoined"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "${{ !github.event.pull_request.draft && always() }}",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-leading"
         )
     ]
 )
@@ -771,11 +790,11 @@ def test_drafts_reports_each_trigger_and_job_running_on_a_draft(
     workdir  : Callable[[dict[str, str]], Path]
 ):
     """
-    Pins that a `pull_request` trigger omitting a ready activity type and
-    a job whose `if` does not end on the draft guard each fail the audit on
-    an annotation locating the workflow and the job, whereas a guard joined
-    by `||` counts as no guard and a workflow no pull request triggers is
-    not read.
+    Pins that a `pull_request` trigger omitting a ready activity type and a
+    job whose `if` does not end on the draft guard each fail the audit on an
+    annotation locating the workflow and the job, whereas a guard joined by
+    `||` or leading another condition counts as no guard and a workflow no
+    pull request triggers is not read.
     """
     workdir(
         {

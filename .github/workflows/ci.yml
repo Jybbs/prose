@@ -27,7 +27,7 @@ concurrency:
 jobs:
   check:
     name            : ${{ matrix.name }}
-    if              : &ready ${{ !github.event.pull_request.draft }}
+    if              : ${{ !github.event.pull_request.draft }}
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
