@@ -110,7 +110,7 @@ export const PipelineOrder = defineComponent({
                 onPointerenter={() => { here.value = at }}
                 title={rule.title}
               >
-                <span aria-hidden="true" class="pipeline-order-gutter w-10 shrink-0 text-center font-mono text-sm" data-order={order.value[at]}>
+                <span aria-hidden="true" class="pipeline-order-gutter w-10 shrink-0 text-center font-mono text-sm text-link" data-order={order.value[at]}>
                   {order.value[at] === 'earlier' ? '↑' : order.value[at] === 'later' ? '↓' : null}
                 </span>
                 <span class="folio">№ {formatFolio(rule.position)}</span>

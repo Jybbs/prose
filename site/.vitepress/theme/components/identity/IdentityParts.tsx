@@ -124,3 +124,14 @@ export const IdentityCaption = defineComponent({
     return () => <p class="mt-16 mb-0 text-sm leading-1-6 text-text-2">{slots.default?.()}</p>
   }
 })
+
+// Sets the name of one row of a specimen's index, which `identity-pick` raises
+// to the primary text color on hover and on selection.
+export const IdentityPickName = defineComponent({
+  name : 'IdentityPickName',
+  setup(_, { slots }) {
+    return () => (
+      <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{slots.default?.()}</span>
+    )
+  }
+})

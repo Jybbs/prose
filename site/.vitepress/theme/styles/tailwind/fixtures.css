@@ -85,7 +85,7 @@
   position : relative;
 
   &::after {
-    content          : "";
+    content          : '';
     position         : absolute;
     inset-inline     : 0;
     bottom           : calc(var(--prose-space-3) * -1);
@@ -107,7 +107,7 @@
      the pointer or the focus, as the wave fades, so the two share one offset
      and one thickness. */
   &:not(.lint-flag-line)::before {
-    content          : "";
+    content          : '';
     position         : absolute;
     inset-inline     : 0;
     bottom           : calc(var(--prose-space-3) * -1);
