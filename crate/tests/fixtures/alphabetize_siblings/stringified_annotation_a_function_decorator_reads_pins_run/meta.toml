@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Stringified Annotation a Function Decorator Reads Keeps Its Type Above"
+
+description = '''
+Under `from __future__ import annotations` each annotation is stored as a string, and `functools.singledispatch`'s `register` resolves the string on `value` as the function binds to pick the type it dispatches on. **`Zed` stays above the registered function**, so `Alpha` holds its slot below it rather than sorting past `Zed`.
+'''

@@ -16,6 +16,7 @@ use crate::{
         binding::{BindingAnalysis, BindingKind},
         scope::sub_bodies,
         slots::{slot_holding, slot_positions},
+        tiering::Annotations,
         walk::for_each_annotation,
     },
     source::Source,
@@ -53,7 +54,14 @@ impl<'a> Resolution<'a> {
             seats: rule
                 .folds
                 .bands()
-                .and_then(|band| band.forecast(source, body, source.module_range(), false))
+                .and_then(|band| {
+                    band.forecast(
+                        source,
+                        body,
+                        source.module_range(),
+                        Annotations::under(rule.target_version),
+                    )
+                })
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
@@ -256,6 +264,13 @@ mod tests {
     )]
     #[case::py314_resolves_a_name_the_band_hoists(
         CONSTANT_BELOW_ITS_READER,
+        Some(PythonVersion::PY314),
+        false,
+        true,
+        true
+    )]
+    #[case::py314_resolves_a_name_the_band_hoists_past_its_annotation(
+        "def convert(value: Alias) -> Alias:\n    return value\n\n\nclass Zed:\n    pass\n\n\nAlias: Zed = int\n",
         Some(PythonVersion::PY314),
         false,
         true,
