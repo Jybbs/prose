@@ -21,6 +21,7 @@ on:
       - crate/Cargo.toml
       - crate/pyproject.toml
       - harness/Cargo.toml
+    types: [opened, synchronize, reopened, ready_for_review]
 
   push:
     tags: ['[0-9]*']
@@ -34,6 +35,7 @@ concurrency:
 jobs:
   plan:
     name            : 🗺️ Plan
+    if              : &ready ${{ !github.event.pull_request.draft }}
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
@@ -58,6 +60,7 @@ jobs:
 
   build:
     name            : 🎻 ${{ matrix.name }}
+    if              : *ready
     needs           : plan
     runs-on         : ${{ matrix.runner }}
     timeout-minutes : 30
@@ -87,6 +90,7 @@ jobs:
 
   sdist:
     name            : 🚢 sdist
+    if              : *ready
     needs           : plan
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -104,6 +108,7 @@ jobs:
 
   validate:
     name            : 🕯️ Validate
+    if              : *ready
     needs           : [build, plan, sdist]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -122,7 +127,7 @@ jobs:
 
   publish:
     name            : 📯 Publish to PyPI
-    if              : github.ref_type == 'tag'
+    if              : ${{ github.ref_type == 'tag' && !github.event.pull_request.draft }}
     needs           : validate
     permissions     : { attestations: write, id-token: write }
     runs-on         : *ubuntu
@@ -154,6 +159,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
+    if              : *ready
     needs           : publish
     permissions     : { actions: write }
     runs-on         : *ubuntu
@@ -168,7 +174,7 @@ jobs:
 
   gate:
     name            : 🗞️ Brief
-    if              : always()
+    if              : ${{ always() && !github.event.pull_request.draft }}
     needs           : [build, sdist, validate, publish]
     runs-on         : *ubuntu
     timeout-minutes : *timeout

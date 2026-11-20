@@ -43,6 +43,10 @@ them fails.
                mise reads them as current.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
+    drafts     Every `pull_request` trigger runs on the `READY` activity
+               types, and every job of its workflow ends its `if` on the
+               `DRAFT` guard, so a draft runs no job until it is marked
+               ready.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
                check its workflows run, every task a row names is one
                `mise tasks` lists, every task outside the `gha` group a
@@ -88,6 +92,7 @@ from yaml        import AnchorToken, BaseLoader, load_all, scan
 CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
+DRAFT = r"\$\{\{ (?:[^|]+ && )?!github\.event\.pull_request\.draft \}\}"
 ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 EXACT = (
     r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
@@ -95,6 +100,9 @@ EXACT = (
 )
 PROPERTY_ESCAPES : dict[int, str] = ESCAPES | str.maketrans({",": "%2C", ":": "%3A"})
 READ             : set[str]       = set()
+READY            : set[str]       = {
+    "opened", "ready_for_review", "reopened", "synchronize"
+}
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
 USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
 UV_SHEBANG   = r"^#!.*\buv run --script\b"
@@ -282,6 +290,37 @@ def dependencies(task: str) -> list[str]:
         each if isinstance(each, str) else each[0]
         for each in tasks_listed()[task]["depends"]
     ]
+
+
+def drafts() -> int:
+    """
+    Reports every `pull_request` trigger omitting one of the `READY`
+    activity types, and every job of a pull-request workflow whose `if` is
+    not the `DRAFT` guard alone or a `||`-free condition ending on `&&` and
+    that guard, locating each to the line its key opens on.
+    """
+    findings = []
+    for path, flow in pull_request_workflows():
+        lines   = read(path).splitlines()
+        trigger = flow["on"]["pull_request"] if isinstance(flow["on"], dict) else ""
+        if missing := READY - set((trigger or {}).get("types", [])):
+            findings.append(
+                (
+                    f"the pull_request trigger omits the types {sorted(missing)}",
+                    path,
+                    lines.index("  pull_request:") + 1
+                )
+            )
+        findings.extend(
+            (
+                f"the {name} job runs on a draft, its if not ending on the draft guard",
+                path,
+                lines.index(f"  {name}:") + 1
+            )
+            for name, job in flow["jobs"].items()
+            if not fullmatch(DRAFT, job.get("if", ""))
+        )
+    return located(findings)
 
 
 def exact() -> int:
@@ -1513,6 +1552,7 @@ if __name__ == "__main__":
         | patterns()
         | stamps()
         | gates()
+        | drafts()
         | checks()
         | tasks()
         | scripts()

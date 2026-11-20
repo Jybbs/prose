@@ -5,8 +5,9 @@ and the trigger it reports for each. Also pins the label `parity` reports
 a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
-restores `stamps` reports for leaving a task's outputs unstamped, and the
-`site/package.json` ranges `exact` reports by package.
+restores `stamps` reports for leaving a task's outputs unstamped, the
+`site/package.json` ranges `exact` reports by package, and the triggers and
+jobs `drafts` reports for running on a draft pull request.
 """
 
 from collections.abc   import Callable
@@ -17,8 +18,10 @@ from pytest_subprocess import FakeProcess
 from types             import ModuleType
 
 COVERING = ["Cargo.lock", "site/**", "wasm/**"]
+GUARD    = "${{ !github.event.pull_request.draft }}"
 LIVE     = ["{root}/Cargo.lock", "{root}/wasm/**"]
 OMITTING = ["Cargo.lock", "site/**"]
+TYPES    = "[opened, synchronize, reopened, ready_for_review]"
 WHEEL    = ".github/actions/build-wheel/action.yml"
 DRIFTS   = {
     ".mise/config.toml maturin pin ↔ build-wheel action maturin-version": [
@@ -714,6 +717,77 @@ def test_workflow_paths_fails_without_a_filter(
         audit.workflow_paths("push", "deploy")
 
     assert capsys.readouterr().out == "::error::no push paths filter in deploy.yml\n"
+
+
+@mark.parametrize(
+    ("event", "types", "check", "gate", "reported"),
+    [
+        param(
+            "pull_request",
+            TYPES,
+            GUARD,
+            "${{ always() && !github.event.pull_request.draft }}",
+            "",
+            id = "guarded"
+        ),
+        param("push", "[]", "''", "''", "", id="push-only"),
+        param(
+            "pull_request",
+            "[opened, synchronize, reopened]",
+            GUARD,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=2::the pull_request trigger "
+            "omits the types ['ready_for_review']\n",
+            id = "types-short"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "''",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if not ending on the draft guard\n",
+            id = "job-unguarded"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            GUARD,
+            "${{ always() || !github.event.pull_request.draft }}",
+            "::error file=.github/workflows/ci.yml,line=9::the gate job runs on a "
+            "draft, its if not ending on the draft guard\n",
+            id = "guard-disjoined"
+        )
+    ]
+)
+def test_drafts_reports_each_trigger_and_job_running_on_a_draft(
+    audit    : ModuleType,
+    capsys   : CaptureFixture[str],
+    check    : str,
+    event    : str,
+    gate     : str,
+    reported : str,
+    types    : str,
+    workdir  : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a `pull_request` trigger omitting a ready activity type and
+    a job whose `if` does not end on the draft guard each fail the audit on
+    an annotation locating the workflow and the job, whereas a guard joined
+    by `||` counts as no guard and a workflow no pull request triggers is
+    not read.
+    """
+    workdir(
+        {
+            ".github/workflows/ci.yml": (
+                f"on:\n  {event}:\n    types: {types}\n\njobs:\n"
+                f"  check:\n    if: {check}\n\n  gate:\n    if: {gate}\n"
+            )
+        }
+    )
+
+    assert audit.drafts() == bool(reported)
+    assert capsys.readouterr().out == reported
 
 
 @mark.parametrize(
