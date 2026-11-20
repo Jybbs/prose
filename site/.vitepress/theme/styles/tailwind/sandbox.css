@@ -42,11 +42,11 @@
   --animate-plate-settle : plate-settle var(--prose-transition-slow);
 
   @keyframes plate-draw {
-    to { scale: 1; }
+    to { scale : 1; }
   }
 
   @keyframes plate-settle {
-    from { opacity: 0; translate: 0 calc(var(--prose-space-4) * -1); }
+    from { opacity : 0; translate : 0 calc(var(--prose-space-4) * -1); }
   }
 }
 
