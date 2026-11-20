@@ -80,6 +80,10 @@ describe('READERS', () => {
     expect(READERS).toHaveProperty([file], expect.arrayContaining([CRATE]))
   })
 
+  it('scans each `.mjs`, `.ts`, and `.tsx` module', () => {
+    expect(new Set(MODULES.map(({ file }) => path.extname(file)))).toStrictEqual(new Set(['.mjs', '.ts', '.tsx']))
+  })
+
   supportTest.for(READS)('lists a glob for each script %s reads', ([file, read]) => {
     const covered = new Set(fs.globSync(GLOBS[file] ?? [], { cwd: ROOT }))
     expect([...new Set(read).difference(covered)]).toStrictEqual([])
@@ -112,7 +116,8 @@ describe('scriptsRead', () => {
   it.each([
     ['a folder',                                "read('../../lib/og/render')"],
     ['the static prefix of a template literal', "read(`../../lib/og/render/${name}`)"],
-    ['a prefix ending inside a file name',      "read(`../../lib/og/render/bu${name}`)"]
+    ['a prefix ending inside a file name',      "read(`../../lib/og/render/bu${name}`)"],
+    ['a prefix holding one folder',             "read(`lib/${name}`)"]
   ])('reads the scripts under %s', (_, text) => {
     expect(scriptsRead(probe, text)).toContain(`${SITE}/lib/og/render/build.ts`)
   })
