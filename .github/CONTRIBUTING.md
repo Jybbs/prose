@@ -348,7 +348,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🗜️ Build` | `🪻 CI` | `mise run rust:build` | The workspace builds in debug |
 | `🪚 Suite` | `🪻 CI` | `mise run rust:suite` | Every Rust suite passes apart from the `corpus` and `settle` targets, which the `🥃 Proof` rows run, and the `prose_wasm` tests, which `☂️ Coverage` runs against `prose` built without `native` |
 | `🥃 Proof · Corpus` | `🪻 CI` | `mise run rust:proof corpus` | The fixture tree settles in one pass at every line length and budget axis under both `target-version` settings, with every reported fix applied |
-| `🥃 Proof · Settle` | `🪻 CI` | `mise run rust:proof settle` | Each rule alone and each ordered rule pair settles the fixture tree in one pass at every line length under both `target-version` settings, every seating that result rests on is declared in the registry, and each rule declaring `PRESERVES_TREE` keeps its input's tree |
+| `🥃 Proof · Settle` | `🪻 CI` | `PROSE_PROOF_PROFILE=probe mise run rust:proof settle` | Each rule alone and each ordered rule pair settles the fixture tree in one pass at every line length under both `target-version` settings, every seating that result rests on is declared in the registry, and each rule declaring `PRESERVES_TREE` keeps its input's tree |
 | `🪻 Prose` | `🪻 CI` | `mise run py:lint` | The checkout's own build of *Prose* reports no rewrite and no lint finding in the repository's Python outside the fixture trees |
 | `🛶 Wasm` | `🪻 CI` | `mise run wasm:lint` | `clippy` reports nothing in `prose_wasm` for the wasm target |
 | `🪃 Browser` | `🪻 CI` | `mise run wasm:smoke` | The packed web module formats Python in a browser smoke test |
