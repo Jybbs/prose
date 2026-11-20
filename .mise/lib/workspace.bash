@@ -29,6 +29,26 @@ suite_targets() {
       "${PROOF_TARGETS[@]}"
 }
 
+wasm_reach() {
+  cargo metadata --format-version 1 --no-deps \
+    | jq -r '
+        .workspace_root as $root
+        | (.packages
+            | map({
+                key: (.manifest_path | rtrimstr("/Cargo.toml")),
+                value: [.dependencies[] | select(.path and .kind != "dev") | .path]
+              })
+            | from_entries) as $paths
+        | def reach: ., ($paths[.][] | reach);
+          [.packages[]
+            | select(.name == "prose_wasm")
+            | .manifest_path
+            | rtrimstr("/Cargo.toml")
+            | reach]
+        | unique[]
+        | ltrimstr($root + "/")'
+}
+
 workspace_members() {
   cargo metadata --format-version 1 --no-deps \
     | jq -r '
