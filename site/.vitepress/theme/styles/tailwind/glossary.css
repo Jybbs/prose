@@ -1,3 +1,7 @@
+@theme inline {
+  --color-ube-page-45-85-text-1 : color-mix(in srgb, var(--prose-shade-ube-page-45) var(--prose-tint-85), var(--vp-c-text-1));
+}
+
 @utility glossary-anchor {
   --underline-accent : var(--vp-c-text-2);
 
