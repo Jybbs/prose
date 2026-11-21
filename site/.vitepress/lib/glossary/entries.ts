@@ -1,5 +1,5 @@
-import type { GlossaryFamily } from '../shared/registries'
-import { directiveHref }       from '../suppression/scopes'
+import type { GlossaryFamily } from '../shared/registries.ts'
+import { directiveHref }       from '../suppression/scopes.ts'
 
 export interface GlossaryEntry {
   aliases   ?: readonly string[]

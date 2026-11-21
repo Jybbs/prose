@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/composition/class_reading_a_later_import_keeps_the_directive_in_place/input.py
+---
+space-statements@51..52

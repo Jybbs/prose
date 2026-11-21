@@ -1,5 +1,5 @@
-import type { DiscoveredRule } from '../rules/discovery'
-import type { GlossaryEntry }  from './entries'
+import type { DiscoveredRule } from '../rules/discovery.ts'
+import type { GlossaryEntry }  from './entries.ts'
 
 export type GlossaryRule = Pick<DiscoveredRule, 'family' | 'href'>
 

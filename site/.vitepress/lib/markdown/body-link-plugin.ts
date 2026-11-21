@@ -1,7 +1,7 @@
 import type { MarkdownIt } from 'markdown-it'
 
-import { BODY_LINK_CLASS } from '../shared/constants'
-import { walkBodyInlines } from './walk'
+import { BODY_LINK_CLASS } from '../shared/constants.ts'
+import { walkBodyInlines } from './walk.ts'
 
 export function bodyLinkPlugin(md: MarkdownIt): void {
   md.core.ruler.after('inline', 'body-link-decorate', state => {

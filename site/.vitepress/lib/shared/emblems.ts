@@ -1,6 +1,6 @@
-import type { WheelPlatform }                        from '../guide/platforms'
-import { lookup }                                    from './lookup'
-import { GLOSSARY_FAMILY_META, type GlossaryFamily } from './registries'
+import type { WheelPlatform }                        from '../guide/platforms.ts'
+import { lookup }                                    from './lookup.ts'
+import { GLOSSARY_FAMILY_META, type GlossaryFamily } from './registries.ts'
 
 export interface Emblem {
   family ?: GlossaryFamily

@@ -1,6 +1,6 @@
-import { groupByMember }                 from '../shared/group-by-member'
-import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
-import type { DiscoveredRule }           from './discovery'
+import { groupByMember }                 from '../shared/group-by-member.ts'
+import { FAMILY_ORDER, type RuleFamily } from '../shared/registries.ts'
+import type { DiscoveredRule }           from './discovery.ts'
 
 export interface RenderedRule extends DiscoveredRule {
   captionHtml : string

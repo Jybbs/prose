@@ -5,9 +5,8 @@ Defines the `workspace_task` fixture, which runs a task sourcing
 
 from collections.abc import Callable
 from json            import dumps
-from os              import environ
 from pathlib         import Path
-from pytest          import MonkeyPatch, fixture
+from pytest          import fixture
 from subprocess      import run
 from sys             import executable
 
@@ -17,14 +16,14 @@ TARGETS = ["corpus", "fixtures", "imports", "settle"]
 
 @fixture
 def workspace_task(
-    monkeypatch : MonkeyPatch,
-    tmp_path    : Path
+    stand_in : Callable[..., Path],
+    tmp_path : Path
 ) -> Callable[..., list[str]]:
     """
-    Builds a stand-in `cargo` printing each command it receives on a line of
-    its own, each argument quoted as a shell reads it, with `cargo metadata`
-    printing one package holding a test target for each name in `TARGETS`,
-    and puts it first on `PATH`.
+    Writes a stand-in `cargo` through `stand_in`, printing each command it
+    receives on a line of its own, each argument quoted as a shell reads
+    it, with `cargo metadata` printing one package holding a test target for
+    each name in `TARGETS`.
 
     Returns:
         A function running the `rust` task `name` with `args`, which returns
@@ -37,17 +36,15 @@ def workspace_task(
             ]
         }
     )
-    (cargo := tmp_path / "cargo").write_text(
-        f"#!{executable}\n"
+    stand_in(
+        "cargo",
+        f"exec '{executable}' - \"$@\" <<'PY'\n"
         "from shlex import join\n"
         "from sys   import argv\n"
         "command = join(['cargo', *argv[1:]])\n"
-        f"print({metadata!r} if argv[1:2] == ['metadata'] else command)\n",
-        encoding = "utf-8"
+        f"print({metadata!r} if argv[1:2] == ['metadata'] else command)\n"
+        "PY\n"
     )
-    cargo.chmod(0o755)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(ROOT))
-    monkeypatch.setenv("PATH", f"{tmp_path}:{environ['PATH']}")
 
     def run_task(name: str, *args: str) -> list[str]:
         """

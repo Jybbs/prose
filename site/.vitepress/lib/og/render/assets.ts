@@ -5,8 +5,8 @@ import path              from 'node:path'
 import { getSVGViewBox } from '@iconify/utils'
 import type { Font }     from 'satori'
 
-import { parseSvg } from '../../shared/svg'
-import { FONT }     from './parts'
+import { parseSvg } from '../../shared/svg.ts'
+import { FONT }     from './parts.ts'
 
 const require = createRequire(import.meta.url)
 

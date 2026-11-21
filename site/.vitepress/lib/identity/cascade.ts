@@ -1,8 +1,8 @@
 import { parse }                  from 'postcss'
 import type { AtRule, Container } from 'postcss'
 
-import { perScheme, SCHEMES } from '../shared/palette'
-import type { Scheme }        from '../shared/palette'
+import { perScheme, SCHEMES } from '../shared/palette.ts'
+import type { Scheme }        from '../shared/palette.ts'
 
 const REFERENCE = 'var('
 

@@ -301,7 +301,7 @@
   position              : relative;
   isolation             : isolate;
   display               : grid;
-  grid-template-areas   : "slug tag" "caption caption";
+  grid-template-areas   : 'slug tag' 'caption caption';
   grid-template-columns : minmax(0, 1fr) auto;
   align-items           : center;
   border                : var(--prose-border-1) solid var(--vp-c-divider);
@@ -311,7 +311,7 @@
   transition            : border-color var(--prose-transition);
 
   &:has(> .rule-card-header) {
-    grid-template-areas : "header header" "slug tag" "caption caption";
+    grid-template-areas : 'header header' 'slug tag' 'caption caption';
   }
 
   &:is(:hover, :focus-within) {

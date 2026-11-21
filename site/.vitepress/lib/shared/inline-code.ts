@@ -1,4 +1,4 @@
-import { escapeHtml } from './escape-html'
+import { escapeHtml } from './escape-html.ts'
 
 const CODE_SPAN = /`([^`]+)`/g
 

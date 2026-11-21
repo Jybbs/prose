@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer }               from '../markdown/renderer'
-import { type ConfigRow, configRow } from '../shared/config-row'
-import * as paths                    from '../shared/paths'
-import * as ruleSchema               from '../shared/rule-schema'
+import { getRenderer }               from '../markdown/renderer.ts'
+import { type ConfigRow, configRow } from '../shared/config-row.ts'
+import * as paths                    from '../shared/paths.ts'
+import * as ruleSchema               from '../shared/rule-schema.ts'
 
 type RuleConfigData = Record<string, readonly ConfigRow[]>
 

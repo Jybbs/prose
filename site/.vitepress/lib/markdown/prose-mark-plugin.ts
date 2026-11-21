@@ -1,8 +1,8 @@
 import type { MarkdownIt } from 'markdown-it'
 
-import { replaceTextTokens } from './token-split'
-import { walkBodyInlines }   from './walk'
-import { wordBounded }       from './word-bounded'
+import { replaceTextTokens } from './token-split.ts'
+import { walkBodyInlines }   from './walk.ts'
+import { wordBounded }       from './word-bounded.ts'
 
 const PATTERN = wordBounded('Prose')
 

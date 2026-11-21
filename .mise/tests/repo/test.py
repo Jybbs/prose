@@ -15,6 +15,8 @@ from subprocess      import run
 from sys             import executable
 from tempfile        import gettempdir
 
+ROOT = Path(__file__).resolve().parents[3]
+
 
 @fixture
 def leaked(monkeypatch: MonkeyPatch):
@@ -70,50 +72,104 @@ def test_scratch_reads_no_configuration_but_its_own(
     assert {line.split()[0] for line in listed.stdout.splitlines()} == {"local"}
 
 
+@fixture
+def sessions(tmp_path: Path) -> Callable[..., list[Path]]:
+    """
+    Builds a runner of pytest sessions over one case file beside the suite's
+    root conftest, each taking the `temp` folder under `tmp_path` as its
+    system temporary folder.
+
+    Returns:
+        A function running `case` as a session `count` times with `args`,
+        which returns the base temporary directory each case reported.
+    """
+    (inner := tmp_path / "inner").mkdir()
+    (temp := tmp_path / "temp").mkdir()
+    (inner / "conftest.py").symlink_to(Path(__file__).parents[1] / "conftest.py")
+    report = tmp_path / "report"
+
+    def run_sessions(case: str, *args: str, count: int = 1) -> list[Path]:
+        """
+        Writes `case` beneath a reporting header and runs it as a session
+        `count` times.
+        """
+        (inner / "case.py").write_text(
+            "from os import environ\n"
+            "from pytest import mark\n"
+            "def report(tmp_path_factory):\n"
+            "    with open(environ['REPORT'], 'a') as file:\n"
+            "        print(tmp_path_factory.getbasetemp(), file=file)\n"
+            f"{case}",
+            encoding = "utf-8"
+        )
+        for _ in range(count):
+            run(
+                [
+                    executable, "-m", "pytest",
+                    *args,
+                    "-o", "python_files=*.py", "-p", "no:cacheprovider", "-q"
+                ],
+                capture_output = True,
+                cwd            = inner,
+                env            = {
+                    **environ,
+                    "PYTEST_ADDOPTS" : "",
+                    "REPORT"         : str(report),
+                    "TMPDIR"         : str(temp)
+                }
+            )
+        return [Path(line) for line in report.read_text(encoding="utf-8").splitlines()]
+
+    return run_sessions
+
+
 @mark.parametrize(
     "passed",
     [param(True, id = "passing session"), param(False, id = "failing session")]
 )
 def test_session_owns_a_root_removed_once_every_case_passed(
     passed   : bool,
+    sessions : Callable[..., list[Path]],
     tmp_path : Path
 ):
     """
     Pins that each of two sessions writes under a base temporary directory
     of its own, removed once every case passed and kept after a failure.
     """
-    (inner := tmp_path / "inner").mkdir()
-    (temp := tmp_path / "temp").mkdir()
-    (inner / "conftest.py").symlink_to(Path(__file__).parents[1] / "conftest.py")
-    (inner / "case.py").write_text(
-        "from os import environ\n"
+    roots = sessions(
         "def test_case(tmp_path_factory):\n"
-        "    with open(environ['REPORT'], 'a') as file:\n"
-        "        print(tmp_path_factory.getbasetemp(), file=file)\n"
+        "    report(tmp_path_factory)\n"
         f"    assert {passed}\n",
-        encoding = "utf-8"
+        count = 2
     )
-    report = tmp_path / "report"
-    for _ in range(2):
-        run(
-            [
-                executable, "-m", "pytest", "-o",
-                "python_files=*.py", "-p", "no:cacheprovider", "-q"
-            ],
-            capture_output = True,
-            cwd            = inner,
-            env            = {
-                **environ,
-                "PYTEST_ADDOPTS" : "",
-                "REPORT"         : str(report),
-                "TMPDIR"         : str(temp)
-            }
-        )
-    roots = [Path(line) for line in report.read_text(encoding="utf-8").splitlines()]
 
     assert len(set(roots)) == 2
-    assert {root.parent for root in roots} == {temp.resolve()}
+    assert {root.parent for root in roots} == {(tmp_path / "temp").resolve()}
     assert [root.exists() for root in roots] == [not passed] * 2
+
+
+def test_session_gives_each_worker_a_folder_under_its_own_root(
+    sessions : Callable[..., list[Path]],
+    tmp_path : Path
+):
+    """
+    Pins that each worker of a session split across two writes under a
+    folder of its own inside the one base temporary directory the session
+    holds, removed once every case passed.
+    """
+    folders = set(
+        sessions(
+            "@mark.parametrize('case', range(4))\n"
+            "def test_case(case, tmp_path_factory):\n"
+            "    report(tmp_path_factory)\n",
+            "--numprocesses=2"
+        )
+    )
+    roots = {folder.parent for folder in folders}
+
+    assert len(folders) == 2
+    assert [root.parent for root in roots] == [(tmp_path / "temp").resolve()]
+    assert not any(root.exists() for root in roots)
 
 
 def test_session_writes_outside_the_shared_temporary_root(
@@ -126,3 +182,25 @@ def test_session_writes_outside_the_shared_temporary_root(
     shared = Path(gettempdir()).resolve() / f"pytest-of-{getuser()}"
 
     assert not tmp_path_factory.getbasetemp().is_relative_to(shared)
+
+
+def test_task_runs_the_suite_at_the_automatic_worker_count(
+    stand_in: Callable[..., Path]
+):
+    """
+    Pins that `repo:test` runs `.mise/tests` across the worker count
+    pytest-xdist detects, passing each argument it is given after the suite.
+    """
+    stand_in("uv")
+    finished = run(
+        [ROOT / ".mise/tasks/repo/test", "-k", "case"],
+        capture_output = True,
+        check          = True,
+        cwd            = ROOT,
+        text           = True
+    )
+
+    assert finished.stdout.splitlines() == [
+        "run", "--locked", "--only-group", "test", "--project", "crate",
+        "pytest", "--numprocesses=auto", ".mise/tests", "-k", "case"
+    ]

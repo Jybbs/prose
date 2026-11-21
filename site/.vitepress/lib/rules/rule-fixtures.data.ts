@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { readRuleFixtures, type RuleFixturesData } from './rule-fixtures'
-import { fixtureWatchGlobs }                       from '../fixtures/walker'
-import { crateDir }                                from '../shared/paths'
+import { readRuleFixtures, type RuleFixturesData } from './rule-fixtures.ts'
+import { fixtureWatchGlobs }                       from '../fixtures/walker.ts'
+import { crateDir }                                from '../shared/paths.ts'
 
 const crate = crateDir(import.meta.url)
 

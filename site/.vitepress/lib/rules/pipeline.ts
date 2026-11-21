@@ -1,5 +1,5 @@
-import { repoRoot, runProse } from '../shared/paths'
-import { requireString }      from '../shared/require-string'
+import { repoRoot, runProse } from '../shared/paths.ts'
+import { requireString }      from '../shared/require-string.ts'
 
 interface PipelineEntry {
   after          : readonly string[]

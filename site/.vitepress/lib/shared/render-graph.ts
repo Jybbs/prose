@@ -6,8 +6,8 @@ import path          from 'node:path'
 // bundler's build phase alone and emits no chunks.
 import { scan } from 'rolldown/experimental'
 
-import { siteDir }             from './paths'
-import { readPackageVersions } from './version'
+import { siteDir }             from './paths.ts'
+import { readPackageVersions } from './version.ts'
 
 // The source of every local module a directory's modules reach, keyed by its
 // path from that directory, and the pinned version of every package those

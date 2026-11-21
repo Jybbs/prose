@@ -1,11 +1,11 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { fixturesDirFrom } from '../shared/paths'
-import { parseToml }       from '../shared/toml'
-import { tomlText }        from '../shared/toml-text'
-import { fixtureId }       from './entry'
-import * as lintFindings   from './lint-findings'
+import { fixturesDirFrom } from '../shared/paths.ts'
+import { parseToml }       from '../shared/toml.ts'
+import { tomlText }        from '../shared/toml-text.ts'
+import { fixtureId }       from './entry.ts'
+import * as lintFindings   from './lint-findings.ts'
 
 // The `config.toml` a case carries beside its input, with the harness table
 // naming the rules a composition case runs.

@@ -3,14 +3,14 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import * as samples         from './output-samples'
-import type { LintFinding } from '../fixtures/lint-findings'
-import { INPUT_FILE }       from '../fixtures/walker'
-import { lintDecorations }  from '../markdown/lint-decorations'
-import * as renderer        from '../markdown/renderer'
-import { alignedJson }      from '../shared/aligned-json'
-import { highlight }        from '../shared/highlight'
-import * as paths           from '../shared/paths'
+import * as samples         from './output-samples.ts'
+import type { LintFinding } from '../fixtures/lint-findings.ts'
+import { INPUT_FILE }       from '../fixtures/walker.ts'
+import { lintDecorations }  from '../markdown/lint-decorations.ts'
+import * as renderer        from '../markdown/renderer.ts'
+import { alignedJson }      from '../shared/aligned-json.ts'
+import { highlight }        from '../shared/highlight.ts'
+import * as paths           from '../shared/paths.ts'
 
 const FENCE: Record<samples.SampleFormat, string> = { github: 'text', json: 'json', text: 'text' }
 

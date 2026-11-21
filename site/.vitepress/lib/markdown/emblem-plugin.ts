@@ -1,9 +1,9 @@
 import type { MarkdownIt } from 'markdown-it'
 
-import type { Emblem }       from '../shared/emblems'
-import { nibBadgeHtml }      from '../../kit/drawing/nib'
-import { replaceTextTokens } from './token-split'
-import { walkBodyInlines }   from './walk'
+import type { Emblem }       from '../shared/emblems.ts'
+import { nibBadgeHtml }      from '../../kit/drawing/nib.ts'
+import { replaceTextTokens } from './token-split.ts'
+import { walkBodyInlines }   from './walk.ts'
 
 // Sets each emoji the map names, wherever it stands in body text, as its
 // emblem inside the running-text chip at the body's 16 px, labeled with its
