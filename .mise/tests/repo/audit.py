@@ -6,8 +6,10 @@ a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
 restores `stamps` reports for leaving a task's outputs unstamped, the
-`site/package.json` ranges `exact` reports by package, and the triggers and
-jobs `drafts` reports for running on a draft pull request.
+`deploy.yml` cache steps `caches` reports for saving on a pull request,
+restoring under a prefix of no key, or caching a folder no site code reads,
+the `site/package.json` ranges `exact` reports by package, and the triggers
+and jobs `drafts` reports for running on a draft pull request.
 """
 
 from collections.abc   import Callable
@@ -258,6 +260,36 @@ PINS = {
         }
     )
 }
+PRESS = (
+    "jobs:\n"
+    "  press:\n"
+    "    steps:\n"
+    "      - name : Restore the highlight cache\n"
+    "        uses : actions/cache/restore@1111\n"
+    "        with:\n"
+    "          key          : highlights-${{ runner.os }}-${{ github.sha }}\n"
+    "          path         : .cache/highlight\n"
+    "          restore-keys : highlights-${{ runner.os }}-\n"
+    "\n"
+    "      - name : Save the highlight cache\n"
+    "        if   : ${{ github.event_name != 'pull_request' }}\n"
+    "        uses : actions/cache/save@1111\n"
+    "        with:\n"
+    "          key  : highlights-${{ runner.os }}-${{ github.sha }}\n"
+    "          path : .cache/highlight\n"
+    "\n"
+    "      - name : Save the wasm module\n"
+    "        if   : ${{ github.event_name != 'pull_request' && always() }}\n"
+    "        uses : actions/cache/save@1111\n"
+    "        with:\n"
+    "          key  : ${{ steps.wasm.outputs.key }}\n"
+    "          path : site/public/wasm\n"
+    "\n"
+    "      - name : Restore the wasm build cache\n"
+    "        uses : Swatinem/rust-cache@1111\n"
+    "        with:\n"
+    "          path : target\n"
+)
 REPORT  = "::error::{}.yml {} paths omit sources {} reads: ['wasm/**']\n"
 RESTORE = ".github/actions/restore-wasm/action.yml"
 STAMP   = {
@@ -692,6 +724,129 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
 
     assert audit.stamps() == bool(reported)
     assert capsys.readouterr().out == reported
+
+
+@mark.parametrize(
+    ("stray", "fix", "reported"),
+    [
+        param("", "", "", id="sound"),
+        param(
+            "'pull_request' }}",
+            "'pull_request' && steps.highlights.outputs.cache-hit != 'true' }}",
+            "",
+            id = "guard-joined"
+        ),
+        param(
+            "        if   : ${{ github.event_name != 'pull_request' }}\n",
+            "",
+            "11::the 'Save the highlight cache' step saves on a pull_request event, "
+            "its if lacking the event guard\n",
+            id = "guard-absent"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' || always() }}",
+            "11::the 'Save the highlight cache' step saves on a pull_request event, "
+            "its if lacking the event guard\n",
+            id = "guard-disjoined"
+        ),
+        param(
+            "!= 'pull_request' }}",
+            "== 'pull_request' }}",
+            "11::the 'Save the highlight cache' step saves on a pull_request event, "
+            "its if lacking the event guard\n",
+            id = "guard-inverted"
+        ),
+        param(
+            "actions/cache/restore@1111",
+            "actions/cache@1111",
+            "4::the 'Restore the highlight cache' step saves on a pull_request "
+            "event, its if lacking the event guard\n",
+            id = "combined-unguarded"
+        ),
+        param(
+            "restore-keys : highlights-",
+            "restore-keys : highlight-",
+            "4::the 'Restore the highlight cache' step restores "
+            "'highlight-${{ runner.os }}-', which no key "
+            "'highlights-${{ runner.os }}-${{ github.sha }}' starts with\n",
+            id = "prefix-drifted"
+        ),
+        param(
+            "restore-keys : highlights-${{ runner.os }}-\n",
+            "restore-keys : |\n            highlights-${{ runner.os }}-\n"
+            "            highlights-\n            other-\n",
+            "4::the 'Restore the highlight cache' step restores 'other-', which no "
+            "key 'highlights-${{ runner.os }}-${{ github.sha }}' starts with\n",
+            id = "prefix-among-several"
+        ),
+        param(
+            "path         : .cache/highlight",
+            "path         : .cache/highlights",
+            "4::the 'Restore the highlight cache' step caches '.cache/highlights', "
+            "a folder the site code never reads\n",
+            id = "restore-path-drifted"
+        ),
+        param(
+            "path : site/public/wasm",
+            "path : site/public",
+            "18::the 'Save the wasm module' step caches 'site/public', a folder the "
+            "site code never reads\n",
+            id = "output-path-drifted"
+        ),
+        param(
+            "      - name : Save the highlight cache\n"
+            "        if   : ${{ github.event_name != 'pull_request' }}\n"
+            "        uses",
+            "      - uses",
+            "11::the 'actions/cache/save@1111' step saves on a pull_request event, "
+            "its if lacking the event guard\n",
+            id = "nameless"
+        )
+    ]
+)
+def test_caches_reports_each_cache_step_breaking_a_property(
+    audit      : ModuleType,
+    capsys     : CaptureFixture[str],
+    fix        : str,
+    reported   : str,
+    repository : Callable[[dict[str, str], list[dict]], Path],
+    stray      : str
+):
+    """
+    Pins that a `deploy.yml` cache step fails the audit on an annotation at
+    the line naming it, or at its `uses` where it has no name, when it saves
+    without the `pull_request` guard leading a `||`-free condition, restores
+    under a `restore-keys` entry no prefix of its `key`, or caches a path
+    that is neither a `cacheDirFrom` folder of the site code nor a task's
+    output folder, whereas a step outside the `actions/cache` family is not
+    read. `stray` is replaced by `fix` in the workflow.
+    """
+    assert stray in PRESS
+    repository(
+        {
+            ".github/workflows/deploy.yml"        : PRESS.replace(stray, fix, 1),
+            "site/.vitepress/lib/shared/paths.ts" : (
+                "export function highlightCacheDir(metaUrl: string): string {\n"
+                "  return cacheDirFrom(repoRoot(metaUrl), 'highlight')\n"
+                "}\n"
+            )
+        },
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.caches() == bool(reported)
+    assert capsys.readouterr().out == (
+        reported and f"::error file=.github/workflows/deploy.yml,line={reported}"
+    )
 
 
 @mark.parametrize(
