@@ -112,8 +112,7 @@ def main():
     if release is None:
         emit(state="created", url=create_draft(repo, version))
     elif release["draft"]:
-        refresh_draft(release, repo)
-        emit(state="refreshed", url=release["html_url"])
+        emit(state="refreshed", url=refresh_draft(release, repo))
     else:
         emit(state="published", url=release["html_url"])
         raise SystemExit(
@@ -132,10 +131,11 @@ def package_version(manifest: str) -> str:
     return from_toml(manifest)["package"]["version"]
 
 
-def refresh_draft(release: dict, repo: str):
+def refresh_draft(release: dict, repo: str) -> str:
     """
     Replaces the draft's body with the notes GitHub generates for its tag
-    against `main`, leaving its title and every other field as they stand.
+    against `main`, leaving its title and every other field as they stand,
+    and returns the URL GitHub gives the draft after the edit.
     """
     notes = gh(
         "api",
@@ -147,7 +147,7 @@ def refresh_draft(release: dict, repo: str):
         "-f",
         "target_commitish=main"
     )
-    gh(
+    edited = gh(
         "api",
         "--method",
         "PATCH",
@@ -155,6 +155,7 @@ def refresh_draft(release: dict, repo: str):
         "-f",
         f"body={from_json(notes)['body']}"
     )
+    return from_json(edited)["html_url"]
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { conditionalFetch }      from './conditional-fetch'
-import { REPO_SLUG, USER_AGENT } from './constants'
-import { fetchCacheDir }         from './paths'
+import { conditionalFetch } from './conditional-fetch'
+import { REPO_SLUG }        from './constants'
+import { githubHeaders }    from './github-headers'
+import { fetchCacheDir }    from './paths'
 
 interface StarsData {
   stars: string
@@ -19,7 +20,7 @@ export default defineLoader({
     const count = await conditionalFetch({
       dir      : fetchCacheDir(import.meta.url),
       fallback : 0,
-      headers  : { 'User-Agent': USER_AGENT },
+      headers  : githubHeaders(),
       key      : 'stars',
       parse    : payload => (payload as { stargazers_count?: number }).stargazers_count ?? 0,
       url      : `https://api.github.com/repos/${REPO_SLUG}`

@@ -3,9 +3,9 @@ import path from 'node:path'
 
 import config                               from '../../config'
 import { checkBundleBudget, measureBundle } from '../../lib/config/bundle-budget'
+import { buildOgCards }                     from '../../lib/og/render/build'
 import { supportTest }                      from '../support'
 
-import type { buildOgCards }         from '../../lib/og/render/build'
 import type { readPublishedVersion } from '../../lib/shared/published-version'
 
 vi.mock('../../lib/og/render/build', () => ({ buildOgCards: vi.fn<typeof buildOgCards>() }))
@@ -71,6 +71,7 @@ describe('the build end the config runs', () => {
     write(tmpDir, 'assets/style.css', 400_000)
     const site = { assetsDir: 'assets', outDir: tmpDir, pages: [], srcDir: tmpDir }
     await expect(config.buildEnd!(site as never)).rejects.toThrow("the built site's css measures")
+    expect(buildOgCards).toHaveBeenCalledExactlyOnceWith(tmpDir, [], tmpDir, '9.8.7')
     expect(fs.readFileSync(path.join(tmpDir, 'assets/vp-icons.a1.css'), 'utf8')).toMatch(/^@layer components \{/)
   })
 })

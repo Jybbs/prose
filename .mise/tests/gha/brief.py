@@ -14,6 +14,7 @@ from yaml            import safe_load
 
 ROOT   = Path(__file__).resolve().parents[3]
 COMMIT = "[`abcdef0`](https://example.test/owner/repo/commit/abcdef012345)"
+CUT    = safe_load((ROOT / ".github/workflows/draft.yml").read_text())["jobs"]["cut"]
 DRAFT  = "https://example.test/owner/repo/releases/tag/untagged-1"
 JOBS   = safe_load((ROOT / ".github/workflows/deploy.yml").read_text())["jobs"]
 URL    = "https://preview.example.test"
@@ -162,3 +163,12 @@ def test_the_draft_summary_names_each_outcome(
     task("gha/brief").Summary().draft()
 
     assert capsys.readouterr().out == f"## 🪻 Prose Draft\n\n{line}\n"
+
+
+def test_the_draft_summary_runs_after_a_failed_cut():
+    """
+    Asserts that the Draft summary step runs unless the run was cancelled,
+    so a cut that failed still renders its line.
+    """
+    steps = {step["name"]: step for step in CUT["steps"]}
+    assert steps["🗞️ Brief"]["if"] == "${{ !cancelled() }}"

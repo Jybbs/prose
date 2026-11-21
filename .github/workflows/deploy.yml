@@ -143,6 +143,7 @@ jobs:
           restore-keys : highlights-${{ runner.os }}-
 
       - name : Build the site and check internal links
+        env  : { GITHUB_TOKEN: "${{ github.token }}" }
         run  : mise run site:links
 
       - name : Save the wasm module

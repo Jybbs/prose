@@ -75,7 +75,7 @@ def release(tag: str, draft: bool = False) -> dict:
             [[release("1.2.2")], [release("1.2.3", draft=True)]],
             [LISTING, NOTES, UPDATE],
             "refreshed",
-            "https://example.test/1.2.3",
+            "https://example.test/edited",
             id = "draft"
         ),
         param(
@@ -89,7 +89,7 @@ def release(tag: str, draft: bool = False) -> dict:
             ],
             [LISTING, NOTES, UPDATE],
             "refreshed",
-            "https://example.test/1.2.3",
+            "https://example.test/edited",
             id = "first match"
         )
     ]
@@ -112,7 +112,7 @@ def test_main_creates_or_refreshes_the_draft(
     fp.register(LISTING, stdout=dumps(pages))
     fp.register(CREATE, stdout=f"{url}\n")
     fp.register(NOTES, stdout=dumps({"body": "## Notes\n", "name": "1.2.3"}))
-    fp.register(UPDATE)
+    fp.register(UPDATE, stdout=dumps({"html_url": "https://example.test/edited"}))
 
     cut.main()
 
