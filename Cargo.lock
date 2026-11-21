@@ -1272,7 +1272,7 @@ dependencies = [
 
 [[package]]
 name = "prose"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "annotate-snippets 0.12.18",
  "anstream",

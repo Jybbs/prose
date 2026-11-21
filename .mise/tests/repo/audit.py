@@ -601,6 +601,9 @@ def test_triggers_reports_each_trigger_omitting_a_source(
     """
     workdir(
         {
+            ".github/workflows/draft.yml"  : dumps(
+                {"on": {"push": {"branches": ["main"]}}}
+            ),
             ".github/workflows/deploy.yml" : dumps(
                 {
                     "on": {
@@ -610,6 +613,72 @@ def test_triggers_reports_each_trigger_omitting_a_source(
                 }
             ),
             ".github/workflows/module.yml" : dumps({"on": {"push": {"paths": module}}})
+        }
+    )
+
+    assert audit.triggers() == bool(reported)
+    assert capsys.readouterr().out == reported
+
+
+@mark.parametrize(
+    ("push", "reported"),
+    [
+        param({"branches": ["main"]}, "", id="main"),
+        param(
+            {"branches": ["main"], "paths": ["crate/Cargo.toml"]},
+            "::error::draft.yml push filters other than branches [main]: "
+            "[\"paths: ['crate/Cargo.toml']\"]\n",
+            id = "paths"
+        ),
+        param(
+            {"branches": ["release/*"]},
+            "::error::draft.yml push filters other than branches [main]: "
+            "[\"branches: ['release/*']\"]\n",
+            id = "other-branch"
+        ),
+        param(
+            {"branches-ignore": ["dev"]},
+            "::error::draft.yml push filters other than branches [main]: "
+            "[\"branches-ignore: ['dev']\", 'branches: None']\n",
+            id = "no-branch"
+        ),
+        param(
+            None,
+            "::error::draft.yml push filters other than branches [main]: "
+            "['branches: None']\n",
+            id = "no-push"
+        )
+    ]
+)
+@mark.usefixtures("tree")
+def test_triggers_hold_the_draft_push_to_main(
+    audit    : ModuleType,
+    capsys   : CaptureFixture[str],
+    push     : dict | None,
+    reported : str,
+    workdir  : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that the `draft.yml` push trigger fails the audit on any filter but
+    `branches: [main]`, a path filter or another branch leaving a push to
+    `main` with no draft written, and on a trigger with no push at all.
+    """
+    workdir(
+        {
+            ".github/workflows/deploy.yml" : dumps(
+                {
+                    "on": {
+                        "pull_request" : {"paths": COVERING},
+                        "push"         : {"paths": COVERING}
+                    }
+                }
+            ),
+            ".github/workflows/draft.yml"  : dumps(
+                {"on": {"workflow_dispatch": None} | ({"push": push} if push else {})}
+            ),
+            ".github/workflows/module.yml" : dumps(
+                {"on": {"push": {"paths": COVERING}}}
+            )
         }
     )
 

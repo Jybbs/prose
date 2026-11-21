@@ -39,6 +39,9 @@ private-vulnerability-reporting = false
 automated-security-fixes = true
 vulnerability-alerts     = false
 
+[releases]
+immutable-releases = false
+
 [repository]
 allow_auto_merge            = true
 allow_merge_commit          = false
@@ -93,6 +96,7 @@ SENT = [
     ("DELETE", f"{BASE}/vulnerability-alerts", None),
     ("PUT", f"{BASE}/automated-security-fixes", None),
     ("DELETE", f"{BASE}/private-vulnerability-reporting", None),
+    ("DELETE", f"{BASE}/immutable-releases", None),
     (
         "PUT",
         f"{BASE}/actions/permissions",
@@ -394,8 +398,8 @@ def test_requests_send_every_setting_in_order(rulesets: ModuleType):
     """
     Pins the endpoint, method, and body of every call, the repository
     `PATCH` carrying the description and the homepage's bare domain, the
-    topics following it, and the dependabot, advisory, Actions, and workflow
-    calls after.
+    topics following it, and the dependabot, advisory, release, Actions, and
+    workflow calls after.
     """
     assert parsed(rulesets).requests(from_toml(PROJECT)["project"]) == [
         (endpoint, method, body) for method, endpoint, body in SENT

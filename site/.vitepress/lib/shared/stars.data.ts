@@ -2,6 +2,7 @@ import { defineLoader } from 'vitepress'
 
 import { conditionalFetch } from './conditional-fetch.ts'
 import { REPO_SLUG }        from './constants.ts'
+import { githubHeaders }    from './github-headers.ts'
 import { fetchCacheDir }    from './paths.ts'
 
 interface StarsData {
@@ -19,7 +20,7 @@ export default defineLoader({
     const count = await conditionalFetch({
       dir      : fetchCacheDir(import.meta.url),
       fallback : 0,
-      headers  : { 'User-Agent': 'prose-docs-build' },
+      headers  : githubHeaders(),
       key      : 'stars',
       parse    : payload => (payload as { stargazers_count?: number }).stargazers_count ?? 0,
       url      : `https://api.github.com/repos/${REPO_SLUG}`

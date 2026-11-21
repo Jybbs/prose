@@ -33,7 +33,8 @@ them fails.
                `false` or forwards a `false` its composite's caller passed.
     triggers   Both `deploy.yml` triggers select every file the site build
                declares as a source, the `module.yml` push trigger selects
-               every file the wasm module is built from, and the
+               every file the wasm module is built from, the `draft.yml`
+               push trigger filters on the `main` branch alone, and the
                `lock:sync` sources cover every project config file
                declaring a tool.
     patterns   Every `sources` pattern a task declares and every `paths`
@@ -1614,10 +1615,12 @@ def triggers() -> int:
     Reports every source the site build declares that a `deploy.yml` trigger
     omits, which leaves a pull request changing that source running no
     loader and a push changing it deploying nothing. It also reports every
-    wasm source the `module.yml` push trigger omits, which leaves the
-    cached module stale after a change to it, and every project config file
-    declaring a tool that `lock:sync` omits from its sources, which leaves
-    `mise relock` skipping a pin change in that file.
+    wasm source the `module.yml` push trigger omits, which leaves the cached
+    module stale after a change to it, every filter of the `draft.yml` push
+    trigger other than `branches: [main]`, which leaves a push to `main`
+    writing no draft, and every project config file declaring a tool that
+    `lock:sync` omits from its sources, which leaves `mise relock` skipping
+    a pin change in that file.
     """
     root     = Path.cwd().resolve()
     declared = {
@@ -1626,6 +1629,9 @@ def triggers() -> int:
         if entry["tools"]
         if (path := Path(entry["path"]).resolve()).is_relative_to(root)
     }
+    draft_push = {"branches": None} | (
+        yaml(".github/workflows/draft.yml")["on"].get("push") or {}
+    )
     return flagged(
         findings = [
             *(
@@ -1638,6 +1644,11 @@ def triggers() -> int:
                     ("push", "site:press", "deploy"),
                     ("push", "wasm:pack", "module")
                 )
+            ),
+            (
+                {f"{key}: {value}" for key, value in draft_push.items()}
+                - {"branches: ['main']"},
+                "draft.yml push filters other than branches [main]"
             ),
             (
                 declared - set(task_paths("lock:sync", "sources")),

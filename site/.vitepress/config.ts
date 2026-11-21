@@ -41,6 +41,7 @@ import * as constants                                 from './lib/shared/constan
 import { emblemsOf }                                  from './lib/shared/emblems.ts'
 import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette.ts'
 import * as paths                                     from './lib/shared/paths.ts'
+import { readPublishedVersion }                       from './lib/shared/published-version.ts'
 import { SECTIONS }                                   from './lib/shared/registries.ts'
 import { readRenderGraph }                            from './lib/shared/render-graph.ts'
 import { sectionRoute }                               from './lib/shared/routes.ts'
@@ -53,7 +54,7 @@ const siteDirectory        = paths.siteDir(import.meta.url)
 const pagesDirectory       = paths.pagesDir(import.meta.url)
 const publicDirectory      = paths.publicDir(import.meta.url)
 const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
-const proseVersion         = version.readCargoVersion(crate)
+const proseVersion         = await readPublishedVersion(crate, paths.fetchCacheDir(import.meta.url))
 const requiresPython       = version.readRequiresPython(crate)
 const ruffRelease          = version.readRuffRelease(crate)
 const ruleDiscovery        = discoverRules(rulesDirectory)
@@ -145,7 +146,7 @@ export default defineConfig({
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
     stylesheetLayer.layerIconStylesheet(path.join(siteConfig.outDir, siteConfig.assetsDir))
     const { buildOgCards } = await import('./lib/og/render/build.ts')
-    await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
+    await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir, proseVersion)
     checkBundleBudget(siteConfig.outDir)
     await highlightCache.flush()
   },

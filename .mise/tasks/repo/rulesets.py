@@ -19,10 +19,10 @@ and an unknown or missing table or key, or a value of the wrong type, stops
 the task. Each table takes the REST API's own names. `[repository]` is
 the body of the repository `PATCH`, to which the task adds the description
 from `crate/pyproject.toml` and the bare domain of its `homepage` URL. The
-`keywords` there are sent as the topics. `[dependabot]` and `[advisories]`
-hold one key per endpoint, `PUT` where it is `true` and `DELETE` where
-it is `false`, and `[actions]` and `[workflow]` are the bodies of
-`actions/permissions` and `actions/permissions/workflow`.
+`keywords` there are sent as the topics. `[dependabot]`, `[advisories]`,
+and `[releases]` hold one key per endpoint, `PUT` where it is `true` and
+`DELETE` where it is `false`, and `[actions]` and `[workflow]` are the
+bodies of `actions/permissions` and `actions/permissions/workflow`.
 """
 
 from dataclasses  import asdict, dataclass, fields, is_dataclass
@@ -168,6 +168,15 @@ class SecurityAndAnalysis(Record):
 
 
 @dataclass(frozen=True)
+class Releases(Endpoints):
+    """
+    Holds one flag per release endpoint.
+    """
+
+    immutable_releases: bool
+
+
+@dataclass(frozen=True)
 class Repository(Record):
     """
     Holds the body of the repository `PATCH` the settings file declares.
@@ -208,6 +217,7 @@ class Settings(Record):
     actions    : Actions
     advisories : Advisories
     dependabot : Dependabot
+    releases   : Releases
     repository : Repository
     workflow   : Workflow
 
@@ -230,6 +240,7 @@ class Settings(Record):
             (f"{REPOSITORY}/topics", "PUT", {"names": project["keywords"]}),
             *self.dependabot.requests(),
             *self.advisories.requests(),
+            *self.releases.requests(),
             (f"{REPOSITORY}/actions/permissions", "PUT", asdict(self.actions)),
             (f"{REPOSITORY}/actions/permissions/workflow", "PUT", asdict(self.workflow))
         ]

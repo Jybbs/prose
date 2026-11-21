@@ -5,20 +5,19 @@ import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url.ts'
 import * as cache                       from '../../shared/cache.ts'
 import * as paths                       from '../../shared/paths.ts'
 import { readRenderGraph }              from '../../shared/render-graph.ts'
-import { readCargoVersion }             from '../../shared/version.ts'
 import { loadBrandAssets }              from './assets.ts'
 import { cardKeyer }                    from './card-key.ts'
 import { enumeratePages }               from '../pages.ts'
 import * as pool                        from './pool.ts'
 
 export async function buildOgCards(
-  srcDir : string,
-  pages  : readonly string[],
-  outDir : string
+  srcDir  : string,
+  pages   : readonly string[],
+  outDir  : string,
+  version : string
 ): Promise<void> {
   const repo     = paths.repoRoot(import.meta.url)
   const brand    = loadBrandAssets(paths.publicDir(import.meta.url))
-  const version  = readCargoVersion(paths.crateDirFrom(repo))
   const cacheDir = paths.cacheDirFrom(repo, 'og')
   const keyOf    = cardKeyer(brand, await readRenderGraph(import.meta.dirname), version)
   const taskFor  = (card: pool.Card, outputPath: string): pool.RenderTask =>

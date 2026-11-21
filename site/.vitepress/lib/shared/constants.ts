@@ -10,6 +10,7 @@ export const SITE_ALT        = 'Prose, a Python typesetter for the reader.'
 export const SITE_HOSTNAME   = 'https://prose.fyi'
 export const SITE_NAME       = 'Prose'
 export const SITE_TAGLINE    = 'A Python typesetter for the reader.'
+export const USER_AGENT      = 'prose-docs-build'
 export const VUE_JSX         = { importSource: 'vue', runtime: 'automatic' } as const
 
 // Maps each token color of the two themes that reads under 4.5:1 on the site's

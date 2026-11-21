@@ -68,9 +68,9 @@ report-unstable-output = false
 
 ## 🗺️ Picking Up an Issue
 
-An issue carries its labels and its milestone before work on it starts, because both are copied onto its pull request, where GitHub reads the labels to file the pull request under a release-notes category.
+An issue carries its labels, and its milestone where it has one, before work on it starts, because both are copied onto its pull request, where GitHub reads the labels to file the pull request under a release-notes category. A milestone groups only the issues a minor release closes and is named for that release's line (*`0.12`*), so an issue shipping in a patch release carries none.
 
-1. Pick an issue from an open milestone, which is named for the minor release line it ships in (*`0.10`*), and assign it to yourself
+1. Pick an open issue, from an open milestone where it ships in a minor release, and assign it to yourself
 2. Confirm the issue carries at least one label from the table below, adding the label for the rule family or area it touches where none is set
 3. Cut a branch named `<issue>/<slug>` from an up-to-date `main`, the slug holding at most three terms from the issue's title (*`55/fmt-suppression`*)
 4. Commit the work on that branch, and open the pull request once `mise ci` passes
@@ -336,7 +336,7 @@ A pull request triggers each workflow whose path filter matches a file it touche
 
 A draft pull request still triggers these workflows, but every job in them skips until the pull request is marked ready. Marking it ready runs each matching workflow once on its head. GitHub reports a skipped job as a success, a required one included, and the head commit stays the same when the pull request is marked ready, so the draft run's skipped `🗞️ Brief` rows count as the required check passing until the ready run's own `🗞️ Brief` reports after that run's other jobs finish. A head whose checks all skipped is not ready to merge. `mise run repo:audit` fails on a `pull_request` trigger that leaves out any of the `opened`, `synchronize`, `reopened`, and `ready_for_review` types, and on a job whose condition lets it run on a draft.
 
-`🗞️ Brief` is the one check the `main` ruleset requires, so a pull request can merge once every workflow it triggered reports that check green. The rulesets are recorded under `.github/rulesets/` and the merge, commit sign-off, feature, security, and Actions settings in `.github/settings.toml`, which `mise run repo:rulesets` applies together (*squash as the only merge method, the head branch deleted on merge, the security features, every action pinned to a commit, a read-only workflow token*). The About box has one source in `crate/pyproject.toml`, whose description, `homepage` URL, and `keywords` the task sends as the description, the homepage, and the topics. `mise run repo:audit` fails when the checks `.github/rulesets/main.json` requires differ from the names of the jobs the pull-request workflows end on, so renaming the `🗞️ Brief` job cannot leave every pull request waiting on a check that never reports.
+`🗞️ Brief` is the one check the `main` ruleset requires, so a pull request can merge once every workflow it triggered reports that check green. The rulesets are recorded under `.github/rulesets/` and the merge, commit sign-off, feature, security, release, and Actions settings in `.github/settings.toml`, which `mise run repo:rulesets` applies together (*squash as the only merge method, the head branch deleted on merge, the security features, immutable releases, every action pinned to a commit, a read-only workflow token*). The About box has one source in `crate/pyproject.toml`, whose description, `homepage` URL, and `keywords` the task sends as the description, the homepage, and the topics. `mise run repo:audit` fails when the checks `.github/rulesets/main.json` requires differ from the names of the jobs the pull-request workflows end on, so renaming the `🗞️ Brief` job cannot leave every pull request waiting on a check that never reports.
 
 The table lists each row beside the task that runs the same check locally:
 
