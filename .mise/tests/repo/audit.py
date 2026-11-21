@@ -5,11 +5,12 @@ and the trigger it reports for each. Also pins the label `parity` reports
 a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
-restores `stamps` reports for leaving a task's outputs unstamped, the
-`deploy.yml` cache steps `caches` reports for saving on a pull request,
-restoring under a prefix of no key, or caching a folder no site code reads,
-the `site/package.json` ranges `exact` reports by package, and the triggers
-and jobs `drafts` reports for running on a draft pull request.
+restores `stamps` reports for leaving a task's outputs unstamped, the cache
+steps of `deploy.yml` and its composites `caches` reports for saving on a
+pull request, restoring under a prefix of no key, or caching a folder no
+site module or task reads, the `site/package.json` ranges `exact` reports by
+package, and the triggers and jobs `drafts` reports for running on a draft
+pull request.
 """
 
 from collections.abc   import Callable
@@ -21,12 +22,19 @@ from types             import ModuleType
 
 ALL_MISSING = "['opened', 'ready_for_review', 'reopened', 'synchronize']"
 COVERING    = ["Cargo.lock", "site/**", "wasm/**"]
+DEBS        = ".github/actions/restore-debs/action.yml"
+DEPLOY      = ".github/workflows/deploy.yml"
 GUARD       = "${{ !github.event.pull_request.draft }}"
 LIVE        = ["{root}/Cargo.lock", "{root}/wasm/**"]
 OMITTING    = ["Cargo.lock", "site/**"]
+PROVISION   = ".mise/tasks/site/provision"
 TYPES       = "[opened, synchronize, reopened, ready_for_review]"
-WHEEL       = ".github/actions/build-wheel/action.yml"
-DRIFTS      = {
+UNGUARDED   = (
+    "saves under an if other than the pull_request guard, alone or joined by &&\n"
+)
+UNREAD = "a folder no site module or task reads\n"
+WHEEL  = ".github/actions/build-wheel/action.yml"
+DRIFTS = {
     ".mise/config.toml maturin pin ↔ build-wheel action maturin-version": [
         (".mise/config.toml", "1.16.0", "1.15.0"),
         (WHEEL, "v1.16.0", "v1.15.0")
@@ -739,29 +747,44 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
         param(
             "        if   : ${{ github.event_name != 'pull_request' }}\n",
             "",
-            "11::the 'Save the highlight cache' step saves on a pull_request event, "
-            "its if lacking the event guard\n",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
             id = "guard-absent"
         ),
         param(
             "'pull_request' }}",
             "'pull_request' || always() }}",
-            "11::the 'Save the highlight cache' step saves on a pull_request event, "
-            "its if lacking the event guard\n",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
             id = "guard-disjoined"
         ),
         param(
             "!= 'pull_request' }}",
             "== 'pull_request' }}",
-            "11::the 'Save the highlight cache' step saves on a pull_request event, "
-            "its if lacking the event guard\n",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
             id = "guard-inverted"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' && always() || true }}",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-disjoined-after-conjunct"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' }} || always()",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-trailing-text"
+        ),
+        param(
+            "restore-keys : highlights-${{ runner.os }}-",
+            "restore-keys : ${{ runner.os }}-",
+            "4::the 'Restore the highlight cache' step restores '${{ runner.os }}-', "
+            "no prefix of its key 'highlights-${{ runner.os }}-${{ github.sha }}'\n",
+            id = "prefix-inside-key"
         ),
         param(
             "actions/cache/restore@1111",
             "actions/cache@1111",
-            "4::the 'Restore the highlight cache' step saves on a pull_request "
-            "event, its if lacking the event guard\n",
+            f"4::the 'Restore the highlight cache' step {UNGUARDED}",
             id = "combined-unguarded"
         ),
         param(
@@ -783,30 +806,29 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
         param(
             "path         : .cache/highlight",
             "path         : .cache/highlights",
-            "4::the 'Restore the highlight cache' step caches '.cache/highlights', "
-            "a folder the site code never reads\n",
+            f"4::the 'Restore the highlight cache' step caches '.cache/highlights', "
+            f"{UNREAD}",
             id = "restore-path-drifted"
         ),
         param(
             "path         : .cache/highlight",
             "path         : .cache/fixture",
-            "4::the 'Restore the highlight cache' step caches '.cache/fixture', "
-            "a folder the site code never reads\n",
+            f"4::the 'Restore the highlight cache' step caches '.cache/fixture', "
+            f"{UNREAD}",
             id = "test-module-folder"
         ),
         param(
             "path         : .cache/highlight\n",
             "path         : |\n            .cache/highlight\n"
             "            .cache/other\n",
-            "4::the 'Restore the highlight cache' step caches '.cache/other', a "
-            "folder the site code never reads\n",
+            f"4::the 'Restore the highlight cache' step caches '.cache/other', "
+            f"{UNREAD}",
             id = "path-among-several"
         ),
         param(
             "path : site/public/wasm",
             "path : site/public",
-            "18::the 'Save the wasm module' step caches 'site/public', a folder the "
-            "site code never reads\n",
+            f"18::the 'Save the wasm module' step caches 'site/public', {UNREAD}",
             id = "output-path-drifted"
         ),
         param(
@@ -814,9 +836,16 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
             "        if   : ${{ github.event_name != 'pull_request' }}\n"
             "        uses",
             "      - uses",
-            "11::the 'actions/cache/save@1111' step saves on a pull_request event, "
-            "its if lacking the event guard\n",
+            f"11::the 'actions/cache/save@1111' step {UNGUARDED}",
             id = "nameless"
+        ),
+        param(
+            "      - name : Save the highlight cache\n"
+            "        if   : ${{ github.event_name != 'pull_request' }}\n"
+            "        uses : actions",
+            "      - uses : &cache-save actions",
+            f"11::the 'actions/cache/save@1111' step {UNGUARDED}",
+            id = "nameless-anchored"
         )
     ]
 )
@@ -865,6 +894,118 @@ def test_caches_reports_each_cache_step_breaking_a_property(
     assert capsys.readouterr().out == (
         reported and f"::error file=.github/workflows/deploy.yml,line={reported}"
     )
+
+
+@mark.parametrize(
+    ("home", "stray", "fix", "provisioner", "reported"),
+    [
+        param(DEPLOY, "", "", "site:provision", "", id="sound"),
+        param(
+            RESTORE,
+            "path : site/public/wasm",
+            "path : site/public/wasm-module",
+            "site:provision",
+            f"{RESTORE},line=4::the 'Restore the wasm module' step caches "
+            f"'site/public/wasm-module', {UNREAD}",
+            id = "composite-path-drifted"
+        ),
+        param(
+            PROVISION,
+            ".cache/apt",
+            ".cache/debs",
+            "site:provision",
+            f"{DEBS},line=4::the 'Restore the WebKit system packages' step caches "
+            f"'.cache/apt', {UNREAD}",
+            id = "provision-folder-drifted"
+        ),
+        param(
+            DEPLOY,
+            "",
+            "",
+            "site:render",
+            f"{DEBS},line=4::the 'Restore the WebKit system packages' step caches "
+            f"'.cache/apt', {UNREAD}",
+            id = "folder-of-another-task"
+        )
+    ]
+)
+def test_caches_reads_the_cache_steps_of_each_composite_deploy_calls(
+    audit       : ModuleType,
+    capsys      : CaptureFixture[str],
+    fix         : str,
+    home        : str,
+    provisioner : str,
+    reported    : str,
+    repository  : Callable[[dict[str, str], list[dict]], Path],
+    stray       : str
+):
+    """
+    Pins that `caches` reads each cache step of a composite `deploy.yml`
+    calls by a `./` or `$/` path, reporting a fault once at the step's
+    line in the composite however often it is called, and that a folder
+    counts as read where a `provision` task's script names it under
+    `$MISE_PROJECT_ROOT`, whereas the same folder named by another task
+    does not. `stray` is replaced by `fix` in the file at `home`, and
+    `provisioner` names the task whose script names `.cache/apt`.
+    """
+    files = {
+        DEBS: (
+            "runs:\n"
+            "  using: composite\n"
+            "  steps:\n"
+            "    - name : Restore the WebKit system packages\n"
+            "      uses : actions/cache/restore@1111\n"
+            "      with:\n"
+            "        key  : webkit-debs\n"
+            "        path : .cache/apt\n"
+        ),
+        DEPLOY: (
+            "jobs:\n"
+            "  check:\n"
+            "    steps:\n"
+            "      - uses : ./.github/actions/restore-wasm\n"
+            "  press:\n"
+            "    steps:\n"
+            "      - uses : ./.github/actions/restore-wasm\n"
+            "      - uses : $/.github/actions/restore-debs\n"
+        ),
+        PROVISION : 'cache="$MISE_PROJECT_ROOT/.cache/apt"\n',
+        RESTORE   : (
+            "runs:\n"
+            "  using: composite\n"
+            "  steps:\n"
+            "    - name : Restore the wasm module\n"
+            "      uses : actions/cache/restore@1111\n"
+            "      with:\n"
+            "        key  : wasm-module\n"
+            "        path : site/public/wasm\n"
+        )
+    }
+    assert stray in files[home]
+    repository(
+        files | {home: files[home].replace(stray, fix, 1)},
+        [
+            {
+                "dir"     : "{root}",
+                "file"    : f"{{root}}/{PROVISION}",
+                "name"    : provisioner,
+                "depends" : [],
+                "outputs" : [],
+                "sources" : []
+            },
+            {
+                "dir"     : "{root}",
+                "file"    : "{root}/.mise/tasks/wasm/pack",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.caches() == bool(reported)
+    assert capsys.readouterr().out == (reported and f"::error file={reported}")
 
 
 @mark.parametrize(

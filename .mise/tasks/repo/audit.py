@@ -41,9 +41,11 @@ them fails.
     stamps     Every cache restore bringing back a task's `outputs` is
                followed by a step touching the restored files on a hit, so
                mise reads them as current.
-    caches     Every cache save in `deploy.yml` skips `pull_request` events,
-               every `restore-keys` entry there is a prefix of its `key`,
-               and every cached `path` is a folder the site code reads.
+    caches     Every cache save in `deploy.yml` and the composites it calls
+               skips `pull_request` events, every `restore-keys` entry there
+               is a prefix of its `key`, and every cached `path` is a folder
+               the site code, a `provision` task, or a task's `outputs`
+               reads.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
     drafts     Every `pull_request` trigger runs on the `READY_TYPES`, and
@@ -76,20 +78,21 @@ whereas a warning `mise tasks validate` reports surfaces as a `::warning::`
 annotation.
 """
 
-from collections import Counter, defaultdict
-from dataclasses import dataclass
-from functools   import cache
-from itertools   import chain, product
-from json        import loads as json_loads
-from os          import environ, killpg
-from pathlib     import Path
-from re          import MULTILINE, escape, findall, fullmatch, search, sub
-from signal      import SIGKILL
-from subprocess  import DEVNULL, PIPE, Popen, TimeoutExpired, check_output, run
-from tempfile    import TemporaryDirectory
-from tomllib     import loads
-from typing      import NoReturn
-from yaml        import AnchorToken, BaseLoader, load_all, scan
+from collections     import Counter, defaultdict
+from collections.abc import Iterator
+from dataclasses     import dataclass
+from functools       import cache
+from itertools       import chain, product
+from json            import loads as json_loads
+from os              import environ, killpg
+from pathlib         import Path
+from re              import MULTILINE, escape, findall, fullmatch, search, sub
+from signal          import SIGKILL
+from subprocess      import DEVNULL, PIPE, Popen, TimeoutExpired, check_output, run
+from tempfile        import TemporaryDirectory
+from tomllib         import loads
+from typing          import NoReturn
+from yaml            import AnchorToken, BaseLoader, load_all, scan
 
 CACHE_GUARD       = r"\$\{\{ github\.event_name != 'pull_request'(?: && [^|]+)? \}\}"
 CACHING: set[str] = {
@@ -107,9 +110,9 @@ READY_TYPES      : set[str]       = {
     "opened", "ready_for_review", "reopened", "synchronize"
 }
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
-STEP_LINE    = r"(?m)^[ \t]+(?:- )?(?:name|uses)[ \t]*:[ \t]*{}[ \t]*$"
-USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
-UV_SHEBANG   = r"^#!.*\buv run --script\b"
+STEP_LINE  = r"(?m)^[ \t]+(?:- )?(?:name|uses)[ \t]*:[ \t]*(?:&[\w-]+[ \t]+)?{}[ \t]*$"
+USES       = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
+UV_SHEBANG = r"^#!.*\buv run --script\b"
 
 
 @dataclass(frozen=True)
@@ -212,7 +215,10 @@ def cache_faults(folders: set[str], step: dict) -> list[str]:
     saves    = action in {"actions/cache", "actions/cache/save"}
     return [
         *(
-            ["saves on a pull_request event, its if lacking the event guard"]
+            [
+                "saves under an if other than the pull_request guard, alone or "
+                "joined by &&"
+            ]
             if saves and not fullmatch(CACHE_GUARD, step.get("if", ""))
             else []
         ),
@@ -222,42 +228,58 @@ def cache_faults(folders: set[str], step: dict) -> list[str]:
             if not key.startswith(prefix)
         ),
         *(
-            f"caches {folder!r}, a folder the site code never reads"
+            f"caches {folder!r}, a folder no site module or task reads"
             for folder in map(str.strip, settings.get("path", "").splitlines())
             if folder and folder not in folders
         )
     ]
 
 
+def cache_steps(path: Path, steps: list[dict]) -> Iterator[tuple[Path, dict]]:
+    """
+    Yields every `actions/cache` family step among `steps`, read from the
+    file at `path`, beside that file, descending into the steps of each
+    composite a step calls from this repository by a `./` or `$/` path.
+    """
+    for step in steps:
+        if (uses := step.get("uses", "")).startswith(("./", "$/")):
+            composite = Path(uses[2:], "action.yml")
+            yield from cache_steps(composite, yaml(composite)["runs"].get("steps", []))
+        elif uses.partition("@")[0] in {
+            "actions/cache", "actions/cache/restore", "actions/cache/save"
+        }:
+            yield path, step
+
+
 def caches() -> int:
     """
-    Reports every `actions/cache` family step of `deploy.yml` breaking a
-    property `cache_faults` reads, locating each to the line naming the
-    step, or to the line of its `uses` where it carries no name. A save
-    running on a pull request spends the cache quota on an entry only that
-    pull request's reruns restore. A `restore-keys` entry that is no prefix
-    of its `key` matches no entry saved under that key, and a `path` the
-    site code never reads restores a folder the build ignores, each leaving
-    the store cold. A `restore-keys` entry restores the newest entry whose
-    key starts with it, per GitHub's dependency caching reference.
+    Reports every `actions/cache` family step of `deploy.yml`, or of a
+    composite it calls, breaking a property `cache_faults` reads, locating
+    each to the line naming the step in its own file, or to the line of its
+    `uses` where it carries no name, once however often the composite is
+    called. A save running on a pull request spends the cache quota on an
+    entry only that pull request's reruns restore. A `restore-keys` entry
+    that is no prefix of its `key` matches no entry saved under that key,
+    and a `path` nothing reads restores a folder the build ignores, each
+    leaving the store cold. A `restore-keys` entry restores the newest entry
+    whose key starts with it, per GitHub's dependency caching reference.
     """
-    path    = Path(".github/workflows/deploy.yml")
-    folders = site_folders()
+    deploy  = Path(".github/workflows/deploy.yml")
+    folders = reader_folders()
     return located(
-        findings = [
-            (
-                f"the {label!r} step {fault}",
-                path,
-                lined(path, STEP_LINE.format(escape(label)))
+        findings = list(
+            dict.fromkeys(
+                (
+                    f"the {label!r} step {fault}",
+                    path,
+                    lined(path, STEP_LINE.format(escape(label)))
+                )
+                for job in yaml(deploy)["jobs"].values()
+                for path, step in cache_steps(deploy, job.get("steps", []))
+                for label in [step.get("name", step["uses"])]
+                for fault in cache_faults(folders, step)
             )
-            for job in yaml(path)["jobs"].values()
-            for step in job.get("steps", [])
-            if step.get("uses", "").partition("@")[0] in {
-                "actions/cache", "actions/cache/restore", "actions/cache/save"
-            }
-            for label in [step.get("name", step["uses"])]
-            for fault in cache_faults(folders, step)
-        ]
+        )
     )
 
 
@@ -1163,6 +1185,33 @@ def read(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
+def reader_folders() -> set[str]:
+    """
+    Collects every folder a store is read from, meaning `.cache/<name>` for
+    each literal name a tracked module under `site/.vitepress/lib/` passes
+    to `cacheDirFrom`, each folder a `provision` task's script names under
+    `$MISE_PROJECT_ROOT`, and each task's `outputs` entry cut before its
+    first glob segment.
+    """
+    return {
+        *(
+            f".cache/{name}"
+            for module in tracked("site/.vitepress/lib/**/*.ts")
+            for name in findall(r"\bcacheDirFrom\([^,]+, '([^']+)'\)", read(module))
+        ),
+        *(
+            folder
+            for name, task in tasks_listed().items()
+            if name.rpartition(":")[2] == "provision"
+            for folder in findall(
+                r'"\$MISE_PROJECT_ROOT/([^"]+)"',
+                read(Path(task["file"]).relative_to(Path.cwd()))
+            )
+        ),
+        *(sub(r"/[^/]*[*?\[].*", "", output) for output in task_outputs())
+    }
+
+
 def referenced(expression: str, scope: str) -> list[str]:
     """
     Resolves the job or step under `scope` whose output an `expression` such
@@ -1313,23 +1362,6 @@ def shadowed(tool: str) -> bool:
         text           = True
     ).stdout.strip()
     return Path(printed).resolve() != Path(".mise/bin", tool).resolve()
-
-
-def site_folders() -> set[str]:
-    """
-    Collects every folder the site code reads a store from, meaning
-    `.cache/<name>` for each literal name a tracked module under
-    `site/.vitepress/lib/` passes to `cacheDirFrom`, and each task's
-    `outputs` entry cut before its first glob segment.
-    """
-    return {
-        *(
-            f".cache/{name}"
-            for module in tracked("site/.vitepress/lib/**/*.ts")
-            for name in findall(r"\bcacheDirFrom\([^,]+, '([^']+)'\)", read(module))
-        ),
-        *(sub(r"/[^/]*[*?\[].*", "", output) for output in task_outputs())
-    }
 
 
 def stamps() -> int:
