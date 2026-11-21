@@ -1,7 +1,7 @@
-import { conditionalFetch } from './conditional-fetch'
-import { REPO_SLUG }        from './constants'
-import { requireString }    from './require-string'
-import { readCargoVersion } from './version'
+import { conditionalFetch }      from './conditional-fetch'
+import { REPO_SLUG, USER_AGENT } from './constants'
+import { requireString }         from './require-string'
+import { readCargoVersion }      from './version'
 
 // Reads the tag of the newest published release from GitHub's
 // `releases/latest`, which leaves out every draft and prerelease, falling
@@ -10,7 +10,7 @@ export function readPublishedVersion(crateDir: string, cacheDir: string): Promis
   return conditionalFetch({
     dir      : cacheDir,
     fallback : readCargoVersion(crateDir),
-    headers  : { Accept: 'application/vnd.github+json', 'User-Agent': 'prose-docs-build' },
+    headers  : { Accept: 'application/vnd.github+json', 'User-Agent': USER_AGENT },
     key      : 'published-version',
     parse    : payload => requireString(
       (payload as { tag_name?: unknown }).tag_name,

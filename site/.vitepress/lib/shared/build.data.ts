@@ -2,10 +2,10 @@ import { execFileSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures }     from '../fixtures/walker'
-import { crateDir }         from './paths'
-import { readCargoVersion } from './version'
-import { withFallback }     from './with-fallback'
+import { walkFixtures }            from '../fixtures/walker'
+import { crateDir, fetchCacheDir } from './paths'
+import { readPublishedVersion }    from './published-version'
+import { withFallback }            from './with-fallback'
 
 const crate = crateDir(import.meta.url)
 
@@ -31,7 +31,7 @@ export default defineLoader({
     return {
       fixtureCount: Iterator.from(walkFixtures(crate)).reduce(n => n + 1, 0),
       gitSha,
-      version: readCargoVersion(crate)
+      version: await readPublishedVersion(crate, fetchCacheDir(import.meta.url))
     }
   }
 })

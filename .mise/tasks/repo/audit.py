@@ -1488,7 +1488,9 @@ def triggers() -> int:
         if entry["tools"]
         if (path := Path(entry["path"]).resolve()).is_relative_to(root)
     }
-    draft = yaml(".github/workflows/draft.yml")["on"].get("push") or {}
+    draft_push = {"branches": None} | (
+        yaml(".github/workflows/draft.yml")["on"].get("push") or {}
+    )
     return flagged(
         findings = [
             *(
@@ -1503,11 +1505,8 @@ def triggers() -> int:
                 )
             ),
             (
-                {
-                    f"{key}: {value}"
-                    for key, value in {"branches": None, **draft}.items()
-                    if (key, value) != ("branches", ["main"])
-                },
+                {f"{key}: {value}" for key, value in draft_push.items()}
+                - {"branches: ['main']"},
                 "draft.yml push filters other than branches [main]"
             ),
             (

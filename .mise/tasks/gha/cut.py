@@ -22,7 +22,7 @@ stderr.
 """
 
 from itertools  import chain
-from json       import dumps, loads as from_json
+from json       import loads as from_json
 from os         import environ
 from pathlib    import Path
 from subprocess import CalledProcessError, PIPE, check_output
@@ -86,14 +86,14 @@ def existing_release(repo: str, version: str) -> dict | None:
     )
 
 
-def gh(*args: str, stdin: str | None = None) -> str:
+def gh(*args: str) -> str:
     """
-    Runs `gh` with `args`, writing `stdin` to its standard input when
-    given, and returns what it prints, stopping the task with an `::error::`
-    annotation carrying every line of its stderr when it exits nonzero.
+    Runs `gh` with `args` and returns what it prints, stopping the task
+    with an `::error::` annotation carrying every line of its stderr when it
+    exits nonzero.
     """
     try:
-        return check_output(["gh", *args], input=stdin, stderr=PIPE, text=True)
+        return check_output(["gh", *args], stderr=PIPE, text=True)
     except CalledProcessError as error:
         raise SystemExit(annotation("error", error.stderr.strip()))
 
@@ -152,9 +152,8 @@ def refresh_draft(release: dict, repo: str):
         "--method",
         "PATCH",
         f"repos/{repo}/releases/{release['id']}",
-        "--input",
-        "-",
-        stdin = dumps({"body": from_json(notes)["body"]})
+        "-f",
+        f"body={from_json(notes)['body']}"
     )
 
 

@@ -27,17 +27,19 @@ MANIFEST = Path("crate/Cargo.toml")
 PARTS    = ("major", "minor", "patch")
 
 
-def bumped(version: str, part: str) -> str:
+def bumped(part: str, version: str) -> str:
     """
     Raises the `part` of `version` by one, zeroing every part after it.
     """
-    if not fullmatch(r"\d+\.\d+\.\d+", version):
+    if not (parts := fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)):
         raise SystemExit(f"{MANIFEST} carries {version}, not three numbers")
-    numbers = [int(number) for number in version.split(".")]
+    numbers = [int(number) for number in parts.groups()]
     index   = PARTS.index(part)
     return ".".join(
-        str(number + 1 if place == index else 0 if place > index else number)
-        for place, number in enumerate(numbers)
+        map(
+            str,
+            [*numbers[:index], numbers[index] + 1, *[0] * (len(PARTS) - index - 1)]
+        )
     )
 
 
@@ -59,7 +61,7 @@ def main():
     if locked["version"] != old:
         raise SystemExit(f"{LOCKFILE} locks prose at {locked['version']}, not {old}")
 
-    package["version"] = locked["version"] = new = bumped(old, part)
+    package["version"] = locked["version"] = new = bumped(part, old)
     MANIFEST.write_text(manifest.as_string(), encoding="utf-8")
     LOCKFILE.write_text(lockfile.as_string(), encoding="utf-8")
     print(f"prose {old} → {new}")

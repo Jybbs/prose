@@ -19,8 +19,7 @@ describe('readPublishedVersion', () => {
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(LATEST, expect.anything())
   })
 
-  supportTest('falls back to the manifest version on a cold store with no answer',
-    async ({ tmpDir, warn }) => {
+  supportTest('falls back to the manifest version on a 404 from a cold store', async ({ tmpDir, warn }) => {
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 404 })))
     await expect(readPublishedVersion(CRATE, tmpDir)).resolves.toBe(readCargoVersion(CRATE))
     expect(warn).toHaveBeenCalledWith('[data:published-version] upstream returned 404, seeding the fallback')

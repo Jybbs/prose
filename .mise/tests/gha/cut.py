@@ -6,7 +6,7 @@ fails stops the task before any draft is written.
 """
 
 from collections.abc   import Callable
-from json              import dumps, loads
+from json              import dumps
 from pathlib           import Path
 from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
@@ -16,6 +16,7 @@ CREATE = [
     "gh", "release", "create", "1.2.3", "--repo",
     "owner/repo", "--target", "main", "--generate-notes", "--draft"
 ]
+DENIED   = "gh: Bad credentials (HTTP 401)\n"
 LISTING  = ["gh", "api", "--paginate", "--slurp", "repos/owner/repo/releases"]
 MANIFEST = '[package]\nversion = "{}"\n'
 NOTES    = [
@@ -23,7 +24,8 @@ NOTES    = [
     "-f", "tag_name=1.2.3", "-f", "target_commitish=main"
 ]
 UPDATE = [
-    "gh", "api", "--method", "PATCH", "repos/owner/repo/releases/7", "--input", "-"
+    "gh", "api", "--method", "PATCH",
+    "repos/owner/repo/releases/7", "-f", "body=## Notes\n"
 ]
 
 
@@ -162,30 +164,11 @@ def test_main_fails_on_a_published_version(
     )
 
 
-def test_main_sends_the_generated_notes_as_the_whole_body(
-    cut  : ModuleType,
-    fp   : FakeProcess,
-    tree : Path
-):
-    """
-    Asserts that the refresh sends the body the generate-notes endpoint
-    returns and no other field, so the draft's title stays as it stands.
-    """
-    sent: list[bytes] = []
-    fp.register(LISTING, stdout=dumps([[release("1.2.3", draft=True)]]))
-    fp.register(NOTES, stdout=dumps({"body": "## Notes\n", "name": "1.2.3"}))
-    fp.register(UPDATE, stdin_callable=sent.append)
-
-    cut.main()
-
-    assert [loads(chunk) for chunk in sent] == [{"body": "## Notes\n"}]
-
-
 @mark.parametrize(
     ("listing", "calls"),
     [
         param(
-            {"returncode": 1, "stderr": "gh: Bad credentials (HTTP 401)\n"},
+            {"returncode": 1, "stderr": DENIED},
             [LISTING],
             id = "listing"
         ),
@@ -211,8 +194,8 @@ def test_main_stops_on_the_gh_call_that_fails(
     version alone, so no draft is written after a read that fails.
     """
     fp.register(LISTING, **listing)
-    fp.register(CREATE, returncode=1, stderr="gh: Bad credentials (HTTP 401)\n")
-    fp.register(NOTES, returncode=1, stderr="gh: Bad credentials (HTTP 401)\n")
+    fp.register(CREATE, returncode=1, stderr=DENIED)
+    fp.register(NOTES, returncode=1, stderr=DENIED)
 
     with raises(SystemExit) as stopped:
         cut.main()
