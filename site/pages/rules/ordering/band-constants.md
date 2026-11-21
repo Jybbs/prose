@@ -23,6 +23,8 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 
 <FixtureCards rule="band_constants" cases="annotated_constant_trails_its_type lazy_annotated_constant_leads_its_type stringified_annotated_constant_leads_its_type" />
 
+The deferral the directive brings holds only where [[prune-inert-imports]] would keep the directive once the constants move. Where the order seated under the directive would leave it inert, and no `noqa` comment, `__all__` entry, self-alias, or suppression directive holds it, the rule seats the order the module takes without the directive, so the file settles in one run. A class whose body annotation reads an import below it, beside a constant reaching through an attribute into that import, then keeps both the directive and its place above them.
+
 Several cases pin a constant where the author left it:
 
 - A reassigned name.

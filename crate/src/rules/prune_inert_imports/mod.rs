@@ -17,7 +17,6 @@
 use std::{ffi::OsStr, path::Path};
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::PythonVersion;
 
 use crate::{
     config::Config,
@@ -35,12 +34,13 @@ mod submodules;
 
 use plan::Plan;
 
+pub(crate) use self::future::DirectiveGate;
+
 #[derive(Debug)]
 pub(crate) struct PruneInertImports {
+    directive: DirectiveGate,
     duplicates: bool,
     folds: Folds,
-    sorts_definitions: bool,
-    target_version: Option<PythonVersion>,
     unreferenced: bool,
 }
 
@@ -55,11 +55,9 @@ impl PruneInertImports {
     pub(crate) fn from_config(config: &Config) -> Self {
         let facets = &config.rules.prune_inert_imports;
         Self {
+            directive: DirectiveGate::from_config(config),
             duplicates: facets.drop_duplicates,
             folds: Folds::from_config(config),
-            sorts_definitions: config.alphabetize_siblings_enabled()
-                && config.rules.alphabetize_siblings.sort_definitions,
-            target_version: config.target_version,
             unreferenced: facets.drop_unreferenced,
         }
     }
