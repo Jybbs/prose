@@ -1,4 +1,4 @@
-import { alignedJson } from '../shared/aligned-json'
+import { alignedJson } from '../shared/aligned-json.ts'
 
 export const FORMATS = ['text', 'json', 'github'] as const
 

@@ -1,7 +1,7 @@
-import { inlineNodes }                   from '../markdown/inline-nodes'
-import type { InlineNode, InlineParser } from '../markdown/inline-nodes'
-import { typeOf }                        from './rule-schema'
-import type { SchemaProp }               from './rule-schema'
+import { inlineNodes }                   from '../markdown/inline-nodes.ts'
+import type { InlineNode, InlineParser } from '../markdown/inline-nodes.ts'
+import { typeOf }                        from './rule-schema.ts'
+import type { SchemaProp }               from './rule-schema.ts'
 
 // The record `ConfigRowTable` renders for one configuration key.
 export interface ConfigRow {

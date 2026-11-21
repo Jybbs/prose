@@ -1,4 +1,4 @@
-import { PYPI_PACKAGE } from '../shared/constants'
+import { PYPI_PACKAGE } from '../shared/constants.ts'
 
 // The output format `prose check` writes when no `--output-format` names one.
 export const DEFAULT_FORMAT = 'text'

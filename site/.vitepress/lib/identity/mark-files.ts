@@ -1,8 +1,8 @@
 import { JSDOM } from 'jsdom'
 
-import { MARK_FILES } from './marks'
+import { MARK_FILES } from './marks.ts'
 
-import type { Drawing, MarkFile, Marks, PartId } from './marks'
+import type { Drawing, MarkFile, Marks, PartId } from './marks.ts'
 
 const LOCKUP: MarkFile = 'title-with-tagline.svg'
 

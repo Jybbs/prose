@@ -1,7 +1,7 @@
 import type { DecorationItem } from '@shikijs/types'
 
-import { codeHighlighter } from '../markdown/highlighter'
-import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from './constants'
+import { codeHighlighter } from '../markdown/highlighter.ts'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from './constants.ts'
 
 // Highlights a code string to dual-theme HTML through the shared client
 // highlighter, carrying optional shiki decorations so a runtime surface

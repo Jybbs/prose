@@ -3,8 +3,8 @@ import path from 'node:path'
 
 import type { PageData } from 'vitepress'
 
-import { readPageCases, type PageFixtureSets } from '../fixtures/page-cases'
-import * as render                             from '../fixtures/render'
+import { readPageCases, type PageFixtureSets } from '../fixtures/page-cases.ts'
+import * as render                             from '../fixtures/render.ts'
 
 // Injects the cases a page renders into that page's frontmatter at build
 // time, with the ids of the ones it embeds inline and the gauges and trails it

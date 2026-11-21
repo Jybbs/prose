@@ -1,9 +1,9 @@
 import type { JSXNode } from 'satori/jsx'
 
-import type { BrandAssets, BrandImage } from './assets'
-import { SITE_HOSTNAME }                from '../../shared/constants'
-import { PALETTE }                      from '../../shared/palette'
-import * as parts                       from './parts'
+import type { BrandAssets, BrandImage } from './assets.ts'
+import { SITE_HOSTNAME }                from '../../shared/constants.ts'
+import { PALETTE }                      from '../../shared/palette.ts'
+import * as parts                       from './parts.ts'
 
 const ARTIFACT_LEFT = 120
 const TITLE_TOP     = 246

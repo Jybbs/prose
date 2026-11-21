@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import type { InlineNode }                     from '../markdown/inline-nodes'
-import { getRenderer, inlineNodeField }        from '../markdown/renderer'
-import { discoverRuleSlugs }                   from '../rules/discovery'
-import { proseBinaryPath, repoRoot, rulesDir } from '../shared/paths'
-import * as sources                            from './sources'
+import type { InlineNode }                     from '../markdown/inline-nodes.ts'
+import { getRenderer, inlineNodeField }        from '../markdown/renderer.ts'
+import { discoverRuleSlugs }                   from '../rules/discovery.ts'
+import { proseBinaryPath, repoRoot, rulesDir } from '../shared/paths.ts'
+import * as sources                            from './sources.ts'
 
 interface ExitCode {
   band    : string

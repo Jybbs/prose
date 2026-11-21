@@ -1,5 +1,5 @@
-import { caseNames, COMPOSITION_RULE, fixtureId, gaugeId } from './entry'
-import { ruleSlug }                                        from '../shared/rule-slug'
+import { caseNames, COMPOSITION_RULE, fixtureId, gaugeId } from './entry.ts'
+import { ruleSlug }                                        from '../shared/rule-slug.ts'
 
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g
 const TAG       = /<(CompositionCards|CompositionTrail|Fixture|FixtureCards|FixtureConvergence|RuleLayout)\b([^>]*)>/g

@@ -1,12 +1,12 @@
 import { defineLoader } from 'vitepress'
 
-import { inlineNodes }       from '../markdown/inline-nodes'
-import type { InlineParser } from '../markdown/inline-nodes'
-import { getRenderer }       from '../markdown/renderer'
-import { readPipeline }      from '../rules/pipeline'
-import type { ConfigRow }    from '../shared/config-row'
-import * as paths            from '../shared/paths'
-import * as help             from './cli-help'
+import { inlineNodes }       from '../markdown/inline-nodes.ts'
+import type { InlineParser } from '../markdown/inline-nodes.ts'
+import { getRenderer }       from '../markdown/renderer.ts'
+import { readPipeline }      from '../rules/pipeline.ts'
+import type { ConfigRow }    from '../shared/config-row.ts'
+import * as paths            from '../shared/paths.ts'
+import * as help             from './cli-help.ts'
 
 export type FlagTable = Exclude<help.HelpCommand, '' | 'cache'> | 'global'
 

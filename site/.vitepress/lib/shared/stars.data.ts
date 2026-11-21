@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { conditionalFetch } from './conditional-fetch'
-import { REPO_SLUG }        from './constants'
-import { fetchCacheDir }    from './paths'
+import { conditionalFetch } from './conditional-fetch.ts'
+import { REPO_SLUG }        from './constants.ts'
+import { fetchCacheDir }    from './paths.ts'
 
 interface StarsData {
   stars: string

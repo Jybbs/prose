@@ -1,4 +1,4 @@
-import type { ScopeKey } from './scopes'
+import type { ScopeKey } from './scopes.ts'
 
 export interface DirectiveSource {
   blurb     : string

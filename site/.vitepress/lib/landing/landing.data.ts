@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes'
-import * as renderer                     from '../markdown/renderer'
-import { PYPI_PACKAGE }                  from '../shared/constants'
-import { formatFolio }                   from '../shared/numerals'
-import { FAMILY_ORDER, type RuleFamily } from '../shared/registries'
+import { inlineNodes, type InlineNode }  from '../markdown/inline-nodes.ts'
+import * as renderer                     from '../markdown/renderer.ts'
+import { PYPI_PACKAGE }                  from '../shared/constants.ts'
+import { formatFolio }                   from '../shared/numerals.ts'
+import { FAMILY_ORDER, type RuleFamily } from '../shared/registries.ts'
 
 export interface Step {
   bodyNodes : InlineNode[]

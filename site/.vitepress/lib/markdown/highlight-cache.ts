@@ -1,8 +1,8 @@
 import { hash }                                   from 'ohash'
 import type { MarkdownOptions, MarkdownRenderer } from 'vitepress'
 
-import * as cache           from '../shared/cache'
-import type { RenderGraph } from '../shared/render-graph'
+import * as cache           from '../shared/cache.ts'
+import type { RenderGraph } from '../shared/render-graph.ts'
 
 type Highlight = (code: string, lang: string, attrs: string) => string
 

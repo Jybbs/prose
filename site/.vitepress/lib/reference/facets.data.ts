@@ -1,12 +1,12 @@
 import { defineLoader } from 'vitepress'
 
-import { inlineNodes, type InlineNode } from '../markdown/inline-nodes'
-import { getRenderer }                  from '../markdown/renderer'
-import { discoverRuleIndex }            from '../rules/discovery'
-import * as paths                       from '../shared/paths'
-import { FAMILY_META, type RuleFamily } from '../shared/registries'
-import * as ruleSchema                  from '../shared/rule-schema'
-import * as anchors                     from './anchors'
+import { inlineNodes, type InlineNode } from '../markdown/inline-nodes.ts'
+import { getRenderer }                  from '../markdown/renderer.ts'
+import { discoverRuleIndex }            from '../rules/discovery.ts'
+import * as paths                       from '../shared/paths.ts'
+import { FAMILY_META, type RuleFamily } from '../shared/registries.ts'
+import * as ruleSchema                  from '../shared/rule-schema.ts'
+import * as anchors                     from './anchors.ts'
 
 interface Facet {
   anchor       : string

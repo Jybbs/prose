@@ -1,14 +1,14 @@
 import type { JSXNode } from 'satori/jsx'
 
-import type { InlineNode } from '../../markdown/inline-nodes'
-import { bareInlineNodes } from '../../markdown/inline-text'
-import { formatFolio }     from '../../shared/numerals'
-import { FAMILY_META }     from '../../shared/registries'
+import type { InlineNode } from '../../markdown/inline-nodes.ts'
+import { bareInlineNodes } from '../../markdown/inline-text.ts'
+import { formatFolio }     from '../../shared/numerals.ts'
+import { FAMILY_META }     from '../../shared/registries.ts'
 
-import type { BrandAssets, BrandImage } from './assets'
-import { PALETTE }                      from '../../shared/palette'
-import type { OgPage }                  from '../pages'
-import * as parts                       from './parts'
+import type { BrandAssets, BrandImage } from './assets.ts'
+import { PALETTE }                      from '../../shared/palette.ts'
+import type { OgPage }                  from '../pages.ts'
+import * as parts                       from './parts.ts'
 
 const CODE_CHIP = {
   backgroundColor : 'rgba(255, 255, 255, 0.08)',

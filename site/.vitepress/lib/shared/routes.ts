@@ -1,4 +1,4 @@
-import type { RuleFamily, SectionSlug } from './registries'
+import type { RuleFamily, SectionSlug } from './registries.ts'
 
 export function familyRoute(family: RuleFamily): string {
   return `${sectionRoute('rules')}${family}/`

@@ -1,4 +1,4 @@
-import { runProse } from '../shared/paths'
+import { runProse } from '../shared/paths.ts'
 
 export const OUTCOMES = ['success', 'findings', 'error'] as const
 

@@ -1,15 +1,15 @@
 import { defineLoader } from 'vitepress'
 
-import { exitCodes }                          from '../exit-codes/sources'
-import { inlineNodes }                        from '../markdown/inline-nodes'
-import { getRenderer }                        from '../markdown/renderer'
-import * as help                              from '../reference/cli-help'
-import { readPipeline }                       from '../rules/pipeline'
-import { pagesDir, proseBinaryPath, repoRoot } from '../shared/paths'
-import { proseSchema }                        from '../shared/rule-schema'
-import * as configKeys                        from './config-keys'
-import { destinations }                       from './destinations'
-import * as sources                           from './sources'
+import { exitCodes }                          from '../exit-codes/sources.ts'
+import { inlineNodes }                        from '../markdown/inline-nodes.ts'
+import { getRenderer }                        from '../markdown/renderer.ts'
+import * as help                              from '../reference/cli-help.ts'
+import { readPipeline }                       from '../rules/pipeline.ts'
+import { pagesDir, proseBinaryPath, repoRoot } from '../shared/paths.ts'
+import { proseSchema }                        from '../shared/rule-schema.ts'
+import * as configKeys                        from './config-keys.ts'
+import { destinations }                       from './destinations.ts'
+import * as sources                           from './sources.ts'
 
 const root   = repoRoot(import.meta.url)
 const srcDir = pagesDir(import.meta.url)
