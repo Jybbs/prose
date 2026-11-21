@@ -4,6 +4,12 @@ import path from 'node:path'
 import { HighlightCache } from '../../lib/markdown/highlight-cache'
 import { siteDir }        from '../../lib/shared/paths'
 
+import type { readPublishedVersion } from '../../lib/shared/published-version'
+
+vi.mock('../../lib/shared/published-version', () => ({
+  readPublishedVersion: vi.fn<typeof readPublishedVersion>().mockResolvedValue('9.8.7')
+}))
+
 const HIGHLIGHTER_OPTIONS = [
   'codeTransformers', 'colorReplacements', 'defaultHighlightLang', 'highlight', 'languageAlias',
   'languages', 'shikiSetup', 'theme'
