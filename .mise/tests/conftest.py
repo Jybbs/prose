@@ -4,11 +4,10 @@ Defines the `task` fixture, which loads a task script under
 pytest-subprocess's `fp` fakes every command the script runs, the `workdir`
 fixture, which writes the files a script reads into a scratch tree, the
 `scratch` fixture, which makes a directory a git repository isolated from
-the session running the suite, the `stand_in` fixture, which writes each
-stand-in command a case puts first on `PATH`, and the `affected` fixture,
-which runs an `affected` task in a scratch repository changed since its
-`origin/main`. Each session writes under a base temporary directory of its
-own.
+the session running the suite, the `stand_in` fixture, which writes a
+stand-in command first on `PATH`, and the `affected` fixture, which runs
+an `affected` task in a scratch repository changed since its `origin/main`.
+Each session writes under a base temporary directory of its own.
 """
 
 from collections.abc import Callable, Iterable
@@ -61,10 +60,9 @@ def pytest_sessionfinish(exitstatus: int, session: Session):
 
 @fixture
 def affected(
-    monkeypatch : MonkeyPatch,
-    scratch     : Callable[[Path], Path],
-    stand_in    : Callable[..., Path],
-    tmp_path    : Path
+    scratch  : Callable[[Path], Path],
+    stand_in : Callable[..., Path],
+    tmp_path : Path
 ) -> Callable[..., CompletedProcess]:
     """
     Builds stand-in `cargo`, `uv`, and `vitest` commands, each printing the
@@ -102,7 +100,6 @@ def affected(
     )
     for name in ("uv", "vitest"):
         (cargo.parent / name).symlink_to(cargo)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(TASKS.parents[1]))
     repo = tmp_path / "repo"
     git  = partial(run, check=True, cwd=repo)
 
@@ -219,7 +216,8 @@ def scratch(monkeypatch: MonkeyPatch) -> Callable[[Path], Path]:
 def stand_in(monkeypatch: MonkeyPatch, tmp_path: Path) -> Callable[..., Path]:
     """
     Builds a writer of stand-in commands under the case's `bin` directory,
-    which it puts first on `PATH`.
+    which it puts first on `PATH` beside a `MISE_PROJECT_ROOT` naming the
+    checkout a task runs from.
 
     Returns:
         A function writing `script` as the executable `name` and
@@ -227,6 +225,7 @@ def stand_in(monkeypatch: MonkeyPatch, tmp_path: Path) -> Callable[..., Path]:
         it receives on a line of its own.
     """
     (folder := tmp_path / "bin").mkdir()
+    monkeypatch.setenv("MISE_PROJECT_ROOT", str(TASKS.parents[1]))
     monkeypatch.setenv("PATH", str(folder), prepend=pathsep)
 
     def write(name: str, script: str = "printf '%s\\n' \"$@\"\n") -> Path:

@@ -20,7 +20,6 @@ def environment(monkeypatch: MonkeyPatch, stand_in: Callable[..., Path]):
     `PATH`.
     """
     monkeypatch.delenv("PROSE_PROOF_PROFILE", raising=False)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(ROOT))
     stand_in("cargo")
 
 

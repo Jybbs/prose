@@ -27,7 +27,6 @@ def ran(
     """
     stand_in("prose")
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(ROOT))
 
     def run_task(
         name    : str,

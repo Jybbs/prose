@@ -8,15 +8,7 @@ from pathlib         import Path
 from subprocess      import run
 from tomllib         import loads
 
-ROOT     = Path(__file__).resolve().parents[3]
-STAND_IN = (
-    "shift\n"
-    "while [ $# -gt 0 ]; do\n"
-    '  if [ "$1" = --config ]; then grep "^unmaintained" "$2"; shift; '
-    "else printf '%s\\n' \"$1\"; fi\n"
-    "  shift\n"
-    "done\n"
-)
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_deny_runs_each_check_under_its_policy_and_targets(
@@ -28,7 +20,15 @@ def test_deny_runs_each_check_under_its_policy_and_targets(
     unmaintained crate as a warning, then licenses over each target
     `.github/scripts/platforms.toml` names and `wasm32-unknown-unknown`.
     """
-    stand_in("cargo", STAND_IN)
+    stand_in(
+        "cargo",
+        "shift\n"
+        "while [ $# -gt 0 ]; do\n"
+        '  if [ "$1" = --config ]; then grep "^unmaintained" "$2"; shift; '
+        "else printf '%s\\n' \"$1\"; fi\n"
+        "  shift\n"
+        "done\n"
+    )
     platforms = loads(
         (ROOT / ".github/scripts/platforms.toml").read_text(encoding="utf-8")
     )["platforms"]
