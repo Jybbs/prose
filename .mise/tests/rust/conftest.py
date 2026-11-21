@@ -8,8 +8,8 @@ from json            import dumps
 from os              import environ
 from pathlib         import Path
 from pytest          import MonkeyPatch, fixture
-from shlex           import quote
 from subprocess      import run
+from sys             import executable
 
 ROOT    = Path(__file__).resolve().parents[3]
 TARGETS = ["corpus", "fixtures", "imports", "settle"]
@@ -22,8 +22,9 @@ def workspace_task(
 ) -> Callable[..., list[str]]:
     """
     Builds a stand-in `cargo` printing each command it receives on a line of
-    its own, with `cargo metadata` printing one package holding a test
-    target for each name in `TARGETS`, and puts it first on `PATH`.
+    its own, each argument quoted as a shell reads it, with `cargo metadata`
+    printing one package holding a test target for each name in `TARGETS`,
+    and puts it first on `PATH`.
 
     Returns:
         A function running the `rust` task `name` with `args`, which returns
@@ -31,15 +32,17 @@ def workspace_task(
     """
     metadata = dumps(
         {
-            "packages" : [
+            "packages": [
                 {"targets": [{"kind": ["test"], "name": name} for name in TARGETS]}
             ]
         }
     )
     (cargo := tmp_path / "cargo").write_text(
-        "#!/bin/sh\n"
-        f'[ "$1" = metadata ] && exec echo {quote(metadata)}\n'
-        'echo "${0##*/} $*"\n',
+        f"#!{executable}\n"
+        "from shlex import join\n"
+        "from sys   import argv\n"
+        "command = join(['cargo', *argv[1:]])\n"
+        f"print({metadata!r} if argv[1:2] == ['metadata'] else command)\n",
         encoding = "utf-8"
     )
     cargo.chmod(0o755)
