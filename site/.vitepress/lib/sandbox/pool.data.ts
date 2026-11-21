@@ -2,8 +2,8 @@ import fs from 'node:fs'
 
 import { defineLoader } from 'vitepress'
 
-import * as walker  from '../fixtures/walker'
-import { crateDir } from '../shared/paths'
+import * as walker  from '../fixtures/walker.ts'
+import { crateDir } from '../shared/paths.ts'
 
 export interface SandboxCase {
   id     : string

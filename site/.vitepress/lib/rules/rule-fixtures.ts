@@ -1,5 +1,5 @@
-import { readFixtureToggle } from '../fixtures/toggle'
-import * as walker           from '../fixtures/walker'
+import { readFixtureToggle } from '../fixtures/toggle.ts'
+import * as walker           from '../fixtures/walker.ts'
 
 interface PendingExample {
   case      : string

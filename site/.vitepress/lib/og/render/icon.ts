@@ -1,5 +1,5 @@
-import type { BrandAssets } from './assets'
-import * as parts           from './parts'
+import type { BrandAssets } from './assets.ts'
+import * as parts           from './parts.ts'
 
 const GLYPH_DROP = 4
 const GLYPH_SIZE = 140

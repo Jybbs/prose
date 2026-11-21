@@ -1,4 +1,4 @@
-import { inertEnv } from './inert-env'
+import { inertEnv } from './inert-env.ts'
 
 // The fields the walk reads off a parsed token, declared structurally so
 // neither parser interface below couples to markdown-it's own type layout.

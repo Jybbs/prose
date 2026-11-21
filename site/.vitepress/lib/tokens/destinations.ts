@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { slugify } from '@mdit-vue/shared'
 
-import { markdownH1 } from '../markdown/h1'
+import { markdownH1 } from '../markdown/h1.ts'
 
 // Names an anchored target in words, `code` marking one set as code.
 export interface Anchored {

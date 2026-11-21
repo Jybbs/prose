@@ -2,13 +2,13 @@ import path from 'node:path'
 
 import type { DefaultTheme } from 'vitepress'
 
-import type { DiscoveredPrimitive } from '../architecture/discovery'
-import { markdownH1 }               from '../markdown/h1'
-import type { DiscoveredRule }      from '../rules/discovery'
-import { matterPages }              from '../shared/content-page'
-import * as registries              from '../shared/registries'
-import { requireString }            from '../shared/require-string'
-import * as routes                  from '../shared/routes'
+import type { DiscoveredPrimitive } from '../architecture/discovery.ts'
+import { markdownH1 }               from '../markdown/h1.ts'
+import type { DiscoveredRule }      from '../rules/discovery.ts'
+import { matterPages }              from '../shared/content-page.ts'
+import * as registries              from '../shared/registries.ts'
+import { requireString }            from '../shared/require-string.ts'
+import * as routes                  from '../shared/routes.ts'
 
 type SidebarPrimitive = Pick<DiscoveredPrimitive, 'slug' | 'stability' | 'title'>
 

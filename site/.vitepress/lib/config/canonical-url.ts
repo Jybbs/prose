@@ -1,5 +1,5 @@
-import { SITE_HOSTNAME } from '../shared/constants'
-import { stripSuffix }   from '../shared/strip-suffix'
+import { SITE_HOSTNAME } from '../shared/constants.ts'
+import { stripSuffix }   from '../shared/strip-suffix.ts'
 
 export function canonicalUrl(relativePath: string): string {
   return `${SITE_HOSTNAME}/${pagePath(relativePath)}`

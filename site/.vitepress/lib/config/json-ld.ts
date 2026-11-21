@@ -1,4 +1,4 @@
-import { SITE_NAME } from '../shared/constants'
+import { SITE_NAME } from '../shared/constants.ts'
 
 const CONTEXT = 'https://schema.org'
 

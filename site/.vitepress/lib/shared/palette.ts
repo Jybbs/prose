@@ -1,6 +1,6 @@
 import { converter, formatHex, interpolate, wcagContrast, wcagLuminance } from 'culori'
 
-import type { GlossaryFamily, SectionSlug } from './registries'
+import type { GlossaryFamily, SectionSlug } from './registries.ts'
 
 export type Scheme = (typeof SCHEMES)[number]
 

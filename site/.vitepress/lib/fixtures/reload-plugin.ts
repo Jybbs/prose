@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 
-import { resetFixtureEntries } from './render'
+import { resetFixtureEntries } from './render.ts'
 
 interface VitePressSite {
   __dirty ?: boolean

@@ -1,6 +1,6 @@
 import type { DecorationItem, ShikiTransformer } from '@shikijs/types'
 
-import type { LintFinding } from '../fixtures/lint-findings'
+import type { LintFinding } from '../fixtures/lint-findings.ts'
 
 const FLAG_CLASS  = 'lint-flag'
 const LINE_CLASS  = 'lint-flag lint-flag-line'
