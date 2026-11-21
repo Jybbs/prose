@@ -4,11 +4,8 @@
 //! shortening rules settle its row, and the spans an in-place shed
 //! removes.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
-use ruff_python_parser::parse_expression;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -22,11 +19,10 @@ use crate::{
         comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         inline::{
-            collapse_soft_wraps, display_width, run_closes_to_a_space, settled_head_column,
-            settled_slice_width, settled_width, soft_wrap_runs,
+            display_width, run_closes_to_a_space, settled_head_column, settled_slice_width,
+            settled_width, soft_wrap_runs,
         },
-        layout::{is_layoutable, item_indent, requires_expand},
-        range::blocks_span,
+        layout::{is_layoutable, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
@@ -101,7 +97,7 @@ impl Shedder<'_> {
     /// call ending ahead of `offset` on that row explodes while the row
     /// through `offset` still overflows the budget, dropping its closer
     /// to the row's indent and the text after it along with it.
-    fn shifted_column(&self, offset: TextSize) -> usize {
+    pub(super) fn shifted_column(&self, offset: TextSize) -> usize {
         let column = self.column_at(offset);
         if column < self.code_line_length {
             return column;
@@ -122,12 +118,6 @@ impl Shedder<'_> {
             shift = placed(call.end()).saturating_sub(indent + 1);
         }
         column.saturating_sub(shift)
-    }
-
-    /// The text `simplify-comprehensions` rewrites the call over `range`
-    /// to, per [`Settings::simplified_form`](crate::primitives::one_row::Settings::simplified_form).
-    fn simplified_form(&self, range: TextRange) -> Option<Cow<'_, str>> {
-        self.one_row.simplified_form(self.source, range)
     }
 
     /// The columns `pair`'s own row carries past its closing paren once
@@ -160,29 +150,17 @@ impl Shedder<'_> {
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
     }
 
-    /// True where `candidate`'s opened form `text` leaves a statement row
-    /// past the budget. That row runs from the column the pair opens at
+    /// True where `candidate`'s opened form `text`, its pair opening at
+    /// `column`, leaves a statement row past the budget. That row runs
     /// through the first row of `text`, settled under the padding table,
-    /// and is cut at the first argument list `reflow-calls` can explode,
-    /// literal `reflow-collections` can expand, or call
-    /// `simplify-comprehensions` rewrites to such a literal on that row
-    /// while that rule runs, leaving out each opener a rewrite of that
-    /// rule removes. A call
-    /// `simplify-comprehensions` rewrites runs through the opening bracket
-    /// of its literal while `reflow-collections` expands literals, and
-    /// through that literal's first row otherwise.
-    pub(super) fn opens_past_the_budget(&self, candidate: &Candidate, text: &str) -> bool {
-        let column = self.shifted_column(candidate.pair.start());
-        if let Expr::Call(call) = candidate.expr
-            && let Some(literal) = self.simplified_form(call.range())
-        {
-            let head = if self.one_row.expands_literals() {
-                TextSize::of('{').to_usize()
-            } else {
-                display_width(literal.lines().next().unwrap_or_default())
-            };
-            return column + head > self.code_line_length;
-        }
+    /// and is cut at the first argument list `reflow-calls` can explode or
+    /// literal `reflow-collections` can expand on that row.
+    pub(super) fn opens_past_the_budget(
+        &self,
+        candidate: &Candidate,
+        text: &str,
+        column: usize,
+    ) -> bool {
         let range = candidate.expr.range();
         let row = TextRange::new(
             range.start(),
@@ -194,33 +172,13 @@ impl Shedder<'_> {
             row,
             display_width(text.lines().next().unwrap_or_default()),
         );
-        let survives = |opener: &&TextRange| {
-            !self
-                .simplified
-                .iter()
-                .flatten()
-                .any(|edit| edit.range().contains(opener.start()))
-        };
         let calls = starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .filter(|_| self.one_row.closes())
-            .filter(survives);
+            .filter(|_| self.one_row.closes());
         let literals = starting_within(self.source.expandable_literals(), range, Ranged::start)
-            .filter(|_| self.one_row.expands_literals())
-            .filter(survives);
-        let rewritten = starting_within(self.simplified, range, |group| blocks_span(group).start())
-            .map(|group| blocks_span(group))
-            .filter(|span| {
-                self.one_row.expands_literals()
-                    && self.simplified_form(*span).is_some_and(|literal| {
-                        parse_expression(&literal)
-                            .is_ok_and(|parsed| requires_expand(parsed.expr()))
-                    })
-            });
+            .filter(|_| self.one_row.expands_literals());
         let head = calls
             .chain(literals)
-            .map(|opener| opener.start())
-            .chain(rewritten.map(|span| span.start()))
-            .map(|start| TextRange::new(range.start(), start + TextSize::of('(')))
+            .map(|opener| TextRange::new(range.start(), opener.start() + TextSize::of('(')))
             .filter(|head| !self.source.contains_line_break(*head))
             .map(|head| settled_slice_width(self.source, self.padding, head))
             .fold(written, usize::min);
@@ -234,33 +192,14 @@ impl Shedder<'_> {
     /// - a collection literal written across rows, where
     ///   `reflow-collections` is off or no rejoined form of it fits that
     ///   row, and one written on one row that rule expands
-    /// - a call `simplify-comprehensions` rewrites to a literal, where
-    ///   that literal runs past `max_dict_entries`, or its one-row form
-    ///   runs past the budget while it spans rows or `reflow-collections`
-    ///   expands literals, and with that rule off, where it spans rows
-    /// - any other call holding an argument list `reflow-calls` can
-    ///   explode, where that rule finds no one-row form fitting that row,
-    ///   and with that rule off, any call spanning rows or holding a
-    ///   literal `reflow-collections` expands on that row, a `dict(...)`
-    ///   call `simplify-comprehensions` rewrites to one included
+    /// - a call holding an argument list `reflow-calls` can explode, where
+    ///   that rule finds no one-row form fitting that row, and with that
+    ///   rule off, any call spanning rows or holding a literal
+    ///   `reflow-collections` expands on that row
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
         match expr {
-            Expr::Call(call) if let Some(literal) = self.simplified_form(call.range()) => {
-                if !self.one_row.joins_literals() {
-                    return spans;
-                }
-                let width = self.one_row.form_width(
-                    self.source,
-                    &collapse_soft_wraps(&literal),
-                    call.range(),
-                );
-                self.one_row
-                    .caps_entries(self.one_row.simplified_entries(self.source, call.range()))
-                    || ((spans || self.one_row.expands_literals())
-                        && !self.one_row.fits(column + width))
-            }
             Expr::Call(call) if self.one_row.closes() => {
                 starting_within(
                     self.source.explodable_arguments(),
@@ -288,27 +227,14 @@ impl Shedder<'_> {
                 let width = |range| settled_slice_width(self.source, self.padding, range);
                 spans
                     || any_over_expr_within(expr, Interpolations::Skip, |inner| {
-                        let column = column + width(TextRange::new(call.start(), inner.start()));
-                        let tail = width(TextRange::new(inner.end(), call.end()));
-                        match inner {
-                            Expr::Call(dict)
-                                if let entries =
-                                    self.one_row.simplified_entries(self.source, dict.range())
-                                    && entries > 0 =>
-                            {
-                                self.one_row.expands_literals()
-                                    && (self.one_row.caps_entries(entries)
-                                        || !self.one_row.fits(column + width(dict.range()) + tail))
-                            }
-                            _ => self.one_row.expands(
-                                self.source,
-                                inner,
-                                inner.into(),
-                                column,
-                                tail,
-                                self.padding,
-                            ),
-                        }
+                        self.one_row.expands(
+                            self.source,
+                            inner,
+                            inner.into(),
+                            column + width(TextRange::new(call.start(), inner.start())),
+                            width(TextRange::new(inner.end(), call.end())),
+                            self.padding,
+                        )
                     })
             }
             _ if is_layoutable(expr) => {

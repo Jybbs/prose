@@ -19,7 +19,7 @@
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.
 
-use std::cell::RefCell;
+use std::{cell::RefCell, mem};
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange};
@@ -84,6 +84,40 @@ impl ReflowParentheses {
         }
     }
 
+    /// Runs `measure` over a [`Shedder`] holding no edits yet, built over
+    /// `source` with every table these settings read off it.
+    fn measuring<R>(&self, source: &Source, measure: impl FnOnce(&mut Shedder) -> R) -> R {
+        let calls = if self.reflows_calls {
+            outermost_calls(source)
+        } else {
+            Vec::new()
+        };
+        let stranded = source.stranded_padding(self.stranding);
+        let simplified = if self.simplifies_comprehensions {
+            prepared_groups(&SimplifyComprehensions, source)
+        } else {
+            Vec::new()
+        };
+        let fstrings = source.fstring_rewrites(self.fstrings);
+        let rewrites = self.rewrites(source, &simplified, &fstrings);
+        let padding = padding::beside(&stranded, &rewrites);
+        let reservations = source.columns(&self.reservations);
+        let targets = module_call_params(source);
+        measure(&mut Shedder {
+            breaks: RefCell::default(),
+            calls,
+            code_line_length: self.code_line_length,
+            edits: Vec::new(),
+            folds: Vec::new(),
+            one_row: self.one_row.against(&targets).forecasting(&fstrings),
+            padding: &padding,
+            reservations: &reservations,
+            rule: self,
+            simplified: &simplified,
+            source,
+        })
+    }
+
     /// The edits the rules shortening a row after this one land over
     /// `source`, ascending and disjoint, an edit inside another left
     /// out. These are `fstrings`, the f-strings `prefer-fstring`
@@ -114,40 +148,10 @@ impl Rule for ReflowParentheses {
         if candidates.is_empty() {
             return Vec::new();
         }
-        let calls = if self.reflows_calls {
-            outermost_calls(source)
-        } else {
-            Vec::new()
-        };
-        let stranded = source.stranded_padding(self.stranding);
-        let simplified = if self.simplifies_comprehensions {
-            prepared_groups(&SimplifyComprehensions, source)
-        } else {
-            Vec::new()
-        };
-        let fstrings = source.fstring_rewrites(self.fstrings);
-        let rewrites = self.rewrites(source, &simplified, &fstrings);
-        let padding = padding::beside(&stranded, &rewrites);
-        let reservations = source.columns(&self.reservations);
-        let targets = module_call_params(source);
-        let mut shedder = Shedder {
-            breaks: RefCell::default(),
-            calls,
-            code_line_length: self.code_line_length,
-            edits: Vec::new(),
-            folds: Vec::new(),
-            one_row: self
-                .one_row
-                .against(&targets)
-                .forecasting(&fstrings)
-                .simplifying(&simplified),
-            padding: &padding,
-            reservations: &reservations,
-            simplified: &simplified,
-            source,
-        };
-        shedder.shed(&candidates);
-        singleton_groups(outermost(shedder.edits))
+        self.measuring(source, |shedder| {
+            shedder.shed(&candidates);
+            singleton_groups(outermost(mem::take(&mut shedder.edits)))
+        })
     }
 
     fn id(&self) -> RuleId {
@@ -164,9 +168,9 @@ impl Rule for ReflowParentheses {
 /// the columns `align-equals` shifts each aligned value to, the two
 /// tables every measure settles a row through. `one_row` holds the terms
 /// the layout rules join a bracketed construct onto one row under,
-/// `simplified` the fix groups `simplify-comprehensions` emits, and
-/// `breaks` holds, for the candidate under test, whether each later pair
-/// on its row breaks.
+/// `simplified` the fix groups `simplify-comprehensions` emits, `rule`
+/// the settings each table comes from, and `breaks` holds, for the
+/// candidate under test, whether each later pair on its row breaks.
 struct Shedder<'a> {
     breaks: RefCell<FxHashMap<TextRange, bool>>,
     calls: Vec<TextRange>,
@@ -176,6 +180,7 @@ struct Shedder<'a> {
     one_row: one_row::Settings<'a>,
     padding: &'a [Edit],
     reservations: &'a reserve::Columns,
+    rule: &'a ReflowParentheses,
     simplified: &'a [Vec<Edit>],
     source: &'a Source,
 }
@@ -242,7 +247,10 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{applied_text, parse};
+    use crate::{
+        pipeline::Pipeline,
+        testing::{applied_text, parse},
+    };
 
     /// `src` with every edit the rule emits applied, under the default
     /// configuration with `reflow-calls` set to `reflows_calls`.
@@ -264,6 +272,50 @@ mod tests {
             .flatten()
             .collect();
         applied_text(&source, edits)
+    }
+
+    /// `value` as the whole value of an assignment, or of a `return`
+    /// where `returns` holds, inside a redundant pair whose interior
+    /// takes rows of its own.
+    fn paired(value: &str, returns: bool) -> String {
+        let indent = if returns { "        " } else { "    " };
+        let rows = value
+            .lines()
+            .map(|row| format!("{indent}{row}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        if returns {
+            format!("def f():\n    return (\n{rows}\n    )\n")
+        } else {
+            format!("value = (\n{rows}\n)\n")
+        }
+    }
+
+    /// Each width from 30 through 88 beside the text the default pipeline
+    /// formats [`paired`] to there, with `reflow-calls` set to
+    /// `reflows_calls`, asserting a second run leaves that text as it is.
+    fn settled_at_every_width(
+        value: &str,
+        returns: bool,
+        reflows_calls: bool,
+    ) -> Vec<(usize, String)> {
+        (30..=88)
+            .map(|width| {
+                let mut config = Config {
+                    code_line_length: NonZeroUsize::new(width),
+                    ..Config::default()
+                };
+                config.rules.reflow_calls.enabled = reflows_calls;
+                let pipeline = Pipeline::with_defaults(&config);
+                let src = paired(value, returns);
+                let once = pipeline.format(parse(&src)).expect("the first run formats");
+                let twice = pipeline
+                    .format(parse(once.text()))
+                    .expect("the second run formats");
+                assert_eq!(twice.text(), once.text(), "width {width}, from:\n{src}");
+                (width, once.text().to_owned())
+            })
+            .collect()
     }
 
     #[rstest]
@@ -521,6 +573,34 @@ mod tests {
         },
         "value = transform(dict((key, val.attr) for key, val in some_items), second_argument,\n    third)\n"
     )]
+    #[case::call_on_a_list_call_simplify_comprehensions_collapses(
+        "value = (\n    list(item for item in some_items_name).index(argument_x, default_value)\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(32),
+        "value = list(item for item in some_items_name).index(argument_x, default_value)\n"
+    )]
+    #[case::dict_call_on_a_nested_dict_call(
+        "value = (\n    dict(alpha_value=dict(beta_value=1, gamma_value=2))\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(54),
+        "value = dict(alpha_value=dict(beta_value=1, gamma_value=2))\n"
+    )]
+    #[case::dict_call_on_a_nested_dict_past_the_entry_cap(
+        "value = (\n    dict(alpha_value={\"x\": 1, \"y\": 2, \"z\": 3, \"w\": 4})\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(53),
+        "value = dict(alpha_value={\"x\": 1, \"y\": 2, \"z\": 3, \"w\": 4})\n"
+    )]
+    #[case::spanning_call_on_a_dict_call_measured_at_its_literal(
+        "value = (\n    transform(dict(alpha=1, beta=2), second_argument_name,\n        third)\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(65),
+        "value = transform(dict(alpha=1, beta=2), second_argument_name,\n    third)\n"
+    )]
+    #[case::one_row_call_on_a_one_entry_dict_call_past_the_indented_row_with_reflow_calls_off(
+        "value = (\n    transform(dict(alpha_value=1), second_argument_name_long)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(50);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform(dict(alpha_value=1), second_argument_name_long)\n"
+    )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -620,6 +700,123 @@ mod tests {
         assert_eq!(configured(src, configure), src);
     }
 
+    #[rstest]
+    fn a_forecast_value_opens_wherever_its_opened_row_fits_and_settles_in_one_run(
+        #[values(
+            "dict(**options_mapping)",
+            "dict(base_mapping, alpha_value=1)",
+            "dict(zip(key_names_list, value_names_list))",
+            "dict(alpha=1, beta=2)",
+            "dict(alpha_value=1, beta_value=2, gamma_value=3)",
+            "dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4)",
+            "dict(alpha_value_long_name=1, delta_value_long_name=2, epsilon_value_name_xxxxx=3)",
+            "dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)",
+            "dict(alpha_value=dict(beta_value=1, gamma_value=2))",
+            "dict(alpha_value=dict(beta_value=1, gamma_value=2), delta_value=3)",
+            "dict(alpha_value=dict(beta_value=1, gamma_value=2, delta_value=3, epsilon_value=4))",
+            "dict(alpha_value={\"x\": 1, \"y\": 2, \"z\": 3, \"w\": 4})",
+            "dict(alpha_value={\"x\": 1, \"y\": 2})",
+            "dict(alpha_value=[first_item, second_item, third_item])",
+            "dict([(\"alpha\", 1), (\"beta\", 2)])",
+            "dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)])",
+            "dict(((\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3)))",
+            "dict({\"alpha\": 1, \"beta\": 2})",
+            "dict({\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4})",
+            "dict((key, val.attr) for key, val in some_items_name)",
+            "dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)",
+            "dict({key: val for key, val in some_items_name}).get(argument_x, default_value)",
+            "dict((k, v) for k, v in some_items_name).get(argument_x, default_value)",
+            "dict([(key, val) for key, val in some_items_name])",
+            "dict()",
+            "dict(\n    [(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)]\n)",
+            "list(item for item in some_items_name)",
+            "list(item for item in some_items_name).index(argument_x, default_value)",
+            "set(item for item in some_items_name).union(argument_x, default_value)",
+            "list([item for item in some_items_name]).index(argument_x, default_value)",
+            "list([alpha_value, beta_value, gamma_value])",
+            "list((alpha_value, beta_value, gamma_value))",
+            "set([alpha_value, beta_value, gamma_value])",
+            "set([alpha_value, beta_value, gamma_value]).union(argument_x, default_value)",
+            "list([item.attribute for item in some_items_name if item.enabled_flag])",
+            "set(item.attribute for item in some_items_name if item.enabled_flag)",
+            "sorted(list(item for item in some_items_name))",
+            "list()",
+            "transform(dict(alpha=1, beta=2))",
+            "transform(dict(alpha_value=1, beta_value=2))",
+            "transform(dict(alpha_value=1), second_argument_name_long)",
+            "transform(dict(alpha=1, beta=2, gamma=3, delta=4))",
+            "transform(dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)]))",
+            "transform(dict(alpha=1, beta=2), second_argument_name, third_argument)",
+            "transform(dict((key, val.attr) for key, val in some_items), second_argument)",
+            "transform(list(item for item in some_items_name), second_argument_name)",
+            "transform(set([alpha_value, beta_value]), second_argument_name_long)",
+            "transform(dict(alpha_value=dict(beta_value=1, gamma_value=2)))",
+            "transform(\n    dict(alpha=1, beta=2),\n    second_argument_name,\n)",
+            "[dict(alpha=1, beta=2), dict(gamma=3, delta=4)]",
+            "{\"alpha\": dict(beta_value=1, gamma_value=2), \"delta\": 3}",
+            "{\"alpha\": list(item for item in some_items_name), \"delta\": 3}",
+            "{\"alpha\": 1, \"beta\": 2, \"gamma\": 3}.get(key_argument, default_value)",
+            "{\"alpha_value_name_xxxxxxx\": 1, \"delta_value_name_xxxxxxxx\": 2,\n \"epsilon_value_name\": 3}",
+            "transform_values({\"alpha\": 1, \"beta\": 22})",
+            "transform_values( {\"alpha\": 1, \"beta\": 22} )",
+            "transform({\"alpha\": 1, \"beta\": 2222})",
+            "transform({\"alpha\": list(), \"beta\": 2})",
+            "compute_something(alpha_argument, delta_argument, epsilon_argument, gamma_argument_x)",
+            "loop.call_later(timeout_argument, self._handle_timeout_argument, other_argument_xxxx)",
+            "compute(\n    a,\n    b,\n)",
+            "factory(\n    alpha,\n    beta,\n)()",
+            "handlers[lookup(alpha_argument, beta_argument, gamma_argument, delta_argument_xxxxx)]()",
+            "(lambda: compute(alpha_argument, beta_argument, gamma_argument, delta_argumentxxxx))()",
+            "{\n    \"a\": 1,\n    \"b\": 2,\n}",
+            "[\n    first,\n    second,\n]",
+            "compute(alpha).transform_everything_now(\n    beta,\n    gamma,\n)",
+            "compute(alpha, beta)",
+            "dict(alpha_value=1, beta_value=2).get(argument_x, default_value)",
+            "transform(list([alpha_value, beta_value]), set(item for item in some_items_name))",
+            "dict(alpha_value=list(item for item in some_items_name), beta_value=set([first, second]))",
+            "dict(alpha=dict(beta=dict(gamma=1, delta=2), epsilon=3), zeta=4)",
+            "compute_values(dict(alpha=1, beta=2), dict(gamma=3, delta=4), list(item for item in items))"
+        )]
+        value: &str,
+        #[values(false, true)] returns: bool,
+        #[values(false, true)] reflows_calls: bool,
+    ) {
+        let (head, closer) = if returns {
+            ("    return (", "    )")
+        } else {
+            ("value = (", ")")
+        };
+        for (width, text) in settled_at_every_width(value, returns, reflows_calls) {
+            let mut rows = text.lines().skip_while(|row| *row != head).skip(1);
+            let held = rows
+                .next()
+                .filter(|_| rows.next().is_some_and(|row| row != closer));
+            assert!(
+                held.is_none_or(|first| head.len() - 1 + first.trim_start().len() > width),
+                "width {width} holds the pair around rows whose opened row fits:\n{text}",
+            );
+        }
+    }
+
+    #[rstest]
+    fn a_forecast_value_left_paired_settles_in_one_run(
+        #[values(
+            "dict(\n    alpha=1,  # first entry\n    delta=2,\n)",
+            "tuple([alpha_value, beta_value, gamma_value])",
+            "tuple([alpha_value, beta_value, gamma_value, delta_value, epsilon_value, zeta_value])",
+            "compute(dict(alpha=1, beta=2)).result_value",
+            "handlers[dict(alpha=1, beta=2)[\"alpha\"]]",
+            "{\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4}.items()",
+            "[compute(\n    a,\n    b,\n)]",
+            "list(item for item in some_items_name)[index_value]",
+            "dict(alpha_value=1, beta_value=2) | dict(gamma_value=3, delta_value=4)"
+        )]
+        value: &str,
+        #[values(false, true)] returns: bool,
+        #[values(false, true)] reflows_calls: bool,
+    ) {
+        settled_at_every_width(value, returns, reflows_calls);
+    }
     #[test]
     fn a_dict_call_on_a_dict_past_the_entry_cap_opens_at_every_width_its_pair_fits() {
         let src =

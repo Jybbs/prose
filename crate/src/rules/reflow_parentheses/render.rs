@@ -13,15 +13,16 @@ use super::{
     Shedder,
     chain::{Operand, operands},
     measure::fold_edits,
-    plan::{Candidate, break_depths, breaks_held_inside, shedding_inside},
+    plan::{self, Candidate, break_depths, breaks_held_inside, shedding_inside},
 };
 use crate::{
     primitives::{
         comparison::narrowing_edits_within,
-        edit::{apply_inline_edits, insert_edit},
+        edit::{apply_inline_edits, forward_start, insert_edit},
         fracture::outermost,
         inline::{display_width, folded_line_form, settled_width, spans_rows},
         layout::{Separator, explode_parens, item_indent},
+        range::blocks_span,
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{open_brackets, tokens_within},
@@ -69,15 +70,59 @@ impl Shedder<'_> {
             return None;
         }
         let indent = self.statement_indent(candidate.pair);
-        if !self.lands_across_rows(candidate.expr, indent) {
+        let column = self.shifted_column(candidate.pair.start());
+        if !self.opens_inside_the_budget(candidate, candidates, indent, column) {
             return None;
         }
         let nested = nested_shed_edits(candidate, candidates);
         let block = hanging_block_through(self.source, candidate.inner, &nested, indent)?;
         let text = candidate.flush.padded(&block).into_owned();
-        (!self.opens_past_the_budget(candidate, &text)
-            && splice_preserves_tree(self.source, candidate.pair, &text))
-        .then_some(text)
+        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
+    }
+
+    /// True where `candidate`'s value lands across rows from a statement
+    /// at `indent`, per [`Self::lands_across_rows`], and its opened row,
+    /// the pair opening at `column`, stays inside the budget, per
+    /// [`Self::opens_past_the_budget`]. Both read the text that value
+    /// lands as, meaning this source reparsed with every edit
+    /// `simplify-comprehensions` plans inside the value applied, measured
+    /// as the same candidate there.
+    fn opens_inside_the_budget(
+        &self,
+        candidate: &Candidate,
+        candidates: &[Candidate],
+        indent: usize,
+        column: usize,
+    ) -> bool {
+        let range = candidate.expr.range();
+        let simplified = outermost(
+            self.simplified
+                .iter()
+                .filter(|group| range.contains_range(blocks_span(group)))
+                .flatten()
+                .cloned()
+                .collect(),
+        );
+        if let Some((landed, map)) = (!simplified.is_empty())
+            .then(|| self.source.editing(simplified))
+            .flatten()
+            .filter(|(landed, _)| landed.text() != self.source.text())
+        {
+            let pair = forward_start(candidate.pair.start(), &map);
+            let landing = plan::candidates(&landed);
+            return landing
+                .iter()
+                .find(|other| Some(other.pair.start()) == pair)
+                .is_some_and(|other| {
+                    self.rule.measuring(&landed, |shedder| {
+                        shedder.opens_inside_the_budget(other, &landing, indent, column)
+                    })
+                });
+        }
+        let nested = nested_shed_edits(candidate, candidates);
+        let block = hung_block_through(self.source, candidate.inner, &nested, indent);
+        self.lands_across_rows(candidate.expr, indent)
+            && !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`

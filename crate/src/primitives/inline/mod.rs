@@ -190,7 +190,7 @@ pub(crate) fn whitespace_runs(text: &str) -> impl Iterator<Item = (usize, usize)
 /// where the run sits directly inside a bracket and to a single space
 /// everywhere else, leaving every run that carries no break as the
 /// source wrote it.
-pub(crate) fn collapse_soft_wraps(text: &str) -> String {
+fn collapse_soft_wraps(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut prev_end = 0;
     for (begin, len) in soft_wrap_runs(text) {

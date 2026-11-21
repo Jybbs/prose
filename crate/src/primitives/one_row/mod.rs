@@ -11,10 +11,7 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{
-    AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall, ExprDict,
-};
-use ruff_python_parser::parse_expression;
+use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
@@ -27,7 +24,6 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
-        range::blocks_span,
         slots::{holds_exactly, item_covering, item_holding, starting_within},
         walk::{Interpolations, any_over_expr_within},
     },
@@ -44,11 +40,9 @@ use render::{Writer, write_joined};
 /// closes a fracture at all, `expands_literals` whether
 /// `reflow-collections` expands a literal, `joins_literals` whether that
 /// rule runs at all, `max_dict_entries` is `None` where it expands none,
-/// leaving the entry cap inert, `rewrites` holds the f-string rewrites
-/// a form is measured through, none until
-/// [`forecasting`](Self::forecasting) binds one source's, and
-/// `simplified` holds the fix groups `simplify-comprehensions` emits,
-/// none until [`simplifying`](Self::simplifying) binds one source's.
+/// leaving the entry cap inert, and `rewrites` holds the f-string
+/// rewrites a form is measured through, none until
+/// [`forecasting`](Self::forecasting) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
@@ -58,7 +52,6 @@ pub(crate) struct Settings<'a> {
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
     rewrites: &'a [Edit],
-    simplified: &'a [Vec<Edit>],
 }
 
 impl<'a> Settings<'a> {
@@ -199,7 +192,6 @@ impl<'a> Settings<'a> {
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
             rewrites: self.rewrites,
-            simplified: self.simplified,
         }
     }
 
@@ -238,13 +230,6 @@ impl<'a> Settings<'a> {
         )?;
         out.push(')');
         Some(out)
-    }
-
-    /// True where a dict holding `entries` entries runs past
-    /// `max_dict_entries`, which `reflow-collections` expands whatever its
-    /// width.
-    pub(crate) fn caps_entries(&self, entries: usize) -> bool {
-        self.max_dict_entries.is_some_and(|cap| entries > cap)
     }
 
     /// True where `reflow-calls` is enabled, read off the rejoin terms
@@ -406,25 +391,15 @@ impl<'a> Settings<'a> {
     }
 
     /// True where a later rule reopens `expr` whatever its shape. That
-    /// happens where `expr` holds a dict past `max_dict_entries`, a call
-    /// past `max_args` that `reflow-calls` can name, or a call a
-    /// `simplified` group rewrites to a dict past `max_dict_entries`,
-    /// outside any replacement field.
+    /// happens where `expr` holds a dict past `max_dict_entries`, or a
+    /// call past `max_args` that `reflow-calls` can name, outside any
+    /// replacement field.
     pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
         any_over_expr_within(expr, Interpolations::Skip, |e| {
-            e.as_call_expr().is_some_and(|call| {
-                if self
-                    .simplified
-                    .iter()
-                    .any(|group| blocks_span(group) == call.range())
-                {
-                    self.caps_entries(self.simplified_entries(source, call.range()))
-                } else {
-                    self.rejoin.explodes(source, call)
-                }
-            }) || e
-                .as_dict_expr()
-                .is_some_and(|dict| self.caps_entries(dict.len()))
+            e.as_call_expr()
+                .is_some_and(|call| self.rejoin.explodes(source, call))
+                || e.as_dict_expr()
+                    .is_some_and(|dict| self.max_dict_entries.is_some_and(|cap| dict.len() > cap))
         })
     }
 
@@ -468,39 +443,6 @@ impl<'a> Settings<'a> {
         self.tail_through(source, padding, end, &mut FxHashMap::default())
     }
 
-    /// These settings reading each call that one of `simplified`, the
-    /// fix groups `simplify-comprehensions` emits over one source,
-    /// rewrites to a literal by its entry count in place of its argument
-    /// count.
-    pub(crate) fn simplifying(self, simplified: &'a [Vec<Edit>]) -> Self {
-        Self { simplified, ..self }
-    }
-
-    /// The entries in the dict literal `simplify-comprehensions` rewrites
-    /// the call over `range` to, read from the parsed
-    /// [`simplified_form`](Self::simplified_form), and none for any other
-    /// rewrite or a call no `simplified` group spans.
-    pub(crate) fn simplified_entries(&self, source: &Source, range: TextRange) -> usize {
-        self.simplified_form(source, range)
-            .and_then(|text| parse_expression(&text).ok())
-            .and_then(|parsed| parsed.expr().as_dict_expr().map(ExprDict::len))
-            .unwrap_or_default()
-    }
-
-    /// The text `simplify-comprehensions` rewrites the call over `range`
-    /// to, `None` where none of the `simplified` groups spans that call
-    /// whole.
-    pub(crate) fn simplified_form<'s>(
-        &self,
-        source: &'s Source,
-        range: TextRange,
-    ) -> Option<Cow<'s, str>> {
-        self.simplified
-            .iter()
-            .find(|group| blocks_span(group) == range)
-            .map(|group| apply_inline_edits(source, range, group))
-    }
-
     /// The display width of the source slice over `range` once each
     /// forecast rewrite inside it lands.
     pub(crate) fn slice_width(&self, source: &Source, range: TextRange) -> usize {
@@ -540,7 +482,6 @@ impl From<&Config> for Settings<'_> {
                 .filter(|_| config.expands_literals()),
             rejoin: config.fracture_settings(),
             rewrites: &[],
-            simplified: &[],
         }
     }
 }
@@ -759,11 +700,16 @@ mod tests {
         let mut config = Config::default();
         config.rules.reflow_collections.explode = explode;
         let source = parse("[dict(a=1, b=2, c=3, d=4)]");
-        let simplified = prepared_groups(&SimplifyComprehensions, &source);
+        let (landed, _) = source
+            .editing(
+                prepared_groups(&SimplifyComprehensions, &source)
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+            )
+            .expect("the rewrite parses");
         assert_eq!(
-            Settings::from(&config)
-                .simplifying(&simplified)
-                .reopens(&source, first_expr(&source)),
+            Settings::from(&config).reopens(&landed, first_expr(&landed)),
             expected,
         );
     }
