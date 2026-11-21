@@ -35,6 +35,7 @@ on:
       - crate/tests/imports/**
       - crate/tests/settle/**
       - harness/**
+    types: [opened, synchronize, reopened, ready_for_review]
 
   push:
     branches:
@@ -50,6 +51,7 @@ concurrency:
 jobs:
   plan:
     name            : 🗺️ Plan
+    if              : &ready ${{ !github.event.pull_request.draft }}
     outputs         : { matrix: "${{ steps.matrix.outputs.matrix }}" }
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
@@ -71,7 +73,7 @@ jobs:
 
   bake:
     name            : 🥧 Bake
-    if              : ${{ github.event_name != 'pull_request' }}
+    if              : ${{ github.event_name != 'pull_request' && !github.event.pull_request.draft }}
     runs-on         : *ubuntu
     timeout-minutes : &sweep 30
 
@@ -126,7 +128,7 @@ jobs:
 
   prune:
     name            : 🍂 Prune
-    if              : ${{ github.ref == 'refs/heads/main' }}
+    if              : ${{ github.ref == 'refs/heads/main' && !github.event.pull_request.draft }}
     needs           : bake
     permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
@@ -140,7 +142,7 @@ jobs:
 
   settle:
     name            : ⚓ Settle
-    if              : &pull-request ${{ github.event_name == 'pull_request' }}
+    if              : &pull-request ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
     runs-on         : *ubuntu
     timeout-minutes : *sweep
 
@@ -227,6 +229,7 @@ jobs:
 
   subsets:
     name            : ${{ matrix.label }}
+    if              : *ready
     needs           : plan
     runs-on         : *ubuntu
     timeout-minutes : *sweep
@@ -248,7 +251,7 @@ jobs:
 
   gate:
     name            : 🗞️ Brief
-    if              : always()
+    if              : ${{ always() && !github.event.pull_request.draft }}
     needs           : [bake, delta, imports, mutations, plan, settle, subsets]
     runs-on         : *ubuntu
     timeout-minutes : *timeout

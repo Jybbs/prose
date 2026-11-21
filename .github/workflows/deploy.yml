@@ -29,6 +29,7 @@ on:
       - crate/tests/fixtures/**
       - site/**
       - wasm/**
+    types: [opened, synchronize, reopened, ready_for_review]
 
   push:
     branches:
@@ -60,6 +61,7 @@ concurrency:
 jobs:
   checks:
     name            : ${{ matrix.name }}
+    if              : &ready ${{ !github.event.pull_request.draft }}
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
@@ -102,6 +104,7 @@ jobs:
 
   press:
     name            : 🎞️ Press
+    if              : *ready
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -173,6 +176,7 @@ jobs:
 
   render:
     name            : 🖋️ Render
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -200,6 +204,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
+    if              : *ready
     needs           : [checks, fit, press, render, sweep]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
@@ -221,7 +226,7 @@ jobs:
 
   prune:
     name            : 🍂 Prune
-    if              : github.event_name != 'pull_request'
+    if              : ${{ github.event_name != 'pull_request' && !github.event.pull_request.draft }}
     needs           : press
     permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
@@ -235,6 +240,7 @@ jobs:
 
   sweep:
     name            : 🦯 Axe
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -258,6 +264,7 @@ jobs:
 
   fit:
     name            : 🍋 Squeeze
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -281,7 +288,7 @@ jobs:
 
   gate:
     name            : 🗞️ Brief
-    if              : always()
+    if              : ${{ always() && !github.event.pull_request.draft }}
     needs           : [checks, deploy, fit, press, render, sweep]
     runs-on         : *ubuntu
     timeout-minutes : *timeout
