@@ -62,7 +62,7 @@ def test_proof_runs_the_binaries_it_is_given(
     tmp_path : Path
 ):
     """
-    Pins that one `cargo test` runs over the workspace less `prose_wasm`
+    Pins that one `cargo test` runs over the workspace without `prose_wasm`
     with a `--test` flag for each binary the task is given, or for each
     binary `PROOF_TARGETS` names when it is given none, passing no profile.
     """

@@ -1,7 +1,7 @@
 """
-Pins that `rust:probe` builds the sweep harnesses over the package
-selection `rust:proof` and the corpus sweeps build them over, so the cache
-it warms holds the feature set each of them resolves.
+Pins that `rust:probe` and the `sweep_test` the corpus sweeps run each build
+over the workspace without `prose_wasm`, the package selection `rust:proof`
+builds over.
 """
 
 from os         import environ
@@ -14,8 +14,8 @@ STAND_IN = "#!/bin/sh\nprintf '%s\\n' \"$*\"\n"
 
 def cargo_calls(command: list[Path | str], tmp_path: Path) -> list[str]:
     """
-    Runs `command` against a stand-in `cargo` that prints its arguments,
-    and returns each call's arguments as one line.
+    Runs `command` against a stand-in `cargo` that prints its arguments, and
+    returns each call's arguments as one line.
     """
     (cargo := tmp_path / "cargo").write_text(STAND_IN, encoding="utf-8")
     cargo.chmod(0o755)
@@ -33,12 +33,10 @@ def cargo_calls(command: list[Path | str], tmp_path: Path) -> list[str]:
     return finished.stdout.splitlines()
 
 
-def test_probe_builds_the_harnesses_over_the_workspace_less_wasm(
-    tmp_path: Path
-):
+def test_probe_builds_the_harnesses_over_the_workspace_without_wasm(tmp_path: Path):
     """
-    Pins that `rust:probe` builds the probe and corpus binaries, then the
-    corpus, imports, and settle harnesses over the workspace less
+    Pins that `rust:probe` builds the probe and corpus binaries, then
+    the corpus, imports, and settle harnesses over the workspace without
     `prose_wasm`.
     """
     assert cargo_calls([ROOT / ".mise/tasks/rust/probe"], tmp_path) == [
@@ -48,9 +46,9 @@ def test_probe_builds_the_harnesses_over_the_workspace_less_wasm(
     ]
 
 
-def test_sweeps_test_over_the_workspace_less_wasm(tmp_path: Path):
+def test_sweeps_test_over_the_workspace_without_wasm(tmp_path: Path):
     """
-    Pins that `sweep_test` runs `cargo test` over the workspace less
+    Pins that `sweep_test` runs `cargo test` over the workspace without
     `prose_wasm` under the probe profile, ahead of the arguments it is
     given.
     """
