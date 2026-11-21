@@ -490,6 +490,37 @@ mod tests {
         },
         "value = transform(dict(alpha_value=1, beta_value=2))\n"
     )]
+    #[case::dict_call_on_a_dict_past_the_entry_cap(
+        "value = (\n    dict({\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4})\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(52),
+        "value = dict({\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4})\n"
+    )]
+    #[case::dict_call_of_pairs_past_the_entry_cap(
+        "value = (\n    dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)])\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(52),
+        "value = dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)])\n"
+    )]
+    #[case::one_row_call_on_a_dict_call_inside_the_indented_row_past_the_entry_cap_with_reflow_calls_off(
+        "value = (\n    transform(dict(alpha=1, beta=2, gamma=3, delta=4))\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(62);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform(dict(alpha=1, beta=2, gamma=3, delta=4))\n"
+    )]
+    #[case::call_on_a_dict_comprehension_call_whose_rewrite_opens_inside_the_budget(
+        "value = (\n    dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(62),
+        "value = dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n"
+    )]
+    #[case::spanning_call_on_a_dict_comprehension_call_whose_rewrite_opens_inside_the_budget_with_reflow_calls_off(
+        "value = (\n    transform(dict((key, val.attr) for key, val in some_items), second_argument,\n        third)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(80);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform(dict((key, val.attr) for key, val in some_items), second_argument,\n    third)\n"
+    )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -563,10 +594,56 @@ mod tests {
             config.rules.reflow_collections.explode = false;
         }
     )]
+    #[case::spanning_call_on_a_dict_comprehension_call_past_the_budget_with_reflow_calls_off(
+        "value = (\n    transform(dict((key, val.attr) for key, val in some_items), second_argument,\n        third)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(60);
+            config.rules.reflow_calls.enabled = false;
+        }
+    )]
+    #[case::spanning_call_on_a_dict_call_past_the_budget_with_both_reflow_rules_off(
+        "value = (\n    transform(dict(alpha=1, beta=2), second_argument_name,\n        third)\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(50);
+            config.rules.reflow_calls.enabled = false;
+            config.rules.reflow_collections.enabled = false;
+        }
+    )]
+    #[case::call_on_a_dict_comprehension_call_past_the_budget(
+        "value = (\n    dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(55)
+    )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
     ) {
         assert_eq!(configured(src, configure), src);
+    }
+
+    #[test]
+    fn a_dict_call_on_a_dict_past_the_entry_cap_opens_at_every_width_its_pair_fits() {
+        let src =
+            "value = (\n    dict({\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4})\n)\n";
+        for width in 51..=54 {
+            assert_eq!(
+                configured(src, |config| config.code_line_length =
+                    NonZeroUsize::new(width)),
+                "value = dict({\"alpha\": 1, \"beta\": 2, \"gamma\": 3, \"delta\": 4})\n",
+                "width {width}",
+            );
+        }
+    }
+
+    #[test]
+    fn a_call_on_a_dict_comprehension_call_holds_wherever_its_rewritten_row_runs_past_the_budget() {
+        let src = "value = (\n    dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n)\n";
+        for width in 30..=59 {
+            assert_eq!(
+                configured(src, |config| config.code_line_length =
+                    NonZeroUsize::new(width)),
+                src,
+                "width {width}",
+            );
+        }
     }
 }

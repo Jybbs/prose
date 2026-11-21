@@ -8,6 +8,7 @@ use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
+use ruff_python_parser::parse_expression;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -24,8 +25,7 @@ use crate::{
             collapse_soft_wraps, display_width, run_closes_to_a_space, settled_head_column,
             settled_slice_width, settled_width, soft_wrap_runs,
         },
-        layout::{is_layoutable, item_indent},
-        one_row::simplified_entries,
+        layout::{is_layoutable, item_indent, requires_expand},
         range::blocks_span,
         slots::starting_within,
         splice::splice_preserves_tree,
@@ -125,12 +125,9 @@ impl Shedder<'_> {
     }
 
     /// The text `simplify-comprehensions` rewrites the call over `range`
-    /// to, `None` where none of its fix groups spans that call whole.
+    /// to, per [`Settings::simplified_form`](crate::primitives::one_row::Settings::simplified_form).
     fn simplified_form(&self, range: TextRange) -> Option<Cow<'_, str>> {
-        self.simplified
-            .iter()
-            .find(|group| blocks_span(group) == range)
-            .map(|group| apply_inline_edits(self.source, range, group))
+        self.one_row.simplified_form(self.source, range)
     }
 
     /// The columns `pair`'s own row carries past its closing paren once
@@ -165,10 +162,12 @@ impl Shedder<'_> {
 
     /// True where `candidate`'s opened form `text` leaves a statement row
     /// past the budget. That row runs from the column the pair opens at
-    /// through the first row of `text`, cut at the first argument list
-    /// `reflow-calls` can explode, literal `reflow-collections` can
-    /// expand, or call `simplify-comprehensions` rewrites to a brace
-    /// literal on that row while that rule runs. A call
+    /// through the first row of `text`, settled under the padding table,
+    /// and is cut at the first argument list `reflow-calls` can explode,
+    /// literal `reflow-collections` can expand, or call
+    /// `simplify-comprehensions` rewrites to such a literal on that row
+    /// while that rule runs, leaving out each opener a rewrite of that
+    /// rule removes. A call
     /// `simplify-comprehensions` rewrites runs through the opening bracket
     /// of its literal while `reflow-collections` expands literals, and
     /// through that literal's first row otherwise.
@@ -185,26 +184,45 @@ impl Shedder<'_> {
             return column + head > self.code_line_length;
         }
         let range = candidate.expr.range();
-        let written = display_width(text.lines().next().unwrap_or_default());
+        let row = TextRange::new(
+            range.start(),
+            self.source.text().line_end(range.start()).min(range.end()),
+        );
+        let written = settled_width(
+            self.source,
+            self.padding,
+            row,
+            display_width(text.lines().next().unwrap_or_default()),
+        );
+        let survives = |opener: &&TextRange| {
+            !self
+                .simplified
+                .iter()
+                .flatten()
+                .any(|edit| edit.range().contains(opener.start()))
+        };
         let calls = starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .filter(|_| self.one_row.closes());
+            .filter(|_| self.one_row.closes())
+            .filter(survives);
         let literals = starting_within(self.source.expandable_literals(), range, Ranged::start)
-            .filter(|_| self.one_row.expands_literals());
-        let dicts = starting_within(self.simplified, range, |group| blocks_span(group).start())
+            .filter(|_| self.one_row.expands_literals())
+            .filter(survives);
+        let rewritten = starting_within(self.simplified, range, |group| blocks_span(group).start())
             .map(|group| blocks_span(group))
             .filter(|span| {
                 self.one_row.expands_literals()
-                    && self
-                        .simplified_form(*span)
-                        .is_some_and(|literal| literal.starts_with('{') && literal.len() > 2)
+                    && self.simplified_form(*span).is_some_and(|literal| {
+                        parse_expression(&literal)
+                            .is_ok_and(|parsed| requires_expand(parsed.expr()))
+                    })
             });
         let head = calls
             .chain(literals)
             .map(|opener| opener.start())
-            .chain(dicts.map(|span| span.start()))
+            .chain(rewritten.map(|span| span.start()))
             .map(|start| TextRange::new(range.start(), start + TextSize::of('(')))
             .filter(|head| !self.source.contains_line_break(*head))
-            .map(|head| display_width(self.source.slice(head)))
+            .map(|head| settled_slice_width(self.source, self.padding, head))
             .fold(written, usize::min);
         column + head > self.code_line_length
     }
@@ -238,7 +256,8 @@ impl Shedder<'_> {
                     &collapse_soft_wraps(&literal),
                     call.range(),
                 );
-                self.one_row.caps_entries(simplified_entries(call))
+                self.one_row
+                    .caps_entries(self.one_row.simplified_entries(self.source, call.range()))
                     || ((spans || self.one_row.expands_literals())
                         && !self.one_row.fits(column + width))
             }
@@ -273,11 +292,12 @@ impl Shedder<'_> {
                         let tail = width(TextRange::new(inner.end(), call.end()));
                         match inner {
                             Expr::Call(dict)
-                                if simplified_entries(dict) > 0
-                                    && self.simplified_form(dict.range()).is_some() =>
+                                if let entries =
+                                    self.one_row.simplified_entries(self.source, dict.range())
+                                    && entries > 0 =>
                             {
                                 self.one_row.expands_literals()
-                                    && (self.one_row.caps_entries(simplified_entries(dict))
+                                    && (self.one_row.caps_entries(entries)
                                         || !self.one_row.fits(column + width(dict.range()) + tail))
                             }
                             _ => self.one_row.expands(

@@ -11,14 +11,16 @@
 use std::borrow::Cow;
 
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall};
+use ruff_python_ast::{
+    AnyNodeRef, AnyParameterRef, ArgOrKeyword, Arguments, Expr, ExprCall, ExprDict,
+};
+use ruff_python_parser::parse_expression;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use rustc_hash::FxHashMap;
 
 use crate::{
     config::Config,
     primitives::{
-        binding::sequence_elts,
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
@@ -416,7 +418,7 @@ impl<'a> Settings<'a> {
                     .iter()
                     .any(|group| blocks_span(group) == call.range())
                 {
-                    self.caps_entries(simplified_entries(call))
+                    self.caps_entries(self.simplified_entries(source, call.range()))
                 } else {
                     self.rejoin.explodes(source, call)
                 }
@@ -474,6 +476,31 @@ impl<'a> Settings<'a> {
         Self { simplified, ..self }
     }
 
+    /// The entries in the dict literal `simplify-comprehensions` rewrites
+    /// the call over `range` to, read from the parsed
+    /// [`simplified_form`](Self::simplified_form), and none for any other
+    /// rewrite or a call no `simplified` group spans.
+    pub(crate) fn simplified_entries(&self, source: &Source, range: TextRange) -> usize {
+        self.simplified_form(source, range)
+            .and_then(|text| parse_expression(&text).ok())
+            .and_then(|parsed| parsed.expr().as_dict_expr().map(ExprDict::len))
+            .unwrap_or_default()
+    }
+
+    /// The text `simplify-comprehensions` rewrites the call over `range`
+    /// to, `None` where none of the `simplified` groups spans that call
+    /// whole.
+    pub(crate) fn simplified_form<'s>(
+        &self,
+        source: &'s Source,
+        range: TextRange,
+    ) -> Option<Cow<'s, str>> {
+        self.simplified
+            .iter()
+            .find(|group| blocks_span(group) == range)
+            .map(|group| apply_inline_edits(source, range, group))
+    }
+
     /// The display width of the source slice over `range` once each
     /// forecast rewrite inside it lands.
     pub(crate) fn slice_width(&self, source: &Source, range: TextRange) -> usize {
@@ -515,24 +542,6 @@ impl From<&Config> for Settings<'_> {
             rewrites: &[],
             simplified: &[],
         }
-    }
-}
-
-/// The entries in the dict `simplify-comprehensions` rewrites `call` to,
-/// one per keyword `dict(a=1)` names and one per pair the list or tuple
-/// in `dict([("a", 1)])` holds, and none for a call to another
-/// constructor.
-pub(crate) fn simplified_entries(call: &ExprCall) -> usize {
-    if call
-        .func
-        .as_name_expr()
-        .is_none_or(|name| name.id.as_str() != "dict")
-    {
-        return 0;
-    }
-    match &*call.arguments.args {
-        [arg] => sequence_elts(arg).map_or(0, <[Expr]>::len),
-        _ => call.arguments.keywords.len(),
     }
 }
 
