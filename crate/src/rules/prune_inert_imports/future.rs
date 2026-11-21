@@ -10,11 +10,16 @@
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
 
-use super::PruneInertImports;
+use super::{
+    PruneInertImports,
+    inventory::ImportNode,
+    reexports::{REEXPORT_CODE, Reexports},
+};
 use crate::{
     config::Config,
     primitives::{
         binding::{BindingAnalysis, BindingKind},
+        comments::noqa_names,
         scope::sub_bodies,
         slots::{slot_holding, slot_positions},
         tiering::Annotations,
@@ -49,6 +54,35 @@ impl DirectiveGate {
     pub(crate) fn pruning(config: &Config) -> Option<Self> {
         let rule = &config.rules.prune_inert_imports;
         (rule.enabled && rule.drop_unreferenced).then(|| Self::from_config(config))
+    }
+
+    /// True when nothing holds the directive the import `node` at `stmt`
+    /// carries from the drop, meaning no `noqa` naming `F401` on the
+    /// statement, no file-level pragma, `__all__` entry, or self-alias
+    /// `reexports` reads, and no suppression directive over it.
+    pub(super) fn releases(
+        source: &Source,
+        reexports: &Reexports<'_>,
+        stmt: &Stmt,
+        node: &ImportNode<'_>,
+    ) -> bool {
+        node.future_annotations().is_some_and(|index| {
+            let alias = &node.names()[index];
+            !noqa_names(source, stmt, REEXPORT_CODE)
+                && !reexports.holds(alias, node.bound(alias))
+                && !source
+                    .suppression_map()
+                    .suppresses(stmt, PruneInertImports::SLUG)
+        })
+    }
+
+    /// True when `source` carries a directive `prune-inert-imports` drops
+    /// once the gate clears, per `releases`.
+    pub(crate) fn drops_from(source: &Source) -> bool {
+        let reexports = Reexports::of(source);
+        source.ast().body.iter().any(|stmt| {
+            ImportNode::of(stmt).is_some_and(|node| Self::releases(source, &reexports, stmt, &node))
+        })
     }
 
     /// True when removing the directive leaves every annotation in

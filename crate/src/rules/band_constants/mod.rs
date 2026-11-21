@@ -61,15 +61,16 @@ impl BandConstants {
     }
 
     /// The timing of the annotations of `source`'s module under the
-    /// rule's target. A module whose future import the order seated at
-    /// the stringified timing would leave inert to `prune-inert-imports`
-    /// reads at the timing it takes without the import, keeping the
-    /// order that holds the import.
+    /// rule's target. A module whose future import `prune-inert-imports`
+    /// would drop once the order seated at the stringified timing leaves
+    /// it inert reads at the timing it takes without the import, keeping
+    /// the order that holds the import.
     pub(crate) fn annotations(&self, source: &Source) -> Annotations {
         match Annotations::of(&source.ast().body, self.target_version) {
             Annotations::Stringified
                 if self.directive.as_ref().is_some_and(|gate| {
-                    gate.clears(source, Some(self), Annotations::Stringified)
+                    DirectiveGate::drops_from(source)
+                        && gate.clears(source, Some(self), Annotations::Stringified)
                 }) =>
             {
                 Annotations::under(self.target_version)
@@ -209,6 +210,48 @@ mod tests {
         None,
         true,
         false,
+        Annotations::Stringified
+    )]
+    #[case::import_a_noqa_holds_stays_stringified(
+        "from __future__ import annotations  # noqa: F401\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_file_pragma_holds_stays_stringified(
+        "# ruff: noqa: F401\nfrom __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_dunder_all_lists_stays_stringified(
+        "from __future__ import annotations\n\n__all__ = [\"P\", \"annotations\"]\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_self_alias_holds_stays_stringified(
+        "from __future__ import annotations as annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_skip_directive_holds_stays_stringified(
+        "from __future__ import annotations  # prose: skip\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_an_off_region_holds_stays_stringified(
+        "# prose: off\nfrom __future__ import annotations\n# prose: on\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
         Annotations::Stringified
     )]
     #[case::module_without_the_import_reads_eagerly(
