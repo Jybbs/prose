@@ -1,9 +1,10 @@
-import { useTimeoutFn }                                         from '@vueuse/core'
+import { useEventListener, useTimeoutFn }                       from '@vueuse/core'
 import { computed, defineComponent, Fragment, ref, shallowRef } from 'vue'
 import type { PropType }                                        from 'vue'
 
 import { Popup } from '../../../kit'
 
+import { useDismissedHover }       from '../../../lib/composables/use-dismissed-hover'
 import { noticeKey, rankedFacets } from '../../../lib/sandbox/config-decorations'
 import type { RuleControl }        from '../../../lib/sandbox/config-schema.data'
 
@@ -23,6 +24,7 @@ export const ConfigFlagPopup = defineComponent({
     apply : (path: string, replacement: string) => typeof path === 'string' && typeof replacement === 'string'
   },
   setup(props, { emit, expose }) {
+    const hover  = useDismissedHover()
     const path   = ref('')
     const target = shallowRef<HTMLElement | null>(null)
 
@@ -37,13 +39,18 @@ export const ConfigFlagPopup = defineComponent({
     const trail = computed(() => path.value.split('.').slice(0, -1))
     const wrote = computed(() => path.value.split('.').at(-1) ?? '')
 
+    function flagFrom(event: Event): HTMLElement | null {
+      const node = event.target
+      return node instanceof Element ? node.closest<HTMLElement>('.lint-flag') : null
+    }
+
     // The anchors sit inside HTML set through `innerHTML`, so event delegation finds the
     // hovered key and the popup takes it as its anchor. A repeat on the flag
     // already shown returns before the read, since crossing between a flag's own
     // token spans re-fires the delegated hover.
     function show(event: Event): void {
-      const flag = (event.target as HTMLElement).closest<HTMLElement>('.lint-flag')
-      if (!flag) return
+      const flag = flagFrom(event)
+      if (hover.enter(flag) || !flag) return
       hold()
       if (path.value && flag === target.value) return
       const named = noticeKey(flag.dataset.message ?? '')
@@ -55,6 +62,7 @@ export const ConfigFlagPopup = defineComponent({
     // The pointer crosses dead space on its way from the key to a replacement
     // button, so a leave schedules the close and entering the card cancels it.
     function hide(): void {
+      hover.leave()
       if (!closing.isPending.value) closing.start()
     }
 
@@ -67,10 +75,19 @@ export const ConfigFlagPopup = defineComponent({
       path.value = ''
     }
 
+    // Closes the card on Escape or an interaction outside it, leaving focus
+    // where it is.
+    function dismiss(): void {
+      close()
+      hover.dismiss()
+    }
+
     function apply(replacement: string): void {
       emit('apply', path.value, replacement)
       close()
     }
+
+    useEventListener('pointermove', event => { hover.move(flagFrom(event)) })
 
     expose({ hide, show })
 
@@ -79,6 +96,7 @@ export const ConfigFlagPopup = defineComponent({
         anchor={target.value}
         class="glossary-popup"
         label={path.value}
+        onDismiss={dismiss}
         open={path.value !== ''}
         overflowPadding={16}
         passive
