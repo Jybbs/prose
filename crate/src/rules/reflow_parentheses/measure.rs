@@ -22,7 +22,7 @@ use crate::{
         edit::{apply_inline_edits, insert_edit},
         inline::{
             collapse_soft_wraps, display_width, run_closes_to_a_space, settled_head_column,
-            settled_width, soft_wrap_runs,
+            settled_slice_width, settled_width, soft_wrap_runs,
         },
         layout::{is_layoutable, item_indent},
         range::blocks_span,
@@ -239,11 +239,21 @@ impl Shedder<'_> {
                 .is_some()
                     && self
                         .one_row
-                        .fitted(self.source, expr, expr.into(), column, 0)
-                        .is_none()
+                        .condensed(self.source, expr, expr.into())
+                        .is_none_or(|form| {
+                            !self.one_row.fits(
+                                column
+                                    + self.one_row.text_width(
+                                        self.source,
+                                        self.padding,
+                                        &form,
+                                        call.range(),
+                                    ),
+                            )
+                        })
             }
             Expr::Call(call) => {
-                let width = |range: TextRange| display_width(self.source.slice(range));
+                let width = |range| settled_slice_width(self.source, self.padding, range);
                 spans
                     || any_over_expr_within(expr, Interpolations::Skip, |inner| {
                         self.one_row.expands(

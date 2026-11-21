@@ -24,6 +24,7 @@ use crate::{
         inline::{display_width, settled_slice_width, settled_width, spans_rows},
         layout::{is_collapse_only, is_collapsible, is_column_shaped, is_multi_entry},
         params::parameter_sites,
+        range::blocks_span,
         slots::{holds_exactly, item_covering, item_holding, starting_within},
         walk::{Interpolations, any_over_expr_within},
     },
@@ -40,9 +41,11 @@ use render::{Writer, write_joined};
 /// closes a fracture at all, `expands_literals` whether
 /// `reflow-collections` expands a literal, `joins_literals` whether that
 /// rule runs at all, `max_dict_entries` is `None` where it expands none,
-/// leaving the entry cap inert, and `rewrites` holds the f-string
-/// rewrites a form is measured through, none until
-/// [`forecasting`](Self::forecasting) binds one source's.
+/// leaving the entry cap inert, `rewrites` holds the f-string rewrites
+/// a form is measured through, none until
+/// [`forecasting`](Self::forecasting) binds one source's, and
+/// `simplified` holds the fix groups `simplify-comprehensions` emits,
+/// none until [`simplifying`](Self::simplifying) binds one source's.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Settings<'a> {
     code_line_length: usize,
@@ -52,6 +55,7 @@ pub(crate) struct Settings<'a> {
     max_dict_entries: Option<usize>,
     rejoin: fracture::Settings<'a>,
     rewrites: &'a [Edit],
+    simplified: &'a [Vec<Edit>],
 }
 
 impl<'a> Settings<'a> {
@@ -192,6 +196,7 @@ impl<'a> Settings<'a> {
             max_dict_entries: self.max_dict_entries,
             rejoin: self.rejoin.against(targets),
             rewrites: self.rewrites,
+            simplified: self.simplified,
         }
     }
 
@@ -398,15 +403,25 @@ impl<'a> Settings<'a> {
     }
 
     /// True where a later rule reopens `expr` whatever its shape. That
-    /// happens where `expr` holds a dict past `max_dict_entries`, or a
-    /// call past `max_args` that `reflow-calls` can name, outside any
-    /// replacement field.
+    /// happens where `expr` holds a dict past `max_dict_entries`, a call
+    /// past `max_args` that `reflow-calls` can name, or a call a
+    /// `simplified` group rewrites to a dict past `max_dict_entries`,
+    /// outside any replacement field.
     pub(crate) fn reopens(&self, source: &Source, expr: &Expr) -> bool {
         any_over_expr_within(expr, Interpolations::Skip, |e| {
-            e.as_call_expr()
-                .is_some_and(|call| self.rejoin.explodes(source, call))
-                || e.as_dict_expr()
-                    .is_some_and(|dict| self.caps_entries(dict.len()))
+            e.as_call_expr().is_some_and(|call| {
+                if self
+                    .simplified
+                    .iter()
+                    .any(|group| blocks_span(group) == call.range())
+                {
+                    self.caps_entries(call.arguments.keywords.len())
+                } else {
+                    self.rejoin.explodes(source, call)
+                }
+            }) || e
+                .as_dict_expr()
+                .is_some_and(|dict| self.caps_entries(dict.len()))
         })
     }
 
@@ -450,6 +465,14 @@ impl<'a> Settings<'a> {
         self.tail_through(source, padding, end, &mut FxHashMap::default())
     }
 
+    /// These settings reading each call that one of `simplified`, the
+    /// fix groups `simplify-comprehensions` emits over one source,
+    /// rewrites to a literal by its entry count in place of its argument
+    /// count.
+    pub(crate) fn simplifying(self, simplified: &'a [Vec<Edit>]) -> Self {
+        Self { simplified, ..self }
+    }
+
     /// The display width of the source slice over `range` once each
     /// forecast rewrite inside it lands.
     pub(crate) fn slice_width(&self, source: &Source, range: TextRange) -> usize {
@@ -489,6 +512,7 @@ impl From<&Config> for Settings<'_> {
                 .filter(|_| config.expands_literals()),
             rejoin: config.fracture_settings(),
             rewrites: &[],
+            simplified: &[],
         }
     }
 }
@@ -512,7 +536,11 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{first_expr, first_value, parse};
+    use crate::{
+        pipeline::prepared_groups,
+        rules::simplify_comprehensions::SimplifyComprehensions,
+        testing::{first_expr, first_value, parse},
+    };
 
     /// `src`'s first expression's one-row form under `config`.
     fn form_under(config: &Config, src: &str) -> Option<String> {
@@ -689,6 +717,25 @@ mod tests {
         let source = parse(src);
         assert_eq!(
             Settings::from(&Config::default()).reopens(&source, first_expr(&source)),
+            expected,
+        );
+    }
+
+    #[rstest]
+    #[case::dict_past_the_entry_cap(true, true)]
+    #[case::literals_left_whole(false, false)]
+    fn reopens_reads_a_simplified_call_by_its_entries(
+        #[case] explode: bool,
+        #[case] expected: bool,
+    ) {
+        let mut config = Config::default();
+        config.rules.reflow_collections.explode = explode;
+        let source = parse("[dict(a=1, b=2, c=3, d=4)]");
+        let simplified = prepared_groups(&SimplifyComprehensions, &source);
+        assert_eq!(
+            Settings::from(&config)
+                .simplifying(&simplified)
+                .reopens(&source, first_expr(&source)),
             expected,
         );
     }

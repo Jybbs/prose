@@ -136,7 +136,11 @@ impl Rule for ReflowParentheses {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             folds: Vec::new(),
-            one_row: self.one_row.against(&targets).forecasting(&fstrings),
+            one_row: self
+                .one_row
+                .against(&targets)
+                .forecasting(&fstrings)
+                .simplifying(&simplified),
             padding: &padding,
             reservations: &reservations,
             simplified: &simplified,
@@ -457,6 +461,14 @@ mod tests {
         },
         "value = transform_values({\"alpha\": 1, \"beta\": 22})\n"
     )]
+    #[case::one_row_call_on_a_dict_past_the_indented_row_with_reflow_calls_off(
+        "value = (\n    transform({\"alpha\": 1, \"beta\": 2222})\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform({\"alpha\": 1, \"beta\": 2222})\n"
+    )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -487,6 +499,35 @@ mod tests {
         |config: &mut Config| {
             config.code_line_length = NonZeroUsize::new(40);
             config.rules.reflow_calls.enabled = false;
+            config.rules.reflow_collections.enabled = false;
+        }
+    )]
+    #[case::one_row_call_on_a_dict_inside_the_budget_once_its_rewrite_lands_with_reflow_calls_off(
+        "value = (\n    transform({\"alpha\": list(), \"beta\": 2})\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        }
+    )]
+    #[case::dict_call_whose_first_literal_row_outruns_the_budget_with_reflow_collections_off(
+        &format!("value_{0} = (\n    dict(\n        alpha_value_long_name=1,\n        b=2\n    )\n)\n", "k".repeat(60)),
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::one_row_call_on_a_dict_inside_the_budget_once_its_padding_strips_with_reflow_calls_off(
+        "value = (\n    transform_values( {\"alpha\": 1, \"beta\": 22} )\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(46);
+            config.rules.reflow_calls.enabled = false;
+        }
+    )]
+    #[case::one_row_call_on_a_dict_inside_the_budget_once_its_padding_strips(
+        "value = (\n    transform_values( {\"alpha\": 1, \"beta\": 22} )\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(46)
+    )]
+    #[case::call_on_a_dict_call_past_max_args_with_reflow_collections_off(
+        "value = (\n    transform(dict(alpha=1, beta=2, gamma=3, delta=4))\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(62);
             config.rules.reflow_collections.enabled = false;
         }
     )]
