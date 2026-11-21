@@ -15,6 +15,8 @@ from subprocess      import run
 from sys             import executable
 from tempfile        import gettempdir
 
+ROOT = Path(__file__).resolve().parents[3]
+
 
 @fixture
 def leaked(monkeypatch: MonkeyPatch):
@@ -180,3 +182,25 @@ def test_session_writes_outside_the_shared_temporary_root(
     shared = Path(gettempdir()).resolve() / f"pytest-of-{getuser()}"
 
     assert not tmp_path_factory.getbasetemp().is_relative_to(shared)
+
+
+def test_task_runs_the_suite_at_the_automatic_worker_count(
+    stand_in: Callable[..., Path]
+):
+    """
+    Pins that `repo:test` runs `.mise/tests` across the worker count
+    pytest-xdist detects, passing each argument it is given after the suite.
+    """
+    stand_in("uv")
+    finished = run(
+        [ROOT / ".mise/tasks/repo/test", "-k", "case"],
+        capture_output = True,
+        check          = True,
+        cwd            = ROOT,
+        text           = True
+    )
+
+    assert finished.stdout.splitlines() == [
+        "run", "--locked", "--only-group", "test", "--project", "crate",
+        "pytest", "--numprocesses=auto", ".mise/tests", "-k", "case"
+    ]

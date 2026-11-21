@@ -5,20 +5,19 @@ targets each one reads.
 
 from collections.abc import Callable
 from pathlib         import Path
+from pytest          import fixture
 from subprocess      import run
 from tomllib         import loads
 
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_deny_runs_each_check_under_its_policy_and_targets(
-    stand_in: Callable[..., Path]
-):
+@fixture(autouse=True)
+def cargo(stand_in: Callable[..., Path]):
     """
-    Pins that `rust:deny` runs advisories, bans, and sources under
-    `.cargo/deny.toml`, then advisories under a copy reporting every
-    unmaintained crate as a warning, then licenses over each target
-    `.github/scripts/platforms.toml` names and `wasm32-unknown-unknown`.
+    Puts a stand-in `cargo` first on `PATH`, printing each argument after
+    the subcommand on a line of its own and the `unmaintained` line of each
+    `--config` file in place of its path.
     """
     stand_in(
         "cargo",
@@ -29,6 +28,15 @@ def test_deny_runs_each_check_under_its_policy_and_targets(
         "  shift\n"
         "done\n"
     )
+
+
+def test_deny_runs_each_check_under_its_policy_and_targets():
+    """
+    Pins that `rust:deny` runs advisories, bans, and sources under
+    `.cargo/deny.toml`, then advisories under a copy reporting every
+    unmaintained crate as a warning, then licenses over each target
+    `.github/scripts/platforms.toml` names and `wasm32-unknown-unknown`.
+    """
     platforms = loads(
         (ROOT / ".github/scripts/platforms.toml").read_text(encoding="utf-8")
     )["platforms"]

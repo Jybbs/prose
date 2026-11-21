@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pytest          import mark, param
 from subprocess      import CompletedProcess
 
-PYTEST = "uv run --locked --only-group test --project crate pytest"
+PYTEST = "uv run --locked --only-group test --project crate pytest --numprocesses=auto"
 SUITE  = (
     ".mise/tests/conftest.py", ".mise/tests/py/conftest.py", ".mise/tests/py/format.py",
     ".mise/tests/py/lint.py", ".mise/tests/repo/audit.py"
