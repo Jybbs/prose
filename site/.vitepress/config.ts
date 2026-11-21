@@ -2,50 +2,50 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import tailwindcss                                from '@tailwindcss/vite'
-import { defineConfig }                           from 'vitepress'
+import { defineConfig, type MarkdownOptions }     from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 
-import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery'
-import { checkBundleBudget }                          from './lib/config/bundle-budget'
-import { canonicalUrl }                               from './lib/config/canonical-url'
-import * as head                                      from './lib/config/head'
-import { injectFixtures }                             from './lib/config/inject-fixtures'
-import { ROBOTS_TXT }                                 from './lib/config/robots'
-import { buildSidebar }                               from './lib/config/sidebar'
-import * as stylesheetLayer                           from './lib/config/stylesheet-layer'
-import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin'
-import { corpusLintFindings }                         from './lib/fixtures/walker'
-import { glossary }                                   from './lib/glossary/entries'
-import { glossaryHrefs }                              from './lib/glossary/hrefs'
-import { buildPhraseToSlug }                          from './lib/glossary/phrase-map'
-import { glossaryPlugin }                             from './lib/glossary/plugin'
-import { readPlatforms }                              from './lib/guide/platforms'
-import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin'
-import { calloutPlugin }                              from './lib/markdown/callout-plugin'
-import { codeOperatorPlugin }                         from './lib/markdown/code-operators'
-import { codeTransformers }                           from './lib/markdown/code-transformers'
-import { configFormsPlugin }                          from './lib/markdown/config-forms-plugin'
-import { emblemPlugin }                               from './lib/markdown/emblem-plugin'
-import { HighlightCache }                             from './lib/markdown/highlight-cache'
-import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin'
-import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin'
-import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin'
-import { TokenClasses }                               from './lib/markdown/token-classes'
-import { compositionDir, readCompositionData }        from './lib/rules/composition'
-import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery'
-import { assertCorpusIntegrity }                      from './lib/rules/integrity'
-import { ruleLinkPlugin }                             from './lib/rules/link-plugin'
-import { readRuleFixtures }                           from './lib/rules/rule-fixtures'
-import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin'
-import * as constants                                 from './lib/shared/constants'
-import { emblemsOf }                                  from './lib/shared/emblems'
-import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette'
-import * as paths                                     from './lib/shared/paths'
-import { SECTIONS }                                   from './lib/shared/registries'
-import { readRenderGraph }                            from './lib/shared/render-graph'
-import { sectionRoute }                               from './lib/shared/routes'
-import { TOOL_SEEDS }                                 from './lib/shared/tools'
-import * as version                                   from './lib/shared/version'
+import { discoverPrimitiveIndex, discoverPrimitives } from './lib/architecture/discovery.ts'
+import { checkBundleBudget }                          from './lib/config/bundle-budget.ts'
+import { canonicalUrl }                               from './lib/config/canonical-url.ts'
+import * as head                                      from './lib/config/head.ts'
+import { injectFixtures }                             from './lib/config/inject-fixtures.ts'
+import { ROBOTS_TXT }                                 from './lib/config/robots.ts'
+import { buildSidebar }                               from './lib/config/sidebar.ts'
+import * as stylesheetLayer                           from './lib/config/stylesheet-layer.ts'
+import { fixtureReloadPlugin }                        from './lib/fixtures/reload-plugin.ts'
+import { corpusLintFindings }                         from './lib/fixtures/walker.ts'
+import { glossary }                                   from './lib/glossary/entries.ts'
+import { glossaryHrefs }                              from './lib/glossary/hrefs.ts'
+import { buildPhraseToSlug }                          from './lib/glossary/phrase-map.ts'
+import { glossaryPlugin }                             from './lib/glossary/plugin.ts'
+import { readPlatforms }                              from './lib/guide/platforms.ts'
+import { bodyLinkPlugin }                             from './lib/markdown/body-link-plugin.ts'
+import { calloutPlugin }                              from './lib/markdown/callout-plugin.ts'
+import { codeOperatorPlugin }                         from './lib/markdown/code-operators.ts'
+import { codeTransformers }                           from './lib/markdown/code-transformers.ts'
+import { configFormsPlugin }                          from './lib/markdown/config-forms-plugin.ts'
+import { emblemPlugin }                               from './lib/markdown/emblem-plugin.ts'
+import { HighlightCache }                             from './lib/markdown/highlight-cache.ts'
+import { proseMarkPlugin }                            from './lib/markdown/prose-mark-plugin.ts'
+import { scrollStopPlugin }                           from './lib/markdown/scroll-stop-plugin.ts'
+import { sectionHeadingPlugin }                       from './lib/markdown/section-heading-plugin.ts'
+import { TokenClasses }                               from './lib/markdown/token-classes.ts'
+import { compositionDir, readCompositionData }        from './lib/rules/composition.ts'
+import { discoverRuleIndex, discoverRules }           from './lib/rules/discovery.ts'
+import { assertCorpusIntegrity }                      from './lib/rules/integrity.ts'
+import { ruleLinkPlugin }                             from './lib/rules/link-plugin.ts'
+import { readRuleFixtures }                           from './lib/rules/rule-fixtures.ts'
+import { serveWasmPlugin }                            from './lib/sandbox/serve-plugin.ts'
+import * as constants                                 from './lib/shared/constants.ts'
+import { emblemsOf }                                  from './lib/shared/emblems.ts'
+import { PALETTE, paletteCss, themeCss }              from './lib/shared/palette.ts'
+import * as paths                                     from './lib/shared/paths.ts'
+import { SECTIONS }                                   from './lib/shared/registries.ts'
+import { readRenderGraph }                            from './lib/shared/render-graph.ts'
+import { sectionRoute }                               from './lib/shared/routes.ts'
+import { TOOL_SEEDS }                                 from './lib/shared/tools.ts'
+import * as version                                   from './lib/shared/version.ts'
 
 const crate                = paths.crateDir(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
@@ -67,11 +67,16 @@ const themeColor           = PALETTE.ube
 const fixturesRoot         = paths.fixturesDirFrom(crate)
 const tokenClasses         = await TokenClasses.read()
 const lintFindings         = corpusLintFindings(crate)
-const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+const highlightOptions     = {
+  codeTransformers  : codeTransformers(lintFindings, tokenClasses),
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
-  data              : Object.fromEntries(lintFindings),
-  graph             : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
   theme             : constants.SHIKI_THEMES
+} satisfies MarkdownOptions
+const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
+  data     : Object.fromEntries(lintFindings),
+  graph    : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
+  lockfile : fs.readFileSync(path.join(siteDirectory, 'bun.lock'), 'utf8'),
+  options  : highlightOptions
 })
 const virtualSheets        = new Map([
   ['virtual:prose-palette.css', paletteCss],
@@ -96,7 +101,7 @@ export default defineConfig({
   ],
   lastUpdated   : true,
   markdown: {
-    codeTransformers: codeTransformers(lintFindings, tokenClasses),
+    ...highlightOptions,
     config: md => {
       md.use(highlightCache.plugin)
       md.use(configFormsPlugin)
@@ -111,9 +116,7 @@ export default defineConfig({
       md.use(codeOperatorPlugin)
       md.use(scrollStopPlugin)
     },
-    colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
-    lineNumbers       : false,
-    theme             : constants.SHIKI_THEMES
+    lineNumbers: false
   },
   sitemap: { hostname: constants.SITE_HOSTNAME },
   srcDir        : pagesDirectory,
@@ -141,7 +144,7 @@ export default defineConfig({
   async buildEnd(siteConfig) {
     fs.writeFileSync(path.join(siteConfig.outDir, 'robots.txt'), ROBOTS_TXT)
     stylesheetLayer.layerIconStylesheet(path.join(siteConfig.outDir, siteConfig.assetsDir))
-    const { buildOgCards } = await import('./lib/og/render/build')
+    const { buildOgCards } = await import('./lib/og/render/build.ts')
     await buildOgCards(siteConfig.srcDir, siteConfig.pages, siteConfig.outDir)
     checkBundleBudget(siteConfig.outDir)
     await highlightCache.flush()

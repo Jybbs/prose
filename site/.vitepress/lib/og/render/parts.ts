@@ -2,7 +2,7 @@ import satori, { type Font }        from 'satori'
 import { createElement as h }       from 'satori/jsx'
 import type { JSXElement, JSXNode } from 'satori/jsx'
 
-import { PALETTE } from '../../shared/palette'
+import { PALETTE } from '../../shared/palette.ts'
 
 export const CARD_HEIGHT = 630
 export const CARD_WIDTH  = 1200

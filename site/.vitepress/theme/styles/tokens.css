@@ -1,6 +1,6 @@
 :root {
-  --prose-font-display           : 'Fraunces Variable', Georgia, "Times New Roman", serif;
-  --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
+  --prose-font-display           : 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --vp-font-family-base          : 'Lora Variable', Georgia, 'Times New Roman', serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --prose-radius-1               : 1px;
@@ -43,7 +43,6 @@
   --prose-tint-30                : 30%;
   --prose-tint-strong            : 32%;
   --prose-tint-35                : 35%;
-  --prose-tint-38                : 38%;
   --prose-tint-40                : 40%;
   --prose-tint-45                : 45%;
   --prose-tint-50                : 50%;
@@ -304,7 +303,7 @@
 
 .shiki,
 .shiki-magic-move-container {
-  background-color: var(--vp-code-block-bg) !important;
+  background-color : var(--vp-code-block-bg) !important;
 }
 
 .dark .shiki span,

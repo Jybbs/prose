@@ -21,9 +21,9 @@ export const ReleaseStamp = defineComponent({
           aria-hidden="true"
           class="pointer-events-none absolute inset-8 rounded-half border-1 border-stamp-accent-40-panel-edge"
         />
-        <span class="text-xxs tracking-display-wide text-stamp-accent-55-text-3">{props.release.month}</span>
+        <span class="text-xxs tracking-display-wide">{props.release.month}</span>
         <span class="font-display text-1-3rem leading-none italic">{props.release.version}</span>
-        <span class="text-0-74rem tracking-0-16em text-stamp-accent-50-text-3">'{props.release.yearShort}</span>
+        <span class="text-0-74rem tracking-0-16em">'{props.release.yearShort}</span>
       </a>
     )
   }

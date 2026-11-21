@@ -1,8 +1,8 @@
 import path from 'node:path'
 
-import { SITE_HOSTNAME } from '../shared/constants'
-import { sectionOf }     from '../shared/registries'
-import { stripSuffix }   from '../shared/strip-suffix'
+import { SITE_HOSTNAME } from '../shared/constants.ts'
+import { sectionOf }     from '../shared/registries.ts'
+import { stripSuffix }   from '../shared/strip-suffix.ts'
 
 export const TOUCH_ICON_PATH = 'apple-touch-icon.png'
 

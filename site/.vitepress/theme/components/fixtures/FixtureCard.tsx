@@ -5,9 +5,8 @@ import { computed, defineComponent, ref } from 'vue'
 import { Disclosure, NibBadge } from '../../../kit'
 import type { DisclosureScope } from '../../../kit'
 import { FixtureConfig }        from './FixtureConfig'
-import { FixtureNoChange }      from './FixtureNoChange'
 import { FixturePairDoc }       from './FixturePairDoc'
-import { FixtureToggle }        from './FixtureToggle'
+import { FixtureToggleSlot }    from './FixtureToggleSlot'
 
 import { useFixtureEntry } from '../../../lib/composables/use-fixture-entry'
 import { useHashOpen }     from '../../../lib/composables/use-hash-open'
@@ -70,14 +69,12 @@ export const FixtureCard = defineComponent({
                   <span aria-hidden="true" class="fixture-card-num" />
                   <span class="fixture-card-title in-code:normal-case" innerHTML={entry.value.titleHtml} />
                 </button>
-                <div
-                  class="hidden items-center group-data-open/fixture:inline-flex group-data-[edits=false]/fixture:not-group-data-[lint=true]/fixture:inline-flex max-mobile:group-data-open/fixture:col-start-2 max-mobile:group-data-open/fixture:row-2 max-mobile:group-data-open/fixture:-col-end-1 max-mobile:group-data-open/fixture:min-h-0 max-mobile:group-data-open/fixture:justify-start max-mobile:group-data-open/fixture:justify-self-start max-mobile:group-data-open/fixture:p-0 max-mobile:group-data-open/fixture:pb-8"
-                  onClick={event => event.stopPropagation()}
-                >
-                  {entry.value.hasToggle
-                    ? <FixtureToggle modelValue={activeTab.value} onUpdate:modelValue={next => { activeTab.value = next }} />
-                    : <FixtureNoChange />}
-                </div>
+                <FixtureToggleSlot
+                  class="hidden items-center group-data-open/fixture:inline-flex group-data-[edits=false]/fixture:not-group-data-[lint=true]/fixture:inline-flex"
+                  hasToggle={entry.value.hasToggle}
+                  modelValue={activeTab.value}
+                  onUpdate:modelValue={next => { activeTab.value = next }}
+                />
               </div>
               <div
                 {...disclosure.content}

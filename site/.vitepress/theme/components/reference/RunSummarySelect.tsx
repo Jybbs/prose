@@ -33,7 +33,7 @@ export const RunSummarySelect = defineComponent({
             <span class="relative inline-block">
               <button
                 {...listbox.trigger}
-                class="run-summary-select-trigger inline-flex items-baseline gap-0-2em border-none px-2 font-mono text-link hairline-ube-38 transition-color-and-box-shadow hover:text-text-1 hover:hairline-ube focus-visible:outline-1 focus-visible:outline-ube"
+                class="run-summary-select-trigger inline-flex items-baseline gap-0-2em border-none px-2 font-mono text-link hairline-ube/38 transition-color-and-box-shadow hover:text-text-1 hover:hairline-ube focus-visible:outline-1 focus-visible:outline-ube"
                 type="button"
               >
                 <span>{selected.value.mono}</span>
@@ -56,7 +56,7 @@ export const RunSummarySelect = defineComponent({
                           <span class="inline-flex items-baseline gap-0-5em font-mono text-sm">
                             {o.preview.anchor ? <span aria-hidden="true" class="flex-none">{o.preview.anchor}</span> : null}
                             <span
-                              class="text-text-2 data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45 group-aria-selected:data-[tint=apricot]:text-apricot-selected-45 group-aria-selected:data-[tint=celadon]:text-celadon-selected-45"
+                              class="text-text-2 data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45 group-aria-selected:data-[tint=apricot]:text-apricot-selected-45 group-hover:data-[tint=apricot]:text-apricot-selected-45 group-data-highlighted:data-[tint=apricot]:text-apricot-selected-45 group-aria-selected:data-[tint=celadon]:text-celadon-selected-45"
                               data-tint={o.preview.countTint || undefined}
                             >{o.preview.text}</span>
                           </span>

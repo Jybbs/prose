@@ -1,6 +1,6 @@
 import type { Env, MarkdownIt } from 'markdown-it'
 
-import { indexSectionOf } from '../shared/registries'
+import { indexSectionOf } from '../shared/registries.ts'
 
 interface PageEnv extends Env {
   frontmatter? : { heading?: boolean }

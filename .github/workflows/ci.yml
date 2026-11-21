@@ -16,6 +16,7 @@ on:
       - '!site/**'
       - site/.vitepress/tests/wasm/**
       - site/**.md
+    types: [opened, synchronize, reopened, ready_for_review]
 
   workflow_dispatch:
 
@@ -26,6 +27,7 @@ concurrency:
 jobs:
   check:
     name            : ${{ matrix.name }}
+    if              : ${{ !github.event.pull_request.draft }}
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
@@ -59,9 +61,9 @@ jobs:
           - command    : mise run rust:proof corpus
             name       : 🥃 Proof · Corpus
             shared-key : *debug-key
-          - command    : mise run rust:proof settle
+          - command    : PROSE_PROOF_PROFILE=probe mise run rust:proof settle
             name       : 🥃 Proof · Settle
-            shared-key : *debug-key
+            shared-key : prose-probe
           - command    : mise run py:lint
             name       : 🪻 Prose
             shared-key : *debug-key
@@ -101,7 +103,7 @@ jobs:
 
   gate:
     name            : 🗞️ Brief
-    if              : always()
+    if              : ${{ always() && !github.event.pull_request.draft }}
     needs           : check
     runs-on         : *ubuntu
     timeout-minutes : *timeout

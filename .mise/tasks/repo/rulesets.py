@@ -48,11 +48,11 @@ class Record:
     @classmethod
     def from_table(cls, table: object, path: str = "") -> Self:
         """
-        Returns the record holding `table`, the table named `path` in the
-        settings file, building each nested record from its own table. The
-        task stops on a value that is not a table, a key the record does
-        not declare, a key it declares that is missing, or a value of the
-        wrong type.
+        Builds the record holding `table`, the table named `path` in the
+        settings file, and each nested record from its own table. The task
+        stops on a value that is not a table, a key the record does not
+        declare, a key it declares that is missing, or a value of the wrong
+        type.
         """
         keys  = {cls.spelled(field.name): field for field in fields(cls)}
         where = f"[{path}]" if path else SETTINGS
@@ -77,7 +77,7 @@ class Record:
     @staticmethod
     def spelled(name: str) -> str:
         """
-        Returns the key the settings file spells the field `name` with.
+        Maps the field `name` to the key the settings file spells it with.
         """
         return name
 
@@ -104,7 +104,7 @@ class Endpoints(Record):
 
     def requests(self) -> list[tuple[str, str, None]]:
         """
-        Returns the call toggling each endpoint, `PUT` where its flag is
+        Builds the call toggling each endpoint, `PUT` where its flag is
         `true` and `DELETE` where it is `false`, the fields `first` names
         sent in that order and the rest after them in declared order.
         """
@@ -121,7 +121,7 @@ class Endpoints(Record):
     @staticmethod
     def spelled(name: str) -> str:
         """
-        Returns the endpoint's last path segment, the field `name` with
+        Spells the field `name` as the endpoint's last path segment, with
         hyphens for underscores.
         """
         return name.replace("_", "-")
@@ -213,7 +213,7 @@ class Settings(Record):
 
     def requests(self, project: dict) -> list[tuple[str, str, dict | None]]:
         """
-        Returns the endpoint, method, and body of each call that applies
+        Builds the endpoint, method, and body of each call that applies
         these settings in the order they are sent, taking the description,
         the homepage's bare domain, and the topics from the `project` table
         of `crate/pyproject.toml`.
@@ -281,7 +281,7 @@ def main():
 
 def read(path: str | Path) -> str:
     """
-    Returns the text of the file at `path`.
+    Reads the text of the file at `path`.
     """
     return Path(path).read_text(encoding="utf-8")
 

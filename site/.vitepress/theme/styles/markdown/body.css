@@ -2,7 +2,7 @@
    multi-rule cards alike, so every folio shares one column. */
 @counter-style prose-fixture-folio {
   system : extends decimal;
-  pad    : 3 "0";
+  pad    : 3 '0';
 }
 
 .vp-doc {
@@ -122,11 +122,11 @@ a.tool-mark code {
 }
 
 .vp-doc tr:last-child td {
-  border-bottom: none;
+  border-bottom : none;
 }
 
 .vp-doc tbody tr {
-  transition: background-color var(--prose-transition);
+  transition : background-color var(--prose-transition);
 }
 
 .vp-doc tbody tr:hover {

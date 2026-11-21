@@ -1,12 +1,12 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import * as contentPage                     from '../shared/content-page'
-import * as paths                           from '../shared/paths'
-import { FAMILY_ORDER, type RuleFamily }    from '../shared/registries'
-import { requireString, requireStringList } from '../shared/require-string'
-import { ruleRoute }                        from '../shared/routes'
-import { toTitleCase }                      from '../shared/title-case'
+import * as contentPage                     from '../shared/content-page.ts'
+import * as paths                           from '../shared/paths.ts'
+import { FAMILY_ORDER, type RuleFamily }    from '../shared/registries.ts'
+import { requireString, requireStringList } from '../shared/require-string.ts'
+import { ruleRoute }                        from '../shared/routes.ts'
+import { toTitleCase }                      from '../shared/title-case.ts'
 
 export interface DiscoveredRule {
   caption  : string

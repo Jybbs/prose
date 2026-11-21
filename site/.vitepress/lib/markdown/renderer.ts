@@ -1,11 +1,11 @@
 import { createMarkdownRenderer, type MarkdownRenderer } from 'vitepress'
 
-import { codeUnitPlugin }                         from './code-operators'
-import { inlineNodes, type InlineNode }           from './inline-nodes'
-import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
-import { pagesDir, publicDir }                    from '../shared/paths'
-import { plainTermsEnv }                          from './inert-env'
-import { TokenClasses }                           from './token-classes'
+import { codeUnitPlugin }                         from './code-operators.ts'
+import { inlineNodes, type InlineNode }           from './inline-nodes.ts'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants.ts'
+import { pagesDir, publicDir }                    from '../shared/paths.ts'
+import { plainTermsEnv }                          from './inert-env.ts'
+import { TokenClasses }                           from './token-classes.ts'
 
 // Maps each field `K` to `${K}${S}`, carrying one `V` where the source field
 // is a scalar and a `V[]` where it is a list of strings.

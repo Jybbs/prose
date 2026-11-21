@@ -8,8 +8,6 @@
   --color-text-3-card-31                       : var(--prose-shade-text-3-card-31);
   --color-text-3-chip-31                       : var(--prose-shade-text-3-chip-31);
 
-  --content-diamond                            : "◆";
-
   --ease-morph                                 : var(--prose-ease-morph);
 
   --grid-template-columns-110-minmax-1fr       : var(--prose-size-110) minmax(0, 1fr);
@@ -153,7 +151,7 @@
   }
 
   .fixture-card:not([data-open]) &::before {
-    content        : "";
+    content        : '';
     position       : absolute;
     inset          : calc(var(--prose-space-2) * -1) auto;
     left           : 0;
@@ -260,8 +258,6 @@
 }
 
 @utility pipeline-order-gutter {
-  color : var(--color-link);
-
   &[data-order='self'] {
     align-self   : stretch;
     background   : var(--family-nib-soft);
@@ -279,7 +275,7 @@
 
 @utility pipeline-order-spine {
   & li::after {
-    content    : "";
+    content    : '';
     flex       : 1;
     height     : var(--prose-size-4);
     background : var(--prose-shade-text-3-soft-31);
@@ -305,7 +301,7 @@
   position              : relative;
   isolation             : isolate;
   display               : grid;
-  grid-template-areas   : "slug tag" "caption caption";
+  grid-template-areas   : 'slug tag' 'caption caption';
   grid-template-columns : minmax(0, 1fr) auto;
   align-items           : center;
   border                : var(--prose-border-1) solid var(--vp-c-divider);
@@ -315,7 +311,7 @@
   transition            : border-color var(--prose-transition);
 
   &:has(> .rule-card-header) {
-    grid-template-areas : "header header" "slug tag" "caption caption";
+    grid-template-areas : 'header header' 'slug tag' 'caption caption';
   }
 
   &:is(:hover, :focus-within) {
@@ -333,10 +329,9 @@
 }
 
 @utility rule-card-caption {
-  grid-area   : caption;
-  max-width   : var(--prose-width-60ch);
-  text-wrap   : pretty;
-  font-family : var(--vp-font-family-base);
+  grid-area : caption;
+  max-width : var(--prose-width-60ch);
+  text-wrap : pretty;
 
   & em {
     color : var(--vp-c-text-1);

@@ -1,7 +1,7 @@
-import type { InlineNode }  from '../markdown/inline-nodes'
-import { DIRECTIVES }       from '../suppression/directives'
-import { directiveHref }    from '../suppression/scopes'
-import type { Destination } from './destinations'
+import type { InlineNode }  from '../markdown/inline-nodes.ts'
+import { DIRECTIVES }       from '../suppression/directives.ts'
+import { directiveHref }    from '../suppression/scopes.ts'
+import type { Destination } from './destinations.ts'
 
 export type Domain =
   | 'cli-flag'

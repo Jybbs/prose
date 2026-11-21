@@ -1,4 +1,4 @@
-import type { GlossaryEntry } from './entries'
+import type { GlossaryEntry } from './entries.ts'
 
 export function buildPhraseToSlug(source: Record<string, GlossaryEntry>): Map<string, string> {
   const out = new Map<string, string>()

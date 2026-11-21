@@ -6,6 +6,7 @@ import type { SliderScope }                             from '../../../kit'
 import { data }                                         from '../../../lib/identity/identity.data'
 import * as marks                                       from '../../../lib/identity/marks'
 import { SITE_TAGLINE }                                 from '../../../lib/shared/constants'
+import { Switch }                                       from '../base/Switch'
 import { IdentityCaption, IdentityCopy, IdentityPanel } from './IdentityParts'
 
 const LOCKUP = data.marks.files['title-with-tagline.svg']
@@ -155,7 +156,7 @@ export const IdentityMarks = defineComponent({
         { side: 'bottom', x: middle.x + gap,                          y: inner.y + inner.height + space.bottom / 2 }
       ] as const
       return (
-        <g aria-hidden="true" class="identity-guides fill-text-3 stroke-text-3 stroke-1" font-size={LABEL_PX / scale.value}>
+        <g aria-hidden="true" class="identity-guides fill-text-1 stroke-text-3-50-bg stroke-1" font-size={LABEL_PX / scale.value}>
           <rect height={h} width={w} x={x} y={y} />
           <rect class="identity-guide-ink" {...inner} />
           <line x1={x} x2={inner.x} y1={middle.y} y2={middle.y} />
@@ -189,16 +190,12 @@ export const IdentityMarks = defineComponent({
                 <div class="flex flex-wrap gap-x-1-5rem gap-y-0-75rem">
                   {marks.PARTS.map(part => (
                     <span class="inline-flex items-center gap-8" key={part.id}>
-                      <button
-                        aria-checked={on.value.includes(part.id)}
-                        aria-label={part.label}
-                        class="group/switch relative h-22 w-40 cursor-pointer rounded-pill border-none bg-text-3/40 transition-colors focus-visible:focus-ring focus-visible:outline-offset-1 aria-checked:bg-text-1"
-                        onClick={() => toggle(part.id)}
-                        role="switch"
-                        type="button"
-                      >
-                        <span class="absolute top-3 left-3 size-16 rounded-half bg-bg transition-transform group-aria-checked/switch:translate-x-18" />
-                      </button>
+                      <Switch
+                        checked={on.value.includes(part.id)}
+                        class="cursor-pointer focus-visible:focus-ring"
+                        label={part.label}
+                        onToggle={() => toggle(part.id)}
+                      />
                       <span aria-hidden="true" class="kicker">{part.label}</span>
                     </span>
                   ))}

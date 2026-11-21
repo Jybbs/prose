@@ -65,9 +65,9 @@ pub(super) fn check_trees(
         })
         .into_group_map();
     for (input, runs) in checked {
-        let before = memo.source(input);
+        let before = memo.source(*input);
         for (rule, preserves, output) in runs {
-            let after = memo.source(output);
+            let after = memo.source(*output);
             let reshaped = reshapes(before, after);
             if !preserves {
                 *findings.changing.entry(rule).or_default() |= reshaped;
@@ -158,10 +158,8 @@ fn reshaping(before: &Source, after: &Source, to: &str) -> String {
 /// Builds a memo over `input` holding one solo run of `rule` that
 /// rewrites it to `output`.
 fn rewriting<'p>(probes: &'p Probes, rule: RuleId, input: &str, output: &str) -> Memo<'p> {
-    let (input, output) = (parsed(input), parsed(output));
-    let (read, written) = (Rc::from(input.text()), Rc::from(output.text()));
-    let mut memo = Memo::new(probes, input);
-    memo.sources.insert(Rc::clone(&written), output);
+    let (mut memo, read) = Memo::new(probes, &parsed(input));
+    let written = memo.intern(&parsed(output));
     memo.runs
         .insert((probes.solo[&rule], read), Applied::Changed(written));
     memo
@@ -179,7 +177,7 @@ fn statements(source: &Source) -> Vec<&Stmt> {
 fn check_trees_files_a_joint_run_that_changes_the_tree(mut probes: Probes) {
     probes.joint = Some(subset(&Config::default(), &[rule("strip-none-return")]));
     let source = parsed("def f() -> None:\n    pass\n");
-    let memo = Memo::new(&probes, source.clone());
+    let (memo, _) = Memo::new(&probes, &source);
     let mut findings = Findings::default();
 
     check_trees(

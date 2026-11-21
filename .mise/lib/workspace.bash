@@ -1,7 +1,15 @@
 PROOF_TARGETS=(corpus settle)
 
+cargo_test() {
+  cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
+}
+
 split_proof() {
-  "$@" --locked --package prose "${PROOF_TARGETS[@]/#/--test=}"
+  "$@" \
+    --locked \
+    --package prose \
+    ${PROSE_PROOF_PROFILE:+--profile "$PROSE_PROOF_PROFILE"} \
+    "${PROOF_TARGETS[@]/#/--test=}"
 }
 
 split_suite() {
@@ -9,7 +17,6 @@ split_suite() {
   targets=$(suite_targets) || return
 
   "$@" --bins --exclude prose_wasm --lib --locked --workspace $targets
-  "$@" --locked --package prose_wasm
 }
 
 split_workspace() {
@@ -24,6 +31,26 @@ suite_targets() {
         | select(.kind == ["test"] and (.name | IN($ARGS.positional[]) | not))
         | "--test=" + .name' \
       "${PROOF_TARGETS[@]}"
+}
+
+wasm_reach() {
+  cargo metadata --format-version 1 --no-deps \
+    | jq -r '
+        .workspace_root as $root
+        | (.packages
+            | map({
+                key: (.manifest_path | rtrimstr("/Cargo.toml")),
+                value: [.dependencies[] | select(.path and .kind != "dev") | .path]
+              })
+            | from_entries) as $paths
+        | def reach: ., ($paths[.][] | reach);
+          [.packages[]
+            | select(.name == "prose_wasm")
+            | .manifest_path
+            | rtrimstr("/Cargo.toml")
+            | reach]
+        | unique[]
+        | ltrimstr($root + "/")'
 }
 
 workspace_members() {

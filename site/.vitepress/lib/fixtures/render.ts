@@ -1,17 +1,17 @@
 import { existsSync } from 'node:fs'
 import path           from 'node:path'
 
-import { fixtureId }                                                 from './entry'
-import type { FixtureEntry, FixtureGauge, FixtureMap, FixtureTrail } from './entry'
-import type { GaugeRequest }                                         from './page-cases'
-import { readFixtureToggle }                                         from './toggle'
-import * as variants                                                 from './variants'
-import * as walker                                                   from './walker'
-import { blockNodes }                                                from '../markdown/inline-nodes'
-import { lintFenceMeta }                                             from '../markdown/lint-decorations'
-import * as renderer                                                 from '../markdown/renderer'
-import { inlineCode }                                                from '../shared/inline-code'
-import { toTitleCase }                                               from '../shared/title-case'
+import { fixtureId }                                                 from './entry.ts'
+import type { FixtureEntry, FixtureGauge, FixtureMap, FixtureTrail } from './entry.ts'
+import type { GaugeRequest }                                         from './page-cases.ts'
+import { readFixtureToggle }                                         from './toggle.ts'
+import * as variants                                                 from './variants.ts'
+import * as walker                                                   from './walker.ts'
+import { blockNodes }                                                from '../markdown/inline-nodes.ts'
+import { lintFenceMeta }                                             from '../markdown/lint-decorations.ts'
+import * as renderer                                                 from '../markdown/renderer.ts'
+import { inlineCode }                                                from '../shared/inline-code.ts'
+import { toTitleCase }                                               from '../shared/title-case.ts'
 
 const entries = new Map<string, Promise<FixtureEntry>>()
 const gauges  = new Map<string, Promise<FixtureGauge>>()

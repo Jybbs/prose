@@ -29,6 +29,7 @@ on:
       - crate/tests/fixtures/**
       - site/**
       - wasm/**
+    types: [opened, synchronize, reopened, ready_for_review]
 
   push:
     branches:
@@ -60,6 +61,7 @@ concurrency:
 jobs:
   checks:
     name            : ${{ matrix.name }}
+    if              : &ready ${{ !github.event.pull_request.draft }}
     runs-on         : &ubuntu ubuntu-24.04
     timeout-minutes : &timeout 15
 
@@ -102,6 +104,7 @@ jobs:
 
   press:
     name            : 🎞️ Press
+    if              : *ready
     runs-on         : *ubuntu
     timeout-minutes : *timeout
 
@@ -125,11 +128,19 @@ jobs:
 
       - name : Restore the OG card cache
         id   : og-cards
-        uses : actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses : &cache-restore actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           key          : &og-key og-cards-${{ runner.os }}-${{ github.sha }}
           path         : &og-path .cache/og
           restore-keys : og-cards-${{ runner.os }}-
+
+      - name : Restore the highlight cache
+        id   : highlights
+        uses : *cache-restore
+        with:
+          key          : &highlight-key highlights-${{ runner.os }}-${{ github.sha }}
+          path         : &highlight-path .cache/highlight
+          restore-keys : highlights-${{ runner.os }}-
 
       - name : Build the site and check internal links
         run  : mise run site:links
@@ -148,6 +159,13 @@ jobs:
           key  : *og-key
           path : *og-path
 
+      - name : Save the highlight cache
+        if   : ${{ github.event_name != 'pull_request' && steps.highlights.outputs.cache-hit != 'true' }}
+        uses : *cache-save
+        with:
+          key  : *highlight-key
+          path : *highlight-path
+
       - name : Upload the site bundle
         uses : actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -158,6 +176,7 @@ jobs:
 
   render:
     name            : 🖋️ Render
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -185,6 +204,7 @@ jobs:
 
   deploy:
     name            : 🪁 Deploy
+    if              : *ready
     needs           : [checks, fit, press, render, sweep]
     outputs         : { url: "${{ steps.publish.outputs.deployment-url }}" }
     runs-on         : *ubuntu
@@ -206,7 +226,7 @@ jobs:
 
   prune:
     name            : 🍂 Prune
-    if              : github.event_name != 'pull_request'
+    if              : ${{ github.event_name != 'pull_request' && !github.event.pull_request.draft }}
     needs           : press
     permissions     : { actions: write, contents: read }
     runs-on         : *ubuntu
@@ -220,6 +240,7 @@ jobs:
 
   sweep:
     name            : 🦯 Axe
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -243,6 +264,7 @@ jobs:
 
   fit:
     name            : 🍋 Squeeze
+    if              : *ready
     needs           : press
     runs-on         : *ubuntu
     timeout-minutes : *timeout
@@ -266,7 +288,7 @@ jobs:
 
   gate:
     name            : 🗞️ Brief
-    if              : always()
+    if              : ${{ always() && !github.event.pull_request.draft }}
     needs           : [checks, deploy, fit, press, render, sweep]
     runs-on         : *ubuntu
     timeout-minutes : *timeout

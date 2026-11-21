@@ -2,11 +2,11 @@ import { defaultWindow, useEventListener }                     from '@vueuse/cor
 import { computed, defineComponent, h, onMounted, shallowRef } from 'vue'
 import type { VNodeChild }                                     from 'vue'
 
-import { Tabs }                                         from '../../../kit'
-import type { TabsScope }                               from '../../../kit'
-import { readType, TYPE_ROLES }                         from '../../../lib/identity/typefaces'
-import { formatFolio }                                  from '../../../lib/shared/numerals'
-import { IdentityCaption, IdentityCopy, IdentityPanel } from './IdentityParts'
+import { Tabs }                 from '../../../kit'
+import type { TabsScope }       from '../../../kit'
+import { readType, TYPE_ROLES } from '../../../lib/identity/typefaces'
+import { formatFolio }          from '../../../lib/shared/numerals'
+import { IdentityCaption, IdentityCopy, IdentityPanel, IdentityPickName } from './IdentityParts'
 
 import type { TypeReading, TypeRoleId } from '../../../lib/identity/typefaces'
 
@@ -86,7 +86,7 @@ export const IdentityTypefaces = defineComponent({
                           ...roles!.map(each => (
                             <button key={each.id} {...trigger(each.id)} aria-controls={undefined} class="identity-pick grid gap-2 px-18 py-6">
                               <span class="font-mono text-kicker-sm tracking-kicker uppercase tabular-nums">{folio(each.id)}</span>
-                              <span class="identity-pick-name font-display text-0-98rem font-500 text-text-2 italic">{each.label}</span>
+                              <IdentityPickName>{each.label}</IdentityPickName>
                             </button>
                           ))
                         ])}

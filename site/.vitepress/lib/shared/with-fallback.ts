@@ -1,4 +1,4 @@
-import { errorMessage } from './error-message'
+import { errorMessage } from './error-message.ts'
 
 export function withFallback<T>(
   label    : string,

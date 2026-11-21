@@ -14,11 +14,11 @@ use self::{analysis::module_band_plan, bander::Bander, plan::ImportBand};
 use crate::{
     config::Config,
     primitives::{
-        imports::defers_annotations,
         orderer::{Seatings, any_sibling_shares_line, member_blocks},
         sections::Sections,
+        tiering::Annotations,
     },
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, prune_inert_imports::DirectiveGate},
     source::Source,
 };
 
@@ -31,6 +31,8 @@ pub(crate) use self::plan::Carry;
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct BandConstants {
     code_width: usize,
+    /// The gate `prune-inert-imports` drops the future import behind.
+    directive: Option<DirectiveGate>,
     first_party: Vec<String>,
     group_imports: bool,
     group_subcategories: bool,
@@ -49,6 +51,7 @@ impl BandConstants {
         let rules = &config.rules.band_constants;
         Self {
             code_width: config.code_width(),
+            directive: DirectiveGate::pruning(config),
             first_party: config.first_party(),
             group_imports: config.group_imports_enabled(),
             group_subcategories: rules.group_subcategories,
@@ -57,19 +60,38 @@ impl BandConstants {
         }
     }
 
+    /// The timing of the annotations of `source`'s module under the
+    /// rule's target. A module whose future import `prune-inert-imports`
+    /// would drop once the order seated at the stringified timing leaves
+    /// it inert reads at the timing it takes without the import, keeping
+    /// the order that holds the import.
+    pub(crate) fn annotations(&self, source: &Source) -> Annotations {
+        match Annotations::of(&source.ast().body, self.target_version) {
+            Annotations::Stringified
+                if self.directive.as_ref().is_some_and(|gate| {
+                    DirectiveGate::drops_from(source)
+                        && gate.clears(source, Some(self), Annotations::Stringified)
+                }) =>
+            {
+                Annotations::under(self.target_version)
+            }
+            timing => timing,
+        }
+    }
+
     /// The order the rule seats `body` in, forecast for a rule seated
     /// ahead of it, beside the import bands it sorts and every comment
     /// the banding carries onto another member. A band holds the
     /// imports of one region once the hoist seats every constant
-    /// between two of them below the run, and an annotation reads as
-    /// deferred while `defer_annotations`. `None` when a sibling shares
-    /// a line or the plan declines the body.
+    /// between two of them below the run, each annotation counting at
+    /// the timing `annotations` sets. `None` when a sibling shares a
+    /// line or the plan declines the body.
     pub(crate) fn forecast(
         &self,
         source: &Source,
         body: &[Stmt],
         outer: TextRange,
-        defer_annotations: bool,
+        annotations: Annotations,
     ) -> Option<Bands> {
         if any_sibling_shares_line(source, body) {
             return None;
@@ -78,7 +100,7 @@ impl BandConstants {
         let sections = Sections::of(source, &blocks);
         let order: Vec<usize> = (0..body.len()).collect();
         Some(
-            module_band_plan(source, body, &blocks, self, defer_annotations)?
+            module_band_plan(source, body, &blocks, self, annotations)?
                 .forecast(body, blocks, &sections, self, &order),
         )
     }
@@ -91,12 +113,7 @@ impl BandConstants {
         let body = &source.ast().body;
         let mut seatings = Seatings::default();
         if !body.is_empty() {
-            Bander {
-                defer_annotations: defers_annotations(body),
-                rule: self,
-                source,
-            }
-            .seat(body, source.module_range(), &mut seatings);
+            Bander::of(self, source).seat(body, source.module_range(), &mut seatings);
         }
         seatings
     }
@@ -108,12 +125,7 @@ impl Rule for BandConstants {
         if body.is_empty() {
             return Vec::new();
         }
-        Bander {
-            defer_annotations: defers_annotations(body),
-            rule: self,
-            source,
-        }
-        .band_edits(body, source.module_range())
+        Bander::of(self, source).band_edits(body, source.module_range())
     }
 
     fn id(&self) -> RuleId {
@@ -138,31 +150,146 @@ mod tests {
     use super::*;
     use crate::testing::{at, parse};
 
+    /// A class whose body annotation reads `Foo`, bound by an import
+    /// below it beside a constant observing `Foo`, under the future
+    /// import the stringified order would leave inert.
+    const CLASS_ABOVE_ITS_IMPORT: &str = "from __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n";
+
     /// `rule`'s forecast over the whole module body of `source`.
     fn module_forecast(
         rule: &BandConstants,
         source: &Source,
-        defer_annotations: bool,
+        annotations: Annotations,
     ) -> Option<Bands> {
         rule.forecast(
             source,
             &source.ast().body,
             source.module_range(),
-            defer_annotations,
+            annotations,
         )
     }
 
     #[rstest]
-    #[case::deferred_annotation_frees_the_observed_site(true, vec![2, 1, 0])]
-    #[case::eager_annotation_anchors_the_observed_site(false, vec![0, 1, 2])]
-    fn forecast_reads_annotations_as_eager_unless_deferred(
-        #[case] defer_annotations: bool,
+    #[case::import_the_band_would_clear_reads_without_it(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    #[case::py314_import_the_band_would_clear_reads_lazily(
+        CLASS_ABOVE_ITS_IMPORT,
+        Some(PythonVersion::PY314),
+        true,
+        true,
+        Annotations::Lazy
+    )]
+    #[case::import_the_band_leaves_needed_stays_stringified(
+        "from __future__ import annotations\n\n\ndef visit(node: Node) -> Node:\n    return node\n\n\nclass Node:\n    pass\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::inert_import_reads_without_it(
+        "from __future__ import annotations\n\nAlias = int\n\n\ndef convert(value: Alias) -> Alias:\n    return value\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    #[case::import_stays_stringified_with_pruning_off(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        false,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_stays_stringified_while_unreferenced_imports_stay(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        true,
+        false,
+        Annotations::Stringified
+    )]
+    #[case::import_a_noqa_holds_stays_stringified(
+        "from __future__ import annotations  # noqa: F401\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_file_pragma_holds_stays_stringified(
+        "# ruff: noqa: F401\nfrom __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_dunder_all_lists_stays_stringified(
+        "from __future__ import annotations\n\n__all__ = [\"P\", \"annotations\"]\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_self_alias_holds_stays_stringified(
+        "from __future__ import annotations as annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_skip_directive_holds_stays_stringified(
+        "from __future__ import annotations  # prose: skip\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_an_off_region_holds_stays_stringified(
+        "# prose: off\nfrom __future__ import annotations\n# prose: on\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::module_without_the_import_reads_eagerly(
+        "x: int = 1\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    fn annotations_read_a_kept_future_import_by_the_order_it_leaves(
+        #[case] src: &str,
+        #[case] target: Option<PythonVersion>,
+        #[case] prunes: bool,
+        #[case] drops_unreferenced: bool,
+        #[case] expected: Annotations,
+    ) {
+        let mut config = Config {
+            target_version: target,
+            ..Config::default()
+        };
+        config.rules.prune_inert_imports.enabled = prunes;
+        config.rules.prune_inert_imports.drop_unreferenced = drops_unreferenced;
+        let rule = BandConstants::from_config(&config);
+        assert_eq!(rule.annotations(&parse(src)), expected);
+    }
+
+    #[rstest]
+    #[case::eager_annotation_anchors_the_observed_site(Annotations::Eager, vec![0, 1, 2])]
+    #[case::lazy_annotation_frees_the_observed_site(Annotations::Lazy, vec![2, 1, 0])]
+    #[case::stringified_annotation_frees_the_observed_site(Annotations::Stringified, vec![2, 1, 0])]
+    fn forecast_reads_annotations_at_the_timing_given(
+        #[case] annotations: Annotations,
         #[case] order: Vec<usize>,
     ) {
         let source =
             parse("def f(x: Foo.Bar):\n    pass\n\n\nY = Foo.Bar\n\n\nfrom m import Foo\n");
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, defer_annotations).expect("the body bands");
+        let bands = module_forecast(&rule, &source, annotations).expect("the body bands");
         assert_eq!(bands.order, order);
     }
 
@@ -181,7 +308,7 @@ mod tests {
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, false);
+        let bands = module_forecast(&rule, &source, Annotations::Eager);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -211,7 +338,7 @@ mod tests {
             code_width: 40,
             ..BandConstants::from_config(&Config::default())
         };
-        let bands = module_forecast(&rule, &source, false);
+        let bands = module_forecast(&rule, &source, Annotations::Eager);
         assert_eq!(
             bands.and_then(|bands| {
                 bands
@@ -243,7 +370,7 @@ mod tests {
     ) {
         let source = parse(src);
         let rule = BandConstants::from_config(&Config::default());
-        let bands = module_forecast(&rule, &source, false).expect("the body bands");
+        let bands = module_forecast(&rule, &source, Annotations::Eager).expect("the body bands");
         assert_eq!(bands.order, order);
     }
 

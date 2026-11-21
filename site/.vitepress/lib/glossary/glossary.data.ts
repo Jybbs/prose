@@ -1,13 +1,13 @@
 import { defineLoader } from 'vitepress'
 
-import { glossary, type GlossaryEntry }       from './entries'
-import { entryHref, entryRule }               from './hrefs'
-import type { GlossaryRule }                  from './hrefs'
-import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
-import { inlineNodes, type InlineNode }       from '../markdown/inline-nodes'
-import { discoverRuleIndex }                  from '../rules/discovery'
-import { rulesDir }                           from '../shared/paths'
-import type { GlossaryFamily }                from '../shared/registries'
+import { glossary, type GlossaryEntry }       from './entries.ts'
+import { entryHref, entryRule }               from './hrefs.ts'
+import type { GlossaryRule }                  from './hrefs.ts'
+import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer.ts'
+import { inlineNodes, type InlineNode }       from '../markdown/inline-nodes.ts'
+import { discoverRuleIndex }                  from '../rules/discovery.ts'
+import { rulesDir }                           from '../shared/paths.ts'
+import type { GlossaryFamily }                from '../shared/registries.ts'
 
 const rulesDirectory = rulesDir(import.meta.url)
 

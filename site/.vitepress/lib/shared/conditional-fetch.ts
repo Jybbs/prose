@@ -1,6 +1,6 @@
 import * as cacache from 'cacache'
 
-import { errorMessage } from './error-message'
+import { errorMessage } from './error-message.ts'
 
 interface ConditionalFetchSource<T> {
   dir      : string

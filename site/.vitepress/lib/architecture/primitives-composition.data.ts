@@ -1,11 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { inlineNodes, type InlineNode }                 from '../markdown/inline-nodes'
-import { getRenderer, inlineNodeField }                 from '../markdown/renderer'
-import { groupByMember }                                from '../shared/group-by-member'
-import { architectureDir }                              from '../shared/paths'
-import { PRIMITIVE_LAYERS, type PrimitiveLayer }        from '../shared/registries'
-import { discoverPrimitives, type DiscoveredPrimitive } from './discovery'
+import { inlineNodes, type InlineNode }                 from '../markdown/inline-nodes.ts'
+import { getRenderer, inlineNodeField }                 from '../markdown/renderer.ts'
+import { groupByMember }                                from '../shared/group-by-member.ts'
+import { architectureDir }                              from '../shared/paths.ts'
+import { PRIMITIVE_LAYERS, type PrimitiveLayer }        from '../shared/registries.ts'
+import { discoverPrimitives, type DiscoveredPrimitive } from './discovery.ts'
 
 interface PrimitiveEntry extends Omit<DiscoveredPrimitive, 'summary'> {
   linkNodes    : InlineNode[]

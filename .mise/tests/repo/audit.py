@@ -5,23 +5,36 @@ and the trigger it reports for each. Also pins the label `parity` reports
 a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
-restores `stamps` reports for leaving a task's outputs unstamped, and the
-`site/package.json` ranges `exact` reports by package.
+restores `stamps` reports for leaving a task's outputs unstamped, the cache
+steps of `deploy.yml` and its composites `caches` reports for saving on a
+pull request, restoring under a prefix of no key, or caching a folder no
+site module or task reads, the `site/package.json` ranges `exact` reports by
+package, and the triggers and jobs `drafts` reports for running on a draft
+pull request.
 """
 
 from collections.abc   import Callable
 from json              import dumps
 from pathlib           import Path
-from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
+from pytest            import CaptureFixture, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
-from subprocess        import run
 from types             import ModuleType
 
-COVERING = ["Cargo.lock", "site/**", "wasm/**"]
-LIVE     = ["{root}/Cargo.lock", "{root}/wasm/**"]
-OMITTING = ["Cargo.lock", "site/**"]
-WHEEL    = ".github/actions/build-wheel/action.yml"
-DRIFTS   = {
+ALL_MISSING = "['opened', 'ready_for_review', 'reopened', 'synchronize']"
+COVERING    = ["Cargo.lock", "site/**", "wasm/**"]
+DEBS        = ".github/actions/restore-debs/action.yml"
+DEPLOY      = ".github/workflows/deploy.yml"
+GUARD       = "${{ !github.event.pull_request.draft }}"
+LIVE        = ["{root}/Cargo.lock", "{root}/wasm/**"]
+OMITTING    = ["Cargo.lock", "site/**"]
+PROVISION   = ".mise/tasks/site/provision"
+TYPES       = "[opened, synchronize, reopened, ready_for_review]"
+UNGUARDED   = (
+    "saves under an if other than the pull_request guard, alone or joined by &&\n"
+)
+UNREAD = "a folder no site module or task reads\n"
+WHEEL  = ".github/actions/build-wheel/action.yml"
+DRIFTS = {
     ".mise/config.toml maturin pin ↔ build-wheel action maturin-version": [
         (".mise/config.toml", "1.16.0", "1.15.0"),
         (WHEEL, "v1.16.0", "v1.15.0")
@@ -255,6 +268,36 @@ PINS = {
         }
     )
 }
+PRESS = (
+    "jobs:\n"
+    "  press:\n"
+    "    steps:\n"
+    "      - name : Restore the highlight cache\n"
+    "        uses : actions/cache/restore@1111\n"
+    "        with:\n"
+    "          key          : highlights-${{ runner.os }}-${{ github.sha }}\n"
+    "          path         : .cache/highlight\n"
+    "          restore-keys : highlights-${{ runner.os }}-\n"
+    "\n"
+    "      - name : Save the highlight cache\n"
+    "        if   : ${{ github.event_name != 'pull_request' }}\n"
+    "        uses : actions/cache/save@1111\n"
+    "        with:\n"
+    "          key  : highlights-${{ runner.os }}-${{ github.sha }}\n"
+    "          path : .cache/highlight\n"
+    "\n"
+    "      - name : Save the wasm module\n"
+    "        if   : ${{ github.event_name != 'pull_request' && always() }}\n"
+    "        uses : actions/cache/save@1111\n"
+    "        with:\n"
+    "          key  : ${{ steps.wasm.outputs.key }}\n"
+    "          path : site/public/wasm\n"
+    "\n"
+    "      - name : Restore the wasm build cache\n"
+    "        uses : Swatinem/rust-cache@1111\n"
+    "        with:\n"
+    "          path : target\n"
+)
 REPORT  = "::error::{}.yml {} paths omit sources {} reads: ['wasm/**']\n"
 RESTORE = ".github/actions/restore-wasm/action.yml"
 STAMP   = {
@@ -334,7 +377,7 @@ UNSTAMPED = (
 @fixture
 def audit(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Returns the loaded `repo:audit` script.
+    Loads the `repo:audit` script.
     """
     return task("repo/audit")
 
@@ -345,7 +388,7 @@ def drifted(
     workdir : Callable[[dict[str, str]], Path]
 ) -> Callable[[str, str, str], None]:
     """
-    Returns a function making the current directory a tree holding `PINS`,
+    Builds a function making the current directory a tree holding `PINS`,
     with `mise` faked to list `TASKS`, after one edit to a pin.
     """
     def write(home: str, pin: str, stray: str):
@@ -368,17 +411,15 @@ def drifted(
 
 @fixture
 def repository(
-    fp          : FakeProcess,
-    monkeypatch : MonkeyPatch,
-    workdir     : Callable[[dict[str, str]], Path]
+    fp      : FakeProcess,
+    scratch : Callable[[Path], Path],
+    workdir : Callable[[dict[str, str]], Path]
 ) -> Callable[[dict[str, str], list[dict]], Path]:
     """
-    Returns a function making the current directory a git repository
-    tracking the files it is given, with `mise` faked to list the tasks it
-    is given and every `git` call run as given.
+    Builds a function making the current directory a git repository tracking
+    the files it is given, with `mise` faked to list the tasks it is given
+    and every `git` call run as given.
     """
-    for variable in ("GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"):
-        monkeypatch.delenv(variable, raising=False)
     fp.keep_last_process(True)
     fp.pass_command(["git", fp.any()])
 
@@ -387,9 +428,7 @@ def repository(
         Writes and tracks `files`, registers `tasks` as the listing with
         each `{root}` replaced by the tree, and returns the tree.
         """
-        root = workdir(files)
-        run(["git", "init", "-q"], check=True)
-        run(["git", "add", "."], check=True)
+        root = scratch(workdir(files))
         fp.register(
             ["mise", "tasks", "ls", "--json"],
             stdout = dumps(tasks).replace("{root}", str(root))
@@ -696,6 +735,280 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
 
 
 @mark.parametrize(
+    ("stray", "fix", "reported"),
+    [
+        param("", "", "", id="sound"),
+        param(
+            "'pull_request' }}",
+            "'pull_request' && steps.highlights.outputs.cache-hit != 'true' }}",
+            "",
+            id = "guard-joined"
+        ),
+        param(
+            "        if   : ${{ github.event_name != 'pull_request' }}\n",
+            "",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-absent"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' || always() }}",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-disjoined"
+        ),
+        param(
+            "!= 'pull_request' }}",
+            "== 'pull_request' }}",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-inverted"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' && always() || true }}",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-disjoined-after-conjunct"
+        ),
+        param(
+            "'pull_request' }}",
+            "'pull_request' }} || always()",
+            f"11::the 'Save the highlight cache' step {UNGUARDED}",
+            id = "guard-trailing-text"
+        ),
+        param(
+            "restore-keys : highlights-${{ runner.os }}-",
+            "restore-keys : ${{ runner.os }}-",
+            "4::the 'Restore the highlight cache' step restores '${{ runner.os }}-', "
+            "no prefix of its key 'highlights-${{ runner.os }}-${{ github.sha }}'\n",
+            id = "prefix-inside-key"
+        ),
+        param(
+            "actions/cache/restore@1111",
+            "actions/cache@1111",
+            f"4::the 'Restore the highlight cache' step {UNGUARDED}",
+            id = "combined-unguarded"
+        ),
+        param(
+            "restore-keys : highlights-",
+            "restore-keys : highlight-",
+            "4::the 'Restore the highlight cache' step restores "
+            "'highlight-${{ runner.os }}-', no prefix of its key "
+            "'highlights-${{ runner.os }}-${{ github.sha }}'\n",
+            id = "prefix-drifted"
+        ),
+        param(
+            "restore-keys : highlights-${{ runner.os }}-\n",
+            "restore-keys : |\n            highlights-${{ runner.os }}-\n"
+            "            highlights-\n            other-\n",
+            "4::the 'Restore the highlight cache' step restores 'other-', no prefix of "
+            "its key 'highlights-${{ runner.os }}-${{ github.sha }}'\n",
+            id = "prefix-among-several"
+        ),
+        param(
+            "path         : .cache/highlight",
+            "path         : .cache/highlights",
+            f"4::the 'Restore the highlight cache' step caches '.cache/highlights', "
+            f"{UNREAD}",
+            id = "restore-path-drifted"
+        ),
+        param(
+            "path         : .cache/highlight",
+            "path         : .cache/fixture",
+            f"4::the 'Restore the highlight cache' step caches '.cache/fixture', "
+            f"{UNREAD}",
+            id = "test-module-folder"
+        ),
+        param(
+            "path         : .cache/highlight\n",
+            "path         : |\n            .cache/highlight\n"
+            "            .cache/other\n",
+            f"4::the 'Restore the highlight cache' step caches '.cache/other', "
+            f"{UNREAD}",
+            id = "path-among-several"
+        ),
+        param(
+            "path : site/public/wasm",
+            "path : site/public",
+            f"18::the 'Save the wasm module' step caches 'site/public', {UNREAD}",
+            id = "output-path-drifted"
+        ),
+        param(
+            "      - name : Save the highlight cache\n"
+            "        if   : ${{ github.event_name != 'pull_request' }}\n"
+            "        uses",
+            "      - uses",
+            f"11::the 'actions/cache/save@1111' step {UNGUARDED}",
+            id = "nameless"
+        ),
+        param(
+            "      - name : Save the highlight cache\n"
+            "        if   : ${{ github.event_name != 'pull_request' }}\n"
+            "        uses : actions",
+            "      - uses : &cache-save actions",
+            f"11::the 'actions/cache/save@1111' step {UNGUARDED}",
+            id = "nameless-anchored"
+        )
+    ]
+)
+def test_caches_reports_each_cache_step_breaking_a_property(
+    audit      : ModuleType,
+    capsys     : CaptureFixture[str],
+    fix        : str,
+    reported   : str,
+    repository : Callable[[dict[str, str], list[dict]], Path],
+    stray      : str
+):
+    """
+    Pins that a `deploy.yml` cache step fails the audit on an annotation at
+    the line naming it, or at its `uses` where it has no name, when it saves
+    without the `pull_request` guard leading a `||`-free condition, restores
+    under a `restore-keys` entry no prefix of its `key`, or caches a path
+    that is neither a `cacheDirFrom` folder of the site code nor a task's
+    output folder, a `cacheDirFrom` call in a test module counting for
+    neither, whereas a step outside the `actions/cache` family is not read.
+    `stray` is replaced by `fix` in the workflow.
+    """
+    assert stray in PRESS
+    repository(
+        {
+            ".github/workflows/deploy.yml"        : PRESS.replace(stray, fix, 1),
+            "site/.vitepress/lib/shared/paths.ts" : (
+                "export function highlightCacheDir(metaUrl: string): string {\n"
+                "  return cacheDirFrom(repoRoot(metaUrl), 'highlight')\n"
+                "}\n"
+            ),
+            "site/.vitepress/tests/shared/paths.test.ts":
+                "expect(cacheDirFrom(root, 'fixture')).toBe(fixture)\n"
+        },
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.caches() == bool(reported)
+    assert capsys.readouterr().out == (
+        reported and f"::error file=.github/workflows/deploy.yml,line={reported}"
+    )
+
+
+@mark.parametrize(
+    ("home", "stray", "fix", "provisioner", "reported"),
+    [
+        param(DEPLOY, "", "", "site:provision", "", id="sound"),
+        param(
+            RESTORE,
+            "path : site/public/wasm",
+            "path : site/public/wasm-module",
+            "site:provision",
+            f"{RESTORE},line=4::the 'Restore the wasm module' step caches "
+            f"'site/public/wasm-module', {UNREAD}",
+            id = "composite-path-drifted"
+        ),
+        param(
+            PROVISION,
+            ".cache/apt",
+            ".cache/debs",
+            "site:provision",
+            f"{DEBS},line=4::the 'Restore the WebKit system packages' step caches "
+            f"'.cache/apt', {UNREAD}",
+            id = "provision-folder-drifted"
+        ),
+        param(
+            DEPLOY,
+            "",
+            "",
+            "site:render",
+            f"{DEBS},line=4::the 'Restore the WebKit system packages' step caches "
+            f"'.cache/apt', {UNREAD}",
+            id = "folder-of-another-task"
+        )
+    ]
+)
+def test_caches_reads_the_cache_steps_of_each_composite_deploy_calls(
+    audit       : ModuleType,
+    capsys      : CaptureFixture[str],
+    fix         : str,
+    home        : str,
+    provisioner : str,
+    reported    : str,
+    repository  : Callable[[dict[str, str], list[dict]], Path],
+    stray       : str
+):
+    """
+    Pins that `caches` reads each cache step of a composite `deploy.yml`
+    calls by a `./` or `$/` path, reporting a fault once at the step's
+    line in the composite however often it is called, and that a folder
+    counts as read where a `provision` task's script names it under
+    `$MISE_PROJECT_ROOT`, whereas the same folder named by another task
+    does not. `stray` is replaced by `fix` in the file at `home`, and
+    `provisioner` names the task whose script names `.cache/apt`.
+    """
+    files = {
+        DEBS: (
+            "runs:\n"
+            "  using: composite\n"
+            "  steps:\n"
+            "    - name : Restore the WebKit system packages\n"
+            "      uses : actions/cache/restore@1111\n"
+            "      with:\n"
+            "        key  : webkit-debs\n"
+            "        path : .cache/apt\n"
+        ),
+        DEPLOY: (
+            "jobs:\n"
+            "  check:\n"
+            "    steps:\n"
+            "      - uses : ./.github/actions/restore-wasm\n"
+            "  press:\n"
+            "    steps:\n"
+            "      - uses : ./.github/actions/restore-wasm\n"
+            "      - uses : $/.github/actions/restore-debs\n"
+        ),
+        PROVISION : 'cache="$MISE_PROJECT_ROOT/.cache/apt"\n',
+        RESTORE   : (
+            "runs:\n"
+            "  using: composite\n"
+            "  steps:\n"
+            "    - name : Restore the wasm module\n"
+            "      uses : actions/cache/restore@1111\n"
+            "      with:\n"
+            "        key  : wasm-module\n"
+            "        path : site/public/wasm\n"
+        )
+    }
+    assert stray in files[home]
+    repository(
+        files | {home: files[home].replace(stray, fix, 1)},
+        [
+            {
+                "dir"     : "{root}",
+                "file"    : f"{{root}}/{PROVISION}",
+                "name"    : provisioner,
+                "depends" : [],
+                "outputs" : [],
+                "sources" : []
+            },
+            {
+                "dir"     : "{root}",
+                "file"    : "{root}/.mise/tasks/wasm/pack",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.caches() == bool(reported)
+    assert capsys.readouterr().out == (reported and f"::error file={reported}")
+
+
+@mark.parametrize(
     "flow",
     [
         param("on:\n  pull_request:\n    paths: ['**']\n", id="event-absent"),
@@ -719,6 +1032,187 @@ def test_workflow_paths_fails_without_a_filter(
         audit.workflow_paths("push", "deploy")
 
     assert capsys.readouterr().out == "::error::no push paths filter in deploy.yml\n"
+
+
+@mark.parametrize(
+    ("event", "types", "check", "gate", "reported"),
+    [
+        param(
+            "pull_request",
+            TYPES,
+            GUARD,
+            "${{ always() && !github.event.pull_request.draft }}",
+            "",
+            id = "guarded"
+        ),
+        param("push", "[]", "''", "''", "", id="push-only"),
+        param(
+            "pull_request",
+            "[opened, synchronize, reopened]",
+            GUARD,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=2::the pull_request trigger "
+            "omits the types ['ready_for_review']\n",
+            id = "types-short"
+        ),
+        param(
+            "pull_request",
+            "''",
+            GUARD,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=2::the pull_request trigger "
+            f"omits the types {ALL_MISSING}\n",
+            id = "types-empty"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "''",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "job-unguarded"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            GUARD,
+            "${{ always() || !github.event.pull_request.draft }}",
+            "::error file=.github/workflows/ci.yml,line=10::the gate job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-disjoined"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "${{ !github.event.pull_request.draft && always() }}",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-leading"
+        ),
+        param(
+            "pull_request",
+            None,
+            GUARD,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=2::the pull_request trigger "
+            f"omits the types {ALL_MISSING}\n",
+            id = "types-absent"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            None,
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "job-ifless"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "${{ always() && github.event.pull_request.draft }}",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-unnegated"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "${{ always() || x && !github.event.pull_request.draft }}",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-disjoined-earlier"
+        ),
+        param(
+            "pull_request",
+            TYPES,
+            "${{ !github.event.pull_request.draft }} || true",
+            GUARD,
+            "::error file=.github/workflows/ci.yml,line=6::the check job runs on a "
+            "draft, its if lacking the draft guard\n",
+            id = "guard-trailing-text"
+        )
+    ]
+)
+def test_drafts_reports_each_trigger_and_job_running_on_a_draft(
+    audit    : ModuleType,
+    capsys   : CaptureFixture[str],
+    check    : str | None,
+    event    : str,
+    gate     : str,
+    reported : str,
+    types    : str | None,
+    workdir  : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a `pull_request` trigger omitting a ready activity type and
+    a job whose `if` does not end on the draft guard each fail the audit on
+    an annotation locating the workflow and the job, whereas a guard joined
+    by `||` or leading another condition counts as no guard and a workflow
+    no pull request triggers is not read. A `None` drops the `types` or the
+    `if` line, posing a trigger with no types and a job with no condition.
+    """
+    types_line = "" if types is None else f"    types: {types}\n"
+    check_line = "" if check is None else f"    if: {check}\n"
+    workdir(
+        {
+            ".github/workflows/ci.yml": (
+                f"on:\n  {event}:\n{types_line}\njobs:\n"
+                f"  check:\n    runs-on: x\n{check_line}\n  gate:\n    if: {gate}\n"
+            )
+        }
+    )
+
+    assert audit.drafts() == bool(reported)
+    assert capsys.readouterr().out == reported
+
+
+@mark.parametrize(
+    ("trigger", "line", "missing"),
+    [
+        param("on: [push, pull_request]\n", 1, ALL_MISSING, id="list"),
+        param("on: pull_request\n", 1, ALL_MISSING, id="scalar"),
+        param(
+            "on:\n  pull_request: {types: [opened]}\n",
+            2,
+            "['ready_for_review', 'reopened', 'synchronize']",
+            id = "inline"
+        ),
+        param(
+            "on:\n  pull_request: # ready\n    types: [opened]\n",
+            2,
+            "['ready_for_review', 'reopened', 'synchronize']",
+            id = "commented"
+        )
+    ]
+)
+def test_drafts_locates_a_trigger_of_every_form(
+    audit   : ModuleType,
+    capsys  : CaptureFixture[str],
+    line    : int,
+    missing : str,
+    trigger : str,
+    workdir : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a `pull_request` trigger written as a list entry, a bare name,
+    an inline mapping, or a key under a trailing comment fails the audit
+    on an annotation at the line opening the trigger, or at `on` where the
+    trigger has no key of its own.
+    """
+    workdir(
+        {".github/workflows/ci.yml": f"{trigger}\njobs:\n  check:\n    if: {GUARD}\n"}
+    )
+
+    assert audit.drafts()
+    assert capsys.readouterr().out == (
+        f"::error file=.github/workflows/ci.yml,line={line}::the pull_request "
+        f"trigger omits the types {missing}\n"
+    )
 
 
 @mark.parametrize(

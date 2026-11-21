@@ -1,8 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import * as composition      from './composition'
-import { fixtureWatchGlobs } from '../fixtures/walker'
-import { crateDir }          from '../shared/paths'
+import * as composition      from './composition.ts'
+import { fixtureWatchGlobs } from '../fixtures/walker.ts'
+import { crateDir }          from '../shared/paths.ts'
 
 const crate = crateDir(import.meta.url)
 

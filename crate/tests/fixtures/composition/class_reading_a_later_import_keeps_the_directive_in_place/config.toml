@@ -1,0 +1,2 @@
+[harness]
+rules = ["prune-inert-imports", "band-constants", "space-statements"]

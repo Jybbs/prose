@@ -1,9 +1,12 @@
 import { chromium }                           from 'playwright'
 import type { Browser, BrowserContext, Page } from 'playwright'
 
-import { bundleContext } from './bundle'
+import { bundleContext, OPEN_CARD } from './bundle'
 
-const OPEN_CARD = '[role="dialog"]:visible'
+// The page global that resolves once the pointer's link is back under it after an Escape.
+interface Returned {
+  returned : Promise<void>
+}
 
 const activeRole = (page: Page) => page.evaluate(() => document.activeElement?.getAttribute('role'))
 
@@ -127,6 +130,27 @@ describe('the rule cards from a pointer at a desktop width', () => {
   afterEach(() => page.close())
 
   afterAll(() => browser.close())
+
+  it('stays closed after Escape under a still pointer and leaves focus where it was', async () => {
+    const probe = () => page.evaluate(() => (document.activeElement as HTMLElement).dataset.probe)
+    await page.evaluate(() => { (document.activeElement as HTMLElement).dataset.probe = 'focused' })
+    // Settles 200 ms, past the card's 80 ms show delay, after the `mouseover` the list's own Escape shift
+    // sends once the hovered link moves back under the pointer.
+    await page.evaluate(link => {
+      (window as unknown as Returned).returned = new Promise(resolve => {
+        document.addEventListener('mouseover', ({ target }) => {
+          if (target instanceof Element && target.closest(link) === document.querySelector(link)) {
+            setTimeout(resolve, 200)
+          }
+        })
+      })
+    }, LINK)
+    await page.keyboard.press('Escape')
+    await page.locator(OPEN_CARD).waitFor({ state: 'hidden' })
+    await page.evaluate(() => (window as unknown as Returned).returned)
+    await expect(page.locator(OPEN_CARD).count()).resolves.toBe(0)
+    await expect(probe()).resolves.toBe('focused')
+  })
 
   it('opens on a hover and leaves focus on the page', async () => {
     await page.waitForTimeout(200)

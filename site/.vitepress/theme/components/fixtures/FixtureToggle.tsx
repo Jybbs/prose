@@ -5,14 +5,14 @@ import type { PropType }             from 'vue'
 import { Tabs }           from '../../../kit'
 import type { TabsScope } from '../../../kit'
 
-import type { FixtureTab } from '../../../lib/shared/fixture-tab'
+import { FIXTURE_TABS, type FixtureTab } from '../../../lib/shared/fixture-tab'
 
 export const FixtureToggle = defineComponent({
   name  : 'FixtureToggle',
   props : {
     modelValue : { required: true, type: String as PropType<FixtureTab> }
   },
-  emits : { 'update:modelValue': (value: FixtureTab) => value === 'before' || value === 'after' },
+  emits : { 'update:modelValue': (value: FixtureTab) => FIXTURE_TABS.includes(value) },
   setup(props) {
     const tab = useModel(props, 'modelValue')
 

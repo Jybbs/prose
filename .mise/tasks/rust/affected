@@ -1,15 +1,12 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Run `rust:suite` once the changes since `origin/main` reach the Rust workspace or its build configuration"
+#MISE description = "Run `rust:suite` once the changes since `origin/main` reach the Rust workspace or its build configuration, and the `prose_wasm` tests once they reach `prose_wasm` or its dependency graph"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/changes.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-cargo_test() {
-  cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
-}
-
 forwarded=("$@")
 members=$(workspace_members)
+reach=$(wasm_reach)
 changed=$(
   changed_paths \
     .cargo/clippy.toml \
@@ -24,4 +21,8 @@ if [[ -z $changed ]]; then
   echo "No Rust file changed since origin/main"
 else
   split_suite cargo_test
+fi
+
+if [[ -n $(changed_paths Cargo.lock Cargo.toml $reach) ]]; then
+  cargo_test --locked --package prose_wasm
 fi

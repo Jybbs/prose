@@ -1,7 +1,7 @@
 import path from 'node:path'
 
-import { requireString } from '../shared/require-string'
-import { parseToml }     from '../shared/toml'
+import { requireString } from '../shared/require-string.ts'
+import { parseToml }     from '../shared/toml.ts'
 
 export interface WheelPlatform {
   emoji     : string

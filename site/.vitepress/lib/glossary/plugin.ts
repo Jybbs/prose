@@ -1,9 +1,9 @@
 import type { MarkdownIt } from 'markdown-it'
 
-import { isInert, isPlainTerms } from '../markdown/inert-env'
-import { replaceTextTokens }     from '../markdown/token-split'
-import { walkBodyInlines }       from '../markdown/walk'
-import { wordBounded }           from '../markdown/word-bounded'
+import { isInert, isPlainTerms } from '../markdown/inert-env.ts'
+import { replaceTextTokens }     from '../markdown/token-split.ts'
+import { walkBodyInlines }       from '../markdown/walk.ts'
+import { wordBounded }           from '../markdown/word-bounded.ts'
 
 export function glossaryPlugin(
   phraseToSlug : ReadonlyMap<string, string>,

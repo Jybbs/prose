@@ -1,10 +1,10 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, inlineNodeField }       from '../markdown/renderer'
-import type { InlineNode }                    from '../markdown/inline-nodes'
-import { DIRECTIVES }                         from './directives'
-import { type DirectivePart, directiveParts } from './directive-parts'
-import type { ScopeKey }                      from './scopes'
+import { getRenderer, inlineNodeField }       from '../markdown/renderer.ts'
+import type { InlineNode }                    from '../markdown/inline-nodes.ts'
+import { DIRECTIVES }                         from './directives.ts'
+import { type DirectivePart, directiveParts } from './directive-parts.ts'
+import type { ScopeKey }                      from './scopes.ts'
 
 export interface Directive {
   effectNodes : InlineNode[]
