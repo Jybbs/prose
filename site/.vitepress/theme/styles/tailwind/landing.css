@@ -16,9 +16,7 @@
   --color-stamp-accent-22-bg                              : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-22), var(--vp-c-bg));
   --color-stamp-accent-30-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-30), var(--panel-edge));
   --color-stamp-accent-40-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-40), var(--panel-edge));
-  --color-stamp-accent-50-text-3                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-50), var(--vp-c-text-3));
   --color-stamp-accent-55-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--panel-edge));
-  --color-stamp-accent-55-text-3                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-55), var(--vp-c-text-3));
   --color-stamp-accent-65-panel-edge                      : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-65), var(--panel-edge));
   --color-stamp-accent-8-panel-bg                         : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-8), var(--panel-bg));
   --color-stamp-accent-medium-bg                          : color-mix(in srgb, var(--stamp-accent) var(--prose-tint-medium), var(--vp-c-bg));

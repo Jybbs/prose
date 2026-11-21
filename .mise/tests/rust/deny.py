@@ -3,32 +3,40 @@ Pins the three `cargo deny` runs `rust:deny` makes and the policy and
 targets each one reads.
 """
 
-from os         import environ
-from pathlib    import Path
-from subprocess import run
-from tomllib    import loads
+from collections.abc import Callable
+from pathlib         import Path
+from pytest          import fixture
+from subprocess      import run
+from tomllib         import loads
 
-ROOT     = Path(__file__).resolve().parents[3]
-STAND_IN = (
-    "#!/bin/sh\n"
-    "shift\n"
-    "while [ $# -gt 0 ]; do\n"
-    '  if [ "$1" = --config ]; then grep "^unmaintained" "$2"; shift; '
-    "else printf '%s\\n' \"$1\"; fi\n"
-    "  shift\n"
-    "done\n"
-)
+ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
+@fixture(autouse=True)
+def cargo(stand_in: Callable[..., Path]):
+    """
+    Puts a stand-in `cargo` first on `PATH`, printing each argument after
+    the subcommand on a line of its own and the `unmaintained` line of each
+    `--config` file in place of its path.
+    """
+    stand_in(
+        "cargo",
+        "shift\n"
+        "while [ $# -gt 0 ]; do\n"
+        '  if [ "$1" = --config ]; then grep "^unmaintained" "$2"; shift; '
+        "else printf '%s\\n' \"$1\"; fi\n"
+        "  shift\n"
+        "done\n"
+    )
+
+
+def test_deny_runs_each_check_under_its_policy_and_targets():
     """
     Pins that `rust:deny` runs advisories, bans, and sources under
     `.cargo/deny.toml`, then advisories under a copy reporting every
     unmaintained crate as a warning, then licenses over each target
     `.github/scripts/platforms.toml` names and `wasm32-unknown-unknown`.
     """
-    (cargo := tmp_path / "cargo").write_text(STAND_IN, encoding="utf-8")
-    cargo.chmod(0o755)
     platforms = loads(
         (ROOT / ".github/scripts/platforms.toml").read_text(encoding="utf-8")
     )["platforms"]
@@ -42,7 +50,6 @@ def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
         capture_output = True,
         check          = True,
         cwd            = ROOT,
-        env            = {**environ, "PATH": f"{tmp_path}:{environ['PATH']}"},
         text           = True
     )
 
