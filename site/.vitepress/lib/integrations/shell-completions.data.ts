@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import type { InlineNode } from '../markdown/inline-nodes'
-import * as renderer       from '../markdown/renderer'
+import type { InlineNode } from '../markdown/inline-nodes.ts'
+import * as renderer       from '../markdown/renderer.ts'
 
 interface ShellCompletion {
   caption   : string

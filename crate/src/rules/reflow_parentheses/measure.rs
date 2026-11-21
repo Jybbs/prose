@@ -5,6 +5,7 @@
 //! removes.
 
 use ruff_diagnostics::Edit;
+use ruff_python_ast::Expr;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -18,12 +19,14 @@ use crate::{
         comparison::narrowing_edits_within,
         edit::{apply_inline_edits, insert_edit},
         inline::{
-            display_width, run_closes_to_a_space, settled_head_column, settled_width,
-            soft_wrap_runs,
+            display_width, run_closes_to_a_space, settled_head_column, settled_slice_width,
+            settled_width, soft_wrap_runs,
         },
+        layout::{is_layoutable, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
+        walk::{Interpolations, any_over_expr_within},
     },
     source::Source,
 };
@@ -94,7 +97,7 @@ impl Shedder<'_> {
     /// call ending ahead of `offset` on that row explodes while the row
     /// through `offset` still overflows the budget, dropping its closer
     /// to the row's indent and the text after it along with it.
-    fn shifted_column(&self, offset: TextSize) -> usize {
+    pub(super) fn shifted_column(&self, offset: TextSize) -> usize {
         let column = self.column_at(offset);
         if column < self.code_line_length {
             return column;
@@ -145,6 +148,109 @@ impl Shedder<'_> {
             return false;
         };
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
+    }
+
+    /// True where `candidate`'s opened form `text`, its pair opening at
+    /// `column`, leaves a statement row past the budget. That row runs
+    /// through the first row of `text`, settled under the padding table,
+    /// and is cut at the first argument list `reflow-calls` can explode or
+    /// literal `reflow-collections` can expand on that row.
+    pub(super) fn opens_past_the_budget(
+        &self,
+        candidate: &Candidate,
+        text: &str,
+        column: usize,
+    ) -> bool {
+        let range = candidate.expr.range();
+        let row = TextRange::new(
+            range.start(),
+            self.source.text().line_end(range.start()).min(range.end()),
+        );
+        let written = settled_width(
+            self.source,
+            self.padding,
+            row,
+            display_width(text.lines().next().unwrap_or_default()),
+        );
+        let calls = starting_within(self.source.explodable_arguments(), range, Ranged::start)
+            .filter(|_| self.one_row.closes());
+        let literals = starting_within(self.source.expandable_literals(), range, Ranged::start)
+            .filter(|_| self.one_row.expands_literals());
+        let head = calls
+            .chain(literals)
+            .map(|opener| TextRange::new(range.start(), opener.start() + TextSize::of('(')))
+            .filter(|head| !self.source.contains_line_break(*head))
+            .map(|head| settled_slice_width(self.source, self.padding, head))
+            .fold(written, usize::min);
+        column + head > self.code_line_length
+    }
+
+    /// True where `expr`, standing alone on a row one indent step past
+    /// `indent`, lands across rows once the layout rules take their turn,
+    /// which holds for
+    ///
+    /// - a collection literal written across rows, where
+    ///   `reflow-collections` is off or no rejoined form of it fits that
+    ///   row, and one written on one row that rule expands
+    /// - a call holding an argument list `reflow-calls` can explode, where
+    ///   that rule finds no one-row form fitting that row, and with that
+    ///   rule off, any call spanning rows or holding a literal
+    ///   `reflow-collections` expands on that row
+    pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
+        let column = item_indent(indent);
+        let spans = self.source.contains_line_break(expr.range());
+        match expr {
+            Expr::Call(call) if self.one_row.closes() => {
+                starting_within(
+                    self.source.explodable_arguments(),
+                    call.range(),
+                    Ranged::start,
+                )
+                .next()
+                .is_some()
+                    && self
+                        .one_row
+                        .condensed(self.source, expr, expr.into())
+                        .is_none_or(|form| {
+                            !self.one_row.fits(
+                                column
+                                    + self.one_row.text_width(
+                                        self.source,
+                                        self.padding,
+                                        &form,
+                                        call.range(),
+                                    ),
+                            )
+                        })
+            }
+            Expr::Call(call) => {
+                let width = |range| settled_slice_width(self.source, self.padding, range);
+                spans
+                    || any_over_expr_within(expr, Interpolations::Skip, |inner| {
+                        self.one_row.expands(
+                            self.source,
+                            inner,
+                            inner.into(),
+                            column + width(TextRange::new(call.start(), inner.start())),
+                            width(TextRange::new(inner.end(), call.end())),
+                            self.padding,
+                        )
+                    })
+            }
+            _ if is_layoutable(expr) => {
+                if spans {
+                    !self.one_row.joins_literals()
+                        || self
+                            .one_row
+                            .rejoined(self.source, expr, expr.into(), column, 0)
+                            .is_none()
+                } else {
+                    self.one_row
+                        .expands(self.source, expr, expr.into(), column, 0, self.padding)
+                }
+            }
+            _ => false,
+        }
     }
 
     /// True where joining `candidate` crosses the budget on its row from

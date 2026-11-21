@@ -1,8 +1,8 @@
 import path from 'node:path'
 
-import { COMPOSITION_RULE } from '../fixtures/entry'
-import * as walker          from '../fixtures/walker'
-import { fixturesDirFrom }  from '../shared/paths'
+import { COMPOSITION_RULE } from '../fixtures/entry.ts'
+import * as walker          from '../fixtures/walker.ts'
+import { fixturesDirFrom }  from '../shared/paths.ts'
 
 export interface CompositionCase {
   case  : string

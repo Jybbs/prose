@@ -277,10 +277,14 @@ impl Source {
     /// beside the map from its offsets to the copy's, or `None` where
     /// the shortened text does not parse.
     pub(crate) fn deleting(&self, ranges: &[TextRange]) -> Option<(Self, SourceMap)> {
-        let (text, map) = apply_edits_mapped(
-            self.text(),
-            ranges.iter().copied().map(Edit::range_deletion).collect(),
-        )?;
+        self.editing(ranges.iter().copied().map(Edit::range_deletion).collect())
+    }
+
+    /// This source reparsed with the disjoint `edits` applied, beside the
+    /// map from its offsets to the copy's, or `None` where the edits
+    /// overlap or the edited text does not parse.
+    pub(crate) fn editing(&self, edits: Vec<Edit>) -> Option<(Self, SourceMap)> {
+        let (text, map) = apply_edits_mapped(self.text(), edits)?;
         let cell_offsets = forward_offsets(&self.cell_offsets, &map, text.text_len());
         let copy = self.reparse_carrying(text, cell_offsets).ok()?;
         Some((copy, map))

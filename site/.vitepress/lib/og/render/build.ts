@@ -1,14 +1,14 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url'
-import * as cache                       from '../../shared/cache'
-import * as paths                       from '../../shared/paths'
-import { readRenderGraph }              from '../../shared/render-graph'
-import { loadBrandAssets }              from './assets'
-import { cardKeyer }                    from './card-key'
-import { enumeratePages }               from '../pages'
-import * as pool                        from './pool'
+import { ogImagePath, TOUCH_ICON_PATH } from '../../config/og-url.ts'
+import * as cache                       from '../../shared/cache.ts'
+import * as paths                       from '../../shared/paths.ts'
+import { readRenderGraph }              from '../../shared/render-graph.ts'
+import { loadBrandAssets }              from './assets.ts'
+import { cardKeyer }                    from './card-key.ts'
+import { enumeratePages }               from '../pages.ts'
+import * as pool                        from './pool.ts'
 
 export async function buildOgCards(
   srcDir  : string,

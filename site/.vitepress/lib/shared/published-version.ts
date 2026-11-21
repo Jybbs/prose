@@ -1,8 +1,8 @@
-import { conditionalFetch } from './conditional-fetch'
-import { REPO_SLUG }        from './constants'
-import { githubHeaders }    from './github-headers'
-import { requireString }    from './require-string'
-import { readCargoVersion } from './version'
+import { conditionalFetch } from './conditional-fetch.ts'
+import { REPO_SLUG }        from './constants.ts'
+import { githubHeaders }    from './github-headers.ts'
+import { requireString }    from './require-string.ts'
+import { readCargoVersion } from './version.ts'
 
 // Reads the tag of the newest published release from GitHub's
 // `releases/latest`, which leaves out every draft and prerelease,

@@ -3,11 +3,11 @@ import { Worker } from 'node:worker_threads'
 
 import { Resvg } from '@resvg/resvg-js'
 
-import type { BrandAssets } from './assets'
-import { iconSvg }          from './icon'
-import { landingSvg }       from './landing'
-import type { OgPage }      from '../pages'
-import { pageSvg }          from './template'
+import type { BrandAssets } from './assets.ts'
+import { iconSvg }          from './icon.ts'
+import { landingSvg }       from './landing.ts'
+import type { OgPage }      from '../pages.ts'
+import { pageSvg }          from './template.ts'
 
 interface CardId {
   key        : string

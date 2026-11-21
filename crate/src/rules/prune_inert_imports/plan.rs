@@ -10,7 +10,7 @@ use ruff_text_size::{TextRange, TextSize};
 use rustc_hash::FxHashSet;
 
 use super::{
-    PruneInertImports,
+    DirectiveGate, PruneInertImports,
     annotations::type_expression_names,
     future::annotations_are_inert,
     inventory::ImportNode,
@@ -78,7 +78,7 @@ impl<'a> Plan<'a> {
 
         let mut dropped: Vec<Vec<usize>> = vec![Vec::new(); nodes.len()];
         let mut reports = Vec::new();
-        for (statement, (_, node)) in nodes.iter().enumerate() {
+        for (statement, (slot, node)) in nodes.iter().enumerate() {
             if noqa_held.contains(&statement) {
                 continue;
             }
@@ -92,7 +92,10 @@ impl<'a> Plan<'a> {
                 } else if !rule.unreferenced || is_star(alias) {
                     None
                 } else if node.is_future() {
-                    (directive_is_inert && directive == Some(index)).then_some(Candidacy::Inert)
+                    (directive_is_inert
+                        && directive == Some(index)
+                        && DirectiveGate::releases(source, &reexports, &body[*slot], node))
+                    .then_some(Candidacy::Inert)
                 } else if reexports_a_private_name(node, alias) {
                     None
                 } else {

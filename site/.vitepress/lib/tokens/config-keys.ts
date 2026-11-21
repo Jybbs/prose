@@ -1,7 +1,7 @@
-import * as anchors         from '../reference/anchors'
-import * as ruleSchema      from '../shared/rule-schema'
-import type { Anchored }    from './destinations'
-import type { TokenSource } from './sources'
+import * as anchors         from '../reference/anchors.ts'
+import * as ruleSchema      from '../shared/rule-schema.ts'
+import type { Anchored }    from './destinations.ts'
+import type { TokenSource } from './sources.ts'
 
 const CONFIG_PAGE  = '/reference/configuration'
 const CATALOG_HREF = `${CONFIG_PAGE}#per-rule-facets`

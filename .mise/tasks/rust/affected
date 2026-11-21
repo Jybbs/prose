@@ -4,10 +4,6 @@
 source "$MISE_PROJECT_ROOT/.mise/lib/changes.bash"
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-cargo_test() {
-  cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
-}
-
 forwarded=("$@")
 members=$(workspace_members)
 reach=$(wasm_reach)

@@ -1,0 +1,18 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/call_on_an_expanding_literal_opens_on_the_assignment_row/input.py
+---
+value = {
+    "alpha": 1,
+    "beta": 2,
+    "gamma": 3
+}.get(key_argument, default_value)
+
+
+other = {
+    "alpha": 1,
+    "beta": 2,
+    "gamma": 3,
+    "delta": 4
+}.items()

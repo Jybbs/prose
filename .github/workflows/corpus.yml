@@ -84,8 +84,9 @@ jobs:
         name : Provision Cargo
         uses : $/.github/actions/provision-cargo
         with:
+          probe      : 'true'
           save       : *no-save
-          shared-key : prose-probe
+          shared-key : prose-probe-workspace
 
       - &interpreter
         name : Key the caches to the pinned interpreter

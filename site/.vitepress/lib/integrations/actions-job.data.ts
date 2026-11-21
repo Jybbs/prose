@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import * as job                         from './actions-job'
-import { getRenderer, renderFencedHtml } from '../markdown/renderer'
-import { readHelp }                      from '../reference/cli-help'
-import * as paths                        from '../shared/paths'
+import * as job                         from './actions-job.ts'
+import { getRenderer, renderFencedHtml } from '../markdown/renderer.ts'
+import { readHelp }                      from '../reference/cli-help.ts'
+import * as paths                        from '../shared/paths.ts'
 
 interface ActionsJob {
   formats   : readonly string[]

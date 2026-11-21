@@ -1,5 +1,5 @@
-import type { InlineNode }   from '../markdown/inline-nodes'
-import { lookup }            from '../shared/lookup'
+import type { InlineNode }   from '../markdown/inline-nodes.ts'
+import { lookup }            from '../shared/lookup.ts'
 
 export const COMPOSITION_RULE = 'composition'
 

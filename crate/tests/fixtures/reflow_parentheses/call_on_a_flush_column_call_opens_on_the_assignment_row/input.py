@@ -1,0 +1,6 @@
+value = (
+    factory(
+        alpha,
+        beta,
+    )()
+)

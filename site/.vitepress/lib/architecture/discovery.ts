@@ -1,8 +1,8 @@
-import { markdownH1 }                       from '../markdown/h1'
-import { inlineText }                       from '../markdown/inline-text'
-import { matterPages }                      from '../shared/content-page'
-import * as registries                      from '../shared/registries'
-import { requireString, requireStringList } from '../shared/require-string'
+import { markdownH1 }                       from '../markdown/h1.ts'
+import { inlineText }                       from '../markdown/inline-text.ts'
+import { matterPages }                      from '../shared/content-page.ts'
+import * as registries                      from '../shared/registries.ts'
+import { requireString, requireStringList } from '../shared/require-string.ts'
 
 export interface DiscoveredPrimitive {
   consumedBy : readonly string[]

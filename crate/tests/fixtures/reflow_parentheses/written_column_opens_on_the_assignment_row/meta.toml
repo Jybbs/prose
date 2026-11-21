@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a Dict Written Across Rows Opens the Dict on the Assignment's Row"
+
+description = '''
+Inside `settings`, `defaults = (` wraps a dict already written one entry per row. **The pair is removed, the dict opens on the assignment's row as `defaults = {`, and its rows move one indent step left**, the entries hanging one step past the statement and the `}` returning to its indent.
+'''

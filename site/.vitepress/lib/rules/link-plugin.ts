@@ -1,13 +1,13 @@
 import type { MarkdownIt } from 'markdown-it'
 
-import type { DiscoveredPrimitive } from '../architecture/discovery'
-import { isInert }                  from '../markdown/inert-env'
-import { walkBodyInlines }          from '../markdown/walk'
-import { BODY_LINK_CLASS }          from '../shared/constants'
-import { familyEmblem }             from '../shared/emblems'
-import { nibBadgeHtml }             from '../../kit/drawing/nib'
-import { primitiveRoute }           from '../shared/routes'
-import type { DiscoveredRule }      from './discovery'
+import type { DiscoveredPrimitive } from '../architecture/discovery.ts'
+import { isInert }                  from '../markdown/inert-env.ts'
+import { walkBodyInlines }          from '../markdown/walk.ts'
+import { BODY_LINK_CLASS }          from '../shared/constants.ts'
+import { familyEmblem }             from '../shared/emblems.ts'
+import { nibBadgeHtml }             from '../../kit/drawing/nib.ts'
+import { primitiveRoute }           from '../shared/routes.ts'
+import type { DiscoveredRule }      from './discovery.ts'
 
 export function ruleLinkPlugin(
   rules      : ReadonlyMap<string, Pick<DiscoveredRule, 'family' | 'href'>>,

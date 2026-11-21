@@ -1,0 +1,15 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/exploding_dict_opens_on_the_assignment_row/input.py
+---
+value = {
+    "alpha": 1,
+    "delta": 2,
+    "epsilon": 3,
+    "gamma": 4,
+    "iota": 5,
+    "kappa": 6,
+    "theta": 7,
+    "zeta": 8
+}

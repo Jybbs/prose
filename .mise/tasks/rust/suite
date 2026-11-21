@@ -3,4 +3,5 @@
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
-split_suite cargo test
+forwarded=("$@")
+split_suite cargo_test

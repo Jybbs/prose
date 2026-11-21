@@ -3,4 +3,12 @@
 #MISE description = "Build the probe binary, the corpus binaries, and the harnesses the settle, subset, import, and delta sweeps run on"
 
 cargo build --bins --locked -p prose -p prose_corpus --profile probe
-cargo test --locked --no-run --profile probe --test corpus --test imports --test settle
+cargo test \
+  --exclude prose_wasm \
+  --locked \
+  --no-run \
+  --profile probe \
+  --test corpus \
+  --test imports \
+  --test settle \
+  --workspace

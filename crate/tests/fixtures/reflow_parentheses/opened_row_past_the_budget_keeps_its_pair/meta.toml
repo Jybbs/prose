@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Whose Opened Row Would Overflow Keeps Its Place"
+
+description = '''
+`self._timeout_handle = (` wraps a `loop.call_later` call that `reflow-calls` explodes under a **40**-column budget. The opened row `self._timeout_handle = loop.call_later(` would run to 47, past the budget, so **the pair keeps its place** and the call explodes on the rows inside it, though the row ending on the pair's `(` fits at 32 columns.
+'''

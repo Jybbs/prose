@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a Call on a Flush-Column Call Opens the Outer Call on the Assignment's Row"
+
+description = '''
+`value = (` wraps `factory(...)()`, an argument-less call on a `factory` call whose arguments stand one per row. **The pair is removed and the construct opens on the assignment's row as `value = factory(`**, its arguments one per row and `)()` closing the statement, since the inner argument list lands across rows whatever the outer call holds.
+'''

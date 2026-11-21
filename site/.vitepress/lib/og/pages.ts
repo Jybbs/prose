@@ -2,14 +2,14 @@ import path from 'node:path'
 
 import matter from 'gray-matter'
 
-import { type DiscoveredPrimitive, discoverPrimitiveIndex } from '../architecture/discovery'
-import { ogImagePath }                                      from '../config/og-url'
-import { markdownH1 }                                       from '../markdown/h1'
-import { type DiscoveredRule, discoverRuleIndex }           from '../rules/discovery'
-import { readPipeline }                                     from '../rules/pipeline'
-import { FAMILIES, SECTIONS }                               from '../shared/palette'
-import * as registries                                      from '../shared/registries'
-import { toTitleCase }                                      from '../shared/title-case'
+import { type DiscoveredPrimitive, discoverPrimitiveIndex } from '../architecture/discovery.ts'
+import { ogImagePath }                                      from '../config/og-url.ts'
+import { markdownH1 }                                       from '../markdown/h1.ts'
+import { type DiscoveredRule, discoverRuleIndex }           from '../rules/discovery.ts'
+import { readPipeline }                                     from '../rules/pipeline.ts'
+import { FAMILIES, SECTIONS }                               from '../shared/palette.ts'
+import * as registries                                      from '../shared/registries.ts'
+import { toTitleCase }                                      from '../shared/title-case.ts'
 
 type OgKind = registries.SectionSlug
 

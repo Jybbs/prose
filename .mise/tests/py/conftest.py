@@ -5,7 +5,6 @@ its own.
 """
 
 from collections.abc import Callable
-from os              import environ
 from pathlib         import Path
 from pytest          import MonkeyPatch, fixture
 from subprocess      import CompletedProcess, run
@@ -17,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def ran(
     monkeypatch : MonkeyPatch,
     scratch     : Callable[[Path], Path],
+    stand_in    : Callable[..., Path],
     tmp_path    : Path
 ) -> Callable[..., CompletedProcess]:
     """
@@ -25,13 +25,8 @@ def ran(
     ones removed from the working tree afterward, under a `GITHUB_ACTIONS`
     of `actions` or none.
     """
-    stand_in = tmp_path / "bin/prose"
-    stand_in.parent.mkdir()
-    stand_in.write_text("#!/bin/sh\nprintf '%s\\n' \"$@\"\n", encoding="utf-8")
-    stand_in.chmod(0o755)
+    stand_in("prose")
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(ROOT))
-    monkeypatch.setenv("PATH", f"{stand_in.parent}:{environ['PATH']}")
 
     def run_task(
         name    : str,

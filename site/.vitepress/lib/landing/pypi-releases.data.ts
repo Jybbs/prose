@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { conditionalFetch }        from '../shared/conditional-fetch'
-import { PYPI_PACKAGE }            from '../shared/constants'
-import { crateDir, fetchCacheDir } from '../shared/paths'
-import { readCargoVersion }        from '../shared/version'
+import { conditionalFetch }        from '../shared/conditional-fetch.ts'
+import { PYPI_PACKAGE }            from '../shared/constants.ts'
+import { crateDir, fetchCacheDir } from '../shared/paths.ts'
+import { readCargoVersion }        from '../shared/version.ts'
 
 export interface PyPIRelease {
   date      : string

@@ -1,4 +1,4 @@
-import type { Scheme } from '../shared/palette'
+import type { Scheme } from '../shared/palette.ts'
 
 // Names each scheme as a reader sees it.
 export const SCHEME_TEXT: Record<Scheme, string> = { dark: 'Dark', light: 'Light' }

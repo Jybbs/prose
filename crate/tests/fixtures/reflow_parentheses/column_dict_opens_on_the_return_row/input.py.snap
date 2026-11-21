@@ -1,0 +1,11 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/column_dict_opens_on_the_return_row/input.py
+---
+def settings():
+    return {
+        "alpha": 1,
+        "delta": 2,
+        "epsilon": 3,
+    }

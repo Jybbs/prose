@@ -1,4 +1,4 @@
-import { USER_AGENT } from './constants'
+import { USER_AGENT } from './constants.ts'
 
 // Builds the headers of a GitHub REST request, adding the build's
 // `GITHUB_TOKEN` as a bearer token where the environment sets one.

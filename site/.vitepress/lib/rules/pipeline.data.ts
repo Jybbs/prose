@@ -1,9 +1,9 @@
 import { defineLoader } from 'vitepress'
 
-import { discoverRuleIndex } from './discovery'
-import { readPipeline }      from './pipeline'
-import * as paths            from '../shared/paths'
-import type { RuleFamily }   from '../shared/registries'
+import { discoverRuleIndex } from './discovery.ts'
+import { readPipeline }      from './pipeline.ts'
+import * as paths            from '../shared/paths.ts'
+import type { RuleFamily }   from '../shared/registries.ts'
 
 interface PipelineRule {
   after         : readonly string[]

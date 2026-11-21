@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around an Exploding Call Opens the Call on the Assignment's Row"
+
+description = '''
+`value = (` wraps a `compute_something` call whose one row runs past the budget even inside the pair, so `reflow-calls` explodes it. **The pair is removed and the call opens on the assignment's row as `value = compute_something(`**, its arguments one per row and its `)` closing the statement.
+'''

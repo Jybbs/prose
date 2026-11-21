@@ -1,5 +1,5 @@
-import { runProse }    from '../shared/paths'
-import { stripSuffix } from '../shared/strip-suffix'
+import { runProse }    from '../shared/paths.ts'
+import { stripSuffix } from '../shared/strip-suffix.ts'
 
 // The subcommands whose `--help` the site reads, keyed by the words after
 // `prose`, the empty key naming the top-level help.

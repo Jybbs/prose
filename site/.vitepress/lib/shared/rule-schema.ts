@@ -1,4 +1,4 @@
-import { runProse } from './paths'
+import { runProse } from './paths.ts'
 
 // The sections whose keys the configuration reference renders as tables,
 // leaving `rules` to the per-rule facet tables.

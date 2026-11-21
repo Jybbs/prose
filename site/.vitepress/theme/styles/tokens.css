@@ -1,6 +1,6 @@
 :root {
-  --prose-font-display           : 'Fraunces Variable', Georgia, "Times New Roman", serif;
-  --vp-font-family-base          : 'Lora Variable', Georgia, "Times New Roman", serif;
+  --prose-font-display           : 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --vp-font-family-base          : 'Lora Variable', Georgia, 'Times New Roman', serif;
   --vp-font-family-mono          : 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --prose-radius-1               : 1px;

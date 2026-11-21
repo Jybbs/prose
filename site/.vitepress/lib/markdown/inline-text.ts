@@ -1,6 +1,6 @@
 import markdownit from 'markdown-it'
 
-import { inlineNodes, type InlineNode } from './inline-nodes'
+import { inlineNodes, type InlineNode } from './inline-nodes.ts'
 
 const md = markdownit()
 

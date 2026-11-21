@@ -2,9 +2,9 @@ import fs from 'node:fs/promises'
 
 import matter from 'gray-matter'
 
-import type { FixtureFlags } from './entry'
-import { readLintFindings }  from './lint-findings'
-import { snapshotPath }      from './walker'
+import type { FixtureFlags } from './entry.ts'
+import { readLintFindings }  from './lint-findings.ts'
+import { snapshotPath }      from './walker.ts'
 
 interface FixtureToggleState extends FixtureFlags {
   inputRaw : string

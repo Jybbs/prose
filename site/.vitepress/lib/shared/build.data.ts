@@ -2,10 +2,10 @@ import { execFileSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures }            from '../fixtures/walker'
-import { crateDir, fetchCacheDir } from './paths'
-import { readPublishedVersion }    from './published-version'
-import { withFallback }            from './with-fallback'
+import { walkFixtures }            from '../fixtures/walker.ts'
+import { crateDir, fetchCacheDir } from './paths.ts'
+import { readPublishedVersion }    from './published-version.ts'
+import { withFallback }            from './with-fallback.ts'
 
 const crate = crateDir(import.meta.url)
 

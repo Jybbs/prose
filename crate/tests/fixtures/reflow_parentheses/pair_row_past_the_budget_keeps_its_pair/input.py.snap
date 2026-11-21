@@ -1,0 +1,13 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/pair_row_past_the_budget_keeps_its_pair/input.py
+---
+class Waiter:
+    def start(self, loop, timeout):
+        self._timeout_handle_of_the_waiter = (
+            loop.call_later(
+                timeout,
+                self._handle_timeout
+            )
+        )
