@@ -469,6 +469,27 @@ mod tests {
         },
         "value = transform({\"alpha\": 1, \"beta\": 2222})\n"
     )]
+    #[case::call_on_a_dict_call_of_pairs_past_the_entry_cap(
+        "value = (\n    transform(dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)]))\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(62),
+        "value = transform(dict([(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)]))\n"
+    )]
+    #[case::one_row_call_on_a_dict_call_past_the_entry_cap_with_reflow_calls_off(
+        "value = (\n    transform(dict(alpha=1, beta=2, gamma=3, delta=4))\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(50);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform(dict(alpha=1, beta=2, gamma=3, delta=4))\n"
+    )]
+    #[case::one_row_call_on_a_dict_call_past_the_indented_row_with_reflow_calls_off(
+        "value = (\n    transform(dict(alpha_value=1, beta_value=2))\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(40);
+            config.rules.reflow_calls.enabled = false;
+        },
+        "value = transform(dict(alpha_value=1, beta_value=2))\n"
+    )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -534,6 +555,13 @@ mod tests {
     #[case::dict_receiver_past_the_budget_with_reflow_collections_off(
         &format!("value_{0} = (\n    {{\"alpha\": 1, \"beta\": 2}}.get(key_argument_long_enough, default_value_long_enough_xxxxxxxxxxxx)\n)\n", "k".repeat(52)),
         |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::spanning_dict_call_of_pairs_inside_the_budget_with_explode_off(
+        "value = (\n    dict(\n        [(\"alpha\", 1), (\"beta\", 2), (\"gamma\", 3), (\"delta\", 4)]\n    )\n)\n",
+        |config: &mut Config| {
+            config.code_line_length = NonZeroUsize::new(54);
+            config.rules.reflow_collections.explode = false;
+        }
     )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,

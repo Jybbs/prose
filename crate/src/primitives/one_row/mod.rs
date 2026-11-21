@@ -18,6 +18,7 @@ use rustc_hash::FxHashMap;
 use crate::{
     config::Config,
     primitives::{
+        binding::sequence_elts,
         call_keywords::CallTargets,
         edit::apply_inline_edits,
         fracture::{self, outermost},
@@ -415,7 +416,7 @@ impl<'a> Settings<'a> {
                     .iter()
                     .any(|group| blocks_span(group) == call.range())
                 {
-                    self.caps_entries(call.arguments.keywords.len())
+                    self.caps_entries(simplified_entries(call))
                 } else {
                     self.rejoin.explodes(source, call)
                 }
@@ -514,6 +515,24 @@ impl From<&Config> for Settings<'_> {
             rewrites: &[],
             simplified: &[],
         }
+    }
+}
+
+/// The entries in the dict `simplify-comprehensions` rewrites `call` to,
+/// one per keyword `dict(a=1)` names and one per pair the list or tuple
+/// in `dict([("a", 1)])` holds, and none for a call to another
+/// constructor.
+pub(crate) fn simplified_entries(call: &ExprCall) -> usize {
+    if call
+        .func
+        .as_name_expr()
+        .is_none_or(|name| name.id.as_str() != "dict")
+    {
+        return 0;
+    }
+    match &*call.arguments.args {
+        [arg] => sequence_elts(arg).map_or(0, <[Expr]>::len),
+        _ => call.arguments.keywords.len(),
     }
 }
 
