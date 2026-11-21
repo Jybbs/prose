@@ -33,7 +33,34 @@ const FALLBACK = [
   { fails: true,  html: FADED,                                             text: 'text at 25% opacity' },
   { fails: true,  html: onGradient('-webkit-text-fill-color: #ddd'),       text: 'a light text fill' },
   { fails: true,  html: '<p style="color: #eee">·</p>',                    text: 'a light glyph' },
-  { fails: false, html: '<p aria-hidden="true" style="color: #eee">·</p>', text: 'a hidden glyph' }
+  { fails: false, html: '<p aria-hidden="true" style="color: #eee">·</p>', text: 'a hidden glyph' },
+  {
+    fails : true,
+    html  : '<p aria-hidden="true" style="background: linear-gradient(#fff, #fefefe); color: #eee">Text</p>',
+    text  : 'a hidden word over a gradient'
+  },
+  {
+    fails : false,
+    html  : '<p aria-hidden="true"><span style="color: #eee">·</span></p>',
+    text  : 'a glyph inside hidden text'
+  },
+  {
+    fails : true,
+    html  : `<div style="opacity: .9">${onGradient('color: rgb(0 0 0 / .5)')}</div>`,
+    text  : 'half-alpha text under a light fade'
+  },
+  {
+    fails : true,
+    html  : '<div style="opacity: .8; background: linear-gradient(#646464, #656565)">'
+          + '<p style="color: #000">Text</p></div>',
+    text  : 'black on a faded gray ground'
+  },
+  {
+    fails : false,
+    html  : '<div style="background: #000">'
+          + '<p style="opacity: .5; background: linear-gradient(#fff, #fefefe); color: #000">Text</p></div>',
+    text  : 'black on a faded white ground over black'
+  }
 ]
 
 // Opens the card the first element `selector` matches, through `act`.

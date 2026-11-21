@@ -14,7 +14,7 @@ const escape = async (): Promise<void> => {
 }
 
 // Mounts the popup beside one flag holding a token span and opens its card
-// through the flag.
+// through a token inside the flag.
 async function opened() {
   vi.useFakeTimers()
   document.body.innerHTML = `<span class="lint-flag" data-message="${MESSAGE}">`
@@ -27,7 +27,7 @@ async function opened() {
   })
   const popup  = wrapper.vm as unknown as ConfigFlagPopupHandle
   const isOpen = () => wrapper.findComponent(Popup).props('open')
-  popup.show({ target: flag } as unknown as Event)
+  popup.show({ target: flag.querySelector('.token') } as unknown as Event)
   await vi.runAllTimersAsync()
   return { flag, isOpen, popup }
 }
@@ -47,7 +47,7 @@ describe('ConfigFlagPopup', () => {
     const { flag, isOpen, popup } = await opened()
     await escape()
     popup.show({ target: flag.querySelector('.token') } as unknown as Event)
-    flag.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }))
+    flag.querySelector('.token')!.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }))
     popup.show({ target: flag } as unknown as Event)
     await nextTick()
     expect(isOpen()).toBe(false)

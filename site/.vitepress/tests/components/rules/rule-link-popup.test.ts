@@ -25,8 +25,13 @@ const escape = async (): Promise<void> => {
   await vi.runAllTimersAsync()
 }
 
-const pointer = (target: Element, type: 'mouseout' | 'mouseover' | 'pointermove'): void => {
-  target.dispatchEvent(new MouseEvent(type, { bubbles: true }))
+// Sends a pointer event, its `relatedTarget` null where the pointer leaves the window.
+const pointer = (
+  target  : Element,
+  type    : 'mouseout' | 'mouseover' | 'pointermove',
+  related : Element | null = document.body
+): void => {
+  target.dispatchEvent(new MouseEvent(type, { bubbles: true, relatedTarget: related }))
 }
 
 // Mounts the popup beside one rule link and opens its card through the link.
@@ -56,11 +61,21 @@ describe('RuleLinkPopup', () => {
     const { link, wrapper } = await opened()
     await escape()
     pointer(link.querySelector('.badge')!, 'mouseover')
-    pointer(link, 'pointermove')
+    pointer(link.querySelector('.badge')!, 'pointermove')
     pointer(link, 'mouseover')
     await after(DELAY.show)
     expect(cardOf(wrapper).exists()).toBe(false)
     pointer(document.body, 'pointermove')
+    pointer(link, 'mouseover')
+    await after(DELAY.show)
+    expect(cardOf(wrapper).exists()).toBe(true)
+  })
+
+  it('opens the card again once the pointer leaves the window off its link and returns', async () => {
+    const { link, wrapper } = await opened()
+    await escape()
+    pointer(link, 'mouseout', null)
+    pointer(link, 'pointermove')
     pointer(link, 'mouseover')
     await after(DELAY.show)
     expect(cardOf(wrapper).exists()).toBe(true)

@@ -77,6 +77,7 @@ export const RuleLinkPopup = defineComponent({
     useEventListener('mouseover',   show)
     useEventListener('mouseout',    hide)
     useEventListener('pointermove', event => { hover.move(linkFrom(event)) })
+    useEventListener('mouseout',    event => { if (event.relatedTarget === null) hover.leave() })
 
     return () => (
       <Popup
