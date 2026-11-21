@@ -768,16 +768,16 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
             "restore-keys : highlights-",
             "restore-keys : highlight-",
             "4::the 'Restore the highlight cache' step restores "
-            "'highlight-${{ runner.os }}-', which no key "
-            "'highlights-${{ runner.os }}-${{ github.sha }}' starts with\n",
+            "'highlight-${{ runner.os }}-', no prefix of its key "
+            "'highlights-${{ runner.os }}-${{ github.sha }}'\n",
             id = "prefix-drifted"
         ),
         param(
             "restore-keys : highlights-${{ runner.os }}-\n",
             "restore-keys : |\n            highlights-${{ runner.os }}-\n"
             "            highlights-\n            other-\n",
-            "4::the 'Restore the highlight cache' step restores 'other-', which no "
-            "key 'highlights-${{ runner.os }}-${{ github.sha }}' starts with\n",
+            "4::the 'Restore the highlight cache' step restores 'other-', no prefix of "
+            "its key 'highlights-${{ runner.os }}-${{ github.sha }}'\n",
             id = "prefix-among-several"
         ),
         param(
@@ -786,6 +786,21 @@ def test_stamps_reports_each_restore_leaving_outputs_stale(
             "4::the 'Restore the highlight cache' step caches '.cache/highlights', "
             "a folder the site code never reads\n",
             id = "restore-path-drifted"
+        ),
+        param(
+            "path         : .cache/highlight",
+            "path         : .cache/fixture",
+            "4::the 'Restore the highlight cache' step caches '.cache/fixture', "
+            "a folder the site code never reads\n",
+            id = "test-module-folder"
+        ),
+        param(
+            "path         : .cache/highlight\n",
+            "path         : |\n            .cache/highlight\n"
+            "            .cache/other\n",
+            "4::the 'Restore the highlight cache' step caches '.cache/other', a "
+            "folder the site code never reads\n",
+            id = "path-among-several"
         ),
         param(
             "path : site/public/wasm",
@@ -819,8 +834,9 @@ def test_caches_reports_each_cache_step_breaking_a_property(
     without the `pull_request` guard leading a `||`-free condition, restores
     under a `restore-keys` entry no prefix of its `key`, or caches a path
     that is neither a `cacheDirFrom` folder of the site code nor a task's
-    output folder, whereas a step outside the `actions/cache` family is not
-    read. `stray` is replaced by `fix` in the workflow.
+    output folder, a `cacheDirFrom` call in a test module counting for
+    neither, whereas a step outside the `actions/cache` family is not read.
+    `stray` is replaced by `fix` in the workflow.
     """
     assert stray in PRESS
     repository(
@@ -830,7 +846,9 @@ def test_caches_reports_each_cache_step_breaking_a_property(
                 "export function highlightCacheDir(metaUrl: string): string {\n"
                 "  return cacheDirFrom(repoRoot(metaUrl), 'highlight')\n"
                 "}\n"
-            )
+            ),
+            "site/.vitepress/tests/shared/paths.test.ts":
+                "expect(cacheDirFrom(root, 'fixture')).toBe(fixture)\n"
         },
         [
             {

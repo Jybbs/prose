@@ -217,9 +217,9 @@ def cache_faults(folders: set[str], step: dict) -> list[str]:
             else []
         ),
         *(
-            f"restores {prefix!r}, which no key {key!r} starts with"
+            f"restores {prefix!r}, no prefix of its key {key!r}"
             for prefix in map(str.strip, settings.get("restore-keys", "").splitlines())
-            if prefix and not key.startswith(prefix)
+            if not key.startswith(prefix)
         ),
         *(
             f"caches {folder!r}, a folder the site code never reads"
@@ -235,11 +235,11 @@ def caches() -> int:
     property `cache_faults` reads, locating each to the line naming the
     step, or to the line of its `uses` where it carries no name. A save
     running on a pull request spends the cache quota on an entry only that
-    pull request's reruns restore, whereas a `restore-keys` entry that is
-    no prefix of its `key` matches no earlier entry and a `path` no site
-    code reads holds no store, each leaving the store cold. A `restore-keys`
-    entry restores the newest entry whose key starts with it, per GitHub's
-    dependency caching reference.
+    pull request's reruns restore. A `restore-keys` entry that is no prefix
+    of its `key` matches no entry saved under that key, and a `path` the
+    site code never reads restores a folder the build ignores, each leaving
+    the store cold. A `restore-keys` entry restores the newest entry whose
+    key starts with it, per GitHub's dependency caching reference.
     """
     path    = Path(".github/workflows/deploy.yml")
     folders = site_folders()
@@ -255,8 +255,8 @@ def caches() -> int:
             if step.get("uses", "").partition("@")[0] in {
                 "actions/cache", "actions/cache/restore", "actions/cache/save"
             }
-            for fault in cache_faults(folders, step)
             for label in [step.get("name", step["uses"])]
+            for fault in cache_faults(folders, step)
         ]
     )
 
@@ -1328,12 +1328,7 @@ def site_folders() -> set[str]:
             for module in tracked("site/.vitepress/lib/**/*.ts")
             for name in findall(r"\bcacheDirFrom\([^,]+, '([^']+)'\)", read(module))
         ),
-        *(
-            sub(r"/[^/]*[*?\[].*", "", rooted(task["dir"], entry))
-            for task in tasks_listed().values()
-            if isinstance(task.get("outputs"), list)
-            for entry in task["outputs"]
-        )
+        *(sub(r"/[^/]*[*?\[].*", "", output) for output in task_outputs())
     }
 
 
@@ -1344,13 +1339,8 @@ def stamps() -> int:
     `cache-hit`, which leaves mise reading the restored files as older than
     the checkout and running the task again.
     """
-    outputs = [
-        rooted(task["dir"], entry)
-        for task in tasks_listed().values()
-        if isinstance(task.get("outputs"), list)
-        for entry in task["outputs"]
-    ]
-    lists = [
+    outputs = task_outputs()
+    lists   = [
         *(
             (path, yaml(path)["runs"].get("steps", []))
             for path in sorted(Path(".github/actions").glob("*/action.y*ml"))
@@ -1501,6 +1491,19 @@ def table(header: str) -> list[list[str]]:
     return [
         [cell.strip() for cell in line.strip("|").split("|")]
         for line in body.splitlines()
+    ]
+
+
+def task_outputs() -> list[str]:
+    """
+    Collects every `outputs` entry a task declares as a list, relative to
+    the project root.
+    """
+    return [
+        rooted(task["dir"], entry)
+        for task in tasks_listed().values()
+        if isinstance(task.get("outputs"), list)
+        for entry in task["outputs"]
     ]
 
 
