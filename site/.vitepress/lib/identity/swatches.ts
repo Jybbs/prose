@@ -2,12 +2,12 @@ import { converter, wcagContrast }        from 'culori'
 import { parse }                          from 'postcss'
 import type { AtRule, Declaration, Rule } from 'postcss'
 
-import * as palette    from '../shared/palette'
-import { toTitleCase } from '../shared/title-case'
-import { LEVELS }      from './roles'
+import * as palette    from '../shared/palette.ts'
+import { toTitleCase } from '../shared/title-case.ts'
+import { LEVELS }      from './roles.ts'
 
-import type { Scheme }   from '../shared/palette'
-import type { Contrast } from './roles'
+import type { Scheme }   from '../shared/palette.ts'
+import type { Contrast } from './roles.ts'
 
 // Records one place the site reads a color, meaning the property, the class, or
 // the expression that reads it, the file or selector it sits in, and the schemes

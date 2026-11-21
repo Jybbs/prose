@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/call_on_an_expanding_literal_opens_on_the_assignment_row/input.py
+---
+reflow-collections@102..147
+reflow-collections@15..48
+reflow-parentheses@8..84
+reflow-parentheses@95..158

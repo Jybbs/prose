@@ -1,0 +1,7 @@
+[docs]
+previewable = true
+title       = "A Pair Around an Exploding Dict Opens the Dict on the Assignment's Row"
+
+description = '''
+`value = (` wraps an eight-entry dict whose one row runs past the budget even inside the pair, so `reflow-collections` explodes it. **The pair is removed and the dict opens on the assignment's row as `value = {`**, its entries one per row and its `}` closing the statement, because the dict's own braces carry the break.
+'''

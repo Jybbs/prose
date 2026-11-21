@@ -43,5 +43,9 @@ done < <(reached <<<"$changed"$'\n'"$readers" | sort -u)
 if ((${#modules[@]} == 0)); then
   echo "No task script or task test changed since origin/main"
 else
-  uv run --locked --only-group test --project crate pytest "$@" "${modules[@]}"
+  uv run \
+    --locked \
+    --only-group test \
+    --project crate \
+    pytest --numprocesses=auto "$@" "${modules[@]}"
 fi

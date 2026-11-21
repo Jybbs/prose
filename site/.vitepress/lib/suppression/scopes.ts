@@ -1,4 +1,4 @@
-import { groupByMember } from '../shared/group-by-member'
+import { groupByMember } from '../shared/group-by-member.ts'
 
 export const SCOPE_ORDER = ['file', 'block', 'line', 'construct'] as const
 

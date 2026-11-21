@@ -1,6 +1,6 @@
 import { applyColorReplacements, bundledThemes, normalizeTheme, type ShikiTransformer } from 'shiki'
 
-import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants.ts'
 
 type Scheme = keyof typeof SHIKI_THEMES
 

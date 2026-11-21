@@ -4,6 +4,8 @@ import path from 'node:path'
 import type { Browser, BrowserContext, BrowserContextOptions, Page, ViewportSize } from 'playwright'
 import { inject }                                                                  from 'vitest'
 
+export const OPEN_CARD = '[role="dialog"]:visible'
+
 export const PAGES = fs.globSync('**/*.html', { cwd: path.resolve(import.meta.dirname, '../../dist') }).toSorted()
 
 export const WIDE : ViewportSize = { height: 800, width: 1280 }

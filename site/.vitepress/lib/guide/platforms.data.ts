@@ -1,7 +1,7 @@
 import { defineLoader } from 'vitepress'
 
-import { repoRoot }   from '../shared/paths'
-import * as platforms from './platforms'
+import { repoRoot }   from '../shared/paths.ts'
+import * as platforms from './platforms.ts'
 
 declare const data: readonly platforms.WheelPlatform[]
 export { data }

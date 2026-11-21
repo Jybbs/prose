@@ -1,15 +1,15 @@
 import type { KeyedTokensInfo } from '@shikijs/magic-move/types'
 import { defineLoader }         from 'vitepress'
 
-import * as typingDemo         from './typing-demo'
-import { precompileMagicMove } from '../markdown/magic-move'
-import * as paths              from '../shared/paths'
+import * as typingDemo         from './typing-demo.ts'
+import { precompileMagicMove } from '../markdown/magic-move.ts'
+import * as paths              from '../shared/paths.ts'
 
 export type {
   LandingTypingDemoEditEntry,
   LandingTypingDemoEntry,
   LandingTypingDemoResetRow
-} from './typing-demo'
+} from './typing-demo.ts'
 
 interface LandingTypingDemoData {
   entries          : readonly typingDemo.LandingTypingDemoEntry[]

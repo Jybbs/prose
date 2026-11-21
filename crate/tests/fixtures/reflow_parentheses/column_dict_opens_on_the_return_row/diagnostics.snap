@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/column_dict_opens_on_the_return_row/input.py
+---
+reflow-parentheses@27..128

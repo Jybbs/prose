@@ -71,7 +71,7 @@ export const GlossaryFolioIndex = defineComponent({
             <div class={['overflow-y-auto', { 'glossary-folio-list': !props.narrow }]} onKeydown={move}>
               {grouped.value.map(([initial, entries]) => (
                 <div class="not-first:mt-14" key={initial}>
-                  <p class="mt-0 mb-4 border-b-1 border-b-divider px-4 pb-4 font-mono text-meta font-500 tracking-label text-text-3 uppercase opacity-70">{initial}</p>
+                  <p class="mt-0 mb-4 border-b-1 border-b-divider px-4 pb-4 font-mono text-meta font-500 tracking-label text-ube-page-45-85-text-1 uppercase dark:text-ube-page-45">{initial}</p>
                   <ul class="m-0 list-none p-0">
                     {entries.map(entry => (
                       <li class="mt-0" key={entry.slug}>

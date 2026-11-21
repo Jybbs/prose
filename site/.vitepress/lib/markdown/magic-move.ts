@@ -1,8 +1,8 @@
 import { codeToKeyedTokens, createMagicMoveMachine } from '@shikijs/magic-move/core'
 import type { KeyedTokensInfo }                      from '@shikijs/magic-move/types'
 
-import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants'
-import { codeHighlighter } from './highlighter'
+import { SHIKI_COLOR_REPLACEMENTS, SHIKI_THEMES } from '../shared/constants.ts'
+import { codeHighlighter } from './highlighter.ts'
 
 export type MagicMoveMachine = ReturnType<typeof createMagicMoveMachine>
 

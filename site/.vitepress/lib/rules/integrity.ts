@@ -1,5 +1,5 @@
-import type { DiscoveredPrimitive }           from '../architecture/discovery'
-import type { DiscoveredRule, RuleDiscovery } from './discovery'
+import type { DiscoveredPrimitive }           from '../architecture/discovery.ts'
+import type { DiscoveredRule, RuleDiscovery } from './discovery.ts'
 
 // `consumedBy` names a primitive's consumers, which span rules, sibling
 // primitives, and the crate's consumer surfaces, so the CLI and the

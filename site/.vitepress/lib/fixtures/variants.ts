@@ -2,13 +2,13 @@ import fs from 'node:fs'
 
 import type { MarkdownRenderer } from 'vitepress'
 
-import type { FixtureGauge, FixtureTrail, OutputSteps } from './entry'
-import * as walker                                      from './walker'
-import { renderFencedHtml }                             from '../markdown/renderer'
-import { readPipeline }                                 from '../rules/pipeline'
-import { readProseUnder, repoRoot }                     from '../shared/paths'
-import { ruleSlug }                                     from '../shared/rule-slug'
-import * as ruleSchema                                  from '../shared/rule-schema'
+import type { FixtureGauge, FixtureTrail, OutputSteps } from './entry.ts'
+import * as walker                                      from './walker.ts'
+import { renderFencedHtml }                             from '../markdown/renderer.ts'
+import { readPipeline }                                 from '../rules/pipeline.ts'
+import { readProseUnder, repoRoot }                     from '../shared/paths.ts'
+import { ruleSlug }                                     from '../shared/rule-slug.ts'
+import * as ruleSchema                                  from '../shared/rule-schema.ts'
 
 const root = repoRoot(import.meta.url)
 

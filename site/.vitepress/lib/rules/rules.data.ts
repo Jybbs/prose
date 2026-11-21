@@ -1,11 +1,11 @@
 import { defineLoader } from 'vitepress'
 
-import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
-import { rulesDir }                           from '../shared/paths'
-import { FAMILY_META }                        from '../shared/registries'
-import { discoverRuleSlugs }                  from './discovery'
-import { groupRules }                         from './grouping'
-import type { RenderedRule, RulesData }       from './grouping'
+import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer.ts'
+import { rulesDir }                           from '../shared/paths.ts'
+import { FAMILY_META }                        from '../shared/registries.ts'
+import { discoverRuleSlugs }                  from './discovery.ts'
+import { groupRules }                         from './grouping.ts'
+import type { RenderedRule, RulesData }       from './grouping.ts'
 
 export type { RenderedRule, RulesData }
 

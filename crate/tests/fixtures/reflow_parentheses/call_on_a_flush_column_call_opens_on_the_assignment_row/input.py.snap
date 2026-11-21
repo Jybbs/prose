@@ -1,0 +1,9 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/call_on_a_flush_column_call_opens_on_the_assignment_row/input.py
+---
+value = factory(
+    alpha,
+    beta,
+)()

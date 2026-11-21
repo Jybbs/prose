@@ -1,12 +1,12 @@
 import { defineLoader, type MarkdownRenderer } from 'vitepress'
 
-import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer'
-import { discoverRuleIndex }                  from '../rules/discovery'
-import * as paths                             from '../shared/paths'
-import type { RuleFamily }                    from '../shared/registries'
-import * as ruleSchema                        from '../shared/rule-schema'
-import { stripSuffix }                        from '../shared/strip-suffix'
-import { toTitleCase }                        from '../shared/title-case'
+import { getRenderer, renderPlainInlineHtml } from '../markdown/renderer.ts'
+import { discoverRuleIndex }                  from '../rules/discovery.ts'
+import * as paths                             from '../shared/paths.ts'
+import type { RuleFamily }                    from '../shared/registries.ts'
+import * as ruleSchema                        from '../shared/rule-schema.ts'
+import { stripSuffix }                        from '../shared/strip-suffix.ts'
+import { toTitleCase }                        from '../shared/title-case.ts'
 
 type FacetKind = 'bool' | 'int' | 'string' | 'stringList'
 

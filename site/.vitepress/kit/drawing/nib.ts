@@ -1,7 +1,7 @@
 import { h }                      from 'vue'
 import type { VNode, VNodeChild } from 'vue'
 
-import type { Emblem, Fit, Motif } from '../../lib/shared/emblems'
+import type { Emblem, Fit, Motif } from '../../lib/shared/emblems.ts'
 
 // Draws every motif with a 0.62-unit stroke repeated along the 45-degree
 // diagonal at the offsets of its size, and displaces the large copies with

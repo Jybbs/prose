@@ -1,8 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { requireString } from './require-string'
-import { parseToml }     from './toml'
+import { requireString } from './require-string.ts'
+import { parseToml }     from './toml.ts'
 
 export function readCargoVersion(crateDir: string): string {
   const cargoPath = path.join(crateDir, 'Cargo.toml')

@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a Call on an Expanding Literal Opens on the Assignment Row"
+
+description = '''
+`value = (` wraps a one-row `.get(...)` call and a one-row `.items()` call, each on a dict literal, under a **40**-column budget with `reflow-calls` off. The call itself stays as written, but `reflow-collections` expands the literal inside it, so the call lands across rows and **the pair is removed**, the literal's `{` opening on the assignment's row at 9 columns, settling in one run.
+'''

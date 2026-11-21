@@ -10,65 +10,140 @@
 use ruff_python_ast::{Expr, PythonVersion, Stmt, helpers::any_over_expr};
 use ruff_text_size::{Ranged, TextSize};
 
-use super::PruneInertImports;
+use super::{
+    PruneInertImports,
+    inventory::ImportNode,
+    reexports::{REEXPORT_CODE, Reexports},
+};
 use crate::{
+    config::Config,
     primitives::{
         binding::{BindingAnalysis, BindingKind},
+        comments::noqa_names,
         scope::sub_bodies,
         slots::{slot_holding, slot_positions},
         tiering::Annotations,
         walk::for_each_annotation,
     },
+    rules::band_constants::BandConstants,
     source::Source,
 };
 
+/// The test deciding whether `from __future__ import annotations` is
+/// inert under the definition sort and the target a pipeline runs, read
+/// by `prune-inert-imports` to drop the directive and by `band-constants`
+/// to seat a body the directive stays in.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct DirectiveGate {
+    sorts_definitions: bool,
+    /// The target whose builtins a name resolves to.
+    target: Option<PythonVersion>,
+}
+
+impl DirectiveGate {
+    pub(super) fn from_config(config: &Config) -> Self {
+        Self {
+            sorts_definitions: config.alphabetize_siblings_enabled()
+                && config.rules.alphabetize_siblings.sort_definitions,
+            target: config.target_version,
+        }
+    }
+
+    /// The gate `prune-inert-imports` drops the directive behind, `None`
+    /// where that rule is off or keeps every unreferenced import.
+    pub(crate) fn pruning(config: &Config) -> Option<Self> {
+        let rule = &config.rules.prune_inert_imports;
+        (rule.enabled && rule.drop_unreferenced).then(|| Self::from_config(config))
+    }
+
+    /// True when nothing holds the directive the import `node` at `stmt`
+    /// carries from the drop, meaning no `noqa` naming `F401` on the
+    /// statement, no file-level pragma, `__all__` entry, or self-alias
+    /// `reexports` reads, and no suppression directive over it.
+    pub(super) fn releases(
+        source: &Source,
+        reexports: &Reexports<'_>,
+        stmt: &Stmt,
+        node: &ImportNode<'_>,
+    ) -> bool {
+        node.future_annotations().is_some_and(|index| {
+            let alias = &node.names()[index];
+            !noqa_names(source, stmt, REEXPORT_CODE)
+                && !reexports.holds(alias, node.bound(alias))
+                && !source
+                    .suppression_map()
+                    .suppresses(stmt, PruneInertImports::SLUG)
+        })
+    }
+
+    /// True when `source` carries a directive `prune-inert-imports` drops
+    /// once the gate clears, per `releases`.
+    pub(crate) fn drops_from(source: &Source) -> bool {
+        let reexports = Reexports::of(source);
+        source.ast().body.iter().any(|stmt| {
+            ImportNode::of(stmt).is_some_and(|node| Self::releases(source, &reexports, stmt, &node))
+        })
+    }
+
+    /// True when removing the directive leaves every annotation in
+    /// `source` evaluating without raising, each module-body statement
+    /// seated where `bands` places it with annotations read at `timing`.
+    /// Every name an annotation reads has to be a builtin the module
+    /// never writes or be bound ahead of it, and under a target deferring
+    /// evaluation an annotation may run at module scope.
+    pub(crate) fn clears(
+        &self,
+        source: &Source,
+        bands: Option<&BandConstants>,
+        timing: Annotations,
+    ) -> bool {
+        (self.target.is_some_and(PythonVersion::defers_annotations)
+            || !annotates_module_scope(&source.ast().body))
+            && Resolution::of(source, self, bands, timing).holds_every_annotation()
+    }
+}
+
 /// What settles whether a name is bound ahead of the annotation reading
-/// it: the binding table, the definition sort, the seat `band-constants`
-/// gives each module-body statement once the directive is gone, the source
-/// order where that rule is off or declines the body, and the target's
-/// builtins. A binding the band seats ahead of its reader counts as bound
-/// whatever its offset, whereas a name a module-level definition binds reads
-/// as unbound while `alphabetize-siblings` sorts definitions.
+/// it: the binding table, the gate's definition sort and target, the seat
+/// `band-constants` gives each module-body statement at the timing the
+/// gate reads, and the source order where that rule is off or declines
+/// the body. A binding the band seats ahead of its reader counts as bound
+/// whatever its offset, whereas a name a module-level definition binds
+/// reads as unbound while `alphabetize-siblings` sorts definitions.
 struct Resolution<'a> {
     analysis: &'a BindingAnalysis,
     body: &'a [Stmt],
     /// The offset every write in the module precedes.
     end: TextSize,
+    gate: &'a DirectiveGate,
     seats: Vec<usize>,
-    sorts_definitions: bool,
     source: &'a Source,
-    /// The target whose builtins a name resolves to.
-    target: Option<PythonVersion>,
 }
 
 impl<'a> Resolution<'a> {
-    /// Builds the resolution for `source` under `rule`, seating each
-    /// statement where the rule's band forecast places it once the directive
-    /// is gone, and reading builtins at the rule's target.
-    fn of(source: &'a Source, rule: &PruneInertImports) -> Self {
+    /// Builds the resolution for `source` under `gate`, seating each
+    /// statement where `bands` places it with annotations read at
+    /// `timing`, or as written where `bands` is `None` or declines the
+    /// body.
+    fn of(
+        source: &'a Source,
+        gate: &'a DirectiveGate,
+        bands: Option<&BandConstants>,
+        timing: Annotations,
+    ) -> Self {
         let body = &source.ast().body;
         Self {
             analysis: source.binding_analysis(),
             body,
             end: source.module_range().end(),
-            seats: rule
-                .folds
-                .bands()
-                .and_then(|band| {
-                    band.forecast(
-                        source,
-                        body,
-                        source.module_range(),
-                        Annotations::under(rule.target_version),
-                    )
-                })
+            gate,
+            seats: bands
+                .and_then(|band| band.forecast(source, body, source.module_range(), timing))
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
                 ),
-            sorts_definitions: rule.sorts_definitions,
             source,
-            target: rule.target_version,
         }
     }
 
@@ -82,12 +157,12 @@ impl<'a> Resolution<'a> {
         if self.analysis.is_deleted(name) || self.analysis.is_written_globally(name) {
             return false;
         }
-        if self.source.is_builtin(name, self.target)
+        if self.source.is_builtin(name, self.gate.target)
             && !self.analysis.is_bound_before(name, self.end)
         {
             return true;
         }
-        !(self.sorts_definitions && binds_a_definition(self.analysis, name))
+        !(self.gate.sorts_definitions && binds_a_definition(self.analysis, name))
             && self
                 .analysis
                 .first_unconditional_write(name)
@@ -118,16 +193,15 @@ impl<'a> Resolution<'a> {
     }
 }
 
-/// True when removing the `annotations` directive leaves every annotation in
-/// `source` evaluating without raising. Every name an annotation reads has
-/// to be a builtin the module never writes or be bound ahead of it, and under
-/// a target deferring evaluation an annotation may run at module scope.
+/// True when removing the `annotations` directive from `source` clears
+/// `rule`'s gate, each statement seated where `band-constants` places it
+/// once the directive is gone.
 pub(super) fn annotations_are_inert(rule: &PruneInertImports, source: &Source) -> bool {
-    let deferred = rule
-        .target_version
-        .is_some_and(PythonVersion::defers_annotations);
-    (deferred || !annotates_module_scope(&source.ast().body))
-        && Resolution::of(source, rule).holds_every_annotation()
+    rule.directive.clears(
+        source,
+        rule.folds.bands(),
+        Annotations::under(rule.directive.target),
+    )
 }
 
 /// True where a statement running at module scope declares an

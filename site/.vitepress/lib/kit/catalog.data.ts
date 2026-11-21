@@ -3,8 +3,8 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import * as renderer       from '../markdown/renderer'
-import { CATALOG_SUFFIX } from '../shared/constants'
+import * as renderer       from '../markdown/renderer.ts'
+import { CATALOG_SUFFIX } from '../shared/constants.ts'
 
 interface KitSource {
   file : string

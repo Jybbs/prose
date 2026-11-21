@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/call_on_a_flush_column_call_opens_on_the_assignment_row/input.py
+---
+reflow-parentheses@8..61

@@ -18,7 +18,7 @@ use crate::{
         sections::Sections,
         tiering::Annotations,
     },
-    rules::{Rule, RuleId},
+    rules::{Rule, RuleId, prune_inert_imports::DirectiveGate},
     source::Source,
 };
 
@@ -31,6 +31,8 @@ pub(crate) use self::plan::Carry;
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct BandConstants {
     code_width: usize,
+    /// The gate `prune-inert-imports` drops the future import behind.
+    directive: Option<DirectiveGate>,
     first_party: Vec<String>,
     group_imports: bool,
     group_subcategories: bool,
@@ -49,6 +51,7 @@ impl BandConstants {
         let rules = &config.rules.band_constants;
         Self {
             code_width: config.code_width(),
+            directive: DirectiveGate::pruning(config),
             first_party: config.first_party(),
             group_imports: config.group_imports_enabled(),
             group_subcategories: rules.group_subcategories,
@@ -58,9 +61,22 @@ impl BandConstants {
     }
 
     /// The timing of the annotations of `source`'s module under the
-    /// rule's target.
+    /// rule's target. A module whose future import `prune-inert-imports`
+    /// would drop once the order seated at the stringified timing leaves
+    /// it inert reads at the timing it takes without the import, keeping
+    /// the order that holds the import.
     pub(crate) fn annotations(&self, source: &Source) -> Annotations {
-        Annotations::of(&source.ast().body, self.target_version)
+        match Annotations::of(&source.ast().body, self.target_version) {
+            Annotations::Stringified
+                if self.directive.as_ref().is_some_and(|gate| {
+                    DirectiveGate::drops_from(source)
+                        && gate.clears(source, Some(self), Annotations::Stringified)
+                }) =>
+            {
+                Annotations::under(self.target_version)
+            }
+            timing => timing,
+        }
     }
 
     /// The order the rule seats `body` in, forecast for a rule seated
@@ -134,6 +150,11 @@ mod tests {
     use super::*;
     use crate::testing::{at, parse};
 
+    /// A class whose body annotation reads `Foo`, bound by an import
+    /// below it beside a constant observing `Foo`, under the future
+    /// import the stringified order would leave inert.
+    const CLASS_ABOVE_ITS_IMPORT: &str = "from __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n";
+
     /// `rule`'s forecast over the whole module body of `source`.
     fn module_forecast(
         rule: &BandConstants,
@@ -146,6 +167,115 @@ mod tests {
             source.module_range(),
             annotations,
         )
+    }
+
+    #[rstest]
+    #[case::import_the_band_would_clear_reads_without_it(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    #[case::py314_import_the_band_would_clear_reads_lazily(
+        CLASS_ABOVE_ITS_IMPORT,
+        Some(PythonVersion::PY314),
+        true,
+        true,
+        Annotations::Lazy
+    )]
+    #[case::import_the_band_leaves_needed_stays_stringified(
+        "from __future__ import annotations\n\n\ndef visit(node: Node) -> Node:\n    return node\n\n\nclass Node:\n    pass\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::inert_import_reads_without_it(
+        "from __future__ import annotations\n\nAlias = int\n\n\ndef convert(value: Alias) -> Alias:\n    return value\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    #[case::import_stays_stringified_with_pruning_off(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        false,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_stays_stringified_while_unreferenced_imports_stay(
+        CLASS_ABOVE_ITS_IMPORT,
+        None,
+        true,
+        false,
+        Annotations::Stringified
+    )]
+    #[case::import_a_noqa_holds_stays_stringified(
+        "from __future__ import annotations  # noqa: F401\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_file_pragma_holds_stays_stringified(
+        "# ruff: noqa: F401\nfrom __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_dunder_all_lists_stays_stringified(
+        "from __future__ import annotations\n\n__all__ = [\"P\", \"annotations\"]\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_self_alias_holds_stays_stringified(
+        "from __future__ import annotations as annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_a_skip_directive_holds_stays_stringified(
+        "from __future__ import annotations  # prose: skip\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::import_an_off_region_holds_stays_stringified(
+        "# prose: off\nfrom __future__ import annotations\n# prose: on\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n",
+        None,
+        true,
+        true,
+        Annotations::Stringified
+    )]
+    #[case::module_without_the_import_reads_eagerly(
+        "x: int = 1\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
+    fn annotations_read_a_kept_future_import_by_the_order_it_leaves(
+        #[case] src: &str,
+        #[case] target: Option<PythonVersion>,
+        #[case] prunes: bool,
+        #[case] drops_unreferenced: bool,
+        #[case] expected: Annotations,
+    ) {
+        let mut config = Config {
+            target_version: target,
+            ..Config::default()
+        };
+        config.rules.prune_inert_imports.enabled = prunes;
+        config.rules.prune_inert_imports.drop_unreferenced = drops_unreferenced;
+        let rule = BandConstants::from_config(&config);
+        assert_eq!(rule.annotations(&parse(src)), expected);
     }
 
     #[rstest]

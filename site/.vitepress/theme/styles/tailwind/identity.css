@@ -1,3 +1,7 @@
+@theme inline {
+  --color-text-3-50-bg : color-mix(in srgb, var(--vp-c-text-3) var(--prose-tint-50), var(--vp-c-bg));
+}
+
 @utility identity-caret {
   width         : var(--prose-size-6);
   height        : var(--prose-size-6);

@@ -177,6 +177,8 @@ mise run rust:test
 mise review
 ```
 
+`rust:test` and `rust:suite` each take a filter after `--` and append it to every `cargo test` they run, behind the flags the task sets, so `mise run rust:suite -- reflow_parentheses` runs only the tests whose names hold `reflow_parentheses`. The arguments after a second `--` reach the test binaries in the same way. A `--test` target is not a filter, since the `prose_wasm` run of `rust:test` holds no test target and fails on one, and `rust:suite` runs it beside the targets it already names.
+
 `mise review` opens every pending snapshot as a diff. Read the Python it proposes as a reader would rather than only checking that the branch is covered, and accept only what reads the way the rule should leave it, since an accepted snapshot becomes the living specification of what that rule produces.
 
 ---
@@ -360,7 +362,7 @@ The table lists each row beside the task that runs the same check locally:
 | `🧹 Cruft` | `🪻 Deploy` | `mise run site:cruft` | `knip` finds no dead code or unused dependency in the docs site |
 | `🎞️ Press` | `🪻 Deploy` | `mise run site:links` | The docs site builds and every internal link resolves |
 | `🖋️ Render` | `🪻 Deploy` | `mise run site:bake`, `mise run site:provision`, `mise run site:render` | Chromium computes the expected value for the marks, narrow breakpoints, and neutral surfaces the render suite lists on the pressed docs site, the shell card's language label clears its code, and in Chromium and WebKit the rules index eases its height with its rows through a family filter and keeps each slug on one line |
-| `🦯 Axe` | `🪻 Deploy` | `mise run site:bake`, `mise run site:sweep` | Every built page of the docs site reports no `axe-core` violation in Chromium, color contrast included, in both color schemes |
+| `🦯 Axe` | `🪻 Deploy` | `mise run site:bake`, `mise run site:sweep` | Every built page of the docs site, and each card, tab, listbox row, hovered link, and search match a reader opens on one, reports no `axe-core` violation in Chromium in both color schemes, color contrast included, measured from the rendered pixels for a lone character, a glyph outside the Basic Multilingual Plane, a translucent text color, and a text whose ground `axe-core` cannot resolve |
 | `🍋 Squeeze` | `🪻 Deploy` | `mise run site:bake`, `mise run site:fit` | Every built page of the docs site fits a wide and a narrow viewport in Chromium, holds each inline code chip and the punctuation after it on one line, and gives each scrolling region a tab stop |
 | `⚓ Settle` | `🪻 Corpus` | `mise run rust:settle` | The standard library settles in one pass at every line length |
 | `🎨 Mutations` | `🪻 Corpus` | `mise run rust:mutations` | Every mutation of the standard library settles in one pass |
