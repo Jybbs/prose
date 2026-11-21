@@ -24,6 +24,7 @@ WASM  = [*SUITE, "cargo test --locked --package prose_wasm"]
         param("crate/tests/fixtures/case/input.py", WASM, id = "fixture"),
         param("harness/src/lib.rs", SUITE, id = "harness"),
         param("tools/bench/src/lib.rs", SUITE, id = "nested member"),
+        param("tools/core/src/lib.rs", WASM, id = "member reached through crate"),
         param("wasm/src/lib.rs", WASM, id = "wasm")
     ]
 )

@@ -26,9 +26,10 @@ from types      import ModuleType
 
 MEMBERS = {
     "corpus"      : {},
-    "crate"       : {"harness": "dev"},
+    "crate"       : {"harness": "dev", "tools/core": None},
     "harness"     : {"crate": None},
     "tools/bench" : {},
+    "tools/core"  : {},
     "wasm"        : {"crate": None}
 }
 OWNED = StashKey[Path]()
