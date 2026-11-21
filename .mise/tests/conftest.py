@@ -4,8 +4,9 @@ Defines the `task` fixture, which loads a task script under
 pytest-subprocess's `fp` fakes every command the script runs, the `workdir`
 fixture, which writes the files a script reads into a scratch tree, the
 `scratch` fixture, which makes a directory a git repository isolated from
-the session running the suite, and the `affected` fixture, which runs an
-`affected` task in a scratch repository changed since its `origin/main`.
+the session running the suite, the `stand_in` fixture, which writes a
+stand-in command first on `PATH`, and the `affected` fixture, which runs
+an `affected` task in a scratch repository changed since its `origin/main`.
 Each session writes under a base temporary directory of its own.
 """
 
@@ -13,7 +14,7 @@ from collections.abc import Callable, Iterable
 from functools       import partial
 from importlib.util  import module_from_spec, spec_from_file_location
 from json            import dumps
-from os              import environ
+from os              import environ, pathsep
 from pathlib         import Path
 from pytest          import (
     Config, ExitCode, MonkeyPatch, Session, StashKey, fixture, hookimpl
@@ -59,9 +60,9 @@ def pytest_sessionfinish(exitstatus: int, session: Session):
 
 @fixture
 def affected(
-    monkeypatch : MonkeyPatch,
-    scratch     : Callable[[Path], Path],
-    tmp_path    : Path
+    scratch  : Callable[[Path], Path],
+    stand_in : Callable[..., Path],
+    tmp_path : Path
 ) -> Callable[..., CompletedProcess]:
     """
     Builds stand-in `cargo`, `uv`, and `vitest` commands, each printing the
@@ -92,19 +93,13 @@ def affected(
             "workspace_root" : "/workspace"
         }
     )
-    stand_in = tmp_path / "bin/cargo"
-    stand_in.parent.mkdir()
-    stand_in.write_text(
-        "#!/bin/sh\n"
+    cargo = stand_in(
+        "cargo",
         f'[ "$1" = metadata ] && exec echo {quote(metadata)}\n'
-        'echo "${0##*/} $*"\n',
-        encoding = "utf-8"
+        'echo "${0##*/} $*"\n'
     )
-    stand_in.chmod(0o755)
     for name in ("uv", "vitest"):
-        (stand_in.parent / name).symlink_to(stand_in)
-    monkeypatch.setenv("MISE_PROJECT_ROOT", str(TASKS.parents[1]))
-    monkeypatch.setenv("PATH", f"{stand_in.parent}:{environ['PATH']}")
+        (cargo.parent / name).symlink_to(cargo)
     repo = tmp_path / "repo"
     git  = partial(run, check=True, cwd=repo)
 
@@ -215,6 +210,33 @@ def scratch(monkeypatch: MonkeyPatch) -> Callable[[Path], Path]:
         return root
 
     return init
+
+
+@fixture
+def stand_in(monkeypatch: MonkeyPatch, tmp_path: Path) -> Callable[..., Path]:
+    """
+    Builds a writer of stand-in commands under the case's `bin` directory,
+    which it puts first on `PATH` beside a `MISE_PROJECT_ROOT` naming the
+    checkout a task runs from.
+
+    Returns:
+        A function writing `script` as the executable `name` and
+        returning its path, where the default `script` prints each argument
+        it receives on a line of its own.
+    """
+    (folder := tmp_path / "bin").mkdir()
+    monkeypatch.setenv("MISE_PROJECT_ROOT", str(TASKS.parents[1]))
+    monkeypatch.setenv("PATH", str(folder), prepend=pathsep)
+
+    def write(name: str, script: str = "printf '%s\\n' \"$@\"\n") -> Path:
+        """
+        Writes `script` under a `sh` shebang as the executable `name`.
+        """
+        (command := folder / name).write_text(f"#!/bin/sh\n{script}", encoding="utf-8")
+        command.chmod(0o755)
+        return command
+
+    return write
 
 
 @fixture(scope="session")

@@ -156,7 +156,7 @@ export const IdentityMarks = defineComponent({
         { side: 'bottom', x: middle.x + gap,                          y: inner.y + inner.height + space.bottom / 2 }
       ] as const
       return (
-        <g aria-hidden="true" class="identity-guides fill-text-3 stroke-text-3 stroke-1" font-size={LABEL_PX / scale.value}>
+        <g aria-hidden="true" class="identity-guides fill-text-1 stroke-text-3-50-bg stroke-1" font-size={LABEL_PX / scale.value}>
           <rect height={h} width={w} x={x} y={y} />
           <rect class="identity-guide-ink" {...inner} />
           <line x1={x} x2={inner.x} y1={middle.y} y2={middle.y} />
