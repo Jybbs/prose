@@ -62,12 +62,12 @@ def test_proof_runs_the_binaries_it_is_given(
     tmp_path : Path
 ):
     """
-    Pins that one `cargo test` runs over the `prose` package with a
-    `--test` flag for each binary the task is given, or for each binary
-    `PROOF_TARGETS` names when it is given none, passing no profile.
+    Pins that one `cargo test` runs over the workspace less `prose_wasm`
+    with a `--test` flag for each binary the task is given, or for each
+    binary `PROOF_TARGETS` names when it is given none, passing no profile.
     """
     assert proof_arguments(binaries, tmp_path) == [
-        "test", "--locked", "--package", "prose",
+        "test", "--exclude", "prose_wasm", "--locked", "--workspace",
         *tests
     ]
 
@@ -92,7 +92,7 @@ def test_proof_builds_under_the_profile_the_environment_names(
     monkeypatch.setenv("PROSE_PROOF_PROFILE", profile)
 
     assert proof_arguments(["settle"], tmp_path) == [
-        "test", "--locked", "--package", "prose",
+        "test", "--exclude", "prose_wasm", "--locked", "--workspace",
         *flags,
         "--test=settle"
     ]
