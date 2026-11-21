@@ -1,7 +1,7 @@
-import axe                            from 'axe-core'
-import { blend, parse, wcagContrast } from 'culori'
-import { JSDOM }                      from 'jsdom'
-import type { Locator, Page }         from 'playwright'
+import axe                                      from 'axe-core'
+import { clampRgb, converter, wcagContrast } from 'culori'
+import { JSDOM }                                from 'jsdom'
+import type { Locator, Page }                   from 'playwright'
 
 import { LEVELS } from '../lib/identity/roles'
 
@@ -37,6 +37,7 @@ const GROUND_REASONS = [
   'bgGradient', 'bgImage', 'bgOverlap', 'elmPartiallyObscured', 'elmPartiallyObscuring', 'fgAlpha',
   'imgNode', 'outsideViewport', 'pseudoContent', ...GLYPH_REASONS
 ]
+const rgb            = converter('rgb')
 // SC 1.4.3 Contrast (Minimum), https://www.w3.org/TR/WCAG22/#contrast-minimum
 const textFloor      = Object.fromEntries(LEVELS).text
 const CAPTURE_STYLES = `[${BARE}], [${BARE}] * {
@@ -48,8 +49,8 @@ const CAPTURE_STYLES = `[${BARE}], [${BARE}] * {
   text-shadow             : none !important;
   transition              : none !important;
 }
-[${UNDER}="hidden"] {
-  opacity    : 0 !important;
+[${UNDER}="opaque"] {
+  opacity    : 1 !important;
   transition : none !important;
 }`
 
@@ -70,8 +71,9 @@ function axeDom(): JSDOM {
 // multiply to, and each pair of colors the page renders under its ink above the
 // baseline, where a descender crossing an underline cannot reach. The element
 // is captured once as drawn and once with its text transparent, so a pixel the
-// two differ on is one the text covers, and once more with every faded element
-// from it up hidden, giving the color beneath the faded group at each pixel.
+// two differ on is one the text covers, and once more with its text still
+// transparent and every faded element from it up drawn opaque, giving the color
+// the text covers with every fade lifted at each pixel.
 async function groundOf(element: Locator): Promise<Ground> {
   const { ink, lines, opacity } = await element.evaluate((node, marker) => {
     const style   = getComputedStyle(node)
@@ -105,34 +107,41 @@ async function groundOf(element: Locator): Promise<Ground> {
   const shown = await captured()
   await element.evaluate((node, marker) => { node.setAttribute(marker, '') }, BARE)
   const bare = await captured()
+  await element.page().evaluate(marker => {
+    document.querySelectorAll(`[${marker}]`).forEach(faded => { faded.setAttribute(marker, 'opaque') })
+  }, UNDER)
+  const under = opacity < 1 ? await captured() : bare
   await element.evaluate((node, { group, text }) => {
     node.removeAttribute(text)
-    document.querySelectorAll(`[${group}]`).forEach(faded => { faded.setAttribute(group, 'hidden') })
+    document.querySelectorAll(`[${group}]`).forEach(faded => { faded.removeAttribute(group) })
   }, { group: UNDER, text: BARE })
-  const under = opacity < 1 ? await captured() : bare
-  await element.page().evaluate(marker => {
-    document.querySelectorAll(`[${marker}]`).forEach(faded => { faded.removeAttribute(marker) })
-  }, UNDER)
   const pixels = await element.page().evaluate(underInk, { bare, lines, shown, under })
   return { ink, opacity, pixels }
 }
 
-// Fades the text color by the opacity over the color beneath the faded group at
-// each pixel, lays that at the text color's own alpha over the ground the page
-// renders there, and returns the lowest ratio any pixel holds, or zero for a
-// text that changed no pixel.
+// Moves the ground the page renders at each pixel toward the text color by the
+// text color's alpha times the opacity, measured from the color the text covers
+// with every fade lifted, and returns the lowest ratio any pixel holds, or zero
+// for a text that changed no pixel.
 function lowestContrast({ ink, opacity, pixels }: Ground): number {
-  const text = parse(ink)
+  const text = rgb(ink)
   if (!text || pixels.length === 0) return 0
-  const alpha = text.alpha ?? 1
+  const weight = (text.alpha ?? 1) * opacity
   return Math.min(...pixels.map(([bare, under]) => {
-    const faded = blend([under, { ...text, alpha: opacity }])
-    return wcagContrast(blend([bare, { ...faded, alpha }]), bare)
+    const ground  = rgb(bare)!
+    const opaque  = rgb(under)!
+    const shifted = clampRgb({
+      b    : ground.b + weight * (text.b - opaque.b),
+      g    : ground.g + weight * (text.g - opaque.g),
+      mode : 'rgb',
+      r    : ground.r + weight * (text.r - opaque.r)
+    })
+    return wcagContrast(shifted, ground)
   }))
 }
 
 // Decodes the captures in the page and returns each distinct pair of colors the
-// bare and the hidden-group captures hold at a pixel the drawn capture differs
+// bare and the opaque-group captures hold at a pixel the drawn capture differs
 // on, inside the boxes the element's own text spans.
 async function underInk(
   { bare, lines, shown, under } : { bare: string, lines: LineBox[], shown: string, under: string }

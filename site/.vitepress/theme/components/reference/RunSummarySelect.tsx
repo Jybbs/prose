@@ -56,7 +56,7 @@ export const RunSummarySelect = defineComponent({
                           <span class="inline-flex items-baseline gap-0-5em font-mono text-sm">
                             {o.preview.anchor ? <span aria-hidden="true" class="flex-none">{o.preview.anchor}</span> : null}
                             <span
-                              class="text-text-2 data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45 group-aria-selected:data-[tint=apricot]:text-apricot-selected-45 group-not-aria-selected:group-hover:data-[tint=apricot]:text-apricot-selected-45 group-not-aria-selected:group-data-highlighted:data-[tint=apricot]:text-apricot-selected-45 group-aria-selected:data-[tint=celadon]:text-celadon-selected-45"
+                              class="text-text-2 data-[tint=apricot]:text-apricot-code-45 data-[tint=celadon]:text-celadon-code-45 group-aria-selected:data-[tint=apricot]:text-apricot-selected-45 group-hover:data-[tint=apricot]:text-apricot-selected-45 group-data-highlighted:data-[tint=apricot]:text-apricot-selected-45 group-aria-selected:data-[tint=celadon]:text-celadon-selected-45"
                               data-tint={o.preview.countTint || undefined}
                             >{o.preview.text}</span>
                           </span>

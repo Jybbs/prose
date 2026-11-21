@@ -60,6 +60,17 @@ const FALLBACK = [
     html  : '<div style="background: #000">'
           + '<p style="opacity: .5; background: linear-gradient(#fff, #fefefe); color: #000">Text</p></div>',
     text  : 'black on a faded white ground over black'
+  },
+  {
+    fails : true,
+    html  : '<div style="background: #000"><div style="opacity: .5; background: #fff">'
+          + '<p style="opacity: .5; background: linear-gradient(#fff, #fefefe); color: #000">Text</p></div></div>',
+    text  : 'black under two fades on a white ground over black'
+  },
+  {
+    fails : true,
+    html  : `<div style="opacity: .9">${onGradient('color: #000')}${onGradient('color: #767676')}</div>`,
+    text  : 'gray after black under one fade'
   }
 ]
 
