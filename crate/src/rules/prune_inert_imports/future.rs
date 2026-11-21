@@ -12,6 +12,7 @@ use ruff_text_size::{Ranged, TextSize};
 
 use super::PruneInertImports;
 use crate::{
+    config::Config,
     primitives::{
         binding::{BindingAnalysis, BindingKind},
         scope::sub_bodies,
@@ -19,8 +20,54 @@ use crate::{
         tiering::Annotations,
         walk::for_each_annotation,
     },
+    rules::band_constants::BandConstants,
     source::Source,
 };
+
+/// The test deciding whether `from __future__ import annotations` is
+/// inert under the definition sort and the target a pipeline runs, read
+/// by `prune-inert-imports` to drop the directive and by `band-constants`
+/// to seat a body the directive stays in.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct DirectiveGate {
+    sorts_definitions: bool,
+    /// The target whose builtins a name resolves to.
+    target: Option<PythonVersion>,
+}
+
+impl DirectiveGate {
+    pub(crate) fn from_config(config: &Config) -> Self {
+        Self {
+            sorts_definitions: config.alphabetize_siblings_enabled()
+                && config.rules.alphabetize_siblings.sort_definitions,
+            target: config.target_version,
+        }
+    }
+
+    /// The gate `prune-inert-imports` drops the directive behind, `None`
+    /// where that rule is off or keeps every unreferenced import.
+    pub(crate) fn pruning(config: &Config) -> Option<Self> {
+        let rule = &config.rules.prune_inert_imports;
+        (rule.enabled && rule.drop_unreferenced).then(|| Self::from_config(config))
+    }
+
+    /// True when removing the directive leaves every annotation in
+    /// `source` evaluating without raising, each module-body statement
+    /// seated where `bands` places it with annotations read at `timing`.
+    /// Every name an annotation reads has to be a builtin the module
+    /// never writes or be bound ahead of it, and under a target deferring
+    /// evaluation an annotation may run at module scope.
+    pub(crate) fn clears(
+        &self,
+        source: &Source,
+        bands: Option<&BandConstants>,
+        timing: Annotations,
+    ) -> bool {
+        (self.target.is_some_and(PythonVersion::defers_annotations)
+            || !annotates_module_scope(&source.ast().body))
+            && Resolution::of(source, self, bands, timing).holds_every_annotation()
+    }
+}
 
 /// What settles whether a name is bound ahead of the annotation reading
 /// it: the binding table, the definition sort, the seat `band-constants`
@@ -42,33 +89,30 @@ struct Resolution<'a> {
 }
 
 impl<'a> Resolution<'a> {
-    /// Builds the resolution for `source` under `rule`, seating each
-    /// statement where the rule's band forecast places it once the directive
-    /// is gone, and reading builtins at the rule's target.
-    fn of(source: &'a Source, rule: &PruneInertImports) -> Self {
+    /// Builds the resolution for `source` under `gate`, seating each
+    /// statement where `bands` places it with annotations read at
+    /// `timing`, or as written where `bands` is `None` or declines the
+    /// body.
+    fn of(
+        source: &'a Source,
+        gate: &DirectiveGate,
+        bands: Option<&BandConstants>,
+        timing: Annotations,
+    ) -> Self {
         let body = &source.ast().body;
         Self {
             analysis: source.binding_analysis(),
             body,
             end: source.module_range().end(),
-            seats: rule
-                .folds
-                .bands()
-                .and_then(|band| {
-                    band.forecast(
-                        source,
-                        body,
-                        source.module_range(),
-                        Annotations::under(rule.target_version),
-                    )
-                })
+            seats: bands
+                .and_then(|band| band.forecast(source, body, source.module_range(), timing))
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
                 ),
-            sorts_definitions: rule.sorts_definitions,
+            sorts_definitions: gate.sorts_definitions,
             source,
-            target: rule.target_version,
+            target: gate.target,
         }
     }
 
@@ -118,16 +162,15 @@ impl<'a> Resolution<'a> {
     }
 }
 
-/// True when removing the `annotations` directive leaves every annotation in
-/// `source` evaluating without raising. Every name an annotation reads has
-/// to be a builtin the module never writes or be bound ahead of it, and under
-/// a target deferring evaluation an annotation may run at module scope.
+/// True when removing the `annotations` directive from `source` clears
+/// `rule`'s gate, each statement seated where `band-constants` places it
+/// once the directive is gone.
 pub(super) fn annotations_are_inert(rule: &PruneInertImports, source: &Source) -> bool {
-    let deferred = rule
-        .target_version
-        .is_some_and(PythonVersion::defers_annotations);
-    (deferred || !annotates_module_scope(&source.ast().body))
-        && Resolution::of(source, rule).holds_every_annotation()
+    rule.directive.clears(
+        source,
+        rule.folds.bands(),
+        Annotations::under(rule.directive.target),
+    )
 }
 
 /// True where a statement running at module scope declares an

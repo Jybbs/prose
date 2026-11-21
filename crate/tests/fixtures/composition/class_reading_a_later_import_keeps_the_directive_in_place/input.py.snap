@@ -1,0 +1,17 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/composition/class_reading_a_later_import_keeps_the_directive_in_place/input.py
+---
+from __future__ import annotations
+
+
+class P(dict):
+
+    x: Foo.sep
+
+
+Y = Foo.sep
+
+
+from os import path as Foo
