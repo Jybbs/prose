@@ -3,5 +3,5 @@ previewable = false
 title       = "A Class Reading a Later Import Keeps the Directive in Place"
 
 description = '''
-`class P` names `Foo` in a body annotation, and `Foo` is bound by an import below it beside `Y = Foo.sep`. **`from __future__ import annotations` stays and the body keeps its order**, because hoisting the import and `Y` above the class under the directive would leave the directive inert, and the order without it holds both below the class that reads `Foo` as it is created.
+`class P` names `Foo` in a body annotation, and `Foo` is bound by an import below it beside `Y = Foo.sep`. **`from __future__ import annotations` stays and the body keeps its order**, because hoisting the import and `Y` above the class under the directive would leave the directive inert, whereas without the directive the class reads `Foo` as it is created, which holds the import and `Y` below it.
 '''

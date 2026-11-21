@@ -36,7 +36,7 @@ pub(crate) struct DirectiveGate {
 }
 
 impl DirectiveGate {
-    pub(crate) fn from_config(config: &Config) -> Self {
+    pub(super) fn from_config(config: &Config) -> Self {
         Self {
             sorts_definitions: config.alphabetize_siblings_enabled()
                 && config.rules.alphabetize_siblings.sort_definitions,
@@ -70,22 +70,20 @@ impl DirectiveGate {
 }
 
 /// What settles whether a name is bound ahead of the annotation reading
-/// it: the binding table, the definition sort, the seat `band-constants`
-/// gives each module-body statement once the directive is gone, the source
-/// order where that rule is off or declines the body, and the target's
-/// builtins. A binding the band seats ahead of its reader counts as bound
-/// whatever its offset, whereas a name a module-level definition binds reads
-/// as unbound while `alphabetize-siblings` sorts definitions.
+/// it: the binding table, the gate's definition sort and target, the seat
+/// `band-constants` gives each module-body statement at the timing the
+/// gate reads, and the source order where that rule is off or declines
+/// the body. A binding the band seats ahead of its reader counts as bound
+/// whatever its offset, whereas a name a module-level definition binds
+/// reads as unbound while `alphabetize-siblings` sorts definitions.
 struct Resolution<'a> {
     analysis: &'a BindingAnalysis,
     body: &'a [Stmt],
     /// The offset every write in the module precedes.
     end: TextSize,
+    gate: &'a DirectiveGate,
     seats: Vec<usize>,
-    sorts_definitions: bool,
     source: &'a Source,
-    /// The target whose builtins a name resolves to.
-    target: Option<PythonVersion>,
 }
 
 impl<'a> Resolution<'a> {
@@ -95,7 +93,7 @@ impl<'a> Resolution<'a> {
     /// body.
     fn of(
         source: &'a Source,
-        gate: &DirectiveGate,
+        gate: &'a DirectiveGate,
         bands: Option<&BandConstants>,
         timing: Annotations,
     ) -> Self {
@@ -104,15 +102,14 @@ impl<'a> Resolution<'a> {
             analysis: source.binding_analysis(),
             body,
             end: source.module_range().end(),
+            gate,
             seats: bands
                 .and_then(|band| band.forecast(source, body, source.module_range(), timing))
                 .map_or_else(
                     || (0..body.len()).collect(),
                     |bands| slot_positions(&bands.order),
                 ),
-            sorts_definitions: gate.sorts_definitions,
             source,
-            target: gate.target,
         }
     }
 
@@ -126,12 +123,12 @@ impl<'a> Resolution<'a> {
         if self.analysis.is_deleted(name) || self.analysis.is_written_globally(name) {
             return false;
         }
-        if self.source.is_builtin(name, self.target)
+        if self.source.is_builtin(name, self.gate.target)
             && !self.analysis.is_bound_before(name, self.end)
         {
             return true;
         }
-        !(self.sorts_definitions && binds_a_definition(self.analysis, name))
+        !(self.gate.sorts_definitions && binds_a_definition(self.analysis, name))
             && self
                 .analysis
                 .first_unconditional_write(name)

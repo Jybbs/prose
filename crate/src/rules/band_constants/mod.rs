@@ -61,10 +61,10 @@ impl BandConstants {
     }
 
     /// The timing of the annotations of `source`'s module under the
-    /// rule's target. Where the order stringified annotations seat would
-    /// clear the gate `prune-inert-imports` drops the future import
-    /// behind, the module reads at the timing it takes without the
-    /// import, the order the import's removal leaves.
+    /// rule's target. A module whose future import the order seated at
+    /// the stringified timing would leave inert to `prune-inert-imports`
+    /// reads at the timing it takes without the import, keeping the
+    /// order that holds the import.
     pub(crate) fn annotations(&self, source: &Source) -> Annotations {
         match Annotations::of(&source.ast().body, self.target_version) {
             Annotations::Stringified
@@ -149,6 +149,11 @@ mod tests {
     use super::*;
     use crate::testing::{at, parse};
 
+    /// A class whose body annotation reads `Foo`, bound by an import
+    /// below it beside a constant observing `Foo`, under the future
+    /// import the stringified order would leave inert.
+    const CLASS_ABOVE_ITS_IMPORT: &str = "from __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n";
+
     /// `rule`'s forecast over the whole module body of `source`.
     fn module_forecast(
         rule: &BandConstants,
@@ -163,44 +168,67 @@ mod tests {
         )
     }
 
-    /// A class whose body annotation reads `Foo`, bound by an import
-    /// below it beside a constant observing `Foo`, under the future
-    /// import the stringified order would leave inert.
-    const CLASS_ABOVE_ITS_IMPORT: &str = "from __future__ import annotations\n\n\nclass P(dict):\n    x: Foo.sep\n\n\nY = Foo.sep\n\n\nfrom os import path as Foo\n";
-
     #[rstest]
     #[case::import_the_band_would_clear_reads_without_it(
         CLASS_ABOVE_ITS_IMPORT,
+        None,
         true,
         true,
         Annotations::Eager
     )]
+    #[case::py314_import_the_band_would_clear_reads_lazily(
+        CLASS_ABOVE_ITS_IMPORT,
+        Some(PythonVersion::PY314),
+        true,
+        true,
+        Annotations::Lazy
+    )]
     #[case::import_the_band_leaves_needed_stays_stringified(
         "from __future__ import annotations\n\n\ndef visit(node: Node) -> Node:\n    return node\n\n\nclass Node:\n    pass\n",
+        None,
         true,
         true,
         Annotations::Stringified
     )]
+    #[case::inert_import_reads_without_it(
+        "from __future__ import annotations\n\nAlias = int\n\n\ndef convert(value: Alias) -> Alias:\n    return value\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
     #[case::import_stays_stringified_with_pruning_off(
         CLASS_ABOVE_ITS_IMPORT,
+        None,
         false,
         true,
         Annotations::Stringified
     )]
     #[case::import_stays_stringified_while_unreferenced_imports_stay(
         CLASS_ABOVE_ITS_IMPORT,
+        None,
         true,
         false,
         Annotations::Stringified
     )]
-    #[case::module_without_the_import_reads_eagerly("x: int = 1\n", true, true, Annotations::Eager)]
+    #[case::module_without_the_import_reads_eagerly(
+        "x: int = 1\n",
+        None,
+        true,
+        true,
+        Annotations::Eager
+    )]
     fn annotations_read_a_kept_future_import_by_the_order_it_leaves(
         #[case] src: &str,
+        #[case] target: Option<PythonVersion>,
         #[case] prunes: bool,
         #[case] drops_unreferenced: bool,
         #[case] expected: Annotations,
     ) {
-        let mut config = Config::default();
+        let mut config = Config {
+            target_version: target,
+            ..Config::default()
+        };
         config.rules.prune_inert_imports.enabled = prunes;
         config.rules.prune_inert_imports.drop_unreferenced = drops_unreferenced;
         let rule = BandConstants::from_config(&config);

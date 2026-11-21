@@ -23,6 +23,8 @@ Only an evaluation-time reference binds the order, covering a right-hand side, a
 
 <FixtureCards rule="band_constants" cases="annotated_constant_trails_its_type lazy_annotated_constant_leads_its_type stringified_annotated_constant_leads_its_type" />
 
+That deferral holds only where [[prune-inert-imports]] would keep the directive. Where the order seated under the directive would leave it inert, the rule seats the order the module takes without the directive, so a class reading a name bound below it keeps both the directive and its place above the binding.
+
 Several cases pin a constant where the author left it:
 
 - A reassigned name.
