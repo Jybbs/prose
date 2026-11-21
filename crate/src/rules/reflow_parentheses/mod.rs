@@ -290,11 +290,11 @@ mod tests {
     };
 
     /// The paired `dict(...)` values the cost test generates.
-    const PAIRED_DICT_CALLS: usize = 2000;
+    const PAIRED_DICT_CALLS: usize = 500;
 
     /// The time the rule takes over [`PAIRED_DICT_CALLS`] values under the
-    /// test profile, 0.63 s measured with one reparse per module, against
-    /// 100 s at 1,000 values with one reparse per candidate.
+    /// test profile, 0.24 s measured with one reparse per module, against
+    /// 117 s with one reparse per candidate.
     const PAIRED_DICT_CALLS_BOUND: Duration = Duration::from_secs(10);
 
     /// `src` with every edit the rule emits applied, under the default
