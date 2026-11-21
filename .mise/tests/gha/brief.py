@@ -1,20 +1,23 @@
 """
 Pins the Deploy and Warm gates `gha:brief` renders, reading the jobs each
 judges from the `gate` job's `needs` in `deploy.yml` and `warm.yml`, so a
-row the workflow waits on and the verdict leaves out fails here.
+row the workflow waits on and the verdict leaves out fails here, and the
+line the Draft summary renders for each outcome `gha:cut` emits.
 """
 
 from collections.abc import Callable
 from json            import dumps
 from pathlib         import Path
-from pytest          import CaptureFixture, MonkeyPatch, fixture, mark, raises
+from pytest          import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
 from types           import ModuleType
 from yaml            import safe_load
 
-ROOT = Path(__file__).resolve().parents[3]
-JOBS = safe_load((ROOT / ".github/workflows/deploy.yml").read_text())["jobs"]
-URL  = "https://preview.example.test"
-WARM = safe_load((ROOT / ".github/workflows/warm.yml").read_text())["jobs"]
+ROOT   = Path(__file__).resolve().parents[3]
+COMMIT = "[`abcdef0`](https://example.test/owner/repo/commit/abcdef012345)"
+DRAFT  = "https://example.test/owner/repo/releases/tag/untagged-1"
+JOBS   = safe_load((ROOT / ".github/workflows/deploy.yml").read_text())["jobs"]
+URL    = "https://preview.example.test"
+WARM   = safe_load((ROOT / ".github/workflows/warm.yml").read_text())["jobs"]
 
 
 @fixture
@@ -115,3 +118,47 @@ def test_a_failed_job_fails_the_warm_gate(
     with raises(SystemExit) as stopped:
         task("gha/brief").Summary().warm()
     assert stopped.value.code == 1
+
+
+@mark.parametrize(
+    ("state", "line"),
+    [
+        param(
+            "created",
+            f"Created the [*Prose* 1.2.3]({DRAFT}) draft from {COMMIT}.",
+            id = "created"
+        ),
+        param(
+            "refreshed",
+            f"Refreshed the notes of the [*Prose* 1.2.3]({DRAFT}) draft from {COMMIT}.",
+            id = "refreshed"
+        ),
+        param(
+            "published",
+            f"[*Prose* 1.2.3]({DRAFT}) is already published. Run `mise bump` to move "
+            "`crate/Cargo.toml` to the next version.",
+            id = "published"
+        ),
+        param("", f"No draft for *Prose* 1.2.3 was written from {COMMIT}.", id = "none")
+    ]
+)
+@mark.usefixtures("gate")
+def test_the_draft_summary_names_each_outcome(
+    capsys      : CaptureFixture[str],
+    line        : str,
+    monkeypatch : MonkeyPatch,
+    state       : str,
+    task        : Callable[[str], ModuleType]
+):
+    """
+    Pins the line the Draft summary renders for each state `gha:cut` emits,
+    linking the draft or the published release, and for a run that stopped
+    before it emitted one.
+    """
+    monkeypatch.setenv("DRAFT_STATE", state)
+    monkeypatch.setenv("DRAFT_URL", DRAFT)
+    monkeypatch.setenv("VERSION", "1.2.3")
+
+    task("gha/brief").Summary().draft()
+
+    assert capsys.readouterr().out == f"## 🪻 Prose Draft\n\n{line}\n"

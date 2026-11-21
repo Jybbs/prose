@@ -1,11 +1,11 @@
 ## 🪻 Prose Draft
 
-{% if state == "cut" -%}
-Cut [*Prose* {{ version }}]({{ draft_url }}) draft from {{ commit_link }}.
-{% elif state == "drafted" -%}
-A draft for [*Prose* {{ version }}]({{ draft_url }}) already exists, left untouched.
+{% if state == "created" -%}
+Created the [*Prose* {{ version }}]({{ draft_url }}) draft from {{ commit_link }}.
+{% elif state == "refreshed" -%}
+Refreshed the notes of the [*Prose* {{ version }}]({{ draft_url }}) draft from {{ commit_link }}.
 {% elif state == "published" -%}
-[*Prose* {{ version }}]({{ draft_url }}) is already published. No draft cut.
+[*Prose* {{ version }}]({{ draft_url }}) is already published. Run `mise bump` to move `crate/Cargo.toml` to the next version.
 {% else -%}
-No version bump in {{ commit_link }}. Draft not cut.
+No draft for *Prose* {{ version }} was written from {{ commit_link }}.
 {% endif %}
