@@ -16,7 +16,10 @@ on:
       - .github/scripts/platforms.toml
       - .github/workflows/warm.yml
       - .mise/config.toml
+      - .mise/lib/corpus.bash
+      - .mise/lib/workspace.bash
       - .mise/mise.lock
+      - .mise/tasks/rust/probe
       - Cargo.lock
       - Cargo.toml
       - corpus/Cargo.toml
@@ -77,7 +80,8 @@ jobs:
             shared-key : prose-coverage
           - command    : mise run rust:probe
             name       : 🔦 Probe
-            shared-key : prose-probe
+            probe      : 'true'
+            shared-key : prose-probe-workspace
 
     steps:
       - *checkout
@@ -85,6 +89,7 @@ jobs:
       - name : Provision Cargo
         uses : $/.github/actions/provision-cargo
         with:
+          probe      : ${{ matrix.probe }}
           save       : ${{ matrix.save }}
           shared-key : ${{ matrix.shared-key }}
 
