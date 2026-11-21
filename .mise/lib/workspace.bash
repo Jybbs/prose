@@ -1,5 +1,9 @@
 PROOF_TARGETS=(corpus settle)
 
+cargo_test() {
+  cargo test "$@" ${forwarded[@]+"${forwarded[@]}"}
+}
+
 split_proof() {
   "$@" \
     --locked \

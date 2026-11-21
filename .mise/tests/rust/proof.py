@@ -5,36 +5,18 @@ otherwise, under the profile `PROSE_PROOF_PROFILE` names.
 """
 
 from collections.abc import Callable
-from pathlib         import Path
 from pytest          import MonkeyPatch, fixture, mark, param
-from subprocess      import run
 
-ROOT = Path(__file__).resolve().parents[3]
+RUN = "cargo test --locked --package prose"
 
 
 @fixture(autouse=True)
-def environment(monkeypatch: MonkeyPatch, stand_in: Callable[..., Path]):
+def unprofiled(monkeypatch: MonkeyPatch):
     """
     Unsets `PROSE_PROOF_PROFILE`, so each case names the profile it runs
-    under, and puts a stand-in `cargo` printing its arguments first on
-    `PATH`.
+    under.
     """
     monkeypatch.delenv("PROSE_PROOF_PROFILE", raising=False)
-    stand_in("cargo")
-
-
-def proof_arguments(binaries: list[str]) -> list[str]:
-    """
-    Runs `rust:proof` on `binaries` and returns the arguments the stand-in
-    `cargo` received, one per line.
-    """
-    finished = run(
-        [ROOT / ".mise/tasks/rust/proof", *binaries],
-        capture_output = True,
-        check          = True,
-        text           = True
-    )
-    return finished.stdout.splitlines()
 
 
 @mark.parametrize(
@@ -51,18 +33,16 @@ def proof_arguments(binaries: list[str]) -> list[str]:
     ]
 )
 def test_proof_runs_the_binaries_it_is_given(
-    binaries : list[str],
-    tests    : list[str]
+    binaries       : list[str],
+    tests          : list[str],
+    workspace_task : Callable[..., list[str]]
 ):
     """
     Pins that one `cargo test` runs over the `prose` package with a
     `--test` flag for each binary the task is given, or for each binary
     `PROOF_TARGETS` names when it is given none, passing no profile.
     """
-    assert proof_arguments(binaries) == [
-        "test", "--locked", "--package", "prose",
-        *tests
-    ]
+    assert workspace_task("proof", *binaries) == [" ".join((RUN, *tests))]
 
 
 @mark.parametrize(
@@ -73,9 +53,10 @@ def test_proof_runs_the_binaries_it_is_given(
     ]
 )
 def test_proof_builds_under_the_profile_the_environment_names(
-    flags       : list[str],
-    monkeypatch : MonkeyPatch,
-    profile     : str
+    flags          : list[str],
+    monkeypatch    : MonkeyPatch,
+    profile        : str,
+    workspace_task : Callable[..., list[str]]
 ):
     """
     Pins that `PROSE_PROOF_PROFILE` hands `cargo test` the profile it names,
@@ -83,8 +64,6 @@ def test_proof_builds_under_the_profile_the_environment_names(
     """
     monkeypatch.setenv("PROSE_PROOF_PROFILE", profile)
 
-    assert proof_arguments(["settle"]) == [
-        "test", "--locked", "--package", "prose",
-        *flags,
-        "--test=settle"
+    assert workspace_task("proof", "settle") == [
+        " ".join((RUN, *flags, "--test=settle"))
     ]
