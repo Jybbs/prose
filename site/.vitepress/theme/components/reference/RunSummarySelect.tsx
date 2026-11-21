@@ -33,7 +33,7 @@ export const RunSummarySelect = defineComponent({
             <span class="relative inline-block">
               <button
                 {...listbox.trigger}
-                class="run-summary-select-trigger inline-flex items-baseline gap-0-2em border-none px-2 font-mono text-link hairline-ube-38 transition-color-and-box-shadow hover:text-text-1 hover:hairline-ube focus-visible:outline-1 focus-visible:outline-ube"
+                class="run-summary-select-trigger inline-flex items-baseline gap-0-2em border-none px-2 font-mono text-link hairline-ube/38 transition-color-and-box-shadow hover:text-text-1 hover:hairline-ube focus-visible:outline-1 focus-visible:outline-ube"
                 type="button"
               >
                 <span>{selected.value.mono}</span>

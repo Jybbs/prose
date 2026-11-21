@@ -24,18 +24,29 @@ use crate::{
         },
         scope::{scoped_body, splice_compound_arms, sub_bodies},
         sections::Sections,
+        tiering::Annotations,
     },
     source::Source,
 };
 
 /// Invariant banding context threaded through the recursion.
 pub(super) struct Bander<'a> {
-    pub(super) defer_annotations: bool,
+    pub(super) annotations: Annotations,
     pub(super) rule: &'a BandConstants,
     pub(super) source: &'a Source,
 }
 
 impl<'a> Bander<'a> {
+    /// The context for banding `source` under `rule`, reading its
+    /// annotations at the timing the module and the rule's target set.
+    pub(super) fn of(rule: &'a BandConstants, source: &'a Source) -> Self {
+        Self {
+            annotations: rule.annotations(source),
+            rule,
+            source,
+        }
+    }
+
     /// Bands a module-scope body, returning the rewritten text alongside
     /// the block-extent span it covers. Each member's text folds in any
     /// banded module-scope compound arm beneath it. The text is
@@ -104,7 +115,7 @@ impl<'a> Bander<'a> {
         sections: &Sections,
         order: &mut Vec<usize>,
     ) -> Option<Banding> {
-        module_band_plan(self.source, body, blocks, self.rule, self.defer_annotations)?
+        module_band_plan(self.source, body, blocks, self.rule, self.annotations)?
             .apply(body, sections, self.rule, order)
     }
 
@@ -235,7 +246,7 @@ mod tests {
         let mut order: Vec<usize> = (0..body.len()).collect();
         let rule = BandConstants::from_config(&Config::default());
         let bander = Bander {
-            defer_annotations: false,
+            annotations: Annotations::Eager,
             rule: &rule,
             source: &source,
         };
@@ -261,12 +272,12 @@ mod tests {
         let body = &source.ast().body;
         let rule = BandConstants::from_config(&Config::default());
         let bander = Bander {
-            defer_annotations: false,
+            annotations: Annotations::Eager,
             rule: &rule,
             source: &source,
         };
         let forecast = rule
-            .forecast(&source, body, source.module_range(), false)
+            .forecast(&source, body, source.module_range(), Annotations::Eager)
             .expect("the body bands");
         assert_eq!(
             bander

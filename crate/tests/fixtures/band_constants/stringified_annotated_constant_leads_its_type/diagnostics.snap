@@ -1,0 +1,6 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/band_constants/stringified_annotated_constant_leads_its_type/input.py
+---
+band-constants@36..73

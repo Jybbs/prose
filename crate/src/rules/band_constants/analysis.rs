@@ -80,7 +80,7 @@ pub(super) fn module_band_plan<'src>(
     body: &'src [Stmt],
     blocks: &[TextRange],
     rule: &BandConstants,
-    defer_annotations: bool,
+    annotations: Annotations,
 ) -> Option<BandPlan<'src>> {
     let analysis = source.binding_analysis();
     let aliases = rule
@@ -150,7 +150,7 @@ pub(super) fn module_band_plan<'src>(
                     sites.push(ConstSite {
                         annot_refs: stmt
                             .as_ann_assign_stmt()
-                            .filter(|_| !defer_annotations)
+                            .filter(|_| annotations.read_at_module_scope())
                             .map_or_else(Vec::new, |ann| eval_refs(&ann.annotation)),
                         effectful: value.is_some_and(value_is_effectful),
                         idx,
@@ -182,11 +182,6 @@ pub(super) fn module_band_plan<'src>(
             .flat_map(|&name| reads_through(name))
             .collect();
     }
-    let annotations = if defer_annotations {
-        Annotations::Stringified
-    } else {
-        Annotations::Eager
-    };
     let refs = eval_time_refs_of(body, annotations);
     let refs_of = |stmt: &Stmt| {
         refs.get(&stmt.start())
@@ -490,7 +485,7 @@ mod tests {
             body,
             &blocks,
             &BandConstants::from_config(&Config::default()),
-            false,
+            Annotations::Eager,
         )
     }
 

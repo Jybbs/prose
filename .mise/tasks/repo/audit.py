@@ -43,6 +43,9 @@ them fails.
                mise reads them as current.
     gates      The checks the `main` ruleset requires are the names of the
                jobs the pull-request workflows end on.
+    drafts     Every `pull_request` trigger runs on the `READY_TYPES`, and
+               every job of its workflow ends its `if` on the `DRAFT_GUARD`,
+               so a draft runs no job until it is marked ready.
     checks     Every row of the checks table in `CONTRIBUTING.md` names a
                check its workflows run, every task a row names is one
                `mise tasks` lists, every task outside the `gha` group a
@@ -88,6 +91,7 @@ from yaml        import AnchorToken, BaseLoader, load_all, scan
 CACHING: set[str] = {
     "Swatinem/rust-cache", "actions/cache", "actions/cache/restore", "jdx/mise-action"
 }
+DRAFT_GUARD = r"\$\{\{ (?:[^|]+ && )?!github\.event\.pull_request\.draft \}\}"
 ESCAPES: dict[int, str] = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 EXACT = (
     r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
@@ -95,6 +99,9 @@ EXACT = (
 )
 PROPERTY_ESCAPES : dict[int, str] = ESCAPES | str.maketrans({",": "%2C", ":": "%3A"})
 READ             : set[str]       = set()
+READY_TYPES      : set[str]       = {
+    "opened", "ready_for_review", "reopened", "synchronize"
+}
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
 USES         = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
 UV_SHEBANG   = r"^#!.*\buv run --script\b"
@@ -284,6 +291,43 @@ def dependencies(task: str) -> list[str]:
     ]
 
 
+def drafts() -> int:
+    """
+    Reports every `pull_request` trigger omitting one of the `READY_TYPES`,
+    and every job of a pull-request workflow whose `if` does not fully match
+    the `DRAFT_GUARD`, the guard alone or a `||`-free condition ending on
+    `&&` and the guard, locating each to the line its key opens on.
+    """
+    flows = pull_request_workflows()
+    return located(
+        findings = [
+            *(
+                (
+                    f"the pull_request trigger omits the types {sorted(missing)}",
+                    path,
+                    opening("pull_request", path)
+                )
+                for path, flow in flows
+                if (
+                    missing := READY_TYPES - set(
+                        pull_request_trigger(flow).get("types", [])
+                    )
+                )
+            ),
+            *(
+                (
+                    f"the {name} job runs on a draft, its if lacking the draft guard",
+                    path,
+                    opening(name, path)
+                )
+                for path, flow in flows
+                for name, job in flow["jobs"].items()
+                if not fullmatch(DRAFT_GUARD, job.get("if", ""))
+            )
+        ]
+    )
+
+
 def exact() -> int:
     """
     Reports every entry of a dependency table, `overrides`, or `resolutions`
@@ -430,8 +474,7 @@ def filters() -> int:
     """
     every, audited = [], []
     for path, flow in pull_request_workflows():
-        event = flow["on"]["pull_request"] if isinstance(flow["on"], dict) else ""
-        paths = (event or {}).get("paths", ["**"])
+        paths = pull_request_trigger(flow).get("paths", ["**"])
         every.append(paths)
         if "repo:audit" in invoked(read(path)):
             audited.append(paths)
@@ -739,6 +782,17 @@ def mise_pins(config: dict) -> dict[str, str]:
     }
 
 
+def opening(key: str, path: Path) -> int:
+    """
+    Finds the line on which the workflow at `path` opens the two-space
+    indented `key`, a job under `jobs` or a trigger under `on`, or else the
+    line opening `on` where the trigger is a bare name or a list entry.
+    """
+    text  = read(path)
+    found = search(rf"(?m)^  {escape(key)}\s*:", text) or search(r"(?m)^on\s*:", text)
+    return text.count("\n", 0, found.start() if found else 0) + 1
+
+
 def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     Builds one parity pair per `overrides` entry the manifest also pins as a
@@ -970,7 +1024,7 @@ def privileges() -> int:
             (
                 f"the {name} job restores a cache while holding a write permission",
                 path,
-                read(path).splitlines().index(f"  {name}:") + 1
+                opening(name, path)
             )
             for path, flow in workflows()
             for name, job in flow["jobs"].items()
@@ -1000,6 +1054,14 @@ def proof_rows() -> list[tuple[str, list[str]]]:
             ]
         )
     ]
+
+
+def pull_request_trigger(flow: dict) -> dict:
+    """
+    Reads the mapping under the `pull_request` trigger of `flow`, empty
+    where the trigger is a bare name or carries no settings.
+    """
+    return (flow["on"]["pull_request"] if isinstance(flow["on"], dict) else None) or {}
 
 
 def pull_request_workflows() -> list[tuple[Path, dict]]:
@@ -1513,6 +1575,7 @@ if __name__ == "__main__":
         | patterns()
         | stamps()
         | gates()
+        | drafts()
         | checks()
         | tasks()
         | scripts()
