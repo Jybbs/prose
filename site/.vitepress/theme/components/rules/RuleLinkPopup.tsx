@@ -4,6 +4,7 @@ import { defineComponent, shallowRef }    from 'vue'
 import { Popup }    from '../../../kit'
 import { RuleCard } from './RuleCard'
 
+import { useDismissedHover }               from '../../../lib/composables/use-dismissed-hover'
 import { data as rules, type RenderedRule } from '../../../lib/rules/rules.data'
 
 const HIDE_MS = 120
@@ -13,6 +14,7 @@ const SHOW_MS = 80
 export const RuleLinkPopup = defineComponent({
   name: 'RuleLinkPopup',
   setup() {
+    const hover  = useDismissedHover()
     const rule   = shallowRef<RenderedRule | null>(null)
     const target = shallowRef<HTMLElement | null>(null)
 
@@ -42,11 +44,12 @@ export const RuleLinkPopup = defineComponent({
     }
 
     function show(event: Event): void {
+      const link = linkFrom(event)
+      if (event.type === 'mouseover' && hover.enter(link)) return
       if (onCard(event)) {
         hold()
         return
       }
-      const link = linkFrom(event)
       if (!link) return
       const found = rules.bySlug[link.dataset.rule ?? '']
       if (!found) return
@@ -55,22 +58,33 @@ export const RuleLinkPopup = defineComponent({
       reveal.start(link, found)
     }
 
+    // Closes the card on Escape or an interaction outside it, leaving focus
+    // where it is.
+    function dismiss(): void {
+      conceal.stop()
+      hover.dismiss()
+      rule.value = null
+    }
+
     function hide(event: Event): void {
       if (!linkFrom(event) && !onCard(event)) return
       hold()
       conceal.start()
     }
 
-    useEventListener('focusin',   show)
-    useEventListener('focusout',  hide)
-    useEventListener('mouseover', show)
-    useEventListener('mouseout',  hide)
+    useEventListener('focusin',     show)
+    useEventListener('focusout',    hide)
+    useEventListener('mouseover',   show)
+    useEventListener('mouseout',    hide)
+    useEventListener('pointermove', event => { hover.move(linkFrom(event)) })
+    useEventListener('mouseout',    event => { if (event.relatedTarget === null) hover.leave() })
 
     return () => (
       <Popup
         anchor={target.value}
         class="rule-card-popup"
         label={rule.value?.name ?? ''}
+        onDismiss={dismiss}
         open={rule.value !== null}
         passive
         theme="rule-card"
