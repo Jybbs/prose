@@ -24,9 +24,16 @@ from subprocess import CompletedProcess, run
 from tempfile   import mkdtemp
 from types      import ModuleType
 
-MEMBERS = ("corpus", "crate", "harness", "tools/bench", "wasm")
-OWNED   = StashKey[Path]()
-TASKS   = Path(__file__).resolve().parents[1] / "tasks"
+MEMBERS = {
+    "corpus"      : {},
+    "crate"       : {"harness": "dev", "tools/core": None},
+    "harness"     : {"crate": None},
+    "tools/bench" : {},
+    "tools/core"  : {},
+    "wasm"        : {"crate": None}
+}
+OWNED = StashKey[Path]()
+TASKS = Path(__file__).resolve().parents[1] / "tasks"
 
 
 @hookimpl(tryfirst=True)
@@ -59,8 +66,9 @@ def affected(
     """
     Builds stand-in `cargo`, `uv`, and `vitest` commands, each printing the
     command it receives on a line of its own, with `cargo metadata` printing
-    a workspace of `MEMBERS` with no test target, and puts them first on
-    `PATH`.
+    a workspace of `MEMBERS` with no test target, each member depending on
+    the members it maps to under the kind each maps to, and puts them first
+    on `PATH`.
 
     Returns:
         A function running the `affected` task of `group` with `args` in a
@@ -70,8 +78,16 @@ def affected(
     metadata = dumps(
         {
             "packages"       : [
-                {"manifest_path": f"/workspace/{member}/Cargo.toml", "targets": []}
-                for member in MEMBERS
+                {
+                    "dependencies"  : [
+                        {"kind": kind, "path": f"/workspace/{needed}"}
+                        for needed, kind in needs.items()
+                    ],
+                    "manifest_path" : f"/workspace/{member}/Cargo.toml",
+                    "name"          : f"prose_{Path(member).name}",
+                    "targets"       : []
+                }
+                for member, needs in MEMBERS.items()
             ],
             "workspace_root" : "/workspace"
         }

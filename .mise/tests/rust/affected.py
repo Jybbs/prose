@@ -7,41 +7,43 @@ from collections.abc import Callable
 from pytest          import mark, param
 from subprocess      import CompletedProcess
 
-SUITE = [
-    "cargo test --bins --exclude prose_wasm --lib --locked --workspace",
-    "cargo test --locked --package prose_wasm"
-]
+SUITE = ["cargo test --bins --exclude prose_wasm --lib --locked --workspace"]
+WASM  = [*SUITE, "cargo test --locked --package prose_wasm"]
 
 
 @mark.parametrize(
-    "changed",
+    ("changed", "commands"),
     [
-        param(".cargo/clippy.toml", id = "clippy config"),
-        param(".cargo/config.toml", id = "cargo config"),
-        param(".mise/config.toml", id = "tool pins"),
-        param("Cargo.lock", id = "workspace lockfile"),
-        param("Cargo.toml", id = "workspace manifest"),
-        param("corpus/src/lib.rs", id = "corpus"),
-        param("crate/src/lib.rs", id = "crate"),
-        param("crate/tests/fixtures/case/input.py", id = "fixture"),
-        param("harness/src/lib.rs", id = "harness"),
-        param("tools/bench/src/lib.rs", id = "nested member"),
-        param("wasm/src/lib.rs", id = "wasm")
+        param(".cargo/clippy.toml", SUITE, id = "clippy config"),
+        param(".cargo/config.toml", SUITE, id = "cargo config"),
+        param(".mise/config.toml", SUITE, id = "tool pins"),
+        param("Cargo.lock", WASM, id = "workspace lockfile"),
+        param("Cargo.toml", WASM, id = "workspace manifest"),
+        param("corpus/src/lib.rs", SUITE, id = "corpus"),
+        param("crate/src/lib.rs", WASM, id = "crate"),
+        param("crate/tests/fixtures/case/input.py", WASM, id = "fixture"),
+        param("harness/src/lib.rs", SUITE, id = "harness"),
+        param("tools/bench/src/lib.rs", SUITE, id = "nested member"),
+        param("tools/core/src/lib.rs", WASM, id = "member reached through crate"),
+        param("wasm/src/lib.rs", WASM, id = "wasm")
     ]
 )
 def test_affected_runs_the_suite_once_a_change_reaches_a_rust_path(
     affected : Callable[..., CompletedProcess],
-    changed  : str
+    changed  : str,
+    commands : list[str]
 ):
     """
     Pins that a change to a Rust source, a workspace member `cargo metadata`
-    lists, or a file configuring the workspace's build or its toolchain runs
-    both halves of `rust:suite`.
+    lists, or a file configuring the workspace's build or its toolchain
+    runs the one `cargo test` of `rust:suite`, followed by the `prose_wasm`
+    tests only where the change reaches `prose_wasm`, a member it depends on
+    outside its dev dependencies, or the workspace manifest and lockfile.
     """
     finished = affected(changed, "edited", group="rust")
 
     assert finished.returncode == 0
-    assert finished.stdout.splitlines() == SUITE
+    assert finished.stdout.splitlines() == commands
 
 
 @mark.parametrize(
@@ -92,7 +94,7 @@ def test_affected_reads_committed_and_untracked_changes(
     Pins that a committed change and a file git does not yet track reach the
     task, as the edit in place every other case makes does.
     """
-    assert affected("crate/src/lib.rs", how, group="rust").stdout.splitlines() == SUITE
+    assert affected("crate/src/lib.rs", how, group="rust").stdout.splitlines() == WASM
 
 
 @mark.parametrize(
@@ -122,12 +124,12 @@ def test_affected_skips_the_suite_for_changes_the_branch_did_not_make(
     assert finished.stdout == "No Rust file changed since origin/main\n"
 
 
-def test_affected_hands_its_arguments_to_each_cargo_test(
+def test_affected_hands_its_arguments_to_cargo_test(
     affected: Callable[..., CompletedProcess]
 ):
     """
-    Pins that the arguments the task is given follow the flags of both
-    `cargo test` runs.
+    Pins that the arguments the task is given follow the flags of each
+    `cargo test` run.
     """
     finished = affected(
         "crate/src/lib.rs",
@@ -138,4 +140,4 @@ def test_affected_hands_its_arguments_to_each_cargo_test(
         group = "rust"
     )
 
-    assert finished.stdout.splitlines() == [f"{line} -- --exact name" for line in SUITE]
+    assert finished.stdout.splitlines() == [f"{line} -- --exact name" for line in WASM]

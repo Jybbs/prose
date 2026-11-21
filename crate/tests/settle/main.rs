@@ -96,13 +96,17 @@ impl Agreement {
 /// One rule's run over one buffer.
 #[derive(Clone)]
 enum Applied {
-    /// The rule rewrote the buffer to this text.
-    Changed(Rc<str>),
+    /// The rule rewrote the buffer to this one.
+    Changed(Buffer),
     /// The pipeline rejected the rule's output.
     Rejected(Rc<str>),
     /// The rule left the buffer as it was.
     Same,
 }
+
+/// The seat in [`Memo::sources`] of one distinct text a sweep reads.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct Buffer(usize);
 
 /// How a scoped run claims the subsets it probes, the pairs and the run
 /// of [`Probes::joint`] alike.
@@ -236,48 +240,56 @@ impl Absorbing for Findings {
 /// order the sweep first made each.
 struct Memo<'p> {
     probes: &'p Probes,
-    runs: IndexMap<(usize, Rc<str>), Applied, FxBuildHasher>,
+    runs: IndexMap<(usize, Buffer), Applied, FxBuildHasher>,
     /// The source of the file and of every buffer a run wrote, keyed by
-    /// its text.
-    sources: FxHashMap<Rc<str>, Source>,
+    /// its text and seated by the [`Buffer`] naming it.
+    sources: IndexMap<Box<str>, Source, FxBuildHasher>,
 }
 
 impl<'p> Memo<'p> {
-    /// Opens a memo over the file `source` holds.
-    fn new(probes: &'p Probes, source: Source) -> Self {
-        Self {
+    /// Opens a memo over the file `source` holds, beside the buffer
+    /// holding it.
+    fn new(probes: &'p Probes, source: &Source) -> (Self, Buffer) {
+        let mut memo = Self {
             probes,
             runs: IndexMap::default(),
-            sources: FxHashMap::from_iter([(Rc::from(source.text()), source)]),
-        }
+            sources: IndexMap::default(),
+        };
+        let file = memo.intern(source);
+        (memo, file)
     }
 
     /// The buffer the rule at `seat` leaves `text` as, `text` itself
     /// where the rule made no edit.
-    fn after(&mut self, seat: usize, text: &Rc<str>) -> Result<Rc<str>, Rc<str>> {
+    fn after(&mut self, seat: usize, text: Buffer) -> Result<Buffer, Rc<str>> {
         match self.apply(seat, text) {
             Applied::Changed(out) => Ok(out),
             Applied::Rejected(error) => Err(error),
-            Applied::Same => Ok(Rc::clone(text)),
+            Applied::Same => Ok(text),
         }
     }
 
-    fn apply(&mut self, seat: usize, text: &Rc<str>) -> Applied {
-        let run = (seat, Rc::clone(text));
+    /// The run of the rule at `seat` over `text`, a rule holding no fix
+    /// group over it leaving it as it was without a format.
+    fn apply(&mut self, seat: usize, text: Buffer) -> Applied {
+        let run = (seat, text);
         if let Some(applied) = self.runs.get(&run) {
             return applied.clone();
         }
-        let applied = match self.probes.singles[seat]
-            .pipeline
-            .format(self.source(text).clone())
-        {
-            Ok(out) if out.text() == &**text => Applied::Same,
-            Ok(out) => {
-                let written: Rc<str> = Rc::from(out.text());
-                self.sources.entry(Rc::clone(&written)).or_insert(out);
-                Applied::Changed(written)
+        let probes = self.probes;
+        let pipeline = &probes.singles[seat].pipeline;
+        let source = self.source(text);
+        let report = pipeline.settle_report(source);
+        let applied = if report.editing.is_empty() && report.unlanded.is_empty() {
+            Applied::Same
+        } else {
+            match pipeline.format(source.clone()) {
+                Ok(out) => match self.intern(&out) {
+                    written if written == text => Applied::Same,
+                    written => Applied::Changed(written),
+                },
+                Err(error) => Applied::Rejected(Rc::from(error.to_string())),
             }
-            Err(error) => Applied::Rejected(Rc::from(error.to_string())),
         };
         self.runs.insert(run, applied.clone());
         applied
@@ -285,14 +297,14 @@ impl<'p> Memo<'p> {
 
     /// The buffer the rules at `seats` leave `text` as, run first to
     /// second, the first rejection ending the chain.
-    fn chain(&mut self, [first, second]: [usize; 2], text: &Rc<str>) -> Result<Rc<str>, Rc<str>> {
+    fn chain(&mut self, [first, second]: [usize; 2], text: Buffer) -> Result<Buffer, Rc<str>> {
         let opened = self.after(first, text)?;
-        self.after(second, &opened)
+        self.after(second, opened)
     }
 
     /// The rules among `seats` still editing `text`, a rejected run
     /// counting as an edit.
-    fn editing(&mut self, seats: &[usize], text: &Rc<str>) -> Vec<RuleId> {
+    fn editing(&mut self, seats: &[usize], text: Buffer) -> Vec<RuleId> {
         let probes = self.probes;
         seats
             .iter()
@@ -301,11 +313,25 @@ impl<'p> Memo<'p> {
             .collect()
     }
 
+    /// The buffer holding `source`'s text, storing a clone of `source`
+    /// where the memo holds no buffer with that text.
+    fn intern(&mut self, source: &Source) -> Buffer {
+        let text = source.text();
+        Buffer(
+            self.sources
+                .get_index_of(text)
+                .unwrap_or_else(|| self.sources.insert_full(Box::from(text), source.clone()).0),
+        )
+    }
+
     /// The source of `text`, which the file holds or a run wrote.
-    fn source(&self, text: &str) -> &Source {
-        self.sources
-            .get(text)
-            .expect("invariant: the memo holds the source of every buffer a run reads")
+    fn source(&self, text: Buffer) -> &Source {
+        &self.sources[text.0]
+    }
+
+    /// The text `buffer` holds.
+    fn text(&self, buffer: Buffer) -> &str {
+        self.source(buffer).text()
     }
 }
 
@@ -559,16 +585,15 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         return findings;
     };
     let _slot = open_slot(format!("{} {}", path.display(), probes.budget));
-    let text: Rc<str> = Rc::from(source.text());
-    let mut memo = Memo::new(probes, source);
+    let (mut memo, text) = Memo::new(probes, &source);
     let mut broken: BTreeSet<RuleId> = BTreeSet::new();
     for (&rule, &seat) in &probes.solo {
         let label = || format!("`{rule}` alone {}", probes.budget);
-        let defect = match memo.apply(seat, &text) {
+        let defect = match memo.apply(seat, text) {
             Applied::Same => continue,
             Applied::Rejected(error) => Some(format!("{} was rejected: {error}", label())),
             Applied::Changed(once) => {
-                let left = memo.editing(&[seat], &once);
+                let left = memo.editing(&[seat], once);
                 (!left.is_empty())
                     .then(|| format!("{} leaves {} editing", label(), render_slugs(&left)))
             }
@@ -595,9 +620,9 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         let file = |tally: &mut Tally, defect: String| {
             tally.record_hit(defect, path, probes.hit(path, &pair));
         };
-        let chained = memo.chain(seats, &text);
+        let chained = memo.chain(seats, text);
         if verifying() {
-            verify_pair(&mut memo, path, &text, probe, &chained);
+            verify_pair(&mut memo, path, text, probe, &chained);
         }
         let forward = match chained {
             Ok(forward) => forward,
@@ -612,9 +637,10 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if forward == text {
             continue;
         }
-        if memo.editing(&seats, &text).len() == 2 {
-            let agrees =
-                |spliced: &Pipeline| spliced_matches(spliced, memo.source(&text), &forward);
+        if memo.editing(&seats, text).len() == 2 {
+            let agrees = |spliced: &Pipeline| {
+                spliced_matches(spliced, memo.source(text), memo.text(forward))
+            };
             if declared {
                 if !agrees(&probe.folded) {
                     file(
@@ -633,7 +659,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
                     .record(agrees(spliced), path);
             }
         }
-        let left = memo.editing(&seats, &forward);
+        let left = memo.editing(&seats, forward);
         if !left.is_empty() {
             file(
                 &mut findings.unsettled,
@@ -648,7 +674,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
         if runs_behind(later.as_str(), earlier.as_str()) {
             continue;
         }
-        let reversed = match memo.chain([second, first], &text) {
+        let reversed = match memo.chain([second, first], text) {
             Ok(reversed) => reversed,
             Err(error) => {
                 file(
@@ -658,7 +684,7 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
                 continue;
             }
         };
-        if memo.editing(&seats, &reversed).is_empty() {
+        if memo.editing(&seats, reversed).is_empty() {
             continue;
         }
         file(
@@ -676,10 +702,10 @@ fn probe(probes: &Probes, path: &Path) -> Findings {
             .filter_map(|rule| probes.paired.get(rule))
             .flatten()
         {
-            memo.apply(seat, &text);
+            memo.apply(seat, text);
         }
     }
-    check_trees(probes, &memo, solo, memo.source(&text), path, &mut findings);
+    check_trees(probes, &memo, solo, memo.source(text), path, &mut findings);
     findings
 }
 
@@ -752,18 +778,18 @@ fn spliced_matches(spliced: &Pipeline, source: &Source, chained: &str) -> bool {
 fn verify_pair(
     memo: &mut Memo,
     path: &Path,
-    text: &Rc<str>,
+    text: Buffer,
     probe: &Pair,
-    chained: &Result<Rc<str>, Rc<str>>,
+    chained: &Result<Buffer, Rc<str>>,
 ) {
     let (folded, [earlier, later], seats) = (&probe.folded, probe.rules, probe.seats);
     let old = folded_text(folded, memo.source(text));
     match (chained, old) {
         (Ok(new), Ok(old)) => assert!(
-            **new == *old,
+            memo.text(*new) == old,
             "forward text differs for `{earlier}` then `{later}` on {}:\n{}",
             path.display(),
-            prose_harness::unified_diff(&old, new),
+            prose_harness::unified_diff(&old, memo.text(*new)),
         ),
         (Err(_), Err(_)) => {}
         (new, old) => panic!(
@@ -773,7 +799,7 @@ fn verify_pair(
             old.is_ok(),
         ),
     }
-    if let Ok(new) = chained {
+    if let Ok(new) = *chained {
         assert_eq!(
             folded.unsettled(memo.source(new)),
             memo.editing(&seats, new),

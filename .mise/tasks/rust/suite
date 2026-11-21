@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Run every Rust suite except the two corpus gates"
+#MISE description = "Run every Rust suite except the two corpus gates and `prose_wasm`"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
 
