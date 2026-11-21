@@ -10,13 +10,16 @@ beforeEach(() => {
 })
 
 describe('readPublishedVersion', () => {
-  supportTest('reads the tag of the latest release', async ({ tmpDir }) => {
+  supportTest('reads the tag of the latest release with the build token', async ({ tmpDir }) => {
+    vi.stubEnv('GITHUB_TOKEN', 'ghs_token')
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response('{"draft":false,"tag_name":"0.11.0"}', { status: 200 })
     )
     vi.stubGlobal('fetch', fetchMock)
     await expect(readPublishedVersion(CRATE, tmpDir)).resolves.toBe('0.11.0')
-    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(LATEST, expect.anything())
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(LATEST, expect.objectContaining({
+      headers: expect.objectContaining({ Authorization: 'Bearer ghs_token' })
+    }))
   })
 
   supportTest('falls back to the manifest version on a 404 from a cold store', async ({ tmpDir, warn }) => {

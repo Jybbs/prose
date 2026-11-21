@@ -1,8 +1,9 @@
 """
 Pins the Deploy and Warm gates `gha:brief` renders, reading the jobs each
 judges from the `gate` job's `needs` in `deploy.yml` and `warm.yml`, so a
-row the workflow waits on and the verdict leaves out fails here, and the
-line the Draft summary renders for each outcome `gha:cut` emits.
+row the workflow waits on and the verdict leaves out fails here, the line
+the Draft summary renders for each outcome `gha:cut` emits, and the workflow
+token the Deploy site build reads GitHub with.
 """
 
 from collections.abc import Callable
@@ -172,3 +173,14 @@ def test_the_draft_summary_runs_after_a_failed_cut():
     """
     steps = {step["name"]: step for step in CUT["steps"]}
     assert steps["🗞️ Brief"]["if"] == "${{ !cancelled() }}"
+
+
+def test_the_site_build_reads_github_with_the_workflow_token():
+    """
+    Asserts that the Deploy step building the site passes the workflow token
+    as `GITHUB_TOKEN`, so its GitHub reads run under the token's rate limit.
+    """
+    steps = {step["name"]: step for step in JOBS["press"]["steps"]}
+    assert steps["Build the site and check internal links"]["env"] == {
+        "GITHUB_TOKEN": "${{ github.token }}"
+    }
