@@ -13,7 +13,7 @@ use super::{
     Shedder,
     chain::{Operand, operands},
     measure::fold_edits,
-    plan::{self, Candidate, break_depths, breaks_held_inside, shedding_inside},
+    plan::{Candidate, break_depths, breaks_held_inside, shedding_inside},
 };
 use crate::{
     primitives::{
@@ -84,9 +84,9 @@ impl Shedder<'_> {
     /// at `indent`, per [`Self::lands_across_rows`], and its opened row,
     /// the pair opening at `column`, stays inside the budget, per
     /// [`Self::opens_past_the_budget`]. Both read the text that value
-    /// lands as, meaning this source reparsed with every edit
-    /// `simplify-comprehensions` plans inside the value applied, measured
-    /// as the same candidate there.
+    /// lands as, meaning this module reparsed once with every edit
+    /// `simplify-comprehensions` plans applied, where one of them falls
+    /// inside the value, measured as the same candidate there.
     fn opens_inside_the_budget(
         &self,
         candidate: &Candidate,
@@ -95,28 +95,21 @@ impl Shedder<'_> {
         column: usize,
     ) -> bool {
         let range = candidate.expr.range();
-        let simplified = outermost(
-            self.simplified
+        if let Some(landed) = self.landed
+            && self
+                .simplified
                 .iter()
-                .filter(|group| range.contains_range(blocks_span(group)))
-                .flatten()
-                .cloned()
-                .collect(),
-        );
-        if let Some((landed, map)) = (!simplified.is_empty())
-            .then(|| self.source.editing(simplified))
-            .flatten()
-            .filter(|(landed, _)| landed.text() != self.source.text())
+                .any(|group| range.contains_range(blocks_span(group)))
         {
-            let pair = forward_start(candidate.pair.start(), &map);
-            let landing = plan::candidates(&landed);
-            return landing
+            let pair = forward_start(candidate.pair.start(), landed.map);
+            return landed
+                .candidates
                 .iter()
                 .find(|other| Some(other.pair.start()) == pair)
                 .is_some_and(|other| {
-                    self.rule.measuring(&landed, |shedder| {
-                        shedder.opens_inside_the_budget(other, &landing, indent, column)
-                    })
+                    landed
+                        .shedder
+                        .opens_inside_the_budget(other, landed.candidates, indent, column)
                 });
         }
         let nested = nested_shed_edits(candidate, candidates);

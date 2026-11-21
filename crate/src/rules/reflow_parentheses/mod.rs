@@ -21,7 +21,7 @@
 
 use std::{cell::RefCell, mem};
 
-use ruff_diagnostics::Edit;
+use ruff_diagnostics::{Edit, SourceMap};
 use ruff_text_size::{Ranged, TextRange};
 use rustc_hash::FxHashMap;
 
@@ -85,21 +85,24 @@ impl ReflowParentheses {
     }
 
     /// Runs `measure` over a [`Shedder`] holding no edits yet, built over
-    /// `source` with every table these settings read off it.
-    fn measuring<R>(&self, source: &Source, measure: impl FnOnce(&mut Shedder) -> R) -> R {
+    /// `source` with every table these settings read off it, `simplified`
+    /// the fix groups `simplify-comprehensions` emits over `source`, and
+    /// `landed` that source with each of those groups applied.
+    fn measuring<R>(
+        &self,
+        source: &Source,
+        simplified: &[Vec<Edit>],
+        landed: Option<Landed<'_>>,
+        measure: impl FnOnce(&mut Shedder) -> R,
+    ) -> R {
         let calls = if self.reflows_calls {
             outermost_calls(source)
         } else {
             Vec::new()
         };
         let stranded = source.stranded_padding(self.stranding);
-        let simplified = if self.simplifies_comprehensions {
-            prepared_groups(&SimplifyComprehensions, source)
-        } else {
-            Vec::new()
-        };
         let fstrings = source.fstring_rewrites(self.fstrings);
-        let rewrites = self.rewrites(source, &simplified, &fstrings);
+        let rewrites = self.rewrites(source, simplified, &fstrings);
         let padding = padding::beside(&stranded, &rewrites);
         let reservations = source.columns(&self.reservations);
         let targets = module_call_params(source);
@@ -109,11 +112,11 @@ impl ReflowParentheses {
             code_line_length: self.code_line_length,
             edits: Vec::new(),
             folds: Vec::new(),
+            landed,
             one_row: self.one_row.against(&targets).forecasting(&fstrings),
             padding: &padding,
             reservations: &reservations,
-            rule: self,
-            simplified: &simplified,
+            simplified,
             source,
         })
     }
@@ -148,9 +151,30 @@ impl Rule for ReflowParentheses {
         if candidates.is_empty() {
             return Vec::new();
         }
-        self.measuring(source, |shedder| {
-            shedder.shed(&candidates);
-            singleton_groups(outermost(mem::take(&mut shedder.edits)))
+        let simplified = if self.simplifies_comprehensions {
+            prepared_groups(&SimplifyComprehensions, source)
+        } else {
+            Vec::new()
+        };
+        let shed = |landed: Option<Landed<'_>>| {
+            self.measuring(source, &simplified, landed, |shedder| {
+                shedder.shed(&candidates);
+                singleton_groups(outermost(mem::take(&mut shedder.edits)))
+            })
+        };
+        let Some((text, map)) = (!simplified.is_empty())
+            .then(|| source.editing(simplified.iter().flatten().cloned().collect()))
+            .flatten()
+        else {
+            return shed(None);
+        };
+        let landing = plan::candidates(&text);
+        self.measuring(&text, &[], None, |shedder| {
+            shed(Some(Landed {
+                candidates: &landing,
+                map: &map,
+                shedder,
+            }))
         })
     }
 
@@ -168,8 +192,8 @@ impl Rule for ReflowParentheses {
 /// the columns `align-equals` shifts each aligned value to, the two
 /// tables every measure settles a row through. `one_row` holds the terms
 /// the layout rules join a bracketed construct onto one row under,
-/// `simplified` the fix groups `simplify-comprehensions` emits, `rule`
-/// the settings each table comes from, and `breaks` holds, for the
+/// `simplified` the fix groups `simplify-comprehensions` emits, `landed`
+/// the module those groups rewrite, and `breaks` holds, for the
 /// candidate under test, whether each later pair on its row breaks.
 struct Shedder<'a> {
     breaks: RefCell<FxHashMap<TextRange, bool>>,
@@ -177,12 +201,22 @@ struct Shedder<'a> {
     code_line_length: usize,
     edits: Vec<Edit>,
     folds: Vec<TextRange>,
+    landed: Option<Landed<'a>>,
     one_row: one_row::Settings<'a>,
     padding: &'a [Edit],
     reservations: &'a reserve::Columns,
-    rule: &'a ReflowParentheses,
     simplified: &'a [Vec<Edit>],
     source: &'a Source,
+}
+
+/// The module `simplify-comprehensions` rewrites, measured once: its
+/// `candidates`, the `map` from the written offsets to its own, and the
+/// `shedder` built over it.
+#[derive(Clone, Copy)]
+struct Landed<'a> {
+    candidates: &'a [Candidate<'a>],
+    map: &'a SourceMap,
+    shedder: &'a Shedder<'a>,
 }
 
 impl Shedder<'_> {
@@ -241,7 +275,10 @@ impl Shedder<'_> {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroUsize;
+    use std::{
+        num::NonZeroUsize,
+        time::{Duration, Instant},
+    };
 
     use rstest::rstest;
     use ruff_python_ast::PythonVersion;
@@ -251,6 +288,14 @@ mod tests {
         pipeline::Pipeline,
         testing::{applied_text, parse},
     };
+
+    /// The paired `dict(...)` values the cost test generates.
+    const PAIRED_DICT_CALLS: usize = 2000;
+
+    /// The time the rule takes over [`PAIRED_DICT_CALLS`] values under the
+    /// test profile, 0.63 s measured with one reparse per module, against
+    /// 100 s at 1,000 values with one reparse per candidate.
+    const PAIRED_DICT_CALLS_BOUND: Duration = Duration::from_secs(10);
 
     /// `src` with every edit the rule emits applied, under the default
     /// configuration with `reflow-calls` set to `reflows_calls`.
@@ -601,6 +646,11 @@ mod tests {
         },
         "value = transform(dict(alpha_value=1), second_argument_name_long)\n"
     )]
+    #[case::dict_call_behind_an_earlier_pair(
+        "first = (alpha)\nvalue = (\n    dict(alpha_value=1, beta_value=2, gamma_value=3)\n)\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(40),
+        "first = alpha\nvalue = dict(alpha_value=1, beta_value=2, gamma_value=3)\n"
+    )]
     fn a_forecast_reading_each_layout_setting_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -842,5 +892,53 @@ mod tests {
                 "width {width}",
             );
         }
+    }
+
+    #[test]
+    fn a_value_simplify_comprehensions_rewrites_over_two_runs_is_measured_as_its_first() {
+        let written = paired(
+            "list(item for item in dict(alpha_value=1, beta_value=2, gamma_value=3))",
+            false,
+        );
+        let landed = paired(
+            "list(item for item in {\"alpha_value\": 1, \"beta_value\": 2, \"gamma_value\": 3})",
+            false,
+        );
+        for width in 30..=88 {
+            let mut config = Config {
+                code_line_length: NonZeroUsize::new(width),
+                ..Config::default()
+            };
+            let rewritten = Pipeline::with_defaults(&config)
+                .format(parse(&written))
+                .expect("the rewritten value formats");
+            config.rules.simplify_comprehensions.enabled = false;
+            let literal = Pipeline::with_defaults(&config)
+                .format(parse(&landed))
+                .expect("the landed value formats");
+            assert_eq!(rewritten.text(), literal.text(), "width {width}");
+        }
+    }
+
+    #[test]
+    fn a_module_of_paired_dict_calls_measures_every_rewrite_against_one_reparse() {
+        let src: String = (0..PAIRED_DICT_CALLS)
+            .map(|index| {
+                format!(
+                    "value_{index} = (\n    dict(alpha_value={index}, beta_value=2, gamma_value=3)\n)\n"
+                )
+            })
+            .collect();
+        let config = Config {
+            code_line_length: NonZeroUsize::new(50),
+            ..Config::default()
+        };
+        let source = parse(&src);
+        let rule = ReflowParentheses::from_config(&config);
+        let started = Instant::now();
+        let groups = rule.apply(&source);
+        let elapsed = started.elapsed();
+        assert_eq!(groups.len(), PAIRED_DICT_CALLS);
+        assert!(elapsed < PAIRED_DICT_CALLS_BOUND, "{elapsed:?}");
     }
 }
