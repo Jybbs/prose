@@ -182,8 +182,8 @@ class Summary:
 
     def draft(self):
         """
-        Renders the Draft summary across the cut, existing, and no-op
-        states.
+        Renders the Draft summary across the created, refreshed, and
+        published states, and a run that wrote no draft.
         """
         self._emit(
             "draft",

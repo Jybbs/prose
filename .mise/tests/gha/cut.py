@@ -1,12 +1,12 @@
 """
-Pins the release `gha:cut` reads for the crate's version, the path it takes
-from what the repository's release listing holds, and that a `gh` call that
-fails stops the task before any draft is cut.
+Pins the release `gha:cut` reads for the crate's version, the outcome it
+takes from what the repository's release listing holds (creating the draft,
+refreshing it, or failing on a published version), and that a `gh` call that
+fails stops the task before any draft is written.
 """
 
 from collections.abc   import Callable
-from io                import StringIO
-from json              import dumps
+from json              import dumps, loads
 from pathlib           import Path
 from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
@@ -18,30 +18,31 @@ CREATE = [
 ]
 LISTING  = ["gh", "api", "--paginate", "--slurp", "repos/owner/repo/releases"]
 MANIFEST = '[package]\nversion = "{}"\n'
-PREVIOUS = ["git", "show", "HEAD~1:crate/Cargo.toml"]
+NOTES    = [
+    "gh", "api", "--method", "POST", "repos/owner/repo/releases/generate-notes",
+    "-f", "tag_name=1.2.3", "-f", "target_commitish=main"
+]
+UPDATE = [
+    "gh", "api", "--method", "PATCH", "repos/owner/repo/releases/7", "--input", "-"
+]
 
 
 @fixture
 def cut(task: Callable[[str], ModuleType]) -> ModuleType:
     """
-    Loads the `gha:cut` script, replacing the `stderr` it binds on loading
-    with a buffer the case reads, since pytest closes the stream `capsys`
-    installs for setup once setup ends.
+    Loads the `gha:cut` script.
     """
-    module        = task("gha/cut")
-    module.stderr = StringIO()
-    return module
+    return task("gha/cut")
 
 
 @fixture
 def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) -> Path:
     """
     Writes a working tree whose `crate/Cargo.toml` carries version `1.2.3`
-    and makes it the current directory. The environment names `owner/repo`,
-    no event, and no output file, so the outputs print to stdout.
+    and makes it the current directory. The environment names `owner/repo`
+    and no output file, so the outputs print to stdout.
     """
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
-    monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
     return workdir({"crate/Cargo.toml": MANIFEST.format("1.2.3")})
 
@@ -50,69 +51,71 @@ def release(tag: str, draft: bool = False) -> dict:
     """
     Builds the fields `gha:cut` reads from one entry of the release listing.
     """
-    return {"draft": draft, "html_url": f"https://example.test/{tag}", "tag_name": tag}
+    return {
+        "draft"    : draft,
+        "html_url" : f"https://example.test/{tag}",
+        "id"       : 7,
+        "tag_name" : tag
+    }
 
 
 @mark.parametrize(
-    ("pages", "state", "url", "annotation"),
+    ("pages", "calls", "state", "url"),
     [
         param(
             [[release("1.2.2")], []],
-            "cut",
+            [LISTING, CREATE],
+            "created",
             "https://example.test/new",
-            "",
             id = "absent"
         ),
         param(
             [[release("1.2.2")], [release("1.2.3", draft=True)]],
-            "drafted",
+            [LISTING, NOTES, UPDATE],
+            "refreshed",
             "https://example.test/1.2.3",
-            "::notice::Draft for 1.2.3 already exists, leaving it untouched.\n",
             id = "draft"
-        ),
-        param(
-            [[release("1.2.3"), release("1.2.2")]],
-            "published",
-            "https://example.test/1.2.3",
-            "::warning::1.2.3 is already published, skipping the draft cut.\n",
-            id = "published"
         ),
         param(
             [
                 [release("1.2.3", draft=True)],
-                [{**release("1.2.3"), "html_url": "https://example.test/older"}]
+                [{
+                    **release("1.2.3"),
+                    "html_url" : "https://example.test/older",
+                    "id"       : 9
+                }]
             ],
-            "drafted",
+            [LISTING, NOTES, UPDATE],
+            "refreshed",
             "https://example.test/1.2.3",
-            "::notice::Draft for 1.2.3 already exists, leaving it untouched.\n",
             id = "first match"
         )
     ]
 )
-def test_main_branches_on_the_listing(
-    annotation : str,
-    capsys     : CaptureFixture[str],
-    cut        : ModuleType,
-    fp         : FakeProcess,
-    pages      : list,
-    state      : str,
-    tree       : Path,
-    url        : str
+def test_main_creates_or_refreshes_the_draft(
+    calls  : list,
+    capsys : CaptureFixture[str],
+    cut    : ModuleType,
+    fp     : FakeProcess,
+    pages  : list,
+    state  : str,
+    tree   : Path,
+    url    : str
 ):
     """
-    Pins that a moved version is looked up across every page of the listing,
-    that a version no release carries is cut as a draft, and that a draft or
-    a published release carrying it is reported and left as it stands.
+    Pins that the version is looked up across every page of the listing,
+    that a version no release carries is created as a draft, and that a
+    draft carrying it has its body replaced with the generated notes alone.
     """
-    fp.register(PREVIOUS, stdout=MANIFEST.format("1.2.2"))
     fp.register(LISTING, stdout=dumps(pages))
     fp.register(CREATE, stdout=f"{url}\n")
+    fp.register(NOTES, stdout=dumps({"body": "## Notes\n", "name": "1.2.3"}))
+    fp.register(UPDATE)
 
     cut.main()
 
-    assert list(fp.calls) == [PREVIOUS, LISTING, *([CREATE] if state == "cut" else [])]
-    assert capsys.readouterr().out == f"state={state}\nurl={url}\nversion=1.2.3\n"
-    assert cut.stderr.getvalue() == annotation
+    assert list(fp.calls) == calls
+    assert capsys.readouterr().out == f"version=1.2.3\nstate={state}\nurl={url}\n"
 
 
 def test_emit_appends_to_the_output_file(
@@ -133,15 +136,65 @@ def test_emit_appends_to_the_output_file(
     assert output.read_text(encoding="utf-8") == "earlier=1\nstate=\nversion=1.2.3\n"
 
 
+def test_main_fails_on_a_published_version(
+    capsys : CaptureFixture[str],
+    cut    : ModuleType,
+    fp     : FakeProcess,
+    tree   : Path
+):
+    """
+    Pins that a published release carrying the version stops the task with
+    an `::error::` annotation naming `mise bump`, after it emits the outputs
+    the summary links the release from, and writes no release.
+    """
+    fp.register(LISTING, stdout=dumps([[release("1.2.3"), release("1.2.2")]]))
+
+    with raises(SystemExit) as stopped:
+        cut.main()
+
+    assert stopped.value.code == (
+        "::error::1.2.3 is already published. Run `mise bump` to move "
+        "crate/Cargo.toml to the next version."
+    )
+    assert list(fp.calls) == [LISTING]
+    assert capsys.readouterr().out == (
+        "version=1.2.3\nstate=published\nurl=https://example.test/1.2.3\n"
+    )
+
+
+def test_main_sends_the_generated_notes_as_the_whole_body(
+    cut  : ModuleType,
+    fp   : FakeProcess,
+    tree : Path
+):
+    """
+    Asserts that the refresh sends the body the generate-notes endpoint
+    returns and no other field, so the draft's title stays as it stands.
+    """
+    sent: list[bytes] = []
+    fp.register(LISTING, stdout=dumps([[release("1.2.3", draft=True)]]))
+    fp.register(NOTES, stdout=dumps({"body": "## Notes\n", "name": "1.2.3"}))
+    fp.register(UPDATE, stdin_callable=sent.append)
+
+    cut.main()
+
+    assert [loads(chunk) for chunk in sent] == [{"body": "## Notes\n"}]
+
+
 @mark.parametrize(
     ("listing", "calls"),
     [
         param(
             {"returncode": 1, "stderr": "gh: Bad credentials (HTTP 401)\n"},
-            [PREVIOUS, LISTING],
+            [LISTING],
             id = "listing"
         ),
-        param({"stdout": dumps([[]])}, [PREVIOUS, LISTING, CREATE], id = "create")
+        param({"stdout": dumps([[]])}, [LISTING, CREATE], id = "create"),
+        param(
+            {"stdout": dumps([[release("1.2.3", draft=True)]])},
+            [LISTING, NOTES],
+            id = "notes"
+        )
     ]
 )
 def test_main_stops_on_the_gh_call_that_fails(
@@ -153,20 +206,20 @@ def test_main_stops_on_the_gh_call_that_fails(
     tree    : Path
 ):
     """
-    Pins that a `gh` call exiting nonzero stops the task before it emits
-    any output, with an `::error::` annotation carrying what `gh` printed on
-    stderr, so no draft is cut after a listing that fails.
+    Pins that a `gh` call exiting nonzero stops the task with an `::error::`
+    annotation carrying what `gh` printed on stderr, having emitted the
+    version alone, so no draft is written after a read that fails.
     """
-    fp.register(PREVIOUS, stdout=MANIFEST.format("1.2.2"))
     fp.register(LISTING, **listing)
     fp.register(CREATE, returncode=1, stderr="gh: Bad credentials (HTTP 401)\n")
+    fp.register(NOTES, returncode=1, stderr="gh: Bad credentials (HTTP 401)\n")
 
     with raises(SystemExit) as stopped:
         cut.main()
 
     assert stopped.value.code == "::error::gh: Bad credentials (HTTP 401)"
     assert list(fp.calls) == calls
-    assert capsys.readouterr().out == ""
+    assert capsys.readouterr().out == "version=1.2.3\n"
 
 
 @mark.parametrize(
@@ -208,68 +261,3 @@ def test_gh_raises_every_line_of_its_stderr_in_one_annotation(
         cut.gh(*CREATE[1:])
 
     assert stopped.value.code == annotation
-
-
-@mark.parametrize(
-    ("event", "calls", "state", "url"),
-    [
-        param("push", [PREVIOUS], "", "", id = "push"),
-        param(
-            "workflow_dispatch",
-            [PREVIOUS, LISTING],
-            "published",
-            "https://example.test/1.2.3",
-            id = "dispatch"
-        )
-    ]
-)
-def test_main_reads_the_listing_at_an_unchanged_version_only_on_a_dispatch(
-    calls       : list,
-    capsys      : CaptureFixture[str],
-    cut         : ModuleType,
-    event       : str,
-    fp          : FakeProcess,
-    monkeypatch : MonkeyPatch,
-    state       : str,
-    tree        : Path,
-    url         : str
-):
-    """
-    Pins that the task reads no release on a push whose version matches
-    HEAD~1's and still reads the listing on a `workflow_dispatch`, emitting
-    the version either way.
-    """
-    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
-    fp.register(PREVIOUS, stdout=MANIFEST.format("1.2.3"))
-    fp.register(LISTING, stdout=dumps([[release("1.2.3")]]))
-
-    cut.main()
-
-    assert list(fp.calls) == calls
-    assert capsys.readouterr().out == f"state={state}\nurl={url}\nversion=1.2.3\n"
-
-
-@mark.parametrize(
-    ("stdout", "returncode", "version"),
-    [
-        param(MANIFEST.format("1.2.2"), 0, "1.2.2", id = "manifest"),
-        param("", 128, None, id = "absent"),
-        param('[package]\nname = "prose"\n', 0, None, id = "no version"),
-        param("[package\n", 0, None, id = "malformed")
-    ]
-)
-def test_previous_version_reads_the_manifest_at_the_parent_commit(
-    cut        : ModuleType,
-    fp         : FakeProcess,
-    returncode : int,
-    stdout     : str,
-    version    : str | None
-):
-    """
-    Pins that the version at HEAD~1 is read from its `crate/Cargo.toml`, and
-    that a missing manifest, a manifest with no version, and one that does
-    not parse each read as no version.
-    """
-    fp.register(PREVIOUS, returncode=returncode, stdout=stdout)
-
-    assert cut.previous_version() == version

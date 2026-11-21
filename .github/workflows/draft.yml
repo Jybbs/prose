@@ -8,8 +8,7 @@ env:
 
 on:
   push:
-    branches : [main]
-    paths    : ['crate/Cargo.toml']
+    branches: [main]
 
   workflow_dispatch:
 
@@ -28,7 +27,6 @@ jobs:
       - name : Check out repository
         uses : actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          fetch-depth         : 2
           persist-credentials : false
           ref                 : ${{ github.event_name == 'push' && github.sha || 'main' }}
 
@@ -36,7 +34,7 @@ jobs:
         uses : $/.github/actions/provision-uv
         with : { cache: 'false' }
 
-      - name : 🌱 Cut draft
+      - name : 🌱 Write draft
         env  : { GH_TOKEN: "${{ github.token }}" }
         id   : cut
         run  : mise run gha:cut
@@ -46,4 +44,5 @@ jobs:
           DRAFT_STATE : ${{ steps.cut.outputs.state }}
           DRAFT_URL   : ${{ steps.cut.outputs.url }}
           VERSION     : ${{ steps.cut.outputs.version }}
+        if   : ${{ !cancelled() }}
         run  : mise run gha:brief draft

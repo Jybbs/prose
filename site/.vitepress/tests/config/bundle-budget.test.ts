@@ -5,9 +5,13 @@ import config                               from '../../config'
 import { checkBundleBudget, measureBundle } from '../../lib/config/bundle-budget'
 import { supportTest }                      from '../support'
 
-import type { buildOgCards } from '../../lib/og/render/build'
+import type { buildOgCards }         from '../../lib/og/render/build'
+import type { readPublishedVersion } from '../../lib/shared/published-version'
 
 vi.mock('../../lib/og/render/build', () => ({ buildOgCards: vi.fn<typeof buildOgCards>() }))
+vi.mock('../../lib/shared/published-version', () => ({
+  readPublishedVersion: vi.fn<typeof readPublishedVersion>().mockResolvedValue('9.8.7')
+}))
 
 const write = (dir: string, file: string, bytes: number) => {
   fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })

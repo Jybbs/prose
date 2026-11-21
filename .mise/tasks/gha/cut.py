@@ -1,31 +1,32 @@
 #!/usr/bin/env -S uv run --script
-# MISE description="Cut a draft release when the crate version moves"
+# MISE description="Create or refresh the draft release for the crate's version"
 # /// script
 # requires-python = ">=3.11"
 # ///
 """
-Cuts a draft release when `crate/Cargo.toml`'s version moves.
+Keeps one draft release for the version `crate/Cargo.toml` carries.
 
-Reads `[package].version` at HEAD and HEAD~1, treating a HEAD~1 that
-lacks the manifest or carries no parseable version as changed. When the
-version moved, or the run is a `workflow_dispatch`, reads every page
-of the repository's releases through `gh api`, then cuts a version no
-release carries with `gh release create --draft`, leaves an existing draft
-untouched, and skips a published release. A `gh` call that exits nonzero
-stops the task with an `::error::` annotation carrying every line it printed
-on stderr, so no draft is cut after a failed read and a rerun retries it.
-Emits `version=`, `state=` (one of `cut`, `drafted`, `published`, or empty
-when nothing happened), and `url=` to `$GITHUB_OUTPUT` when it is set,
-stdout otherwise, with annotations on stderr.
+Reads `[package].version`, emits it, then reads every page of the
+repository's releases through `gh api` and takes one outcome from the
+release carrying that version. A version no release carries is created as a
+draft with generated notes. A draft carrying it has its body replaced with
+the notes the `releases/generate-notes` endpoint returns for the version
+against `main`. A published release carrying it stops the task with an
+`::error::` annotation naming `mise bump`, so no merge adds to a version
+already released. A `gh` call that exits nonzero stops the task with an
+`::error::` annotation carrying every line it printed on stderr, so no draft
+is written after a failed read and a rerun retries it. Emits `version=`,
+then `state=` (one of `created`, `refreshed`, or `published`) and `url=`,
+to `$GITHUB_OUTPUT` when it is set, stdout otherwise, with annotations on
+stderr.
 """
 
 from itertools  import chain
-from json       import loads as from_json
+from json       import dumps, loads as from_json
 from os         import environ
 from pathlib    import Path
-from subprocess import CalledProcessError, DEVNULL, PIPE, check_output
-from sys        import stderr
-from tomllib    import TOMLDecodeError, loads as from_toml
+from subprocess import CalledProcessError, PIPE, check_output
+from tomllib    import loads as from_toml
 
 ESCAPES  = str.maketrans({"%": "%25", "\n": "%0A", "\r": "%0D"})
 MANIFEST = "crate/Cargo.toml"
@@ -41,9 +42,10 @@ def annotation(level: str, message: str) -> str:
     return f"::{level}::{message.translate(ESCAPES)}"
 
 
-def cut_draft(repo: str, version: str) -> str:
+def create_draft(repo: str, version: str) -> str:
     """
-    Creates a draft release for the version and returns its URL.
+    Creates a draft release for the version with generated notes and returns
+    its URL.
     """
     return gh(
         "release",
@@ -84,57 +86,43 @@ def existing_release(repo: str, version: str) -> dict | None:
     )
 
 
-def gh(*args: str) -> str:
+def gh(*args: str, stdin: str | None = None) -> str:
     """
-    Runs `gh` with `args` and returns what it prints, stopping the task
-    with an `::error::` annotation carrying every line of its stderr when it
-    exits nonzero.
+    Runs `gh` with `args`, writing `stdin` to its standard input when
+    given, and returns what it prints, stopping the task with an `::error::`
+    annotation carrying every line of its stderr when it exits nonzero.
     """
     try:
-        return check_output(["gh", *args], stderr=PIPE, text=True)
+        return check_output(["gh", *args], input=stdin, stderr=PIPE, text=True)
     except CalledProcessError as error:
         raise SystemExit(annotation("error", error.stderr.strip()))
 
 
 def main():
     """
-    Compares the version at HEAD with HEAD~1, cuts or reports the version's
-    release when it moved or the run was dispatched, and emits the outputs.
+    Emits the manifest's version, then creates, refreshes, or refuses the
+    version's release by what the listing holds, and emits the outcome.
     """
-    head   = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
-    forced = environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    state  = ""
-    url    = ""
+    repo    = environ["GITHUB_REPOSITORY"]
+    version = package_version(Path(MANIFEST).read_text(encoding="utf-8"))
 
-    if previous_version() != head or forced:
-        repo    = environ["GITHUB_REPOSITORY"]
-        release = existing_release(repo, head)
+    emit(version=version)
+    release = existing_release(repo, version)
 
-        if release is None:
-            state = "cut"
-            url   = cut_draft(repo, head)
-        elif release["draft"]:
-            state = "drafted"
-            url   = release["html_url"]
-            print(
-                annotation(
-                    level   = "notice",
-                    message = f"Draft for {head} already exists, leaving it untouched."
-                ),
-                file = stderr
+    if release is None:
+        emit(state="created", url=create_draft(repo, version))
+    elif release["draft"]:
+        refresh_draft(release, repo)
+        emit(state="refreshed", url=release["html_url"])
+    else:
+        emit(state="published", url=release["html_url"])
+        raise SystemExit(
+            annotation(
+                level   = "error",
+                message = f"{version} is already published. Run `mise bump` to "
+                          f"move {MANIFEST} to the next version."
             )
-        else:
-            state = "published"
-            url   = release["html_url"]
-            print(
-                annotation(
-                    level   = "warning",
-                    message = f"{head} is already published, skipping the draft cut."
-                ),
-                file = stderr
-            )
-
-    emit(state=state, url=url, version=head)
+        )
 
 
 def package_version(manifest: str) -> str:
@@ -144,20 +132,30 @@ def package_version(manifest: str) -> str:
     return from_toml(manifest)["package"]["version"]
 
 
-def previous_version() -> str | None:
+def refresh_draft(release: dict, repo: str):
     """
-    Reads `[package].version` from `crate/Cargo.toml` at HEAD~1, giving
-    `None` when HEAD~1 lacks the manifest or carries no parseable version.
+    Replaces the draft's body with the notes GitHub generates for its tag
+    against `main`, leaving its title and every other field as they stand.
     """
-    try:
-        manifest = check_output(
-            ["git", "show", f"HEAD~1:{MANIFEST}"],
-            stderr = DEVNULL,
-            text   = True
-        )
-        return package_version(manifest)
-    except (CalledProcessError, KeyError, TOMLDecodeError):
-        return None
+    notes = gh(
+        "api",
+        "--method",
+        "POST",
+        f"repos/{repo}/releases/generate-notes",
+        "-f",
+        f"tag_name={release['tag_name']}",
+        "-f",
+        "target_commitish=main"
+    )
+    gh(
+        "api",
+        "--method",
+        "PATCH",
+        f"repos/{repo}/releases/{release['id']}",
+        "--input",
+        "-",
+        stdin = dumps({"body": from_json(notes)["body"]})
+    )
 
 
 if __name__ == "__main__":
