@@ -177,7 +177,7 @@ mise run rust:test
 mise review
 ```
 
-`rust:test` and `rust:suite` each take a filter after `--` and append it to every `cargo test` they run, behind the flags the task sets, so `mise run rust:suite -- reflow_parentheses` runs only the tests whose names hold `reflow_parentheses`. The arguments after a second `--` reach the test binaries in the same way.
+`rust:test` and `rust:suite` each take a filter after `--` and append it to every `cargo test` they run, behind the flags the task sets, so `mise run rust:suite -- reflow_parentheses` runs only the tests whose names hold `reflow_parentheses`. The arguments after a second `--` reach the test binaries in the same way. A `--test` target is not a filter, since the `prose_wasm` run of `rust:test` holds no test target and fails on one, and `rust:suite` runs it beside the targets it already names.
 
 `mise review` opens every pending snapshot as a diff. Read the Python it proposes as a reader would rather than only checking that the branch is covered, and accept only what reads the way the rule should leave it, since an accepted snapshot becomes the living specification of what that rule produces.
 

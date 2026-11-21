@@ -18,10 +18,7 @@ RUNS = [
         param((), id = "no arguments"),
         param(("reflow_parentheses",), id = "filter"),
         param(("name with space",), id = "argument holding a space"),
-        param(
-            ("--test", "fixtures", "--", "--exact", "name"),
-            id = "target and runner arguments"
-        )
+        param(("--", "--exact", "name"), id = "runner arguments")
     ]
 )
 def test_test_hands_its_arguments_to_each_cargo_test(
