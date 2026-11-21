@@ -886,7 +886,7 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
             sorted(hashed_paths("restore-wasm"))
         ),
         (
-            "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml task paths",
+            "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml path filter",
             sorted(hashed_paths("provision-cargo")),
             sorted(
                 path

@@ -117,7 +117,7 @@ DRIFTS      = {
         (".github/workflows/ci.yml", "mise run rust:suite", "mise run rust:other")
     ],
 
-    "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml task paths": [
+    "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml path filter": [
         (CARGO, ".mise/tasks/rust/probe", ".mise/tasks/rust/build"),
         (".github/workflows/warm.yml", "      - .mise/lib/workspace.bash\n", "")
     ],

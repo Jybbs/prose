@@ -46,8 +46,9 @@ runs:
         version            : ${{ steps.mise.outputs.version }}
 
     - name : Restore Cargo cache
+      env  : { RUST_PROBE_SELECTION: "${{ inputs.probe == 'true' && hashFiles('.mise/lib/corpus.bash', '.mise/lib/workspace.bash', '.mise/tasks/rust/probe') || '' }}" }
       if   : ${{ inputs.shared-key != '' }}
       uses : Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
       with:
         save-if    : ${{ inputs.save != 'false' }}
-        shared-key : ${{ inputs.shared-key }}${{ inputs.probe == 'true' && format('-{0}', hashFiles('.mise/lib/corpus.bash', '.mise/lib/workspace.bash', '.mise/tasks/rust/probe')) || '' }}
+        shared-key : ${{ inputs.shared-key }}
