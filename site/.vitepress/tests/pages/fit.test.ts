@@ -69,7 +69,7 @@ async function scrolling(page: Page): Promise<Scrolling> {
         && element.querySelector(focusable) === null
     })
     .map(element => `${element.tagName.toLowerCase()}.${element.classList.value}`), FOCUSABLE)
-  return { regions: await audit(page, ['scrollable-region-focusable']), unreachable }
+  return { regions: await audit(page, { runOnly: ['scrollable-region-focusable'] }), unreachable }
 }
 
 let browser  : Browser
