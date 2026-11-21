@@ -3,14 +3,13 @@ Pins the three `cargo deny` runs `rust:deny` makes and the policy and
 targets each one reads.
 """
 
-from os         import environ
-from pathlib    import Path
-from subprocess import run
-from tomllib    import loads
+from collections.abc import Callable
+from pathlib         import Path
+from subprocess      import run
+from tomllib         import loads
 
 ROOT     = Path(__file__).resolve().parents[3]
 STAND_IN = (
-    "#!/bin/sh\n"
     "shift\n"
     "while [ $# -gt 0 ]; do\n"
     '  if [ "$1" = --config ]; then grep "^unmaintained" "$2"; shift; '
@@ -20,15 +19,16 @@ STAND_IN = (
 )
 
 
-def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
+def test_deny_runs_each_check_under_its_policy_and_targets(
+    stand_in: Callable[..., Path]
+):
     """
     Pins that `rust:deny` runs advisories, bans, and sources under
     `.cargo/deny.toml`, then advisories under a copy reporting every
     unmaintained crate as a warning, then licenses over each target
     `.github/scripts/platforms.toml` names and `wasm32-unknown-unknown`.
     """
-    (cargo := tmp_path / "cargo").write_text(STAND_IN, encoding="utf-8")
-    cargo.chmod(0o755)
+    stand_in("cargo", STAND_IN)
     platforms = loads(
         (ROOT / ".github/scripts/platforms.toml").read_text(encoding="utf-8")
     )["platforms"]
@@ -42,7 +42,6 @@ def test_deny_runs_each_check_under_its_policy_and_targets(tmp_path: Path):
         capture_output = True,
         check          = True,
         cwd            = ROOT,
-        env            = {**environ, "PATH": f"{tmp_path}:{environ['PATH']}"},
         text           = True
     )
 

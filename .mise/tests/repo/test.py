@@ -116,6 +116,48 @@ def test_session_owns_a_root_removed_once_every_case_passed(
     assert [root.exists() for root in roots] == [not passed] * 2
 
 
+def test_session_gives_each_worker_a_folder_under_its_own_root(tmp_path: Path):
+    """
+    Pins that each worker of a session split across two writes under a
+    folder of its own inside the one base temporary directory the session
+    holds, removed once every case passed.
+    """
+    (inner := tmp_path / "inner").mkdir()
+    (temp := tmp_path / "temp").mkdir()
+    (inner / "conftest.py").symlink_to(Path(__file__).parents[1] / "conftest.py")
+    (inner / "case.py").write_text(
+        "from os import environ\n"
+        "from pytest import mark\n"
+        "@mark.parametrize('case', range(4))\n"
+        "def test_case(case, tmp_path_factory):\n"
+        "    with open(environ['REPORT'], 'a') as file:\n"
+        "        print(tmp_path_factory.getbasetemp(), file=file)\n",
+        encoding = "utf-8"
+    )
+    report = tmp_path / "report"
+    run(
+        [
+            executable, "-m", "pytest", "--numprocesses=2", "-o",
+            "python_files=*.py", "-p", "no:cacheprovider", "-q"
+        ],
+        capture_output = True,
+        check          = True,
+        cwd            = inner,
+        env            = {
+            **environ,
+            "PYTEST_ADDOPTS" : "",
+            "REPORT"         : str(report),
+            "TMPDIR"         : str(temp)
+        }
+    )
+    folders = {Path(line) for line in report.read_text(encoding="utf-8").splitlines()}
+
+    assert len(folders) == 2
+    assert {folder.parent.parent for folder in folders} == {temp.resolve()}
+    assert len({folder.parent for folder in folders}) == 1
+    assert not any(folder.parent.exists() for folder in folders)
+
+
 def test_session_writes_outside_the_shared_temporary_root(
     tmp_path_factory: TempPathFactory
 ):
