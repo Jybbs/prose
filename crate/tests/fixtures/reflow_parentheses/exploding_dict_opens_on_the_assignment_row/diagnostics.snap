@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/exploding_dict_opens_on_the_assignment_row/input.py
+---
+reflow-collections@15..109
+reflow-parentheses@8..112

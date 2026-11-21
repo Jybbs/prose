@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Whose Own Row Already Overflows Keeps Its Place"
+
+description = '''
+`self._timeout_handle_of_the_waiter = (` already runs to 47 columns under a **40**-column budget, and `self._timeout_handle_of_the_waiter = loop.call_later(` would run to 62. The opened row runs past the budget, so **the pair keeps its place** whether or not its own row fits, and `reflow-calls` explodes the call on the rows inside it.
+'''

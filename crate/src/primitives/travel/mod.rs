@@ -33,8 +33,8 @@ mod blocks;
 mod rows;
 
 pub(crate) use blocks::{
-    block_shift, carried_rows, frozen_rows, hung_block_through, placed_block, shifted_block,
-    spans_a_string_part,
+    block_shift, carried_rows, frozen_rows, hanging_block_through, hung_block_through,
+    placed_block, shifted_block, spans_a_string_part,
 };
 pub(crate) use rows::{Seat, is_movable, seat};
 use rows::{hanging_travel, movable_floor, movable_rows, rows_beneath, shifted_rows};

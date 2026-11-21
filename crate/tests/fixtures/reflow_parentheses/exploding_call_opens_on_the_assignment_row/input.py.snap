@@ -1,0 +1,12 @@
+---
+source: crate/tests/integration.rs
+expression: snapshot
+input_file: crate/tests/fixtures/reflow_parentheses/exploding_call_opens_on_the_assignment_row/input.py
+---
+value = compute_something(
+    alpha_argument,
+    delta_argument,
+    epsilon_argument,
+    gamma_argument,
+    iota
+)

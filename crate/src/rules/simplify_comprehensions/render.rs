@@ -115,15 +115,17 @@ fn pair_edits(
                 pair.start(),
                 key.start(),
             )));
-            edits.push(Edit::range_deletion(TextRange::new(
-                value.end(),
-                pair.end(),
-            )));
         }
         edits.push(Edit::range_replacement(
             ": ".to_owned(),
             TextRange::new(key.end(), value.start()),
         ));
+        if pair.parenthesized {
+            edits.push(Edit::range_deletion(TextRange::new(
+                value.end(),
+                pair.end(),
+            )));
+        }
     }
     edits.push(Edit::range_replacement(
         close.to_owned(),

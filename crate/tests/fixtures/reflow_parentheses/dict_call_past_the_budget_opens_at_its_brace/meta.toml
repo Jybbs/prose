@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a `dict(...)` Call Opens Where the Literal's Brace Fits"
+
+description = '''
+`defaults_for_the_service_handler_xy = (` wraps a `dict(...)` call under a **40**-column budget, where `defaults_for_the_service_handler_xy = dict(` would run to 43 columns. `simplify-comprehensions` turns the call into a dict literal whose opened row `defaults_for_the_service_handler_xy = {` runs to 39, so **the pair is removed and the literal opens on the assignment's row**, settling in one run.
+'''

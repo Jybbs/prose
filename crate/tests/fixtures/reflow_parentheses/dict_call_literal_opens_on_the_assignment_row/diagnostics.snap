@@ -1,0 +1,7 @@
+---
+source: crate/tests/integration.rs
+expression: render(diagnostics)
+input_file: crate/tests/fixtures/reflow_parentheses/dict_call_literal_opens_on_the_assignment_row/input.py
+---
+reflow-parentheses@41..108
+simplify-comprehensions@47..106

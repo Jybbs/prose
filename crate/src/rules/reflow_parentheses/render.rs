@@ -1,8 +1,10 @@
 //! Whether a pair breaks and the text it lands as, its brackets alone
 //! on their rows and every operand led by the operator joining it to
-//! the row above, or its interior whole on one row where that fits.
-//! Each operand renders through the pairs this same pass sheds inside
-//! it, and joins its own rows where it fits one.
+//! the row above, or its interior whole on one row where that fits,
+//! and the text a pair around one bracketed construct lands as once
+//! that construct opens on the statement's row. Each operand renders
+//! through the pairs this same pass sheds inside it, and joins its own
+//! rows where it fits one.
 
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -16,14 +18,15 @@ use super::{
 use crate::{
     primitives::{
         comparison::narrowing_edits_within,
-        edit::{apply_inline_edits, insert_edit},
+        edit::{apply_inline_edits, forward_start, insert_edit},
         fracture::outermost,
         inline::{display_width, folded_line_form, settled_width, spans_rows},
         layout::{Separator, explode_parens, item_indent},
+        range::blocks_span,
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{open_brackets, tokens_within},
-        travel::hung_block_through,
+        travel::{hanging_block_through, hung_block_through},
     },
     source::Source,
 };
@@ -52,6 +55,67 @@ impl Shedder<'_> {
     fn holds_its_breaks_inside(&self, inner: TextRange, nested: &[Edit]) -> bool {
         self.source.contains_line_break(inner)
             && breaks_held_inside(self.source, inner, &covered_by(nested))
+    }
+
+    /// The text replacing `candidate`'s pair with the construct it holds,
+    /// that construct's opening bracket landing on the pair's row and its
+    /// rows hung from the statement's indent, rendered through the pairs
+    /// inside it this pass sheds. `None` unless the pair holds the whole
+    /// value of a `return` or an assignment and that value is a construct
+    /// [`Self::lands_across_rows`] reports, and `None` where the rows
+    /// cannot hang from that indent or the opened row runs past the
+    /// budget.
+    fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
+        if !candidate.value {
+            return None;
+        }
+        let indent = self.statement_indent(candidate.pair);
+        let column = self.shifted_column(candidate.pair.start());
+        if !self.opens_inside_the_budget(candidate, candidates, indent, column) {
+            return None;
+        }
+        let nested = nested_shed_edits(candidate, candidates);
+        let block = hanging_block_through(self.source, candidate.inner, &nested, indent)?;
+        let text = candidate.flush.padded(&block).into_owned();
+        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
+    }
+
+    /// True where `candidate`'s value lands across rows from a statement
+    /// at `indent`, per [`Self::lands_across_rows`], and its opened row,
+    /// the pair opening at `column`, stays inside the budget, per
+    /// [`Self::opens_past_the_budget`]. Both read the text that value
+    /// lands as, meaning this module reparsed once with every edit
+    /// `simplify-comprehensions` plans applied, where one of them falls
+    /// inside the value, measured as the same candidate there.
+    fn opens_inside_the_budget(
+        &self,
+        candidate: &Candidate,
+        candidates: &[Candidate],
+        indent: usize,
+        column: usize,
+    ) -> bool {
+        let range = candidate.expr.range();
+        if let Some(landed) = self.landed
+            && self
+                .simplified
+                .iter()
+                .any(|group| range.contains_range(blocks_span(group)))
+        {
+            let pair = forward_start(candidate.pair.start(), landed.map);
+            return landed
+                .candidates
+                .iter()
+                .find(|other| Some(other.pair.start()) == pair)
+                .is_some_and(|other| {
+                    landed
+                        .shedder
+                        .opens_inside_the_budget(other, landed.candidates, indent, column)
+                });
+        }
+        let nested = nested_shed_edits(candidate, candidates);
+        let block = hung_block_through(self.source, candidate.inner, &nested, indent);
+        self.lands_across_rows(candidate.expr, indent)
+            && !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`
@@ -189,6 +253,17 @@ impl Shedder<'_> {
             );
         }
         true
+    }
+
+    /// Emits the replacement [`Self::opened_form`] writes for
+    /// `candidate`'s pair, where it writes one.
+    pub(super) fn push_opened_edits(&mut self, candidate: &Candidate, candidates: &[Candidate]) {
+        if let Some(text) = self.opened_form(candidate, candidates) {
+            insert_edit(
+                &mut self.edits,
+                Edit::range_replacement(text, candidate.pair),
+            );
+        }
     }
 }
 

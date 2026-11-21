@@ -1,0 +1,7 @@
+[docs]
+previewable = false
+title       = "A Pair Around a Call That Fits Inside It Keeps Its Place"
+
+description = '''
+`value = (` wraps a `compute_something` call whose joined row runs two columns past the budget, while the call alone fits the row one indent step in. **The pair keeps its place and the call stays whole on the row inside it**, because no rule breaks the call there.
+'''

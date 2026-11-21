@@ -34,9 +34,10 @@ use crate::{
 /// pair links a wider chain as one of its operands, whether the pair
 /// comes off without moving either the parse or the grouping a reader
 /// sees, the sides on which the pair runs into an identifier character,
-/// and whether a break lands every operand on a row of its own. A pair
-/// the break adds spans the bare expression, so its `pair` and `inner`
-/// match.
+/// whether a break lands every operand on a row of its own, and whether
+/// the expression is the whole value of a `return` or an assignment. A
+/// pair the break adds spans the bare expression, so its `pair` and
+/// `inner` match.
 pub(super) struct Candidate<'src> {
     pub(super) bare: Option<Cow<'src, str>>,
     pub(super) expr: &'src Expr,
@@ -46,6 +47,7 @@ pub(super) struct Candidate<'src> {
     pub(super) pair: TextRange,
     pub(super) sheds: bool,
     pub(super) stacks: bool,
+    pub(super) value: bool,
 }
 
 impl Candidate<'_> {
@@ -260,6 +262,7 @@ fn candidate<'src>(
         pair,
         sheds,
         stacks: stacks(expr, parent),
+        value: stands_as_value(inner, parent),
     })
 }
 
@@ -302,6 +305,7 @@ fn added<'src>(
         pair: inner,
         sheds: false,
         stacks: stacks(expr, parent),
+        value: stands_as_value(inner, parent),
     })
 }
 
