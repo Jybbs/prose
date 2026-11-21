@@ -7,7 +7,7 @@ otherwise, under the profile `PROSE_PROOF_PROFILE` names.
 from collections.abc import Callable
 from pytest          import MonkeyPatch, fixture, mark, param
 
-RUN = "cargo test --locked --package prose"
+RUN = "cargo test --exclude prose_wasm --locked --workspace"
 
 
 @fixture(autouse=True)
@@ -38,9 +38,9 @@ def test_proof_runs_the_binaries_it_is_given(
     workspace_task : Callable[..., list[str]]
 ):
     """
-    Pins that one `cargo test` runs over the `prose` package with a
-    `--test` flag for each binary the task is given, or for each binary
-    `PROOF_TARGETS` names when it is given none, passing no profile.
+    Pins that one `cargo test` runs over the workspace without `prose_wasm`
+    with a `--test` flag for each binary the task is given, or for each
+    binary `PROOF_TARGETS` names when it is given none, passing no profile.
     """
     assert workspace_task("proof", *binaries) == [" ".join((RUN, *tests))]
 

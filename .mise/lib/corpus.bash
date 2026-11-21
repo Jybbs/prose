@@ -36,5 +36,5 @@ settle_corpus() {
 }
 
 sweep_test() {
-  cargo test --locked --profile probe "$@"
+  cargo test --exclude prose_wasm --locked --profile probe --workspace "$@"
 }

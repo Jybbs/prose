@@ -63,7 +63,8 @@ jobs:
             shared-key : *debug-key
           - command    : PROSE_PROOF_PROFILE=probe mise run rust:proof settle
             name       : 🥃 Proof · Settle
-            shared-key : prose-probe
+            probe      : 'true'
+            shared-key : prose-probe-workspace
           - command    : mise run py:lint
             name       : 🪻 Prose
             shared-key : *debug-key
@@ -87,6 +88,7 @@ jobs:
       - name : Provision Cargo
         uses : $/.github/actions/provision-cargo
         with:
+          probe      : ${{ matrix.probe }}
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
           tools      : ${{ matrix.tools }}

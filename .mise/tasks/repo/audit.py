@@ -983,6 +983,15 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
             sorted(hashed_paths("restore-wasm"))
         ),
         (
+            "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml path filter",
+            sorted(hashed_paths("provision-cargo")),
+            sorted(
+                path
+                for path in workflow_paths("push", "warm")
+                if path.startswith((".mise/lib/", ".mise/tasks/"))
+            )
+        ),
+        (
             "PROOF_TARGETS ↔ the rust:proof binaries the workflows name",
             sorted(
                 matched(

@@ -21,6 +21,7 @@ from pytest_subprocess import FakeProcess
 from types             import ModuleType
 
 ALL_MISSING = "['opened', 'ready_for_review', 'reopened', 'synchronize']"
+CARGO       = ".github/actions/provision-cargo/action.yml"
 COVERING    = ["Cargo.lock", "site/**", "wasm/**"]
 DEBS        = ".github/actions/restore-debs/action.yml"
 DEPLOY      = ".github/workflows/deploy.yml"
@@ -126,6 +127,11 @@ DRIFTS = {
         (".github/workflows/ci.yml", "mise run rust:suite", "mise run rust:other")
     ],
 
+    "provision-cargo hashFiles paths ↔ .github/workflows/warm.yml path filter": [
+        (CARGO, ".mise/tasks/rust/probe", ".mise/tasks/rust/build"),
+        (".github/workflows/warm.yml", "      - .mise/lib/workspace.bash\n", "")
+    ],
+
     "site/package.json @shikijs/magic-move patch key ↔ its devDependency pin": [
         ("site/package.json", "magic-move@4.6.0", "magic-move@4.5.0"),
         ("site/package.json", 'magic-move": "4.6.0', 'magic-move": "4.5.0')
@@ -165,6 +171,12 @@ PINS = {
     ".github/README.md": (
         "[![Rust](rust.svg)![1.99+](https://img.shields.io/badge/1.99+-8a80cb)]\n"
         "[![Python](python.svg)![3.10+](https://img.shields.io/badge/3.10+-8a80cb)]\n"
+    ),
+
+    CARGO: (
+        "shared-key : ${{ inputs.shared-key }}${{ inputs.probe == 'true' && "
+        "format('-{0}', hashFiles('.mise/lib/workspace.bash', "
+        "'.mise/tasks/rust/probe')) || '' }}\n"
     ),
 
     ".github/actions/restore-wasm/action.yml":
@@ -208,6 +220,8 @@ PINS = {
         "on:\n"
         "  push:\n"
         "    paths:\n"
+        "      - .mise/lib/workspace.bash\n"
+        "      - .mise/tasks/rust/probe\n"
         "      - Cargo.toml\n"
         "      - wasm/Cargo.toml\n"
         "      - crate/Cargo.toml\n"

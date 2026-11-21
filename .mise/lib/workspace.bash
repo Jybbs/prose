@@ -6,8 +6,9 @@ cargo_test() {
 
 split_proof() {
   "$@" \
+    --exclude prose_wasm \
     --locked \
-    --package prose \
+    --workspace \
     ${PROSE_PROOF_PROFILE:+--profile "$PROSE_PROOF_PROFILE"} \
     "${PROOF_TARGETS[@]/#/--test=}"
 }
