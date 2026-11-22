@@ -1055,9 +1055,11 @@ def patterns() -> int:
     Reports every `sources` pattern a task declares and every `paths` entry
     a workflow trigger filters on that selects no tracked file, which is
     what a retired file leaves behind in each list still naming it. A `!`
-    entry excludes files rather than selecting them, so it is left out.
+    entry excludes files rather than selecting them, and an entry naming a
+    task's `outputs` selects the untracked files that task writes, so both
+    are left out.
     """
-    files = tracked()
+    files, outputs = tracked(), task_outputs()
     return flagged(
         findings = [
             (
@@ -1067,6 +1069,7 @@ def patterns() -> int:
                     if isinstance(task.get("sources"), list)
                     for entry in task_paths(name, "sources")
                     if not entry.startswith("!")
+                    if entry not in outputs
                     if not tracked(entry)
                 },
                 "task sources selecting no tracked file"
