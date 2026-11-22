@@ -4,6 +4,7 @@
 //! shortening rules settle its row, and the spans an in-place shed
 //! removes.
 
+use itertools::Itertools;
 use ruff_diagnostics::Edit;
 use ruff_python_ast::Expr;
 use ruff_python_trivia::PythonWhitespace;
@@ -83,6 +84,28 @@ impl Shedder<'_> {
             && starting_within(self.source.explodable_arguments(), call, Ranged::start)
                 .next()
                 .is_some()
+    }
+
+    /// True where every line break inside `call` falls inside an argument
+    /// list `reflow-calls` closes or a literal `reflow-collections`
+    /// rejoins.
+    fn closes_every_break(&self, call: TextRange) -> bool {
+        let literals = starting_within(self.source.expandable_literals(), call, Ranged::start)
+            .filter(|_| self.one_row.joins_literals());
+        starting_within(self.source.explodable_arguments(), call, Ranged::start)
+            .merge_by(literals, |list, literal| list.start() <= literal.start())
+            .try_fold(call.start(), |cursor, closed| {
+                (closed.start() < cursor
+                    || !self
+                        .source
+                        .contains_line_break(TextRange::new(cursor, closed.start())))
+                .then(|| cursor.max(closed.end()))
+            })
+            .is_some_and(|cursor| {
+                !self
+                    .source
+                    .contains_line_break(TextRange::new(cursor, call.end()))
+            })
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
@@ -193,9 +216,9 @@ impl Shedder<'_> {
     /// True where `candidate`'s value, its pair taken off at `column`,
     /// lands on one row inside the budget once the layout rules take their
     /// turn, its row tail included. That holds for a value written on one
-    /// row, a call whose argument list `reflow-calls` condenses, and a
-    /// collection literal, comprehension, or subscript the layout rules
-    /// rejoin.
+    /// row, a call `reflow-calls` condenses whose every break
+    /// [`Self::closes_every_break`] closes, and a collection literal,
+    /// comprehension, or subscript the layout rules rejoin.
     pub(super) fn lands_on_one_row(
         &self,
         candidate: &Candidate,
@@ -211,9 +234,12 @@ impl Shedder<'_> {
             );
         }
         match expr {
-            Expr::Call(call) if self.condenses(call.range()) => self
-                .condensed_width(expr)
-                .is_some_and(|width| self.one_row.fits(column + width + tail)),
+            Expr::Call(call) if self.condenses(call.range()) => {
+                self.closes_every_break(call.range())
+                    && self
+                        .condensed_width(expr)
+                        .is_some_and(|width| self.one_row.fits(column + width + tail))
+            }
             _ => {
                 self.one_row.joins_literals()
                     && self

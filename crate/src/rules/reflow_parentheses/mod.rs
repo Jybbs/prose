@@ -544,6 +544,10 @@ mod tests {
         &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
         true
     )]
+    #[case::method_with_empty_brackets_across_rows_on_a_fractured_call(
+        "value = (\n    compute(a,\n        b).run(\n    )\n)\n",
+        true
+    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
@@ -779,6 +783,10 @@ mod tests {
     )]
     #[case::fractured_list_comprehension_with_reflow_collections_off(
         "value = (\n    [item.name\n     for item in items]\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::call_on_a_fractured_dict_with_reflow_collections_off(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
         |config: &mut Config| config.rules.reflow_collections.enabled = false
     )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
