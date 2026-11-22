@@ -943,6 +943,10 @@ mod tests {
         &format!("value_{0} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
         &format!("value_{0} = compute(alpha, beta)\n", "k".repeat(59))
     )]
+    #[case::fractured_dict_call_of_pairs_whose_rewrite_lands_on_one_row(
+        "value = (\n    dict([(alpha,\n           beta)])\n)\n",
+        "value = {alpha: beta}\n"
+    )]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
         #[case] expected: &str,
