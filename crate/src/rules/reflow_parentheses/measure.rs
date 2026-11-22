@@ -29,6 +29,7 @@ use crate::{
         tokens::string_run_breaks,
         walk::{Interpolations, any_over_expr_within, filter_map_within_expr},
     },
+    rules::reflow_collections::ReflowCollections,
     source::Source,
 };
 
@@ -87,12 +88,22 @@ impl Shedder<'_> {
     }
 
     /// True where every line break inside the call `expr` falls inside an
-    /// argument list `reflow-calls` closes or a collection literal
-    /// `reflow-collections` rejoins.
+    /// argument list `reflow-calls` closes or a bracketed collection
+    /// literal `reflow-collections` rejoins outside any suppression of
+    /// that rule.
     fn closes_every_break(&self, expr: &Expr) -> bool {
         let call = expr.range();
         let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
-            (self.one_row.joins_literals() && is_layoutable(inner)).then(|| inner.range())
+            (self.one_row.joins_literals()
+                && is_layoutable(inner)
+                && inner
+                    .as_tuple_expr()
+                    .is_none_or(|tuple| tuple.parenthesized)
+                && !self
+                    .source
+                    .suppression_map()
+                    .suppresses(inner, ReflowCollections::SLUG))
+            .then(|| inner.range())
         });
         starting_within(self.source.explodable_arguments(), call, Ranged::start)
             .copied()

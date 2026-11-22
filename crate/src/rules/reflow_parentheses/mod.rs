@@ -548,6 +548,14 @@ mod tests {
         "value = (\n    compute(a,\n        b).run(\n    )\n)\n",
         true
     )]
+    #[case::call_on_a_fractured_dict_reflow_collections_skips(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)  # prose: skip[reflow-collections]\n",
+        true
+    )]
+    #[case::call_on_a_subscript_slice_written_across_rows(
+        "value = (\n    table[alpha,\n          beta].get(key)\n)\n",
+        true
+    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
