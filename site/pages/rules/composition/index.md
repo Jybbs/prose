@@ -4,7 +4,7 @@ description: "Runs small sources through several rules together, in pipeline ord
 
 # Rule Composition
 
-Each case on this page pairs a small Python source with the rule set it turns on and shows what those rules write when they run together in [**Pipeline Order**](/reference/pipeline-order), which the [[pipeline]] runner applies. A rule page shows the cases its own rule takes part in, whereas this page runs each case through the whole listed set. The cards below render the previewable cases from `crate/tests/fixtures/composition/`, and the binary's integration tests run every case in that directory.
+Each case on this page pairs a small Python source with the rule set it turns on and shows what those rules write when they run together in [**Pipeline Order**](/reference/pipeline-order), which the [[pipeline]] runner applies. A rule page shows the cases its own rule takes part in, whereas this page runs each case through the whole listed set. The cards below render the previewable cases from `tests/rust/fixtures/composition/`, and the binary's integration tests run every case in that directory.
 
 ## The Canonical Case
 

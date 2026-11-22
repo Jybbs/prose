@@ -1,0 +1,100 @@
+// @vitest-environment happy-dom
+import { mount } from '@vue/test-utils'
+
+import { Surfaces }                         from '../../../site/.vitepress/theme/components/landing/surfaces/Surfaces'
+import { AXE_TIMEOUT_MS, expectAccessible } from '../axe'
+import { domTest }                          from '../dom'
+
+vi.mock('vitepress', () => ({ defineLoader: () => {}, useRoute: () => ({ path: '/' }) }))
+
+vi.mock('../../../site/.vitepress/lib/landing/landing.data', () => ({
+  data: {
+    surfaces: [
+      {
+        bodyNodes : [{ kind: 'text', text: 'Columns line up around an ' },
+                     { kind: 'term', slug: 'atomic', text: 'atomic' },
+                     { kind: 'text', text: ' value.' }],
+        family    : 'alignment',
+        number    : 'I'
+      },
+      {
+        bodyNodes : [{ kind: 'text', text: 'Siblings sort.' }],
+        family    : 'ordering',
+        number    : 'II'
+      }
+    ],
+    workflow: []
+  }
+}))
+
+vi.mock('../../../site/.vitepress/lib/glossary/glossary.data', () => ({
+  data: {
+    entries: {
+      atomic: {
+        aliases        : [],
+        definitionHtml : '<p>An indivisible literal.</p>',
+        families       : ['engine'],
+        href           : '/reference/glossary#atomic',
+        slug           : 'atomic'
+      }
+    }
+  }
+}))
+
+vi.mock('../../../site/.vitepress/lib/rules/rules.data', async () =>
+  (await import('../rules-data-stub')).rulesDataStub([{ slug: 'align-equals' }]))
+
+const mountSurfaces = () => mount(Surfaces)
+
+describe('Surfaces', () => {
+  domTest('doubles the track and hides the second copy from assistive tech', ({ reducedMotion }) => {
+    reducedMotion(true)
+    const cards = mountSurfaces().findAll('.surface-card')
+    expect(cards).toHaveLength(4)
+    expect(cards.map(c => c.attributes('data-family')))
+      .toStrictEqual(['alignment', 'ordering', 'alignment', 'ordering'])
+    expect(cards.map(c => c.attributes('aria-hidden')))
+      .toStrictEqual([undefined, undefined, 'true', 'true'])
+  })
+
+  domTest('sets each card\'s disc in its family\'s large badge', ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect(mountSurfaces().findAll('.surface-card-icon use').map(use => use.attributes('href')))
+      .toStrictEqual(['#nib-ladder-large', '#nib-harp-large', '#nib-ladder-large', '#nib-harp-large'])
+  })
+
+  domTest('leaves every focusable node in the hidden copy out of the tab order', ({ reducedMotion }) => {
+    reducedMotion(true)
+    const cards      = mountSurfaces().findAll('.surface-card')
+    const tabindexes = (card: (typeof cards)[number]): (string | undefined)[] =>
+      card.findAll('a, button').map(node => node.attributes('tabindex'))
+
+    expect(tabindexes(cards[0]).every(t => t === undefined)).toBe(true)
+    expect(tabindexes(cards[2]).length).toBeGreaterThan(0)
+    expect(tabindexes(cards[2]).every(t => t === '-1')).toBe(true)
+  })
+
+  domTest('drops the hidden copy\'s glossary anchors out of the tab order too', ({ reducedMotion }) => {
+    reducedMotion(true)
+    const cards = mountSurfaces().findAll('.surface-card')
+    expect(cards[0].get('.glossary-anchor').attributes('tabindex')).toBe('0')
+    expect(cards[2].get('.glossary-anchor').attributes('tabindex')).toBe('-1')
+  })
+
+  domTest('counts the families and rules in the heading', ({ reducedMotion }) => {
+    reducedMotion(true)
+    expect(mountSurfaces().get('h2').text()).toBe('2 rule families. 1 rules.')
+  })
+
+  domTest('links each family card to its rules', ({ reducedMotion }) => {
+    reducedMotion(true)
+    const first = mountSurfaces().findAll('.surface-card')[0]
+    expect(first.get('.cover-link').attributes('href')).toBe('/rules/alignment/')
+    expect(first.get('.surface-pip').attributes('href')).toBe('/rules/alignment/align-equals')
+  })
+
+  domTest('renders with no axe violations', async ({ reducedMotion }) => {
+    reducedMotion(true)
+    await expectAccessible(mountSurfaces().html())
+  }, AXE_TIMEOUT_MS)
+})

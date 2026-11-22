@@ -4,11 +4,14 @@
     "noEmit" : true,
     "target" : "ESNext",
     "lib"    : ["ESNext", "DOM", "DOM.Iterable"],
+    "paths"  : { "*": ["../node_modules/@types/*", "../node_modules/*"] },
     "types"  : ["node", "vite/client", "vitest/globals"]
   },
   "include"         : [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "../../tests/site/**/*.ts",
+    "../../tests/site/**/*.tsx"
   ],
-  "exclude"         : ["tests/wasm/**"]
+  "exclude"         : ["../../tests/site/wasm/**"]
 }

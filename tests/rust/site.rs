@@ -1,0 +1,394 @@
+//! Coverage checks pairing the docs site at `site/` with the live rule
+//! registry and the per-case fixture tree, so a drifted `<Fixture>`
+//! pointer or a malformed `meta.toml` fails a test rather than a build,
+//! and running a page's config example through the binary, so an
+//! example the binary no longer honors fails a test as well.
+
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::{Path, PathBuf},
+};
+
+use assert_cmd::Command;
+use ignore::{WalkBuilder, types::TypesBuilder};
+use indoc::indoc;
+use itertools::Itertools;
+use prose::pipeline::Pipeline;
+use serde::Deserialize;
+use serde_json::{Deserializer, Value};
+use tempfile::TempDir;
+
+const INPUT_SNAPS: [(&str, &str); 3] = [
+    ("input.py", "input.py.snap"),
+    ("input.ipynb", "input.ipynb.snap"),
+    ("input.toml", "config.snap"),
+];
+
+/// The `[docs]` block every fixture case carries. `title` and
+/// `description` document the case, `previewable` gates whether it
+/// joins the examples a rule page or the composition page lists,
+/// `canonical = true` marks the one lead example per rule page, and
+/// `sandbox = true` opts the case into the interactive sandbox's seed
+/// pool.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Docs {
+    #[serde(default)]
+    canonical: bool,
+    description: Option<String>,
+    #[serde(default)]
+    previewable: bool,
+    #[serde(default)]
+    sandbox: bool,
+    title: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct Meta {
+    docs: Docs,
+}
+
+/// Returns the double-quoted value of the `name` attribute inside `tag`,
+/// `None` where `tag` carries no such attribute.
+fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let (_, after) = tag.split_once(&format!(" {name}=\""))?;
+    after.split_once('"').map(|(value, _)| value)
+}
+
+/// Pairs each `.snap` in `case_dir` with the `input_file` its header
+/// names, skipping any snapshot carrying no such line.
+fn declared_inputs(case_dir: &Path) -> Vec<(String, String)> {
+    entries(case_dir, |path| {
+        path.extension().is_some_and(|ext| ext == "snap")
+    })
+    .into_iter()
+    .filter_map(|path| {
+        let declared = fs_err::read_to_string(&path)
+            .ok()?
+            .lines()
+            .find_map(|line| line.strip_prefix("input_file: ").map(ToOwned::to_owned))?;
+        Some((dir_name(&path), declared))
+    })
+    .collect()
+}
+
+fn dir_name(path: &Path) -> String {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .expect("fixture directory name is UTF-8")
+        .to_owned()
+}
+
+/// Lists the entries of `dir` that `keep` admits, ascending by path.
+fn entries(dir: &Path, keep: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
+    fs_err::read_dir(dir)
+        .expect("the fixture directory reads")
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| keep(path))
+        .sorted()
+        .collect()
+}
+
+/// Yields the `(rule, case)` pair of every `<Fixture…>` tag in `text`
+/// that carries both attributes.
+fn fixture_invocations(text: &str) -> impl Iterator<Item = (&str, &str)> {
+    text.match_indices("<Fixture").filter_map(|(at, _)| {
+        let (tag, _) = text[at..].split_once('>')?;
+        Some((attribute(tag, "rule")?, attribute(tag, "case")?))
+    })
+}
+
+/// True when the rule's directory at `module` carries `needle`
+/// anywhere inside it.
+fn module_carries(module: &Path, needle: &str) -> bool {
+    WalkBuilder::new(module)
+        .build()
+        .flatten()
+        .filter(|entry| entry.file_type().is_some_and(|kind| kind.is_file()))
+        .any(|entry| {
+            fs_err::read_to_string(entry.path()).is_ok_and(|source| source.contains(needle))
+        })
+}
+
+/// Returns the source module of the rule at `slug`, a file or a
+/// directory.
+fn rule_module(root: &Path, slug: &str) -> PathBuf {
+    root.join(format!("src/rules/{}", slug.replace('-', "_")))
+}
+
+/// Finds the docs-site page for `slug` across every family directory.
+fn rule_page(rules: &Path, slug: &str) -> Option<PathBuf> {
+    subdirs(rules)
+        .into_iter()
+        .map(|family| family.join(format!("{slug}.md")))
+        .find(|page| page.is_file())
+}
+
+fn subdirs(dir: &Path) -> Vec<PathBuf> {
+    entries(dir, Path::is_dir)
+}
+
+#[test]
+fn every_binding_reader_is_listed_on_the_primitive_page() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let page = fs_err::read_to_string(root.join("../site/pages/architecture/binding-analysis.md"))
+        .expect("the primitive page reads");
+    let listed = page
+        .lines()
+        .find_map(|line| line.strip_prefix("consumedBy: ["))
+        .expect("the page declares consumedBy");
+
+    for slug in Pipeline::known_ids() {
+        let module = rule_module(root, slug.as_str());
+        assert!(
+            !module_carries(&module, "binding_analysis()") || listed.contains(slug.as_str()),
+            "rule `{slug}` reads the binding table and is absent from `consumedBy`",
+        );
+    }
+}
+
+#[test]
+fn every_case_directory_is_well_formed() {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures");
+    let rule_slugs: BTreeSet<String> = Pipeline::known_ids()
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    let mut violations = Vec::new();
+    let mut canonical = BTreeMap::<String, usize>::new();
+    let mut domains = BTreeSet::<String>::new();
+    let mut cases = BTreeMap::<String, String>::new();
+
+    for domain_dir in subdirs(&fixtures) {
+        let domain = dir_name(&domain_dir);
+        domains.insert(domain.clone());
+        for case_dir in subdirs(&domain_dir) {
+            let case = dir_name(&case_dir);
+            let id = format!("{domain}/{case}");
+            if let Some(first) = cases.insert(case.clone(), domain.clone()) {
+                violations.push(format!(
+                    "{id}: case name is already defined under \"{first}\", and a case \
+                     name must be unique across the whole fixture tree"
+                ));
+            }
+            if INPUT_SNAPS
+                .iter()
+                .all(|(input, _)| !case_dir.join(input).is_file())
+            {
+                violations.push(format!(
+                    "{id}: missing input.py, input.ipynb, and input.toml"
+                ));
+            }
+            for (input, snap) in INPUT_SNAPS {
+                if case_dir.join(input).is_file() && !case_dir.join(snap).is_file() {
+                    violations.push(format!("{id}: {input} without its {snap}"));
+                }
+            }
+            for (snap, declared) in declared_inputs(&case_dir) {
+                if Path::new(&declared).parent().map(Path::file_name) != Some(case_dir.file_name())
+                {
+                    violations.push(format!("{id}: {snap} names `{declared}`"));
+                }
+            }
+
+            let meta_path = case_dir.join("meta.toml");
+            if !meta_path.is_file() {
+                violations.push(format!("{id}: missing meta.toml"));
+                continue;
+            }
+            let raw = fs_err::read_to_string(&meta_path).expect("meta.toml reads");
+            let docs = match toml::from_str::<Meta>(&raw) {
+                Ok(meta) => meta.docs,
+                Err(e) => {
+                    violations.push(format!("{id}: meta.toml is not the [docs] shape: {e}"));
+                    continue;
+                }
+            };
+            if docs.title.as_deref().is_none_or(|t| t.trim().is_empty()) {
+                violations.push(format!("{id}: meta.toml lacks a non-empty title"));
+            }
+            if docs
+                .description
+                .as_deref()
+                .is_none_or(|d| d.trim().is_empty())
+            {
+                violations.push(format!("{id}: meta.toml lacks a non-empty description"));
+            }
+            if docs.canonical {
+                *canonical.entry(domain.clone()).or_default() += 1;
+                if !docs.previewable {
+                    violations.push(format!("{id}: canonical case must be previewable"));
+                }
+            }
+            if docs.sandbox && !case_dir.join("input.py").is_file() {
+                violations.push(format!("{id}: sandbox case must carry an input.py seed"));
+            }
+        }
+    }
+
+    for domain in &domains {
+        let count = canonical.get(domain).copied().unwrap_or(0);
+        let is_rule_page = rule_slugs.contains(&domain.replace('_', "-"));
+        if is_rule_page && count != 1 {
+            violations.push(format!(
+                "rule \"{domain}\" resolves {count} canonical cases, expected exactly 1"
+            ));
+        }
+        if !is_rule_page && count != 0 {
+            violations.push(format!(
+                "non-rule domain \"{domain}\" carries {count} canonical cases, expected 0"
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "fixture-tree violations:\n  {}",
+        violations.join("\n  ")
+    );
+}
+
+#[test]
+fn every_fixture_invocation_resolves() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let site = root.join("../site");
+    let mut types = TypesBuilder::new();
+    types.add_defaults();
+    types.select("markdown");
+    let types = types.build().expect("the markdown type set builds");
+
+    let mut found_any = false;
+    let mut missing = Vec::new();
+    for entry in WalkBuilder::new(&site).types(types).build().flatten() {
+        if !entry.file_type().is_some_and(|t| t.is_file()) {
+            continue;
+        }
+        found_any = true;
+        let path = entry.path();
+        let body = fs_err::read_to_string(path).expect("the page reads");
+        for (rule, case) in fixture_invocations(&body) {
+            let dir = root.join("../tests/rust/fixtures").join(rule).join(case);
+            let input = dir.join("input.py");
+            let snap = dir.join("input.py.snap");
+            if !input.is_file() || !snap.is_file() {
+                missing.push(format!(
+                    "{} -> rule=\"{rule}\" case=\"{case}\"",
+                    path.strip_prefix(&site)
+                        .expect("the walk is rooted at the site")
+                        .display()
+                ));
+            }
+        }
+    }
+    assert!(found_any, "found no markdown under `site/`");
+    assert!(
+        missing.is_empty(),
+        "`<Fixture>` invocations point at missing fixture or snapshot pairs:\n  {}",
+        missing.join("\n  ")
+    );
+}
+
+#[test]
+fn every_registered_rule_has_a_page() {
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/pages/rules");
+    for id in Pipeline::known_ids() {
+        assert!(
+            rule_page(&rules, id.as_str()).is_some(),
+            "rule `{id}` registered in `KNOWN_IDS` has no page under `site/pages/rules/<family>/{id}.md`"
+        );
+    }
+}
+
+#[test]
+fn miscased_constants_override_example_spares_only_its_globs() {
+    let slug = "miscased-constants";
+    let rules = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site/pages/rules");
+    let page = rule_page(&rules, slug).expect("the rule has a page");
+    let page = fs_err::read_to_string(page).expect("the rule page reads");
+    let (_, after) = page
+        .split_once("```toml config\n")
+        .expect("the page carries a config example");
+    let (example, _) = after.split_once("```").expect("the example fence closes");
+    let project = TempDir::new().expect("tempdir");
+    let files = [
+        ("prose.toml", example),
+        (
+            "conftest.py",
+            indoc! {r#"
+                pytest_plugins = ["myapp.testsupport.myplugin"]
+                collect_ignore = ["setup.py"]
+                collect_ignore_glob = ["*_ignore.py"]
+                timeout = 30
+            "#},
+        ),
+        ("docs/conf.py", "project = \"Thermidor\"\n"),
+        (
+            "migrations/versions/ae1027a6acf_add_account.py",
+            "revision = \"ae1027a6acf\"\ndown_revision = None\n",
+        ),
+        (
+            "mysite/urls.py",
+            indoc! {r#"
+                handler400 = "mysite.views.bad_request"
+                handler403 = "mysite.views.permission_denied"
+                handler404 = "mysite.views.page_not_found"
+                handler500 = "mysite.views.server_error"
+                admin_header = "Thermidor administration"
+            "#},
+        ),
+        ("polls/urls.py", "app_name = \"polls\"\nurlpatterns = []\n"),
+        ("src/settings.py", "project = \"Thermidor\"\n"),
+        (
+            "tests/billing_test.py",
+            "import pytest\npytestmark = [pytest.mark.slow]\n",
+        ),
+        (
+            "tests/integration/conftest.py",
+            "collect_ignore_glob = [\"*_slow.py\"]\n",
+        ),
+        (
+            "tests/test_accounts.py",
+            indoc! {r#"
+                pytest_plugins = ["myapp.testsupport.myplugin"]
+                base_url = "https://thermidor.example"
+            "#},
+        ),
+    ];
+    for (path, contents) in files {
+        let path = project.path().join(path);
+        fs_err::create_dir_all(path.parent().expect("a parent")).expect("dirs create");
+        fs_err::write(path, contents).expect("writes");
+    }
+
+    let output = Command::cargo_bin("prose")
+        .expect("prose binary")
+        .args(["check", "--no-cache", "--output-format", "json", "."])
+        .current_dir(project.path())
+        .output()
+        .expect("prose runs");
+    let reported: BTreeSet<(String, String)> = Deserializer::from_slice(&output.stdout)
+        .into_iter::<Value>()
+        .map(|record| record.expect("a JSON record"))
+        .filter(|record| record["code"] == slug)
+        .map(|record| {
+            let file = record["filename"].as_str().expect("a filename");
+            let name = record["fix"]["edits"][0]["before"]
+                .as_str()
+                .expect("a name");
+            (file.trim_start_matches("./").to_owned(), name.to_owned())
+        })
+        .collect();
+
+    assert_eq!(
+        reported,
+        BTreeSet::from([
+            ("conftest.py".to_owned(), "timeout".to_owned()),
+            ("mysite/urls.py".to_owned(), "admin_header".to_owned()),
+            ("src/settings.py".to_owned(), "project".to_owned()),
+            ("tests/test_accounts.py".to_owned(), "base_url".to_owned()),
+        ]),
+        "{}",
+        String::from_utf8_lossy(&output.stderr),
+    );
+}

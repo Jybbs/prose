@@ -169,7 +169,7 @@ pub(crate) fn breaks_parse() -> GroupSentinelRule {
 /// by path.
 pub(crate) fn corpus_inputs() -> Vec<PathBuf> {
     let root = std::env::var_os("PROSE_SETTLE_CORPUS").map_or_else(
-        || Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures"),
+        || Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures"),
         PathBuf::from,
     );
     let mut inputs: Vec<PathBuf> = ignore::WalkBuilder::new(root)

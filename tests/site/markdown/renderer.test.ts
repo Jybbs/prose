@@ -1,0 +1,45 @@
+import * as renderer from '../../../site/.vitepress/lib/markdown/renderer'
+
+describe('renderer', () => {
+  it('resolves the one renderer VitePress holds across calls', async () => {
+    // VitePress assigns its renderer after an await, so two concurrent calls
+    // each build one and only sequential calls share the instance.
+    // oxlint-disable-next-line vitest/prefer-expect-resolves
+    expect(await renderer.getRenderer()).toBe(await renderer.getRenderer())
+  })
+
+  it('renders a fenced code block to highlighted HTML', async () => {
+    const md  = await renderer.getRenderer()
+    const out = await renderer.renderFencedHtml(md, 'x = 1', 'python')
+    expect(out).toContain('<pre')
+    expect(out).toContain('<span class="sd-')
+  })
+
+  it('appends fence meta to the fence line', async () => {
+    const md = await renderer.getRenderer()
+    await expect(renderer.renderFencedHtml(md, 'x = 1', 'python', 'lint=demo-rule/basic')).resolves.toContain('<pre')
+  })
+
+  it('replaces an inline field with its walked node tree', async () => {
+    const md  = await renderer.getRenderer()
+    const out = renderer.inlineNodeField(md, [{ note: 'see `prose`' }], 'note')
+    expect(out[0]).not.toHaveProperty('note')
+    expect(out[0].noteNodes).toStrictEqual([
+      { kind: 'text', text: 'see ' },
+      { kind: 'code', text: 'prose' }
+    ])
+  })
+
+  it('walks an array-valued field to one node tree per entry', async () => {
+    const md  = await renderer.getRenderer()
+    const out = renderer.inlineNodeField(md, [{ tags: ['`a`', '`b`'] }], 'tags')
+    expect(out[0].tagsNodes).toStrictEqual([[{ kind: 'code', text: 'a' }], [{ kind: 'code', text: 'b' }]])
+  })
+
+  it('replaces a fenced field with its rendered counterpart', async () => {
+    const md  = await renderer.getRenderer()
+    const out = await renderer.renderFencedField(md, [{ code: 'x = 1', language: 'python' }], 'code')
+    expect(out[0]).not.toHaveProperty('code')
+    expect(out[0].codeHtml).toContain('<pre')
+  })
+})

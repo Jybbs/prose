@@ -26,7 +26,7 @@ export interface RuleDiscovery {
 const crate = paths.crateDirFrom(paths.repoRoot(import.meta.url))
 
 // A rule emits lints where its module overrides `Rule::lint`, read off the
-// crate source the way `crate/tests/site.rs` reads it.
+// crate source the way `tests/rust/site.rs` reads it.
 function moduleEmitsLints(slug: string): boolean {
   const directory = path.join(crate, 'src', 'rules', slug.replaceAll('-', '_'))
   if (!fs.existsSync(directory)) return false

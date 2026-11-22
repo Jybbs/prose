@@ -25,8 +25,8 @@ struct Carried {
 
 #[rstest]
 fn carried_binding_tables_match_the_ones_a_fresh_read_builds(
-    #[files("tests/fixtures/**/input.py")]
-    #[files("tests/fixtures/**/input.ipynb")]
+    #[files("../tests/rust/fixtures/**/input.py")]
+    #[files("../tests/rust/fixtures/**/input.ipynb")]
     path: PathBuf,
 ) {
     carried_over(&path);
@@ -37,7 +37,7 @@ fn carrying_reaches_each_table() {
     assert_eq!(
         carried_over(
             &Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("tests/fixtures/align_colons/class_field_run_aligns/input.py")
+                .join("../tests/rust/fixtures/align_colons/class_field_run_aligns/input.py")
         ),
         Carried {
             bindings: true,
@@ -49,8 +49,8 @@ fn carrying_reaches_each_table() {
 
 #[rstest]
 fn column_tables_hold_at_run_granularity_across_every_splice(
-    #[files("tests/fixtures/**/input.py")]
-    #[files("tests/fixtures/**/input.ipynb")]
+    #[files("../tests/rust/fixtures/**/input.py")]
+    #[files("../tests/rust/fixtures/**/input.ipynb")]
     path: PathBuf,
     #[values(40, 50, 60, 79, 88, 100)] width: usize,
 ) {

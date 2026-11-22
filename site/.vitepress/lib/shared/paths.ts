@@ -28,7 +28,7 @@ export function fetchCacheDir(metaUrl: string): string {
 }
 
 export function fixturesDirFrom(crate: string): string {
-  return path.join(crate, 'tests', 'fixtures')
+  return path.join(path.dirname(crate), 'tests', 'rust', 'fixtures')
 }
 
 export function pagesDir(metaUrl: string): string {
