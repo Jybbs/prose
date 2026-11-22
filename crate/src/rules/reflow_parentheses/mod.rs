@@ -424,6 +424,11 @@ mod tests {
         false,
         &format!("value_{0} = compute(alpha,\n    beta)\n", "k".repeat(60))
     )]
+    #[case::fractured_call_rejoining_at_the_budget_under_a_long_target(
+        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
+        true,
+        &format!("value_{0} = compute(alpha,\n    beta)\n", "k".repeat(59))
+    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -768,6 +773,10 @@ mod tests {
         "def f():\n    return(\n        compute(alpha,\n            beta)\n    )\n",
         |config: &mut Config| config.code_line_length = NonZeroUsize::new(30)
     )]
+    #[case::fractured_list_comprehension_with_reflow_collections_off(
+        "value = (\n    [item.name\n     for item in items]\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -917,6 +926,10 @@ mod tests {
     #[case::items_call_on_a_dict_past_the_budget(
         "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
         "def f():\n    pairs = {\n        \"alpha_key_name\" : alpha_value_xxxxxxxx,\n        \"delta_key_name\" : delta_value_xxxxxx\n    }.items()\n    return pairs\n"
+    )]
+    #[case::fractured_set_comprehension_whose_rewrite_lands_at_the_budget(
+        &format!("value_{0} = (\n    {{item\n     for item in range(10)}}\n)\n", "k".repeat(65)),
+        &format!("value_{0} = set(range(10))\n", "k".repeat(65))
     )]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
