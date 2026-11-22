@@ -8,13 +8,13 @@
 //! rows one operand per row, and one whose interior breaks sit inside a
 //! bracket of its own sheds in place. A pair holding the whole value
 //! of a `return` or an assignment that is one bracketed construct
-//! landing across rows comes off, that construct opening on the
-//! statement's row, unless that row then runs past the budget or the
-//! construct's rows cannot hang from the statement's indent. An
-//! over-budget boolean chain or conditional forming a test, a `return`
-//! value, an assignment value, or the last element of a bare tuple
-//! standing as one gains a pair the break adds. Each row is measured as
-//! the later rules shortening it leave it.
+//! landing on one row or across rows comes off, that construct
+//! opening on the statement's row, unless that row then runs past the
+//! budget or the construct's rows cannot hang from the statement's
+//! indent. An over-budget boolean chain or conditional forming a test,
+//! a `return` value, an assignment value, or the last element of a bare
+//! tuple standing as one gains a pair the break adds. Each row is
+//! measured as the later rules shortening it leave it.
 //! `plan` finds the pairs, `chain` divides an interior into operands,
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.
@@ -419,6 +419,11 @@ mod tests {
         true,
         &format!("value_{0} = dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n", "k".repeat(78))
     )]
+    #[case::fractured_call_under_a_long_target_with_reflow_calls_off(
+        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
+        false,
+        &format!("value_{0} = compute(alpha,\n    beta)\n", "k".repeat(60))
+    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -524,6 +529,10 @@ mod tests {
     )]
     #[case::dict_call_whose_brace_lands_one_past_the_budget(
         &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(79)),
+        true
+    )]
+    #[case::fractured_call_rejoining_under_a_long_target(
+        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
         true
     )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
@@ -755,6 +764,10 @@ mod tests {
         "value = (\n    dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n)\n",
         |config: &mut Config| config.code_line_length = NonZeroUsize::new(55)
     )]
+    #[case::fractured_call_under_a_return_one_column_short(
+        "def f():\n    return(\n        compute(alpha,\n            beta)\n    )\n",
+        |config: &mut Config| config.code_line_length = NonZeroUsize::new(30)
+    )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -879,6 +892,7 @@ mod tests {
     ) {
         settled_at_every_width(value, returns, reflows_calls);
     }
+
     #[rstest]
     #[case::fractured_call(
         "third = (\n    compute(a,\n        b)\n)\n",
