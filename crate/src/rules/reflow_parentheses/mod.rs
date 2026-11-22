@@ -536,6 +536,10 @@ mod tests {
         &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(79)),
         true
     )]
+    #[case::fractured_dict_rejoining_one_past_the_budget_under_a_long_target(
+        &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(56)),
+        true
+    )]
     #[case::fractured_call_rejoining_under_a_long_target(
         &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
         true
@@ -930,6 +934,14 @@ mod tests {
     #[case::fractured_set_comprehension_whose_rewrite_lands_at_the_budget(
         &format!("value_{0} = (\n    {{item\n     for item in range(10)}}\n)\n", "k".repeat(65)),
         &format!("value_{0} = set(range(10))\n", "k".repeat(65))
+    )]
+    #[case::fractured_dict_rejoining_at_the_budget_under_a_long_target(
+        &format!("value_{0} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(55)),
+        &format!("value_{0} = {{\"alpha\": 1, \"delta\": 2}}\n", "k".repeat(55))
+    )]
+    #[case::fractured_call_reflow_calls_condenses_to_the_budget(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
+        &format!("value_{0} = compute(alpha, beta)\n", "k".repeat(59))
     )]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
