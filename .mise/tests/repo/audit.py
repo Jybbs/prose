@@ -709,7 +709,8 @@ def test_triggers_hold_the_draft_push_to_main(
             [*LIVE, "!{root}/wasm/target/**"],
             "",
             id = "exclusions-skipped"
-        )
+        ),
+        param(COVERING, [*LIVE, "{root}/site/public/wasm/*"], "", id="outputs-skipped")
     ]
 )
 def test_patterns_reports_each_entry_selecting_no_tracked_file(
@@ -723,7 +724,8 @@ def test_patterns_reports_each_entry_selecting_no_tracked_file(
     """
     Pins that a task source and a workflow path entry left naming a retired
     file each fail the audit on an annotation naming the entry, whereas a
-    `!` entry, which excludes rather than selects, is not held to a file.
+    `!` entry, which excludes rather than selects, and an entry naming a
+    task's `outputs` are not held to a file.
     """
     repository(
         TREE | {
@@ -732,6 +734,7 @@ def test_patterns_reports_each_entry_selecting_no_tracked_file(
         [{
             "dir"     : "{root}",
             "name"    : "wasm:pack",
+            "outputs" : ["{root}/site/public/wasm/*"],
             "sources" : sources,
             "depends" : []
         }]

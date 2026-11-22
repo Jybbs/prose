@@ -1,4 +1,4 @@
-min_version = "2026.9.18"
+min_version = "2026.11.10"
 
 [doctor.checks.clone]
 description = "The clone is not shallow, since a depth-limited fetch from any worktree turns every worktree shallow"
@@ -57,10 +57,8 @@ site      = [
   ".mise/bin/**",
   ".mise/config.toml",
   "site/**/*",
-  "!site/.vitepress/.temp/**/*",
-  "!site/.vitepress/dist/**/*",
-  "!site/.vitepress/tests/wasm/pkg/**/*",
-  "!site/node_modules/**/*"
+  "!@gitignore",
+  "site/public/wasm/*"
 ]
 wasm      = [
   ".mise/config.toml",
