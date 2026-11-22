@@ -27,7 +27,7 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
-        walk::{Interpolations, any_over_expr_within},
+        walk::{Interpolations, any_over_expr_within, filter_map_within_expr},
     },
     source::Source,
 };
@@ -86,13 +86,16 @@ impl Shedder<'_> {
                 .is_some()
     }
 
-    /// True where every line break inside `call` falls inside an argument
-    /// list `reflow-calls` closes or a literal `reflow-collections`
-    /// rejoins.
-    fn closes_every_break(&self, call: TextRange) -> bool {
-        let literals = starting_within(self.source.expandable_literals(), call, Ranged::start)
-            .filter(|_| self.one_row.joins_literals());
+    /// True where every line break inside the call `expr` falls inside an
+    /// argument list `reflow-calls` closes or a collection literal
+    /// `reflow-collections` rejoins.
+    fn closes_every_break(&self, expr: &Expr) -> bool {
+        let call = expr.range();
+        let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
+            (self.one_row.joins_literals() && is_layoutable(inner)).then(|| inner.range())
+        });
         starting_within(self.source.explodable_arguments(), call, Ranged::start)
+            .copied()
             .merge_by(literals, |list, literal| list.start() <= literal.start())
             .try_fold(call.start(), |cursor, closed| {
                 (closed.start() < cursor
@@ -235,7 +238,7 @@ impl Shedder<'_> {
         }
         match expr {
             Expr::Call(call) if self.condenses(call.range()) => {
-                self.closes_every_break(call.range())
+                self.closes_every_break(expr)
                     && self
                         .condensed_width(expr)
                         .is_some_and(|width| self.one_row.fits(column + width + tail))

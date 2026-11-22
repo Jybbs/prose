@@ -955,6 +955,18 @@ mod tests {
         "value = (\n    dict([(alpha,\n           beta)])\n)\n",
         "value = {alpha: beta}\n"
     )]
+    #[case::call_on_a_one_entry_list_written_across_rows(
+        "value = (\n    [\n        alpha\n    ].count(key)\n)\n",
+        "value = [alpha].count(key)\n"
+    )]
+    #[case::call_on_a_fractured_dict(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
+        "value = {\"alpha\": 1, \"delta\": 2}.get(key)\n"
+    )]
+    #[case::fractured_call_holding_a_call_ahead_of_its_break(
+        "value = (\n    compute(inner(a),\n        b)\n)\n",
+        "value = compute(inner(a), b)\n"
+    )]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
         #[case] expected: &str,
