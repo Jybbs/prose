@@ -37,8 +37,9 @@ them fails.
                push trigger filters on the `main` branch alone, and the
                `lock:sync` sources cover every project config file
                declaring a tool.
-    patterns   Every `sources` pattern a task declares and every `paths`
-               entry a workflow trigger filters on selects a tracked file.
+    patterns   Every `sources` pattern a task declares, short of one naming a
+               task's `outputs`, and every `paths` entry a workflow trigger
+               filters on selects a tracked file.
     stamps     Every cache restore bringing back a task's `outputs` is
                followed by a step touching the restored files on a hit, so
                mise reads them as current.
