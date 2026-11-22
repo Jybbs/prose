@@ -117,10 +117,12 @@ impl Shedder<'_> {
         if self.lands_on_one_row(candidate, candidates, column) {
             return true;
         }
+        if !self.lands_across_rows(candidate.expr, indent) {
+            return false;
+        }
         let nested = nested_shed_edits(candidate, candidates);
         let block = hung_block_through(self.source, candidate.inner, &nested, indent);
-        self.lands_across_rows(candidate.expr, indent)
-            && !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
+        !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`

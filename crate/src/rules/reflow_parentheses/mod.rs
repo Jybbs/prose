@@ -468,6 +468,14 @@ mod tests {
     }
 
     #[rstest]
+    #[case::fractured_call_holding_a_comment(
+        "value = (\n    compute(a,  # note\n        b)\n)\n",
+        true
+    )]
+    #[case::fractured_list_comprehension_holding_a_comment(
+        "value = (\n    [item.name  # note\n     for item in items]\n)\n",
+        true
+    )]
     #[case::fractured_dict_rejoining_inside(
         &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(60)),
         true
@@ -883,6 +891,14 @@ mod tests {
     #[case::fractured_set_comprehension(
         "value = (\n    {item\n     for item in range(10)}\n)\n",
         "value = set(range(10))\n"
+    )]
+    #[case::fractured_list_comprehension(
+        "value = (\n    [item.name\n     for item in items]\n)\n",
+        "value = [item.name for item in items]\n"
+    )]
+    #[case::fractured_subscript(
+        "value = (\n    table[alpha,\n          beta]\n)\n",
+        "value = table[alpha, beta]\n"
     )]
     #[case::items_call_on_a_dict_past_the_budget(
         "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
