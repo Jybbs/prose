@@ -45,6 +45,15 @@ impl Shedder<'_> {
         breaks
     }
 
+    /// True where `reflow-calls` runs and an argument list it can explode
+    /// or condense opens inside `call`.
+    fn condenses(&self, call: TextRange) -> bool {
+        self.one_row.closes()
+            && starting_within(self.source.explodable_arguments(), call, Ranged::start)
+                .next()
+                .is_some()
+    }
+
     /// The column `offset` reaches once the edits emitted so far apply
     /// and the padding and alignment rules settle its row, measured from
     /// the enclosing logical line.
@@ -193,36 +202,27 @@ impl Shedder<'_> {
     ///   `reflow-collections` is off or no rejoined form of it fits that
     ///   row, and one written on one row that rule expands
     /// - a call holding an argument list `reflow-calls` can explode, where
-    ///   that rule finds no one-row form fitting that row, and with that
-    ///   rule off, any call spanning rows or holding a literal
-    ///   `reflow-collections` expands on that row
+    ///   that rule finds no one-row form fitting that row, and any other
+    ///   call spanning rows or holding a literal `reflow-collections`
+    ///   expands on that row
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
         match expr {
-            Expr::Call(call) if self.one_row.closes() => {
-                starting_within(
-                    self.source.explodable_arguments(),
-                    call.range(),
-                    Ranged::start,
-                )
-                .next()
-                .is_some()
-                    && self
-                        .one_row
-                        .condensed(self.source, expr, expr.into())
-                        .is_none_or(|form| {
-                            !self.one_row.fits(
-                                column
-                                    + self.one_row.text_width(
-                                        self.source,
-                                        self.padding,
-                                        &form,
-                                        call.range(),
-                                    ),
-                            )
-                        })
-            }
+            Expr::Call(call) if self.condenses(call.range()) => self
+                .one_row
+                .condensed(self.source, expr, expr.into())
+                .is_none_or(|form| {
+                    !self.one_row.fits(
+                        column
+                            + self.one_row.text_width(
+                                self.source,
+                                self.padding,
+                                &form,
+                                call.range(),
+                            ),
+                    )
+                }),
             Expr::Call(call) => {
                 let width = |range| settled_slice_width(self.source, self.padding, range);
                 spans
@@ -248,6 +248,52 @@ impl Shedder<'_> {
                     self.one_row
                         .expands(self.source, expr, expr.into(), column, 0, self.padding)
                 }
+            }
+            _ => false,
+        }
+    }
+
+    /// True where `candidate`'s value, its pair taken off at `column`,
+    /// lands on one row inside the budget once the layout rules take their
+    /// turn, its row tail included. That holds for a value written on one
+    /// row, a call whose argument list `reflow-calls` condenses, and a
+    /// collection literal or comprehension `reflow-collections` rejoins.
+    pub(super) fn lands_on_one_row(
+        &self,
+        candidate: &Candidate,
+        candidates: &[Candidate],
+        column: usize,
+    ) -> bool {
+        let expr = candidate.expr;
+        let column = column + candidate.flush.spaces();
+        let tail = self.tail_width(candidate.pair, candidates);
+        if !self.source.contains_line_break(expr.range()) {
+            return self.one_row.fits(
+                column + settled_slice_width(self.source, self.padding, expr.range()) + tail,
+            );
+        }
+        match expr {
+            Expr::Call(call) if self.condenses(call.range()) => self
+                .one_row
+                .condensed(self.source, expr, expr.into())
+                .is_some_and(|form| {
+                    self.one_row.fits(
+                        column
+                            + self.one_row.text_width(
+                                self.source,
+                                self.padding,
+                                &form,
+                                call.range(),
+                            )
+                            + tail,
+                    )
+                }),
+            _ if is_layoutable(expr) => {
+                self.one_row.joins_literals()
+                    && self
+                        .one_row
+                        .rejoined(self.source, expr, expr.into(), column, tail)
+                        .is_some()
             }
             _ => false,
         }

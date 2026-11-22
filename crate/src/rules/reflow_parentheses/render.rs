@@ -61,7 +61,8 @@ impl Shedder<'_> {
     /// that construct's opening bracket landing on the pair's row and its
     /// rows hung from the statement's indent, rendered through the pairs
     /// inside it this pass sheds. `None` unless the pair holds the whole
-    /// value of a `return` or an assignment and that value is a construct
+    /// value of a `return` or an assignment and that value lands on one
+    /// row, per [`Self::lands_on_one_row`], or is a construct
     /// [`Self::lands_across_rows`] reports, and `None` where the rows
     /// cannot hang from that indent or the opened row runs past the
     /// budget.
@@ -80,10 +81,11 @@ impl Shedder<'_> {
         splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
     }
 
-    /// True where `candidate`'s value lands across rows from a statement
-    /// at `indent`, per [`Self::lands_across_rows`], and its opened row,
-    /// the pair opening at `column`, stays inside the budget, per
-    /// [`Self::opens_past_the_budget`]. Both read the text that value
+    /// True where `candidate`'s value, the pair opening at `column`,
+    /// lands on one row inside the budget, per [`Self::lands_on_one_row`],
+    /// or lands across rows from a statement at `indent`, per
+    /// [`Self::lands_across_rows`], with its opened row inside the budget,
+    /// per [`Self::opens_past_the_budget`]. Each reads the text that value
     /// lands as, meaning this module reparsed once with every edit
     /// `simplify-comprehensions` plans applied, where one of them falls
     /// inside the value, measured as the same candidate there.
@@ -111,6 +113,9 @@ impl Shedder<'_> {
                         .shedder
                         .opens_inside_the_budget(other, landed.candidates, indent, column)
                 });
+        }
+        if self.lands_on_one_row(candidate, candidates, column) {
+            return true;
         }
         let nested = nested_shed_edits(candidate, candidates);
         let block = hung_block_through(self.source, candidate.inner, &nested, indent);

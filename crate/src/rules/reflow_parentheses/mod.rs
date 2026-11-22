@@ -228,9 +228,9 @@ impl Shedder<'_> {
     /// Otherwise a pair the source wrote sheds in place where an enclosing
     /// bracket holds its breaks, re-seating the rows its parens moved.
     /// Where none does, a pair holding the whole value of a `return` or an
-    /// assignment that is one bracketed construct landing across rows
-    /// opens that bracket on the statement's row, and any other pair holds, whereas
-    /// a pair the break adds earns nothing.
+    /// assignment that is one bracketed construct landing on one row or
+    /// across rows opens that bracket on the statement's row, and any
+    /// other pair holds, whereas a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let pair = candidate.pair;
@@ -379,6 +379,11 @@ mod tests {
         false,
         "value = compute(a,\n    b)\n"
     )]
+    #[case::fractured_call_reflow_calls_joins(
+        "value = (\n    compute(a,\n        b)\n)\n",
+        true,
+        "value = compute(a,\n    b)\n"
+    )]
     #[case::call_on_a_flush_column_call(
         "value = (\n    factory(\n        alpha,\n        beta,\n    )()\n)\n",
         true,
@@ -463,7 +468,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::fractured_call_rejoining_inside("value = (\n    compute(a,\n        b)\n)\n", true)]
     #[case::fractured_dict_rejoining_inside(
         &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(60)),
         true
@@ -867,6 +871,36 @@ mod tests {
     ) {
         settled_at_every_width(value, returns, reflows_calls);
     }
+    #[rstest]
+    #[case::fractured_call(
+        "third = (\n    compute(a,\n        b)\n)\n",
+        "third = compute(a, b)\n"
+    )]
+    #[case::fractured_dict(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}\n)\n",
+        "value = {\"alpha\": 1, \"delta\": 2}\n"
+    )]
+    #[case::fractured_set_comprehension(
+        "value = (\n    {item\n     for item in range(10)}\n)\n",
+        "value = set(range(10))\n"
+    )]
+    #[case::items_call_on_a_dict_past_the_budget(
+        "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
+        "def f():\n    pairs = {\n        \"alpha_key_name\" : alpha_value_xxxxxxxx,\n        \"delta_key_name\" : delta_value_xxxxxx\n    }.items()\n    return pairs\n"
+    )]
+    fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let pipeline = Pipeline::with_defaults(&Config::default());
+        let once = pipeline.format(parse(src)).expect("the first run formats");
+        assert_eq!(once.text(), expected);
+        let twice = pipeline
+            .format(parse(once.text()))
+            .expect("the second run formats");
+        assert_eq!(twice.text(), expected);
+    }
+
     #[test]
     fn a_dict_call_on_a_dict_past_the_entry_cap_opens_at_every_width_its_pair_fits() {
         let src =
