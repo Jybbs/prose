@@ -24,7 +24,7 @@ export function byRule(cases: readonly CompositionCase[]): Record<string, readon
   return index
 }
 
-// Resolves the composition directory inside one crate's fixture tree.
+// Resolves the composition directory inside the fixture tree beside a crate.
 export function compositionDir(crate: string): string {
   return path.join(fixturesDirFrom(crate), COMPOSITION_RULE)
 }

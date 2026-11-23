@@ -8,8 +8,9 @@ import { readFromDiskPlugin } from './lib/config/read-from-disk.ts'
 import { VUE_JSX }            from './lib/shared/constants.ts'
 import * as paths             from './lib/shared/paths.ts'
 
+const TESTS  = paths.siteTestsDir(import.meta.url)
 const BUNDLE = {
-  globalSetup : [path.join(paths.siteTestsDir(import.meta.url), 'serve.ts')],
+  globalSetup : [path.join(TESTS, 'serve.ts')],
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
@@ -21,7 +22,6 @@ const ROOT           = paths.repoRoot(import.meta.url)
 const RULES          = 'crate/src/rules/**/*.rs'
 const SCRIPTS        = 'site/.vitepress/{kit,lib,theme}/**/*.{ts,tsx}'
 const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
-const TESTS          = paths.siteTestsDir(import.meta.url)
 export const READERS = {
   'site/.vitepress/config.ts'                               : [GRAPH],
   'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],

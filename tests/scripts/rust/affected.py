@@ -36,9 +36,10 @@ def test_affected_runs_the_suite_once_a_change_reaches_a_rust_path(
     """
     Pins that a change to a Rust source, a workspace member `cargo metadata`
     lists, the integration tests and fixtures under `tests/rust/`, or a file
-    configuring the workspace's build or its toolchain runs the one `cargo test` of `rust:suite`, followed by the `prose_wasm`
-    tests only where the change reaches `prose_wasm`, a member it depends on
-    outside its dev dependencies, or the workspace manifest and lockfile.
+    configuring the workspace's build or its toolchain runs the one
+    `cargo test` of `rust:suite`, followed by the `prose_wasm` tests only
+    where the change reaches `prose_wasm`, a member it depends on outside its
+    dev dependencies, or the workspace manifest and lockfile.
     """
     finished = affected(changed, "edited", group="rust")
 

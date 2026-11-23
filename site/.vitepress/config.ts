@@ -49,6 +49,7 @@ import { TOOL_SEEDS }                                 from './lib/shared/tools.t
 import * as version                                   from './lib/shared/version.ts'
 
 const crate                = paths.crateDir(import.meta.url)
+const repoDirectory        = paths.repoRoot(import.meta.url)
 const rulesDirectory       = paths.rulesDir(import.meta.url)
 const siteDirectory        = paths.siteDir(import.meta.url)
 const pagesDirectory       = paths.pagesDir(import.meta.url)
@@ -61,7 +62,7 @@ const ruleDiscovery        = discoverRules(rulesDirectory)
 const ruleIndex            = discoverRuleIndex(rulesDirectory)
 const discoveredRules      = ruleDiscovery.rules
 const discoveredPrimitives = discoverPrimitives(paths.architectureDir(import.meta.url))
-const emblems              = emblemsOf(readPlatforms(paths.repoRoot(import.meta.url)))
+const emblems              = emblemsOf(readPlatforms(repoDirectory))
 const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const themeColor           = PALETTE.ube
@@ -76,7 +77,7 @@ const highlightOptions     = {
 const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
   data     : Object.fromEntries(lintFindings),
   graph    : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
-  lockfile : fs.readFileSync(path.join(paths.repoRoot(import.meta.url), 'bun.lock'), 'utf8'),
+  lockfile : fs.readFileSync(path.join(repoDirectory, 'bun.lock'), 'utf8'),
   options  : highlightOptions
 })
 const virtualSheets        = new Map([

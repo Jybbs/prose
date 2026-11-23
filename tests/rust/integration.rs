@@ -252,7 +252,9 @@ fn render(diagnostics: &[Diagnostic]) -> String {
 /// ending its source carries. A rule writing an ending of its own leaves
 /// the output mixed, which the second pass then rewrites again.
 #[rstest]
-fn crlf_input_holds_its_endings_and_settles(#[files("../tests/rust/fixtures/**/input.py")] path: PathBuf) {
+fn crlf_input_holds_its_endings_and_settles(
+    #[files("../tests/rust/fixtures/**/input.py")] path: PathBuf,
+) {
     let Some((domain, case, _, pipeline)) = sweepable(&path) else {
         return;
     };

@@ -115,10 +115,10 @@ export function viteCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'vite')
 }
 
-export function vitepressThemeDir(metaUrl: string): string {
-  return path.join(repoRoot(metaUrl), 'node_modules', 'vitepress', 'dist', 'client', 'theme-default')
-}
-
 export function vitepressCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'vitepress')
+}
+
+export function vitepressThemeDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'node_modules', 'vitepress', 'dist', 'client', 'theme-default')
 }

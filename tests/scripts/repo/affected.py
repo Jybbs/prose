@@ -9,8 +9,9 @@ from subprocess      import CompletedProcess
 
 PYTEST = "uv run --locked --only-group test --project crate pytest --numprocesses=auto"
 SUITE  = (
-    "tests/scripts/conftest.py", "tests/scripts/py/conftest.py", "tests/scripts/py/format.py",
-    "tests/scripts/py/lint.py", "tests/scripts/repo/audit.py"
+    "tests/scripts/conftest.py", "tests/scripts/py/conftest.py",
+    "tests/scripts/py/format.py", "tests/scripts/py/lint.py",
+    "tests/scripts/repo/audit.py"
 )
 
 
@@ -23,7 +24,11 @@ SUITE  = (
             "tests/scripts/repo/audit.py",
             id = "python task"
         ),
-        param("tests/scripts/py/lint.py", "tests/scripts/py/lint.py", id = "test module"),
+        param(
+            "tests/scripts/py/lint.py",
+            "tests/scripts/py/lint.py",
+            id = "test module"
+        ),
         param("tests/scripts/py/conftest.py", "tests/scripts/py", id = "group fixture"),
         param("tests/scripts/conftest.py", "tests/scripts", id = "suite fixture"),
         param(".mise/lib/python.bash", "tests/scripts", id = "library"),
@@ -129,7 +134,8 @@ def test_affected_runs_the_module_named_for_a_renamed_task(
         ),
         param(
             (".mise/tasks/repo/audit.py", "tests/scripts/py/lint.py"),
-            "tests/scripts/py/format.py tests/scripts/py/lint.py tests/scripts/repo/audit.py",
+            "tests/scripts/py/format.py tests/scripts/py/lint.py "
+            "tests/scripts/repo/audit.py",
             id = "modules out of path order"
         )
     ]
@@ -190,7 +196,11 @@ def test_affected_runs_the_modules_a_deletion_leaves(
             id = "test module"
         ),
         param(".mise/tasks/gha/brief.py", "tests/scripts/gha/brief.py", id = "task"),
-        param("tests/scripts/gha/conftest.py", "tests/scripts/gha", id = "group fixture")
+        param(
+            "tests/scripts/gha/conftest.py",
+            "tests/scripts/gha",
+            id = "group fixture"
+        )
     ]
 )
 def test_affected_runs_what_a_file_naming_a_changed_path_reaches(
