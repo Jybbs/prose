@@ -23,7 +23,7 @@ use crate::{
             display_width, run_closes_to_a_space, settled_head_column, settled_slice_width,
             settled_width, soft_wrap_runs,
         },
-        layout::{is_layoutable, item_indent},
+        layout::{is_collapsible, is_layoutable, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
@@ -89,13 +89,13 @@ impl Shedder<'_> {
 
     /// True where every line break inside the call `expr` falls inside an
     /// argument list `reflow-calls` closes or a bracketed collection
-    /// literal `reflow-collections` rejoins outside any suppression of
-    /// that rule.
+    /// literal, comprehension, or subscript `reflow-collections` rejoins
+    /// outside any suppression of that rule.
     fn closes_every_break(&self, expr: &Expr) -> bool {
         let call = expr.range();
         let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
             (self.one_row.joins_literals()
-                && is_layoutable(inner)
+                && is_collapsible(inner)
                 && inner
                     .as_tuple_expr()
                     .is_none_or(|tuple| tuple.parenthesized)

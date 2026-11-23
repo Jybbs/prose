@@ -552,10 +552,6 @@ mod tests {
         "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)  # prose: skip[reflow-collections]\n",
         true
     )]
-    #[case::call_on_a_subscript_slice_written_across_rows(
-        "value = (\n    table[alpha,\n          beta].get(key)\n)\n",
-        true
-    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
@@ -974,6 +970,22 @@ mod tests {
     #[case::fractured_call_holding_a_call_ahead_of_its_break(
         "value = (\n    compute(inner(a),\n        b)\n)\n",
         "value = compute(inner(a), b)\n"
+    )]
+    #[case::call_on_a_subscript_slice_written_across_rows(
+        "value = (\n    table[alpha,\n          beta].get(key)\n)\n",
+        "value = table[alpha, beta].get(key)\n"
+    )]
+    #[case::call_on_a_list_comprehension_written_across_rows(
+        "value = ([item.name\n for item in items].count(key))\n",
+        "value = [item.name for item in items].count(key)\n"
+    )]
+    #[case::call_holding_a_dict_comprehension_written_across_rows(
+        "value = (\n    compute({item.name: item\n             for item in items}, key)\n)\n",
+        "value = compute({item.name: item for item in items}, key)\n"
+    )]
+    #[case::call_holding_a_generator_written_across_rows(
+        "value = (\n    compute(item.name\n            for item in items)\n)\n",
+        "value = compute(item.name for item in items)\n"
     )]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
