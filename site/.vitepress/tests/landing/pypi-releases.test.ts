@@ -35,6 +35,7 @@ describe('the PyPI releases loader', () => {
 
   supportTest.for([
     ['the release map is missing', {}],
+    ['a version has no file list', { releases: { '0.9.0': null } }],
     ['a file has no upload time', { releases: { '0.9.0': [{}] } }],
     ['an upload time is unreadable', { releases: { '0.9.0': [{ upload_time: 'soon' }] } }]
   ] as const)('returns no release on a cold store when %s', async ([, payload], { tmpDir, warn }) => {
@@ -57,26 +58,32 @@ describe('the PyPI releases loader', () => {
     respond({ releases: {
       '0.10.0' : [{ upload_time: '2026-05-12T09:30:00' }],
       '0.11.1' : [],
-      '0.8.0'  : [{ upload_time: '2026-01-05T08:00:00', yanked: true }],
-      '0.9.0'  : [
-        { upload_time: '2026-03-02T10:00:00', yanked: true },
-        { upload_time: '2026-03-04T10:00:00' }
+
+      '0.8.0': [
+        { upload_time: '2026-01-05T08:00:00', yanked: true },
+        { upload_time: '2026-01-06T08:00:00', yanked: true }
+      ],
+
+      '0.9.0': [
+        { upload_time: '2026-06-02T10:00:00', yanked: true },
+        { upload_time: '2026-06-04T10:00:00' },
+        { upload_time: '2026-06-06T10:00:00' }
       ]
     } })
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([
+      {
+        date      : '2026-06-04',
+        month     : 'JUN',
+        url       : 'https://pypi.org/project/prose-formatter/0.9.0/',
+        version   : '0.9.0',
+        year      : '2026',
+        yearShort : '26'
+      },
       {
         date      : '2026-05-12',
         month     : 'MAY',
         url       : 'https://pypi.org/project/prose-formatter/0.10.0/',
         version   : '0.10.0',
-        year      : '2026',
-        yearShort : '26'
-      },
-      {
-        date      : '2026-03-04',
-        month     : 'MAR',
-        url       : 'https://pypi.org/project/prose-formatter/0.9.0/',
-        version   : '0.9.0',
         year      : '2026',
         yearShort : '26'
       },
