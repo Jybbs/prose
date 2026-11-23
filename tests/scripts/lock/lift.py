@@ -90,7 +90,7 @@ TREE     = {
         '[[package]]\nname    = "pytest"\nversion = "9.1.1"\n'
     ),
 
-    "site/package.json": (
+    "package.json": (
         '{\n  "overrides": {\n    "shiki" : "4.4.3",\n    "vite"  : "8.3.0"\n  },\n'
         '  "devDependencies": {\n    "vite" : "8.3.0"\n  },\n'
         '  "patchedDependencies": {\n    "vite@8.3.0": "patches/vite.patch"\n  }\n}\n'
@@ -1127,9 +1127,9 @@ def test_pins_reads_every_home(fp: FakeProcess, lift: ModuleType, tree: Path):
         ("rust", "rust", "", "1.98.1", "Cargo.toml"),
         ("rust", "rust", "mise", "1.98.1", ".mise/config.toml"),
         ("serde", "serde", "cargo", "1.0.229", "Cargo.toml"),
-        ("shiki", "shiki", "npm", "4.4.3", "site/package.json"),
+        ("shiki", "shiki", "npm", "4.4.3", "package.json"),
         ("tomli", "tomli", "uv", "2.2.1", "crate/pyproject.toml"),
-        ("vite", "vite", "bun", "8.3.0", "site/package.json"),
+        ("vite", "vite", "bun", "8.3.0", "package.json"),
         ("wasm-bindgen", "wasm-bindgen", "cargo", "0.2.128", "crate/Cargo.toml"),
         ("wrangler", "wrangler", "npm", "4.137.0", ".github/actions/wheel/action.yml")
     }
@@ -1649,7 +1649,7 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
         pin(
             lift    = lift,
             name    = "vite",
-            path    = "site/package.json",
+            path    = "package.json",
             pattern = "x",
             source  = "bun",
             written = "8.3.0"
@@ -1657,7 +1657,7 @@ def test_table_groups_the_pins_and_reads_alerts_only_for_a_lift(
         pin(
             lift    = lift,
             name    = "vite",
-            path    = "site/package.json",
+            path    = "package.json",
             pattern = "y",
             source  = "bun",
             written = "8.3.0"
@@ -2015,7 +2015,7 @@ def test_write_moves_every_home_and_each_lifted_package(
                 pin(
                     lift    = lift,
                     name    = "vite",
-                    path    = "site/package.json",
+                    path    = "package.json",
                     pattern = each,
                     source  = "bun",
                     written = "8.3.0"
@@ -2037,8 +2037,8 @@ def test_write_moves_every_home_and_each_lifted_package(
     assert (tree / "Cargo.toml").read_text() == (
         TREE["Cargo.toml"].replace('"1.0.229"', '"1.0.230"')
     )
-    assert (tree / "site/package.json").read_text() == (
-        TREE["site/package.json"].replace("8.3.0", "8.3.4")
+    assert (tree / "package.json").read_text() == (
+        TREE["package.json"].replace("8.3.0", "8.3.4")
     )
     assert [list(call) for call in fp.calls] == [*TOOLS, cargo, uv, SYNC]
     assert capsys.readouterr().out == " M Cargo.lock\n"
@@ -2091,7 +2091,7 @@ def test_write_runs_only_the_relock_for_an_npm_lift(
     vite = pin(
         lift    = lift,
         name    = "vite",
-        path    = "site/package.json",
+        path    = "package.json",
         pattern = r'"vite"\s*:\s*"[^"]*"',
         source  = "bun",
         written = "8.3.0"

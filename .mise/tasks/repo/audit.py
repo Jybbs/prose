@@ -13,7 +13,7 @@ them fails.
     parity     Every cross-config pin and shared declaration agrees across
                its homes.
     exact      Every entry of a dependency table, `overrides`, or
-               `resolutions` in `site/package.json` pins one exact version,
+               `resolutions` in `package.json` pins one exact version,
                so each range `bun add` writes fails the audit, named by its
                package.
     labels     Every label `release.yml`, an issue template, or the label
@@ -62,7 +62,7 @@ them fails.
                and no dependency names a task that does not exist.
     scripts    Every tool in `.mise/bin` resolves on the path from `site/` to
                its script, none of those scripts is a symlink, each docs-site
-               script passes its arguments to `site/node_modules/.bin/<tool>`
+               script passes its arguments to `node_modules/.bin/<tool>`
                as given within ten seconds and matches the first byte for
                byte, and no task or library under `.mise/` runs `bunx`,
                `bun x`, or `npx`.
@@ -422,11 +422,11 @@ def drafts() -> int:
 def exact() -> int:
     """
     Reports every entry of a dependency table, `overrides`, or `resolutions`
-    in `site/package.json` whose version is a range rather than one version
+    in `package.json` whose version is a range rather than one version
     in the grammar https://semver.org/ sets, which `EXACT` spells, naming
     each by its package.
     """
-    package = json_loads(read("site/package.json"))
+    package = json_loads(read("package.json"))
     return flagged(
         findings = [
             (
@@ -439,7 +439,7 @@ def exact() -> int:
                     for name, version in package.get(table, {}).items()
                     if not fullmatch(EXACT, version)
                 },
-                "site/package.json dependencies written as a range rather than an "
+                "package.json dependencies written as a range rather than an "
                 "exact version"
             )
         ]
@@ -828,7 +828,7 @@ def misdirected(script: Path) -> bool:
     Checks whether a copy of `script` in a scratch tree hands its
     stand-in target an argument other than as given, one holding
     a space included, runs a target other than the scratch tree's
-    `site/node_modules/.bin/<tool>` once both paths are resolved, or runs
+    `node_modules/.bin/<tool>` once both paths are resolved, or runs
     past ten seconds, the script reaching its root as `.mise/bin/../..`.
     A copy that runs past ten seconds is killed along with every process
     it started.
@@ -836,7 +836,7 @@ def misdirected(script: Path) -> bool:
     arguments = ["two words", "one", ""]
     with TemporaryDirectory() as scratch:
         copy   = Path(scratch, ".mise/bin", script.name)
-        target = Path(scratch, "site/node_modules/.bin", script.name)
+        target = Path(scratch, "node_modules/.bin", script.name)
         for path, body in [
             (copy,   script.read_bytes()),
             (target, b'#!/bin/sh\nprintf \'%s\\n\' "$0" "$@"\n')
@@ -900,7 +900,7 @@ def override_pins(package: dict) -> list[tuple[str, str, str]]:
     """
     return [
         (
-            f"site/package.json {name} override ↔ its devDependency pin",
+            f"package.json {name} override ↔ its devDependency pin",
             version,
             package["devDependencies"][name]
         )
@@ -928,7 +928,7 @@ def parity_pairs() -> list[tuple[str, str | list[str], str | list[str]]]:
     compares, beside the label it reports a mismatch under.
     """
     cargo   = toml("Cargo.toml")
-    package = json_loads(read("site/package.json"))
+    package = json_loads(read("package.json"))
     pins    = mise_pins(toml(".mise/config.toml"))
     proofs  = proof_rows()
     rust    = cargo["workspace"]["package"]["rust-version"]
@@ -1041,10 +1041,10 @@ def patch_pins(package: dict) -> list[tuple[str, str, str]]:
     for key in package.get("patchedDependencies", {}):
         name, _, version = key.rpartition("@")
         if (pinned := package["devDependencies"].get(name)) is None:
-            fail(f"no site/package.json devDependency named {name!r}")
+            fail(f"no package.json devDependency named {name!r}")
         pairs.append(
             (
-                f"site/package.json {name} patch key ↔ its devDependency pin",
+                f"package.json {name} patch key ↔ its devDependency pin",
                 version, pinned
             )
         )
@@ -1316,7 +1316,7 @@ def scripts() -> int:
     Reports every drift in the scripts under `.mise/bin`, covering a tool
     that `mise x` run from `site/` resolves to anything but its script, a
     docs-site script that hands its target an argument other than as given,
-    runs a target other than `site/node_modules/.bin/<tool>`, or runs past
+    runs a target other than `node_modules/.bin/<tool>`, or runs past
     ten seconds, a symlink among the scripts, a docs-site script differing
     byte for byte from the first, and a task or library under `.mise/`
     that runs `bunx`, `bun x`, or `npx`. Each script lands in `READ` for

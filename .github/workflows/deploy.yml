@@ -23,9 +23,11 @@ on:
       - Cargo.lock
       - Cargo.toml
       - LICENSE
+      - bun.lock
       - crate/Cargo.toml
       - crate/pyproject.toml
       - crate/src/**
+      - package.json
       - site/**
       - tests/rust/fixtures/**
       - tests/site/**
@@ -46,9 +48,11 @@ on:
       - .mise/tasks/**
       - Cargo.lock
       - Cargo.toml
+      - bun.lock
       - crate/Cargo.toml
       - crate/pyproject.toml
       - crate/src/**
+      - package.json
       - site/**
       - tests/rust/fixtures/**
       - tests/site/**

@@ -4,10 +4,10 @@ import path from 'node:path'
 import { babelParse, walk } from '@vue/compiler-sfc'
 import { parse }            from 'postcss'
 
-import { VITEPRESS_THEME } from '../../../site/.vitepress/lib/shared/paths'
-import { siteSheets }      from '../support'
-import * as tailwind       from '../tailwind'
-import * as vocabulary     from '../vocabulary'
+import { repoRoot, vitepressThemeDir } from '../../../site/.vitepress/lib/shared/paths'
+import { siteSheets }                  from '../support'
+import * as tailwind                   from '../tailwind'
+import * as vocabulary                 from '../vocabulary'
 
 import type { Declaration, Root, Rule } from 'postcss'
 
@@ -41,6 +41,7 @@ const CLASS_NAME = /\.(-?[_a-zA-Z][\w-]*)/g
 // Matches the `group` and `peer` classes, optionally named, that mark an
 // element for the `group-*` and `peer-*` variants and generate no CSS.
 const MARKER     = /^(?:group|peer)(?:\/[\w-]+)?$/
+const ROOT       = repoRoot(import.meta.url)
 const SHEETS     = siteSheets()
 const VOCAB      = vocabulary.siteVocabulary(
   SHEETS.find(({ file }) => file === vocabulary.TOKENS)!.root,
@@ -68,8 +69,9 @@ const DECLARED = new Set(
 // so every class a selector names passes as a hook, and so does a file
 // extension or a domain label such as `json` or `org`.
 const HOOKS = new Set(
-  fs.globSync('.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}', { cwd: vocabulary.SITE })
-    .flatMap(file => [...vocabulary.read(file).matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
+  fs.globSync('{site/.vitepress/{kit,lib,theme},tests/site}/**/*.{ts,tsx}', { cwd: ROOT })
+    .flatMap(file => [...fs.readFileSync(path.join(ROOT, file), 'utf8')
+      .matchAll(/(['"`])((?:(?!\1).)*)\1/g)])
     .flatMap(([, , text]) => [...text.matchAll(CLASS_NAME)].map(([, name]) => name))
 )
 
@@ -168,8 +170,8 @@ function bound(node: Expression, into: Written[], slot: number, alt = 0, shared?
 function vitepressClasses(): string[] {
   const keyed = (expression: string) => [...expression.matchAll(/([\w-]+)\s*:(?!:)|'([^']*)'/g)]
     .flatMap(([, key, text]) => (key ? [key] : words(text)))
-  return fs.globSync(`${VITEPRESS_THEME}/**/*.vue`, { cwd: vocabulary.SITE })
-    .flatMap(file => [...vocabulary.read(file).matchAll(/(?<!\w)(:?)class="([^"]+)"/g)])
+  return fs.globSync(path.join(vitepressThemeDir(import.meta.url), '**/*.vue'))
+    .flatMap(file => [...fs.readFileSync(file, 'utf8').matchAll(/(?<!\w)(:?)class="([^"]+)"/g)])
     .flatMap(([, binding, names]) => (binding ? keyed(names) : words(names)))
 }
 

@@ -4,7 +4,6 @@
     "noEmit" : true,
     "target" : "ESNext",
     "lib"    : ["ESNext", "DOM", "DOM.Iterable"],
-    "paths"  : { "*": ["../node_modules/@types/*", "../node_modules/*"] },
     "types"  : ["node", "vite/client", "vitest/globals"]
   },
   "include"         : [

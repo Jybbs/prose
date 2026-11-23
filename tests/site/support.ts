@@ -5,7 +5,7 @@ import path from 'node:path'
 import { parse as parseCss, type Root }    from 'postcss'
 import { test as base, type MockInstance } from 'vitest'
 
-import { VITEPRESS_THEME } from '../../site/.vitepress/lib/shared/paths'
+import { siteDir, vitepressThemeDir } from '../../site/.vitepress/lib/shared/paths'
 
 interface SupportFixtures {
   tmpDir : string
@@ -24,11 +24,11 @@ export function expectSlugIndex(
 // Parses every stylesheet under the kit and the theme in path order, each
 // beside its path within the site.
 export function siteSheets(): { file: string, root: Root }[] {
-  const site  = new URL('../../site/', import.meta.url)
+  const site  = siteDir(import.meta.url)
   const files = fs.globSync('.vitepress/{kit,theme}/**/*.css', { cwd: site })
   return files.toSorted().map(file => ({
     file : file,
-    root : parseCss(fs.readFileSync(new URL(file, site), 'utf8'))
+    root : parseCss(fs.readFileSync(path.join(site, file), 'utf8'))
   }))
 }
 
@@ -54,7 +54,7 @@ export function declared(file: string | URL, selector: string): Record<string, s
 // Reads the value the VitePress default theme gives `prop` under `selector`,
 // `:root` for the light scheme and `.dark` for the dark.
 export function vitepressVar(prop: string, selector: string): string {
-  const vars = new URL(`../../site/${VITEPRESS_THEME}/styles/vars.css`, import.meta.url)
+  const vars = path.join(vitepressThemeDir(import.meta.url), 'styles/vars.css')
   let value = ''
   parseCss(fs.readFileSync(vars, 'utf8')).walkRules(rule => {
     if (rule.selector === selector) rule.walkDecls(prop, decl => { value = decl.value })

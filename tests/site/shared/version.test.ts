@@ -1,9 +1,9 @@
-import { siteDir }    from '../../../site/.vitepress/lib/shared/paths'
+import { repoRoot }   from '../../../site/.vitepress/lib/shared/paths'
 import * as version   from '../../../site/.vitepress/lib/shared/version'
 import { CRATE }      from '../corpus'
 import { fixtureDir } from '../support'
 
-const site = siteDir(import.meta.url)
+const root = repoRoot(import.meta.url)
 
 describe('readCargoVersion', () => {
   it('reads the crate version from Cargo.toml', () => {
@@ -19,12 +19,12 @@ describe('readCargoVersion', () => {
 describe('readPackageVersions', () => {
   it('reads the pinned version of each named devDependency', () => {
     const semver = expect.stringMatching(/^\d+\.\d+\.\d+/)
-    expect(version.readPackageVersions(site, ['@resvg/resvg-js', 'satori']))
+    expect(version.readPackageVersions(root, ['@resvg/resvg-js', 'satori']))
       .toStrictEqual({ '@resvg/resvg-js': semver, satori: semver })
   })
 
   it('reads the pin of a package the manifest only overrides', () => {
-    expect(version.readPackageVersions(site, ['shiki'])).toStrictEqual({ shiki: expect.stringMatching(/^\d+\.\d+\.\d+/) })
+    expect(version.readPackageVersions(root, ['shiki'])).toStrictEqual({ shiki: expect.stringMatching(/^\d+\.\d+\.\d+/) })
   })
 
   it.each([

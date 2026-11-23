@@ -21,8 +21,8 @@ import {
 import { parse as parseColor } from 'culori'
 import { parse }               from 'postcss'
 
-import { paletteCss, themeCss }     from '../../site/.vitepress/lib/shared/palette'
-import { siteDir, VITEPRESS_THEME } from '../../site/.vitepress/lib/shared/paths'
+import { paletteCss, themeCss }       from '../../site/.vitepress/lib/shared/palette'
+import { siteDir, vitepressThemeDir } from '../../site/.vitepress/lib/shared/paths'
 
 import type { ComponentValue, FunctionNode } from '@csstools/css-parser-algorithms'
 import type { TokenIdent }                   from '@csstools/css-tokenizer'
@@ -261,7 +261,8 @@ export function siteVocabulary(tokens: Root, reading: Root[]): Vocabulary {
 
 // Parses each stylesheet the VitePress default theme ships.
 export function vitepressSheets(): Root[] {
-  return fs.globSync(`${VITEPRESS_THEME}/styles/**/*.css`, { cwd: SITE }).map(file => parse(read(file)))
+  return fs.globSync(path.join(vitepressThemeDir(import.meta.url), 'styles/**/*.css'))
+    .map(file => parse(fs.readFileSync(file, 'utf8')))
 }
 
 function named(node: unknown, name: string): node is FunctionNode {

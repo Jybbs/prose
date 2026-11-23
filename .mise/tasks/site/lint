@@ -1,6 +1,5 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE depends     = ["site:bake"]
 #MISE description = "Lint the docs-site TypeScript with `oxlint`"
-#MISE dir         = "site"
 
-oxlint -c .vitepress/.oxlintrc.json .vitepress ../tests/site "$@"
+oxlint -c site/.vitepress/.oxlintrc.json site/.vitepress tests/site "$@"

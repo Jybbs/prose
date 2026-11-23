@@ -72,6 +72,6 @@
     "vue"                                 : "3.5.45"
   },
   "patchedDependencies": {
-    "@shikijs/magic-move@4.6.0": ".vitepress/patches/magic-move-frame-cost.patch"
+    "@shikijs/magic-move@4.6.0": "site/.vitepress/patches/magic-move-frame-cost.patch"
   }
 }

@@ -2,7 +2,7 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 import { HighlightCache } from '../../../site/.vitepress/lib/markdown/highlight-cache'
-import { siteDir }        from '../../../site/.vitepress/lib/shared/paths'
+import { repoRoot }       from '../../../site/.vitepress/lib/shared/paths'
 
 import type { readPublishedVersion } from '../../../site/.vitepress/lib/shared/published-version'
 
@@ -25,6 +25,6 @@ describe('the highlight cache key', () => {
   })
 
   it('takes the text of the lockfile', () => {
-    expect(inputs.lockfile).toBe(fs.readFileSync(path.join(siteDir(import.meta.url), 'bun.lock'), 'utf8'))
+    expect(inputs.lockfile).toBe(fs.readFileSync(path.join(repoRoot(import.meta.url), 'bun.lock'), 'utf8'))
   })
 })

@@ -7,13 +7,17 @@ const pageScript = (text: string): string => {
 }
 
 export default defineConfig({
-  entry              : ['**/*.md', '.vitepress/**/*.data.ts', '.vitepress/kit/**/*.catalog.tsx', '.vitepress/lib/readme/{cards,record}.ts'],
-  project            : ['.vitepress/**/*.{ts,tsx,mjs}', '../tests/site/**/*.{ts,tsx,mjs}', '**/*.md'],
+  entry              : [
+    'site/**/*.md', 'site/.vitepress/**/*.data.ts', 'site/.vitepress/kit/**/*.catalog.tsx',
+    'site/.vitepress/lib/readme/{cards,record}.ts'
+  ],
+  project            : ['site/.vitepress/**/*.{ts,tsx,mjs}', 'site/**/*.md', 'tests/site/**/*.{ts,tsx,mjs}'],
   compilers          : { md: pageScript },
   include            : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
   rules              : { cycles: 'error' },
-  typescript         : { config: ['.vitepress/tsconfig.json'] },
-  vitest             : { config: ['.vitepress/vitest.config.ts'] },
+  typescript         : { config: ['site/.vitepress/tsconfig.json'] },
+  vitepress          : { entry: ['site/.vitepress/config.ts', 'site/.vitepress/theme/index.ts'] },
+  vitest             : { config: ['site/.vitepress/vitest.config.ts'] },
   ignoreDependencies : [
     '@fontsource/fraunces',
     '@fontsource/jetbrains-mono',

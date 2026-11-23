@@ -4,18 +4,18 @@ import path          from 'node:path'
 
 import { hash } from 'ohash'
 
-import { siteDir }             from '../../../site/.vitepress/lib/shared/paths'
+import { repoRoot }            from '../../../site/.vitepress/lib/shared/paths'
 import { readRenderGraph }     from '../../../site/.vitepress/lib/shared/render-graph'
 import { readPackageVersions } from '../../../site/.vitepress/lib/shared/version'
 import { supportTest }         from '../support'
 
 describe('readRenderGraph', () => {
-  const site = siteDir(import.meta.url)
+  const root = repoRoot(import.meta.url)
 
   it('reaches a module and a package imported only through another module', async () => {
     const graph = await readRenderGraph(path.join(import.meta.dirname, '../../../site/.vitepress/lib/og/render'))
     expect(Object.keys(graph.modules)).toContain('../../markdown/inert-env.ts')
-    expect(graph.packages).toMatchObject(readPackageVersions(site, ['culori']))
+    expect(graph.packages).toMatchObject(readPackageVersions(root, ['culori']))
     expect(Object.keys(graph.packages).some(isBuiltin)).toBe(false)
   })
 
@@ -40,7 +40,7 @@ describe('readRenderGraph', () => {
     expect(Object.keys(graph.modules).toSorted())
       .toStrictEqual(['entry.ts', 'lib/late.ts', 'lib/ns.ts'])
     expect(graph.packages)
-      .toStrictEqual(readPackageVersions(site, ['@iconify/utils', 'ohash', 'satori']))
+      .toStrictEqual(readPackageVersions(root, ['@iconify/utils', 'ohash', 'satori']))
   })
 
   supportTest('keeps a module whose constant the bundler inlines', async ({ tmpDir }) => {
@@ -64,7 +64,7 @@ describe('readRenderGraph', () => {
     const after = await readRenderGraph(tmpDir)
     expect(Object.keys(before.modules).toSorted())
       .toStrictEqual(['entry.ts', 'lib/leaf.ts', 'lib/mid.ts'])
-    expect(before.packages).toStrictEqual(readPackageVersions(site, ['culori']))
+    expect(before.packages).toStrictEqual(readPackageVersions(root, ['culori']))
     expect(hash(after)).not.toBe(hash(before))
   })
 })

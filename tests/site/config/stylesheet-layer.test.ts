@@ -12,8 +12,8 @@ const transform = (code: string, id: string) =>
 describe('stylesheetLayerPlugin', () => {
   it.each([
     '/site/.vitepress/theme/styles/globals.css',
-    '/site/node_modules/vitepress/dist/client/theme-default/styles/vars.css',
-    '/site/node_modules/vitepress/dist/client/theme-default/components/VPNav.vue?vue&type=style&index=0&scoped=1&lang.css',
+    '/node_modules/vitepress/dist/client/theme-default/styles/vars.css',
+    '/node_modules/vitepress/dist/client/theme-default/components/VPNav.vue?vue&type=style&index=0&scoped=1&lang.css',
     '\0virtual:prose-palette.css'
   ])('wraps %s in the components layer', id => {
     expect(transform('.a { color: red; }', id)).toStrictEqual({

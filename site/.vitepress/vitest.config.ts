@@ -4,14 +4,12 @@ import { playwright }                   from '@vitest/browser-playwright'
 import { groupIconVitePlugin }          from 'vitepress-plugin-group-icons'
 import { configDefaults, defineConfig } from 'vitest/config'
 
-import manifest from '../package.json' with { type: 'json' }
-
 import { readFromDiskPlugin } from './lib/config/read-from-disk.ts'
 import { VUE_JSX }            from './lib/shared/constants.ts'
 import * as paths             from './lib/shared/paths.ts'
 
 const BUNDLE = {
-  globalSetup : ['../tests/site/serve.ts'],
+  globalSetup : [path.join(paths.siteTestsDir(import.meta.url), 'serve.ts')],
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
@@ -23,6 +21,7 @@ const ROOT           = paths.repoRoot(import.meta.url)
 const RULES          = 'crate/src/rules/**/*.rs'
 const SCRIPTS        = 'site/.vitepress/{kit,lib,theme}/**/*.{ts,tsx}'
 const STYLES         = 'site/.vitepress/{kit,theme}/**/*.css'
+const TESTS          = paths.siteTestsDir(import.meta.url)
 export const READERS = {
   'site/.vitepress/config.ts'                               : [GRAPH],
   'site/.vitepress/lib/exit-codes/sources.ts'               : [CRATE],
@@ -74,16 +73,14 @@ export const READERS = {
   ]
 }
 const RERUN_TRIGGERS = [
-  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
-  'site/.vitepress/{assets,patches}/**', 'site/bun.lock', 'site/public/**', 'tests/rust/fixtures/**',
-  'tests/site/**/fixtures/*/**'
+  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'bun.lock', 'crate/{Cargo,pyproject}.toml',
+  'site/.vitepress/{assets,patches}/**', 'site/public/**', 'tests/rust/fixtures/**', 'tests/site/**/fixtures/*/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
-  resolve  : { dedupe: Object.keys(manifest.devDependencies) },
   test     : {
-    dir                 : path.join(ROOT, 'tests', 'site'),
+    dir                 : TESTS,
     environment         : 'node',
     expect              : { requireAssertions: true },
     forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...RERUN_TRIGGERS],
@@ -106,7 +103,7 @@ export default defineConfig({
           exclude    : [...configDefaults.exclude, 'pages/**', 'render/**', 'wasm/**'],
           include    : ['**/*.test.ts'],
           name       : 'docs',
-          setupFiles : ['../tests/site/setup.ts']
+          setupFiles : [path.join(TESTS, 'setup.ts')]
         }
       },
 
@@ -129,7 +126,7 @@ export default defineConfig({
 
       {
         test: {
-          globalSetup : ['../tests/site/serve.ts'],
+          globalSetup : BUNDLE.globalSetup,
           include     : ['render/**/*.test.ts'],
           name        : 'render',
           testTimeout : 30_000

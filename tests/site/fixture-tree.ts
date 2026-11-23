@@ -46,7 +46,7 @@ export async function loadComponent(name: string): Promise<Component> {
     const pieces = await import('../../site/.vitepress/kit') as unknown as Record<string, Component>
     return pieces[name.slice('kit/'.length)]!
   }
-  const loader = COMPONENT_MODULES[`../theme/components/${name}.tsx`]
+  const loader = COMPONENT_MODULES[`../../site/.vitepress/theme/components/${name}.tsx`]
   if (loader === undefined) {
     throw new Error(`fixture tree: no component at theme/components/${name}`)
   }
