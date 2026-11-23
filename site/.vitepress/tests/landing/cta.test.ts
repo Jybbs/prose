@@ -6,7 +6,7 @@ import { Cta }              from '../../theme/components/landing/Cta.tsx'
 
 const releases = vi.hoisted((): PyPIRelease[] => [])
 
-vi.mock('../../lib/landing/pypi-releases.data.ts', () => ({ data: releases }))
+vi.mock('../../lib/landing/pypi-releases.data', () => ({ data: releases }))
 
 afterEach(() => {
   releases.length = 0

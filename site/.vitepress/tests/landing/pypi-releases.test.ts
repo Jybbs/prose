@@ -2,7 +2,7 @@ import loader            from '../../lib/landing/pypi-releases.data.ts'
 import { fetchCacheDir } from '../../lib/shared/paths.ts'
 import { supportTest }   from '../support.ts'
 
-vi.mock('../../lib/shared/paths.ts', async importOriginal => ({
+vi.mock('../../lib/shared/paths', async importOriginal => ({
   ...await importOriginal<typeof import('../../lib/shared/paths.ts')>(),
   fetchCacheDir: vi.fn<typeof fetchCacheDir>()
 }))
