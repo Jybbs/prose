@@ -1,9 +1,8 @@
 import { defineLoader } from 'vitepress'
 
-import { conditionalFetch }        from '../shared/conditional-fetch.ts'
-import { PYPI_PACKAGE }            from '../shared/constants.ts'
-import { crateDir, fetchCacheDir } from '../shared/paths.ts'
-import { readCargoVersion }        from '../shared/version.ts'
+import { conditionalFetch } from '../shared/conditional-fetch.ts'
+import { PYPI_PACKAGE }     from '../shared/constants.ts'
+import { fetchCacheDir }    from '../shared/paths.ts'
 
 export interface PyPIRelease {
   date      : string
@@ -26,7 +25,6 @@ interface PyPIPayload {
   releases : Record<string, readonly PyPIReleaseFile[]>
 }
 
-const CRATE     = crateDir(import.meta.url)
 const ENDPOINT  = `https://pypi.org/pypi/${PYPI_PACKAGE}/json`
 const MONTH_FMT = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' })
 
@@ -35,19 +33,15 @@ function projectUrl(version: string): string {
 }
 
 function render(version: string, date: string): PyPIRelease {
-  const d     = new Date(date)
-  const dated = !Number.isNaN(d.getTime())
   return {
     date,
-    month     : dated ? MONTH_FMT.format(d).toUpperCase() : '—',
+    month     : MONTH_FMT.format(new Date(date)).toUpperCase(),
     url       : projectUrl(version),
     version,
-    year      : dated ? date.slice(0, 4) : '—',
-    yearShort : dated ? date.slice(2, 4) : '—'
+    year      : date.slice(0, 4),
+    yearShort : date.slice(2, 4)
   }
 }
-
-const FALLBACK: readonly PyPIRelease[] = [render(readCargoVersion(CRATE), '')]
 
 function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
   return b.date.localeCompare(a.date)
@@ -55,14 +49,13 @@ function compareDesc(a: PyPIRelease, b: PyPIRelease): number {
 }
 
 function toReleases(payload: unknown): readonly PyPIRelease[] {
-  const entries = Object.entries((payload as PyPIPayload).releases)
+  return Object.entries((payload as PyPIPayload).releases)
     .filter(([, files]) => files && files.length > 0)
     .map(([version, files]) => {
       const live = files.find(f => !f.yanked) ?? files[0]
       return render(version, live.upload_time.slice(0, 10))
     })
     .toSorted(compareDesc)
-  return entries.length > 0 ? entries : FALLBACK
 }
 
 export default defineLoader({
@@ -70,7 +63,7 @@ export default defineLoader({
   load(): Promise<readonly PyPIRelease[]> {
     return conditionalFetch({
       dir      : fetchCacheDir(import.meta.url),
-      fallback : FALLBACK,
+      fallback : [],
       headers  : { Accept: 'application/json' },
       key      : 'pypi-releases',
       parse    : toReleases,

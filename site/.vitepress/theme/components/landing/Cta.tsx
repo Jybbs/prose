@@ -12,7 +12,7 @@ import { ReleaseToggle }          from './ReleaseToggle'
 export const Cta = defineComponent({
   name: 'Cta',
   setup() {
-    const current = releases[0]
+    const current = releases.at(0)
     const extras  = releases.slice(1)
     const open    = ref(false)
 
@@ -39,7 +39,7 @@ export const Cta = defineComponent({
                               class="absolute inset-0 flex flex-col items-center justify-center px-14 py-16"
                               key="stamp"
                             >
-                              <ReleaseStamp release={current} />
+                              {current && <ReleaseStamp release={current} />}
                             </div>
                           )
                           : (
@@ -54,7 +54,7 @@ export const Cta = defineComponent({
                     )
                   }}
                 </Transition>
-                <ReleaseToggle {...disclosure.trigger} open={open.value} />
+                {current && <ReleaseToggle {...disclosure.trigger} open={open.value} />}
               </aside>
             )
           }}
