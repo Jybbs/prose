@@ -6,6 +6,8 @@
 //! through the pairs this same pass sheds inside it, and joins its own
 //! rows where it fits one.
 
+use std::borrow::Cow;
+
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -26,10 +28,19 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{open_brackets, tokens_within},
-        travel::{hanging_block_through, hung_block_through},
+        travel::{Travel, hanging_block_through, hung_block_through, shifted_block},
     },
     source::Source,
 };
+
+/// How the rows of a value whose pair comes off land. `Closed` where the
+/// layout rules close every break inside the value, each written row
+/// moving with the value until they do, and `Hung` where its rows hang
+/// from the statement.
+enum Landing {
+    Closed,
+    Hung,
+}
 
 impl Shedder<'_> {
     /// True where a bracket this pass leaves standing still holds `pair`
@@ -57,45 +68,22 @@ impl Shedder<'_> {
             && breaks_held_inside(self.source, inner, &covered_by(nested))
     }
 
-    /// The text replacing `candidate`'s pair with the construct it holds,
-    /// that construct's opening bracket landing on the pair's row and its
-    /// rows hung from the statement's indent, rendered through the pairs
-    /// inside it this pass sheds. `None` unless the pair holds the whole
-    /// value of a `return` or an assignment and that value lands on one
-    /// row, per [`Self::lands_on_one_row`], or is a construct
-    /// [`Self::lands_across_rows`] reports, and `None` where the rows
-    /// cannot hang from that indent or the opened row runs past the
-    /// budget.
-    fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
-        if !candidate.value {
-            return None;
-        }
-        let indent = self.statement_indent(candidate.pair);
-        let column = self.shifted_column(candidate.pair.start());
-        if !self.opens_inside_the_budget(candidate, candidates, indent, column) {
-            return None;
-        }
-        let nested = nested_shed_edits(candidate, candidates);
-        let block = hanging_block_through(self.source, candidate.inner, &nested, indent)?;
-        let text = candidate.flush.padded(&block).into_owned();
-        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
-    }
-
-    /// True where `candidate`'s value, the pair opening at `column`,
-    /// lands on one row inside the budget, per [`Self::lands_on_one_row`],
-    /// or lands across rows from a statement at `indent`, per
+    /// How `candidate`'s value lands, the pair opening at `column` in a
+    /// statement at `indent`. `None` unless it lands on one row, per
+    /// [`Self::lands_on_one_row`], or across rows, per
     /// [`Self::lands_across_rows`], with its opened row inside the budget,
-    /// per [`Self::opens_past_the_budget`]. Each reads the text that value
-    /// lands as, meaning this module reparsed once with every edit
-    /// `simplify-comprehensions` plans applied, where one of them falls
-    /// inside the value, measured as the same candidate there.
-    fn opens_inside_the_budget(
+    /// per [`Self::opens_past_the_budget`]. `Closed` for a value landing on
+    /// one row or one [`Self::closed_width`] measures. Each reads the
+    /// text that value lands as, meaning this module reparsed once with
+    /// every edit `simplify-comprehensions` plans applied, where one of
+    /// them falls inside the value, measured as the same candidate there.
+    fn landing(
         &self,
         candidate: &Candidate,
         candidates: &[Candidate],
         indent: usize,
         column: usize,
-    ) -> bool {
+    ) -> Option<Landing> {
         let range = candidate.expr.range();
         if let Some(landed) = self.landed
             && self
@@ -108,21 +96,58 @@ impl Shedder<'_> {
                 .candidates
                 .iter()
                 .find(|other| Some(other.pair.start()) == pair)
-                .is_some_and(|other| {
+                .and_then(|other| {
                     landed
                         .shedder
-                        .opens_inside_the_budget(other, landed.candidates, indent, column)
+                        .landing(other, landed.candidates, indent, column)
                 });
         }
         if self.lands_on_one_row(candidate, candidates, column) {
-            return true;
+            return Some(Landing::Closed);
         }
         if !self.lands_across_rows(candidate.expr, indent) {
-            return false;
+            return None;
         }
         let nested = nested_shed_edits(candidate, candidates);
         let block = hung_block_through(self.source, candidate.inner, &nested, indent);
-        !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
+        (!self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)).then(
+            || match self.closed_width(candidate.expr) {
+                Some(_) => Landing::Closed,
+                None => Landing::Hung,
+            },
+        )
+    }
+
+    /// The text replacing `candidate`'s pair with the construct it holds,
+    /// that construct's opening bracket landing on the pair's row and its
+    /// rows hung from the statement's indent, rendered through the pairs
+    /// inside it this pass sheds. `None` unless the pair holds the whole
+    /// value of a `return` or an assignment and [`Self::landing`] places
+    /// that value, and `None` where a [`Landing::Hung`] value's rows cannot
+    /// hang from that indent. The rows of a [`Landing::Closed`] value that
+    /// cannot hang move with it instead.
+    fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
+        if !candidate.value {
+            return None;
+        }
+        let indent = self.statement_indent(candidate.pair);
+        let column = self.shifted_column(candidate.pair.start());
+        let landing = self.landing(candidate, candidates, indent, column)?;
+        let nested = nested_shed_edits(candidate, candidates);
+        let block = match hanging_block_through(self.source, candidate.inner, &nested, indent) {
+            Some(block) => block,
+            None => match landing {
+                Landing::Closed => {
+                    let block = apply_inline_edits(self.source, candidate.inner, &nested);
+                    let head = self.source.line_indent_width(candidate.inner.start());
+                    let travel = Travel::rigid(indent.cast_signed() - head.cast_signed());
+                    Cow::Owned(shifted_block(&block, travel).into_owned())
+                }
+                Landing::Hung => return None,
+            },
+        };
+        let text = candidate.flush.padded(&block).into_owned();
+        splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`

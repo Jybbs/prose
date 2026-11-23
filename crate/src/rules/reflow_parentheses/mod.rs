@@ -10,7 +10,7 @@
 //! of a `return` or an assignment that is one bracketed construct
 //! landing on one row or across rows comes off, that construct
 //! opening on the statement's row, unless that row then runs past the
-//! budget or the construct's rows cannot hang from the statement's
+//! budget or rows no later rule closes cannot hang from the statement's
 //! indent. An over-budget boolean chain or conditional forming a test,
 //! a `return` value, an assignment value, or the last element of a bare
 //! tuple standing as one gains a pair the break adds. Each row is
@@ -458,6 +458,21 @@ mod tests {
     }
 
     #[rstest]
+    #[case::from_a_row_of_its_own(
+        "def f():\n    return (\n        [item.name for item in fetch(\n        ) if item.compute(\n        )].count(key)\n    )\n"
+    )]
+    #[case::from_the_row_of_the_pair(
+        "def f():\n    return ([item.name for item in fetch(\n    ) if item.compute(\n    )].count(key)\n    )\n"
+    )]
+    fn a_call_whose_rows_close_moves_them_to_the_statement_indent(#[case] src: &str) {
+        assert_eq!(
+            configured(src, |config| config.code_line_length =
+                NonZeroUsize::new(45)),
+            "def f():\n    return [item.name for item in fetch(\n    ) if item.compute(\n    )].count(key)\n",
+        );
+    }
+
+    #[rstest]
     #[case::call(
         "def f():\n    return (\n        compute(\n            a,\n            b,\n        )\n    )\n",
         "def f():\n    return compute(\n        a,\n        b,\n    )\n"
@@ -548,6 +563,11 @@ mod tests {
         "value = (\n    compute(a,\n        b).run(\n    )\n)\n",
         true
     )]
+    #[case::fractured_call_with_a_closer_row_and_reflow_calls_off(
+        "value = (\n    compute(lookup(\n        alpha, other(beta\n    ), gamma), key)\n)\n",
+        false
+    )]
+    #[case::call_with_empty_brackets_across_rows("value = (\n    compute(\n    )\n)\n", true)]
     #[case::call_on_a_fractured_dict_reflow_collections_skips(
         "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)  # prose: skip[reflow-collections]\n",
         true
@@ -901,6 +921,12 @@ mod tests {
     #[rstest]
     fn a_forecast_value_left_paired_settles_in_one_run(
         #[values(
+            "[[\n    alpha_value_name\n], beta_value_name_long]",
+            "[x for x in fetch(\n)].count(key)",
+            "dict(\n)[alpha,\n beta].get(key)",
+            "compute([item.name for item in fetch(\n)], key_argument)",
+            "table[lookup([\n    alpha\n], beta)].get(key)",
+            "[item.name for item in fetch(\n) if item.compute(\n)].count(key)",
             "dict(\n    alpha=1,  # first entry\n    delta=2,\n)",
             "tuple([alpha_value, beta_value, gamma_value])",
             "tuple([alpha_value, beta_value, gamma_value, delta_value, epsilon_value, zeta_value])",
@@ -987,6 +1013,43 @@ mod tests {
         "value = (\n    compute(item.name\n            for item in items)\n)\n",
         "value = compute(item.name for item in items)\n"
     )]
+    #[case::call_on_a_subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    obj.compute(\n    )[alpha].get(key)\n)\n",
+        "value = obj.compute()[alpha].get(key)\n"
+    )]
+    #[case::call_on_a_comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x.name for x in fetch(\n    )].count(key)\n)\n",
+        "value = [x.name for x in fetch()].count(key)\n"
+    )]
+    #[case::call_on_a_simplified_comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x for x in fetch(\n    )].count(key)\n)\n",
+        "value = list(fetch()).count(key)\n"
+    )]
+    #[case::call_on_a_fractured_subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    dict(\n    )[alpha,\n       beta].get(key)\n)\n",
+        "value = {}[alpha, beta].get(key)\n"
+    )]
+    #[case::comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x.name for x in fetch(\n    )]\n)\n",
+        "value = [x.name for x in fetch()]\n"
+    )]
+    #[case::subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    obj.compute(\n    )[alpha]\n)\n",
+        "value = obj.compute()[alpha]\n"
+    )]
+    #[case::call_holding_a_one_entry_list_whose_closer_row_holds_more_arguments(
+        "value = (\n    compute([\n        alpha\n    ], key)\n)\n",
+        "value = compute([alpha], key)\n"
+    )]
+    #[case::call_without_arguments_on_a_subscript_of_a_one_entry_list(
+        "value = (\n    table[[\n        alpha\n    ], beta].items()\n)\n",
+        "value = table[[alpha], beta].items()\n"
+    )]
+    #[case::dict_call_with_empty_brackets_across_rows(
+        "value = (\n    dict(\n    )\n)\n",
+        "value = {}\n"
+    )]
+    #[case::empty_dict_across_rows("value = (\n    {\n    }\n)\n", "value = {}\n")]
     fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
         #[case] src: &str,
         #[case] expected: &str,

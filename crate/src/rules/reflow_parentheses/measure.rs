@@ -47,6 +47,42 @@ impl Shedder<'_> {
         breaks
     }
 
+    /// True where every line break inside `expr` falls inside an
+    /// argument list a running `reflow-calls` closes or a bracketed
+    /// collection literal, comprehension, or subscript
+    /// `reflow-collections` rejoins outside any suppression of that rule.
+    fn closes_every_break(&self, expr: &Expr) -> bool {
+        let range = expr.range();
+        let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
+            (self.one_row.joins_literals()
+                && is_collapsible(inner)
+                && inner
+                    .as_tuple_expr()
+                    .is_none_or(|tuple| tuple.parenthesized)
+                && !self
+                    .source
+                    .suppression_map()
+                    .suppresses(inner, ReflowCollections::SLUG))
+            .then(|| inner.range())
+        });
+        starting_within(self.source.explodable_arguments(), range, Ranged::start)
+            .filter(|_| self.one_row.closes())
+            .copied()
+            .merge_by(literals, |list, literal| list.start() <= literal.start())
+            .try_fold(range.start(), |cursor, closed| {
+                (closed.start() < cursor
+                    || !self
+                        .source
+                        .contains_line_break(TextRange::new(cursor, closed.start())))
+                .then(|| cursor.max(closed.end()))
+            })
+            .is_some_and(|cursor| {
+                !self
+                    .source
+                    .contains_line_break(TextRange::new(cursor, range.end()))
+            })
+    }
+
     /// The column `offset` reaches once the edits emitted so far apply
     /// and the padding and alignment rules settle its row, measured from
     /// the enclosing logical line.
@@ -85,41 +121,6 @@ impl Shedder<'_> {
             && starting_within(self.source.explodable_arguments(), call, Ranged::start)
                 .next()
                 .is_some()
-    }
-
-    /// True where every line break inside the call `expr` falls inside an
-    /// argument list `reflow-calls` closes or a bracketed collection
-    /// literal, comprehension, or subscript `reflow-collections` rejoins
-    /// outside any suppression of that rule.
-    fn closes_every_break(&self, expr: &Expr) -> bool {
-        let call = expr.range();
-        let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
-            (self.one_row.joins_literals()
-                && is_collapsible(inner)
-                && inner
-                    .as_tuple_expr()
-                    .is_none_or(|tuple| tuple.parenthesized)
-                && !self
-                    .source
-                    .suppression_map()
-                    .suppresses(inner, ReflowCollections::SLUG))
-            .then(|| inner.range())
-        });
-        starting_within(self.source.explodable_arguments(), call, Ranged::start)
-            .copied()
-            .merge_by(literals, |list, literal| list.start() <= literal.start())
-            .try_fold(call.start(), |cursor, closed| {
-                (closed.start() < cursor
-                    || !self
-                        .source
-                        .contains_line_break(TextRange::new(cursor, closed.start())))
-                .then(|| cursor.max(closed.end()))
-            })
-            .is_some_and(|cursor| {
-                !self
-                    .source
-                    .contains_line_break(TextRange::new(cursor, call.end()))
-            })
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
@@ -167,6 +168,15 @@ impl Shedder<'_> {
             self.source.tail_width(tail),
         )
         .saturating_sub(shed_columns(tail, candidates))
+    }
+
+    /// The columns `expr` takes on one row where the layout rules close
+    /// every break inside it, per [`Self::closes_every_break`]. `None`
+    /// where they do not or no one-row form exists.
+    pub(super) fn closed_width(&self, expr: &Expr) -> Option<usize> {
+        self.closes_every_break(expr)
+            .then(|| self.condensed_width(expr))
+            .flatten()
     }
 
     /// True when joining `candidate` leaves its line inside the budget
@@ -230,9 +240,9 @@ impl Shedder<'_> {
     /// True where `candidate`'s value, its pair taken off at `column`,
     /// lands on one row inside the budget once the layout rules take their
     /// turn, its row tail included. That holds for a value written on one
-    /// row, a call `reflow-calls` condenses whose every break
-    /// [`Self::closes_every_break`] closes, and a collection literal,
-    /// comprehension, or subscript the layout rules rejoin.
+    /// row, a call `reflow-calls` condenses that [`Self::closed_width`]
+    /// measures, and a collection literal, comprehension, or subscript the
+    /// layout rules rejoin.
     pub(super) fn lands_on_one_row(
         &self,
         candidate: &Candidate,
@@ -248,12 +258,9 @@ impl Shedder<'_> {
             );
         }
         match expr {
-            Expr::Call(call) if self.condenses(call.range()) => {
-                self.closes_every_break(expr)
-                    && self
-                        .condensed_width(expr)
-                        .is_some_and(|width| self.one_row.fits(column + width + tail))
-            }
+            Expr::Call(call) if self.condenses(call.range()) => self
+                .closed_width(expr)
+                .is_some_and(|width| self.one_row.fits(column + width + tail)),
             _ => {
                 self.one_row.joins_literals()
                     && self
