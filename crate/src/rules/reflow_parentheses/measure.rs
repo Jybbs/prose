@@ -4,11 +4,8 @@
 //! shortening rules settle its row, and the spans an in-place shed
 //! removes.
 
-use std::iter::successors;
-
-use itertools::Itertools;
 use ruff_diagnostics::Edit;
-use ruff_python_ast::{Expr, ExprCall};
+use ruff_python_ast::Expr;
 use ruff_python_trivia::PythonWhitespace;
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextLen, TextRange, TextSize};
@@ -25,13 +22,12 @@ use crate::{
             display_width, run_closes_to_a_space, settled_head_column, settled_slice_width,
             settled_width, soft_wrap_runs,
         },
-        layout::{is_collapsible, is_column_shaped, is_layoutable, item_indent},
+        layout::{is_layoutable, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
-        walk::{Interpolations, any_over_expr_within, filter_map_within_expr},
+        walk::{Interpolations, any_over_expr_within},
     },
-    rules::reflow_collections::ReflowCollections,
     source::Source,
 };
 
@@ -47,34 +43,6 @@ impl Shedder<'_> {
             && self.broken_form(candidate, candidates).is_some();
         self.breaks.borrow_mut().insert(candidate.pair, breaks);
         breaks
-    }
-
-    /// True where every line break inside `expr` falls inside an
-    /// argument list a running `reflow-calls` closes or a bracketed
-    /// collection literal, comprehension, or subscript
-    /// [`Self::rejoins`] accepts.
-    fn closes_every_break(&self, expr: &Expr) -> bool {
-        let literals = filter_map_within_expr(expr, Interpolations::Skip, |inner| {
-            (is_collapsible(inner)
-                && inner
-                    .as_tuple_expr()
-                    .is_none_or(|tuple| tuple.parenthesized)
-                && self.rejoins(inner))
-            .then(|| inner.range())
-        });
-        self.holds_every_break(
-            expr.range(),
-            self.closing_lists(expr.range())
-                .merge_by(literals, |list, literal| list.start() <= literal.start()),
-        )
-    }
-
-    /// The argument lists inside `range` a running `reflow-calls` closes,
-    /// ascending by start.
-    fn closing_lists(&self, range: TextRange) -> impl Iterator<Item = TextRange> {
-        starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .filter(|_| self.one_row.closes())
-            .copied()
     }
 
     /// The column `offset` reaches once the edits emitted so far apply
@@ -95,71 +63,6 @@ impl Shedder<'_> {
         let column = settled_head_column(self.source, self.padding, &placed, range.end(), 0);
         self.reservations
             .column_under(self.source, &self.edits, range.end(), column)
-    }
-
-    /// The columns `expr`'s one-row form takes once `reflow-calls`
-    /// condenses it, `None` where no one-row form exists.
-    fn condensed_width(&self, expr: &Expr) -> Option<usize> {
-        self.one_row
-            .condensed(self.source, expr, expr.into())
-            .map(|form| {
-                self.one_row
-                    .text_width(self.source, self.padding, &form, expr.range())
-            })
-    }
-
-    /// True where `reflow-calls` runs and an argument list it can explode
-    /// or condense opens inside `call`.
-    fn condenses(&self, call: TextRange) -> bool {
-        self.one_row.closes()
-            && starting_within(self.source.explodable_arguments(), call, Ranged::start)
-                .next()
-                .is_some()
-    }
-
-    /// The columns `form`, `expr`'s one-row form, takes once this pass
-    /// sheds the pairs inside `expr` that `form` still carries. The form
-    /// of a direct argument or a child of a rebuilt construct already
-    /// leaves its pair out, each such pair taking its `(` out of the
-    /// text.
-    fn form_width(&self, expr: &Expr, form: &str, candidates: &[Candidate]) -> usize {
-        let range = expr.range();
-        let opens = |text: &str| text.matches('(').count();
-        let dropped = opens(self.source.slice(range)).saturating_sub(opens(form));
-        let kept = shed_columns(range, candidates).saturating_sub(2 * dropped);
-        self.one_row
-            .text_width(self.source, self.padding, form, range)
-            .saturating_sub(kept)
-    }
-
-    /// True where an argument list inside `range` is written as a flush
-    /// column, a layout `reflow-calls` leaves standing.
-    fn holds_a_column_list(&self, range: TextRange) -> bool {
-        starting_within(self.source.explodable_arguments(), range, Ranged::start)
-            .any(|list| is_column_shaped(self.source.slice(*list)))
-    }
-
-    /// True where every line break inside `range` falls inside one of
-    /// `closed`, ascending by start.
-    fn holds_every_break(
-        &self,
-        range: TextRange,
-        closed: impl IntoIterator<Item = TextRange>,
-    ) -> bool {
-        closed
-            .into_iter()
-            .try_fold(range.start(), |cursor, held| {
-                (held.start() < cursor
-                    || !self
-                        .source
-                        .contains_line_break(TextRange::new(cursor, held.start())))
-                .then(|| cursor.max(held.end()))
-            })
-            .is_some_and(|cursor| {
-                !self
-                    .source
-                    .contains_line_break(TextRange::new(cursor, range.end()))
-            })
     }
 
     /// The columns `candidate`'s joined interior takes, widened by the
@@ -189,14 +92,32 @@ impl Shedder<'_> {
         )
     }
 
-    /// True where `reflow-collections` runs and no suppression of that
-    /// rule holds `expr`.
-    fn rejoins(&self, expr: &Expr) -> bool {
-        self.one_row.joins_literals()
-            && !self
-                .source
-                .suppression_map()
-                .suppresses(expr, ReflowCollections::SLUG)
+    /// The column `offset` reaches once the edits emitted so far apply
+    /// and `reflow-calls` takes its turn on the row. Each outermost
+    /// call ending ahead of `offset` on that row explodes while the row
+    /// through `offset` still overflows the budget, dropping its closer
+    /// to the row's indent and the text after it along with it.
+    pub(super) fn shifted_column(&self, offset: TextSize) -> usize {
+        let column = self.column_at(offset);
+        if column < self.code_line_length {
+            return column;
+        }
+        let row_start = self.source.text().line_start(offset);
+        let placed = |to: TextSize| self.column_through(TextRange::new(row_start, to));
+        let indent = self.source.line_indent_width(offset);
+        let mut shift = 0;
+        let row = placed(offset);
+        for call in self
+            .calls
+            .iter()
+            .filter(|call| row_start <= call.start() && call.end() <= offset)
+        {
+            if row.saturating_sub(shift) < self.code_line_length {
+                break;
+            }
+            shift = placed(call.end()).saturating_sub(indent + 1);
+        }
+        column.saturating_sub(shift)
     }
 
     /// The columns `pair`'s own row carries past its closing paren once
@@ -219,66 +140,6 @@ impl Shedder<'_> {
         .saturating_sub(shed_columns(tail, candidates))
     }
 
-    /// True where the layout rules close or lay out every break inside
-    /// `expr`, its opening row starting at `column`, once it lands across
-    /// rows, which holds for
-    ///
-    /// - a collection literal `reflow-collections` expands, no argument
-    ///   list inside it written as a flush column
-    /// - a call holding on its callee chain an argument list `reflow-calls`
-    ///   explodes on its count, the callee of that list fitting one row
-    /// - a call with a one-row form, the callee of the first list on that
-    ///   chain `reflow-calls` can explode, or the call itself where the
-    ///   chain holds none, carrying no break outside an argument list that
-    ///   rule closes
-    ///
-    /// A break a comprehension, subscript, or literal holds in a callee
-    /// closes ahead of a count-exploded list alone, since `reflow-calls`
-    /// measures any other list from the row its callee ends on.
-    pub(super) fn closes_across_rows(
-        &self,
-        expr: &Expr,
-        column: usize,
-        candidates: &[Candidate],
-    ) -> bool {
-        if !self.closes_every_break(expr) {
-            return false;
-        }
-        if !expr.is_call_expr() {
-            return !self.holds_a_column_list(expr.range())
-                && self
-                    .one_row
-                    .expands(self.source, expr, expr.into(), column, 0, self.padding);
-        }
-        let lists: Vec<&ExprCall> = successors(Some(expr), |&inner| match inner {
-            Expr::Attribute(attribute) => Some(&*attribute.value),
-            Expr::Call(call) => Some(&*call.func),
-            _ => None,
-        })
-        .filter_map(Expr::as_call_expr)
-        .filter(|call| {
-            self.one_row
-                .explodes_arguments(self.source, &call.arguments)
-        })
-        .collect();
-        let callee = lists
-            .last()
-            .map_or_else(|| expr.range(), |call| call.func.range());
-        let counted = |call: &ExprCall| {
-            self.one_row.count_explodes(self.source, call)
-                && self
-                    .one_row
-                    .condensed(self.source, &call.func, call.into())
-                    .is_some_and(|form| {
-                        let width = self.form_width(&call.func, &form, candidates);
-                        self.one_row.fits(column + width + 1)
-                    })
-        };
-        lists.iter().any(|&call| counted(call))
-            || (self.condensed_width(expr).is_some()
-                && self.holds_every_break(callee, self.closing_lists(callee)))
-    }
-
     /// True when joining `candidate` leaves its line inside the budget
     /// once `reflow-calls` has taken its turn on the row, and false for
     /// an interior no fold joins.
@@ -287,124 +148,6 @@ impl Shedder<'_> {
             return false;
         };
         self.shifted_column(candidate.pair.start()) + width <= self.code_line_length
-    }
-
-    /// True where `expr`, standing alone on a row one indent step past
-    /// `indent`, lands across rows once the layout rules take their turn,
-    /// which holds for
-    ///
-    /// - a collection literal written across rows, where
-    ///   `reflow-collections` is off or no rejoined form of it fits that
-    ///   row, and one written on one row that rule expands
-    /// - a call holding an argument list `reflow-calls` can explode, where
-    ///   that rule finds no one-row form fitting that row
-    /// - with `reflow-calls` running, any other call whose every break
-    ///   [`Self::closes_every_break`] closes and whose callee chain opens
-    ///   on a literal `reflow-collections` expands on that row
-    /// - with that rule off, any call spanning rows or holding a literal
-    ///   `reflow-collections` expands on that row
-    pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
-        let column = item_indent(indent);
-        let spans = self.source.contains_line_break(expr.range());
-        match expr {
-            Expr::Call(call) if self.condenses(call.range()) => self
-                .condensed_width(expr)
-                .is_none_or(|width| !self.one_row.fits(column + width)),
-            Expr::Call(call) if self.one_row.closes() => {
-                self.closes_every_break(expr)
-                    && successors(Some(expr), |&inner| match inner {
-                        Expr::Attribute(attribute) => Some(&*attribute.value),
-                        Expr::Call(call) => Some(&*call.func),
-                        Expr::Subscript(subscript) => Some(&*subscript.value),
-                        _ => None,
-                    })
-                    .last()
-                    .is_some_and(|root| {
-                        let tail = settled_slice_width(
-                            self.source,
-                            self.padding,
-                            TextRange::new(root.end(), call.end()),
-                        );
-                        self.one_row
-                            .rejoined(self.source, root, root.into(), column, tail)
-                            .is_none()
-                            && self.one_row.expands(
-                                self.source,
-                                root,
-                                root.into(),
-                                column,
-                                tail,
-                                self.padding,
-                            )
-                    })
-            }
-            Expr::Call(call) => {
-                let width = |range| settled_slice_width(self.source, self.padding, range);
-                spans
-                    || any_over_expr_within(expr, Interpolations::Skip, |inner| {
-                        self.one_row.expands(
-                            self.source,
-                            inner,
-                            inner.into(),
-                            column + width(TextRange::new(call.start(), inner.start())),
-                            width(TextRange::new(inner.end(), call.end())),
-                            self.padding,
-                        )
-                    })
-            }
-            _ if is_layoutable(expr) => {
-                if spans {
-                    !self.one_row.joins_literals()
-                        || self
-                            .one_row
-                            .rejoined(self.source, expr, expr.into(), column, 0)
-                            .is_none()
-                } else {
-                    self.one_row
-                        .expands(self.source, expr, expr.into(), column, 0, self.padding)
-                }
-            }
-            _ => false,
-        }
-    }
-
-    /// True where `candidate`'s value, its pair taken off at `column`,
-    /// lands on one row inside the budget once the layout rules take their
-    /// turn, its row tail included. That holds for a value written on one
-    /// row, a call whose every break [`Self::closes_every_break`] closes,
-    /// and a collection literal, comprehension, or subscript the layout
-    /// rules rejoin, each row-spanning one measured per
-    /// [`Self::form_width`].
-    pub(super) fn lands_on_one_row(
-        &self,
-        candidate: &Candidate,
-        candidates: &[Candidate],
-        column: usize,
-    ) -> bool {
-        let expr = candidate.expr;
-        let tail = self.tail_width(candidate.pair, candidates);
-        let row = column + candidate.flush.spaces() + tail;
-        if !self.source.contains_line_break(expr.range()) {
-            let width = settled_slice_width(self.source, self.padding, expr.range());
-            return self.one_row.fits(row + width);
-        }
-        let form = match expr {
-            Expr::Call(_) => self
-                .closes_every_break(expr)
-                .then(|| self.one_row.condensed(self.source, expr, expr.into()))
-                .flatten(),
-            _ if self.rejoins(expr) => {
-                let shed = shed_columns(expr.range(), candidates);
-                let column = row.saturating_sub(shed);
-                self.one_row
-                    .rejoined(self.source, expr, expr.into(), column, 0)
-            }
-            _ => None,
-        };
-        form.is_some_and(|form| {
-            self.one_row
-                .fits(row + self.form_width(expr, &form, candidates))
-        })
     }
 
     /// True where `candidate`'s opened form `text`, its pair opening at
@@ -440,6 +183,74 @@ impl Shedder<'_> {
             .map(|head| settled_slice_width(self.source, self.padding, head))
             .fold(written, usize::min);
         column + head > self.code_line_length
+    }
+
+    /// True where `expr`, standing alone on a row one indent step past
+    /// `indent`, lands across rows once the layout rules take their turn,
+    /// which holds for
+    ///
+    /// - a collection literal written across rows, where
+    ///   `reflow-collections` is off or no rejoined form of it fits that
+    ///   row, and one written on one row that rule expands
+    /// - a call holding an argument list `reflow-calls` can explode, where
+    ///   that rule finds no one-row form fitting that row, and with that
+    ///   rule off, any call spanning rows or holding a literal
+    ///   `reflow-collections` expands on that row
+    pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
+        let column = item_indent(indent);
+        let spans = self.source.contains_line_break(expr.range());
+        match expr {
+            Expr::Call(call) if self.one_row.closes() => {
+                starting_within(
+                    self.source.explodable_arguments(),
+                    call.range(),
+                    Ranged::start,
+                )
+                .next()
+                .is_some()
+                    && self
+                        .one_row
+                        .condensed(self.source, expr, expr.into())
+                        .is_none_or(|form| {
+                            !self.one_row.fits(
+                                column
+                                    + self.one_row.text_width(
+                                        self.source,
+                                        self.padding,
+                                        &form,
+                                        call.range(),
+                                    ),
+                            )
+                        })
+            }
+            Expr::Call(call) => {
+                let width = |range| settled_slice_width(self.source, self.padding, range);
+                spans
+                    || any_over_expr_within(expr, Interpolations::Skip, |inner| {
+                        self.one_row.expands(
+                            self.source,
+                            inner,
+                            inner.into(),
+                            column + width(TextRange::new(call.start(), inner.start())),
+                            width(TextRange::new(inner.end(), call.end())),
+                            self.padding,
+                        )
+                    })
+            }
+            _ if is_layoutable(expr) => {
+                if spans {
+                    !self.one_row.joins_literals()
+                        || self
+                            .one_row
+                            .rejoined(self.source, expr, expr.into(), column, 0)
+                            .is_none()
+                } else {
+                    self.one_row
+                        .expands(self.source, expr, expr.into(), column, 0, self.padding)
+                }
+            }
+            _ => false,
+        }
     }
 
     /// True where joining `candidate` crosses the budget on its row from
@@ -495,34 +306,6 @@ impl Shedder<'_> {
         let bare = self.source.slice(TextRange::new(open.end(), close.start()));
         splice_preserves_tree(self.source, pair, &candidate.flush.padded(bare))
             .then_some((open, close))
-    }
-
-    /// The column `offset` reaches once the edits emitted so far apply
-    /// and `reflow-calls` takes its turn on the row. Each outermost
-    /// call ending ahead of `offset` on that row explodes while the row
-    /// through `offset` still overflows the budget, dropping its closer
-    /// to the row's indent and the text after it along with it.
-    pub(super) fn shifted_column(&self, offset: TextSize) -> usize {
-        let column = self.column_at(offset);
-        if column < self.code_line_length {
-            return column;
-        }
-        let row_start = self.source.text().line_start(offset);
-        let placed = |to: TextSize| self.column_through(TextRange::new(row_start, to));
-        let indent = self.source.line_indent_width(offset);
-        let mut shift = 0;
-        let row = placed(offset);
-        for call in self
-            .calls
-            .iter()
-            .filter(|call| row_start <= call.start() && call.end() <= offset)
-        {
-            if row.saturating_sub(shift) < self.code_line_length {
-                break;
-            }
-            shift = placed(call.end()).saturating_sub(indent + 1);
-        }
-        column.saturating_sub(shift)
     }
 }
 

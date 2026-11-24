@@ -6,8 +6,6 @@
 //! through the pairs this same pass sheds inside it, and joins its own
 //! rows where it fits one.
 
-use std::borrow::Cow;
-
 use ruff_diagnostics::Edit;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 
@@ -28,7 +26,7 @@ use crate::{
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::{open_brackets, tokens_within},
-        travel::{Travel, hanging_block_through, hung_block_through, shifted_block},
+        travel::{hanging_block_through, hung_block_through},
     },
     source::Source,
 };
@@ -63,41 +61,33 @@ impl Shedder<'_> {
     /// that construct's opening bracket landing on the pair's row and its
     /// rows hung from the statement's indent, rendered through the pairs
     /// inside it this pass sheds. `None` unless the pair holds the whole
-    /// value of a `return` or an assignment and [`Self::opens`] accepts
-    /// that value. Rows that cannot hang from that indent move with the
-    /// value instead.
+    /// value of a `return` or an assignment and that value is a construct
+    /// [`Self::lands_across_rows`] reports, and `None` where the rows
+    /// cannot hang from that indent or the opened row runs past the
+    /// budget.
     fn opened_form(&self, candidate: &Candidate, candidates: &[Candidate]) -> Option<String> {
         if !candidate.value {
             return None;
         }
         let indent = self.statement_indent(candidate.pair);
         let column = self.shifted_column(candidate.pair.start());
-        if !self.opens(candidate, candidates, indent, column) {
+        if !self.opens_inside_the_budget(candidate, candidates, indent, column) {
             return None;
         }
         let nested = nested_shed_edits(candidate, candidates);
-        let block = hanging_block_through(self.source, candidate.inner, &nested, indent)
-            .unwrap_or_else(|| {
-                let block = apply_inline_edits(self.source, candidate.inner, &nested);
-                let head = self.source.line_indent_width(candidate.inner.start());
-                let travel = Travel::rigid(indent.cast_signed() - head.cast_signed());
-                Cow::Owned(shifted_block(&block, travel).into_owned())
-            });
+        let block = hanging_block_through(self.source, candidate.inner, &nested, indent)?;
         let text = candidate.flush.padded(&block).into_owned();
         splice_preserves_tree(self.source, candidate.pair, &text).then_some(text)
     }
 
-    /// True where `candidate`'s value, the pair opening at `column` in a
-    /// statement at `indent`, lands on one row, per
-    /// [`Self::lands_on_one_row`], or across rows, per
-    /// [`Self::lands_across_rows`], with its opened row inside the budget,
-    /// per [`Self::opens_past_the_budget`], and its rows either hanging
-    /// from that indent or closing, per [`Self::closes_across_rows`]. Each
-    /// reads the text that value lands as, meaning this module reparsed
-    /// once with every edit `simplify-comprehensions` plans applied, where
-    /// one of them falls inside the value, measured as the same candidate
-    /// there.
-    fn opens(
+    /// True where `candidate`'s value lands across rows from a statement
+    /// at `indent`, per [`Self::lands_across_rows`], and its opened row,
+    /// the pair opening at `column`, stays inside the budget, per
+    /// [`Self::opens_past_the_budget`]. Both read the text that value
+    /// lands as, meaning this module reparsed once with every edit
+    /// `simplify-comprehensions` plans applied, where one of them falls
+    /// inside the value, measured as the same candidate there.
+    fn opens_inside_the_budget(
         &self,
         candidate: &Candidate,
         candidates: &[Candidate],
@@ -119,23 +109,13 @@ impl Shedder<'_> {
                 .is_some_and(|other| {
                     landed
                         .shedder
-                        .opens(other, landed.candidates, indent, column)
+                        .opens_inside_the_budget(other, landed.candidates, indent, column)
                 });
         }
-        if self.lands_on_one_row(candidate, candidates, column) {
-            return true;
-        }
-        if !self.lands_across_rows(candidate.expr, indent) {
-            return false;
-        }
         let nested = nested_shed_edits(candidate, candidates);
-        let hung = hung_block_through(self.source, candidate.inner, &nested, indent);
-        if self.opens_past_the_budget(candidate, &candidate.flush.padded(&hung), column) {
-            return false;
-        }
-        let head = column + candidate.flush.spaces();
-        hanging_block_through(self.source, candidate.inner, &nested, indent).is_some()
-            || self.closes_across_rows(candidate.expr, head, candidates)
+        let block = hung_block_through(self.source, candidate.inner, &nested, indent);
+        self.lands_across_rows(candidate.expr, indent)
+            && !self.opens_past_the_budget(candidate, &candidate.flush.padded(&block), column)
     }
 
     /// The edits closing the soft breaks inside each operand of `chain`

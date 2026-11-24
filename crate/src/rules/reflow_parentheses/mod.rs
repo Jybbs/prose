@@ -8,13 +8,13 @@
 //! rows one operand per row, and one whose interior breaks sit inside a
 //! bracket of its own sheds in place. A pair holding the whole value
 //! of a `return` or an assignment that is one bracketed construct
-//! landing on one row or across rows comes off, that construct
-//! opening on the statement's row, unless that row then runs past the
-//! budget or rows no later rule closes cannot hang from the statement's
-//! indent. An over-budget boolean chain or conditional forming a test,
-//! a `return` value, an assignment value, or the last element of a bare
-//! tuple standing as one gains a pair the break adds. Each row is
-//! measured as the later rules shortening it leave it.
+//! landing across rows comes off, that construct opening on the
+//! statement's row, unless that row then runs past the budget or the
+//! construct's rows cannot hang from the statement's indent. An
+//! over-budget boolean chain or conditional forming a test, a `return`
+//! value, an assignment value, or the last element of a bare tuple
+//! standing as one gains a pair the break adds. Each row is measured as
+//! the later rules shortening it leave it.
 //! `plan` finds the pairs, `chain` divides an interior into operands,
 //! `measure` answers whether each direction fits, and `render` builds
 //! the broken text.
@@ -228,9 +228,9 @@ impl Shedder<'_> {
     /// Otherwise a pair the source wrote sheds in place where an enclosing
     /// bracket holds its breaks, re-seating the rows its parens moved.
     /// Where none does, a pair holding the whole value of a `return` or an
-    /// assignment that is one bracketed construct landing on one row or
-    /// across rows opens that bracket on the statement's row, and any
-    /// other pair holds, whereas a pair the break adds earns nothing.
+    /// assignment that is one bracketed construct landing across rows
+    /// opens that bracket on the statement's row, and any other pair holds, whereas
+    /// a pair the break adds earns nothing.
     fn shed(&mut self, candidates: &[Candidate]) {
         for candidate in candidates {
             let pair = candidate.pair;
@@ -379,11 +379,6 @@ mod tests {
         false,
         "value = compute(a,\n    b)\n"
     )]
-    #[case::fractured_call_reflow_calls_joins(
-        "value = (\n    compute(a,\n        b)\n)\n",
-        true,
-        "value = compute(a,\n    b)\n"
-    )]
     #[case::call_on_a_flush_column_call(
         "value = (\n    factory(\n        alpha,\n        beta,\n    )()\n)\n",
         true,
@@ -419,16 +414,6 @@ mod tests {
         true,
         &format!("value_{0} = dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n", "k".repeat(78))
     )]
-    #[case::fractured_call_under_a_long_target_with_reflow_calls_off(
-        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
-        false,
-        &format!("value_{0} = compute(alpha,\n    beta)\n", "k".repeat(60))
-    )]
-    #[case::fractured_call_rejoining_at_the_budget_under_a_long_target(
-        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
-        true,
-        &format!("value_{0} = compute(alpha,\n    beta)\n", "k".repeat(59))
-    )]
     fn a_call_landing_across_rows_opens_on_the_assignment_row(
         #[case] src: &str,
         #[case] reflows_calls: bool,
@@ -458,20 +443,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case::from_a_row_of_its_own(
-        "def f():\n    return (\n        compute([item.name_of_the_record for item in fetch(\n        ) if item.enabled_for_the_request], key_argument)\n    )\n"
-    )]
-    #[case::from_the_row_of_the_pair(
-        "def f():\n    return (compute([item.name_of_the_record for item in fetch(\n    ) if item.enabled_for_the_request], key_argument)\n    )\n"
-    )]
-    fn a_call_whose_rows_close_moves_them_to_the_statement_indent(#[case] src: &str) {
-        assert_eq!(
-            applied(src, true),
-            "def f():\n    return compute([item.name_of_the_record for item in fetch(\n    ) if item.enabled_for_the_request], key_argument)\n",
-        );
-    }
-
-    #[rstest]
     #[case::call(
         "def f():\n    return (\n        compute(\n            a,\n            b,\n        )\n    )\n",
         "def f():\n    return compute(\n        a,\n        b,\n    )\n"
@@ -492,14 +463,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case::fractured_call_holding_a_comment(
-        "value = (\n    compute(a,  # note\n        b)\n)\n",
-        true
-    )]
-    #[case::fractured_list_comprehension_holding_a_comment(
-        "value = (\n    [item.name  # note\n     for item in items]\n)\n",
-        true
-    )]
+    #[case::fractured_call_rejoining_inside("value = (\n    compute(a,\n        b)\n)\n", true)]
     #[case::fractured_dict_rejoining_inside(
         &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(60)),
         true
@@ -548,83 +512,6 @@ mod tests {
     )]
     #[case::dict_call_whose_brace_lands_one_past_the_budget(
         &format!("value_{0} = (\n    dict(alpha_value=1, beta_value=2, delta_value=3, epsilon_value=4, gamma_value=5, zeta_value=6)\n)\n", "k".repeat(79)),
-        true
-    )]
-    #[case::fractured_dict_rejoining_one_past_the_budget_under_a_long_target(
-        &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(56)),
-        true
-    )]
-    #[case::fractured_call_rejoining_under_a_long_target(
-        &format!("value_{} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(60)),
-        true
-    )]
-    #[case::method_with_empty_brackets_across_rows_on_a_fractured_call(
-        "value = (\n    compute(a,\n        b).run(\n    )\n)\n",
-        true
-    )]
-    #[case::fractured_call_with_a_closer_row_and_reflow_calls_off(
-        "value = (\n    compute(lookup(\n        alpha, other(beta\n    ), gamma), key)\n)\n",
-        false
-    )]
-    #[case::call_with_empty_brackets_across_rows("value = (\n    compute(\n    )\n)\n", true)]
-    #[case::call_on_a_fractured_dict_reflow_collections_skips(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::call_on_a_comprehension_too_wide_to_rejoin(
-        "value = (\n    [item.attribute_name_long for item in fetch_every_record_from_storage(\n    ) if item.compute_the_predicate_value(\n    )].count(key_argument)\n)\n",
-        true
-    )]
-    #[case::call_on_a_comprehension_whose_argument_list_stays_closed(
-        "value = (\n    [item.attribute_name for item in fetch_every_record(\n    ) if item.enabled].count(key_argument_name)\n)\n",
-        true
-    )]
-    #[case::count_exploded_call_on_a_comprehension_too_wide_to_rejoin(
-        "value = (\n    [item.attribute_name_long for item in fetch_every_record_from_storage(\n    ) if item.compute_the_predicate_value(\n    )].run(a=1, b=2, c=3, d=4)\n)\n",
-        true
-    )]
-    #[case::fractured_dict_reflow_collections_skips(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::fractured_list_comprehension_reflow_collections_skips(
-        "value = (\n    [item.name\n     for item in items]\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::fractured_subscript_reflow_collections_skips(
-        "value = (\n    table[alpha,\n          beta]\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::comprehension_over_a_call_with_empty_brackets_reflow_collections_skips(
-        "value = (\n    [x.name for x in fetch(\n    )]\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::call_with_empty_brackets_across_rows_on_a_fractured_comprehension(
-        "value = (\n    [item.name\n     for item in items].pop(\n    )\n)\n",
-        true
-    )]
-    #[case::call_without_arguments_on_a_fractured_dict_reflow_collections_skips(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.items()\n)  # prose: skip[reflow-collections]\n",
-        true
-    )]
-    #[case::call_without_arguments_on_a_fractured_dict_rejoining_under_a_long_target(
-        &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}.items()\n)\n", "k".repeat(60)),
-        true
-    )]
-    #[case::call_without_arguments_on_a_subscript_holding_an_expanding_dict(
-        "value = (\n    table[{\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxxxx}].copy()\n)\n",
-        true
-    )]
-    #[case::fractured_call_reflow_calls_skips(
-        "value = (\n    compute(alpha,\n        beta)\n)  # prose: skip[reflow-calls]\n",
-        true
-    )]
-    #[case::call_with_empty_brackets_across_rows_on_a_dict_past_the_budget(
-        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx,\n     \"delta_key_name\": delta_value_xxxxxxxxxxxx}.items(\n    )\n)\n",
-        true
-    )]
-    #[case::column_dict_holding_a_call_exploded_onto_rows(
-        "value = (\n    {\n        \"alpha\": compute(\n            beta,\n            gamma,\n        )\n    }\n)\n",
         true
     )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
@@ -856,26 +743,6 @@ mod tests {
         "value = (\n    dict((key, val.attr) for key, val in some_items_name).get(argument_x, default_value)\n)\n",
         |config: &mut Config| config.code_line_length = NonZeroUsize::new(55)
     )]
-    #[case::fractured_call_under_a_return_one_column_short(
-        "def f():\n    return(\n        compute(alpha,\n            beta)\n    )\n",
-        |config: &mut Config| config.code_line_length = NonZeroUsize::new(30)
-    )]
-    #[case::fractured_list_comprehension_with_reflow_collections_off(
-        "value = (\n    [item.name\n     for item in items]\n)\n",
-        |config: &mut Config| config.rules.reflow_collections.enabled = false
-    )]
-    #[case::call_on_a_fractured_dict_with_reflow_collections_off(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
-        |config: &mut Config| config.rules.reflow_collections.enabled = false
-    )]
-    #[case::call_without_arguments_on_a_fractured_dict_with_reflow_collections_off(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.items()\n)\n",
-        |config: &mut Config| config.rules.reflow_collections.enabled = false
-    )]
-    #[case::call_without_arguments_on_a_fractured_dict_past_the_budget_with_explode_off(
-        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx,\n     \"delta_key_name\": delta_value_xxxxxxxxxxxx}.items()\n)\n",
-        |config: &mut Config| config.rules.reflow_collections.explode = false
-    )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -984,22 +851,6 @@ mod tests {
     #[rstest]
     fn a_forecast_value_left_paired_settles_in_one_run(
         #[values(
-            "[[\n    alpha_value_name\n], beta_value_name_long]",
-            "[x for x in fetch(\n)].count(key)",
-            "dict(\n)[alpha,\n beta].get(key)",
-            "compute([item.name for item in fetch(\n)], key_argument)",
-            "table[lookup([\n    alpha\n], beta)].get(key)",
-            "[item.name for item in fetch(\n) if item.compute(\n)].count(key)",
-            "[item.name for item in fetch(\n) if item.compute(\n)].count(key_argument_name)",
-            "compute([item.name for item in fetch(\n) if item.enabled], key_argument)",
-            "[x.name for x in fetch(\n    alpha, beta\n)].count(key_argument_name)",
-            "[x.name for x in fetch(\n)].run(a=1, b=2, c=3, d=4)",
-            "table[lookup([\n    alpha\n], beta)].items()",
-            "{\"alpha\": [\n    alpha\n], \"beta\": 2, \"gamma\": 3, \"delta\": 4}",
-            "[(x.name) for x in (fetch(\n))].count(key)",
-            "[(x.name)\n for x in (items)]",
-            "{\n    \"alpha\": lookup_the_value(item.name\n    for item in key)}",
-            "compute((alpha_value),\n    table[(beta_value)])",
             "dict(\n    alpha=1,  # first entry\n    delta=2,\n)",
             "tuple([alpha_value, beta_value, gamma_value])",
             "tuple([alpha_value, beta_value, gamma_value, delta_value, epsilon_value, zeta_value])",
@@ -1016,150 +867,6 @@ mod tests {
     ) {
         settled_at_every_width(value, returns, reflows_calls);
     }
-
-    #[rstest]
-    #[case::fractured_call(
-        "third = (\n    compute(a,\n        b)\n)\n",
-        "third = compute(a, b)\n"
-    )]
-    #[case::fractured_dict(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}\n)\n",
-        "value = {\"alpha\": 1, \"delta\": 2}\n"
-    )]
-    #[case::fractured_set_comprehension(
-        "value = (\n    {item\n     for item in range(10)}\n)\n",
-        "value = set(range(10))\n"
-    )]
-    #[case::fractured_list_comprehension(
-        "value = (\n    [item.name\n     for item in items]\n)\n",
-        "value = [item.name for item in items]\n"
-    )]
-    #[case::fractured_subscript(
-        "value = (\n    table[alpha,\n          beta]\n)\n",
-        "value = table[alpha, beta]\n"
-    )]
-    #[case::items_call_on_a_fractured_dict_past_the_budget(
-        "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx,\n         \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
-        "def f():\n    pairs = {\n        \"alpha_key_name\" : alpha_value_xxxxxxxx,\n        \"delta_key_name\" : delta_value_xxxxxx\n    }.items()\n    return pairs\n"
-    )]
-    #[case::items_call_on_an_item_of_a_dict_past_the_budget(
-        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}[key].items()\n)\n",
-        "value = {\n    \"alpha_key_name\" : alpha_value_xxxxxxxx,\n    \"delta_key_name\" : delta_value_xxxxxx\n}[key].items()\n"
-    )]
-    #[case::items_call_on_a_dict_past_the_budget(
-        "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
-        "def f():\n    pairs = {\n        \"alpha_key_name\" : alpha_value_xxxxxxxx,\n        \"delta_key_name\" : delta_value_xxxxxx\n    }.items()\n    return pairs\n"
-    )]
-    #[case::fractured_set_comprehension_whose_rewrite_lands_at_the_budget(
-        &format!("value_{0} = (\n    {{item\n     for item in range(10)}}\n)\n", "k".repeat(65)),
-        &format!("value_{0} = set(range(10))\n", "k".repeat(65))
-    )]
-    #[case::fractured_dict_rejoining_at_the_budget_under_a_long_target(
-        &format!("value_{0} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(55)),
-        &format!("value_{0} = {{\"alpha\": 1, \"delta\": 2}}\n", "k".repeat(55))
-    )]
-    #[case::fractured_call_reflow_calls_condenses_to_the_budget(
-        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
-        &format!("value_{0} = compute(alpha, beta)\n", "k".repeat(59))
-    )]
-    #[case::fractured_dict_call_of_pairs_whose_rewrite_lands_on_one_row(
-        "value = (\n    dict([(alpha,\n           beta)])\n)\n",
-        "value = {alpha: beta}\n"
-    )]
-    #[case::call_on_a_one_entry_list_written_across_rows(
-        "value = (\n    [\n        alpha\n    ].count(key)\n)\n",
-        "value = [alpha].count(key)\n"
-    )]
-    #[case::call_on_a_fractured_dict(
-        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
-        "value = {\"alpha\": 1, \"delta\": 2}.get(key)\n"
-    )]
-    #[case::fractured_call_holding_a_call_ahead_of_its_break(
-        "value = (\n    compute(inner(a),\n        b)\n)\n",
-        "value = compute(inner(a), b)\n"
-    )]
-    #[case::call_on_a_subscript_slice_written_across_rows(
-        "value = (\n    table[alpha,\n          beta].get(key)\n)\n",
-        "value = table[alpha, beta].get(key)\n"
-    )]
-    #[case::call_on_a_list_comprehension_written_across_rows(
-        "value = ([item.name\n for item in items].count(key))\n",
-        "value = [item.name for item in items].count(key)\n"
-    )]
-    #[case::call_holding_a_dict_comprehension_written_across_rows(
-        "value = (\n    compute({item.name: item\n             for item in items}, key)\n)\n",
-        "value = compute({item.name: item for item in items}, key)\n"
-    )]
-    #[case::call_holding_a_generator_written_across_rows(
-        "value = (\n    compute(item.name\n            for item in items)\n)\n",
-        "value = compute(item.name for item in items)\n"
-    )]
-    #[case::call_on_a_subscript_of_a_call_with_empty_brackets_across_rows(
-        "value = (\n    obj.compute(\n    )[alpha].get(key)\n)\n",
-        "value = obj.compute()[alpha].get(key)\n"
-    )]
-    #[case::call_on_a_comprehension_over_a_call_with_empty_brackets_across_rows(
-        "value = (\n    [x.name for x in fetch(\n    )].count(key)\n)\n",
-        "value = [x.name for x in fetch()].count(key)\n"
-    )]
-    #[case::call_on_a_simplified_comprehension_over_a_call_with_empty_brackets_across_rows(
-        "value = (\n    [x for x in fetch(\n    )].count(key)\n)\n",
-        "value = list(fetch()).count(key)\n"
-    )]
-    #[case::call_on_a_fractured_subscript_of_a_call_with_empty_brackets_across_rows(
-        "value = (\n    dict(\n    )[alpha,\n       beta].get(key)\n)\n",
-        "value = {}[alpha, beta].get(key)\n"
-    )]
-    #[case::comprehension_over_a_call_with_empty_brackets_across_rows(
-        "value = (\n    [x.name for x in fetch(\n    )]\n)\n",
-        "value = [x.name for x in fetch()]\n"
-    )]
-    #[case::subscript_of_a_call_with_empty_brackets_across_rows(
-        "value = (\n    obj.compute(\n    )[alpha]\n)\n",
-        "value = obj.compute()[alpha]\n"
-    )]
-    #[case::call_holding_a_one_entry_list_whose_closer_row_holds_more_arguments(
-        "value = (\n    compute([\n        alpha\n    ], key)\n)\n",
-        "value = compute([alpha], key)\n"
-    )]
-    #[case::call_without_arguments_on_a_subscript_of_a_one_entry_list(
-        "value = (\n    table[[\n        alpha\n    ], beta].items()\n)\n",
-        "value = table[[alpha], beta].items()\n"
-    )]
-    #[case::count_exploded_call_on_a_comprehension_over_a_call_with_empty_brackets_across_rows(
-        "value = (\n    [x.name for x in fetch(\n    )].run(a=1, b=2, c=3, d=4)\n)\n",
-        "value = [x.name for x in fetch()].run(\n    a = 1,\n    b = 2,\n    c = 3,\n    d = 4\n)\n"
-    )]
-    #[case::fractured_count_exploded_call_on_a_comprehension_over_a_call_with_empty_brackets(
-        "value = (\n    [x.name for x in fetch(\n    )].run(a=1, b=2,\n        c=3, d=4)\n)\n",
-        "value = [x.name for x in fetch()].run(\n    a = 1,\n    b = 2,\n    c = 3,\n    d = 4\n)\n"
-    )]
-    #[case::call_on_a_comprehension_shedding_nested_pairs_to_the_budget(
-        &format!("value_{0} = (\n    [(x.name) for x in (fetch(\n    ))].count(key)\n)\n", "k".repeat(43)),
-        &format!("value_{0} = [x.name for x in fetch()].count(key)\n", "k".repeat(43))
-    )]
-    #[case::fractured_comprehension_shedding_nested_pairs_to_the_budget(
-        &format!("value_{0} = (\n    [(x.name)\n     for x in (items)]\n)\n", "k".repeat(56)),
-        &format!("value_{0} = [x.name for x in items]\n", "k".repeat(56))
-    )]
-    #[case::dict_call_with_empty_brackets_across_rows(
-        "value = (\n    dict(\n    )\n)\n",
-        "value = {}\n"
-    )]
-    #[case::empty_dict_across_rows("value = (\n    {\n    }\n)\n", "value = {}\n")]
-    fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
-        #[case] src: &str,
-        #[case] expected: &str,
-    ) {
-        let pipeline = Pipeline::with_defaults(&Config::default());
-        let once = pipeline.format(parse(src)).expect("the first run formats");
-        assert_eq!(once.text(), expected);
-        let twice = pipeline
-            .format(parse(once.text()))
-            .expect("the second run formats");
-        assert_eq!(twice.text(), expected);
-    }
-
     #[test]
     fn a_dict_call_on_a_dict_past_the_entry_cap_opens_at_every_width_its_pair_fits() {
         let src =
