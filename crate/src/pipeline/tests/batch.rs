@@ -30,7 +30,7 @@ fn run_batches_a_declared_pair_against_one_buffer() {
     // in the registry's table, so the second sentinel reads the buffer
     // the first read.
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "normalize-literals", vec![replacement("y", 0, 1)]),
         capturing(&seen, "strip-trailing-commas", vec![replacement("2", 4, 5)]),
     ]);
@@ -46,7 +46,7 @@ fn run_batches_adjacent_edits_from_two_rules() {
     // An edit ending where the next begins is no overlap, so both rules
     // read the base buffer and land in one splice.
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "rewrite-head", vec![replacement("a", 0, 1)]),
         capturing(&seen, "rewrite-gap", vec![replacement("b", 1, 2)]),
     ])
@@ -66,7 +66,7 @@ fn run_batches_adjacent_edits_from_two_rules() {
 #[case::never(Sharing::Never)]
 fn a_batch_closing_hands_the_downstream_rule_the_upstream_rewrite(#[case] sharing: Sharing) {
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "rewrite-x-to-y", vec![replacement("y", 0, 1)]),
         capturing(&seen, "downstream-observer", Vec::new()),
     ])
@@ -82,7 +82,7 @@ fn run_batches_independent_rules_against_one_buffer() {
     // The second reads the buffer the first read rather than the
     // first's rewrite, and both rewrites land in one splice.
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "rewrite-x-to-y", vec![replacement("y", 0, 1)]),
         capturing(&seen, "rewrite-1-to-2", vec![replacement("2", 4, 5)]),
     ])
@@ -101,7 +101,7 @@ fn run_closes_a_batch_ahead_of_an_overlapping_edit() {
     // the first closes and the second re-reads the spliced buffer
     // before its own edit lands.
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "rewrite-x-to-y", vec![replacement("y", 0, 1)]),
         capturing(&seen, "rewrite-head-to-z", vec![replacement("z", 0, 1)]),
     ])
@@ -151,7 +151,7 @@ fn run_flags_a_replay_that_passes_where_its_batch_was_rejected() {
 
 #[test]
 fn run_forwards_a_notebook_through_one_batched_splice() {
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         sentinel("widen-x", vec![replacement("xx", 0, 1)]),
         sentinel("widen-y", vec![replacement("yy", 7, 8)]),
     ])

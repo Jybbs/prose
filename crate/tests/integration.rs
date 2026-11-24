@@ -176,7 +176,8 @@ fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, u
 }
 
 /// The domain, case, sidecar options, and default pipeline for `path`,
-/// `None` for an `identity` fixture the full-pipeline sweeps pass over.
+/// taking one trip a run, or `None` for an `identity` fixture the
+/// full-pipeline sweeps pass over.
 fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
     let domain = domain_name(path);
     (domain != "identity").then(|| {
@@ -185,9 +186,26 @@ fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
             domain,
             case_name(path),
             harness,
-            Pipeline::with_defaults(&config),
+            Pipeline::with_defaults(&config).trips(1),
         )
     })
+}
+
+#[test]
+fn sweepable_leaves_a_second_trip_for_the_sweep_to_fail() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/thematic/args_returns_docstring_wraps/input.py");
+    let (_, _, _, pipeline) = sweepable(&path).expect("a thematic fixture is swept");
+
+    let (_, _, trips) = pipeline
+        .run(
+            "third = (\n    compute(a,\n        b)\n)\n"
+                .parse::<Source>()
+                .expect("the input parses"),
+        )
+        .expect("the run succeeds");
+
+    assert!(trips.capped);
 }
 
 /// Renders a formatted notebook as its per-cell source joined by a

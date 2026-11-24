@@ -9,7 +9,7 @@ use ruff_source_file::SourceFileBuilder;
 
 use super::{
     FileOutcome, Pass,
-    process::{Marker, drive, failed, parse_failure, refused},
+    process::{drive, failed, parse_failure, refused},
     resolve::Resolved,
 };
 use crate::{cache::Rewrite, cli::exit_status::ExitStatus, source::Source};
@@ -101,7 +101,7 @@ fn run(source: Source, mut notebook: Notebook, resolved: &Resolved, pass: Pass) 
         resolved,
         pass,
         Some(index),
-        Marker::Eager,
+        false,
         move |formatted, _file| {
             build_rewrite(&mut notebook, &original_offsets, &original_code, formatted)
         },

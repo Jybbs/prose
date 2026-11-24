@@ -1,8 +1,8 @@
-//! Narrows a run whose output a second pass would change down to the
+//! Narrows a run whose output a further trip would change down to the
 //! smallest rule subset still reproducing it.
 //!
 //! The search runs each rule alone first and each rule pair after,
-//! returning the first subset whose own output a second pass changes. A
+//! returning the first subset whose own output a further trip changes. A
 //! pair is built in candidate order, the editing rules leading, which
 //! [`Pipeline::with_filters`] reads as a set rather than as a seating.
 
@@ -43,7 +43,7 @@ pub(super) fn reproducing_subset(
     })
 }
 
-/// True where a second pass over `pipeline`'s output for `text` still
+/// True where a further trip over `pipeline`'s output for `text` still
 /// edits. A `text` that does not parse and a run a rule's output is
 /// rejected on both answer false. The source is rebuilt from `parsed`.
 fn leaves_an_edit(pipeline: &Pipeline, text: &str, parsed: &Parsed<ModModule>) -> bool {

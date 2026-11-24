@@ -30,7 +30,8 @@ pub struct HarnessOptions {
     pub skip_ruff_coexistence: bool,
 }
 
-/// Returns the pipeline that exercises a fixture directory.
+/// Returns the pipeline that exercises a fixture directory, each run
+/// taking one trip so a rule that edits its own output fails the case.
 ///
 /// `composition` fixtures pin a named subset of rules and the sidecar's
 /// `[harness] rules = [...]` field selects exactly that subset, so the
@@ -43,7 +44,7 @@ pub struct HarnessOptions {
 pub fn build_pipeline(directory: &str, config: &Config, harness: &HarnessOptions) -> Pipeline {
     match directory {
         "composition" => subset(config, &harness.rules),
-        "notebook" | "suppression" | "thematic" => Pipeline::with_defaults(config),
+        "notebook" | "suppression" | "thematic" => Pipeline::with_defaults(config).trips(1),
         "binding_analysis" | "identity" => Pipeline::empty(),
         _ => {
             let own: RuleId = directory.replace('_', "-").parse().unwrap_or_else(|_| {
@@ -106,9 +107,9 @@ pub fn in_snapshot_dir(path: &Path, f: impl FnOnce()) {
 }
 
 /// A pipeline carrying exactly `rules`, bypassing each one's `enabled`
-/// flag the way a `--select` run does.
+/// flag the way a `--select` run does and taking one trip a run.
 pub fn subset(config: &Config, rules: &[RuleId]) -> Pipeline {
-    Pipeline::with_filters(config, rules, &[])
+    Pipeline::with_filters(config, rules, &[]).trips(1)
 }
 
 fn sidecar_contents(path: &Path) -> Option<String> {
@@ -117,5 +118,40 @@ fn sidecar_contents(path: &Path) -> Option<String> {
         Ok(c) => Some(c),
         Err(e) if e.kind() == ErrorKind::NotFound => None,
         Err(e) => panic!("read sidecar: {e}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::a_full_pipeline("thematic", "[harness]\n")]
+    #[case::a_named_subset(
+        "composition",
+        "[harness]\nrules = [\"reflow-parentheses\", \"reflow-calls\"]\n"
+    )]
+    #[case::a_rule_beside_the_one_a_sidecar_lists(
+        "reflow_parentheses",
+        "[harness]\nrules = [\"reflow-calls\"]\n"
+    )]
+    fn build_pipeline_leaves_a_second_trip_for_the_case_to_fail(
+        #[case] directory: &str,
+        #[case] sidecar: &str,
+    ) {
+        let table: toml::Table = toml::from_str(sidecar).expect("the sidecar parses");
+        let harness = table["harness"].clone().try_into().expect("it reads");
+        let pipeline = build_pipeline(directory, &Config::default(), &harness);
+        let src = "third = (\n    compute(a,\n        b)\n)\n";
+
+        let (formatted, _, trips) = pipeline
+            .run(src.parse().expect("it parses"))
+            .expect("the run succeeds");
+
+        let own: RuleId = "reflow-parentheses".parse().expect("it is a rule");
+        assert!(trips.capped);
+        assert_eq!(pipeline.unsettled(&formatted), [own]);
     }
 }

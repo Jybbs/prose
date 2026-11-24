@@ -9,10 +9,13 @@
 //! the data dependency, seating every rule that mutates a line's width,
 //! a group's member order, or a statement's position ahead of every
 //! rule that reads one, and a rule joins a batch only beside rules the
-//! registry declares it independent of. The settle check re-applies the
-//! enabled rules to a completed run's output and names every rule still
-//! editing it, a `format` run re-applying only the rules that edited on
-//! its first pass.
+//! registry declares it independent of. A run takes the rules in trips,
+//! each reading the text the trip ahead of it left, until one leaves the
+//! text as it read it or the eight a run allows have each edited. The
+//! settle check re-applies the enabled rules to a completed run's output
+//! and names every rule still editing it, a `format` run making it only
+//! where its last trip edited and re-applying only the rules that edited
+//! on some trip.
 
 use std::{collections::BTreeSet, ops::Range, path::Path, slice};
 
@@ -40,6 +43,11 @@ pub(crate) use filter::prepared_groups;
 use filter::settled_lints;
 pub(crate) use held::Held;
 
+/// How many trips through the enabled rules a run takes before it stops
+/// with a rule still editing. The deepest of 567,444 generated layouts
+/// settles in three.
+const TRIPS: usize = 8;
+
 /// Ordered sequence of enabled rules, run against each source file.
 pub struct Pipeline {
     rules: Vec<Box<dyn Rule>>,
@@ -48,6 +56,7 @@ pub struct Pipeline {
     shares: Vec<Vec<usize>>,
     sharing: Sharing,
     target: Target,
+    trips: usize,
 }
 
 impl Pipeline {
@@ -73,6 +82,7 @@ impl Pipeline {
             shares,
             sharing: Sharing::default(),
             target: Target::Unset,
+            trips: TRIPS,
         }
     }
 
@@ -89,6 +99,15 @@ impl Pipeline {
     #[must_use]
     pub(crate) fn targeting(mut self, target_version: Option<PythonVersion>) -> Self {
         self.target = Target::from(target_version);
+        self
+    }
+
+    /// Sets how many trips through the rules a run takes at most, one
+    /// leaving a rule's own second edit standing for the settle check to
+    /// name.
+    #[must_use]
+    pub fn trips(mut self, most: usize) -> Self {
+        self.trips = most;
         self
     }
 
@@ -175,6 +194,35 @@ impl Pipeline {
         batch.close(source, gate, replays)
     }
 
+    /// Folds the rules over `source` in trips, the first opening at seat
+    /// `first` and each later one at the top, until a trip leaves the text
+    /// as it read it. Returns the source beside true where every trip
+    /// this pipeline allows edited, the text standing as the last one
+    /// left it.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `PipelineError` [`fold_rules`](Self::fold_rules)
+    /// reports for a rule's output on any trip.
+    fn fold_trips(
+        &self,
+        mut source: Source,
+        mut diagnostics: Option<&mut Vec<Diagnostic>>,
+        first: usize,
+    ) -> Result<(Source, bool), PipelineError> {
+        let mut opened = first;
+        for _ in 0..self.trips {
+            let entry = source.source_file().clone();
+            source =
+                self.fold_rules(source, diagnostics.as_deref_mut(), opened..self.rules.len())?;
+            if source.text() == entry.source_text() {
+                return Ok((source, false));
+            }
+            opened = 0;
+        }
+        Ok((source, true))
+    }
+
     /// Returns the target each rule's output is checked against, or
     /// `None` when `source` does not itself compile, which disarms the
     /// gate for the run.
@@ -259,9 +307,9 @@ impl Pipeline {
             .collect()
     }
 
-    /// Rewrites `source` through every enabled rule, skipping the
-    /// diagnostics [`run`](Self::run) collects and the lint pass it
-    /// closes on.
+    /// Rewrites `source` through every enabled rule until none edits or
+    /// the trips run out, skipping the diagnostics [`run`](Self::run)
+    /// collects and the lint pass it closes on.
     ///
     /// # Errors
     ///
@@ -271,12 +319,13 @@ impl Pipeline {
         if source.suppression_map().file_is_suppressed() {
             return Ok(source);
         }
-        self.fold_rules(source, None, 0..self.rules.len())
+        self.fold_trips(source, None, 0)
+            .map(|(formatted, _)| formatted)
     }
 
-    /// Rewrites `source` through the rules seated in `seats`, resuming
-    /// behind a prefix whose output the caller already holds. The
-    /// compile gate reads the segment's entry source.
+    /// Rewrites `source` through the rules seated in `seats` once,
+    /// resuming behind a prefix whose output the caller already holds.
+    /// The compile gate reads the segment's entry source.
     ///
     /// # Errors
     ///
@@ -354,13 +403,14 @@ impl Pipeline {
             .into()
     }
 
-    /// Runs every registered rule against `source` in order. Returns
-    /// the rewritten source, the diagnostics the rules emitted, and the
-    /// set of rules that edited.
+    /// Runs every registered rule against `source` in order until none
+    /// edits or the trips run out. Returns the rewritten source, the
+    /// diagnostics the rules emitted on every trip, and what those trips
+    /// came to.
     ///
     /// Lint diagnostics are collected after the rewrites settle, so
     /// every lint range resolves against the returned source. The fired
-    /// set is read from the rewrite pass alone.
+    /// set is read from the rewrite trips alone.
     ///
     /// File-level `# prose: off` short-circuits to identity. The
     /// suppression map otherwise drops each fix group holding a
@@ -376,18 +426,15 @@ impl Pipeline {
     /// when it parses but no longer compiles, and `PipelineError::Cell`
     /// when a notebook cell that parsed on its own before the rule ran no
     /// longer does.
-    pub fn run(
-        &self,
-        source: Source,
-    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
+    pub fn run(&self, source: Source) -> Result<(Source, Vec<Diagnostic>, Trips), PipelineError> {
         if source.suppression_map().file_is_suppressed() {
-            return Ok((source, Vec::new(), BTreeSet::new()));
+            return Ok((source, Vec::new(), Trips::default()));
         }
         let mut diagnostics = Vec::new();
-        let source = self.fold_rules(source, Some(&mut diagnostics), 0..self.rules.len())?;
+        let (source, capped) = self.fold_trips(source, Some(&mut diagnostics), 0)?;
         let fired = fired_rules(&diagnostics);
         diagnostics.extend(settled_lints(&self.rules, &source));
-        Ok((source, diagnostics, fired))
+        Ok((source, diagnostics, Trips { capped, fired }))
     }
 
     /// What the settle check reads off one walk over `source`, where the
@@ -403,14 +450,14 @@ impl Pipeline {
     /// holding its rule as this pipeline constructed it, so a rule that
     /// reads a sibling's flag keeps the value this selection gave it.
     pub fn split(self) -> Vec<(RuleId, Self)> {
-        let (sharing, target) = (self.sharing, self.target);
+        let (sharing, target, trips) = (self.sharing, self.target, self.trips);
         self.rules
             .into_iter()
             .map(|rule| {
                 let rule_id = rule.id();
                 let alone = Self {
                     target,
-                    ..Self::from_rules(vec![rule]).sharing(sharing)
+                    ..Self::from_rules(vec![rule]).sharing(sharing).trips(trips)
                 };
                 (rule_id, alone)
             })
@@ -431,13 +478,18 @@ impl Pipeline {
         self.settle_walk(source, "full", |_| true, false).editing
     }
 
-    /// The rules among `fired` whose edits would still rewrite `source`,
-    /// the second pass a `format` run makes over its own output. A rule
-    /// silent on the first pass is left to the full
+    /// The rules that edited on one of `trips` whose edits would still
+    /// rewrite `source`, the settle check a `format` run makes over its
+    /// own output. Empty without a walk where the last trip edited
+    /// nothing, since that trip already left `source` as every rule
+    /// writes it. A rule silent on every trip is left to the full
     /// [`settle_report`](Self::settle_report) walk that `check
     /// --validate` and the settle sweeps run.
-    pub fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
-        self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
+    pub fn unsettled_among(&self, source: &Source, trips: &Trips) -> Vec<RuleId> {
+        if !trips.capped {
+            return Vec::new();
+        }
+        self.settle_walk(source, "narrowed", |id| trips.fired.contains(&id), false)
             .editing
     }
 }
@@ -475,6 +527,16 @@ pub enum Sharing {
     /// it left, the fold the subset probe measures a batched pair
     /// against.
     Never,
+}
+
+/// What a run's trips through the enabled rules came to.
+#[derive(Debug, Default)]
+pub struct Trips {
+    /// True where every trip the run allows edited, so a further one may
+    /// still edit the source it left.
+    pub capped: bool,
+    /// The rules that edited on any trip.
+    pub fired: BTreeSet<RuleId>,
 }
 
 /// The format diagnostics `rule`'s surviving fix groups emit, one per

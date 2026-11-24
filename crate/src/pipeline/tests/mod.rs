@@ -23,7 +23,7 @@ use crate::{
     testing::{
         FUTURE_LEAD, GroupSentinelRule, GuardedRule, assert_send_sync, at, breaks_compile,
         breaks_parse, never_settles, notebook, parse, prefix_rule, range, replacement,
-        self_overlapping,
+        self_overlapping, stepping,
     },
 };
 
@@ -38,6 +38,7 @@ mod run;
 mod second_pass;
 mod settle;
 mod subsets;
+mod trips;
 
 /// Test-only lint-only rule that returns the range list supplied
 /// at construction and never produces edits.
@@ -169,6 +170,12 @@ fn capturing(
 /// The buffers a capture log holds, in the order the rules read them.
 fn captured(seen: &Arc<Mutex<Vec<String>>>) -> Vec<String> {
     seen.lock().expect("seen mutex").clone()
+}
+
+/// A pipeline over `rules` whose run takes one trip, the fold a rule
+/// holding a fixed edit list is read through.
+fn one_trip(rules: Vec<Box<dyn Rule>>) -> Pipeline {
+    Pipeline::from_rules(rules).trips(1)
 }
 
 /// A group sentinel under `slug` whose `edits` form one fix group.

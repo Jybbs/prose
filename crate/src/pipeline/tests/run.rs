@@ -65,7 +65,7 @@ fn rules_run_in_registration_order() {
 fn run_applies_a_reordering_rule_on_a_notebook() {
     // A sibling reorder runs cell-aware on a notebook, so its
     // rewrite lands inside the cell that holds the members.
-    let pipeline = Pipeline::from_rules(vec![sentinel(
+    let pipeline = one_trip(vec![sentinel(
         "rewrite-x-to-y",
         vec![replacement("y", 0, 1)],
     )]);
@@ -103,11 +103,11 @@ fn run_drops_a_whole_group_holding_one_suppressed_edit() {
     )]);
     let source = parse("# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
 
-    let (result, diagnostics, fired) = pipeline.run(source).expect("filtered run succeeds");
+    let (result, diagnostics, trips) = pipeline.run(source).expect("filtered run succeeds");
 
     assert_eq!(result.text(), "# fmt: off\nx = 1\n# fmt: on\nz = 9\n");
     assert!(diagnostics.is_empty());
-    assert!(fired.is_empty());
+    assert!(trips.fired.is_empty());
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn run_drops_edits_whose_range_overlaps_a_suppressed_span() {
     // Edit at 11..16 (`x = 1`) sits inside the suppressed
     // [0..17) span and must be dropped, leaving the unsuppressed
     // edit at 27..32 (`z = 9`) in its own group to apply.
-    let pipeline = Pipeline::from_rules(vec![Box::new(GroupSentinelRule {
+    let pipeline = one_trip(vec![Box::new(GroupSentinelRule {
         groups: singleton_groups(vec![replacement("y", 11, 16), replacement("Z", 27, 32)]),
         id: RuleId::from("rewrite-x-and-z"),
     })]);
@@ -138,11 +138,11 @@ fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
     })]);
     let source = parse("x = 1\ny = 2\n");
 
-    let (result, diagnostics, fired) = pipeline.run(source).expect("lint-only run succeeds");
+    let (result, diagnostics, trips) = pipeline.run(source).expect("lint-only run succeeds");
 
     assert_eq!(result.text(), "x = 1\ny = 2\n");
     assert_eq!(diagnostics.len(), 2);
-    assert!(fired.is_empty());
+    assert!(trips.fired.is_empty());
     for diagnostic in &diagnostics {
         assert_eq!(diagnostic.severity, Severity::Lint);
         assert!(diagnostic.fix.is_none());
@@ -153,7 +153,7 @@ fn run_emits_lint_diagnostic_without_fix_per_lint_range() {
 
 #[test]
 fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
-    let pipeline = Pipeline::from_rules(vec![sentinel(
+    let pipeline = one_trip(vec![sentinel(
         "rewrite-x-and-1",
         vec![replacement("Y", 0, 1), replacement("Z", 4, 5)],
     )]);
@@ -173,7 +173,7 @@ fn run_emits_one_diagnostic_per_group_carrying_every_edit() {
 
 #[test]
 fn run_emits_one_diagnostic_per_surviving_edit() {
-    let pipeline = Pipeline::from_rules(vec![sentinel(
+    let pipeline = one_trip(vec![sentinel(
         "rewrite-x-to-y",
         vec![replacement("y", 0, 1)],
     )]);
@@ -220,7 +220,7 @@ fn run_resolves_a_lint_range_against_the_settled_source() {
     // inserts a line above the ignored statement. Collecting lints
     // after the rewrites settle keeps the lint's range on the row
     // carrying the directive, so the ignore still matches.
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         Box::new(NeedleLintRule {
             id: RuleId::from("inlinable-bindings"),
             needle: "y = 2",
@@ -250,11 +250,11 @@ fn run_short_circuits_when_file_is_suppressed() {
     })]);
     let source = parse("# prose: off\nx = 1\n");
 
-    let (result, diagnostics, fired) = pipeline.run(source).expect("short-circuit run");
+    let (result, diagnostics, trips) = pipeline.run(source).expect("short-circuit run");
 
     assert_eq!(result.text(), "# prose: off\nx = 1\n");
     assert!(diagnostics.is_empty());
-    assert!(fired.is_empty());
+    assert!(trips.fired.is_empty());
     assert!(log.lock().expect("log mutex").is_empty());
 }
 
@@ -291,7 +291,7 @@ fn run_skips_the_compile_gate_when_the_input_does_not_compile() {
     // The demoted `__future__` import arrives in the source, so the
     // rewrite of `os` to `sys` leaves the module exactly as
     // uncompilable as it was found and the run carries it through.
-    let pipeline = Pipeline::from_rules(vec![sentinel(
+    let pipeline = one_trip(vec![sentinel(
         "rewrite-os-to-sys",
         vec![replacement("sys", 7, 9)],
     )]);

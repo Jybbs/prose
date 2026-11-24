@@ -1,51 +1,25 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "mutations"
-#MISE description = "Check every mutation of a corpus for output a second run would change, generating the set under a budget where the named directory is absent"
+#MISE description = "Check every mutation of a corpus for output a second trip through the rules would change, generating the set under a budget where the named directory is absent"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
-source "$MISE_PROJECT_ROOT/.mise/lib/delta.bash"
 
 mutation_pass() {
-  local variant="$1" log name record seen status=0 unstable
+  local variant="$1" log name
   name=$(basename "$variant")
   log="$mutations/$name.log"
-  record="$mutations/$name.json"
-  "$binary" check --no-cache --output-format json --validate "$variant" 2> "$log" \
-    | jq -c 'select(.kind == "summary" and .schema_version == 1)' \
-    > "$record" || status=$?
-  (( status <= 4 )) || { echo "$name exited $status, stderr at $log" >&2; exit 1; }
-  read -r seen unstable < <(jq -r '"\(.files_visited) \(.unstable | length)"' "$record")
-  printf '\n%s: %s of %s variants rewrite to output a second run would change\n' \
-    "$name with \`target-version\` $target" "$unstable" "$seen"
-  (( unstable == 0 )) || second_pass "$name" "$record" "$unstable"
-}
-
-second_pass() {
-  local name="$1" record="$2" unstable="$3" file first rules shown=8
-  while IFS=$'\t' read -r file rules; do
-    first="$file.first-pass"
-    cp "$file" "$file.as-written"
-    "$binary" format --no-cache --quiet "$file" 2> /dev/null || true
-    cp "$file" "$first"
-    "$binary" format --no-cache --quiet "$file" 2> /dev/null || true
-    printf '\n  %s, where a second pass leaves %s editing:\n' \
-      "${file#"$mutations/$name/"}" "$rules"
-    diff --label 'first pass' --label 'second pass' -u "$first" "$file" \
-      > "$first.diff" || true
-    sed -n '3,26{s/^/    /;p;}' "$first.diff"
-    mv "$file.as-written" "$file"
-    rm "$first" "$first.diff"
-  done < <(jq --argjson n "$shown" -r '
-    .unstable[:$n][]
-    | [.file, (.rules | map("`\(.)`") | join(", "))]
-    | @tsv' "$record")
-  (( unstable <= shown )) \
-    || printf '\n  ... and %s more, listed in %s\n' "$(( unstable - shown ))" "$record"
+  printf '\n%s with `target-version` %s: ' "$name" "$target"
+  if PROSE_SETTLE_AXES=code PROSE_SETTLE_WIDTHS=88 \
+    settle_corpus "$variant" --test corpus every_width > "$log" 2>&1; then
+    echo 'every variant settles in one trip'
+  else
+    grep -q 'distinct defects' "$log" || { cat "$log" >&2; exit 1; }
+    sed -n '/distinct defects/,/^note: /{/^note: /d;p;}' "$log"
+  fi
 }
 
 corpus=$(corpus_root "${1:-}")
 budget="${2:-60}"
-binary=$(built_binary)
 target=$(corpus_target)
 
 mutations="${PROSE_SETTLE_MUTATIONS:-}"
@@ -53,8 +27,6 @@ if [[ -z "$mutations" || ! -f "$mutations/.generated" ]]; then
   mutations="${mutations:-$(scratch_dir mutations)}"
   mutate_corpus "$corpus" "$mutations" "$budget"
 fi
-rm -f "$mutations/.generated"
-printf 'target-version = "%s"\n' "$target" > "$mutations/prose.toml"
 
 while IFS= read -r variant; do
   mutation_pass "$variant"

@@ -1,5 +1,6 @@
-//! Corpus sweep at every configured line length: the text the formatter
-//! writes leaves no rule rewriting it and no reported fix unapplied.
+//! Corpus sweep at every configured line length: the text one trip
+//! through the rules writes leaves no rule rewriting it and no reported
+//! fix unapplied, so a file taking a second editing trip fails the sweep.
 //! [`Pipeline::settle_report`] reads both defects off one walk over
 //! every file's output. A run that panics or is rejected is recorded
 //! against its file rather than ending the sweep, and a file passing
@@ -164,7 +165,7 @@ impl Plan {
             let default_print = Pipeline::with_defaults(&shipped).fingerprint();
             let first = slices.len();
             for (&axis, &width) in iproduct!(axes, widths) {
-                let pipeline = Pipeline::with_defaults(&axis.config(width, &shipped));
+                let pipeline = Pipeline::with_defaults(&axis.config(width, &shipped)).trips(1);
                 let prints = pipeline.fingerprints();
                 let peers = &slices[first..];
                 if peers.iter().any(|held| held.prints == prints) {

@@ -336,27 +336,37 @@ mod tests {
         }
     }
 
-    /// Each width from 30 through 88 beside the text the default pipeline
-    /// formats [`paired`] to there, with `reflow-calls` set to
-    /// `reflows_calls`, asserting a second run leaves that text as it is.
+    /// Each width from 30 through 88 beside the default pipeline there,
+    /// with `reflow-calls` set to `reflows_calls`.
+    fn pipelines_at_every_width(reflows_calls: bool) -> impl Iterator<Item = (usize, Pipeline)> {
+        (30..=88).map(move |width| {
+            let mut config = Config {
+                code_line_length: NonZeroUsize::new(width),
+                ..Config::default()
+            };
+            config.rules.reflow_calls.enabled = reflows_calls;
+            (width, Pipeline::with_defaults(&config))
+        })
+    }
+
+    /// Each width from 30 through 88 beside the text one trip of the
+    /// default pipeline takes [`paired`] to there, with `reflow-calls` set
+    /// to `reflows_calls`, asserting a second trip leaves that text as it
+    /// is.
     fn settled_at_every_width(
         value: &str,
         returns: bool,
         reflows_calls: bool,
     ) -> Vec<(usize, String)> {
-        (30..=88)
-            .map(|width| {
-                let mut config = Config {
-                    code_line_length: NonZeroUsize::new(width),
-                    ..Config::default()
-                };
-                config.rules.reflow_calls.enabled = reflows_calls;
-                let pipeline = Pipeline::with_defaults(&config);
+        pipelines_at_every_width(reflows_calls)
+            .map(|(width, pipeline)| {
                 let src = paired(value, returns);
-                let once = pipeline.format(parse(&src)).expect("the first run formats");
+                let once = pipeline
+                    .format_once(parse(&src))
+                    .expect("the first trip formats");
                 let twice = pipeline
-                    .format(parse(once.text()))
-                    .expect("the second run formats");
+                    .format_once(parse(once.text()))
+                    .expect("the second trip formats");
                 assert_eq!(twice.text(), once.text(), "width {width}, from:\n{src}");
                 (width, once.text().to_owned())
             })
@@ -867,6 +877,204 @@ mod tests {
     ) {
         settled_at_every_width(value, returns, reflows_calls);
     }
+
+    #[rstest]
+    #[case::fractured_call(
+        "third = (\n    compute(a,\n        b)\n)\n",
+        "third = compute(a, b)\n"
+    )]
+    #[case::fractured_dict(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}\n)\n",
+        "value = {\"alpha\": 1, \"delta\": 2}\n"
+    )]
+    #[case::fractured_set_comprehension(
+        "value = (\n    {item\n     for item in range(10)}\n)\n",
+        "value = set(range(10))\n"
+    )]
+    #[case::fractured_list_comprehension(
+        "value = (\n    [item.name\n     for item in items]\n)\n",
+        "value = [item.name for item in items]\n"
+    )]
+    #[case::fractured_subscript(
+        "value = (\n    table[alpha,\n          beta]\n)\n",
+        "value = table[alpha, beta]\n"
+    )]
+    #[case::fractured_set_comprehension_whose_rewrite_lands_at_the_budget(
+        &format!("value_{0} = (\n    {{item\n     for item in range(10)}}\n)\n", "k".repeat(65)),
+        &format!("value_{0} = set(range(10))\n", "k".repeat(65))
+    )]
+    #[case::fractured_dict_rejoining_at_the_budget_under_a_long_target(
+        &format!("value_{0} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}\n)\n", "k".repeat(55)),
+        &format!("value_{0} = {{\"alpha\": 1, \"delta\": 2}}\n", "k".repeat(55))
+    )]
+    #[case::fractured_call_reflow_calls_condenses_to_the_budget(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n)\n", "k".repeat(59)),
+        &format!("value_{0} = compute(alpha, beta)\n", "k".repeat(59))
+    )]
+    #[case::fractured_dict_call_of_pairs_whose_rewrite_lands_on_one_row(
+        "value = (\n    dict([(alpha,\n           beta)])\n)\n",
+        "value = {alpha: beta}\n"
+    )]
+    #[case::call_on_a_one_entry_list_written_across_rows(
+        "value = (\n    [\n        alpha\n    ].count(key)\n)\n",
+        "value = [alpha].count(key)\n"
+    )]
+    #[case::call_on_a_fractured_dict(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
+        "value = {\"alpha\": 1, \"delta\": 2}.get(key)\n"
+    )]
+    #[case::fractured_call_holding_a_call_ahead_of_its_break(
+        "value = (\n    compute(inner(a),\n        b)\n)\n",
+        "value = compute(inner(a), b)\n"
+    )]
+    #[case::call_on_a_subscript_slice_written_across_rows(
+        "value = (\n    table[alpha,\n          beta].get(key)\n)\n",
+        "value = table[alpha, beta].get(key)\n"
+    )]
+    #[case::call_on_a_list_comprehension_written_across_rows(
+        "value = ([item.name\n for item in items].count(key))\n",
+        "value = [item.name for item in items].count(key)\n"
+    )]
+    #[case::call_holding_a_dict_comprehension_written_across_rows(
+        "value = (\n    compute({item.name: item\n             for item in items}, key)\n)\n",
+        "value = compute({item.name: item for item in items}, key)\n"
+    )]
+    #[case::call_holding_a_generator_written_across_rows(
+        "value = (\n    compute(item.name\n            for item in items)\n)\n",
+        "value = compute(item.name for item in items)\n"
+    )]
+    #[case::call_on_a_subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    obj.compute(\n    )[alpha].get(key)\n)\n",
+        "value = obj.compute()[alpha].get(key)\n"
+    )]
+    #[case::call_on_a_comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x.name for x in fetch(\n    )].count(key)\n)\n",
+        "value = [x.name for x in fetch()].count(key)\n"
+    )]
+    #[case::call_on_a_simplified_comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x for x in fetch(\n    )].count(key)\n)\n",
+        "value = list(fetch()).count(key)\n"
+    )]
+    #[case::call_on_a_fractured_subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    dict(\n    )[alpha,\n       beta].get(key)\n)\n",
+        "value = {}[alpha, beta].get(key)\n"
+    )]
+    #[case::comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x.name for x in fetch(\n    )]\n)\n",
+        "value = [x.name for x in fetch()]\n"
+    )]
+    #[case::subscript_of_a_call_with_empty_brackets_across_rows(
+        "value = (\n    obj.compute(\n    )[alpha]\n)\n",
+        "value = obj.compute()[alpha]\n"
+    )]
+    #[case::call_holding_a_one_entry_list_whose_closer_row_holds_more_arguments(
+        "value = (\n    compute([\n        alpha\n    ], key)\n)\n",
+        "value = compute([alpha], key)\n"
+    )]
+    #[case::call_without_arguments_on_a_subscript_of_a_one_entry_list(
+        "value = (\n    table[[\n        alpha\n    ], beta].items()\n)\n",
+        "value = table[[alpha], beta].items()\n"
+    )]
+    #[case::count_exploded_call_on_a_comprehension_over_a_call_with_empty_brackets_across_rows(
+        "value = (\n    [x.name for x in fetch(\n    )].run(a=1, b=2, c=3, d=4)\n)\n",
+        "value = [x.name for x in fetch()].run(\n    a = 1,\n    b = 2,\n    c = 3,\n    d = 4\n)\n"
+    )]
+    #[case::fractured_count_exploded_call_on_a_comprehension_over_a_call_with_empty_brackets(
+        "value = (\n    [x.name for x in fetch(\n    )].run(a=1, b=2,\n        c=3, d=4)\n)\n",
+        "value = [x.name for x in fetch()].run(\n    a = 1,\n    b = 2,\n    c = 3,\n    d = 4\n)\n"
+    )]
+    #[case::call_on_a_comprehension_shedding_nested_pairs_to_the_budget(
+        &format!("value_{0} = (\n    [(x.name) for x in (fetch(\n    ))].count(key)\n)\n", "k".repeat(43)),
+        &format!("value_{0} = [x.name for x in fetch()].count(key)\n", "k".repeat(43))
+    )]
+    #[case::fractured_comprehension_shedding_nested_pairs_to_the_budget(
+        &format!("value_{0} = (\n    [(x.name)\n     for x in (items)]\n)\n", "k".repeat(56)),
+        &format!("value_{0} = [x.name for x in items]\n", "k".repeat(56))
+    )]
+    #[case::dict_call_with_empty_brackets_across_rows(
+        "value = (\n    dict(\n    )\n)\n",
+        "value = {}\n"
+    )]
+    #[case::empty_dict_across_rows("value = (\n    {\n    }\n)\n", "value = {}\n")]
+    #[case::attribute_after_a_call(
+        "value = (\n    compute(alpha,\n        beta).result\n)\n",
+        "value = compute(alpha, beta).result\n"
+    )]
+    #[case::await_of_a_call(
+        "async def f():\n    value = (\n        await compute(alpha,\n            beta)\n    )\n    return value\n",
+        "async def f():\n    value = await compute(alpha, beta)\n    return value\n"
+    )]
+    #[case::lambda_whose_body_is_a_call(
+        "value = (\n    lambda: compute(alpha,\n        beta)\n)\n",
+        "value = lambda: compute(alpha, beta)\n"
+    )]
+    #[case::conditional_holding_a_call(
+        "value = (\n    compute(alpha,\n        beta) if ready else None\n)\n",
+        "value = compute(alpha, beta) if ready else None\n"
+    )]
+    #[case::call_whose_row_reaches_the_budget_with_its_semicolon(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n);\n", "k".repeat(58)),
+        &format!("value_{0} = compute(alpha, beta);\n", "k".repeat(58))
+    )]
+    #[case::call_whose_row_passes_the_budget_by_its_semicolon(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n);\n", "k".repeat(59)),
+        &format!("value_{0} = compute(\n    alpha,\n    beta\n);\n", "k".repeat(59))
+    )]
+    #[case::call_whose_row_reaches_the_budget_with_the_statement_after_it(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n); other = 1\n", "k".repeat(48)),
+        &format!("value_{0} = compute(alpha, beta); other = 1\n", "k".repeat(48))
+    )]
+    #[case::call_whose_row_passes_the_budget_by_the_statement_after_it(
+        &format!("value_{0} = (\n    compute(alpha,\n        beta)\n); other = 1\n", "k".repeat(49)),
+        &format!("value_{0} = compute(\n    alpha,\n    beta\n); other = 1\n", "k".repeat(49))
+    )]
+    fn a_pair_around_an_interior_a_later_rule_joins_settles_in_one_run(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let pipeline = Pipeline::with_defaults(&Config::default());
+        let once = pipeline.format(parse(src)).expect("the first run formats");
+        assert_eq!(once.text(), expected);
+        let twice = pipeline
+            .format_once(parse(expected))
+            .expect("the second run formats");
+        assert_eq!(twice.text(), expected);
+    }
+
+    #[rstest]
+    fn a_value_a_later_rule_joins_settles_in_one_run_at_every_width(
+        #[values(
+            "[[\n    alpha_value_name\n], beta_value_name_long]",
+            "[x for x in fetch(\n)].count(key)",
+            "dict(\n)[alpha,\n beta].get(key)",
+            "compute([item.name for item in fetch(\n)], key_argument)",
+            "table[lookup([\n    alpha\n], beta)].get(key)",
+            "[item.name for item in fetch(\n) if item.compute(\n)].count(key)",
+            "[item.name for item in fetch(\n) if item.compute(\n)].count(key_argument_name)",
+            "compute([item.name for item in fetch(\n) if item.enabled], key_argument)",
+            "[x.name for x in fetch(\n    alpha, beta\n)].count(key_argument_name)",
+            "[x.name for x in fetch(\n)].run(a=1, b=2, c=3, d=4)",
+            "table[lookup([\n    alpha\n], beta)].items()",
+            "{\"alpha\": [\n    alpha\n], \"beta\": 2, \"gamma\": 3, \"delta\": 4}",
+            "[(x.name) for x in (fetch(\n))].count(key)",
+            "[(x.name)\n for x in (items)]",
+            "{\n    \"alpha\": lookup_the_value(item.name\n    for item in key)}",
+            "compute((alpha_value),\n    table[(beta_value)])"
+        )]
+        value: &str,
+        #[values(false, true)] returns: bool,
+        #[values(false, true)] reflows_calls: bool,
+    ) {
+        let src = paired(value, returns);
+        for (width, pipeline) in pipelines_at_every_width(reflows_calls) {
+            let once = pipeline.format(parse(&src)).expect("the first run formats");
+            let twice = pipeline
+                .format_once(parse(once.text()))
+                .expect("the second run formats");
+            assert_eq!(twice.text(), once.text(), "width {width}, from:\n{src}");
+        }
+    }
+
     #[test]
     fn a_dict_call_on_a_dict_past_the_entry_cap_opens_at_every_width_its_pair_fits() {
         let src =
@@ -895,7 +1103,7 @@ mod tests {
     }
 
     #[test]
-    fn a_value_simplify_comprehensions_rewrites_over_two_runs_is_measured_as_its_first() {
+    fn a_value_simplify_comprehensions_rewrites_over_two_trips_is_measured_as_its_first() {
         let written = paired(
             "list(item for item in dict(alpha_value=1, beta_value=2, gamma_value=3))",
             false,
@@ -909,14 +1117,23 @@ mod tests {
                 code_line_length: NonZeroUsize::new(width),
                 ..Config::default()
             };
-            let rewritten = Pipeline::with_defaults(&config)
-                .format(parse(&written))
+            let pipeline = Pipeline::with_defaults(&config);
+            let rewritten = pipeline
+                .format_once(parse(&written))
                 .expect("the rewritten value formats");
             config.rules.simplify_comprehensions.enabled = false;
             let literal = Pipeline::with_defaults(&config)
-                .format(parse(&landed))
+                .format_once(parse(&landed))
                 .expect("the landed value formats");
             assert_eq!(rewritten.text(), literal.text(), "width {width}");
+            let settled = pipeline
+                .format(parse(&written))
+                .expect("the settled value formats");
+            let again = pipeline
+                .format_once(rewritten)
+                .expect("the second trip formats");
+            assert_eq!(settled.text(), again.text(), "width {width}");
+            assert!(pipeline.unsettled(&settled).is_empty(), "width {width}");
         }
     }
 

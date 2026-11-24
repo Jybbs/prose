@@ -114,7 +114,10 @@ fn carry_trace_env_reports_each_table_build_and_carry_to_stderr() {
 
     assert_stderr_has(&assert, "build\tbindings\n");
     assert_stderr_has(&assert, "carry\tprune-inert-imports\tbindings\tdeclined\n");
-    assert_stderr_has(&assert, "second\tnarrowed\tprune-inert-imports\n");
+    assert!(
+        !stderr_utf8(&assert).contains("second\t"),
+        "a run whose last trip edits nothing takes no settle check",
+    );
 }
 
 #[test]
