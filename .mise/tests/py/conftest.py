@@ -17,7 +17,7 @@ def ran(
     monkeypatch : MonkeyPatch,
     scratch     : Callable[[Path], Path],
     stand_in    : Callable[..., Path],
-    tmp_path    : Path
+    workdir     : Callable[..., Path]
 ) -> Callable[..., CompletedProcess]:
     """
     Builds a function running the `py` task `name` with `args` in a scratch
@@ -38,13 +38,9 @@ def ran(
         """
         Runs the task to completion, capturing its output as text.
         """
-        repo = tmp_path / "repo"
         if actions:
             monkeypatch.setenv("GITHUB_ACTIONS", actions)
-        for file in tracked:
-            (path := repo / file).parent.mkdir(exist_ok=True, parents=True)
-            path.write_text("x = 1\n", encoding="utf-8")
-        scratch(repo)
+        repo = scratch(workdir(dict.fromkeys(tracked, "x = 1\n"), "repo"))
         for file in deleted:
             (repo / file).unlink()
 

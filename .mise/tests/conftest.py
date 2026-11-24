@@ -12,7 +12,7 @@ a stand-in build. Each session writes under a base temporary directory of
 its own.
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from functools       import partial
 from importlib.util  import module_from_spec, spec_from_file_location
 from json            import dumps
@@ -64,7 +64,7 @@ def pytest_sessionfinish(exitstatus: int, session: Session):
 def affected(
     scratch  : Callable[[Path], Path],
     stand_in : Callable[..., Path],
-    tmp_path : Path
+    workdir  : Callable[..., Path]
 ) -> Callable[..., CompletedProcess]:
     """
     Builds stand-in `cargo`, `uv`, and `vitest` commands, each printing the
@@ -102,17 +102,7 @@ def affected(
     )
     for name in ("uv", "vitest"):
         (cargo.parent / name).symlink_to(cargo)
-    repo = tmp_path / "repo"
-    git  = partial(run, check=True, cwd=repo)
-
-    def write(files: Iterable[str], text: str):
-        """
-        Writes `text` to each path in `files` under the scratch repository,
-        making every parent directory the path names.
-        """
-        for file in files:
-            (path := repo / file).parent.mkdir(exist_ok=True, parents=True)
-            path.write_text(text, encoding="utf-8")
+    write = partial(workdir, root="repo")
 
     def run_task(
         changed   : str,
@@ -140,20 +130,21 @@ def affected(
             The finished run, its output captured as text.
         """
         changes = {changed, *alongside}
-        write({"seed", *changes, *tracked}, "x = 1\n")
-        write(reading, f'ROOT / "{changed}"\n')
-        scratch(repo)
+        repo    = scratch(
+            write(
+                dict.fromkeys(("seed", *changes, *tracked), "x = 1\n")
+                | dict.fromkeys(reading, f'ROOT / "{changed}"\n')
+            )
+        )
+        git = partial(run, check=True, cwd=repo)
         if how in {"ignored", "untracked"}:
             git(["git", "rm", "--cached", "-q", *changes])
         if how == "ignored":
-            (repo / ".git/info/exclude").write_text(
-                "\n".join(changes),
-                encoding = "utf-8"
-            )
+            write({".git/info/exclude": "\n".join(changes)})
         git(["git", "commit", "-qm", "main"])
         if upstream:
             git(["git", "switch", "-q", "-c", "upstream"])
-            write(upstream, "x = 1\n")
+            write(dict.fromkeys(upstream, "x = 1\n"))
             git(["git", "add", "."])
             git(["git", "commit", "-qm", "upstream"])
         if main:
@@ -166,7 +157,7 @@ def affected(
             elif how == "renamed":
                 git(["git", "mv", file, f"{file}-renamed"])
             else:
-                (repo / file).write_text("x = 2\n", encoding="utf-8")
+                write({file: "x = 2\n"})
         if how in {"committed", "renamed"}:
             git(["git", "commit", "-qam", "change"])
 
@@ -185,7 +176,8 @@ def delta(
     monkeypatch : MonkeyPatch,
     scratch     : Callable[[Path], Path],
     stand_in    : Callable[..., Path],
-    tmp_path    : Path
+    tmp_path    : Path,
+    workdir     : Callable[..., Path]
 ) -> Callable[..., CompletedProcess]:
     """
     Clones a scratch repository into `clone`, alone beside its upstream,
@@ -239,22 +231,23 @@ def delta(
         f'case "$2" in *sysconfig*) echo {quote(str(corpus))} ;; *) echo 3.15 ;; esac\n'
     )
 
-    def formatter(root: Path, value: str):
+    def formatter(value: str) -> str:
         """
-        Writes the formatter `root` builds, which writes each module of the
-        corpus as `value`.
+        Renders a formatter that writes each module of the corpus as
+        `value`.
         """
-        (root / "crate/src/formatter").write_text(
+        return (
             f'#!/bin/sh\necho "x = \'{value}\'" > "$5/module.py"\n'
-            'echo \'{"files_visited":1,"kind":"summary","schema_version":1}\'\n',
-            encoding = "utf-8"
+            'echo \'{"files_visited":1,"kind":"summary","schema_version":1}\'\n'
         )
 
-    corpus.mkdir()
-    (corpus / "module.py").write_text("x = ''\n", encoding="utf-8")
-    (upstream / "crate/src").mkdir(parents=True)
-    (upstream / "Cargo.toml").write_text("[profile.probe]\n", encoding="utf-8")
-    formatter(upstream, "main")
+    workdir(
+        {
+            "corpus/module.py"             : "x = ''\n",
+            "upstream/Cargo.toml"          : "[profile.probe]\n",
+            "upstream/crate/src/formatter" : formatter("main")
+        }
+    )
     for root, *command in (
         (scratch(upstream), "commit", "-qm", "main"),
         (upstream, "branch", "-M", "main"),
@@ -262,7 +255,7 @@ def delta(
         (clone, "switch", "-c", "feature", "-q")
     ):
         run(["git", *command], check=True, cwd=root)
-    formatter(clone, "head")
+    workdir({"clone/crate/src/formatter": formatter("head")})
     run(["git", "commit", "-qam", "head"], check=True, cwd=clone)
     (clone / ".mise").symlink_to(TASKS.parent)
 
@@ -370,26 +363,25 @@ def task() -> Callable[[str], ModuleType]:
 
 
 @fixture
-def workdir(
-    monkeypatch : MonkeyPatch,
-    tmp_path    : Path
-) -> Callable[[dict[str, str]], Path]:
+def workdir(monkeypatch: MonkeyPatch, tmp_path: Path) -> Callable[..., Path]:
     """
     Builds a writer of scratch trees under the case's temporary directory.
 
     Returns:
         A function writing each file a mapping names into the scratch tree
-        and making that tree the current directory, which it returns.
+        at `root`, the temporary directory itself by default, and making
+        that tree the current directory, which it returns.
     """
-    def write(files: dict[str, str]) -> Path:
+    def write(files: dict[str, str], root: str = "") -> Path:
         """
         Writes the text of each file in `files` at its path under the tree,
         making every parent directory the path names.
         """
+        tree = tmp_path / root
         for name, text in files.items():
-            (target := tmp_path / name).parent.mkdir(exist_ok=True, parents=True)
+            (target := tree / name).parent.mkdir(exist_ok=True, parents=True)
             target.write_text(text, encoding="utf-8")
-        monkeypatch.chdir(tmp_path)
-        return tmp_path
+        monkeypatch.chdir(tree)
+        return tree
 
     return write
