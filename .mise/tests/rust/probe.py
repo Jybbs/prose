@@ -1,8 +1,8 @@
 """
 Pins that `rust:probe` and the `sweep_test` the corpus sweeps run each build
 over the workspace without `prose_wasm`, the package selection `rust:proof`
-builds over, and that the delta, mutation, and bake rows build their binaries
-over the packages `rust:probe` builds its binaries over.
+builds over, and that the delta, mutation, and bake rows build their
+binaries over the packages `rust:probe` builds its binaries over.
 """
 
 from os         import environ
@@ -15,7 +15,7 @@ SELECTION = "build --locked -p prose -p prose_corpus"
 STAND_IN  = (
     "#!/bin/sh\n"
     "printf '%s\\n' \"$*\" >&2\n"
-    "printf '{\"executable\":\"true\",\"target\":{\"name\":\"%s\"}}\\n' \"$8\"\n"
+    'printf \'{"executable":"true","target":{"name":"%s"}}\\n\' "$8"\n'
 )
 
 

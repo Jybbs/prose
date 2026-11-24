@@ -191,9 +191,9 @@ def delta(
     Clones a scratch repository into `clone`, alone beside its upstream,
     on a `feature` branch whose formatter writes a module of the corpus
     as `head` where `main` writes it as `main`. A stand-in `cargo` builds
-    the formatter of the tree it runs in, counts any binary already in
-    the target directory as built, and builds a `delta` binary reporting
-    the files whose formatting differs, beside stand-in `mise` and `python`
+    the formatter of the tree it runs in, counts any binary already in the
+    target directory as built, and builds a `delta` binary reporting the
+    files whose formatting differs, beside stand-in `mise` and `python`
     commands.
 
     Returns:
