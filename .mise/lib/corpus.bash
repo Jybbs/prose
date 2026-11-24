@@ -1,5 +1,5 @@
 corpus_build() {
-  cargo build --bins --locked -p prose_corpus --profile probe --quiet
+  probe_build --bins --profile probe --quiet
 }
 
 corpus_root() {
@@ -10,9 +10,9 @@ corpus_root() {
 }
 
 corpus_run() {
-  local bin="$1"
-  shift
-  cargo run --bin "$bin" --locked -p prose_corpus --profile probe --quiet -- "$@"
+  local binary
+  binary=$(probe_binary "$1" probe --quiet) || return
+  "$binary" "${@:2}"
 }
 
 corpus_target() {
@@ -22,6 +22,19 @@ corpus_target() {
 mutate_corpus() {
   printf '\nMutating the corpus under a %ss budget\n' "$3"
   corpus_run mutate "$@"
+}
+
+probe_binary() {
+  probe_build \
+    --bin "$1" \
+    --message-format json-render-diagnostics \
+    --profile "$2" \
+    "${@:3}" \
+    | jq --arg name "$1" -r 'select(.target.name == $name).executable // empty'
+}
+
+probe_build() {
+  cargo build --locked -p prose -p prose_corpus "$@"
 }
 
 scratch_dir() {

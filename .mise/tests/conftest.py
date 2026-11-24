@@ -192,8 +192,9 @@ def delta(
     on a `feature` branch whose formatter writes a module of the corpus
     as `head` where `main` writes it as `main`. A stand-in `cargo` builds
     the formatter of the tree it runs in, counts any binary already in
-    the target directory as built, and reports the files whose formatting
-    differs, beside stand-in `mise` and `python` commands.
+    the target directory as built, and builds a `delta` binary reporting
+    the files whose formatting differs, beside stand-in `mise` and `python`
+    commands.
 
     Returns:
         A function running the task at `name` in the clone with `args` under
@@ -214,21 +215,25 @@ def delta(
         monkeypatch.setenv(name, str(value))
     stand_in(
         "cargo",
+        'probe="build --locked -p prose -p prose_corpus"\n'
+        'binary="${CARGO_TARGET_DIR:-$PWD/target}/probe/$8"\n'
         'case "$*" in\n'
-        '  "build --bin prose --locked --message-format json-render-diagnostics'
+        '  "$probe --bin prose --message-format json-render-diagnostics'
         ' --profile probe")\n'
-        "    binary=${CARGO_TARGET_DIR:-$PWD/target}/probe/prose\n"
         '    mkdir -p "${binary%/*}"\n'
         '    [ -e "$binary" ] || install -m 755 crate/src/formatter "$binary"\n'
-        '    printf \'{"executable":"%s","target":{"name":"prose"}}\' "$binary"\n'
         "    ;;\n"
-        '  "build --bins --locked -p prose_corpus --profile probe --quiet") ;;\n'
-        '  "run --bin delta --locked -p prose_corpus --profile probe --quiet -- "*)\n'
-        "    shift 10\n"
-        '    git -C "$1" diff --name-only "base-$2" "head-$2"\n'
+        '  "$probe --bin delta --message-format json-render-diagnostics'
+        ' --profile probe --quiet")\n'
+        '    mkdir -p "${binary%/*}"\n'
+        '    printf \'#!/bin/sh\\ngit -C "$1" diff --name-only'
+        ' "base-$2" "head-$2"\\n\' > "$binary"\n'
+        '    chmod 755 "$binary"\n'
         "    ;;\n"
+        '  "$probe --bins --profile probe --quiet") exit ;;\n'
         '  *) echo "unexpected: $*" >&2; exit 1 ;;\n'
         "esac\n"
+        'printf \'{"executable":"%s","target":{"name":"%s"}}\' "$binary" "$8"\n'
     )
     stand_in(
         "mise",
