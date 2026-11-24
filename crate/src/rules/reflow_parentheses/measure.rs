@@ -25,7 +25,7 @@ use crate::{
             display_width, run_closes_to_a_space, settled_head_column, settled_slice_width,
             settled_width, soft_wrap_runs,
         },
-        layout::{is_collapsible, is_layoutable, item_indent},
+        layout::{is_collapsible, is_column_shaped, is_layoutable, item_indent},
         slots::starting_within,
         splice::splice_preserves_tree,
         tokens::string_run_breaks,
@@ -132,6 +132,13 @@ impl Shedder<'_> {
             .saturating_sub(kept)
     }
 
+    /// True where an argument list inside `range` is written as a flush
+    /// column, a layout `reflow-calls` leaves standing.
+    fn holds_a_column_list(&self, range: TextRange) -> bool {
+        starting_within(self.source.explodable_arguments(), range, Ranged::start)
+            .any(|list| is_column_shaped(self.source.slice(*list)))
+    }
+
     /// True where every line break inside `range` falls inside one of
     /// `closed`, ascending by start.
     fn holds_every_break(
@@ -216,7 +223,8 @@ impl Shedder<'_> {
     /// `expr`, its opening row starting at `column`, once it lands across
     /// rows, which holds for
     ///
-    /// - a collection literal `reflow-collections` expands
+    /// - a collection literal `reflow-collections` expands, no argument
+    ///   list inside it written as a flush column
     /// - a call holding on its callee chain an argument list `reflow-calls`
     ///   explodes on its count, the callee of that list fitting one row
     /// - a call with a one-row form, the callee of the first list on that
@@ -237,9 +245,10 @@ impl Shedder<'_> {
             return false;
         }
         if !expr.is_call_expr() {
-            return self
-                .one_row
-                .expands(self.source, expr, expr.into(), column, 0, self.padding);
+            return !self.holds_a_column_list(expr.range())
+                && self
+                    .one_row
+                    .expands(self.source, expr, expr.into(), column, 0, self.padding);
         }
         let lists: Vec<&ExprCall> = successors(Some(expr), |&inner| match inner {
             Expr::Attribute(attribute) => Some(&*attribute.value),
@@ -288,9 +297,12 @@ impl Shedder<'_> {
     ///   `reflow-collections` is off or no rejoined form of it fits that
     ///   row, and one written on one row that rule expands
     /// - a call holding an argument list `reflow-calls` can explode, where
-    ///   that rule finds no one-row form fitting that row, and any other
-    ///   call spanning rows or holding a literal `reflow-collections`
-    ///   expands on that row
+    ///   that rule finds no one-row form fitting that row
+    /// - with `reflow-calls` running, any other call whose every break
+    ///   [`Self::closes_every_break`] closes and whose callee chain opens
+    ///   on a literal `reflow-collections` expands on that row
+    /// - with that rule off, any call spanning rows or holding a literal
+    ///   `reflow-collections` expands on that row
     pub(super) fn lands_across_rows(&self, expr: &Expr, indent: usize) -> bool {
         let column = item_indent(indent);
         let spans = self.source.contains_line_break(expr.range());
@@ -298,6 +310,34 @@ impl Shedder<'_> {
             Expr::Call(call) if self.condenses(call.range()) => self
                 .condensed_width(expr)
                 .is_none_or(|width| !self.one_row.fits(column + width)),
+            Expr::Call(call) if self.one_row.closes() => {
+                self.closes_every_break(expr)
+                    && successors(Some(expr), |&inner| match inner {
+                        Expr::Attribute(attribute) => Some(&*attribute.value),
+                        Expr::Call(call) => Some(&*call.func),
+                        Expr::Subscript(subscript) => Some(&*subscript.value),
+                        _ => None,
+                    })
+                    .last()
+                    .is_some_and(|root| {
+                        let tail = settled_slice_width(
+                            self.source,
+                            self.padding,
+                            TextRange::new(root.end(), call.end()),
+                        );
+                        self.one_row
+                            .rejoined(self.source, root, root.into(), column, tail)
+                            .is_none()
+                            && self.one_row.expands(
+                                self.source,
+                                root,
+                                root.into(),
+                                column,
+                                tail,
+                                self.padding,
+                            )
+                    })
+            }
             Expr::Call(call) => {
                 let width = |range| settled_slice_width(self.source, self.padding, range);
                 spans

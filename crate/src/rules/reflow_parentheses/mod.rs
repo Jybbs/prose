@@ -599,6 +599,34 @@ mod tests {
         "value = (\n    [x.name for x in fetch(\n    )]\n)  # prose: skip[reflow-collections]\n",
         true
     )]
+    #[case::call_with_empty_brackets_across_rows_on_a_fractured_comprehension(
+        "value = (\n    [item.name\n     for item in items].pop(\n    )\n)\n",
+        true
+    )]
+    #[case::call_without_arguments_on_a_fractured_dict_reflow_collections_skips(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.items()\n)  # prose: skip[reflow-collections]\n",
+        true
+    )]
+    #[case::call_without_arguments_on_a_fractured_dict_rejoining_under_a_long_target(
+        &format!("value_{} = (\n    {{\"alpha\": 1,\n     \"delta\": 2}}.items()\n)\n", "k".repeat(60)),
+        true
+    )]
+    #[case::call_without_arguments_on_a_subscript_holding_an_expanding_dict(
+        "value = (\n    table[{\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxxxx}].copy()\n)\n",
+        true
+    )]
+    #[case::fractured_call_reflow_calls_skips(
+        "value = (\n    compute(alpha,\n        beta)\n)  # prose: skip[reflow-calls]\n",
+        true
+    )]
+    #[case::call_with_empty_brackets_across_rows_on_a_dict_past_the_budget(
+        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx,\n     \"delta_key_name\": delta_value_xxxxxxxxxxxx}.items(\n    )\n)\n",
+        true
+    )]
+    #[case::column_dict_holding_a_call_exploded_onto_rows(
+        "value = (\n    {\n        \"alpha\": compute(\n            beta,\n            gamma,\n        )\n    }\n)\n",
+        true
+    )]
     fn a_pair_around_any_other_value_holds(#[case] src: &str, #[case] reflows_calls: bool) {
         assert_eq!(applied(src, reflows_calls), src);
     }
@@ -840,6 +868,14 @@ mod tests {
         "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.get(key)\n)\n",
         |config: &mut Config| config.rules.reflow_collections.enabled = false
     )]
+    #[case::call_without_arguments_on_a_fractured_dict_with_reflow_collections_off(
+        "value = (\n    {\"alpha\": 1,\n     \"delta\": 2}.items()\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.enabled = false
+    )]
+    #[case::call_without_arguments_on_a_fractured_dict_past_the_budget_with_explode_off(
+        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx,\n     \"delta_key_name\": delta_value_xxxxxxxxxxxx}.items()\n)\n",
+        |config: &mut Config| config.rules.reflow_collections.explode = false
+    )]
     fn a_forecast_reading_each_layout_setting_holds_the_pair(
         #[case] src: &str,
         #[case] configure: fn(&mut Config),
@@ -962,6 +998,7 @@ mod tests {
             "{\"alpha\": [\n    alpha\n], \"beta\": 2, \"gamma\": 3, \"delta\": 4}",
             "[(x.name) for x in (fetch(\n))].count(key)",
             "[(x.name)\n for x in (items)]",
+            "{\n    \"alpha\": lookup_the_value(item.name\n    for item in key)}",
             "compute((alpha_value),\n    table[(beta_value)])",
             "dict(\n    alpha=1,  # first entry\n    delta=2,\n)",
             "tuple([alpha_value, beta_value, gamma_value])",
@@ -1000,6 +1037,14 @@ mod tests {
     #[case::fractured_subscript(
         "value = (\n    table[alpha,\n          beta]\n)\n",
         "value = table[alpha, beta]\n"
+    )]
+    #[case::items_call_on_a_fractured_dict_past_the_budget(
+        "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx,\n         \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
+        "def f():\n    pairs = {\n        \"alpha_key_name\" : alpha_value_xxxxxxxx,\n        \"delta_key_name\" : delta_value_xxxxxx\n    }.items()\n    return pairs\n"
+    )]
+    #[case::items_call_on_an_item_of_a_dict_past_the_budget(
+        "value = (\n    {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}[key].items()\n)\n",
+        "value = {\n    \"alpha_key_name\" : alpha_value_xxxxxxxx,\n    \"delta_key_name\" : delta_value_xxxxxx\n}[key].items()\n"
     )]
     #[case::items_call_on_a_dict_past_the_budget(
         "def f():\n    pairs = (\n        {\"alpha_key_name\": alpha_value_xxxxxxxx, \"delta_key_name\": delta_value_xxxxxx}.items()\n    )\n    return pairs\n",
