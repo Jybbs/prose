@@ -24,5 +24,5 @@ fn the_narrowed_second_pass_names_every_firing_rule_the_full_walk_names(
         .into_iter()
         .filter(|rule| trips.fired.contains(rule))
         .collect();
-    assert_eq!(pipeline.unsettled_among(&formatted, &trips.fired), full);
+    assert_eq!(pipeline.unsettled_among(&formatted, &trips), full);
 }

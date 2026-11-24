@@ -36,18 +36,13 @@ impl Settled {
     /// Runs the settle check over the held rewrite as a `format` run
     /// does, re-applying the rules that fired where every trip edited.
     pub(super) fn detect(&self, config: &Config, original: &str) -> Option<UnstableRewrite> {
-        self.trips
-            .capped
-            .then(|| {
-                UnstableRewrite::detect_narrowed(
-                    &self.pipeline,
-                    config,
-                    original,
-                    &self.source,
-                    &self.trips.fired,
-                )
-            })
-            .flatten()
+        UnstableRewrite::detect_narrowed(
+            &self.pipeline,
+            config,
+            original,
+            &self.source,
+            &self.trips,
+        )
     }
 }
 

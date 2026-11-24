@@ -283,7 +283,7 @@ fn narrowed_report(
         &resolved.config,
         original,
         formatted,
-        &trips.fired,
+        trips,
     )
     .map(Box::new)
 }
@@ -319,10 +319,7 @@ fn run_and_assemble(
                     format_args!("{} did not re-read as a notebook", file.name()),
                 );
             }
-            // A run whose last trip left the text alone is settled, so
-            // only one that spent every trip takes the settle check.
             let unstable = (resolved.config.report_unstable_output
-                && trips.capped
                 && matches!(rewrite, Rewrite::Changed(_)))
             .then(|| narrowed_report(resolved, file.source_text(), &formatted, &trips))
             .flatten()

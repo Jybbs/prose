@@ -478,13 +478,18 @@ impl Pipeline {
         self.settle_walk(source, "full", |_| true, false).editing
     }
 
-    /// The rules among `fired` whose edits would still rewrite `source`,
-    /// the settle check a `format` run makes over its own output where
-    /// its last trip edited. A rule silent on every trip is left to the
-    /// full [`settle_report`](Self::settle_report) walk that `check
+    /// The rules that edited on one of `trips` whose edits would still
+    /// rewrite `source`, the settle check a `format` run makes over its
+    /// own output. Empty without a walk where the last trip edited
+    /// nothing, since that trip already left `source` as every rule
+    /// writes it. A rule silent on every trip is left to the full
+    /// [`settle_report`](Self::settle_report) walk that `check
     /// --validate` and the settle sweeps run.
-    pub fn unsettled_among(&self, source: &Source, fired: &BTreeSet<RuleId>) -> Vec<RuleId> {
-        self.settle_walk(source, "narrowed", |id| fired.contains(&id), false)
+    pub fn unsettled_among(&self, source: &Source, trips: &Trips) -> Vec<RuleId> {
+        if !trips.capped {
+            return Vec::new();
+        }
+        self.settle_walk(source, "narrowed", |id| trips.fired.contains(&id), false)
             .editing
     }
 }

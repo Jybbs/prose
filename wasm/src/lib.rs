@@ -85,8 +85,8 @@ fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Err
         return Err(format!("{message} at byte range {:?}", refusal.range()).into());
     }
     let (formatted, diagnostics, trips) = pipeline.run(source)?;
-    let unstable_rules = if settle && trips.capped {
-        pipeline.unsettled_among(&formatted, &trips.fired)
+    let unstable_rules = if settle {
+        pipeline.unsettled_among(&formatted, &trips)
     } else {
         Vec::new()
     };

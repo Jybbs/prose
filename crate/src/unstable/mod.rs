@@ -9,12 +9,15 @@
 //! reproduces it, the configuration the run resolved, the output it
 //! wrote, and what a further trip turns that output into.
 
-use std::collections::BTreeSet;
-
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::Config, pipeline::Pipeline, rules::RuleId, source::Source};
+use crate::{
+    config::Config,
+    pipeline::{Pipeline, Trips},
+    rules::RuleId,
+    source::Source,
+};
 
 mod form;
 mod narrow;
@@ -73,8 +76,8 @@ impl UnstableRewrite {
 
     /// The report a `format` run or the editor makes over `formatted`,
     /// its output for `original`, re-applying through
-    /// [`Pipeline::unsettled_among`] only `fired`, the rules that edited
-    /// on some trip. `None` where those rules leave `formatted` settled, a
+    /// [`Pipeline::unsettled_among`] only the rules that edited on one of
+    /// `trips`. `None` where those rules leave `formatted` settled, a
     /// rule silent on every trip being left to the full walk
     /// [`detect`](Self::detect) runs.
     pub(crate) fn detect_narrowed(
@@ -82,9 +85,9 @@ impl UnstableRewrite {
         config: &Config,
         original: &str,
         formatted: &Source,
-        fired: &BTreeSet<RuleId>,
+        trips: &Trips,
     ) -> Option<Self> {
-        let editing = pipeline.unsettled_among(formatted, fired);
+        let editing = pipeline.unsettled_among(formatted, trips);
         Self::from_editing(pipeline, config, formatted, &editing, || {
             narrowed(pipeline, config, original, &editing)
         })
@@ -228,10 +231,7 @@ mod tests {
     use std::num::NonZeroUsize;
 
     use super::*;
-    use crate::{
-        diagnostics::fired_rules,
-        testing::{breaks_parse, never_settles, notebook, parse, prefix_rule},
-    };
+    use crate::testing::{breaks_parse, never_settles, notebook, parse, prefix_rule};
 
     /// What `widening()` writes over `SOURCE`, standing in for the
     /// bytes a prior write-back run marked as its own output.
@@ -261,18 +261,12 @@ mod tests {
         ])
         .trips(1);
         let config = Config::default();
-        let (formatted, diagnostics, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, trips) = pipeline.run(parse(SOURCE)).expect("runs");
 
         assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
         assert!(
-            UnstableRewrite::detect_narrowed(
-                &pipeline,
-                &config,
-                SOURCE,
-                &formatted,
-                &fired_rules(&diagnostics),
-            )
-            .is_none(),
+            UnstableRewrite::detect_narrowed(&pipeline, &config, SOURCE, &formatted, &trips,)
+                .is_none(),
             "`edits-q` emitted nothing on the one trip, so the narrowed check leaves it to the full walk",
         );
     }
@@ -281,18 +275,13 @@ mod tests {
     fn detect_narrowed_reports_a_rule_that_fired_and_still_edits() {
         let pipeline = downstream();
         let config = Config::default();
-        let (formatted, diagnostics, _) = pipeline.run(parse(SOURCE)).expect("runs");
+        let (formatted, _, trips) = pipeline.run(parse(SOURCE)).expect("runs");
 
         let full = UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted)
             .expect("`widens-downstream` leaves the output unsettled");
-        let narrowed = UnstableRewrite::detect_narrowed(
-            &pipeline,
-            &config,
-            SOURCE,
-            &formatted,
-            &fired_rules(&diagnostics),
-        )
-        .expect("`widens-downstream` fired and still edits");
+        let narrowed =
+            UnstableRewrite::detect_narrowed(&pipeline, &config, SOURCE, &formatted, &trips)
+                .expect("`widens-downstream` fired and still edits");
 
         assert_eq!(narrowed, full);
     }

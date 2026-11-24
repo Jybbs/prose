@@ -59,11 +59,24 @@ fn unsettled_among_answers_empty_where_no_rule_fired() {
     let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
     let source = parse("x = 1\n");
 
-    assert!(
-        pipeline
-            .unsettled_among(&source, &BTreeSet::new())
-            .is_empty()
-    );
+    let trips = Trips {
+        capped: true,
+        fired: BTreeSet::new(),
+    };
+
+    assert!(pipeline.unsettled_among(&source, &trips).is_empty());
+}
+
+#[test]
+fn unsettled_among_answers_empty_where_the_last_trip_edited_nothing() {
+    let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]);
+    let source = parse("x = 1\n");
+    let trips = Trips {
+        capped: false,
+        fired: BTreeSet::from([RuleId::from("widener")]),
+    };
+
+    assert!(pipeline.unsettled_among(&source, &trips).is_empty());
 }
 
 #[test]
@@ -73,10 +86,13 @@ fn unsettled_among_reapplies_only_the_rules_that_fired() {
         Box::new(never_settles("other-widener")),
     ]);
     let source = parse("x = 1\n");
-    let fired = BTreeSet::from([RuleId::from("other-widener")]);
+    let trips = Trips {
+        capped: true,
+        fired: BTreeSet::from([RuleId::from("other-widener")]),
+    };
 
     assert_eq!(
-        pipeline.unsettled_among(&source, &fired),
+        pipeline.unsettled_among(&source, &trips),
         vec![RuleId::from("other-widener")],
     );
 }
