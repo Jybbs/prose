@@ -30,7 +30,7 @@ Each rule's edits change the source the next rule reads. The dependencies below 
 
 ## Every Subset Settles
 
-The order takes the default set through the standard library in one pass a file, and any subset a project enables settles that way too, whether through `--select`, `--ignore`, or a rule turned off under `[tool.prose.rules]`. Where a rule measures rows that a later rule joins, a run repeats its rules until none edits, so the file still settles in one command. A corpus sweep in CI holds each subset to the one pass, so a rule that depends on a later rule to finish its work is caught where the fault is rather than hidden by the default pipeline.
+Under this order the default set settles each file of the standard library in one pass, and so does any subset a project enables, whether through `--select`, `--ignore`, or a rule turned off under `[tool.prose.rules]`. Where a rule measures rows that a later rule joins, a run repeats its rules until none edits, so the file still settles in one command. A corpus sweep in CI holds each subset to the one pass, so a rule that depends on a later rule to finish its work is caught where the fault is rather than hidden by the default pipeline.
 
 That needs no sweep over every subset, because a rule that settles alone and never unsettles an earlier rule leaves every larger subset settled, so checking each rule alone and each ordered pair of rules covers all of them.
 

@@ -265,7 +265,7 @@ mod tests {
 
         assert!(UnstableRewrite::detect(&pipeline, &config, SOURCE, &formatted).is_some());
         assert!(
-            UnstableRewrite::detect_narrowed(&pipeline, &config, SOURCE, &formatted, &trips,)
+            UnstableRewrite::detect_narrowed(&pipeline, &config, SOURCE, &formatted, &trips)
                 .is_none(),
             "`edits-q` emitted nothing on the one trip, so the narrowed check leaves it to the full walk",
         );

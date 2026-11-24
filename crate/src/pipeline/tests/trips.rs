@@ -131,6 +131,18 @@ fn trips_sets_how_many_a_run_takes() {
     assert!(trips.capped);
 }
 
+#[test]
+fn zero_trips_leave_the_source_as_written_and_capped() {
+    let (formatted, _, trips) = stepping(3)
+        .trips(0)
+        .run(parse("a = 1\n"))
+        .expect("the run succeeds");
+
+    assert_eq!(formatted.text(), "a = 1\n");
+    assert!(trips.capped);
+    assert!(trips.fired.is_empty());
+}
+
 /// Each source settles in one run whose first trip leaves a row a later
 /// one joins.
 #[rstest]

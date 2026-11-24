@@ -24,6 +24,7 @@ tagline: deterministic rule runner
 3. `Pipeline::with_filters(config: &Config, select: &[RuleId], ignore: &[RuleId]) -> Self` applies the CLI's `--select` and `--ignore` semantics. A non-empty `select` replaces the configured-enabled set, an empty `select` falls back to it, and `ignore` subtracts from that base, giving `select - ignore`.
 4. `Pipeline::for_rule(name: &str, config: &Config) -> Option<Self>` builds a single-rule pipeline, for isolating one rule's diagnostics and for the exact-rule path of `prose check --select <rule>`. Returns `None` for an unrecognized slug.
 5. `Pipeline::sharing(self, sharing: Sharing) -> Self` sets which rules a run lets share one splice and one parse. `Sharing::Declared`, the default, follows the registry's shared-splice column. `Sharing::Never` reparses after every editing rule, which is the run the subset probe measures a batched pair against. `Sharing::Always` batches every rule and reports a batch the reparse rejects as `PipelineError::Batch`, which is how the probe tests whether a pair's edits are independent.
+6. `Pipeline::trips(self, most: usize) -> Self` sets how many trips through the rules a run takes at most, eight unless set. The fixture harness and the corpus sweep set one, so a rule that leaves its own output for a second trip fails there rather than settling unseen.
 
 ### Enumeration
 
@@ -130,7 +131,7 @@ use prose::source::Source;
 let config   = Config::default();
 let pipeline = Pipeline::with_defaults(&config);
 let source   = Source::from_path("example.py")?;
-let (formatted, diagnostics, fired) = pipeline.run(source)?;
+let (formatted, diagnostics, trips) = pipeline.run(source)?;
 println!("{}", formatted.text());
 ```
 
