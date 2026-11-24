@@ -24,5 +24,4 @@ fi
 rm -rf "$stage"
 
 git worktree add -q "$tree" "$parent"
-CARGO_TARGET_DIR="$PWD/target" PROSE_DELTA_BASELINE="$tree" PROSE_DELTA_STAGE="$stage" \
-  mise run rust:bake
+PROSE_DELTA_BASELINE="$tree" PROSE_DELTA_STAGE="$stage" mise run rust:bake

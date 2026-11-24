@@ -1,5 +1,5 @@
 baseline_binary() {
-  (cd "$1" && built_binary "${2:-}")
+  (cd "$1" && CARGO_TARGET_DIR="$PWD/target" built_binary)
 }
 
 baseline_label() {
@@ -7,13 +7,17 @@ baseline_label() {
 }
 
 baseline_root() {
-  local tree="${1:-main}"
-  [[ -d "$tree" ]] || tree="$MISE_PROJECT_ROOT/../$tree"
+  local name="${1:-main}" tree
+  tree="$name"
+  [[ -d "$tree" ]] || tree="$MISE_PROJECT_ROOT/../$name"
+  if [[ "$name" == main && ! -d "$tree" ]]; then
+    git worktree add --detach "$tree" main >&2 || return
+  fi
   git -C "$tree" rev-parse --show-toplevel
 }
 
 built_binary() {
-  local profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
+  local profile="${PROSE_DELTA_PROFILE:-probe}"
   grep -q "^\[profile\.$profile\]" Cargo.toml || {
     echo "$PWD defines no $profile profile, building release instead" >&2
     profile=release
