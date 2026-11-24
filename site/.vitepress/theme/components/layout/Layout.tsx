@@ -8,6 +8,7 @@ import { RuleChrome }         from '../rules/RuleChrome'
 import { RuleLinkPopup }      from '../rules/RuleLinkPopup'
 import { BuildMetadata }      from './BuildMetadata'
 import { NotFound }           from './NotFound'
+import { SearchRoles }        from './SearchRoles'
 import { StarBadge }          from './StarBadge'
 
 export const Layout = defineComponent({
@@ -25,6 +26,7 @@ export const Layout = defineComponent({
               <BuildMetadata />
               <NibSprite />
               <RuleLinkPopup />
+              <SearchRoles />
             </>
           ),
           'nav-bar-content-after' : () => <StarBadge />,
