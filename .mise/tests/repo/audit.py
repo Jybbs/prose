@@ -917,6 +917,10 @@ def test_inputs_reports_each_ignored_output_a_task_leaves_out(
         ]
     )
     monkeypatch.setenv("XDG_CONFIG_HOME", str(root / "excludes"))
+    (root / ".gitignore").write_text(
+        "node_modules/\nsite/bun.lock\nsite/public/wasm/\n",
+        encoding = "utf-8"
+    )
 
     assert audit.inputs() == bool(reported)
     assert capsys.readouterr().out == reported
@@ -959,6 +963,8 @@ def test_inputs_reports_an_output_of_a_task_with_no_source(
     ("entries", "left"),
     [
         param(["site/x.wasm", "!@gitignore"], True, id="narrower"),
+        param(["site/**/*.ts", "!@gitignore", "site/x.wasm"], False, id="added-after"),
+        param(["!@gitignore", "site/x.wasm", "!@gitignore"], True, id="between"),
         param(["site/**/*.ts", "!site/x.wasm", "!@gitignore"], False, id="excluding")
     ]
 )
@@ -968,9 +974,10 @@ def test_leaves_out_reads_no_excluding_entry_as_selecting(
     left    : bool
 ):
     """
-    Pins that an entry the `output` glob names counts as selecting part of
-    the output only where it is no exclusion, so an excluding entry ahead of
-    `!@gitignore` leaves nothing out.
+    Pins that an entry the `output` glob names counts as selecting part
+    of the output only where it is no exclusion and sits ahead of the last
+    `!@gitignore`, so neither an excluding entry ahead of `!@gitignore` nor
+    an entry after it leaves anything out.
     """
     assert audit.leaves_out(entries, "**/*.wasm") is left
 
