@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 use crate::{
     config::Config,
     diagnostics::Diagnostic,
-    pipeline::Pipeline,
+    pipeline::{Pipeline, Sharing},
     primitives::{
         aligner,
         comments::Settling,
@@ -345,6 +345,17 @@ pub(crate) fn stepping(steps: usize) -> Pipeline {
         .map(|&(id, reads, writes)| -> Box<dyn Rule> { Box::new(prefix_rule(id, reads, writes)) })
         .collect();
     Pipeline::from_rules(rules)
+}
+
+/// A pipeline whose two rules read the same buffer, one turning a
+/// leading `x` into `y` and the other `y` into `x`, so every trip edits
+/// and the eighth lands back on an input opening with `x`.
+pub(crate) fn toggling() -> Pipeline {
+    Pipeline::from_rules(vec![
+        Box::new(prefix_rule("x-to-y", "x", "y")),
+        Box::new(prefix_rule("y-to-x", "y", "x")),
+    ])
+    .sharing(Sharing::Always)
 }
 
 /// Returns the `strip-stranded-padding` terms a primitive test reads,

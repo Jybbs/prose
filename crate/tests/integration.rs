@@ -191,6 +191,23 @@ fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
     })
 }
 
+#[test]
+fn sweepable_leaves_a_second_trip_for_the_sweep_to_fail() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/thematic/args_returns_docstring_wraps/input.py");
+    let (_, _, _, pipeline) = sweepable(&path).expect("a thematic fixture is swept");
+
+    let (_, _, trips) = pipeline
+        .run(
+            "third = (\n    compute(a,\n        b)\n)\n"
+                .parse::<Source>()
+                .expect("the input parses"),
+        )
+        .expect("the run succeeds");
+
+    assert!(trips.capped);
+}
+
 /// Renders a formatted notebook as its per-cell source joined by a
 /// `# --- cell N ---` banner, so a snapshot shows the cell structure the
 /// concatenated buffer hides. The banner numbers each cell after the

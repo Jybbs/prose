@@ -16,11 +16,12 @@ use crate::{
 /// One formatting pass over a buffer.
 #[derive(Default)]
 pub(super) struct Formatted {
-    /// The whole-document edit, `None` where the buffer is already
-    /// formatted or fails to read.
+    /// The whole-document edit, `None` where the run leaves the text
+    /// unchanged or the buffer fails to read.
     pub(super) edits: Option<Vec<TextEdit>>,
     /// The rewritten buffer held for a settle check the caller runs
-    /// after the edits response is sent, `None` where nothing changed.
+    /// after the edits response is sent, `None` where the run left the
+    /// text unchanged and its last trip edited nothing.
     pub(super) settled: Option<Settled>,
 }
 
@@ -86,29 +87,40 @@ pub(super) fn format_buffer(
     encoding: PositionEncoding,
     config: &Config,
 ) -> Formatted {
-    formatted(original, source_type, encoding, config).unwrap_or_default()
+    formatted(
+        original,
+        source_type,
+        encoding,
+        Pipeline::with_defaults(config),
+    )
+    .unwrap_or_default()
 }
 
 /// Returns the edit and held rewrite for a buffer the pipeline
-/// rewrote, `None` where it does not parse, holds syntax its target
-/// rejects, a rule's output is rejected, or the run leaves the text
-/// unchanged.
+/// rewrote, or the rewrite alone where the run lands back on the
+/// buffer with its last trip still editing, `None` where it does not
+/// parse, holds syntax its target rejects, a rule's output is
+/// rejected, or the run leaves the text unchanged and settled.
 fn formatted(
     original: &str,
     source_type: PySourceType,
     encoding: PositionEncoding,
-    config: &Config,
+    pipeline: Pipeline,
 ) -> Option<Formatted> {
-    let pipeline = Pipeline::with_defaults(config);
     let source = pipeline
         .read(original, source_type)
         .ok()
         .filter(|source| pipeline.refusal(source).is_none())?;
     let range = full_document_range(&source, encoding);
     let (settled, _, trips) = pipeline.run(source).ok()?;
-    let new_text = settled.changed_from(original)?.to_owned();
-    Some(Formatted {
-        edits: Some(vec![TextEdit { new_text, range }]),
+    let edits = settled.changed_from(original).map(|new_text| {
+        vec![TextEdit {
+            new_text: new_text.to_owned(),
+            range,
+        }]
+    });
+    (edits.is_some() || trips.capped).then(|| Formatted {
+        edits,
         settled: Some(Settled {
             pipeline,
             source: settled,
@@ -126,7 +138,7 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::{BARE_IMPORT_LINT, never_settles, parse, stepping};
+    use crate::testing::{BARE_IMPORT_LINT, never_settles, parse, stepping, toggling};
 
     #[test]
     fn diagnostics_are_empty_for_clean_source() {
@@ -302,6 +314,21 @@ mod tests {
         let report = settled.detect(&Config::default(), "a = 1\n");
 
         assert_eq!(report.is_some(), reported);
+    }
+
+    #[test]
+    fn a_run_landing_back_on_the_buffer_holds_it_for_the_settle_check() {
+        let formatted = formatted(
+            "x = 1\n",
+            PySourceType::Python,
+            PositionEncoding::Utf16,
+            toggling(),
+        )
+        .expect("a run still editing is held");
+
+        assert!(formatted.edits.is_none());
+        let settled = formatted.settled.expect("the rewrite is held");
+        assert!(settled.detect(&Config::default(), "x = 1\n").is_some());
     }
 
     #[test]

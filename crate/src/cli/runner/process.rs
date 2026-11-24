@@ -144,8 +144,8 @@ pub(super) fn process_path(
             );
         }
         // A write-back module run marks the bytes it is about to land, so
-        // the next run holding them re-keys to this entry and a rewrite of
-        // marked bytes reads as a proven settle defect.
+        // the next run holding them re-keys to this entry and, where its
+        // last trip still edits, names the rules editing the marked bytes.
         if let Rewrite::Changed(kind) = rewrite
             && pass.write_back()
             && !source_type.is_ipynb()
@@ -319,17 +319,18 @@ fn run_and_assemble(
                     format_args!("{} did not re-read as a notebook", file.name()),
                 );
             }
-            let unstable = (resolved.config.report_unstable_output
-                && matches!(rewrite, Rewrite::Changed(_)))
-            .then(|| narrowed_report(resolved, file.source_text(), &formatted, &trips))
-            .flatten()
-            .and_then(|report| {
-                if marked && pass.write_back() {
-                    marked_report(resolved, file.source_text(), &formatted)
-                } else {
-                    Some(report)
-                }
-            });
+            let unstable = resolved
+                .config
+                .report_unstable_output
+                .then(|| narrowed_report(resolved, file.source_text(), &formatted, &trips))
+                .flatten()
+                .and_then(|report| {
+                    if marked && pass.write_back() {
+                        marked_report(resolved, file.source_text(), &formatted)
+                    } else {
+                        Some(report)
+                    }
+                });
             FileOutcome::Done {
                 cached: false,
                 diagnostics,
@@ -389,6 +390,7 @@ mod tests {
         rules::RuleId,
         testing::{
             GroupSentinelRule, breaks_parse, never_settles, notebook_index, parse, range, stepping,
+            toggling,
         },
     };
 
@@ -459,6 +461,24 @@ mod tests {
                 },
             ],
             "only the rewrite a ninth trip would change carries a report",
+        );
+    }
+
+    #[rstest]
+    fn a_rewrite_landing_back_on_its_input_carries_a_report(
+        #[values(Pass::Both, Pass::Preview, Pass::Rewrite, Pass::Diagnose { validate: true })]
+        pass: Pass,
+    ) {
+        let resolved = Resolved::over(toggling());
+
+        let outcome = run_pipeline(parse("x = 1\n"), &resolved, pass, false);
+
+        assert_matches!(
+            &outcome,
+            FileOutcome::Done {
+                unstable: Some(_),
+                ..
+            }
         );
     }
 
