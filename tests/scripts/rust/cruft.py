@@ -12,8 +12,7 @@ from subprocess      import CompletedProcess, run
 
 LIST = ".cache/insta/references"
 READ = [
-    "crate/src/snapshots/unit.snap",
-    "tests/rust/fixtures/rule/case/input.snap"
+    "crate/src/snapshots/unit.snap", "tests/rust/fixtures/rule/a case/input.snap"
 ]
 TASK = Path(__file__).resolve().parents[3] / ".mise/tasks/rust/cruft"
 
@@ -24,16 +23,18 @@ def cruft(
     workdir  : Callable[[dict[str, str]], Path]
 ) -> Callable[..., CompletedProcess]:
     """
-    Writes a stand-in `cargo` printing each command it receives, with `cargo
-    metadata` printing a workspace of the one member `crate` and `cargo
-    insta` appending each path in `READ` to the list
-    `INSTA_SNAPSHOT_REFERENCES_FILE` names, spelled through `crate/..` as a
-    test target outside its package's folder spells it.
+    Writes a stand-in `cargo` printing each command it receives, with
+    `cargo metadata` printing a workspace of the one member `crate` and
+    `cargo insta` appending each path in `READ`, the last first, to the list
+    `INSTA_SNAPSHOT_REFERENCES_FILE` names, run from `crate` as `cargo` runs
+    a test binary and spelled through `crate/..` as a test target outside
+    its package's folder spells it.
 
     Returns:
         A function running the task in a scratch tree holding each snapshot
         in `READ` and in `beside`, where an earlier run listed each in
-        `beside` as read and `cargo insta` exits with `status`.
+        `beside` as read, or none ran where `beside` is empty, and
+        `cargo insta` exits with `status`.
     """
     def run_task(*beside: str, status: int = 0) -> CompletedProcess:
         """
@@ -43,21 +44,23 @@ def cruft(
         Returns:
             The finished run, its output captured as text.
         """
-        root     = workdir(dict.fromkeys([*READ, *beside], ""))
-        workdir({LIST: "".join(f"{root}/{path}\n" for path in beside)})
+        root = workdir(dict.fromkeys([*READ, *beside], ""))
+        if beside:
+            workdir({LIST: "".join(f"{root}/{path}\n" for path in beside)})
         metadata = dumps(
             {
                 "packages"       : [{"manifest_path": f"{root}/crate/Cargo.toml"}],
                 "workspace_root" : str(root)
             }
         )
-        lines = "\\n".join(f"{root}/crate/../{path}" for path in READ)
+        lines = "\\n".join(f"{root}/crate/../{path}" for path in reversed(READ))
         stand_in(
             "cargo",
             f'[ "$1" = metadata ] && exec echo {quote(metadata)}\n'
             'echo "cargo $*"\n'
             '[ "$1" = insta ] || exit 0\n'
-            f"printf '{lines}\\n' >> \"${{INSTA_SNAPSHOT_REFERENCES_FILE:-/dev/null}}\"\n"
+            "cd crate\n"
+            f"printf '{lines}\\n' >> \"$INSTA_SNAPSHOT_REFERENCES_FILE\"\n"
             f"exit {status}\n"
         )
         return run([TASK], capture_output=True, cwd=root, text=True)
@@ -95,8 +98,8 @@ def test_cruft_rejects_a_snapshot_no_test_reads(
 ):
     """
     Pins that a snapshot under a workspace member or under `tests/rust/`
-    that no test reads fails the task, which names that snapshot alone,
-    even where an earlier run read it.
+    that no test reads fails the task, which names that snapshot alone, even
+    where an earlier run read it.
     """
     finished = cruft(orphan)
 
