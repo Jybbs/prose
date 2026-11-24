@@ -177,7 +177,7 @@ jobs:
           key  : *mutations-key
           path : *mutations-dir
 
-      - name : Format every mutation of the corpus
+      - name : Sweep every mutation of the corpus
         env:
           CORPUS                 : ${{ steps.python.outputs.corpus }}
           PROSE_SETTLE_MUTATIONS : *mutations-dir

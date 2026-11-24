@@ -8,7 +8,7 @@ description: "Covers the per-user cache, the `[cache]` keys, the `--no-cache` fl
 
 The cache is on by default, with the `[cache]` table tuning it, `--no-cache` bypassing it for one run, and `prose cache clean` emptying it.
 
-A `prose format` run that rewrites a file stores no entry for it, because the rewrite replaces the bytes the key was computed from, so that file's next run computes a new key. A file the run leaves unchanged does get an entry, which is why a second `prose format` over an already-formatted tree hits on every file. The rewriting run records the key of the bytes it wrote in the generation's ledger, so a later `prose format` run that finds those bytes changing again raises the [**unstable-output**](/reference/cli#unstable-output) notice.
+A `prose format` run that rewrites a file stores no entry for it, because the rewrite replaces the bytes the key was computed from, so that file's next run computes a new key. A file the run leaves unchanged does get an entry, which is why a second `prose format` over an already-formatted tree hits on every file. The rewriting run records the key of the bytes it wrote in the generation's ledger, so a later `prose format` run that spends every pass on those bytes reads its [**unstable-output**](/reference/cli#unstable-output) notice off them.
 
 ## Location
 

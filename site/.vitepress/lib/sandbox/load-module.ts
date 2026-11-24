@@ -14,7 +14,7 @@ export interface ProseFormat {
 }
 
 // The part of the `--target web` glue the sandbox calls. Passing `settle` as
-// false skips the second pass over the output and leaves `unstable_rules`
+// false skips the check for a rule still editing and leaves `unstable_rules`
 // empty, and `__wbg_reset_state` rebuilds a trapped instance in place.
 export interface ProseWasm {
   __wbg_reset_state : () => void

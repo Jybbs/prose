@@ -8,7 +8,7 @@ body:
       value: |
         ### The Defect This Form Covers
 
-        *Prose* settles a file in one pass, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
+        *Prose* settles a file in one run, so a second run over what the first one wrote should find nothing left to do. Where that breaks, the formatter says so at the moment it writes the file, and the defect belongs to *Prose* rather than to the Python beneath it. Nothing is wrong with your source, and the rewrite that landed is safe to keep.
 
         Arriving here from that notice means the fields below already carry what fit in the link. A field that arrived blank was too long to travel that way, so paste it in from the run, and the editor's own link carries more than the terminal's.
 

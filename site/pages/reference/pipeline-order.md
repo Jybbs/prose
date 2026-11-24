@@ -30,9 +30,9 @@ Each rule's edits change the source the next rule reads. The dependencies below 
 
 ## Every Subset Settles
 
-The order guarantees more than the default set settling a file in one pass. Any subset a project enables settles too, whether through `--select`, `--ignore`, or a rule turned off under `[tool.prose.rules]`, because a subset that needed a second pass would be a defect for whoever configured it rather than a curiosity. A corpus sweep in CI checks the guarantee, so a rule that depends on a later rule to finish its work is caught where the fault is rather than hidden by the default pipeline.
+The order takes the default set through the standard library in one pass a file, and any subset a project enables settles that way too, whether through `--select`, `--ignore`, or a rule turned off under `[tool.prose.rules]`. Where a rule measures rows that a later rule joins, a run repeats its rules until none edits, so the file still settles in one command. A corpus sweep in CI holds each subset to the one pass, so a rule that depends on a later rule to finish its work is caught where the fault is rather than hidden by the default pipeline.
 
-The guarantee needs no sweep over every subset, because a rule that settles alone and never unsettles an earlier rule leaves every larger subset settled, so checking each rule alone and each ordered pair of rules covers all of them.
+That needs no sweep over every subset, because a rule that settles alone and never unsettles an earlier rule leaves every larger subset settled, so checking each rule alone and each ordered pair of rules covers all of them.
 
 Each ordering the guarantee depends on is recorded in the registry's dependency column rather than left to a position that happens to work, and `prose rules --output-format json` prints that column as each rule's `after` list.
 
