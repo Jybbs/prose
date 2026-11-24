@@ -422,9 +422,9 @@ def drafts() -> int:
 def exact() -> int:
     """
     Reports every entry of a dependency table, `overrides`, or `resolutions`
-    in `package.json` whose version is a range rather than one version
-    in the grammar https://semver.org/ sets, which `EXACT` spells, naming
-    each by its package.
+    in `package.json` whose version is a range rather than one version in
+    the grammar https://semver.org/ sets, which `EXACT` spells, naming each
+    by its package.
     """
     package = json_loads(read("package.json"))
     return flagged(
@@ -825,13 +825,12 @@ def member_pins(cargo: dict) -> list[tuple[str, list[str], list[str]]]:
 
 def misdirected(script: Path) -> bool:
     """
-    Checks whether a copy of `script` in a scratch tree hands its
-    stand-in target an argument other than as given, one holding
-    a space included, runs a target other than the scratch tree's
-    `node_modules/.bin/<tool>` once both paths are resolved, or runs
-    past ten seconds, the script reaching its root as `.mise/bin/../..`.
-    A copy that runs past ten seconds is killed along with every process
-    it started.
+    Checks whether a copy of `script` in a scratch tree hands its stand-in
+    target an argument other than as given, one holding a space included,
+    runs a target other than the scratch tree's `node_modules/.bin/<tool>`
+    once both paths are resolved, or runs past ten seconds, the script
+    reaching its root as `.mise/bin/../..`. A copy that runs past ten
+    seconds is killed along with every process it started.
     """
     arguments = ["two words", "one", ""]
     with TemporaryDirectory() as scratch:
@@ -1316,11 +1315,11 @@ def scripts() -> int:
     Reports every drift in the scripts under `.mise/bin`, covering a tool
     that `mise x` run from `site/` resolves to anything but its script, a
     docs-site script that hands its target an argument other than as given,
-    runs a target other than `node_modules/.bin/<tool>`, or runs past
-    ten seconds, a symlink among the scripts, a docs-site script differing
-    byte for byte from the first, and a task or library under `.mise/`
-    that runs `bunx`, `bun x`, or `npx`. Each script lands in `READ` for
-    `filters` to check.
+    runs a target other than `node_modules/.bin/<tool>`, or runs past ten
+    seconds, a symlink among the scripts, a docs-site script differing byte
+    for byte from the first, and a task or library under `.mise/` that runs
+    `bunx`, `bun x`, or `npx`. Each script lands in `READ` for `filters`
+    to check.
     """
     found    = list(map(Path, tracked(".mise/bin")))
     docs     = [path for path in found if path.name != "prose"]

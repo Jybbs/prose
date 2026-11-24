@@ -1,6 +1,6 @@
 """
-Pins which `tests/scripts` modules `repo:affected` runs for each change since
-`origin/main`, and the arguments it hands `pytest`.
+Pins which `tests/scripts` modules `repo:affected` runs for each change
+since `origin/main`, and the arguments it hands `pytest`.
 """
 
 from collections.abc import Callable
