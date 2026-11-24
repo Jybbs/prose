@@ -219,8 +219,7 @@ def delta(
         ' --profile probe")\n'
         "    binary=${CARGO_TARGET_DIR:-$PWD/target}/probe/prose\n"
         '    mkdir -p "${binary%/*}"\n'
-        '    [ -e "$binary" ] || cp crate/src/formatter "$binary"\n'
-        '    chmod +x "$binary"\n'
+        '    [ -e "$binary" ] || install -m 755 crate/src/formatter "$binary"\n'
         '    printf \'{"executable":"%s","target":{"name":"prose"}}\' "$binary"\n'
         "    ;;\n"
         '  "build --bins --locked -p prose_corpus --profile probe --quiet") ;;\n'

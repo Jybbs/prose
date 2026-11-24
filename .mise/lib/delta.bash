@@ -1,5 +1,5 @@
 baseline_binary() {
-  (cd "$1" && CARGO_TARGET_DIR="$PWD/target" built_binary "${2:-}")
+  (cd "$1" && CARGO_TARGET_DIR="$PWD/target" built_binary)
 }
 
 baseline_label() {
@@ -17,7 +17,7 @@ baseline_root() {
 }
 
 built_binary() {
-  local profile="${1:-${PROSE_DELTA_PROFILE:-probe}}"
+  local profile="${PROSE_DELTA_PROFILE:-probe}"
   grep -q "^\[profile\.$profile\]" Cargo.toml || {
     echo "$PWD defines no $profile profile, building release instead" >&2
     profile=release

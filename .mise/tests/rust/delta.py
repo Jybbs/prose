@@ -75,18 +75,27 @@ def test_delta_adds_a_missing_main_worktree(
     )
 
 
-def test_delta_adds_no_worktree_under_another_name(
+@mark.parametrize(
+    ("command", "name"),
+    [
+        param(("branch", "other", "main"), "other", id = "another branch"),
+        param(("branch", "-D", "main"), "main", id = "no main branch")
+    ]
+)
+def test_delta_adds_no_worktree_away_from_the_main_branch(
+    command  : tuple[str, ...],
     delta    : Callable[..., CompletedProcess],
+    name     : str,
     tmp_path : Path
 ):
     """
-    Pins that a branch other than `main` with no worktree beside the clone
-    stops the run and gains none.
+    Pins that a missing baseline naming another branch, or `main` in a clone
+    holding no `main` branch, stops the run and leaves no worktree behind.
     """
-    git(tmp_path / "clone", "branch", "other", "main")
+    git(tmp_path / "clone", *command)
 
-    assert delta("rust/delta", "other").returncode != 0
-    assert not (tmp_path / "other").exists()
+    assert delta("rust/delta", name).returncode != 0
+    assert not (tmp_path / name).exists()
 
 
 def test_delta_builds_the_baseline_outside_a_shared_target_directory(
@@ -112,7 +121,7 @@ def test_delta_reads_an_existing_main_worktree_as_it_stands(
     and the uncommitted edits it holds.
     """
     main = tmp_path / "main"
-    git(tmp_path / "clone", "worktree", "add", "-q", "--detach", main, "feature")
+    git(tmp_path / "clone", "worktree", "add", "-q", "--detach", "../main", "feature")
     (main / "Cargo.toml").write_text("[profile.probe]\n\n", encoding="utf-8")
     held     = git(main, "rev-parse", "HEAD")
     finished = delta("rust/delta", "main")
