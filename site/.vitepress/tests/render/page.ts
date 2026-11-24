@@ -2,7 +2,7 @@ import { converter }            from 'culori'
 import { chromium, webkit }     from 'playwright'
 import { inject, test as base } from 'vitest'
 
-import type { Browser, BrowserContext, BrowserContextOptions, Locator, Page } from 'playwright'
+import type { Browser, BrowserContext, BrowserContextOptions, LaunchOptions, Locator, Page } from 'playwright'
 
 import type { Scheme } from '../../lib/shared/palette'
 
@@ -14,6 +14,9 @@ interface Visit {
 }
 
 export const ENGINES = { chromium, webkit }
+
+// Mutes Chromium through `--mute-audio`, a switch of Chromium alone.
+const LAUNCH : Record<Engine, LaunchOptions> = { chromium: { args: ['--mute-audio'] }, webkit: {} }
 
 export const PAGE_WIDTH = 1440
 
@@ -48,7 +51,8 @@ export const renderTest = base
     onCleanup(async () => {
       await Promise.all(Object.values(launched).map(async browser => (await browser).close()))
     })
-    return (engine: Engine): Promise<Browser> => (launched[engine] ??= ENGINES[engine].launch())
+    return (engine: Engine): Promise<Browser> =>
+      (launched[engine] ??= ENGINES[engine].launch(LAUNCH[engine]))
   })
   .extend('visit', ({ browsers }, { onCleanup }) => {
     const contexts = [] as BrowserContext[]

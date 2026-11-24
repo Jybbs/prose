@@ -76,7 +76,7 @@ let browser  : Browser
 let contexts : Record<'narrow' | 'overflowing' | 'wide', BrowserContext>
 
 beforeAll(async () => {
-  browser  = await chromium.launch()
+  browser  = await chromium.launch({ args: ['--mute-audio'] })
   const [narrow, overflowing, wide] = await Promise.all([
     bundleContext(browser, { viewport: NARROW }),
     bundleContext(browser, { viewport: OVERFLOWING }),

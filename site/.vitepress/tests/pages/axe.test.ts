@@ -157,7 +157,7 @@ let browser  : Browser
 let contexts : Record<Scheme, Promise<BrowserContext>>
 
 beforeAll(async () => {
-  browser  = await chromium.launch()
+  browser  = await chromium.launch({ args: ['--mute-audio'] })
   contexts = perScheme(colorScheme => bundleContext(browser, { colorScheme, viewport: WIDE }))
 })
 
