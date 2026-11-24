@@ -30,7 +30,7 @@ probe_binary() {
     --message-format json-render-diagnostics \
     --profile "$2" \
     "${@:3}" \
-    | jq --arg name "$1" -r 'select(.target.name == $name).executable // empty'
+    | jq --arg name "$1" -er 'select(.target.name == $name).executable // empty'
 }
 
 probe_build() {
