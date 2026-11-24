@@ -812,9 +812,9 @@ def labels() -> int:
 def leaves_out(entries: list[str], output: str) -> bool:
     """
     Checks whether the `sources` patterns `entries` select files the
-    `output` glob names and add the whole of it back in no entry after
-    a `!@gitignore`, a narrower entry ahead of the last `!@gitignore`
-    selecting part of it.
+    `output` glob names, through an entry selecting it or a narrower
+    one ahead of the last `!@gitignore`, while the entries after that
+    `!@gitignore` leave part of it unselected.
     """
     cut  = len(entries) - entries[::-1].index("!@gitignore")
     kept = ["!**" if each == "!@gitignore" else each for each in entries]

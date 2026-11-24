@@ -956,6 +956,26 @@ def test_inputs_reports_an_output_of_a_task_with_no_source(
 
 
 @mark.parametrize(
+    ("entries", "left"),
+    [
+        param(["site/x.wasm", "!@gitignore"], True, id="narrower"),
+        param(["site/**/*.ts", "!site/x.wasm", "!@gitignore"], False, id="excluding")
+    ]
+)
+def test_leaves_out_reads_no_excluding_entry_as_selecting(
+    audit   : ModuleType,
+    entries : list[str],
+    left    : bool
+):
+    """
+    Pins that an entry the `output` glob names counts as selecting part of
+    the output only where it is no exclusion, so an excluding entry ahead of
+    `!@gitignore` leaves nothing out.
+    """
+    assert audit.leaves_out(entries, "**/*.wasm") is left
+
+
+@mark.parametrize(
     ("home", "path", "stamp", "reported"),
     [
         param(RESTORE, "site/public/wasm", [STAMP], "", id="stamped"),
