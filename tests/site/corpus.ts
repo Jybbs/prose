@@ -1,8 +1,8 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import * as walker  from '../../site/.vitepress/lib/fixtures/walker'
-import * as paths   from '../../site/.vitepress/lib/shared/paths'
+import * as walker from '../../site/.vitepress/lib/fixtures/walker'
+import * as paths  from '../../site/.vitepress/lib/shared/paths'
 
 export const CRATE    = paths.crateDir(import.meta.url)
 export const FIXTURES = paths.fixturesDir(import.meta.url)

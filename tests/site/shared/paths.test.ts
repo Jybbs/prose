@@ -2,8 +2,8 @@ import fs                from 'node:fs'
 import path              from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import * as paths          from '../../../site/.vitepress/lib/shared/paths'
-import { supportTest }     from '../support'
+import * as paths      from '../../../site/.vitepress/lib/shared/paths'
+import { supportTest } from '../support'
 
 const meta = import.meta.url
 
