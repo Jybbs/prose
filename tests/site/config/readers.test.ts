@@ -4,10 +4,10 @@ import path             from 'node:path'
 
 import { babelParse, walk } from '@vue/compiler-sfc'
 
-import * as paths         from '../../../site/.vitepress/lib/shared/paths.ts'
-import { supportTest }    from '../support.ts'
-import * as tailwind      from '../tailwind.ts'
-import { CRATE, READERS } from '../../../site/.vitepress/vitest.config.ts'
+import * as paths                         from '../../../site/.vitepress/lib/shared/paths.ts'
+import { supportTest }                    from '../support.ts'
+import * as tailwind                      from '../tailwind.ts'
+import { CRATE, READERS, RERUN_TRIGGERS } from '../../../site/.vitepress/vitest.config.ts'
 
 const FOLDER   = /^(?=.*\/).*[^./]/
 const GLOBS    : Readonly<Record<string, readonly string[]>> = READERS
@@ -88,6 +88,12 @@ describe('READERS', () => {
   supportTest.for(READS)('lists a glob for each script %s reads', ([file, read]) => {
     const covered = new Set(fs.globSync(GLOBS[file] ?? [], { cwd: ROOT }))
     expect([...new Set(read).difference(covered)]).toStrictEqual([])
+  })
+})
+
+describe('RERUN_TRIGGERS', () => {
+  it.each(RERUN_TRIGGERS)('matches a file under %s', glob => {
+    expect(fs.globSync(glob)).not.toStrictEqual([])
   })
 })
 

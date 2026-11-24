@@ -292,6 +292,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn corpus_root_follows_the_variable() {
+        if let Some(pointed) = pointed_corpus() {
+            assert_eq!(corpus_root(), pointed);
+            return;
+        }
+        assert_eq!(corpus_root(), Path::new(FIXTURES));
+        let child = process::Command::new(env::current_exe().expect("the test binary has a path"))
+            .args(["--exact", "sweep::tests::corpus_root_follows_the_variable"])
+            .env(CORPUS, "a/pointed/corpus")
+            .output()
+            .expect("the test binary runs");
+        assert!(
+            child.status.success(),
+            "{}",
+            String::from_utf8_lossy(&child.stdout)
+        );
+    }
+
+    #[test]
     fn open_slot_clears_its_entry_once_dropped() {
         let slot = open_slot("a probe".to_string());
         let id = *slot;

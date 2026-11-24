@@ -69,7 +69,7 @@ export const READERS = {
     'site/pages/index.md', STYLES
   ]
 }
-const RERUN_TRIGGERS = [
+export const RERUN_TRIGGERS = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'bun.lock', 'crate/{Cargo,pyproject}.toml',
   'site/.vitepress/{assets,patches}/**', 'site/public/**', 'tests/rust/fixtures/**', 'tests/site/**/fixtures/*/**'
 ].map(glob => path.join(ROOT, glob))

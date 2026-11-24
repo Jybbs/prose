@@ -54,7 +54,8 @@ def test_affected_runs_the_suite_once_a_change_reaches_a_rust_path(
         param(".mise/tasks/py/format", id = "task"),
         param("crates/src/lib.rs", id = "prefix"),
         param("site/index.md", id = "site"),
-        param("src/Cargo.toml", id = "nested manifest")
+        param("src/Cargo.toml", id = "nested manifest"),
+        param("tests/site/support.ts", id = "other suite")
     ]
 )
 def test_affected_skips_the_suite_where_no_change_reaches_a_rust_path(
@@ -64,8 +65,8 @@ def test_affected_skips_the_suite_where_no_change_reaches_a_rust_path(
     """
     Pins that a change outside every Rust path, the `cargo-deny` policy
     beside the build configuration, a folder sharing a Rust folder's prefix,
-    and a manifest outside the workspace root included, runs no `cargo` and
-    exits zero on a line saying so.
+    another suite under `tests`, and a manifest outside the workspace root
+    included, runs no `cargo` and exits zero on a line saying so.
     """
     finished = affected(changed, "edited", group="rust")
 
