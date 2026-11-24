@@ -66,9 +66,9 @@ const emblems              = emblemsOf(readPlatforms(repoDirectory))
 const primitiveIndex       = discoverPrimitiveIndex(paths.architectureDir(import.meta.url))
 const glossaryPhraseToSlug = buildPhraseToSlug(glossary)
 const themeColor           = PALETTE.ube
-const fixturesRoot         = paths.fixturesDirFrom(crate)
+const fixturesRoot         = paths.fixturesDir(import.meta.url)
 const tokenClasses         = await TokenClasses.read()
-const lintFindings         = corpusLintFindings(crate)
+const lintFindings         = corpusLintFindings(fixturesRoot)
 const highlightOptions     = {
   codeTransformers  : codeTransformers(lintFindings, tokenClasses),
   colorReplacements : constants.SHIKI_COLOR_REPLACEMENTS,
@@ -85,8 +85,8 @@ const virtualSheets        = new Map([
   ['virtual:prose-tokens.css',  () => tokenClasses.css()]
 ])
 const fixtureSets          = {
-  composition  : readCompositionData(compositionDir(crate)),
-  ruleFixtures : await readRuleFixtures(crate)
+  composition  : readCompositionData(compositionDir(fixturesRoot)),
+  ruleFixtures : await readRuleFixtures(fixturesRoot)
 }
 
 assertCorpusIntegrity(ruleDiscovery, discoveredPrimitives)
@@ -168,7 +168,7 @@ export default defineConfig({
     if (pageData.relativePath.startsWith('rules/')) {
       pageData.frontmatter.name ??= ruleIndex.get(path.basename(pageData.relativePath, '.md'))?.name
     }
-    await injectFixtures(pageData, crate, fixtureSets, siteConfig.srcDir)
+    await injectFixtures(pageData, fixturesRoot, fixtureSets, siteConfig.srcDir)
   },
   vite: {
     build: { chunkSizeWarningLimit: 5000 },

@@ -443,7 +443,7 @@ fn verify_unlanded(
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_width_settles_and_applies_what_it_reports() {
-    let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures"));
+    let files = corpus();
     let previous = panic::take_hook();
     panic::set_hook(Box::new(|info| {
         let at = info

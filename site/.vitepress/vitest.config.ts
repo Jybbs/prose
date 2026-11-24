@@ -42,6 +42,7 @@ export const READERS = {
   'tests/site/config/readers.test.ts'                       : ['{site/.vitepress,tests/site}/**/*.{mjs,ts,tsx}'],
   'tests/site/og/render.test.ts'                            : ['tests/site/og/cards/*/page.ts'],
   'tests/site/reference/section-glance.test.ts'             : [PAGES],
+  'tests/site/shared/classes.test.ts'                       : [SCRIPTS, 'tests/site/**/*.{ts,tsx}'],
   'tests/site/shared/palette.test.ts'                       : [STYLES],
   'tests/site/shared/parity.test.ts'                        : [PAGES, STYLES],
   'tests/site/shared/render-graph.test.ts'                  : [GRAPH],
@@ -57,10 +58,6 @@ export const READERS = {
 
   'tests/site/integrations/hue-limit.test.ts': [
     'site/.vitepress/theme/components/integrations/**/*.{css,tsx}'
-  ],
-
-  'tests/site/shared/classes.test.ts': [
-    'site/.vitepress/{kit,lib,theme}/**/*.{ts,tsx}', 'tests/site/**/*.{ts,tsx}'
   ],
 
   'tests/site/shared/emblems.test.ts': [

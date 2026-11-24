@@ -22,6 +22,8 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::{PySourceType, PythonVersion};
 
+use crate::FIXTURES;
+
 /// The wall clock one probe may take before a sweep treats its run as
 /// non-terminating.
 const BUDGET: Duration = Duration::from_mins(1);
@@ -69,10 +71,10 @@ pub trait Absorbing: Default + Send {
 }
 
 /// The Python sources a sweep reads, under the directory [`CORPUS`] names or
-/// under `fixtures` where it is unset, with the runaway watchdog opened
+/// under [`FIXTURES`] where it is unset, with the runaway watchdog opened
 /// and an empty corpus failing the sweep outright.
-pub fn corpus(fixtures: &Path) -> Vec<PathBuf> {
-    let files = walked(fixtures);
+pub fn corpus() -> Vec<PathBuf> {
+    let files = walked();
     assert!(!files.is_empty(), "the corpus holds no Python sources");
     watch_for_a_runaway();
     files
@@ -269,9 +271,9 @@ fn target_of(token: &str) -> Option<PythonVersion> {
 /// The Python sources under the corpus root, largest first with the path
 /// breaking ties, so a parallel sweep's tail is one file long and a
 /// failure names the same file across runs. [`CORPUS`] points a sweep
-/// at a directory other than `fixtures`.
-fn walked(fixtures: &Path) -> Vec<PathBuf> {
-    let root = pointed_corpus().unwrap_or_else(|| fixtures.to_path_buf());
+/// at a directory other than [`FIXTURES`].
+fn walked() -> Vec<PathBuf> {
+    let root = pointed_corpus().unwrap_or_else(|| FIXTURES.into());
     python_files(&root)
         .sorted_by_cached_key(|path| {
             let size = fs_err::metadata(path).map_or(0, |data| data.len());

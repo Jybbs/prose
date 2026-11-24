@@ -36,8 +36,8 @@ fn carried_binding_tables_match_the_ones_a_fresh_read_builds(
 fn carrying_reaches_each_table() {
     assert_eq!(
         carried_over(
-            &Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("../tests/rust/fixtures/align_colons/class_field_run_aligns/input.py")
+            &Path::new(prose_harness::FIXTURES)
+                .join("align_colons/class_field_run_aligns/input.py")
         ),
         Carried {
             bindings: true,

@@ -2,10 +2,10 @@ import fs from 'node:fs'
 
 import { Window } from 'happy-dom'
 
-import * as render      from '../../../site/.vitepress/lib/fixtures/render'
-import * as walker      from '../../../site/.vitepress/lib/fixtures/walker'
-import { codeFrom }     from '../../../site/.vitepress/lib/shared/code-from'
-import { CASES, CRATE } from '../corpus'
+import * as render         from '../../../site/.vitepress/lib/fixtures/render'
+import * as walker         from '../../../site/.vitepress/lib/fixtures/walker'
+import { codeFrom }        from '../../../site/.vitepress/lib/shared/code-from'
+import { CASES, FIXTURES } from '../corpus'
 
 const OVERRIDING = CASES.find(entry => walker.readOverrideToml(entry.inputPath))!
 
@@ -15,7 +15,7 @@ describe('codeFrom', () => {
   beforeEach(() => { vi.stubGlobal('DOMParser', new Window().DOMParser) })
 
   it('recovers the input and the override a case renders, short of the closing newline', async () => {
-    const entry = (await render.fixtureEntries(CRATE, [OVERRIDING.id]))[OVERRIDING.id]
+    const entry = (await render.fixtureEntries(FIXTURES, [OVERRIDING.id]))[OVERRIDING.id]
     expect(`${codeFrom(entry.inputHtml)}\n`).toBe(fs.readFileSync(OVERRIDING.inputPath, 'utf8'))
     expect(`${codeFrom(entry.configHtml!)}\n`).toBe(walker.readOverrideToml(OVERRIDING.inputPath))
   })

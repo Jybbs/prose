@@ -20,8 +20,8 @@ use prose::{
     source::Source,
 };
 use prose_harness::{
-    HarnessOptions, build_pipeline, case_name, domain_name, fixture_inputs, in_snapshot_dir,
-    python_files, unified_diff,
+    FIXTURES, HarnessOptions, build_pipeline, case_name, domain_name, fixture_inputs,
+    in_snapshot_dir, python_files, unified_diff,
 };
 use rstest::rstest;
 use ruff_python_ast::PySourceType;
@@ -32,7 +32,7 @@ use ruff_source_file::{LineEnding, UniversalNewlines};
 /// the whole set, so the cases share a single `ruff` start.
 static POST_RUFF: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     let scratch = tempfile::tempdir().expect("tempdir");
-    let names = python_files(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures"))
+    let names = python_files(Path::new(FIXTURES))
         .filter(|path| {
             path.ends_with("input.py")
                 && domain_name(path) != "identity"

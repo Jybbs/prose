@@ -1,8 +1,8 @@
 import { readFixtureToggle } from '../../../site/.vitepress/lib/fixtures/toggle'
 import { readRuleFixtures }  from '../../../site/.vitepress/lib/rules/rule-fixtures'
-import { CASES, CRATE }      from '../corpus'
+import { CASES, FIXTURES }   from '../corpus'
 
-const data  = await readRuleFixtures(CRATE)
+const data  = await readRuleFixtures(FIXTURES)
 const rules = Object.entries(data)
 
 const inputPath = (rule: string, caseName: string): string =>

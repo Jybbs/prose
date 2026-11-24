@@ -48,9 +48,10 @@ describe('proseBinaryPath', () => {
 })
 
 describe('directory helpers', () => {
-  it('resolve the crate, site, pages, public, rules, architecture, readme, cache, test, and theme directories under the repo', () => {
+  it('resolve the crate, fixture, site, pages, public, rules, architecture, readme, cache, test, and theme directories under the repo', () => {
     const root = paths.repoRoot(meta)
     expect(paths.crateDir(meta)).toBe(path.join(root, 'crate'))
+    expect(paths.fixturesDir(meta)).toBe(path.join(root, 'tests', 'rust', 'fixtures'))
     expect(paths.siteDir(meta)).toBe(path.join(root, 'site'))
     expect(paths.siteTestsDir(meta)).toBe(path.join(root, 'tests', 'site'))
     expect(paths.pagesDir(meta)).toBe(path.join(root, 'site', 'pages'))

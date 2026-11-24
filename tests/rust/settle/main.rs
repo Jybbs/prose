@@ -34,8 +34,8 @@ use prose::{
     source::Source,
 };
 use prose_harness::{
-    Absorbing, Hit, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified, open_slot,
-    pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
+    Absorbing, FIXTURES, Hit, TARGETS, Tally, WIDTHS, corpus, env_list_of, note_verified,
+    open_slot, pointed_corpus, report_verified, repro_command, setting, subset, swept, target_name,
     target_names, targets_or, unread, verifying, widths_or,
 };
 use rstest::{fixture, rstest};
@@ -878,7 +878,7 @@ fn claims_reads_the_first_rule_when_owned_and_any_when_touching(
 #[test]
 #[cfg_attr(coverage, ignore = "the sweep runs uninstrumented in its own row")]
 fn every_rule_subset_settles_declares_its_seating_and_keeps_its_declared_tree() {
-    let files = corpus(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures"));
+    let files = corpus();
     let lengths = lengths();
     let targets = targets_or(TARGETS);
     let fixtures = pointed_corpus().is_none();
@@ -1054,8 +1054,8 @@ fn sweep_reads_a_changing_rule_over_a_seat_only_a_pair_in_another_share_construc
 ) {
     probes.pairs.clear();
     probes.reported = BTreeSet::from([rule("reflow-signatures")]);
-    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../tests/rust/fixtures/reflow_signatures/default_call_takes_keyword_form/input.py");
+    let fixture =
+        Path::new(FIXTURES).join("reflow_signatures/default_call_takes_keyword_form/input.py");
 
     let findings = probes.sweep(&[fixture]);
 

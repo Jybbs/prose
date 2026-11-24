@@ -5,10 +5,9 @@ import * as entry                              from '../../../site/.vitepress/li
 import { LINT_FINDINGS_FILE, readLintFindings } from '../../../site/.vitepress/lib/fixtures/lint-findings'
 import { readFixtureToggle }                    from '../../../site/.vitepress/lib/fixtures/toggle'
 import * as walker                              from '../../../site/.vitepress/lib/fixtures/walker'
-import { fixturesDirFrom }                      from '../../../site/.vitepress/lib/shared/paths'
-import { CASES, CRATE, hasSidecar }             from '../corpus'
+import { CASES, FIXTURES, hasSidecar }          from '../corpus'
 
-const absent = path.join(fixturesDirFrom(CRATE), '__no_such_case__', 'input.py')
+const absent = path.join(FIXTURES, '__no_such_case__', 'input.py')
 
 describe('walkFixtures', () => {
   it('yields a rule/case/input entry per fixture case', () => {
@@ -84,7 +83,7 @@ describe('fixtureTrail', () => {
 
 describe('corpusLintFindings', () => {
   it('maps every findings-bearing case by its fixture id', () => {
-    const map = walker.corpusLintFindings(CRATE)
+    const map = walker.corpusLintFindings(FIXTURES)
     expect(map.size).toBeGreaterThan(0)
     expect([...map.keys()].every(id => {
       const parts = id.split('/')
@@ -109,7 +108,7 @@ describe('fixtureTitle', () => {
 
 describe('fixtureWatchGlobs', () => {
   it('covers every watched sidecar, rooted at the fixture tree', () => {
-    const globs   = walker.fixtureWatchGlobs(CRATE)
+    const globs   = walker.fixtureWatchGlobs(FIXTURES)
     const watched = [
       'input.py', 'input.py.snap', 'config.toml', 'lint_findings.snap', 'meta.toml'
     ]
@@ -122,7 +121,7 @@ describe('fixtureWatchGlobs', () => {
 
 describe('subdirNames', () => {
   it('lists rule directories in sorted order', () => {
-    const names = walker.subdirNames(fixturesDirFrom(CRATE))
+    const names = walker.subdirNames(FIXTURES)
     expect(names.length).toBeGreaterThan(0)
     expect(names).toStrictEqual([...names].sort())
   })

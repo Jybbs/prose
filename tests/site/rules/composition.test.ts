@@ -21,8 +21,8 @@ describe('readCompositionCases', () => {
 })
 
 describe('compositionDir', () => {
-  it('resolves the composition directory inside the fixture tree beside the crate', () => {
-    expect(composition.compositionDir('/repo/crate'))
+  it('resolves the composition directory inside a fixture tree', () => {
+    expect(composition.compositionDir('/repo/tests/rust/fixtures'))
       .toBe('/repo/tests/rust/fixtures/composition')
   })
 })

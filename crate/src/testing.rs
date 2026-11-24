@@ -168,10 +168,8 @@ pub(crate) fn breaks_parse() -> GroupSentinelRule {
 /// `PROSE_SETTLE_CORPUS` names, the fixture tree absent it, ascending
 /// by path.
 pub(crate) fn corpus_inputs() -> Vec<PathBuf> {
-    let root = std::env::var_os("PROSE_SETTLE_CORPUS").map_or_else(
-        || Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures"),
-        PathBuf::from,
-    );
+    let root = std::env::var_os("PROSE_SETTLE_CORPUS")
+        .map_or_else(|| prose_harness::FIXTURES.into(), PathBuf::from);
     let mut inputs: Vec<PathBuf> = ignore::WalkBuilder::new(root)
         .standard_filters(false)
         .build()

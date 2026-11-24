@@ -6,12 +6,11 @@ import { readGauge, readTrail }          from '../../../site/.vitepress/lib/fixt
 import * as walker                       from '../../../site/.vitepress/lib/fixtures/walker'
 import { getRenderer, renderFencedHtml } from '../../../site/.vitepress/lib/markdown/renderer'
 import { readPipeline }                  from '../../../site/.vitepress/lib/rules/pipeline'
-import { fixturesDirFrom }               from '../../../site/.vitepress/lib/shared/paths'
-import { CRATE }                         from '../corpus'
+import { FIXTURES }                      from '../corpus'
 
 const md       = await getRenderer()
 const inputOf  = (rule: string, caseName: string): string =>
-  path.join(fixturesDirFrom(CRATE), rule, caseName, walker.INPUT_FILE)
+  path.join(FIXTURES, rule, caseName, walker.INPUT_FILE)
 const WIDE     = inputOf('align_equals', 'wide_target_breaks_run')
 const UNPADDED = inputOf('align_colons', 'docstring_entries_off_keeps_unpadded_entries')
 const TRAILED  = inputOf('composition', 'overflow_dict_constants_modernize_unions')

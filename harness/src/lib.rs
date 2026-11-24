@@ -21,6 +21,9 @@ pub use sweep::{
 use tally::more;
 pub use tally::{Hit, SHOWN, Tally, remainder, with_rest};
 
+/// The tree holding every fixture case.
+pub const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/rust/fixtures");
+
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.
 #[derive(Debug, Default, Deserialize)]

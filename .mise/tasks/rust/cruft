@@ -8,6 +8,7 @@
 #MISE   "crate/**/*",
 #MISE   "harness/**/*",
 #MISE   "site/**/*.md",
+#MISE   "tests/rust/**/*",
 #MISE   "wasm/**/*"
 #MISE ]
 

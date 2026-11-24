@@ -13,19 +13,15 @@ export function cacheDirFrom(root: string, name: string): string {
 }
 
 export function crateDir(metaUrl: string): string {
-  return crateDirFrom(repoRoot(metaUrl))
-}
-
-export function crateDirFrom(root: string): string {
-  return path.join(root, 'crate')
+  return path.join(repoRoot(metaUrl), 'crate')
 }
 
 export function fetchCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'fetch')
 }
 
-export function fixturesDirFrom(crate: string): string {
-  return path.join(path.dirname(crate), 'tests', 'rust', 'fixtures')
+export function fixturesDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'tests', 'rust', 'fixtures')
 }
 
 export function pagesDir(metaUrl: string): string {

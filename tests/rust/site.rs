@@ -14,6 +14,7 @@ use ignore::{WalkBuilder, types::TypesBuilder};
 use indoc::indoc;
 use itertools::Itertools;
 use prose::pipeline::Pipeline;
+use prose_harness::FIXTURES;
 use serde::Deserialize;
 use serde_json::{Deserializer, Value};
 use tempfile::TempDir;
@@ -150,7 +151,6 @@ fn every_binding_reader_is_listed_on_the_primitive_page() {
 
 #[test]
 fn every_case_directory_is_well_formed() {
-    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/rust/fixtures");
     let rule_slugs: BTreeSet<String> = Pipeline::known_ids()
         .iter()
         .map(ToString::to_string)
@@ -160,7 +160,7 @@ fn every_case_directory_is_well_formed() {
     let mut domains = BTreeSet::<String>::new();
     let mut cases = BTreeMap::<String, String>::new();
 
-    for domain_dir in subdirs(&fixtures) {
+    for domain_dir in subdirs(Path::new(FIXTURES)) {
         let domain = dir_name(&domain_dir);
         domains.insert(domain.clone());
         for case_dir in subdirs(&domain_dir) {
@@ -251,8 +251,7 @@ fn every_case_directory_is_well_formed() {
 
 #[test]
 fn every_fixture_invocation_resolves() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let site = root.join("../site");
+    let site = Path::new(env!("CARGO_MANIFEST_DIR")).join("../site");
     let mut types = TypesBuilder::new();
     types.add_defaults();
     types.select("markdown");
@@ -268,7 +267,7 @@ fn every_fixture_invocation_resolves() {
         let path = entry.path();
         let body = fs_err::read_to_string(path).expect("the page reads");
         for (rule, case) in fixture_invocations(&body) {
-            let dir = root.join("../tests/rust/fixtures").join(rule).join(case);
+            let dir = Path::new(FIXTURES).join(rule).join(case);
             let input = dir.join("input.py");
             let snap = dir.join("input.py.snap");
             if !input.is_file() || !snap.is_file() {

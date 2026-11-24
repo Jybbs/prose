@@ -15,15 +15,13 @@ use std::collections::BTreeMap;
 
 use prose::config::Config;
 
-const EVERY_KNOB_OVERRIDDEN: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../tests/rust/fixtures/config/every_knob_overridden/input.toml"
-);
+const EVERY_KNOB_OVERRIDDEN: &str =
+    include_str!("fixtures/config/every_knob_overridden/input.toml");
 
 #[test]
 fn every_knob_overridden_leaves_no_key_at_its_default() {
-    let toml = fs_err::read_to_string(EVERY_KNOB_OVERRIDDEN).expect("fixture reads");
-    let (parsed, notices) = Config::from_prose_toml_str(&toml).expect("fixture parses");
+    let (parsed, notices) =
+        Config::from_prose_toml_str(EVERY_KNOB_OVERRIDDEN).expect("fixture parses");
     assert!(
         notices.is_empty(),
         "the fixture names a key prose does not read: {notices:?}"

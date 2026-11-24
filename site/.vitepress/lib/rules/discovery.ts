@@ -23,7 +23,7 @@ export interface RuleDiscovery {
   strayPages : string[]
 }
 
-const crate = paths.crateDirFrom(paths.repoRoot(import.meta.url))
+const crate = paths.crateDir(import.meta.url)
 
 // A rule emits lints where its module overrides `Rule::lint`, read off the
 // crate source the way `tests/rust/site.rs` reads it.
