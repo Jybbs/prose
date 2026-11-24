@@ -23,22 +23,6 @@ def git(root: Path, *args: str) -> str:
     ).stdout
 
 
-def test_delta_adds_a_main_worktree_over_one_deleted_by_hand(
-    delta    : Callable[..., CompletedProcess],
-    tmp_path : Path
-):
-    """
-    Pins that a `main` worktree the clone still lists after its directory is
-    gone is added again.
-    """
-    git(tmp_path / "clone", "worktree", "add", "-q", "../main", "main")
-    rmtree(tmp_path / "main")
-    finished = delta("rust/delta", "main")
-
-    assert finished.returncode == 0
-    assert "module.py" in finished.stdout.splitlines()
-
-
 @mark.parametrize("args", [param((), id="by default"), param(("main",), id="by name")])
 @mark.parametrize(
     "commands",
@@ -57,9 +41,9 @@ def test_delta_adds_a_missing_main_worktree(
     tmp_path : Path
 ):
     """
-    Pins that a lone clone gains a worktree at its `main` branch beside it,
-    whichever branch it has checked out, and reports the file its own tree
-    formats differently.
+    Pins that a lone clone gains a detached worktree at its `main` branch
+    beside it, whichever branch it has checked out, and reports the file its
+    own tree formats differently.
     """
     clone = tmp_path / "clone"
     for command in commands:
@@ -68,6 +52,7 @@ def test_delta_adds_a_missing_main_worktree(
 
     assert finished.returncode == 0
     assert "module.py" in finished.stdout.splitlines()
+    assert git(tmp_path / "main", "branch", "--show-current") == ""
     assert git(tmp_path / "main", "rev-parse", "HEAD") == git(
         clone,
         "rev-parse",
@@ -130,3 +115,42 @@ def test_delta_reads_an_existing_main_worktree_as_it_stands(
     assert "module.py" not in finished.stdout.splitlines()
     assert git(main, "rev-parse", "HEAD") == held
     assert git(main, "status", "--porcelain") == " M Cargo.toml\n?? target/\n"
+
+
+def test_delta_stops_at_a_deleted_main_worktree(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a `main` worktree the clone still lists after its directory is
+    deleted stops the run on git's own message, and is not added again.
+    """
+    git(tmp_path / "clone", "worktree", "add", "-q", "../main", "main")
+    rmtree(tmp_path / "main")
+    finished = delta("rust/delta", "main")
+
+    assert finished.returncode != 0
+    assert "is a missing but already registered worktree" in finished.stderr
+    assert not (tmp_path / "main").exists()
+
+
+def test_delta_stops_at_a_moved_main_worktree(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a `main` worktree moved from beside the clone stops the run on
+    git's own message, and keeps its branch and its staged entries.
+    """
+    main = tmp_path / "main"
+    git(tmp_path / "clone", "worktree", "add", "-q", "../main", "main")
+    (main / "new.py").write_text("x = 1\n", encoding="utf-8")
+    git(main, "add", "new.py")
+    moved    = main.rename(tmp_path / "moved")
+    finished = delta("rust/delta", "main")
+
+    assert finished.returncode != 0
+    assert "is a missing but already registered worktree" in finished.stderr
+    assert not main.exists()
+    assert git(moved, "branch", "--show-current") == "main\n"
+    assert git(moved, "status", "--porcelain") == "A  new.py\n"

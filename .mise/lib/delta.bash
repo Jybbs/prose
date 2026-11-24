@@ -11,7 +11,7 @@ baseline_root() {
   tree="$name"
   [[ -d "$tree" ]] || tree="$MISE_PROJECT_ROOT/../$name"
   if [[ "$name" == main && ! -d "$tree" ]]; then
-    git worktree add --detach --force "$tree" main >&2 || return
+    git worktree add --detach "$tree" main >&2 || return
   fi
   git -C "$tree" rev-parse --show-toplevel
 }
