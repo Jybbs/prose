@@ -176,7 +176,8 @@ fn assert_settles(pipeline: &Pipeline, output: &str, domain: &str, case: &str, u
 }
 
 /// The domain, case, sidecar options, and default pipeline for `path`,
-/// `None` for an `identity` fixture the full-pipeline sweeps pass over.
+/// taking one trip a run, or `None` for an `identity` fixture the
+/// full-pipeline sweeps pass over.
 fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
     let domain = domain_name(path);
     (domain != "identity").then(|| {
@@ -185,7 +186,7 @@ fn sweepable(path: &Path) -> Option<(&str, &str, HarnessOptions, Pipeline)> {
             domain,
             case_name(path),
             harness,
-            Pipeline::with_defaults(&config),
+            Pipeline::with_defaults(&config).trips(1),
         )
     })
 }

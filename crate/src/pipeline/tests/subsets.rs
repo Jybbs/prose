@@ -102,7 +102,7 @@ fn format_span_segments_compose_to_the_full_fold() {
         "y  =  2\n",
     );
     let full = pipeline
-        .format(parse(text))
+        .format_once(parse(text))
         .expect("the whole fold succeeds");
 
     for seam in 0..=pipeline.len() {
@@ -118,6 +118,16 @@ fn format_span_segments_compose_to_the_full_fold() {
             "segments split at seat {seam} differ from the whole fold",
         );
     }
+}
+
+#[test]
+fn split_carries_the_trips_a_run_takes() {
+    let pipeline = Pipeline::from_rules(vec![Box::new(never_settles("widener"))]).trips(1);
+
+    let (_, single) = pipeline.split().remove(0);
+
+    let formatted = single.format(parse("x = 1\n")).expect("the run succeeds");
+    assert_eq!(formatted.text(), "yy = 1\n");
 }
 
 #[test]

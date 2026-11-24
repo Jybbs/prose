@@ -9,7 +9,7 @@ fn run_as_written_leaves_the_unedited_prefix_to_the_diagnose_pass() {
     // diagnose pass already covers it and the fold opens at the
     // second. Its capture log holds the one read.
     let seen = Arc::new(Mutex::new(Vec::new()));
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         capturing(&seen, "reads-only", Vec::new()),
         sentinel("rewrite-x-to-y", vec![replacement("y", 0, 1)]),
     ]);
@@ -35,21 +35,21 @@ fn run_as_written_names_the_rules_the_fold_fired_rather_than_the_as_written_ones
         RuleId::from("widens-downstream"),
     ]);
 
-    let (formatted, diagnostics, fired) = Pipeline::from_rules(rules())
+    let (formatted, diagnostics, trips) = Pipeline::from_rules(rules())
         .run_as_written(parse("x = 1\n"))
         .expect("the run succeeds");
-    let (_, _, run_fired) = Pipeline::from_rules(rules())
+    let (_, _, run_trips) = Pipeline::from_rules(rules())
         .run(parse("x = 1\n"))
         .expect("the run succeeds");
 
-    assert_eq!(formatted.text(), "qq = 1\n");
+    assert_eq!(formatted.text(), "qqqqqqqqq = 1\n");
     assert_eq!(
         fired_rules(&diagnostics),
         BTreeSet::from([RuleId::from("settles-once")]),
         "the as-written diagnostics name only the rule that edits the buffer as written",
     );
-    assert_eq!(fired, both);
-    assert_eq!(run_fired, both);
+    assert_eq!(trips.fired, both);
+    assert_eq!(run_trips.fired, both);
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn run_as_written_passes_when_no_rule_edits() {
 fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
     // `widen-x` moves the `1` one byte right, so the lint range the
     // rewritten buffer carries is 5..6 and the as-written one 4..5.
-    let pipeline = Pipeline::from_rules(vec![
+    let pipeline = one_trip(vec![
         sentinel("widen-x", vec![replacement("yy", 0, 1)]),
         Box::new(NeedleLintRule {
             id: RuleId::from("flag-one"),
@@ -97,7 +97,7 @@ fn run_as_written_resolves_a_lint_range_against_the_original_buffer() {
 
 #[test]
 fn run_as_written_returns_the_diagnostics_it_replayed() {
-    let pipeline = Pipeline::from_rules(vec![sentinel(
+    let pipeline = one_trip(vec![sentinel(
         "rewrite-x-to-y",
         vec![replacement("y", 0, 1)],
     )]);
@@ -118,12 +118,12 @@ fn run_as_written_short_circuits_when_file_is_suppressed() {
     )]);
     let source = parse("# prose: off\nx = 1\n");
 
-    let (formatted, diagnostics, fired) =
+    let (formatted, diagnostics, trips) =
         pipeline.run_as_written(source).expect("the run succeeds");
 
     assert_eq!(formatted.text(), "# prose: off\nx = 1\n");
     assert!(diagnostics.is_empty());
-    assert!(fired.is_empty());
+    assert!(trips.fired.is_empty());
 }
 
 #[test]

@@ -1,13 +1,13 @@
 //! The report over a rewrite whose settle check names rules.
 //!
-//! A run that rewrote a file re-applies its enabled rules to the output
-//! it produced, a `format` run re-applying the rules that edited on the
-//! first pass and `check --validate` every enabled rule. Where any
-//! still edits, the rewrite is a defect in Prose rather than in the
+//! A run whose last trip still edited re-applies its enabled rules to
+//! the output it produced, a `format` run re-applying the rules that
+//! edited on some trip and `check --validate` every enabled rule. Where
+//! any still edits, the rewrite is a defect in Prose rather than in the
 //! file beneath it, and this module builds the record the CLI and the
 //! language server both render: the narrowed rule subset that
 //! reproduces it, the configuration the run resolved, the output it
-//! wrote, and what a second pass turns that output into.
+//! wrote, and what a further trip turns that output into.
 
 use std::collections::BTreeSet;
 
@@ -22,7 +22,7 @@ mod narrow;
 pub(crate) use form::report_url;
 use narrow::{editing_subset, reproducing_subset};
 
-/// One file's rewrite that a second pass would change.
+/// One file's rewrite that a further trip would change.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub(crate) struct UnstableRewrite {
     /// The keys the run's `[tool.prose]` table set away from the
@@ -33,7 +33,7 @@ pub(crate) struct UnstableRewrite {
     /// The narrowest subset reproducing the defect, the `--select`
     /// list the report names.
     pub(crate) rules: Vec<RuleId>,
-    /// What a second pass turns `first` into.
+    /// What a further trip turns `first` into.
     pub(crate) second: String,
 }
 
@@ -74,9 +74,9 @@ impl UnstableRewrite {
     /// The report a `format` run or the editor makes over `formatted`,
     /// its output for `original`, re-applying through
     /// [`Pipeline::unsettled_among`] only `fired`, the rules that edited
-    /// on the first pass. `None` where those rules leave `formatted`
-    /// settled, a rule silent on the first pass being left to the full
-    /// walk [`detect`](Self::detect) runs.
+    /// on some trip. `None` where those rules leave `formatted` settled, a
+    /// rule silent on every trip being left to the full walk
+    /// [`detect`](Self::detect) runs.
     pub(crate) fn detect_narrowed(
         pipeline: &Pipeline,
         config: &Config,
@@ -198,15 +198,15 @@ fn narrowed(
     )
 }
 
-/// What a second pass turns `formatted` into, its own text where the
-/// second run does not parse or a rule's output is rejected. The second
-/// source carries the cell boundaries the first one did.
+/// What a further trip turns `formatted` into, its own text where the
+/// source rebuilt from it does not parse or a rule's output is rejected.
+/// The rebuilt source carries the cell boundaries the first one did.
 fn second_pass(pipeline: &Pipeline, formatted: &Source) -> String {
     let first = formatted.text();
     formatted
         .reparse_carrying(first.to_owned(), formatted.cell_offsets().clone())
         .ok()
-        .and_then(|source| pipeline.format(source).ok())
+        .and_then(|source| pipeline.format_once(source).ok())
         .map_or_else(|| first.to_owned(), |settled| settled.text().to_owned())
 }
 
@@ -254,11 +254,12 @@ mod tests {
     }
 
     #[test]
-    fn detect_narrowed_leaves_a_rule_silent_on_the_first_pass_to_the_full_walk() {
+    fn detect_narrowed_leaves_a_rule_silent_on_every_trip_to_the_full_walk() {
         let pipeline = Pipeline::from_rules(vec![
             Box::new(prefix_rule("edits-q", "q", "qq")),
             Box::new(prefix_rule("settles-once", "x", "q")),
-        ]);
+        ])
+        .trips(1);
         let config = Config::default();
         let (formatted, diagnostics, _) = pipeline.run(parse(SOURCE)).expect("runs");
 
@@ -272,7 +273,7 @@ mod tests {
                 &fired_rules(&diagnostics),
             )
             .is_none(),
-            "`edits-q` emitted nothing on the first pass, so the narrowed pass leaves it to the full walk",
+            "`edits-q` emitted nothing on the one trip, so the narrowed check leaves it to the full walk",
         );
     }
 
@@ -291,7 +292,7 @@ mod tests {
             &formatted,
             &fired_rules(&diagnostics),
         )
-        .expect("`widens-downstream` fired on the first pass and still edits");
+        .expect("`widens-downstream` fired and still edits");
 
         assert_eq!(narrowed, full);
     }
@@ -320,8 +321,8 @@ mod tests {
         let report = UnstableRewrite::detect(&pipeline, &Config::default(), SOURCE, &formatted)
             .expect("a widening rule leaves the output unsettled");
 
-        assert_eq!(report.first, "yy = 1\n");
-        assert_eq!(report.second, "yyy = 1\n");
+        assert_eq!(report.first, "yyyyyyyyy = 1\n");
+        assert_eq!(report.second, "yyyyyyyyyy = 1\n");
         assert!(report.config_toml.is_empty(), "{}", report.config_toml);
     }
 
@@ -420,8 +421,8 @@ mod tests {
                 .expect("the marked bytes are still unsettled");
 
         assert_eq!(report.rules, vec![RuleId::from("widener")]);
-        assert_eq!(report.first, "yyy = 1\n");
-        assert_eq!(report.second, "yyyy = 1\n");
+        assert_eq!(report.first, "yyyyyyyyyy = 1\n");
+        assert_eq!(report.second, "yyyyyyyyyyy = 1\n");
     }
 
     #[test]

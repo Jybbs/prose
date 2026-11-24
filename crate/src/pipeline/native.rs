@@ -1,10 +1,8 @@
-//! The pipeline surface only the native build reads, meaning the rule
-//! slugs that key the check cache and the as-written run `check
-//! --validate` makes.
+//! The pipeline surface only the native build reads, meaning the one
+//! trip a settle report shows, the rule slugs that key the check cache,
+//! and the as-written run `check --validate` makes.
 
-use std::collections::BTreeSet;
-
-use super::{Pipeline, PipelineError};
+use super::{Pipeline, PipelineError, Trips};
 use crate::{
     diagnostics::{Diagnostic, fired_rules},
     rules::RuleId,
@@ -12,6 +10,17 @@ use crate::{
 };
 
 impl Pipeline {
+    /// Rewrites `source` through every enabled rule once, the further
+    /// trip a settle report shows over a run's output.
+    ///
+    /// # Errors
+    ///
+    /// Returns the `PipelineError` the reparse between rules reports
+    /// for a rule's output.
+    pub(crate) fn format_once(&self, source: Source) -> Result<Source, PipelineError> {
+        self.format_span(source, 0..self.rules.len())
+    }
+
     /// This pipeline's enabled rule slugs in registration order, the
     /// resolved selection that keys the check cache.
     pub(crate) fn rule_ids(&self) -> impl Iterator<Item = RuleId> + use<'_> {
@@ -20,18 +29,18 @@ impl Pipeline {
 
     /// Rewrites `source` and returns it beside the diagnostics
     /// [`diagnose`](Self::diagnose) collects against the buffer as
-    /// written, the pair a structured `format` reports, and the rules
-    /// the fold fired, the set a narrowed settle check re-applies. That
-    /// set includes a rule that edits only once an upstream rule has
-    /// rewritten, which the as-written diagnostics leave out.
+    /// written, the pair a structured `format` reports, and what the
+    /// run's trips came to. The fired set a narrowed settle check
+    /// re-applies includes a rule that edits only once an upstream rule
+    /// has rewritten, which the as-written diagnostics leave out.
     ///
-    /// The fold opens at the first rule the diagnose pass found editing
-    /// and leaves every rule ahead of it to that pass, and a buffer no
-    /// rule edits skips the fold outright. No lint pass runs against the
-    /// rewritten buffer, leaving the reported diagnostics resolved
-    /// against the source as written. `check --validate` reads this in
-    /// place of the full [`run`](Self::run) and keeps the rewrite for
-    /// its settle check.
+    /// The first trip opens at the first rule the diagnose pass found
+    /// editing and leaves every rule ahead of it to that pass, and a
+    /// buffer no rule edits skips the trips outright. No lint pass runs
+    /// against the rewritten buffer, leaving the reported diagnostics
+    /// resolved against the source as written. `check --validate` reads
+    /// this in place of the full [`run`](Self::run) and keeps the rewrite
+    /// for its settle check.
     ///
     /// # Errors
     ///
@@ -43,13 +52,14 @@ impl Pipeline {
     pub(crate) fn run_as_written(
         &self,
         source: Source,
-    ) -> Result<(Source, Vec<Diagnostic>, BTreeSet<RuleId>), PipelineError> {
+    ) -> Result<(Source, Vec<Diagnostic>, Trips), PipelineError> {
         let (diagnostics, edits_at) = self.diagnosed(&source);
         let Some(first) = edits_at else {
-            return Ok((source, diagnostics, BTreeSet::new()));
+            return Ok((source, diagnostics, Trips::default()));
         };
         let mut fold = Vec::new();
-        let formatted = self.fold_rules(source, Some(&mut fold), first..self.rules.len())?;
-        Ok((formatted, diagnostics, fired_rules(&fold)))
+        let (formatted, capped) = self.fold_trips(source, Some(&mut fold), first)?;
+        let fired = fired_rules(&fold);
+        Ok((formatted, diagnostics, Trips { capped, fired }))
     }
 }

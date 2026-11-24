@@ -302,9 +302,11 @@ pub(crate) fn rendered(write: impl FnOnce(&mut Vec<u8>)) -> String {
     String::from_utf8(buf).expect("utf-8")
 }
 
+/// `src` after one trip of the rule registered under `slug`.
 pub(crate) fn run_rule(slug: &str, src: &str) -> String {
     let pipeline = Pipeline::for_rule(slug, &Config::default()).expect("rule is registered");
     pipeline
+        .trips(1)
         .run(parse(src))
         .expect("pipeline runs")
         .0
@@ -319,6 +321,30 @@ pub(crate) fn self_overlapping() -> GroupSentinelRule {
         groups: vec![vec![replacement("Y", 0, 3), replacement("Z", 2, 5)]],
         id: RuleId::from("self-overlapping"),
     }
+}
+
+/// A pipeline whose run over a buffer opening with `a` edits on `steps`
+/// trips and no more. Each rule rewrites one letter of `a` through `i` to
+/// the next and seats ahead of the rule writing that letter, so a trip
+/// lands one step.
+pub(crate) fn stepping(steps: usize) -> Pipeline {
+    const STEPS: [(&str, &str, &str); 9] = [
+        ("a-to-b", "a", "b"),
+        ("b-to-c", "b", "c"),
+        ("c-to-d", "c", "d"),
+        ("d-to-e", "d", "e"),
+        ("e-to-f", "e", "f"),
+        ("f-to-g", "f", "g"),
+        ("g-to-h", "g", "h"),
+        ("h-to-i", "h", "i"),
+        ("i-to-j", "i", "j"),
+    ];
+    let rules = STEPS[..steps]
+        .iter()
+        .rev()
+        .map(|&(id, reads, writes)| -> Box<dyn Rule> { Box::new(prefix_rule(id, reads, writes)) })
+        .collect();
+    Pipeline::from_rules(rules)
 }
 
 /// Returns the `strip-stranded-padding` terms a primitive test reads,

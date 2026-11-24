@@ -5,7 +5,7 @@
 use std::io;
 
 use super::{
-    process::{Marker, failed, process_source},
+    process::{failed, process_source},
     *,
 };
 
@@ -98,7 +98,7 @@ pub(super) fn process_stdin(
         stdin_source_type(filename),
         &resolved,
         pass,
-        Marker::Eager,
+        false,
     )
 }
 

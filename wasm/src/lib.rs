@@ -50,9 +50,9 @@ impl Run {
 
 /// Formats `source` using the `prose.toml` text in `config_toml`.
 ///
-/// With `settle`, the rules that fired run again over the output, and
-/// any rule still editing it is listed in `unstable_rules`. Without
-/// `settle` that list is empty.
+/// With `settle`, a run whose last trip edited re-applies the rules that
+/// fired to its output, and any rule still editing it is listed in
+/// `unstable_rules`. That list is otherwise empty.
 ///
 /// # Errors
 ///
@@ -75,7 +75,7 @@ pub fn panic_for_test() {
 }
 
 /// Runs the pipeline over `source`, walking `unsettled_among` over the
-/// fired set where `settle` is true.
+/// fired set where `settle` is true and every trip edited.
 fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Error>> {
     let (config, config_notices) = Config::from_prose_toml_str(config_toml)?;
     let pipeline = Pipeline::with_defaults(&config);
@@ -84,16 +84,16 @@ fn run(config_toml: &str, source: &str, settle: bool) -> Result<Run, Box<dyn Err
         let message = refusal.message(pipeline.target());
         return Err(format!("{message} at byte range {:?}", refusal.range()).into());
     }
-    let (formatted, diagnostics, fired_rules) = pipeline.run(source)?;
-    let unstable_rules = if settle {
-        pipeline.unsettled_among(&formatted, &fired_rules)
+    let (formatted, diagnostics, trips) = pipeline.run(source)?;
+    let unstable_rules = if settle && trips.capped {
+        pipeline.unsettled_among(&formatted, &trips.fired)
     } else {
         Vec::new()
     };
     Ok(Run {
         config_notices,
         diagnostics,
-        fired_rules,
+        fired_rules: trips.fired,
         formatted,
         unstable_rules,
     })

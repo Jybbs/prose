@@ -1,15 +1,16 @@
 //! Runs the pipeline over a tracked buffer, bridging prose's engine to the
 //! editor protocol.
 
-use std::collections::BTreeSet;
-
 use lsp_types::{Diagnostic as LspDiagnostic, TextEdit};
 use ruff_python_ast::PySourceType;
 use ruff_source_file::PositionEncoding;
 
 use super::conversion::{full_document_range, refusal_to_lsp, to_lsp};
 use crate::{
-    config::Config, pipeline::Pipeline, rules::RuleId, source::Source, unstable::UnstableRewrite,
+    config::Config,
+    pipeline::{Pipeline, Trips},
+    source::Source,
+    unstable::UnstableRewrite,
 };
 
 /// One formatting pass over a buffer.
@@ -23,25 +24,30 @@ pub(super) struct Formatted {
     pub(super) settled: Option<Settled>,
 }
 
-/// A rewrite held beside the pipeline that produced it and the rules
-/// that edited on the way, read by a later settle check.
+/// A rewrite held beside the pipeline that produced it and what the
+/// run's trips came to, read by a later settle check.
 pub(super) struct Settled {
-    fired: BTreeSet<RuleId>,
     pipeline: Pipeline,
     source: Source,
+    trips: Trips,
 }
 
 impl Settled {
-    /// Runs the settle check over the held rewrite, re-applying the
-    /// rules that fired as a `format` run does.
+    /// Runs the settle check over the held rewrite as a `format` run
+    /// does, re-applying the rules that fired where every trip edited.
     pub(super) fn detect(&self, config: &Config, original: &str) -> Option<UnstableRewrite> {
-        UnstableRewrite::detect_narrowed(
-            &self.pipeline,
-            config,
-            original,
-            &self.source,
-            &self.fired,
-        )
+        self.trips
+            .capped
+            .then(|| {
+                UnstableRewrite::detect_narrowed(
+                    &self.pipeline,
+                    config,
+                    original,
+                    &self.source,
+                    &self.trips.fired,
+                )
+            })
+            .flatten()
     }
 }
 
@@ -104,14 +110,14 @@ fn formatted(
         .ok()
         .filter(|source| pipeline.refusal(source).is_none())?;
     let range = full_document_range(&source, encoding);
-    let (settled, _, fired) = pipeline.run(source).ok()?;
+    let (settled, _, trips) = pipeline.run(source).ok()?;
     let new_text = settled.changed_from(original)?.to_owned();
     Some(Formatted {
         edits: Some(vec![TextEdit { new_text, range }]),
         settled: Some(Settled {
-            fired,
             pipeline,
             source: settled,
+            trips,
         }),
     })
 }
@@ -125,7 +131,7 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
-    use crate::testing::BARE_IMPORT_LINT;
+    use crate::testing::{BARE_IMPORT_LINT, never_settles, parse, stepping};
 
     #[test]
     fn diagnostics_are_empty_for_clean_source() {
@@ -279,6 +285,28 @@ mod tests {
             }
         );
         assert!(edit.new_text.contains("alpha = 1"));
+    }
+
+    #[rstest]
+    #[case::a_run_settling_on_its_last_trip(stepping(8), false)]
+    #[case::a_run_still_editing_past_its_last_trip(
+        Pipeline::from_rules(vec![Box::new(never_settles("widener"))]),
+        true
+    )]
+    fn a_held_rewrite_reports_only_a_run_whose_every_trip_edited(
+        #[case] pipeline: Pipeline,
+        #[case] reported: bool,
+    ) {
+        let (source, _, trips) = pipeline.run(parse("a = 1\n")).expect("the run succeeds");
+        let settled = Settled {
+            pipeline,
+            source,
+            trips,
+        };
+
+        let report = settled.detect(&Config::default(), "a = 1\n");
+
+        assert_eq!(report.is_some(), reported);
     }
 
     #[test]
