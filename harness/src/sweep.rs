@@ -70,14 +70,18 @@ pub trait Absorbing: Default + Send {
     fn absorb(&mut self, other: Self);
 }
 
-/// The Python sources a sweep reads, under the directory [`CORPUS`] names or
-/// under [`FIXTURES`] where it is unset, with the runaway watchdog opened
-/// and an empty corpus failing the sweep outright.
+/// The Python sources a sweep reads under [`corpus_root`], with the runaway
+/// watchdog opened and an empty corpus failing the sweep outright.
 pub fn corpus() -> Vec<PathBuf> {
     let files = walked();
     assert!(!files.is_empty(), "the corpus holds no Python sources");
     watch_for_a_runaway();
     files
+}
+
+/// The directory [`CORPUS`] names, [`FIXTURES`] where it is unset.
+pub fn corpus_root() -> PathBuf {
+    pointed_corpus().unwrap_or_else(|| FIXTURES.into())
 }
 
 /// The values `var` carries as a space-separated list, `defaults` where
@@ -268,13 +272,11 @@ fn target_of(token: &str) -> Option<PythonVersion> {
     })
 }
 
-/// The Python sources under the corpus root, largest first with the path
+/// The Python sources under [`corpus_root`], largest first with the path
 /// breaking ties, so a parallel sweep's tail is one file long and a
-/// failure names the same file across runs. [`CORPUS`] points a sweep
-/// at a directory other than [`FIXTURES`].
+/// failure names the same file across runs.
 fn walked() -> Vec<PathBuf> {
-    let root = pointed_corpus().unwrap_or_else(|| FIXTURES.into());
-    python_files(&root)
+    python_files(&corpus_root())
         .sorted_by_cached_key(|path| {
             let size = fs_err::metadata(path).map_or(0, |data| data.len());
             (Reverse(size), path.clone())
