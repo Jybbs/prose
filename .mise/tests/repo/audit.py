@@ -3,7 +3,7 @@ Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
 it finds a filter leaving out across a task and the tasks it depends on,
 and the trigger it reports for each. Also pins that a run reaches every
 check, the trigger keys it reads off a workflow, the git-ignored outputs
-`inputs` reports each input group leaving out, the label `parity` reports
+`inputs` reports each task's sources leaving out, the label `parity` reports
 a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
@@ -21,7 +21,7 @@ from json              import dumps
 from pathlib           import Path
 from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
-from re                import findall
+from re                import findall, sub
 from types             import ModuleType
 
 ALL_MISSING = "['opened', 'ready_for_review', 'reopened', 'synchronize']"
@@ -31,14 +31,15 @@ DEBS        = ".github/actions/restore-debs/action.yml"
 DEPLOY      = ".github/workflows/deploy.yml"
 GUARD       = "${{ !github.event.pull_request.draft }}"
 LEFT_OUT    = (
-    "::error::input groups leaving out a git-ignored task output they select: "
-    "['site: site/public/wasm/*']\n"
+    "::error::tasks whose sources leave out a git-ignored task output they select: "
+    "['site:typecheck: site/public/wasm/*']\n"
 )
-LIVE      = ["{root}/Cargo.lock", "{root}/wasm/**"]
-OMITTING  = ["Cargo.lock", "site/**"]
-PROVISION = ".mise/tasks/site/provision"
-TYPES     = "[opened, synchronize, reopened, ready_for_review]"
-UNGUARDED = (
+LEFT_OUT_BAKE = LEFT_OUT.replace("public/wasm/*", "node_modules/.bun.lock")
+LIVE          = ["{root}/Cargo.lock", "{root}/wasm/**"]
+OMITTING      = ["Cargo.lock", "site/**"]
+PROVISION     = ".mise/tasks/site/provision"
+TYPES         = "[opened, synchronize, reopened, ready_for_review]"
+UNGUARDED     = (
     "saves under an if other than the pull_request guard, alone or joined by &&\n"
 )
 UNREAD = "a folder no site module or task reads\n"
@@ -769,61 +770,104 @@ def test_patterns_reads_a_trigger_of_every_form(
 
 
 @mark.parametrize(
-    ("entries", "reported"),
+    ("entries", "depends", "reported"),
     [
-        param(["site/**/*", "!@gitignore", "site/public/wasm/*"], "", id="added-back"),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*"],
+            ["site:bake"],
+            "",
+            id = "added-back"
+        ),
         param(
             ["site/**/*", "!@gitignore", "site/public/**"],
+            ["site:bake"],
             "",
             id = "folder-added-back"
         ),
-        param(["!@gitignore", "site/**/*"], "", id="selected-after"),
-        param(["site/**/*"], "", id="ignored-files-kept"),
-        param(["site/lib/**", "!@gitignore"], "", id="output-unselected"),
+        param(["!@gitignore", "site/**/*"], ["site:bake"], "", id="selected-after"),
+        param(["site/**/*"], [], "", id="ignored-files-kept"),
+        param(["site/lib/**", "!@gitignore"], [], "", id="output-unselected"),
         param(
             ["site/**/*", "!site/public/wasm/**", "!@gitignore"],
+            ["site:bake"],
             "",
             id = "output-excluded"
         ),
-        param(["site/**/*", "wasm/**", "!@gitignore"], "", id="sources-selected"),
-        param(["site/**/*", "!@gitignore"], LEFT_OUT, id="never-added-back"),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake", "wasm:pack"],
+            "",
+            id = "writer-depended-on"
+        ),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake", "site:serve"],
+            "",
+            id = "writer-depended-on-through-another"
+        ),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "never-added-back"
+        ),
+        param(
+            ["site/**/*", "wasm/**", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "sources-selected"
+        ),
+        param(
+            ["site/public/wasm/*.js", "!@gitignore"],
+            [],
+            LEFT_OUT,
+            id = "narrower-entry"
+        ),
         param(
             ["site/public/wasm/*", "site/**/*", "!@gitignore"],
+            ["site:bake"],
             LEFT_OUT,
             id = "added-before"
         ),
         param(
             ["site/**/*", "!@gitignore", "site/public/wasm/*.js"],
+            ["site:bake"],
             LEFT_OUT,
             id = "partly-added-back"
         ),
         param(
             ["site/**/*", "!@gitignore", "site/public/wasm/*", "!@gitignore"],
+            ["site:bake"],
             LEFT_OUT,
             id = "left-out-again"
+        ),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*"],
+            [],
+            LEFT_OUT_BAKE,
+            id = "writer-not-depended-on"
         )
     ]
 )
-def test_inputs_reports_each_ignored_output_a_group_leaves_out(
+def test_inputs_reports_each_ignored_output_a_task_leaves_out(
     audit       : ModuleType,
     capsys      : CaptureFixture[str],
+    depends     : list[str],
     entries     : list[str],
     monkeypatch : MonkeyPatch,
     reported    : str,
     repository  : Callable[[dict[str, str], list[dict]], Path]
 ):
     """
-    Pins that an input group selecting a git-ignored task output before
-    `!@gitignore` fails the audit unless a later entry adds the output back
-    or the group selects every source of the task writing it, whereas a
-    tracked output and one only the user's own excludes file ignores are
-    never left out.
+    Pins that a task whose sources select a git-ignored task output before
+    `!@gitignore` fails the audit unless a later entry adds the whole output
+    back or the task depends on the task writing it, whereas a tracked
+    output and one only the user's own excludes file ignores are never left
+    out.
     """
     root = repository(
         TREE | {
             ".gitignore"          : "node_modules/\nsite/public/wasm/\n",
-            ".mise/config.toml"   :
-                f"[task_config.input_groups]\nsite = {dumps(entries)}\n",
             "excludes/git/ignore" : "site/drawn/\n",
             "site/bun.lock"       : ""
         },
@@ -851,6 +895,20 @@ def test_inputs_reports_each_ignored_output_a_group_leaves_out(
             },
             {
                 "dir"     : "{root}",
+                "name"    : "site:serve",
+                "depends" : ["wasm:pack"]
+            },
+            {
+                "dir"     : "{root}/site",
+                "name"    : "site:typecheck",
+                "depends" : depends,
+                "sources" : [
+                    each if each == "!@gitignore" else sub("^!?", r"\g<0>{root}/", each)
+                    for each in entries
+                ]
+            },
+            {
+                "dir"     : "{root}",
                 "name"    : "wasm:pack",
                 "depends" : [],
                 "outputs" : ["site/public/wasm/*"],
@@ -870,24 +928,27 @@ def test_inputs_reports_an_output_of_a_task_with_no_source(
     repository : Callable[[dict[str, str], list[dict]], Path]
 ):
     """
-    Pins that an output of a task declaring no source counts as one the
-    group's own entries do not cover.
+    Pins that an output of a task declaring no source counts as left out
+    even where the reading task depends on that task, since mise reruns a
+    dependent only after a dependency with sources runs.
     """
     repository(
-        {
-            ".gitignore"        : "site/public/wasm/\n",
-            ".mise/config.toml" : (
-                "[task_config.input_groups]\n"
-                'site = ["site/**/*", "!@gitignore"]\n'
-            )
-        },
-        [{
-            "dir"     : "{root}",
-            "name"    : "wasm:pack",
-            "depends" : [],
-            "outputs" : ["site/public/wasm/*"],
-            "sources" : []
-        }]
+        {".gitignore": "site/public/wasm/\n", "site/index.md": ""},
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "site:typecheck",
+                "depends" : ["wasm:pack"],
+                "sources" : ["{root}/site/**/*", "!@gitignore"]
+            },
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
     )
 
     assert audit.inputs() == 1

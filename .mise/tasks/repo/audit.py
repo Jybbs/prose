@@ -40,9 +40,9 @@ them fails.
     patterns   Every `sources` pattern a task declares, short of one naming a
                task's `outputs`, and every `paths` entry a workflow trigger
                filters on selects a tracked file.
-    inputs     Every input group that leaves out git-ignored files adds back
-               each ignored task output its other entries select, short of
-               one written by a task whose every source it selects.
+    inputs     Every task whose sources leave out git-ignored files adds back
+               each ignored task output its earlier entries select, short of
+               one written by a task with sources that it depends on.
     stamps     Every cache restore bringing back a task's `outputs` is
                followed by a step touching the restored files on a hit, so
                mise reads them as current.
@@ -697,28 +697,35 @@ def ignored(path: str) -> bool:
 
 def inputs() -> int:
     """
-    Reports every git-ignored task output an input group selects before its
-    `!@gitignore` entry and adds back by no later one, which leaves a task
-    reading the group fresh after that output changes. An output written by
-    a task whose every source the group selects is left out, since a change
-    to one of those sources already makes the reading task stale.
+    Reports every git-ignored task output that a task's `sources`, each
+    `@group:` reference expanded in place by mise, leave out through
+    `!@gitignore` after selecting, which leaves that task fresh after the
+    output changes. An output is left out of the report where its writing
+    task declares sources and is one the reading task depends on, since mise
+    runs every task depending on a task with sources that ran.
     """
-    groups = toml(".mise/config.toml")["task_config"]["input_groups"]
+    listed  = tasks_listed()
+    outputs = task_outputs()
     return flagged(
         findings = [
             (
                 {
-                    f"{group}: {output}"
-                    for group, entries in groups.items()
-                    for kept in [
-                        ["!**" if each == "!@gitignore" else each for each in entries]
+                    f"{name}: {output}"
+                    for name, task in listed.items()
+                    if isinstance(sources := task.get("sources"), list)
+                    if "!@gitignore" in sources
+                    for entries in [
+                        [
+                            each if each == "!@gitignore" else rooted(task["dir"], each)
+                            for each in sources
+                        ]
                     ]
-                    for output, task in task_outputs().items()
-                    if filtered(output, entries) and not filtered(output, kept)
-                    if unfiltered(entries, task) or not task_paths(task, "sources")
+                    for output, writer in outputs.items()
+                    if leaves_out(entries, output)
+                    if writer not in swept([name]) or not listed[writer].get("sources")
                     if ignored(output)
                 },
-                "input groups leaving out a git-ignored task output they select"
+                "tasks whose sources leave out a git-ignored task output they select"
             )
         ]
     )
@@ -799,6 +806,25 @@ def labels() -> int:
                 "family labels whose description differs from their rule-index page"
             )
         ]
+    )
+
+
+def leaves_out(entries: list[str], output: str) -> bool:
+    """
+    Checks whether the `sources` patterns `entries` select files the
+    `output` glob names and add the whole of it back in no entry after
+    a `!@gitignore`, a narrower entry ahead of the last `!@gitignore`
+    selecting part of it.
+    """
+    cut  = len(entries) - entries[::-1].index("!@gitignore")
+    kept = ["!**" if each == "!@gitignore" else each for each in entries]
+    return not filtered(output, kept) and (
+        filtered(output, entries)
+        or any(
+            filtered(entry, [output])
+            for entry in entries[:cut]
+            if not entry.startswith("!")
+        )
     )
 
 
