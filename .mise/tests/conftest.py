@@ -2,17 +2,17 @@
 Defines the `task` fixture, which loads a task script under
 `.mise/tasks/` as a module so a case calls its functions in process, where
 pytest-subprocess's `fp` fakes every command the script runs, the `workdir`
-fixture, which writes the files a script reads into a scratch tree, the
-`scratch` fixture, which makes a directory a git repository isolated from
-the session running the suite, the `stand_in` fixture, which writes a
-stand-in command first on `PATH`, the `affected` fixture, which runs an
+fixture, which writes a scratch tree and makes it the current directory,
+the `scratch` fixture, which makes a directory a git repository isolated
+from the session running the suite, the `stand_in` fixture, which writes
+a stand-in command first on `PATH`, the `affected` fixture, which runs an
 `affected` task in a scratch repository changed since its `origin/main`,
 and the `delta` fixture, which runs a delta task in a scratch clone against
 a stand-in build. Each session writes under a base temporary directory of
 its own.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from functools       import partial
 from importlib.util  import module_from_spec, spec_from_file_location
 from json            import dumps
@@ -372,7 +372,7 @@ def workdir(monkeypatch: MonkeyPatch, tmp_path: Path) -> Callable[..., Path]:
         at `root`, the temporary directory itself by default, and making
         that tree the current directory, which it returns.
     """
-    def write(files: dict[str, str], root: str = "") -> Path:
+    def write(files: Mapping[str, str], root: str = "") -> Path:
         """
         Writes the text of each file in `files` at its path under the tree,
         making every parent directory the path names.
