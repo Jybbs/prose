@@ -1,0 +1,123 @@
+"""
+Pins the baseline worktree `rust:delta` reads or adds, and that the baseline
+it builds there stays apart from the head's build.
+"""
+
+from collections.abc import Callable
+from pathlib         import Path
+from pytest          import mark, param
+from shutil          import rmtree
+from subprocess      import CompletedProcess, run
+
+
+def git(root: Path, *args: str) -> str:
+    """
+    Runs `git` with `args` in `root`, and returns the text it printed.
+    """
+    return run(
+        ["git", *args],
+        capture_output = True,
+        check          = True,
+        cwd            = root,
+        text           = True
+    ).stdout
+
+
+def test_delta_adds_a_main_worktree_over_one_deleted_by_hand(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a `main` worktree the clone still lists after its directory is
+    gone is added again.
+    """
+    git(tmp_path / "clone", "worktree", "add", "-q", "../main", "main")
+    rmtree(tmp_path / "main")
+    finished = delta("rust/delta", "main")
+
+    assert finished.returncode == 0
+    assert "module.py" in finished.stdout.splitlines()
+
+
+@mark.parametrize("args", [param((), id="by default"), param(("main",), id="by name")])
+@mark.parametrize(
+    "commands",
+    [
+        param((), id = "branch checked out"),
+        param(
+            (("switch", "-q", "main"), ("restore", "-s", "feature", "crate")),
+            id = "main checked out"
+        )
+    ]
+)
+def test_delta_adds_a_missing_main_worktree(
+    args     : tuple[str, ...],
+    commands : tuple[tuple[str, ...], ...],
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a lone clone gains a worktree at its `main` branch beside it,
+    whichever branch it has checked out, and reports the file its own tree
+    formats differently.
+    """
+    clone = tmp_path / "clone"
+    for command in commands:
+        git(clone, *command)
+    finished = delta("rust/delta", *args)
+
+    assert finished.returncode == 0
+    assert "module.py" in finished.stdout.splitlines()
+    assert git(tmp_path / "main", "rev-parse", "HEAD") == git(
+        clone,
+        "rev-parse",
+        "main"
+    )
+
+
+def test_delta_adds_no_worktree_under_another_name(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a branch other than `main` with no worktree beside the clone
+    stops the run and gains none.
+    """
+    git(tmp_path / "clone", "branch", "other", "main")
+
+    assert delta("rust/delta", "other").returncode != 0
+    assert not (tmp_path / "other").exists()
+
+
+def test_delta_builds_the_baseline_outside_a_shared_target_directory(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a `CARGO_TARGET_DIR` both trees inherit leaves the baseline a
+    build of its own.
+    """
+    finished = delta("rust/delta", CARGO_TARGET_DIR=str(tmp_path / "shared"))
+
+    assert finished.returncode == 0
+    assert "module.py" in finished.stdout.splitlines()
+
+
+def test_delta_reads_an_existing_main_worktree_as_it_stands(
+    delta    : Callable[..., CompletedProcess],
+    tmp_path : Path
+):
+    """
+    Pins that a `main` worktree already beside the clone stays at the commit
+    and the uncommitted edits it holds.
+    """
+    main = tmp_path / "main"
+    git(tmp_path / "clone", "worktree", "add", "-q", "--detach", main, "feature")
+    (main / "Cargo.toml").write_text("[profile.probe]\n\n", encoding="utf-8")
+    held     = git(main, "rev-parse", "HEAD")
+    finished = delta("rust/delta", "main")
+
+    assert finished.returncode == 0
+    assert "module.py" not in finished.stdout.splitlines()
+    assert git(main, "rev-parse", "HEAD") == held
+    assert git(main, "status", "--porcelain") == " M Cargo.toml\n?? target/\n"

@@ -5,9 +5,11 @@ pytest-subprocess's `fp` fakes every command the script runs, the `workdir`
 fixture, which writes the files a script reads into a scratch tree, the
 `scratch` fixture, which makes a directory a git repository isolated from
 the session running the suite, the `stand_in` fixture, which writes a
-stand-in command first on `PATH`, and the `affected` fixture, which runs
-an `affected` task in a scratch repository changed since its `origin/main`.
-Each session writes under a base temporary directory of its own.
+stand-in command first on `PATH`, the `affected` fixture, which runs an
+`affected` task in a scratch repository changed since its `origin/main`,
+and the `delta` fixture, which runs a delta task in a scratch clone against
+a stand-in build. Each session writes under a base temporary directory of
+its own.
 """
 
 from collections.abc import Callable, Iterable
@@ -172,6 +174,111 @@ def affected(
             [TASKS / group / "affected", *args],
             capture_output = True,
             check          = False,
+            text           = True
+        )
+
+    return run_task
+
+
+@fixture
+def delta(
+    monkeypatch : MonkeyPatch,
+    scratch     : Callable[[Path], Path],
+    stand_in    : Callable[..., Path],
+    tmp_path    : Path
+) -> Callable[..., CompletedProcess]:
+    """
+    Clones a scratch repository into `clone`, alone beside its upstream,
+    on a `feature` branch whose formatter writes a module of the corpus
+    as `head` where `main` writes it as `main`. A stand-in `cargo` builds
+    the formatter of the tree it runs in, counts any binary already in
+    the target directory as built, and reports the files whose formatting
+    differs, beside stand-in `mise` and `python` commands.
+
+    Returns:
+        A function running the task at `name` in the clone with `args` under
+        the environment variables in `variables`, which returns the finished
+        run, its output captured as text.
+    """
+    clone, corpus, upstream = (
+        tmp_path / name for name in ("clone", "corpus", "upstream")
+    )
+    for name in [name for name in environ if name.startswith(("CARGO_", "PROSE_"))]:
+        monkeypatch.delenv(name)
+    for name, value in {
+        "MISE_PROJECT_ROOT"  : clone,
+        "PROSE_DELTA_WIDTHS" : "88",
+        "RUNNER_TEMP"        : tmp_path,
+        "TMPDIR"             : tmp_path
+    }.items():
+        monkeypatch.setenv(name, str(value))
+    stand_in(
+        "cargo",
+        'case "$*" in\n'
+        '  "build --bin prose --locked --message-format json-render-diagnostics'
+        ' --profile probe")\n'
+        "    binary=${CARGO_TARGET_DIR:-$PWD/target}/probe/prose\n"
+        '    mkdir -p "${binary%/*}"\n'
+        '    [ -e "$binary" ] || cp crate/src/formatter "$binary"\n'
+        '    chmod +x "$binary"\n'
+        '    printf \'{"executable":"%s","target":{"name":"prose"}}\' "$binary"\n'
+        "    ;;\n"
+        '  "build --bins --locked -p prose_corpus --profile probe --quiet") ;;\n'
+        '  "run --bin delta --locked -p prose_corpus --profile probe --quiet -- "*)\n'
+        "    shift 10\n"
+        '    git -C "$1" diff --name-only "base-$2" "head-$2"\n'
+        "    ;;\n"
+        '  *) echo "unexpected: $*" >&2; exit 1 ;;\n'
+        "esac\n"
+    )
+    stand_in(
+        "mise",
+        f'[ "$*" = "run rust:bake" ] && exec {quote(str(TASKS / "rust/bake"))}\n'
+    )
+    stand_in(
+        "python",
+        f'case "$2" in *sysconfig*) echo {quote(str(corpus))} ;; *) echo 3.15 ;; esac\n'
+    )
+
+    def formatter(root: Path, value: str):
+        """
+        Writes the formatter `root` builds, which writes each module of the
+        corpus as `value`.
+        """
+        (root / "crate/src/formatter").write_text(
+            f'#!/bin/sh\necho "x = \'{value}\'" > "$5/module.py"\n'
+            'echo \'{"files_visited":1,"kind":"summary","schema_version":1}\'\n',
+            encoding = "utf-8"
+        )
+
+    corpus.mkdir()
+    (corpus / "module.py").write_text("x = ''\n", encoding="utf-8")
+    (upstream / "crate/src").mkdir(parents=True)
+    (upstream / "Cargo.toml").write_text("[profile.probe]\n", encoding="utf-8")
+    formatter(upstream, "main")
+    for root, *command in (
+        (scratch(upstream), "commit", "-qm", "main"),
+        (upstream, "branch", "-M", "main"),
+        (tmp_path, "clone", "-q", upstream.as_uri(), clone),
+        (clone, "switch", "-c", "feature", "-q")
+    ):
+        run(["git", *command], check=True, cwd=root)
+    formatter(clone, "head")
+    run(["git", "commit", "-qam", "head"], check=True, cwd=clone)
+    (clone / ".mise").symlink_to(TASKS.parent)
+
+    def run_task(name: str, *args: str, **variables: str) -> CompletedProcess:
+        """
+        Runs `.mise/tasks/<name>` in the clone.
+
+        Returns:
+            The finished run, its output captured as text.
+        """
+        return run(
+            [TASKS / name, *args],
+            capture_output = True,
+            cwd            = clone,
+            env            = {**environ, **variables},
             text           = True
         )
 
