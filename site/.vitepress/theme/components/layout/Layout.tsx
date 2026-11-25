@@ -3,18 +3,19 @@ import { defineComponent } from 'vue'
 
 import { NibSprite }          from '../../../kit'
 import { useNibStroke }       from '../../../lib/composables/use-nib-stroke'
+import { useSearchRoles }     from '../../../lib/composables/use-search-roles'
 import { GlossaryFolioIndex } from '../glossary/GlossaryFolioIndex'
 import { RuleChrome }         from '../rules/RuleChrome'
 import { RuleLinkPopup }      from '../rules/RuleLinkPopup'
 import { BuildMetadata }      from './BuildMetadata'
 import { NotFound }           from './NotFound'
-import { SearchRoles }        from './SearchRoles'
 import { StarBadge }          from './StarBadge'
 
 export const Layout = defineComponent({
   name: 'Layout',
   setup() {
     useNibStroke()
+    useSearchRoles()
 
     return () => (
       <DefaultTheme.Layout>
@@ -26,7 +27,6 @@ export const Layout = defineComponent({
               <BuildMetadata />
               <NibSprite />
               <RuleLinkPopup />
-              <SearchRoles />
             </>
           ),
           'nav-bar-content-after' : () => <StarBadge />,
