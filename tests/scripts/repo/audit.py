@@ -856,7 +856,8 @@ def test_inputs_reports_each_ignored_output_a_task_leaves_out(
     entries     : list[str],
     monkeypatch : MonkeyPatch,
     reported    : str,
-    repository  : Callable[[dict[str, str], list[dict]], Path]
+    repository  : Callable[[dict[str, str], list[dict]], Path],
+    workdir     : Callable[[dict[str, str]], Path]
 ):
     """
     Pins that a task whose sources select a git-ignored task output before
@@ -917,10 +918,7 @@ def test_inputs_reports_each_ignored_output_a_task_leaves_out(
         ]
     )
     monkeypatch.setenv("XDG_CONFIG_HOME", str(root / "excludes"))
-    (root / ".gitignore").write_text(
-        "node_modules/\nsite/bun.lock\nsite/public/wasm/\n",
-        encoding = "utf-8"
-    )
+    workdir({".gitignore": "node_modules/\nsite/bun.lock\nsite/public/wasm/\n"})
 
     assert audit.inputs() == bool(reported)
     assert capsys.readouterr().out == reported

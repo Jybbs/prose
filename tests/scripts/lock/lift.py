@@ -371,32 +371,24 @@ def test_cleared_counts_a_cutoff_of_seconds_through_weeks_from_publication(
 
 
 def test_carry_copies_every_change_and_untracked_file(
-    lift        : ModuleType,
-    monkeypatch : MonkeyPatch,
-    scratch     : Callable[[Path], Path],
-    tmp_path    : Path
+    lift     : ModuleType,
+    scratch  : Callable[[Path], Path],
+    tmp_path : Path,
+    workdir  : Callable[..., Path]
 ):
     """
     Pins that the clone receives each file the checkout changes from `HEAD`
     and each untracked file git does not ignore, and loses each tracked file
     the checkout deleted, while an ignored file stays behind.
     """
-    root, clone = tmp_path / "root", tmp_path / "clone"
-    root.mkdir()
-    for name, text in {
-        ".gitignore" : "ignored\n",
-        "changed"    : "old\n",
-        "gone"       : "x\n"
-    }.items():
-        (root / name).write_text(text)
-    monkeypatch.chdir(scratch(root))
+    clone = tmp_path / "clone"
+    root  = scratch(
+        workdir({".gitignore": "ignored\n", "changed": "old\n", "gone": "x\n"}, "root")
+    )
     run(["git", "commit", "-qm", "base"], check=True)
     run(["git", "clone", "-q", str(root), str(clone)], check=True)
-    (root / "changed").write_text("new\n")
+    workdir({"changed": "new\n", "fresh/new.txt": "n\n", "ignored": "i\n"}, "root")
     (root / "gone").unlink()
-    (root / "ignored").write_text("i\n")
-    (root / "fresh").mkdir()
-    (root / "fresh/new.txt").write_text("n\n")
 
     lift.carry(clone, root)
 
