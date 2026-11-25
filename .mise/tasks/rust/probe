@@ -2,13 +2,7 @@
 #MISE alias       = "probe"
 #MISE description = "Build the probe binary, the corpus binaries, and the harnesses the settle, subset, import, and delta sweeps run on"
 
-cargo build --bins --locked -p prose -p prose_corpus --profile probe
-cargo test \
-  --exclude prose_wasm \
-  --locked \
-  --no-run \
-  --profile probe \
-  --test corpus \
-  --test imports \
-  --test settle \
-  --workspace
+source "$MISE_PROJECT_ROOT/.mise/lib/corpus.bash"
+
+probe_build --bins --profile probe
+sweep_test --no-run --test corpus --test imports --test settle
