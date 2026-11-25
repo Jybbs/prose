@@ -11,10 +11,10 @@ export function readCargoVersion(crateDir: string): string {
 }
 
 export function readPackageVersions(
-  root  : string,
-  names : readonly string[]
+  siteDir : string,
+  names   : readonly string[]
 ): Record<string, string> {
-  const manifestPath = path.join(root, 'package.json')
+  const manifestPath = path.join(siteDir, 'package.json')
   const parsed       = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
     devDependencies? : Record<string, unknown>
     overrides?       : Record<string, unknown>

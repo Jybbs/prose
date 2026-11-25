@@ -6,13 +6,12 @@ import { Scanner }                      from '@tailwindcss/oxide'
 import { __unstable__loadDesignSystem } from 'tailwindcss'
 
 import { themeCss } from '../../site/.vitepress/lib/shared/palette'
-import { repoRoot } from '../../site/.vitepress/lib/shared/paths'
 
 import { read, SITE } from './vocabulary'
 
 import type { Root } from 'postcss'
 
-const REQUIRE = createRequire(path.join(repoRoot(import.meta.url), 'package.json'))
+const REQUIRE = createRequire(path.join(SITE, 'package.json'))
 
 const ENTRY = '.vitepress/theme/styles/tailwind.css'
 

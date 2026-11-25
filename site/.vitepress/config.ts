@@ -77,7 +77,7 @@ const highlightOptions     = {
 const highlightCache       = await HighlightCache.read(paths.highlightCacheDir(import.meta.url), {
   data     : Object.fromEntries(lintFindings),
   graph    : await readRenderGraph(path.join(siteDirectory, '.vitepress/lib/markdown')),
-  lockfile : fs.readFileSync(path.join(repoDirectory, 'bun.lock'), 'utf8'),
+  lockfile : fs.readFileSync(path.join(siteDirectory, 'bun.lock'), 'utf8'),
   options  : highlightOptions
 })
 const virtualSheets        = new Map([

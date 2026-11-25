@@ -5,8 +5,8 @@
 #MISE   "@group:manifests",
 #MISE   ".mise/mise.lock",
 #MISE   "Cargo.lock",
-#MISE   "bun.lock",
-#MISE   "crate/uv.lock"
+#MISE   "crate/uv.lock",
+#MISE   "site/bun.lock"
 #MISE ]
 
 restore() {
@@ -14,7 +14,7 @@ restore() {
   rm -f "$snapshot"
 }
 
-bun install --dry-run --frozen-lockfile
+(cd site && bun install --dry-run --frozen-lockfile)
 cargo metadata --format-version 1 --locked > /dev/null
 snapshot=$(mktemp)
 cp -p .mise/mise.lock "$snapshot"

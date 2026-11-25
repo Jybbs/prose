@@ -70,12 +70,14 @@ export const READERS = {
   ]
 }
 export const RERUN_TRIGGERS = [
-  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'bun.lock', 'crate/{Cargo,pyproject}.toml',
-  'site/.vitepress/{assets,patches}/**', 'site/public/**', 'tests/rust/fixtures/**', 'tests/site/**/fixtures/*/**'
+  '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
+  'site/.vitepress/{assets,patches}/**', 'site/bun.lock', 'site/public/**', 'tests/rust/fixtures/**',
+  'tests/site/**/fixtures/*/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
+  server   : { fs: { allow: [ROOT] } },
   test     : {
     dir                 : TESTS,
     environment         : 'node',

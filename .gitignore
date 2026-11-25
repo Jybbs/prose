@@ -20,7 +20,7 @@ __pycache__/
 .vscode/
 .idea/
 
-node_modules/
+node_modules
 site/.vitepress/dist/
 site/.vitepress/.temp/
 tests/site/wasm/pkg/

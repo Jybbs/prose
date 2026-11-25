@@ -6,7 +6,7 @@ import path          from 'node:path'
 // bundler's build phase alone and emits no chunks.
 import { scan } from 'rolldown/experimental'
 
-import { repoRoot }            from './paths.ts'
+import { siteDir }             from './paths.ts'
 import { readPackageVersions } from './version.ts'
 
 // The source of every local module a directory's modules reach, keyed by its
@@ -44,7 +44,7 @@ export async function readRenderGraph(dir: string): Promise<RenderGraph> {
   const packages = new Set(specifiers.filter(id => !isBuiltin(id)).map(packageName))
 
   return {
-    packages : readPackageVersions(repoRoot(import.meta.url), [...packages]),
+    packages : readPackageVersions(siteDir(import.meta.url), [...packages]),
     modules  : Object.fromEntries(files.map(file =>
       [path.relative(root, file), fs.readFileSync(file, 'utf8')]))
   }

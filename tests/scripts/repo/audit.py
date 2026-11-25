@@ -8,7 +8,7 @@ path entries `patterns` reports for selecting no tracked file, the cache
 restores `stamps` reports for leaving a task's outputs unstamped, the cache
 steps of `deploy.yml` and its composites `caches` reports for saving on a
 pull request, restoring under a prefix of no key, or caching a folder no
-site module or task reads, the `package.json` ranges `exact` reports by
+site module or task reads, the `site/package.json` ranges `exact` reports by
 package, and the triggers and jobs `drafts` reports for running on a draft
 pull request.
 """
@@ -132,14 +132,14 @@ DRIFTS = {
         (".github/workflows/warm.yml", "      - .mise/lib/workspace.bash\n", "")
     ],
 
-    "package.json @shikijs/magic-move patch key ↔ its devDependency pin": [
-        ("package.json", "magic-move@4.6.0", "magic-move@4.5.0"),
-        ("package.json", 'magic-move": "4.6.0', 'magic-move": "4.5.0')
+    "site/package.json @shikijs/magic-move patch key ↔ its devDependency pin": [
+        ("site/package.json", "magic-move@4.6.0", "magic-move@4.5.0"),
+        ("site/package.json", 'magic-move": "4.6.0', 'magic-move": "4.5.0')
     ],
 
-    "package.json vite override ↔ its devDependency pin": [
-        ("package.json", '8.3.5"}, "patched', '8.3.4"}, "patched'),
-        ("package.json", '8.3.5"}, "overrides', '8.3.4"}, "overrides')
+    "site/package.json vite override ↔ its devDependency pin": [
+        ("site/package.json", '8.3.5"}, "patched', '8.3.4"}, "patched'),
+        ("site/package.json", '8.3.5"}, "overrides', '8.3.4"}, "overrides')
     ],
 
     "site:test sources ↔ site:press sources": [
@@ -274,7 +274,7 @@ PINS = {
         "      maturin-version : v1.16.0\n"
     ),
 
-    "package.json": dumps(
+    "site/package.json": dumps(
         {
             "devDependencies"     : {"@shikijs/magic-move": "4.6.0", "vite": "8.3.5"},
             "overrides"           : {"postcss": "8.5.32", "vite": "8.3.5"},
@@ -1335,14 +1335,14 @@ def test_parity_reports_each_drifted_side_under_its_label(
             id = "action-pinned-once"
         ),
         param(
-            "package.json",
+            "site/package.json",
             '"postcss": "8.5.32"',
             '"postcss": "8.5.31"',
             id = "override-of-a-transitive"
         ),
-        param("package.json", '"overrides"', '"resolutions"', id="no-overrides"),
+        param("site/package.json", '"overrides"', '"resolutions"', id="no-overrides"),
         param(
-            "package.json",
+            "site/package.json",
             '"patchedDependencies"',
             '"patches"',
             id = "no-patched-dependencies"
@@ -1536,10 +1536,10 @@ def test_swept_follows_dependencies_transitively(
             id = "unversioned"
         ),
         param(
-            "package.json",
+            "site/package.json",
             "magic-move@",
             "magic-fade@",
-            "no package.json devDependency named '@shikijs/magic-fade'",
+            "no site/package.json devDependency named '@shikijs/magic-fade'",
             id = "patch-key"
         )
     ]
@@ -1591,7 +1591,7 @@ def test_exact_reports_each_range_by_its_package(
 ):
     """
     Pins that `exact` fails on a range written into a dependency table,
-    `overrides`, or `resolutions` of `package.json`, naming the package
+    `overrides`, or `resolutions` of `site/package.json`, naming the package
     beside the range.
     """
     package = {
@@ -1604,11 +1604,11 @@ def test_exact_reports_each_range_by_its_package(
     }
     name                 = next(iter(package[table]))
     package[table][name] = version
-    workdir({"package.json": dumps(package)})
+    workdir({"site/package.json": dumps(package)})
 
     assert audit.exact() == 1
     assert capsys.readouterr().out == (
-        "::error::package.json dependencies written as a range rather than an "
+        "::error::site/package.json dependencies written as a range rather than an "
         f"exact version: ['{name}@{version}']\n"
     )
 
@@ -1632,7 +1632,7 @@ def test_exact_passes_each_exact_version(
     Asserts that `exact` reports nothing for a manifest whose every entry is
     one version, prerelease and build metadata included.
     """
-    workdir({"package.json": dumps({"devDependencies": {"vite": version}})})
+    workdir({"site/package.json": dumps({"devDependencies": {"vite": version}})})
 
     assert audit.exact() == 0
     assert capsys.readouterr().out == ""

@@ -378,7 +378,7 @@ class Reports:
         that crate at the release it resolves to under the cooldown.
         """
         with ThreadPoolExecutor() as pool:
-            bun   = pool.submit(output, "bun", "outdated")
+            bun   = pool.submit(output, "bun", "outdated", cwd="site")
             cargo = pool.submit(output, *CARGO_REPORT)
             mise  = pool.submit(output, "mise", "outdated", "--bump", "--json")
             uv    = [
@@ -1151,7 +1151,7 @@ def site_pins() -> list[Pin]:
     of each `overrides` entry, which no report covers where it names no
     declared package, and of each `patchedDependencies` key.
     """
-    path     = "package.json"
+    path     = "site/package.json"
     manifest = from_json(read(path))
     declared = manifest.get("dependencies", {}) | manifest.get("devDependencies", {})
     entries  = [

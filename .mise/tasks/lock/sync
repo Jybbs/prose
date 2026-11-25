@@ -1,10 +1,10 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "relock"
 #MISE description = "Re-resolve every lockfile against its manifest"
-#MISE outputs     = [".mise/mise.lock", "Cargo.lock", "bun.lock", "crate/uv.lock"]
+#MISE outputs     = [".mise/mise.lock", "Cargo.lock", "crate/uv.lock", "site/bun.lock"]
 #MISE sources     = ["@group:manifests"]
 
-bun install --lockfile-only
+(cd site && bun install --lockfile-only)
 cargo update --workspace
 mise lock
 uv lock --project crate

@@ -2,5 +2,6 @@
 #MISE alias       = "cruft"
 #MISE depends     = ["site:bake"]
 #MISE description = "Sweep the docs site for dead code and unused dependencies with `knip`"
+#MISE dir         = "site"
 
-knip -c site/.vitepress/knip.ts
+knip -c .vitepress/knip.ts

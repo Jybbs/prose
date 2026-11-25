@@ -49,15 +49,13 @@ manifests = [
   "crate/Cargo.toml",
   "crate/pyproject.toml",
   "harness/Cargo.toml",
-  "package.json",
+  "site/package.json",
   "wasm/Cargo.toml"
 ]
 site      = [
   ".github/scripts/platforms.toml",
   ".mise/bin/**",
   ".mise/config.toml",
-  "bun.lock",
-  "package.json",
   "site/**/*",
   "tests/site/**/*",
   "!@gitignore",

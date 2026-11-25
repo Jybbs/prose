@@ -65,6 +65,6 @@ describe('directory helpers', () => {
     expect(paths.viteCacheDir(meta)).toBe(path.join(root, '.cache', 'vite'))
     expect(paths.vitepressCacheDir(meta)).toBe(path.join(root, '.cache', 'vitepress'))
     expect(paths.vitepressThemeDir(meta))
-      .toBe(path.join(root, 'node_modules', 'vitepress', 'dist', 'client', 'theme-default'))
+      .toBe(path.join(root, 'site', 'node_modules', 'vitepress', 'dist', 'client', 'theme-default'))
   })
 })

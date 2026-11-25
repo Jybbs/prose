@@ -116,5 +116,5 @@ export function vitepressCacheDir(metaUrl: string): string {
 }
 
 export function vitepressThemeDir(metaUrl: string): string {
-  return path.join(repoRoot(metaUrl), 'node_modules', 'vitepress', 'dist', 'client', 'theme-default')
+  return path.join(siteDir(metaUrl), 'node_modules', 'vitepress', 'dist', 'client', 'theme-default')
 }
