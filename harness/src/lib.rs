@@ -14,12 +14,16 @@ mod tally;
 
 pub use diff::{excerpt, unified_diff};
 pub use sweep::{
-    Absorbing, TARGETS, WIDTHS, WIDTHS_VAR, corpus, env_list, env_list_of, note_verified,
-    open_slot, pointed_corpus, python_files, report_verified, repro_command, setting, swept,
-    target_name, target_names, targets_or, unread, verifying, watch_for_a_runaway, widths_or,
+    Absorbing, TARGETS, WIDTHS, WIDTHS_VAR, corpus, corpus_root, env_list, env_list_of,
+    note_verified, open_slot, pointed_corpus, python_files, report_verified, repro_command,
+    setting, swept, target_name, target_names, targets_or, unread, verifying, watch_for_a_runaway,
+    widths_or,
 };
 use tally::more;
 pub use tally::{Hit, SHOWN, Tally, remainder, with_rest};
+
+/// The tree holding every fixture case.
+pub const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/rust/fixtures");
 
 /// Per-fixture flags read from the sidecar TOML's `[harness]` table,
 /// independent of the prose config the rule itself consumes.

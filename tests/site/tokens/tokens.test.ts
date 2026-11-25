@@ -1,0 +1,106 @@
+import { nodeText }                        from '../../../site/.vitepress/lib/markdown/inline-text'
+import { declaredKeys }                    from '../../../site/.vitepress/lib/shared/rule-schema'
+import { configKeySources, firstSentence } from '../../../site/.vitepress/lib/tokens/config-keys'
+import * as sources                        from '../../../site/.vitepress/lib/tokens/sources'
+import loader                              from '../../../site/.vitepress/lib/tokens/tokens.data'
+import { SCHEMA }                          from '../schema'
+
+const token = (domain: sources.Domain, key: string): sources.Token =>
+  ({ blurbNodes: [], destination: { code: false, part: null, title: '' }, domain, href: '', key, sort: key })
+
+const loaded = await loader.load([])
+const blurb  = (key: string): string => loaded.find(entry => entry.key === key)!.blurbNodes.map(nodeText).join('')
+
+describe('the token loader', () => {
+  it('cuts a flag blurb at the first sentence of its help line', () => {
+    expect(blurb('--stdin')).toMatch(/to stdout\.$/)
+    expect(blurb('--stdin')).not.toContain('Equivalent')
+  })
+
+  it('names the values clap lists for a flag, short of the whole rule set', () => {
+    expect(blurb('--output-format')).toBe('Output format for diagnostics, github, json, sarif, or text.')
+    expect(blurb('--select <slug>')).toMatch(/^Comma-separated rule slugs to run, replacing the configured-enabled set\.$/)
+  })
+})
+
+describe('stripPrefix', () => {
+  it.each([
+    ['# fmt: off',                   'off'],
+    ['# prose: ignore[<rule>, ...]', 'ignore[<rule>, ...]'],
+    ['# yapf: disable',              'disable'],
+    ['--color',                      'color'],
+    ['prose check',                  'check']
+  ])('reduces %s to its sort key', (input, expected) => {
+    expect(sources.stripPrefix(input)).toBe(expected)
+  })
+})
+
+describe('groupByDomain', () => {
+  it('buckets by domain, both the buckets and their tokens sorted', () => {
+    const tokens = [
+      token('config-key', 'z'), token('cli-flag', 'a'), token('config-key', 'y'), token('cli-flag', 'b')
+    ]
+    expect(sources.groupByDomain(tokens)).toStrictEqual([
+      ['cli-flag',   [token('cli-flag', 'a'), token('cli-flag', 'b')]],
+      ['config-key', [token('config-key', 'y'), token('config-key', 'z')]]
+    ])
+  })
+
+  it('does not mutate its input', () => {
+    const input = [token('cli-flag', 'b'), token('cli-flag', 'a')]
+    sources.groupByDomain(input)
+    expect(input.map(t => t.key)).toStrictEqual(['b', 'a'])
+  })
+})
+
+describe('firstSentence', () => {
+  it.each([
+    ['Turns the cache on or off.',                         'Turns the cache on or off.'],
+    ['Reads `a.b`. Then more.',                            'Reads `a.b`.'],
+    ['The `prose.toml` file wins. A second sentence.',     'The `prose.toml` file wins.'],
+    ['No terminator at all',                               'No terminator at all']
+  ])('cuts %s at its first sentence end outside code', (input, expected) => {
+    expect(firstSentence(input)).toBe(expected)
+  })
+})
+
+describe('configKeySources', () => {
+  const keys     = declaredKeys(SCHEMA)
+  const declared = new Set([
+    ...keys.top,
+    ...keys.rules,
+    ...keys.cache.map(key => `cache.${key}`),
+    ...keys.imports.map(key => `imports.${key}`)
+  ])
+  const built   = configKeySources(SCHEMA)
+  const indexed = built.map(source => source.key)
+
+  it('indexes every key the schema declares', () => {
+    expect([...declared].filter(key => !indexed.includes(key)).toSorted()).toStrictEqual([])
+  })
+
+  it('indexes nothing the schema leaves out, beyond the overrides table', () => {
+    const unschemed = new Set(['overrides.paths'])
+    expect(indexed.filter(key => !declared.has(key) && !unschemed.has(key))).toStrictEqual([])
+  })
+
+  it('gives every key a one-sentence blurb', () => {
+    expect(built.filter(s => s.blurb === '' || !s.blurb.endsWith('.'))).toStrictEqual([])
+  })
+
+  const hrefFor = (key: string): string | undefined =>
+    built.find(source => source.key === key)?.href
+
+  it.each([
+    ['enabled',          '/reference/configuration#every-rule-enabled'],
+    ['max-attributes',   '/reference/configuration#bare-imports-max-attributes'],
+    ['max-dict-entries', '/reference/configuration#reflow-collections-max-dict-entries'],
+    ['max-shift',        '/reference/configuration#alignment-rules-max-shift']
+  ])('sends %s to its own entry in the catalog', (key, expected) => {
+    expect(hrefFor(key)).toBe(expected)
+  })
+
+  it('sends a facet several rules declare to the catalog itself', () => {
+    expect(hrefFor('allow')).toBe('/reference/configuration#per-rule-facets')
+  })
+})

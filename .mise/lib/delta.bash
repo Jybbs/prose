@@ -22,12 +22,7 @@ built_binary() {
     echo "$PWD defines no $profile profile, building release instead" >&2
     profile=release
   }
-  cargo build \
-    --bin prose \
-    --locked \
-    --message-format json-render-diagnostics \
-    --profile "$profile" \
-    | jq -r 'select(.executable != null and .target.name == "prose") | .executable'
+  probe_binary prose "$profile"
 }
 
 delta_widths() {

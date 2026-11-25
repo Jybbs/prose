@@ -1,8 +1,8 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Run the task scripts' pytest suite under .mise/tests"
+#MISE description = "Run the task scripts' pytest suite under tests/scripts"
 
 uv run \
   --locked \
   --only-group test \
   --project crate \
-  pytest --numprocesses=auto .mise/tests "$@"
+  pytest --numprocesses=auto tests/scripts "$@"

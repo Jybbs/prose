@@ -3,17 +3,17 @@ import path from 'node:path'
 
 import { defineLoader } from 'vitepress'
 
-import { KINDS }                                         from '../markdown/callout-plugin.ts'
-import { discoverRuleSlugs }                             from '../rules/discovery.ts'
-import { groupByMember }                                 from '../shared/group-by-member.ts'
-import * as palette                                      from '../shared/palette.ts'
-import { publicDir, rulesDir, siteDir, VITEPRESS_THEME } from '../shared/paths.ts'
-import { FAMILY_ORDER }                                  from '../shared/registries.ts'
-import { toTitleCase }                                   from '../shared/title-case.ts'
-import { Cascade }                                       from './cascade.ts'
-import { readMarks }                                     from './mark-files.ts'
-import { PASSAGE_TOKENS, ROLES }                         from './roles.ts'
-import * as swatchSet                                    from './swatches.ts'
+import { KINDS }                                           from '../markdown/callout-plugin.ts'
+import { discoverRuleSlugs }                               from '../rules/discovery.ts'
+import { groupByMember }                                   from '../shared/group-by-member.ts'
+import * as palette                                        from '../shared/palette.ts'
+import { publicDir, rulesDir, siteDir, vitepressThemeDir } from '../shared/paths.ts'
+import { FAMILY_ORDER }                                    from '../shared/registries.ts'
+import { toTitleCase }                                     from '../shared/title-case.ts'
+import { Cascade }                                         from './cascade.ts'
+import { readMarks }                                       from './mark-files.ts'
+import { PASSAGE_TOKENS, ROLES }                           from './roles.ts'
+import * as swatchSet                                      from './swatches.ts'
 
 import type { Scheme }                      from '../shared/palette.ts'
 import type { GlossaryFamily, RuleFamily }  from '../shared/registries.ts'
@@ -39,7 +39,7 @@ declare const data: Identity
 export { data }
 
 const site      = siteDir(import.meta.url)
-const VITEPRESS = path.join(site, VITEPRESS_THEME, 'styles/vars.css')
+const VITEPRESS = path.join(vitepressThemeDir(import.meta.url), 'styles/vars.css')
 const TOKENS    = path.join(site, '.vitepress/theme/styles/tokens.css')
 const CALLOUTS  = path.join(site, '.vitepress/theme/styles/markdown/callouts.css')
 const PUBLIC    = publicDir(import.meta.url)

@@ -1,0 +1,164 @@
+// @vitest-environment happy-dom
+import { nextTick, ref, type Ref } from 'vue'
+
+import { useCarouselVelocity }     from '../../../site/.vitepress/lib/composables/use-carousel-velocity'
+import { mountSetup, rectElement } from '../dom'
+
+// The mock hands the composable a visibility ref the test flips, since
+// happy-dom observes no intersections.
+const visibility = vi.hoisted(() => ({ current: undefined as Ref<boolean> | undefined }))
+
+vi.mock('@vueuse/core', async importOriginal => {
+  const actual          = await importOriginal<typeof import('@vueuse/core')>()
+  const { ref: vueRef } = await import('vue')
+  return {
+    ...actual,
+    useElementVisibility: () => (visibility.current = vueRef(true))
+  }
+})
+
+const OPTIONS = { baseSpeedPxPerSec: 100, edgeMarginPx: 10, magnetGain: 2, maxPullPxPerSec: 400 }
+
+const surfaceCard = (left: number, right: number): HTMLElement => {
+  const el = rectElement({ left, right })
+  el.classList.add('surface-card')
+  return el
+}
+
+const pointerOn = (el: HTMLElement): PointerEvent => ({ target: el } as unknown as PointerEvent)
+
+let frame: FrameRequestCallback | undefined
+
+const step = (timestamp: number): void => frame?.(timestamp)
+
+const mountVelocity = (halfWidth: number, fits = false, reducedMotion = false) => {
+  const viewport = rectElement({ left: 0, right: 500 })
+  return mountSetup(() => useCarouselVelocity(ref(viewport), ref(halfWidth), ref(fits), {
+    ...OPTIONS,
+    reducedMotion: ref(reducedMotion)
+  }))
+}
+
+beforeEach(() => {
+  frame = undefined
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    frame = cb
+    return 1
+  })
+  vi.stubGlobal('cancelAnimationFrame', () => {})
+})
+
+describe('useCarouselVelocity', () => {
+  it('drifts forward at the base speed', () => {
+    const api = mountVelocity(1000)
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(100)
+  })
+
+  it('wraps the offset into one copy width', () => {
+    const api = mountVelocity(150)
+    step(1000)
+    step(2000)
+    step(3000)
+    expect(api.offset.value).toBe(50)
+  })
+
+  it('holds still under reduced motion', () => {
+    const api = mountVelocity(1000, false, true)
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(0)
+  })
+
+  it('holds still and ignores the pointer when the track fits', () => {
+    const api = mountVelocity(1000, true)
+    api.onPointerMove(pointerOn(surfaceCard(-20, 180)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(0)
+  })
+
+  it('halts when the pointer rests between cards', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(document.createElement('div')))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(0)
+  })
+
+  it('halts over a card sitting clear of both margins', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(surfaceCard(100, 400)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(0)
+  })
+
+  it('magnet-pulls backward toward a card past the left margin', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(surfaceCard(-20, 180)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(940)
+  })
+
+  it('magnet-pulls forward toward a card past the right margin', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(surfaceCard(320, 520)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(60)
+  })
+
+  it('clamps the pull to the configured maximum', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(surfaceCard(-300, -100)))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(600)
+  })
+
+  it('drops a drifted offset to the origin once the track starts fitting', async () => {
+    const fits     = ref(false)
+    const viewport = rectElement({ left: 0, right: 500 })
+    const api      = mountSetup(() => useCarouselVelocity(ref(viewport), ref(1000), fits, {
+      ...OPTIONS,
+      reducedMotion: ref(false)
+    }))
+    step(1000)
+    step(2000)
+    expect(api.offset.value).toBe(100)
+
+    fits.value = true
+    await nextTick()
+    expect(api.offset.value).toBe(0)
+  })
+
+  it('pauses the drift off screen and resumes it without a jump', async () => {
+    const api = mountVelocity(1000)
+    step(1000)
+    step(2000)
+    visibility.current!.value = false
+    await nextTick()
+    step(3000)
+    step(4000)
+    expect(api.offset.value).toBe(100)
+
+    visibility.current!.value = true
+    await nextTick()
+    step(9000)
+    step(10000)
+    expect(api.offset.value).toBe(200)
+  })
+
+  it('resumes the base drift after the pointer leaves', () => {
+    const api = mountVelocity(1000)
+    api.onPointerMove(pointerOn(document.createElement('div')))
+    step(1000)
+    step(2000)
+    api.onPointerLeave()
+    step(3000)
+    expect(api.offset.value).toBe(100)
+  })
+})

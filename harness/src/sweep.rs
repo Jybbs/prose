@@ -22,6 +22,8 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use ruff_python_ast::{PySourceType, PythonVersion};
 
+use crate::FIXTURES;
+
 /// The wall clock one probe may take before a sweep treats its run as
 /// non-terminating.
 const BUDGET: Duration = Duration::from_mins(1);
@@ -68,14 +70,18 @@ pub trait Absorbing: Default + Send {
     fn absorb(&mut self, other: Self);
 }
 
-/// The Python sources a sweep reads, under the directory [`CORPUS`] names or
-/// under `fixtures` where it is unset, with the runaway watchdog opened
-/// and an empty corpus failing the sweep outright.
-pub fn corpus(fixtures: &Path) -> Vec<PathBuf> {
-    let files = walked(fixtures);
+/// The Python sources a sweep reads under [`corpus_root`], with the runaway
+/// watchdog opened and an empty corpus failing the sweep outright.
+pub fn corpus() -> Vec<PathBuf> {
+    let files = walked();
     assert!(!files.is_empty(), "the corpus holds no Python sources");
     watch_for_a_runaway();
     files
+}
+
+/// The directory [`CORPUS`] names, [`FIXTURES`] where it is unset.
+pub fn corpus_root() -> PathBuf {
+    pointed_corpus().unwrap_or_else(|| FIXTURES.into())
 }
 
 /// The values `var` carries as a space-separated list, `defaults` where
@@ -266,13 +272,11 @@ fn target_of(token: &str) -> Option<PythonVersion> {
     })
 }
 
-/// The Python sources under the corpus root, largest first with the path
+/// The Python sources under [`corpus_root`], largest first with the path
 /// breaking ties, so a parallel sweep's tail is one file long and a
-/// failure names the same file across runs. [`CORPUS`] points a sweep
-/// at a directory other than `fixtures`.
-fn walked(fixtures: &Path) -> Vec<PathBuf> {
-    let root = pointed_corpus().unwrap_or_else(|| fixtures.to_path_buf());
-    python_files(&root)
+/// failure names the same file across runs.
+fn walked() -> Vec<PathBuf> {
+    python_files(&corpus_root())
         .sorted_by_cached_key(|path| {
             let size = fs_err::metadata(path).map_or(0, |data| data.len());
             (Reverse(size), path.clone())
@@ -286,6 +290,25 @@ mod tests {
     use ruff_python_ast::PythonVersion;
 
     use super::*;
+
+    #[test]
+    fn corpus_root_follows_the_variable() {
+        if let Some(pointed) = pointed_corpus() {
+            assert_eq!(corpus_root(), pointed);
+            return;
+        }
+        assert_eq!(corpus_root(), Path::new(FIXTURES));
+        let child = process::Command::new(env::current_exe().expect("the test binary has a path"))
+            .args(["--exact", "sweep::tests::corpus_root_follows_the_variable"])
+            .env(CORPUS, "a/pointed/corpus")
+            .output()
+            .expect("the test binary runs");
+        assert!(
+            child.status.success(),
+            "{}",
+            String::from_utf8_lossy(&child.stdout)
+        );
+    }
 
     #[test]
     fn open_slot_clears_its_entry_once_dropped() {
