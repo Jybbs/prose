@@ -2,14 +2,33 @@
 #MISE description = "Run the Rust suites, rejecting any orphaned `insta` snapshot"
 #MISE sources     = [
 #MISE   ".mise/config.toml",
+#MISE   ".mise/lib/workspace.bash",
 #MISE   "Cargo.lock",
 #MISE   "Cargo.toml",
 #MISE   "corpus/**/*",
 #MISE   "crate/**/*",
 #MISE   "harness/**/*",
 #MISE   "site/**/*.md",
+#MISE   "tests/rust/**/*",
 #MISE   "wasm/**/*"
 #MISE ]
 
-cargo insta test --exclude prose_wasm --unreferenced=reject --workspace
+source "$MISE_PROJECT_ROOT/.mise/lib/workspace.bash"
+
+members=$(workspace_members)
+references="$PWD/.cache/insta/references"
+mkdir -p "${references%/*}"
+: > "$references"
+
+INSTA_SNAPSHOT_REFERENCES_FILE="$references" \
+  cargo insta test --exclude prose_wasm --unreferenced=ignore --workspace
 cargo test --locked --package prose_wasm
+
+referenced=$(tr '\n' '\0' < "$references" | xargs -0 realpath | sort -u)
+snapshots=$(find $members tests/rust -name '*.snap' -print0 | xargs -0 realpath | sort)
+orphans=$(comm -13 <(echo "$referenced") <(echo "$snapshots"))
+
+if [[ -n $orphans ]]; then
+  printf 'No test reads these snapshots:\n%s\n' "$orphans" >&2
+  exit 1
+fi

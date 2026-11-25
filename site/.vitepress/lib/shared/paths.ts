@@ -4,9 +4,6 @@ import os                          from 'node:os'
 import path                        from 'node:path'
 import { fileURLToPath }           from 'node:url'
 
-// Locates the VitePress default theme under the site's directory.
-export const VITEPRESS_THEME = 'node_modules/vitepress/dist/client/theme-default'
-
 export function architectureDir(metaUrl: string): string {
   return path.join(pagesDir(metaUrl), 'architecture')
 }
@@ -16,19 +13,15 @@ export function cacheDirFrom(root: string, name: string): string {
 }
 
 export function crateDir(metaUrl: string): string {
-  return crateDirFrom(repoRoot(metaUrl))
-}
-
-export function crateDirFrom(root: string): string {
-  return path.join(root, 'crate')
+  return path.join(repoRoot(metaUrl), 'crate')
 }
 
 export function fetchCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'fetch')
 }
 
-export function fixturesDirFrom(crate: string): string {
-  return path.join(crate, 'tests', 'fixtures')
+export function fixturesDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'tests', 'rust', 'fixtures')
 }
 
 export function pagesDir(metaUrl: string): string {
@@ -110,10 +103,18 @@ export function siteDir(metaUrl: string): string {
   return path.join(repoRoot(metaUrl), 'site')
 }
 
+export function siteTestsDir(metaUrl: string): string {
+  return path.join(repoRoot(metaUrl), 'tests', 'site')
+}
+
 export function viteCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'vite')
 }
 
 export function vitepressCacheDir(metaUrl: string): string {
   return cacheDirFrom(repoRoot(metaUrl), 'vitepress')
+}
+
+export function vitepressThemeDir(metaUrl: string): string {
+  return path.join(siteDir(metaUrl), 'node_modules', 'vitepress', 'dist', 'client', 'theme-default')
 }

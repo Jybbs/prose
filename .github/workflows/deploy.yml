@@ -26,8 +26,9 @@ on:
       - crate/Cargo.toml
       - crate/pyproject.toml
       - crate/src/**
-      - crate/tests/fixtures/**
       - site/**
+      - tests/rust/fixtures/**
+      - tests/site/**
       - wasm/**
     types: [opened, synchronize, reopened, ready_for_review]
 
@@ -48,8 +49,9 @@ on:
       - crate/Cargo.toml
       - crate/pyproject.toml
       - crate/src/**
-      - crate/tests/fixtures/**
       - site/**
+      - tests/rust/fixtures/**
+      - tests/site/**
       - wasm/**
 
   workflow_dispatch:

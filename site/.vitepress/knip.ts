@@ -7,17 +7,27 @@ const pageScript = (text: string): string => {
 }
 
 export default defineConfig({
-  entry              : ['**/*.md', '.vitepress/**/*.data.ts', '.vitepress/kit/**/*.catalog.tsx', '.vitepress/lib/readme/{cards,record}.ts'],
-  project            : ['.vitepress/**/*.{ts,tsx,mjs}', '**/*.md'],
-  compilers          : { md: pageScript },
-  include            : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
-  rules              : { cycles: 'error' },
-  typescript         : { config: ['.vitepress/tsconfig.json'] },
-  vitest             : { config: ['.vitepress/vitest.config.ts'] },
-  ignoreDependencies : [
-    '@fontsource/fraunces',
-    '@fontsource/jetbrains-mono',
-    '@fontsource/lora',
-    'oxlint'
-  ]
+  compilers  : { md: pageScript },
+  include    : ['binaries', 'cycles', 'dependencies', 'duplicates', 'enumMembers', 'exports', 'files', 'namespaceMembers', 'types', 'unlisted', 'unresolved'],
+  rules      : { cycles: 'error' },
+  workspaces : {
+    '.': {
+      entry              : ['**/*.md', '.vitepress/**/*.data.ts', '.vitepress/kit/**/*.catalog.tsx', '.vitepress/lib/readme/{cards,record}.ts'],
+      project            : ['.vitepress/**/*.{ts,tsx,mjs}', '**/*.md'],
+      typescript         : { config: ['.vitepress/tsconfig.json'] },
+      vitest             : { config: ['.vitepress/vitest.config.ts'] },
+      ignoreDependencies : [
+        '@fontsource/fraunces',
+        '@fontsource/jetbrains-mono',
+        '@fontsource/lora',
+        'oxlint'
+      ]
+    },
+    '../tests/site': {
+      ignoreUnresolved : ['./pkg/prose_wasm.js'],
+      project          : ['**/*.{ts,tsx,mjs}'],
+      typescript       : { config: ['../../site/.vitepress/tsconfig.json'] },
+      vitest           : { config: ['../../site/.vitepress/vitest.config.ts'] }
+    }
+  }
 })

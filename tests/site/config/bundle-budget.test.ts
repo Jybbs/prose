@@ -1,0 +1,77 @@
+import fs   from 'node:fs'
+import path from 'node:path'
+
+import config                               from '../../../site/.vitepress/config'
+import { checkBundleBudget, measureBundle } from '../../../site/.vitepress/lib/config/bundle-budget'
+import { buildOgCards }                     from '../../../site/.vitepress/lib/og/render/build'
+import { supportTest }                      from '../support'
+
+import type { readPublishedVersion } from '../../../site/.vitepress/lib/shared/published-version'
+
+vi.mock('../../../site/.vitepress/lib/og/render/build', () => ({ buildOgCards: vi.fn<typeof buildOgCards>() }))
+vi.mock('../../../site/.vitepress/lib/shared/published-version', () => ({
+  readPublishedVersion: vi.fn<typeof readPublishedVersion>().mockResolvedValue('9.8.7')
+}))
+
+const write = (dir: string, file: string, bytes: number) => {
+  fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+  fs.writeFileSync(path.join(dir, file), 'x'.repeat(bytes))
+}
+
+describe('measureBundle', () => {
+  supportTest('sums the CSS and the JavaScript at every depth, leaving other files out', ({ tmpDir }) => {
+    write(tmpDir, 'assets/style.css', 30)
+    write(tmpDir, 'assets/vp-icons.css', 5)
+    write(tmpDir, 'assets/app.js', 100)
+    write(tmpDir, 'assets/chunks/theme.js', 20)
+    write(tmpDir, 'index.html', 7)
+    write(tmpDir, 'hashmap.json', 9)
+    expect(measureBundle(tmpDir)).toStrictEqual({ css: 35, js: 120 })
+  })
+})
+
+describe('checkBundleBudget', () => {
+  supportTest('passes a bundle that measures exactly its budget', ({ tmpDir }) => {
+    write(tmpDir, 'a.css', 10)
+    write(tmpDir, 'a.js', 20)
+    expect(() => checkBundleBudget(tmpDir, { css: 10, js: 20 })).not.toThrow()
+  })
+
+  supportTest.for([
+    {
+      budget  : { css: 9, js: 20 },
+      message : "the built site's css measures 10 bytes against a budget of 9"
+    },
+    {
+      budget  : { css: 10, js: 19 },
+      message : "the built site's js measures 20 bytes against a budget of 19"
+    },
+    {
+      budget  : { css: 9, js: 19 },
+      message : "the built site's css measures 10 bytes against a budget of 9 and the built site's js "
+              + 'measures 20 bytes against a budget of 19'
+    }
+  ])('names each kind a bundle grows past, against $budget', ({ budget, message }, { tmpDir }) => {
+    write(tmpDir, 'a.css', 10)
+    write(tmpDir, 'a.js', 20)
+    expect(() => checkBundleBudget(tmpDir, budget)).toThrow(message)
+  })
+})
+
+describe('the markdown highlighter the config runs', () => {
+  it('passes the lint flags, the whole-line tokens, and the token classes', () => {
+    expect(config.markdown?.codeTransformers?.map(transformer => transformer.name))
+      .toStrictEqual(['prose:lint-flag', 'prose:whole-line-tokens', 'prose:token-classes'])
+  })
+})
+
+describe('the build end the config runs', () => {
+  supportTest('layers the icon sheet and throws on a bundle past its budget', async ({ tmpDir }) => {
+    write(tmpDir, 'assets/vp-icons.a1.css', 5)
+    write(tmpDir, 'assets/style.css', 400_000)
+    const site = { assetsDir: 'assets', outDir: tmpDir, pages: [], srcDir: tmpDir }
+    await expect(config.buildEnd!(site as never)).rejects.toThrow("the built site's css measures")
+    expect(buildOgCards).toHaveBeenCalledExactlyOnceWith(tmpDir, [], tmpDir, '9.8.7')
+    expect(fs.readFileSync(path.join(tmpDir, 'assets/vp-icons.a1.css'), 'utf8')).toMatch(/^@layer components \{/)
+  })
+})

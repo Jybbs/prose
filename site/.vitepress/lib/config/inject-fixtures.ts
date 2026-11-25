@@ -10,16 +10,16 @@ import * as render                             from '../fixtures/render.ts'
 // time, with the ids of the ones it embeds inline and the gauges and trails it
 // draws, leaving the fixture corpus out of every page's download.
 export async function injectFixtures(
-  pageData : PageData,
-  crate    : string,
-  sets     : PageFixtureSets,
-  srcDir   : string
+  pageData     : PageData,
+  fixturesRoot : string,
+  sets         : PageFixtureSets,
+  srcDir       : string
 ): Promise<void> {
   if (!pageData.filePath) return
   const source                          = fs.readFileSync(path.join(srcDir, pageData.filePath), 'utf8')
   const { gauges, ids, inline, trails } = readPageCases(source, sets)
-  if (ids.length > 0) pageData.frontmatter.fixtures = await render.fixtureEntries(crate, ids)
+  if (ids.length > 0) pageData.frontmatter.fixtures = await render.fixtureEntries(fixturesRoot, ids)
   if (inline.length > 0) pageData.frontmatter.inlineFixtures = inline
-  if (gauges.length > 0) pageData.frontmatter.fixtureGauges = await render.fixtureGauges(crate, gauges)
-  if (trails.length > 0) pageData.frontmatter.fixtureTrails = await render.fixtureTrails(crate, trails)
+  if (gauges.length > 0) pageData.frontmatter.fixtureGauges = await render.fixtureGauges(fixturesRoot, gauges)
+  if (trails.length > 0) pageData.frontmatter.fixtureTrails = await render.fixtureTrails(fixturesRoot, trails)
 }

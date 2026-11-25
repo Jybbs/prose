@@ -8,13 +8,14 @@ import { readFromDiskPlugin } from './lib/config/read-from-disk.ts'
 import { VUE_JSX }            from './lib/shared/constants.ts'
 import * as paths             from './lib/shared/paths.ts'
 
+const TESTS  = paths.siteTestsDir(import.meta.url)
 const BUNDLE = {
-  globalSetup : ['./.vitepress/tests/serve.ts'],
+  globalSetup : [path.join(TESTS, 'serve.ts')],
   hookTimeout : 120_000,
   testTimeout : 120_000
 }
 export const CRATE   = 'crate/src/**/*.rs'
-const FIT            = '.vitepress/tests/pages/fit.test.ts'
+const FIT            = 'pages/fit.test.ts'
 const GRAPH          = 'site/.vitepress/lib/**/*.{mjs,ts}'
 const PAGES          = 'site/pages/**/*.md'
 const ROOT           = paths.repoRoot(import.meta.url)
@@ -36,50 +37,49 @@ export const READERS = {
   'site/.vitepress/lib/shared/content-page.ts'              : [PAGES],
   'site/.vitepress/lib/shared/rule-schema.ts'               : [CRATE],
   'site/.vitepress/lib/tokens/destinations.ts'              : [PAGES],
-  'site/.vitepress/tests/config/edit-link.test.ts'          : [PAGES],
-  'site/.vitepress/tests/config/head.test.ts'               : [PAGES],
-  'site/.vitepress/tests/config/readers.test.ts'            : ['site/.vitepress/**/*.{mjs,ts,tsx}'],
-  'site/.vitepress/tests/og/render.test.ts'                 : ['site/.vitepress/tests/og/cards/*/page.ts'],
-  'site/.vitepress/tests/reference/section-glance.test.ts'  : [PAGES],
-  'site/.vitepress/tests/shared/palette.test.ts'            : [STYLES],
-  'site/.vitepress/tests/shared/parity.test.ts'             : [PAGES, STYLES],
-  'site/.vitepress/tests/shared/render-graph.test.ts'       : [GRAPH],
-  'site/.vitepress/tests/shared/stylesheets.test.ts'        : [SCRIPTS],
-  'site/.vitepress/tests/shared/tool-chips.test.ts'         : [PAGES],
-  'site/.vitepress/tests/support.ts'                        : [STYLES],
-  'site/.vitepress/tests/suppression/scopes.test.ts'        : [PAGES],
-  'site/.vitepress/tests/vocabulary.ts'                     : [STYLES],
+  'tests/site/config/edit-link.test.ts'                     : [PAGES],
+  'tests/site/config/head.test.ts'                          : [PAGES],
+  'tests/site/config/readers.test.ts'                       : ['{site/.vitepress,tests/site}/**/*.{mjs,ts,tsx}'],
+  'tests/site/og/render.test.ts'                            : ['tests/site/og/cards/*/page.ts'],
+  'tests/site/reference/section-glance.test.ts'             : [PAGES],
+  'tests/site/shared/classes.test.ts'                       : [SCRIPTS, 'tests/site/**/*.{ts,tsx}'],
+  'tests/site/shared/palette.test.ts'                       : [STYLES],
+  'tests/site/shared/parity.test.ts'                        : [PAGES, STYLES],
+  'tests/site/shared/render-graph.test.ts'                  : [GRAPH],
+  'tests/site/shared/stylesheets.test.ts'                   : [SCRIPTS],
+  'tests/site/shared/tool-chips.test.ts'                    : [PAGES],
+  'tests/site/support.ts'                                   : [STYLES],
+  'tests/site/suppression/scopes.test.ts'                   : [PAGES],
+  'tests/site/vocabulary.ts'                                : [STYLES],
 
-  'site/.vitepress/tests/identity/declarations.test.ts': [
+  'tests/site/identity/declarations.test.ts': [
     'site/.vitepress/lib/identity/*.ts', 'site/.vitepress/theme/components/identity/**/*.{css,tsx}'
   ],
 
-  'site/.vitepress/tests/integrations/hue-limit.test.ts': [
+  'tests/site/integrations/hue-limit.test.ts': [
     'site/.vitepress/theme/components/integrations/**/*.{css,tsx}'
   ],
 
-  'site/.vitepress/tests/shared/classes.test.ts': [
-    'site/.vitepress/{kit,lib,tests,theme}/**/*.{ts,tsx}'
-  ],
-
-  'site/.vitepress/tests/shared/emblems.test.ts': [
+  'tests/site/shared/emblems.test.ts': [
     'site/.vitepress/theme/components/rules/PipelineOrder.tsx'
   ],
 
-  'site/.vitepress/tests/tailwind.ts': [
+  'tests/site/tailwind.ts': [
     'site/.vitepress/kit/**/*.{ts,tsx}', 'site/.vitepress/lib/**/*.ts', 'site/.vitepress/theme/**/*.tsx',
     'site/pages/index.md', STYLES
   ]
 }
-const RERUN_TRIGGERS = [
+export const RERUN_TRIGGERS = [
   '.github/scripts/platforms.toml', 'Cargo.{lock,toml}', 'crate/{Cargo,pyproject}.toml',
-  'crate/tests/fixtures/**', 'site/.vitepress/{assets,patches}/**', 'site/.vitepress/tests/**/fixtures/*/**',
-  'site/bun.lock', 'site/public/**'
+  'site/.vitepress/{assets,patches}/**', 'site/bun.lock', 'site/public/**', 'tests/rust/fixtures/**',
+  'tests/site/**/fixtures/*/**'
 ].map(glob => path.join(ROOT, glob))
 
 export default defineConfig({
   cacheDir : paths.viteCacheDir(import.meta.url),
+  server   : { fs: { allow: [ROOT] } },
   test     : {
+    dir                 : TESTS,
     environment         : 'node',
     expect              : { requireAssertions: true },
     forceRerunTriggers  : [...configDefaults.forceRerunTriggers, ...RERUN_TRIGGERS],
@@ -99,10 +99,10 @@ export default defineConfig({
         oxc     : { jsx: VUE_JSX },
         plugins : [groupIconVitePlugin(), readFromDiskPlugin(READERS, ROOT)],
         test    : {
-          exclude    : [...configDefaults.exclude, '.vitepress/tests/pages/**', '.vitepress/tests/render/**', '.vitepress/tests/wasm/**'],
-          include    : ['.vitepress/tests/**/*.test.ts'],
+          exclude    : [...configDefaults.exclude, 'pages/**', 'render/**', 'wasm/**'],
+          include    : ['**/*.test.ts'],
           name       : 'docs',
-          setupFiles : ['./.vitepress/tests/setup.ts']
+          setupFiles : [path.join(TESTS, 'setup.ts')]
         }
       },
 
@@ -110,7 +110,7 @@ export default defineConfig({
         test: {
           ...BUNDLE,
           exclude : [...configDefaults.exclude, FIT],
-          include : ['.vitepress/tests/pages/**/*.test.ts'],
+          include : ['pages/**/*.test.ts'],
           name    : 'pages'
         }
       },
@@ -125,8 +125,8 @@ export default defineConfig({
 
       {
         test: {
-          globalSetup : ['./.vitepress/tests/serve.ts'],
-          include     : ['.vitepress/tests/render/**/*.test.ts'],
+          globalSetup : BUNDLE.globalSetup,
+          include     : ['render/**/*.test.ts'],
           name        : 'render',
           testTimeout : 30_000
         }
@@ -134,7 +134,7 @@ export default defineConfig({
 
       {
         test: {
-          include : ['.vitepress/tests/wasm/**/*.test.ts'],
+          include : ['wasm/**/*.test.ts'],
           name    : 'wasm',
           browser : {
             enabled            : true,

@@ -1,30 +1,30 @@
 #!/usr/bin/env -S bash -euo pipefail
-#MISE description = "Run the `.mise/tests` modules the changes since `origin/main` reach"
+#MISE description = "Run the `tests/scripts` modules the changes since `origin/main` reach"
 
 source "$MISE_PROJECT_ROOT/.mise/lib/changes.bash"
 
 naming() {
   [[ -n $changed ]] || return 0
   git grep --files-with-matches --fixed-strings --untracked -f - \
-    -- .mise/tasks .mise/tests <<<"$changed" || (($? == 1))
+    -- .mise/tasks tests/scripts <<<"$changed" || (($? == 1))
 }
 
 reached() {
   local path
   while IFS= read -r path; do
     case $path in
-      .mise/config.toml | .mise/lib/* | .mise/tests/conftest.py | crate/pyproject.toml \
-        | crate/uv.lock)
-        echo .mise/tests
+      .mise/config.toml | .mise/lib/* | crate/pyproject.toml | crate/uv.lock \
+        | tests/scripts/conftest.py)
+        echo tests/scripts
         ;;
       .mise/tasks/*)
-        path=.mise/tests/${path#.mise/tasks/}
+        path=tests/scripts/${path#.mise/tasks/}
         echo "${path%.py}.py"
         ;;
-      .mise/tests/*/conftest.py)
+      tests/scripts/*/conftest.py)
         echo "${path%/conftest.py}"
         ;;
-      .mise/tests/*)
+      tests/scripts/*)
         echo "$path"
         ;;
     esac

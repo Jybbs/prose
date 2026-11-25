@@ -1,0 +1,66 @@
+import { LINT_CODE, OUTCOMES, SOURCES, exitCodes, exitCodesFrom } from '../../../site/.vitepress/lib/exit-codes/sources'
+import { repoRoot }                                               from '../../../site/.vitepress/lib/shared/paths'
+
+const HELP = `Usage: prose [OPTIONS] <COMMAND>
+
+Exit codes:
+  0    Clean: no findings, no rewrite pending, or a stdin run wrote the formatted source
+  1    Format would change: at least one rewrite is pending
+  2    Lint violation: at least one lint finding was reported, unless a stdin run wrote the formatted source
+  3    Parse error: input is not valid Python for the target version
+  4    Config error: the config, the arguments, a path, or a rewrite failed validation
+`
+
+describe('SOURCES', () => {
+  it('gives each exit code one entry', () => {
+    const codes = SOURCES.map(source => source.code)
+    expect(codes).toStrictEqual([...new Set(codes)].toSorted((a, b) => a - b))
+  })
+
+  it('names a code the loader can append the shipped-lint roster to', () => {
+    expect(SOURCES.filter(source => source.code === LINT_CODE)).toHaveLength(1)
+  })
+
+  it.each(SOURCES.map(source => [source.code, source] as const))(
+    'states every fact for code %i',
+    (_code, source) => {
+      expect(source.facts).not.toContain('')
+    }
+  )
+
+  it('lists the codes in the order of their outcomes, so each band opens once', () => {
+    const order = SOURCES.map(source => OUTCOMES.indexOf(source.outcome))
+    expect(order).toStrictEqual(order.toSorted((a, b) => a - b))
+    expect(new Set(SOURCES.map(source => source.outcome))).toStrictEqual(new Set(OUTCOMES))
+  })
+})
+
+describe('exitCodesFrom', () => {
+  it('reads each label and summary off its matrix row', () => {
+    expect(exitCodesFrom(HELP).find(entry => entry.code === 3)).toMatchObject({
+      label   : 'Parse error',
+      summary : 'Input is not valid Python for the target version.'
+    })
+  })
+
+  it('throws where the matrix prints no row for a code', () => {
+    const help = `  4    Config error: a row above the matrix\n${HELP.replace(/^ {2}4 .*$/m, '')}`
+    expect(() => exitCodesFrom(help)).toThrow(/no exit-code row for 4/)
+  })
+})
+
+describe('exitCodes', () => {
+  const entries = exitCodes(repoRoot(import.meta.url))
+
+  it('labels every code from the built binary', () => {
+    expect(entries.map(entry => entry.code)).toStrictEqual(SOURCES.map(source => source.code))
+  })
+
+  it.each(entries.map(entry => [entry.code, entry] as const))(
+    'labels code %i and states its summary as a sentence',
+    (_code, entry) => {
+      expect(entry.label).not.toBe('')
+      expect(entry.summary).toMatch(/^[A-Z].*\.$/)
+    }
+  )
+})
