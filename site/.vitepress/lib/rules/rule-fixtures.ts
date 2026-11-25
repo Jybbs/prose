@@ -22,9 +22,9 @@ const sortKey = (title: string): string => title.replace(/^`+/, '')
 // ordering the examples that rewrite their input ahead of the rest and
 // alphabetizing by title within each group. A rule registering no canonical case
 // is left out.
-export async function readRuleFixtures(crate: string): Promise<RuleFixturesData> {
+export async function readRuleFixtures(fixturesRoot: string): Promise<RuleFixturesData> {
   const byRule: Record<string, { canonical: string | null, examples: PendingExample[] }> = {}
-  for (const { rule, caseName, inputPath } of walker.walkFixtures(crate)) {
+  for (const { rule, caseName, inputPath } of walker.walkFixtures(fixturesRoot)) {
     const docs = walker.readFixtureDocs(inputPath)
     if (docs === undefined) continue
     const set   = (byRule[rule] ??= { canonical: null, examples: [] })

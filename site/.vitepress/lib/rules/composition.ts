@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import { COMPOSITION_RULE } from '../fixtures/entry.ts'
 import * as walker          from '../fixtures/walker.ts'
-import { fixturesDirFrom }  from '../shared/paths.ts'
 
 export interface CompositionCase {
   case  : string
@@ -24,9 +23,9 @@ export function byRule(cases: readonly CompositionCase[]): Record<string, readon
   return index
 }
 
-// Resolves the composition directory inside one crate's fixture tree.
-export function compositionDir(crate: string): string {
-  return path.join(fixturesDirFrom(crate), COMPOSITION_RULE)
+// Resolves the composition directory inside a fixture tree.
+export function compositionDir(fixturesRoot: string): string {
+  return path.join(fixturesRoot, COMPOSITION_RULE)
 }
 
 // Validates every case's harness rules and reads the ones a `meta.toml` marks

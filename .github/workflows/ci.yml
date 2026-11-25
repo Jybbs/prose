@@ -14,8 +14,9 @@ on:
       - '!**.md'
       - '!LICENSE'
       - '!site/**'
-      - site/.vitepress/tests/wasm/**
+      - '!tests/site/**'
       - site/**.md
+      - tests/site/wasm/**
     types: [opened, synchronize, reopened, ready_for_review]
 
   workflow_dispatch:

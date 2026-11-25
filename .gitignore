@@ -20,9 +20,9 @@ __pycache__/
 .vscode/
 .idea/
 
-node_modules/
+node_modules
 site/.vitepress/dist/
 site/.vitepress/.temp/
-site/.vitepress/tests/wasm/pkg/
+tests/site/wasm/pkg/
 site/public/wasm/
 **/*.timestamp-*.mjs

@@ -1,0 +1,11 @@
+import type { OgPage } from '../../../../../site/.vitepress/lib/og/pages'
+
+export const page: OgPage = {
+  breadcrumb : ['Rules', 'Lint'],
+  caption    : 'Flags `import` used bare',
+  family     : 'lint',
+  kind       : 'rules',
+  outputPath : 'og/rules/lint/bare-imports.png',
+  pipeline   : { position: 18, total: 20 },
+  title      : 'Bare Imports'
+}

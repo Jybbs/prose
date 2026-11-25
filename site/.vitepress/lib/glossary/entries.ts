@@ -398,7 +398,7 @@ export const glossary: Record<string, GlossaryEntry> = {
     aliases    : ['fixtures', 'fixture pair'],
     definition : 'A fixture is an input file paired with the output *Prose* produces from it. '
                + 'Each rule page renders its fixtures as before-and-after Python, and the '
-               + 'same files drive the snapshot tests inside the crate.',
+               + 'same files drive the snapshot tests of the crate.',
     families   : ['engine']
   },
 

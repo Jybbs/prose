@@ -2,12 +2,12 @@ import { execFileSync } from 'node:child_process'
 
 import { defineLoader } from 'vitepress'
 
-import { walkFixtures }            from '../fixtures/walker.ts'
-import { crateDir, fetchCacheDir } from './paths.ts'
-import { readPublishedVersion }    from './published-version.ts'
-import { withFallback }            from './with-fallback.ts'
+import { walkFixtures }         from '../fixtures/walker.ts'
+import * as paths               from './paths.ts'
+import { readPublishedVersion } from './published-version.ts'
+import { withFallback }         from './with-fallback.ts'
 
-const crate = crateDir(import.meta.url)
+const crate = paths.crateDir(import.meta.url)
 
 interface BuildData {
   fixtureCount: number
@@ -29,9 +29,9 @@ export default defineLoader({
       'unknown'
     )
     return {
-      fixtureCount: Iterator.from(walkFixtures(crate)).reduce(n => n + 1, 0),
+      fixtureCount: Iterator.from(walkFixtures(paths.fixturesDir(import.meta.url))).reduce(n => n + 1, 0),
       gitSha,
-      version: await readPublishedVersion(crate, fetchCacheDir(import.meta.url))
+      version: await readPublishedVersion(crate, paths.fetchCacheDir(import.meta.url))
     }
   }
 })

@@ -20,9 +20,9 @@ const trails  = new Map<string, Promise<FixtureTrail>>()
 
 // Maps each fixture id to its input file, taking only the cases that carry both
 // an input and a snapshot.
-function buildCaseIndex(crate: string): Map<string, string> {
+function buildCaseIndex(fixturesRoot: string): Map<string, string> {
   return new Map(
-    walker.walkFixtures(crate)
+    walker.walkFixtures(fixturesRoot)
       .filter(({ inputPath }) => existsSync(walker.snapshotPath(inputPath)))
       .map(({ id, inputPath }) => [id, inputPath] as const)
   )
@@ -49,17 +49,17 @@ async function renderEntry(id: string, inputPath: string): Promise<FixtureEntry>
 
 // Reads the input path of one case, failing where the case has no input and
 // snapshot pair.
-function casePath(crate: string, id: string): string {
-  const inputPath = indexes.getOrInsertComputed(crate, buildCaseIndex).get(id)
+function casePath(fixturesRoot: string, id: string): string {
+  const inputPath = indexes.getOrInsertComputed(fixturesRoot, buildCaseIndex).get(id)
   if (inputPath === undefined) throw new Error(`Fixture case "${id}" has no input and snapshot pair`)
   return inputPath
 }
 
 // Renders the fixture cases one page shows, caching each by its input path so a
 // case appearing on several pages costs one render across the whole build.
-export async function fixtureEntries(crate: string, ids: readonly string[]): Promise<FixtureMap> {
+export async function fixtureEntries(fixturesRoot: string, ids: readonly string[]): Promise<FixtureMap> {
   const pairs = await Promise.all(ids.map(async id => {
-    const inputPath = casePath(crate, id)
+    const inputPath = casePath(fixturesRoot, id)
     const entry     = await entries.getOrInsertComputed(inputPath, () => renderEntry(id, inputPath))
     return [id, entry] as const
   }))
@@ -68,22 +68,22 @@ export async function fixtureEntries(crate: string, ids: readonly string[]): Pro
 
 // Steps each gauge one page draws, caching each by its id across the build.
 export async function fixtureGauges(
-  crate    : string,
-  requests : readonly GaugeRequest[]
+  fixturesRoot : string,
+  requests     : readonly GaugeRequest[]
 ): Promise<Record<string, FixtureGauge>> {
   const md = await renderer.getRenderer()
   return readCached(gauges, requests.map(({ case: caseName, id, rule, setting }) =>
-    [id, () => variants.readGauge(md, rule, casePath(crate, fixtureId(rule, caseName)), setting)]))
+    [id, () => variants.readGauge(md, rule, casePath(fixturesRoot, fixtureId(rule, caseName)), setting)]))
 }
 
 // Runs each composition trail one page draws, caching each by its case id
 // across the build.
 export async function fixtureTrails(
-  crate : string,
-  ids   : readonly string[]
+  fixturesRoot : string,
+  ids          : readonly string[]
 ): Promise<Record<string, FixtureTrail>> {
   const md = await renderer.getRenderer()
-  return readCached(trails, ids.map(id => [id, () => variants.readTrail(md, casePath(crate, id))]))
+  return readCached(trails, ids.map(id => [id, () => variants.readTrail(md, casePath(fixturesRoot, id))]))
 }
 
 // Runs each read whose id `cache` does not yet hold, keeping its result there
