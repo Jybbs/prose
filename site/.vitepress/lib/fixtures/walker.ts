@@ -1,11 +1,10 @@
 import fs   from 'node:fs'
 import path from 'node:path'
 
-import { fixturesDirFrom } from '../shared/paths.ts'
-import { parseToml }       from '../shared/toml.ts'
-import { tomlText }        from '../shared/toml-text.ts'
-import { fixtureId }       from './entry.ts'
-import * as lintFindings   from './lint-findings.ts'
+import { parseToml }     from '../shared/toml.ts'
+import { tomlText }      from '../shared/toml-text.ts'
+import { fixtureId }     from './entry.ts'
+import * as lintFindings from './lint-findings.ts'
 
 // The `config.toml` a case carries beside its input, with the harness table
 // naming the rules a composition case runs.
@@ -35,9 +34,9 @@ interface FixtureWalkEntry {
   rule      : string
 }
 
-export function corpusLintFindings(crateDir: string): Map<string, lintFindings.LintFinding[]> {
+export function corpusLintFindings(fixturesRoot: string): Map<string, lintFindings.LintFinding[]> {
   const map = new Map<string, lintFindings.LintFinding[]>()
-  for (const { id, inputPath } of walkFixtures(crateDir)) {
+  for (const { id, inputPath } of walkFixtures(fixturesRoot)) {
     const findings = lintFindings.readLintFindings(inputPath)
     if (findings.length > 0) map.set(id, findings)
   }
@@ -50,8 +49,7 @@ export function fixtureTitle(docs: FixtureDocs | undefined): string | undefined 
   return docs?.title?.trim() || undefined
 }
 
-export function fixtureWatchGlobs(crateDir: string): string[] {
-  const fixturesRoot = fixturesDirFrom(crateDir)
+export function fixtureWatchGlobs(fixturesRoot: string): string[] {
   return [
     `${fixturesRoot}/**/${INPUT_FILE}`,
     `${fixturesRoot}/**/${SNAPSHOT_FILE}`,
@@ -98,8 +96,7 @@ export function subdirNames(dir: string): string[] {
     .sort()
 }
 
-export function* walkFixtures(crateDir: string): Generator<FixtureWalkEntry> {
-  const fixturesRoot = fixturesDirFrom(crateDir)
+export function* walkFixtures(fixturesRoot: string): Generator<FixtureWalkEntry> {
   for (const rule of subdirNames(fixturesRoot)) {
     const ruleDir = path.join(fixturesRoot, rule)
     for (const caseName of subdirNames(ruleDir)) {

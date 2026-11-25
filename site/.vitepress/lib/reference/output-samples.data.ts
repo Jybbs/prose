@@ -24,7 +24,7 @@ export default defineLoader({
   async load(): Promise<samples.OutputSamples> {
     const md     = await renderer.getRenderer()
     const input  = fs.readFileSync(path.join(
-      paths.fixturesDirFrom(paths.crateDirFrom(root)), samples.SAMPLE.rule, samples.SAMPLE.case, INPUT_FILE
+      paths.fixturesDir(import.meta.url), samples.SAMPLE.rule, samples.SAMPLE.case, INPUT_FILE
     ), 'utf8')
     const run    = (args: readonly string[]): string => paths.readProseUnder(root, [
       ...args, '--no-cache', '--color', 'never', '--stdin', '--stdin-filename', samples.SAMPLE.filename

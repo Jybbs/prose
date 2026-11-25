@@ -8,8 +8,8 @@ use super::*;
 
 #[rstest]
 fn the_narrowed_second_pass_names_every_firing_rule_the_full_walk_names(
-    #[files("tests/fixtures/**/input.py")]
-    #[files("tests/fixtures/**/input.ipynb")]
+    #[files("../tests/rust/fixtures/**/input.py")]
+    #[files("../tests/rust/fixtures/**/input.ipynb")]
     path: PathBuf,
 ) {
     let pipeline = Pipeline::with_defaults(&Config::default());

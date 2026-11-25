@@ -20,6 +20,38 @@ required-features = ["native"]
 [lib]
 doctest = false
 
+[[test]]
+name = "binding_analysis"
+path = "../tests/rust/binding_analysis.rs"
+
+[[test]]
+name = "cli"
+path = "../tests/rust/cli/main.rs"
+
+[[test]]
+name = "config_parsing"
+path = "../tests/rust/config_parsing.rs"
+
+[[test]]
+name = "corpus"
+path = "../tests/rust/corpus.rs"
+
+[[test]]
+name = "imports"
+path = "../tests/rust/imports/main.rs"
+
+[[test]]
+name = "integration"
+path = "../tests/rust/integration.rs"
+
+[[test]]
+name = "settle"
+path = "../tests/rust/settle/main.rs"
+
+[[test]]
+name = "site"
+path = "../tests/rust/site.rs"
+
 [features]
 default = ["native"]
 native  = [

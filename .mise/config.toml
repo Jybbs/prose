@@ -25,7 +25,7 @@ run         = '''test "$("$VIRTUAL_ENV/bin/python" -c 'import sys; print(sys.bas
 _.path = { path = ".mise/bin", tools = true }
 _.python.venv = { path = "crate/.venv", create = true }
 NODE_COMPILE_CACHE = "{{config_root}}/.cache/node"
-PYTEST_ADDOPTS = "--import-mode=importlib --rootdir={{config_root}}/.mise/tests --strict -W error -o cache_dir={{config_root}}/.cache/pytest -o empty_parameter_set_mark=fail_at_collect -o python_files=*.py -ra"
+PYTEST_ADDOPTS = "--import-mode=importlib --rootdir={{config_root}}/tests/scripts --strict -W error -o cache_dir={{config_root}}/.cache/pytest -o empty_parameter_set_mark=fail_at_collect -o python_files=*.py -ra"
 PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 
 [settings]
@@ -40,7 +40,7 @@ crate     = [
   "crate/Cargo.toml",
   "crate/pyproject.toml",
   "crate/src/**/*.rs",
-  "crate/tests/fixtures/**/*"
+  "tests/rust/fixtures/**/*"
 ]
 manifests = [
   ".mise/config.toml",
@@ -57,6 +57,7 @@ site      = [
   ".mise/bin/**",
   ".mise/config.toml",
   "site/**/*",
+  "tests/site/**/*",
   "!@gitignore",
   "site/public/wasm/*"
 ]
