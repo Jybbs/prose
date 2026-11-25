@@ -32,7 +32,7 @@ def sourced(
     stand_in(
         "cargo",
         "printf '%s\\n' \"$*\" >&2\n"
-        "printf '{\"executable\":%s,\"target\":{\"name\":\"%s\"}}\\n' "
+        'printf \'{"executable":%s,"target":{"name":"%s"}}\\n\' '
         f'{quote(dumps(executable))} "$8"\n'
     )
     script = (
@@ -125,7 +125,8 @@ def test_rows_build_over_the_probe_selection(
     finished = sourced(call, stand_in)
 
     assert (finished.returncode, finished.stderr.splitlines()) == (
-        0, [f"{SELECTION} {flags}"]
+        0,
+        [f"{SELECTION} {flags}"]
     )
 
 
