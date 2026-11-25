@@ -1,7 +1,9 @@
 """
 Pins how `repo:audit` reads a GitHub `paths` filter, the `sources` patterns
 it finds a filter leaving out across a task and the tasks it depends on,
-and the trigger it reports for each. Also pins the label `parity` reports
+and the trigger it reports for each. Also pins that a run reaches every
+check, the trigger keys it reads off a workflow, the git-ignored outputs
+`inputs` reports each task's sources leaving out, the label `parity` reports
 a pin under once either side of its pair drifts, the annotation a `fail`
 in a helper of `parity` stops the audit on, the task source and workflow
 path entries `patterns` reports for selecting no tracked file, the cache
@@ -14,10 +16,12 @@ pull request.
 """
 
 from collections.abc   import Callable
+from inspect           import isfunction, signature
 from json              import dumps
 from pathlib           import Path
-from pytest            import CaptureFixture, fixture, mark, param, raises
+from pytest            import CaptureFixture, MonkeyPatch, fixture, mark, param, raises
 from pytest_subprocess import FakeProcess
+from re                import findall, sub
 from types             import ModuleType
 
 ALL_MISSING = "['opened', 'ready_for_review', 'reopened', 'synchronize']"
@@ -26,11 +30,16 @@ COVERING    = ["Cargo.lock", "site/**", "wasm/**"]
 DEBS        = ".github/actions/restore-debs/action.yml"
 DEPLOY      = ".github/workflows/deploy.yml"
 GUARD       = "${{ !github.event.pull_request.draft }}"
-LIVE        = ["{root}/Cargo.lock", "{root}/wasm/**"]
-OMITTING    = ["Cargo.lock", "site/**"]
-PROVISION   = ".mise/tasks/site/provision"
-TYPES       = "[opened, synchronize, reopened, ready_for_review]"
-UNGUARDED   = (
+LEFT_OUT    = (
+    "::error::tasks whose sources leave out a git-ignored task output they select: "
+    "['site:typecheck: site/public/wasm/*']\n"
+)
+LEFT_OUT_BAKE = LEFT_OUT.replace("public/wasm/*", "node_modules/.bun.lock")
+LIVE          = ["{root}/Cargo.lock", "{root}/wasm/**"]
+OMITTING      = ["Cargo.lock", "site/**"]
+PROVISION     = ".mise/tasks/site/provision"
+TYPES         = "[opened, synchronize, reopened, ready_for_review]"
+UNGUARDED     = (
     "saves under an if other than the pull_request guard, alone or joined by &&\n"
 )
 UNREAD = "a folder no site module or task reads\n"
@@ -744,6 +753,235 @@ def test_patterns_reports_each_entry_selecting_no_tracked_file(
     assert capsys.readouterr().out == reported
 
 
+@mark.parametrize("trigger", ["push", ["push"], {"schedule": [{"cron": "0 0 * * *"}]}])
+def test_patterns_reads_a_trigger_of_every_form(
+    audit      : ModuleType,
+    repository : Callable[[dict[str, str], list[dict]], Path],
+    trigger    : str | list[str] | dict
+):
+    """
+    Asserts that `patterns` reports nothing for a workflow whose `on` is
+    a scalar, a list, or a mapping of a key to a list, none filtering on
+    paths.
+    """
+    repository({".github/workflows/draft.yml": dumps({"on": trigger})}, [])
+
+    assert audit.patterns() == 0
+
+
+@mark.parametrize(
+    ("entries", "depends", "reported"),
+    [
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*"],
+            ["site:bake"],
+            "",
+            id = "added-back"
+        ),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/**"],
+            ["site:bake"],
+            "",
+            id = "folder-added-back"
+        ),
+        param(["!@gitignore", "site/**/*"], ["site:bake"], "", id="selected-after"),
+        param(["site/**/*"], [], "", id="ignored-files-kept"),
+        param(["site/lib/**", "!@gitignore"], [], "", id="output-unselected"),
+        param(
+            ["site/**/*", "!site/public/wasm/**", "!@gitignore"],
+            ["site:bake"],
+            "",
+            id = "output-excluded"
+        ),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake", "wasm:pack"],
+            "",
+            id = "writer-depended-on"
+        ),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake", "site:serve"],
+            "",
+            id = "writer-depended-on-through-another"
+        ),
+        param(
+            ["site/**/*", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "never-added-back"
+        ),
+        param(
+            ["site/**/*", "wasm/**", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "sources-selected"
+        ),
+        param(
+            ["site/public/wasm/*.js", "!@gitignore"],
+            [],
+            LEFT_OUT,
+            id = "narrower-entry"
+        ),
+        param(
+            ["site/public/wasm/*", "site/**/*", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "added-before"
+        ),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*.js"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "partly-added-back"
+        ),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*", "!@gitignore"],
+            ["site:bake"],
+            LEFT_OUT,
+            id = "left-out-again"
+        ),
+        param(
+            ["site/**/*", "!@gitignore", "site/public/wasm/*"],
+            [],
+            LEFT_OUT_BAKE,
+            id = "writer-not-depended-on"
+        )
+    ]
+)
+def test_inputs_reports_each_ignored_output_a_task_leaves_out(
+    audit       : ModuleType,
+    capsys      : CaptureFixture[str],
+    depends     : list[str],
+    entries     : list[str],
+    monkeypatch : MonkeyPatch,
+    reported    : str,
+    repository  : Callable[[dict[str, str], list[dict]], Path]
+):
+    """
+    Pins that a task whose sources select a git-ignored task output before
+    `!@gitignore` fails the audit unless a later entry adds the whole output
+    back or the task depends on the task writing it, whereas a tracked
+    output and one only the user's own excludes file ignores are never left
+    out.
+    """
+    root = repository(
+        TREE | {
+            ".gitignore"          : "node_modules/\nsite/public/wasm/\n",
+            "excludes/git/ignore" : "site/drawn/\n",
+            "site/bun.lock"       : ""
+        },
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "lock:sync",
+                "depends" : [],
+                "outputs" : ["site/bun.lock"],
+                "sources" : ["Cargo.lock"]
+            },
+            {
+                "dir"     : "{root}/site",
+                "name"    : "site:bake",
+                "depends" : [],
+                "outputs" : ["node_modules/.bun.lock"],
+                "sources" : ["bun.lock"]
+            },
+            {
+                "dir"     : "{root}",
+                "name"    : "site:draw",
+                "depends" : [],
+                "outputs" : ["site/drawn/*"],
+                "sources" : ["Cargo.lock"]
+            },
+            {
+                "dir"     : "{root}",
+                "name"    : "site:serve",
+                "depends" : ["wasm:pack"]
+            },
+            {
+                "dir"     : "{root}/site",
+                "name"    : "site:typecheck",
+                "depends" : depends,
+                "sources" : [
+                    each if each == "!@gitignore" else sub("^!?", r"\g<0>{root}/", each)
+                    for each in entries
+                ]
+            },
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : ["wasm/**"]
+            }
+        ]
+    )
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(root / "excludes"))
+    (root / ".gitignore").write_text(
+        "node_modules/\nsite/bun.lock\nsite/public/wasm/\n",
+        encoding = "utf-8"
+    )
+
+    assert audit.inputs() == bool(reported)
+    assert capsys.readouterr().out == reported
+
+
+def test_inputs_reports_an_output_of_a_task_with_no_source(
+    audit      : ModuleType,
+    capsys     : CaptureFixture[str],
+    repository : Callable[[dict[str, str], list[dict]], Path]
+):
+    """
+    Pins that an output of a task declaring no source counts as left out
+    even where the reading task depends on that task, since mise reruns a
+    dependent only after a dependency with sources runs.
+    """
+    repository(
+        {".gitignore": "site/public/wasm/\n", "site/index.md": ""},
+        [
+            {
+                "dir"     : "{root}",
+                "name"    : "site:typecheck",
+                "depends" : ["wasm:pack"],
+                "sources" : ["{root}/site/**/*", "!@gitignore"]
+            },
+            {
+                "dir"     : "{root}",
+                "name"    : "wasm:pack",
+                "depends" : [],
+                "outputs" : ["site/public/wasm/*"],
+                "sources" : []
+            }
+        ]
+    )
+
+    assert audit.inputs() == 1
+    assert capsys.readouterr().out == LEFT_OUT
+
+
+@mark.parametrize(
+    ("entries", "left"),
+    [
+        param(["site/x.wasm", "!@gitignore"], True, id="narrower"),
+        param(["site/**/*.ts", "!@gitignore", "site/x.wasm"], False, id="added-after"),
+        param(["!@gitignore", "site/x.wasm", "!@gitignore"], True, id="between"),
+        param(["site/**/*.ts", "!site/x.wasm", "!@gitignore"], False, id="excluding")
+    ]
+)
+def test_leaves_out_reads_no_excluding_entry_as_selecting(
+    audit   : ModuleType,
+    entries : list[str],
+    left    : bool
+):
+    """
+    Pins that an entry the `output` glob names counts as selecting part
+    of the output only where it is no exclusion and sits ahead of the last
+    `!@gitignore`, so neither an excluding entry ahead of `!@gitignore` nor
+    an entry after it leaves anything out.
+    """
+    assert audit.leaves_out(entries, "**/*.wasm") is left
+
+
 @mark.parametrize(
     ("home", "path", "stamp", "reported"),
     [
@@ -1099,7 +1337,8 @@ def test_caches_reads_the_cache_steps_of_each_composite_deploy_calls(
     [
         param("on:\n  pull_request:\n    paths: ['**']\n", id="event-absent"),
         param("on:\n  push:\n", id="event-bare"),
-        param("on:\n  push:\n    branches: [main]\n", id="paths-absent")
+        param("on:\n  push:\n    branches: [main]\n", id="paths-absent"),
+        param("on: push\n", id="event-scalar")
     ]
 )
 def test_workflow_paths_fails_without_a_filter(
@@ -1299,6 +1538,104 @@ def test_drafts_locates_a_trigger_of_every_form(
         f"::error file=.github/workflows/ci.yml,line={line}::the pull_request "
         f"trigger omits the types {missing}\n"
     )
+
+
+@mark.parametrize(
+    ("triggers", "mapped"),
+    [
+        param("pull_request", {"pull_request": {}}, id="scalar"),
+        param(["push", "pull_request"], {"push": {}, "pull_request": {}}, id="list"),
+        param(
+            {
+                "pull_request" : {"types": ["opened"]},
+                "push"         : "",
+                "schedule"     : [{"cron": "0 0 * * *"}]
+            },
+            {"pull_request": {"types": ["opened"]}, "push": {}, "schedule": {}},
+            id = "mapping"
+        )
+    ]
+)
+def test_events_maps_each_trigger_key_to_its_settings(
+    audit    : ModuleType,
+    mapped   : dict[str, dict],
+    triggers : str | list[str] | dict
+):
+    """
+    Pins that `events` reads the trigger keys of a scalar, a list, and a
+    mapping, a key carrying no mapping of its own reading as empty.
+    """
+    assert audit.events({"on": triggers}) == mapped
+
+
+@mark.parametrize(
+    ("trigger", "triggered"),
+    [
+        param("pull_request", True, id="scalar"),
+        param("[push, pull_request]", True, id="list"),
+        param("{push: {}, pull_request: {}}", True, id="mapping"),
+        param("pull_request_target", False, id="scalar-target"),
+        param("[push, pull_request_target]", False, id="list-target"),
+        param("{push: {}, pull_request_target: {}}", False, id="mapping-target")
+    ]
+)
+def test_pull_request_workflows_reads_the_trigger_keys(
+    audit     : ModuleType,
+    trigger   : str,
+    triggered : bool,
+    workdir   : Callable[[dict[str, str]], Path]
+):
+    """
+    Pins that a workflow counts as a pull-request workflow only where
+    `pull_request` is one of its trigger keys, so `pull_request_target`
+    counts in no form.
+    """
+    workdir({".github/workflows/ci.yml": f"on: {trigger}\n"})
+
+    assert [path.name for path, _ in audit.pull_request_workflows()] == (
+        ["ci.yml"] if triggered else []
+    )
+
+
+@mark.parametrize("failing", [None, "parity", "filters"])
+def test_main_reaches_every_check(
+    audit       : ModuleType,
+    failing     : str | None,
+    monkeypatch : MonkeyPatch
+):
+    """
+    Pins that a run calls every check the module docstring lists, in its
+    order and whether or not an earlier one fails, that those are all the
+    checks the module defines, and that any failing check fails the run.
+    """
+    ran    = []
+    checks = {
+        name
+        for name, each in vars(audit).items()
+        if isfunction(each)
+        if signature(each) == signature(audit.main)
+    } - {"main"}
+
+    def stub(name: str) -> Callable[[], int]:
+        """
+        Builds a stand-in for the check `name` that records the call and
+        fails where `name` is the failing check.
+        """
+        def check() -> int:
+            """
+            Records the call, returning 1 where the check fails.
+            """
+            ran.append(name)
+            return int(name == failing)
+
+        return check
+
+    for name in checks:
+        monkeypatch.setattr(audit, name, stub(name))
+
+    assert audit.main() == (failing is not None)
+    assert ran == findall(r"(?m)^ {4}(\w+)", audit.__doc__)
+    assert set(ran) == checks
 
 
 @mark.parametrize(
