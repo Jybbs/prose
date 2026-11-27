@@ -78,18 +78,22 @@ def emit(**outputs: str):
 def existing_release(repo: str, version: str) -> dict | None:
     """
     Finds the first release in the repository's listing whose tag is the
-    version, or a draft named for it whose tag a refresh once replaced with
-    `untagged-<hash>`, giving `None` when no release in the listing carries
-    it.
+    version, else the first draft named for it whose tag a refresh once
+    replaced with `untagged-<hash>`, giving `None` when neither exists. A
+    tag match wins wherever it sits, so a published release carrying the
+    version still stops the task ahead of a stale untagged draft.
     """
-    listing = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
+    listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
+    releases = list(chain.from_iterable(from_json(listing)))
     return next(
-        (
-            release for release in chain.from_iterable(from_json(listing))
-            if release["tag_name"] == version
-            or release["draft"] and release["name"] == version
-        ),
-        None
+        (release for release in releases if release["tag_name"] == version),
+        next(
+            (
+                release for release in releases
+                if release["draft"] and release["name"] == version
+            ),
+            None
+        )
     )
 
 

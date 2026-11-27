@@ -179,6 +179,25 @@ def test_main_fails_on_a_published_version(
     )
 
 
+def test_main_fails_on_a_published_version_behind_an_untagged_draft(
+    cut  : ModuleType,
+    fp   : FakeProcess,
+    tree : Path
+):
+    """
+    Pins that a published release carrying the version stops the task even
+    where a draft named for it, tagged `untagged-<hash>`, precedes it in the
+    listing, so no release is written.
+    """
+    draft = release("untagged-abc", draft=True, name="1.2.3")
+    fp.register(LISTING, stdout=dumps([[draft, release("1.2.3")]]))
+
+    with raises(SystemExit):
+        cut.main()
+
+    assert list(fp.calls) == [LISTING]
+
+
 @mark.parametrize(
     ("listing", "calls"),
     [
