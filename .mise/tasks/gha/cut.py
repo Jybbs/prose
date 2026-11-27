@@ -8,19 +8,19 @@ Keeps one draft release for the version `crate/Cargo.toml` carries.
 
 Reads `[package].version`, emits it, then reads every page of the
 repository's releases through `gh api` and takes one outcome from the
-release carrying that version. A version no release carries is created as
-a draft with generated notes. A draft carrying it has its body replaced
-with the notes the `releases/generate-notes` endpoint returns for the
-version against `main`, sent with the version as `tag_name` so the draft
-keeps it. A draft named for the version whose tag reads `untagged-<hash>`
-counts as carrying it. A published release carrying it stops the task with
-an `::error::` annotation naming `mise bump`, so no merge adds to a version
-already released. A `gh` call that exits nonzero stops the task with an
-`::error::` annotation carrying every line it printed on stderr, so no draft
-is written after a failed read and a rerun retries it. Emits `version=`,
-then `state=` (one of `created`, `refreshed`, or `published`) and `url=`,
-to `$GITHUB_OUTPUT` when it is set, stdout otherwise, with annotations on
-stderr.
+release carrying that version. A version no release carries is created as a
+draft with generated notes. A draft carrying it has its body replaced with
+the notes the `releases/generate-notes` endpoint returns for the version
+against `main`, sent with the version as `tag_name` so the draft keeps it. A
+draft named for the version counts as carrying it, which takes in one whose
+tag a refresh replaced with `untagged-<hash>`. A published release carrying
+it stops the task with an `::error::` annotation naming `mise bump`, so no
+merge adds to a version already released. A `gh` call that exits nonzero
+stops the task with an `::error::` annotation carrying every line it
+printed on stderr, so no draft is written after a failed read and a rerun
+retries it. Emits `version=`, then `state=` (one of `created`, `refreshed`,
+or `published`) and `url=`, to `$GITHUB_OUTPUT` when it is set, stdout
+otherwise, with annotations on stderr.
 """
 
 from itertools  import chain
@@ -78,10 +78,11 @@ def emit(**outputs: str):
 def existing_release(repo: str, version: str) -> dict | None:
     """
     Finds the first release in the repository's listing whose tag is the
-    version, else the first draft named for it whose tag a refresh once
-    replaced with `untagged-<hash>`, giving `None` when neither exists. A
-    tag match wins wherever it sits, so a published release carrying the
-    version still stops the task ahead of a stale untagged draft.
+    version, else the first draft named for it, which takes in one whose tag
+    a refresh replaced with `untagged-<hash>`, giving `None` when neither
+    exists. A tag match wins wherever it sits, so a published release
+    carrying the version still stops the task ahead of a stale untagged
+    draft.
     """
     listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
     releases = list(chain.from_iterable(from_json(listing)))

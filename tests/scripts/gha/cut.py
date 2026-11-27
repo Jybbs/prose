@@ -122,7 +122,10 @@ def test_main_creates_or_refreshes_the_draft(
     """
     Pins that the version is looked up across every page of the listing,
     that a version no release carries is created as a draft, and that a
-    draft carrying it has its body replaced with the generated notes alone.
+    draft carrying it, by tag or by a name that is the version where its
+    tag reads `untagged-<hash>`, is refreshed with the generated notes, the
+    version as `tag_name`, and `main` as `target_commitish`. A release named
+    for the version but published is not taken for its draft.
     """
     fp.register(LISTING, stdout=dumps(pages))
     fp.register(CREATE, stdout=f"{url}\n")
