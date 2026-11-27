@@ -37,6 +37,7 @@ use crate::{
             Annotations, CallReach, Evaluated, call_reachable, consults_call_graph,
             definition_names, eval_time_refs_of, fenced_slots,
         },
+        walk::any_over_stmts,
     },
     source::Source,
 };
@@ -298,12 +299,35 @@ fn rewrite_stmt<'a>(
         }
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     };
-    if body.is_empty() {
+    if body.is_empty() || (scope == BodyScope::Function && holds_as_written(ctx, body, block)) {
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
     let ctx = scoped_ctx(ctx, stmt);
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
+}
+
+/// True when the function body `body` holds nothing the rewrite can
+/// change: no leaf edit starts inside `block`, and no class or import
+/// sits in its subtree, since a function scope orders nothing but import
+/// runs.
+fn holds_as_written(ctx: RewriteCtx<'_>, body: &[Stmt], block: TextRange) -> bool {
+    let lo = ctx
+        .leaf_edits
+        .partition_point(|e| e.start() < block.start());
+    if ctx
+        .leaf_edits
+        .get(lo)
+        .is_some_and(|e| e.start() <= block.end())
+    {
+        return false;
+    }
+    !any_over_stmts(body, |stmt| {
+        matches!(
+            stmt,
+            Stmt::ClassDef(_) | Stmt::Import(_) | Stmt::ImportFrom(_)
+        )
+    })
 }
 
 /// Returns `ctx` for the body the class or function `stmt` opens, with
