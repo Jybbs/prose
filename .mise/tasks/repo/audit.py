@@ -40,6 +40,9 @@ them fails.
     patterns   Every `sources` pattern a task declares, short of one naming a
                task's `outputs`, and every `paths` entry a workflow trigger
                filters on selects a tracked file.
+    inputs     Every task whose sources leave out git-ignored files adds back
+               each ignored task output its earlier entries select, short of
+               one written by a task with sources that it depends on.
     stamps     Every cache restore bringing back a task's `outputs` is
                followed by a step touching the restored files on a hit, so
                mise reads them as current.
@@ -401,7 +404,7 @@ def drafts() -> int:
                 for path, flow in flows
                 if (
                     missing := READY_TYPES - set(
-                        pull_request_trigger(flow).get("types", [])
+                        events(flow)["pull_request"].get("types", [])
                     )
                 )
             ),
@@ -417,6 +420,20 @@ def drafts() -> int:
             )
         ]
     )
+
+
+def events(flow: dict) -> dict[str, dict]:
+    """
+    Maps each trigger key of `flow` to the mapping under it, empty where
+    `on` is a scalar or a list or the key carries no mapping.
+    """
+    triggers = flow["on"]
+    if not isinstance(triggers, dict):
+        triggers = dict.fromkeys([triggers] if isinstance(triggers, str) else triggers)
+    return {
+        event: settings if isinstance(settings, dict) else {}
+        for event, settings in triggers.items()
+    }
 
 
 def exact() -> int:
@@ -565,7 +582,7 @@ def filters() -> int:
     """
     every, audited = [], []
     for path, flow in pull_request_workflows():
-        paths = pull_request_trigger(flow).get("paths", ["**"])
+        paths = events(flow)["pull_request"].get("paths", ["**"])
         every.append(paths)
         if "repo:audit" in invoked(read(path)):
             audited.append(paths)
@@ -669,6 +686,51 @@ def hashed_paths(action: str) -> list[str]:
     )
 
 
+def ignored(path: str) -> bool:
+    """
+    Checks whether git ignores the untracked `path`, reading the rules mise
+    reads for `!@gitignore`, which leave out `core.excludesFile`.
+    """
+    command = ["git", "-c", "core.excludesFile=", "check-ignore", "--quiet", path]
+    return run(command).returncode == 0
+
+
+def inputs() -> int:
+    """
+    Reports every git-ignored task output that a task's `sources`, each
+    `@group:` reference expanded in place by mise, leave out through
+    `!@gitignore` after selecting, which leaves that task fresh after the
+    output changes. An output is left out of the report where its writing
+    task declares sources and is one the reading task depends on, since mise
+    runs every task depending on a task with sources that ran.
+    """
+    listed  = tasks_listed()
+    outputs = task_outputs()
+    return flagged(
+        findings = [
+            (
+                {
+                    f"{name}: {output}"
+                    for name, task in listed.items()
+                    if isinstance(sources := task.get("sources"), list)
+                    if "!@gitignore" in sources
+                    for entries in [
+                        [
+                            each if each == "!@gitignore" else rooted(task["dir"], each)
+                            for each in sources
+                        ]
+                    ]
+                    for output, writer in outputs.items()
+                    if leaves_out(entries, output)
+                    if writer not in swept([name]) or not listed[writer].get("sources")
+                    if ignored(output)
+                },
+                "tasks whose sources leave out a git-ignored task output they select"
+            )
+        ]
+    )
+
+
 def invoked(text: str) -> list[str]:
     """
     Collects every task a `mise run` in `text` names.
@@ -747,6 +809,25 @@ def labels() -> int:
     )
 
 
+def leaves_out(entries: list[str], output: str) -> bool:
+    """
+    Checks whether the `sources` patterns `entries` select files the
+    `output` glob names, through an entry selecting it or a narrower
+    one ahead of the last `!@gitignore`, while the entries after that
+    `!@gitignore` leave part of it unselected.
+    """
+    cut  = len(entries) - entries[::-1].index("!@gitignore")
+    kept = ["!**" if each == "!@gitignore" else each for each in entries]
+    return not filtered(output, kept) and (
+        filtered(output, entries)
+        or any(
+            filtered(entry, [output])
+            for entry in entries[:cut]
+            if not entry.startswith("!")
+        )
+    )
+
+
 def lined(path: Path, *patterns: str) -> int:
     """
     Finds the line on which the first of `patterns` to match the file at
@@ -765,6 +846,33 @@ def located(findings: list[tuple[str, Path, int]]) -> int:
     for message, path, line in findings:
         annotate(message, file = path, line = line)
     return int(bool(findings))
+
+
+def main() -> int:
+    """
+    Runs every check, each whether or not an earlier one fails, and returns
+    1 when any fails.
+    """
+    return (
+        parity()
+        | exact()
+        | labels()
+        | forms()
+        | manifests()
+        | privileges()
+        | triggers()
+        | patterns()
+        | inputs()
+        | stamps()
+        | caches()
+        | gates()
+        | drafts()
+        | checks()
+        | tasks()
+        | scripts()
+        | suffixes()
+        | filters()
+    )
 
 
 def major_minor(value: str) -> str:
@@ -1079,8 +1187,7 @@ def patterns() -> int:
                 {
                     f"{path.name} {event}: {entry}"
                     for path, flow in workflows()
-                    for event, trigger in flow["on"].items()
-                    if isinstance(trigger, dict)
+                    for event, trigger in events(flow).items()
                     for entry in trigger.get("paths", [])
                     if not entry.startswith("!")
                     if not any(filtered(file, [entry]) for file in files)
@@ -1167,20 +1274,16 @@ def proof_rows() -> list[tuple[str, list[str]]]:
     ]
 
 
-def pull_request_trigger(flow: dict) -> dict:
-    """
-    Reads the mapping under the `pull_request` trigger of `flow`, empty
-    where the trigger is a bare name or carries no settings.
-    """
-    return (flow["on"]["pull_request"] if isinstance(flow["on"], dict) else None) or {}
-
-
 def pull_request_workflows() -> list[tuple[Path, dict]]:
     """
     Collects every workflow a `pull_request` event triggers beside its
     parsed mapping.
     """
-    return [(path, flow) for path, flow in workflows() if "pull_request" in flow["on"]]
+    return [
+        (path, flow)
+        for path, flow in workflows()
+        if "pull_request" in events(flow)
+    ]
 
 
 def quoted(cell: str) -> list[str]:
@@ -1540,17 +1643,17 @@ def table(header: str) -> list[list[str]]:
     ]
 
 
-def task_outputs() -> list[str]:
+def task_outputs() -> dict[str, str]:
     """
-    Collects every `outputs` entry a task declares as a list, relative to
-    the project root.
+    Maps every `outputs` entry a task declares as a list, relative to the
+    project root, to the name of that task.
     """
-    return [
-        rooted(task["dir"], entry)
-        for task in tasks_listed().values()
+    return {
+        rooted(task["dir"], entry): name
+        for name, task in tasks_listed().items()
         if isinstance(task.get("outputs"), list)
         for entry in task["outputs"]
-    ]
+    }
 
 
 def task_paths(task: str, *keys: str) -> list[str]:
@@ -1633,9 +1736,9 @@ def triggers() -> int:
         if entry["tools"]
         if (path := Path(entry["path"]).resolve()).is_relative_to(root)
     }
-    draft_push = {"branches": None} | (
-        yaml(".github/workflows/draft.yml")["on"].get("push") or {}
-    )
+    draft_push = {"branches": None} | events(
+        yaml(".github/workflows/draft.yml")
+    ).get("push", {})
     return flagged(
         findings = [
             *(
@@ -1688,7 +1791,7 @@ def workflow_paths(event: str, name: str) -> list[str]:
     Reads the paths the `name` workflow's `event` trigger filters on.
     """
     flow = yaml(f".github/workflows/{name}.yml")
-    if (paths := (flow["on"].get(event) or {}).get("paths")) is None:
+    if (paths := events(flow).get(event, {}).get("paths")) is None:
         fail(f"no {event} paths filter in {name}.yml")
     return paths
 
@@ -1720,22 +1823,4 @@ def yaml(path: str | Path) -> dict:
 
 if __name__ == "__main__":
 
-    raise SystemExit(
-        parity()
-        | exact()
-        | labels()
-        | forms()
-        | manifests()
-        | privileges()
-        | triggers()
-        | patterns()
-        | stamps()
-        | caches()
-        | gates()
-        | drafts()
-        | checks()
-        | tasks()
-        | scripts()
-        | suffixes()
-        | filters()
-    )
+    raise SystemExit(main())

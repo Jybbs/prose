@@ -1,6 +1,6 @@
 """
-Defines the `workspace_task` fixture, which runs a task sourcing
-`.mise/lib/workspace.bash` against a stand-in `cargo`.
+Defines the `workspace_task` fixture, which runs a `rust` task against a
+stand-in `cargo`.
 """
 
 from collections.abc import Callable
