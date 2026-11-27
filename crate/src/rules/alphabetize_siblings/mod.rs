@@ -245,6 +245,30 @@ mod tests {
     }
 
     #[rstest]
+    #[case::plain("def f():\n    b = 1\n    a = 2\n", "def f():\n    b = 1\n    a = 2\n")]
+    #[case::import_run(
+        "def f():\n    import b\n    import a\n",
+        "def f():\n    import a\n    import b\n"
+    )]
+    #[case::nested_class(
+        "def f():\n    class K:\n        b = 1\n        a = 2\n",
+        "def f():\n    class K:\n        a = 2\n        b = 1\n"
+    )]
+    #[case::leaf_edit(
+        "def f():\n    tags = {\"zeta\", \"alpha\"}\n",
+        "def f():\n    tags = {\"alpha\", \"zeta\"}\n"
+    )]
+    fn apply_returns_a_function_as_written_only_where_nothing_inside_reorders(
+        #[case] src: &str,
+        #[case] expected: &str,
+    ) {
+        let source = parse(src);
+        let rule = AlphabetizeSiblings::from_config(&Config::default());
+        let edits = rule.apply(&source).into_iter().flatten().collect();
+        assert_eq!(applied_text(&source, edits), expected);
+    }
+
+    #[rstest]
     #[case::packed_commented_list("x = [b, a,  # c\n     d]\n", true)]
     #[case::packed_commented_tuple("x = (b, a,  # c\n     d)\n", true)]
     #[case::packed_commented_set("x = {b, a,  # c\n     d}\n", true)]

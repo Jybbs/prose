@@ -11,6 +11,7 @@ use ruff_diagnostics::Edit;
 use ruff_python_ast::{
     Stmt,
     helpers::{is_compound_statement, is_docstring_stmt},
+    statement_visitor::{StatementVisitor, walk_stmt},
 };
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange, TextSize};
@@ -108,6 +109,22 @@ impl ImportRunSlots {
             .binary_search(&i)
             .is_ok()
             .then_some(source.newline_str())
+    }
+}
+
+/// Flags a class or an import statement in a walked subtree.
+struct SeatsSomething(bool);
+
+impl<'a> StatementVisitor<'a> for SeatsSomething {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        if self.0 {
+            return;
+        }
+        if matches!(stmt, Stmt::ClassDef(_) | Stmt::Import(_) | Stmt::ImportFrom(_)) {
+            self.0 = true;
+        } else {
+            walk_stmt(self, stmt);
+        }
     }
 }
 
@@ -298,12 +315,27 @@ fn rewrite_stmt<'a>(
         }
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     };
-    if body.is_empty() {
+    if body.is_empty() || (scope == BodyScope::Function && holds_as_written(ctx, stmt, block)) {
         return apply_inline_edits(ctx.source, block, ctx.leaf_edits);
     }
     let ctx = scoped_ctx(ctx, stmt);
     let (body_text, body_span) = rewrite_body(ctx, body, stmt.range(), scope);
     splice_bodies(ctx.source, block, [(body_text, body_span)], ctx.leaf_edits)
+}
+
+/// True when the function `stmt` opens nothing the rewrite can change:
+/// no leaf edit starts inside `block`, and no class or import sits in its
+/// subtree, since a function scope orders nothing but import runs.
+fn holds_as_written(ctx: RewriteCtx<'_>, stmt: &Stmt, block: TextRange) -> bool {
+    let lo = ctx
+        .leaf_edits
+        .partition_point(|e| e.start() < block.start());
+    if ctx.leaf_edits.get(lo).is_some_and(|e| e.start() <= block.end()) {
+        return false;
+    }
+    let mut seats = SeatsSomething(false);
+    seats.visit_stmt(stmt);
+    !seats.0
 }
 
 /// Returns `ctx` for the body the class or function `stmt` opens, with
