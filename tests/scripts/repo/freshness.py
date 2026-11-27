@@ -1,6 +1,6 @@
 """
-Pins that tasks decide freshness from the contents of their `sources`, so a
-branch switch rewriting unchanged files keeps them current, and that a
+Pins that tasks decide freshness from the contents of their `sources`, so
+a branch switch rewriting unchanged files keeps them current, and that a
 `restore-wasm` hit returns the job to modification times, since a runner
 holds no recorded hashes and hashing would run `wasm:pack` over restored
 outputs.
