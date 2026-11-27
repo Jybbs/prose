@@ -15,6 +15,9 @@ const loadFrom = (dir: string) => {
 const respond = (payload: object) =>
   vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(Response.json(payload)))
 
+const dist = (name: string, time: string, yanked?: boolean | string) =>
+  ({ filename: `prose_formatter-${name}`, 'upload-time': time, yanked })
+
 beforeEach(() => {
   vi.stubEnv('PROSE_OFFLINE_DOCS', '')
 })
@@ -36,8 +39,7 @@ describe('the PyPI releases loader', () => {
   supportTest.for([
     ['the file list is missing', {}],
     ['a file has no upload time', { files: [{ filename: 'prose_formatter-0.9.0.tar.gz' }] }],
-    ['an upload time is unreadable',
-      { files: [{ filename: 'prose_formatter-0.9.0.tar.gz', 'upload-time': 'soon' }] }]
+    ['an upload time is unreadable', { files: [dist('0.9.0.tar.gz', 'soon')] }]
   ] as const)('returns no release on a cold store when %s', async ([, payload], { tmpDir, warn }) => {
     respond(payload)
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([])
@@ -49,15 +51,17 @@ describe('the PyPI releases loader', () => {
     await loadFrom(tmpDir)
     expect(fetch).toHaveBeenCalledWith(
       'https://pypi.org/simple/prose-formatter/',
-      expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/vnd.pypi.simple.v1+json' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({ Accept: 'application/vnd.pypi.simple.v1+json' })
+      })
     )
   })
 
   supportTest('orders releases uploaded on the same day by version number, highest first',
     async ({ tmpDir }) => {
     respond({ files: [
-      { filename: 'prose_formatter-0.9.0.tar.gz',  'upload-time': '2026-05-12T08:00:00Z' },
-      { filename: 'prose_formatter-0.10.0.tar.gz', 'upload-time': '2026-05-12T09:30:00Z' }
+      dist('0.9.0.tar.gz',  '2026-05-12T08:00:00Z'),
+      dist('0.10.0.tar.gz', '2026-05-12T09:30:00Z')
     ] })
     await expect(loadFrom(tmpDir)).resolves.toMatchObject([{ version: '0.10.0' }, { version: '0.9.0' }])
   })
@@ -65,14 +69,14 @@ describe('the PyPI releases loader', () => {
   supportTest('leaves out a release whose every file is yanked and keeps one with a file left',
     async ({ tmpDir }) => {
     respond({ files: [
-      { filename: 'prose_formatter-0.10.0.tar.gz', 'upload-time': '2026-05-12T09:30:00Z', yanked: false },
+      dist('0.10.0.tar.gz', '2026-05-12T09:30:00Z', false),
 
-      { filename: 'prose_formatter-0.8.0-py3-none-any.whl', 'upload-time': '2026-01-05T08:00:00Z', yanked: true },
-      { filename: 'prose_formatter-0.8.0.tar.gz',           'upload-time': '2026-01-06T08:00:00Z', yanked: 'broken' },
+      dist('0.8.0-py3-none-any.whl', '2026-01-05T08:00:00Z', true),
+      dist('0.8.0.tar.gz',           '2026-01-06T08:00:00Z', 'broken'),
 
-      { filename: 'prose_formatter-0.9.0-py3-none-any.whl', 'upload-time': '2026-06-02T10:00:00Z', yanked: 'broken' },
-      { filename: 'prose_formatter-0.9.0-py3-none-musl.whl', 'upload-time': '2026-06-04T10:00:00Z' },
-      { filename: 'prose_formatter-0.9.0.tar.gz',            'upload-time': '2026-06-06T10:00:00Z', yanked: false }
+      dist('0.9.0-py3-none-any.whl',  '2026-06-02T10:00:00Z', 'broken'),
+      dist('0.9.0-py3-none-musl.whl', '2026-06-04T10:00:00Z'),
+      dist('0.9.0.tar.gz',            '2026-06-06T10:00:00Z', false)
     ] })
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([
       {

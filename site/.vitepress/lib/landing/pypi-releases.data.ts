@@ -49,9 +49,8 @@ function versionOf(filename: string): string {
 function toReleases(payload: unknown): readonly PyPIRelease[] {
   const live = new Map<string, PyPIReleaseFile>()
   for (const file of (payload as PyPIPayload).files) {
-    if ((file.yanked ?? false) === false && !live.has(versionOf(file.filename))) {
-      live.set(versionOf(file.filename), file)
-    }
+    const version = versionOf(file.filename)
+    if ((file.yanked ?? false) === false && !live.has(version)) live.set(version, file)
   }
   return [...live].map(([version, file]) => {
     const date = file['upload-time'].slice(0, 10)
