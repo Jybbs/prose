@@ -31,6 +31,7 @@ PYTHONPYCACHEPREFIX = "{{config_root}}/.cache/pycache"
 [settings]
 auto_install = false
 experimental = true
+task.source_freshness_hash_contents = true
 
 [task_config.input_groups]
 crate     = [

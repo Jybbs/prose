@@ -1,3 +1,4 @@
+import type { DecorationItem }                   from '@shikijs/types'
 import { computedAsync }                         from '@vueuse/core'
 import { defineComponent, shallowRef, useModel } from 'vue'
 import type { PropType }                         from 'vue'
@@ -11,8 +12,9 @@ export interface SandboxCodeEditorHandle {
 export const SandboxCodeEditor = defineComponent({
   name  : 'SandboxCodeEditor',
   props : {
-    lang       : { required: true, type: String as PropType<'python' | 'toml'> },
-    modelValue : { required: true, type: String }
+    decorations : { default: () => [], type: Array as PropType<readonly DecorationItem[]> },
+    lang        : { required: true, type: String as PropType<'python' | 'toml'> },
+    modelValue  : { required: true, type: String }
   },
   emits : {
     'blur'              : () => true,
@@ -29,7 +31,7 @@ export const SandboxCodeEditor = defineComponent({
     // textarea, so pad it with a space to keep the two boxes the same height.
     const highlighted = computedAsync(() => {
       const text = model.value
-      return highlight(text.endsWith('\n') ? `${text} ` : text, props.lang)
+      return highlight(text.endsWith('\n') ? `${text} ` : text, props.lang, props.decorations)
     }, '', { flush: 'pre' })
 
     function syncScroll(): void {
