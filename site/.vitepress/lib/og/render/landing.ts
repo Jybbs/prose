@@ -10,11 +10,11 @@ const TITLE_TOP     = 246
 const TITLE_WIDTH   = 889
 const TRACK         = '0.28em'
 
-export function landingSvg(brand: BrandAssets, version: string): Promise<string> {
+export function landingSvg(brand: BrandAssets, version: string | null): Promise<string> {
   return parts.toSvg(buildLandingCard(brand.titleWithTagline, version), brand.fonts)
 }
 
-function buildLandingCard(titleWithTagline: BrandImage, version: string): JSXNode {
+function buildLandingCard(titleWithTagline: BrandImage, version: string | null): JSXNode {
   return parts.cardShell(
     parts.leftRail(PALETTE.ube),
     glyphBlock(),
@@ -23,11 +23,10 @@ function buildLandingCard(titleWithTagline: BrandImage, version: string): JSXNod
   )
 }
 
-function dataPanel(version: string): JSXNode {
+function dataPanel(version: string | null): JSXNode {
   return parts.panelShell(PALETTE.ube, '66',
     parts.panelRow('URL', new URL(SITE_HOSTNAME).host),
-    parts.panelDivider(),
-    parts.versionCallout(version)
+    ...parts.versionRows(version)
   )
 }
 

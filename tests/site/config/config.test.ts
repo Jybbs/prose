@@ -37,6 +37,13 @@ describe('landingLd', () => {
   })
 })
 
+describe('landingLd without a version', () => {
+  it('leaves softwareVersion out of the application', () => {
+    const { '@graph': graph } = JSON.parse(landingLd(`${SITE_HOSTNAME}/`, null, 'd'))
+    expect(graph[1]).not.toHaveProperty('softwareVersion')
+  })
+})
+
 describe('ogImagePath', () => {
   it.each([
     ['index.md',                        'og.png'],

@@ -92,7 +92,7 @@ A downstream Rust crate depends on *Prose* through a Git dependency pinned to a 
 
 ```toml-vue
 [dependencies]
-prose = { git = "https://github.com/Jybbs/prose", tag = "{{ $frontmatter.proseVersion }}" }
+prose = { git = "https://github.com/Jybbs/prose"{{ $frontmatter.proseVersion ? ', tag = "' + $frontmatter.proseVersion + '"' : '' }} }
 ```
 
 The default `native` feature includes the command line, the cache, the language server, and the file walker. Depending with `default-features = false` drops that machinery, leaving the formatting core alone, which also builds for `wasm32-unknown-unknown`.

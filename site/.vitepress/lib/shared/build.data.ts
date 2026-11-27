@@ -12,7 +12,7 @@ const crate = paths.crateDir(import.meta.url)
 interface BuildData {
   fixtureCount: number
   gitSha      : string
-  version     : string
+  version     : string | null
 }
 
 declare const data: BuildData
@@ -31,7 +31,7 @@ export default defineLoader({
     return {
       fixtureCount: Iterator.from(walkFixtures(paths.fixturesDir(import.meta.url))).reduce(n => n + 1, 0),
       gitSha,
-      version: await readPublishedVersion(crate, paths.fetchCacheDir(import.meta.url))
+      version: await readPublishedVersion(paths.fetchCacheDir(import.meta.url))
     }
   }
 })

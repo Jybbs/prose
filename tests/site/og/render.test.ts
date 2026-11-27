@@ -38,6 +38,18 @@ describe('landingSvg', () => {
   })
 })
 
+describe('cards with no version', () => {
+  it('renders a landing card shorter than the versioned one', async () => {
+    const [bare, versioned] = await Promise.all([landingSvg(brand, null), landingSvg(brand, '0.7.0')])
+    expect(bare.length).toBeLessThan(versioned.length)
+  })
+
+  it.each(CASES)('renders the %s card shorter than the versioned one', async (_name, page) => {
+    const [bare, versioned] = await Promise.all([pageSvg(page, brand, null), pageSvg(page, brand, '0.7.0')])
+    expect(bare.length).toBeLessThan(versioned.length)
+  })
+})
+
 describe('fitTitleSize', () => {
   it.each([
     [4,  false, 144],

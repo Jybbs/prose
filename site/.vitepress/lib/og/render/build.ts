@@ -14,7 +14,7 @@ export async function buildOgCards(
   srcDir  : string,
   pages   : readonly string[],
   outDir  : string,
-  version : string
+  version : string | null
 ): Promise<void> {
   const repo     = paths.repoRoot(import.meta.url)
   const brand    = loadBrandAssets(paths.publicDir(import.meta.url))

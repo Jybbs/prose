@@ -133,6 +133,10 @@ export function panelRow(label: string, value: string): JSXNode {
     { fontFamily: FONT.mono, fontSize: 19, fontWeight: 500 }, 24, 8)
 }
 
+export function versionRows(version: string | null): JSXNode[] {
+  return version === null ? [] : [panelDivider(), versionCallout(version)]
+}
+
 export function versionCallout(version: string): JSXNode {
   return metaRow('VERSION', version,
     { fontFamily: FONT.display, fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)

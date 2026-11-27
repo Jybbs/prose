@@ -27,7 +27,7 @@ const WORKER_URL = new URL('./resvg-worker.mjs', import.meta.url)
 // satori (text-to-vector) runs here, leaving the resvg rasterization to fan out across cores
 export async function renderCards(
   brand   : BrandAssets,
-  version : string,
+  version : string | null,
   tasks   : readonly RenderTask[]
 ): Promise<readonly RenderedCard[]> {
   const jobs = await Promise.all(tasks.map(async task => ({
@@ -47,7 +47,7 @@ export async function renderCards(
   }
 }
 
-function cardSvg(brand: BrandAssets, card: Card, version: string): Promise<string> {
+function cardSvg(brand: BrandAssets, card: Card, version: string | null): Promise<string> {
   if (card === 'icon')    return iconSvg(brand)
   if (card === 'landing') return landingSvg(brand, version)
   return pageSvg(card, brand, version)

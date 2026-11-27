@@ -33,12 +33,12 @@ const TITLE_SIZES = {
 export function pageSvg(
   page    : OgPage,
   brand   : BrandAssets,
-  version : string
+  version : string | null
 ): Promise<string> {
   return parts.toSvg(buildCard(brand.glyph, page, version, brand.wordmark), brand.fonts)
 }
 
-function buildCard(glyph: string, page: OgPage, version: string, wordmark: BrandImage): JSXNode {
+function buildCard(glyph: string, page: OgPage, version: string | null, wordmark: BrandImage): JSXNode {
   const accent = page.accent ?? PALETTE.ube
   return parts.cardShell(
     watermarkLayer(glyph),
@@ -53,13 +53,13 @@ function buildKicker(page: OgPage): string {
   return `— ${page.breadcrumb.map(s => s.toUpperCase()).join(' · ')} —`
 }
 
-function dataPanel(accent: string, page: OgPage, version: string): JSXNode {
+function dataPanel(accent: string, page: OgPage, version: string | null): JSXNode {
   const rows = panelRows(page)
   const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
   return parts.panelShell(accent, warm ? '99' : '66',
     ...rows.map(row => parts.panelRow(...row)),
-    ...(rows.length > 0 ? [parts.panelDivider()] : []),
-    parts.versionCallout(version)
+    ...(rows.length > 0 && version !== null ? [parts.panelDivider()] : []),
+    ...(version === null ? [] : [parts.versionCallout(version)])
   )
 }
 
