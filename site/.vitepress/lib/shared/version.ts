@@ -4,12 +4,6 @@ import path from 'node:path'
 import { requireString } from './require-string.ts'
 import { parseToml }     from './toml.ts'
 
-export function readCargoVersion(crateDir: string): string {
-  const cargoPath = path.join(crateDir, 'Cargo.toml')
-  const parsed    = parseToml(cargoPath) as { package?: { version?: unknown } }
-  return requireString(parsed.package?.version, `Could not find package.version in ${cargoPath}`)
-}
-
 export function readPackageVersions(
   siteDir : string,
   names   : readonly string[]

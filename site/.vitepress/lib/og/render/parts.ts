@@ -98,7 +98,7 @@ export function panelShell(accent: string, alpha: string, ...children: JSXNode[]
   )
 }
 
-export function panelDivider(): JSXNode {
+function panelDivider(): JSXNode {
   return el('div', {
     style: {
       borderTop    : `1px solid ${BORDER}`,
@@ -133,7 +133,12 @@ export function panelRow(label: string, value: string): JSXNode {
     { fontFamily: FONT.mono, fontSize: 19, fontWeight: 500 }, 24, 8)
 }
 
-export function versionCallout(version: string): JSXNode {
+export function versionRows(version: string | null, divided: boolean): JSXNode[] {
+  if (version === null) return []
+  return divided ? [panelDivider(), versionCallout(version)] : [versionCallout(version)]
+}
+
+function versionCallout(version: string): JSXNode {
   return metaRow('VERSION', version,
     { fontFamily: FONT.display, fontSize: 72, fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1 }, 18)
 }

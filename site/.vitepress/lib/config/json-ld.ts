@@ -13,7 +13,7 @@ export function articleLd(facts: ArticleFacts): string {
   return JSON.stringify({ '@context': CONTEXT, '@type': 'TechArticle', ...facts })
 }
 
-export function landingLd(url: string, version: string, description: string): string {
+export function landingLd(url: string, version: string | null, description: string): string {
   return JSON.stringify({
     '@context' : CONTEXT,
     '@graph'   : [
@@ -24,7 +24,7 @@ export function landingLd(url: string, version: string, description: string): st
         license             : 'https://opensource.org/license/mit',
         name                : SITE_NAME,
         operatingSystem     : 'Linux, macOS, Windows',
-        softwareVersion     : version,
+        softwareVersion     : version ?? undefined,
         url
       }
     ]

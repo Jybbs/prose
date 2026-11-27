@@ -1,4 +1,4 @@
-import { promiseTimeout }                                                                                  from '@vueuse/core'
+import { promiseTimeout, useEventListener, usePointer }                                                    from '@vueuse/core'
 import { computed, defineComponent, nextTick, onMounted, ref, shallowRef, watch, withKeys, withModifiers } from 'vue'
 import type { PropType }                                                                                   from 'vue'
 
@@ -25,7 +25,10 @@ export const ProseSandboxToml = defineComponent({
 
     const reducedMotion = useReducedMotion()
     const editor        = shallowRef<SandboxCodeEditorHandle | null>(null)
+    const panel         = shallowRef<HTMLElement | null>(null)
     const popup         = shallowRef<ConfigFlagPopupHandle | null>(null)
+
+    const { pointerType } = usePointer({ target: panel })
 
     // An unknown key the source carries takes a squiggle and a margin mark,
     // leaving the message list to the notices no line matched.
@@ -36,6 +39,11 @@ export const ProseSandboxToml = defineComponent({
       const matched = new Set(located.value.map(finding => finding.message))
       return configNotices.value.filter(notice => !matched.has(notice))
     })
+
+    // Marks each unknown key in the editor's layer with its notice, leaving out the
+    // class that draws the squiggle.
+    const keys = computed(() => configDecorations(configNotices.value, configToml.value)
+      .map(item => ({ ...item, properties: { ...item.properties, class: undefined } })))
 
     const displayHtml = ref('')
     const editing     = ref(false)
@@ -109,14 +117,39 @@ export const ProseSandboxToml = defineComponent({
 
     function stopEditing(): void {
       editing.value = false
+      popup.value?.close()
       settle(configToml.value)
     }
 
-    watch(configToml, next => { if (!editing.value) typeTo(next) })
+    // Opens the card of the key a tap lands on. The key is read off the display
+    // when the tap opens the editor, and from under the text area once it is open.
+    // The listener runs on the window, after the document closes a card pressed
+    // outside, and reads the pointer's type off the press, as Safari reports a
+    // tap's `click` as a mouse's (WebKit bug 282988).
+    useEventListener('click', ({ clientX, clientY, target }) => {
+      if (!editing.value || pointerType.value !== 'touch') return
+      if (!(target instanceof Element) || !panel.value?.contains(target)) return
+      const covered = target instanceof HTMLTextAreaElement
+      const under   = covered ? document.elementsFromPoint(clientX, clientY) : [target]
+      const named   = under.map(node => node.closest<HTMLElement>('[data-message]')).find(Boolean)
+      const message = named?.dataset.message
+      const marks   = panel.value.querySelectorAll<HTMLElement>('.sandbox-code-editor [data-message]')
+      const key     = [...marks].find(mark => mark.dataset.message === message)
+      if (key) popup.value?.press(key)
+    })
+
+    watch(configToml, next => {
+      if (editing.value) popup.value?.close()
+      else typeTo(next)
+    })
 
     // The notices land a beat after the text they describe, so the panel repaints
-    // against the current config rather than waiting for the next edit.
-    watch(configNotices, () => { if (!editing.value) settle(configToml.value) })
+    // against the current config rather than waiting for the next edit. The open
+    // editor repaints its own layer, which drops the key a card points at.
+    watch(configNotices, () => {
+      if (editing.value) popup.value?.close()
+      else settle(configToml.value)
+    })
 
     onMounted(() => settle(configToml.value))
 
@@ -124,9 +157,11 @@ export const ProseSandboxToml = defineComponent({
       <section
         aria-label="prose.toml config"
         class="sandbox-toml copy-host code-panel overflow-hidden panel transition-opacity in-data-editing:pointer-events-none in-data-editing:opacity-50"
+        ref={panel}
       >
         <header class="code-panel-label">prose.toml</header>
         <SandboxCodeEditor
+          decorations={keys.value}
           lang="toml"
           modelValue={configToml.value}
           onBlur={stopEditing}

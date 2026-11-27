@@ -33,18 +33,18 @@ const TITLE_SIZES = {
 export function pageSvg(
   page    : OgPage,
   brand   : BrandAssets,
-  version : string
+  version : string | null
 ): Promise<string> {
   return parts.toSvg(buildCard(brand.glyph, page, version, brand.wordmark), brand.fonts)
 }
 
-function buildCard(glyph: string, page: OgPage, version: string, wordmark: BrandImage): JSXNode {
+function buildCard(glyph: string, page: OgPage, version: string | null, wordmark: BrandImage): JSXNode {
   const accent = page.accent ?? PALETTE.ube
   return parts.cardShell(
     watermarkLayer(glyph),
     parts.leftRail(accent),
     wordmarkBlock(wordmark),
-    dataPanel(accent, page, version),
+    ...dataPanel(accent, page, version),
     titleBlock(page, accent)
   )
 }
@@ -53,14 +53,11 @@ function buildKicker(page: OgPage): string {
   return `— ${page.breadcrumb.map(s => s.toUpperCase()).join(' · ')} —`
 }
 
-function dataPanel(accent: string, page: OgPage, version: string): JSXNode {
-  const rows = panelRows(page)
-  const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
-  return parts.panelShell(accent, warm ? '99' : '66',
-    ...rows.map(row => parts.panelRow(...row)),
-    ...(rows.length > 0 ? [parts.panelDivider()] : []),
-    parts.versionCallout(version)
-  )
+function dataPanel(accent: string, page: OgPage, version: string | null): JSXNode[] {
+  const rows     = panelRows(page)
+  const warm     = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
+  const children = [...rows.map(row => parts.panelRow(...row)), ...parts.versionRows(version, rows.length > 0)]
+  return children.length === 0 ? [] : [parts.panelShell(accent, warm ? '99' : '66', ...children)]
 }
 
 export function fitTitleSize(text: string, hasCaption: boolean): number {

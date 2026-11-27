@@ -25,7 +25,7 @@ export function describePage(pageData: PageData): void {
   }
 }
 
-export function pageHead(pageData: PageData, version: string): HeadConfig[] {
+export function pageHead(pageData: PageData, version: string | null): HeadConfig[] {
   const isLanding   = pageData.relativePath === 'index.md'
   const notFound    = pageData.isNotFound === true
   const landingCard = sectionOf(pageData.relativePath) === null
