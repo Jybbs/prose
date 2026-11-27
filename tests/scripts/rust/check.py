@@ -58,8 +58,9 @@ def test_check_runs_the_lockfile_check_unless_told_rustfmt_only(
 
 def test_format_row_checks_only_the_rust_source():
     """
-    Pins that the `🪶 Format` row of `ci.yml` passes `--rustfmt`, leaving
-    the mise lockfile to the `🪵 Lockfile` row.
+    Pins that the `🪶 Format` row of `ci.yml` passes `--rustfmt`, the flag
+    `rust:check` declares, leaving the mise lockfile to the `🪵 Lockfile`
+    row.
     """
     flow = safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
     rows = {
@@ -68,3 +69,4 @@ def test_format_row_checks_only_the_rust_source():
     }
 
     assert rows["🪶 Format"] == "mise run rust:check --rustfmt"
+    assert '#USAGE flag "--rustfmt"' in TASK.read_text(encoding="utf-8")
