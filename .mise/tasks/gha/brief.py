@@ -28,6 +28,9 @@ Subcommands:
               `validate`, and `publish` results plus the GitHub-runner
               defaults. Exits 0 when every required job succeeded, where
               `publish` is required on a tag run alone.
+    tasks   : Renders the task table of one CI row. Reads `REPORT`, the JSON
+              report `mise run --report-file` wrote, and `ROW`, the row's
+              name, and renders nothing where the run wrote no report.
     warm    : Renders the Warm gate summary. Reads the `checks`, `packages`,
               and `wheels` results plus the GitHub-runner defaults. Exits 0
               when all three succeeded.
@@ -43,6 +46,8 @@ from pathlib import Path
 from sys     import argv
 from tomllib import loads
 from yaml    import safe_load
+
+MARKS = {"failed": "❌", "passed": "✅"}
 
 
 class Summary:
@@ -217,6 +222,32 @@ class Summary:
         )
 
         raise SystemExit(prepub_failed or self.is_tag and not published)
+
+    def tasks(self):
+        """
+        Renders every task the row's `mise run` scheduled with the status
+        and duration its report records, reading the report at `$REPORT` and
+        rendering nothing when the run ended before writing one.
+        """
+        if not (path := Path(environ["REPORT"])).is_file():
+            return
+
+        self._emit(
+            "tasks",
+            row   = environ["ROW"],
+            tasks = [
+                {
+                    "mark"   : MARKS.get(task["status"], "➖"),
+                    "name"   : " ".join([task["name"], *task["args"]]),
+                    "status" : task["status"].replace("_", " "),
+                    "time"   : (
+                        f"{task['duration_ms'] / 1000:.1f}s"
+                        if task["duration_ms"] is not None else "—"
+                    )
+                }
+                for task in json_loads(path.read_text(encoding="utf-8"))["tasks"]
+            ]
+        )
 
     def warm(self):
         """

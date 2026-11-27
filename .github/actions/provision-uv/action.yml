@@ -30,3 +30,7 @@ runs:
         cache_save         : ${{ inputs.save != 'false' }}
         install_args       : uv
         version            : ${{ steps.mise.outputs.version }}
+
+    - name  : Check the project's conditions
+      run   : mise doctor project
+      shell : bash

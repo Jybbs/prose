@@ -37,46 +37,46 @@ jobs:
 
       matrix:
         include:
-          - command    : mise run rust:check
+          - task       : rust:check
             name       : 🪶 Format
-          - command    : mise run lock:check
+          - task       : lock:check
             name       : 🪵 Lockfile
-          - command    : mise run repo:audit
+          - task       : repo:audit
             name       : 🪷 Audit
-          - command    : mise run repo:lint
+          - task       : repo:lint
             name       : 🧷 Workflows
             tools      : zizmor
-          - command    : mise run rust:unused
+          - task       : rust:unused
             name       : 🪓 Unused
-          - command    : mise run rust:deny
+          - task       : rust:deny
             name       : 🛂 Crates
-          - command    : mise run rust:lint
+          - task       : rust:lint
             name       : 📎 Clippy
             shared-key : prose-clippy
-          - command    : mise run rust:build
+          - task       : rust:build
             name       : 🗜️ Build
             shared-key : &debug-key prose-debug
-          - command    : mise run rust:suite
+          - task       : rust:suite
             name       : 🪚 Suite
             shared-key : *debug-key
-          - command    : mise run rust:proof corpus
+          - task       : rust:proof corpus
             name       : 🥃 Proof · Corpus
             shared-key : *debug-key
-          - command    : PROSE_PROOF_PROFILE=probe mise run rust:proof settle
+          - task       : rust:proof settle
             name       : 🥃 Proof · Settle
             probe      : 'true'
             shared-key : prose-probe-workspace
-          - command    : mise run py:lint
+          - task       : py:lint
             name       : 🪻 Prose
             shared-key : *debug-key
-          - command    : mise run wasm:lint
+          - task       : wasm:lint
             name       : 🛶 Wasm
             shared-key : prose-wasm
-          - command    : mise run wasm:smoke
+          - task       : wasm:smoke
             module     : 'true'
             name       : 🪃 Browser
             shared-key : prose-wasm
-          - command    : mise run rust:upload
+          - task       : rust:upload
             name       : ☂️ Coverage
             shared-key : prose-coverage
 
@@ -98,11 +98,20 @@ jobs:
         if   : ${{ matrix.module == 'true' }}
         uses : $/.github/actions/restore-wasm
 
-      - name : ${{ matrix.command }}
+      - name : mise run ${{ matrix.task }}
         env:
-          CODECOV_TOKEN     : ${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}
-          MISE_GITHUB_TOKEN : ${{ matrix.command == 'mise run lock:check' && github.token || '' }}
-        run  : ${{ matrix.command }}
+          CODECOV_TOKEN      : ${{ endsWith(matrix.task, ':upload') && secrets.CODECOV_TOKEN || '' }}
+          MISE_GITHUB_TOKEN  : ${{ matrix.task == 'lock:check' && github.token || '' }}
+          PROSE_PROOF_PROFILE: ${{ matrix.probe == 'true' && 'probe' || '' }}
+          REPORT             : ${{ runner.temp }}/tasks.json
+        run  : mise run -c --report-file "$REPORT" ${{ matrix.task }}
+
+      - name : List the row's tasks
+        env:
+          REPORT : ${{ runner.temp }}/tasks.json
+          ROW    : ${{ matrix.name }}
+        if   : ${{ !cancelled() }}
+        run  : mise run gha:brief tasks
 
   gate:
     name            : 🗞️ Brief
