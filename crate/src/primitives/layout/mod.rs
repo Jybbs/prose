@@ -8,7 +8,6 @@ mod pack;
 mod shapes;
 
 pub(crate) use opener::opener_width;
-use pack::flush_bracket_open;
 pub(crate) use pack::{explode_parens, item_indent, pack, requires_expand};
 pub(crate) use shapes::{
     is_collapse_only, is_collapsible, is_column_shaped, is_fractured, is_layoutable, is_multi_entry,
@@ -55,7 +54,39 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::testing::{first_expr, parse};
+    use crate::{
+        config::Config,
+        pipeline::Pipeline,
+        testing::{first_expr, parse},
+    };
+
+    /// The text the default pipeline prints for `src`.
+    fn formatted(src: &str) -> String {
+        Pipeline::with_defaults(&Config::default())
+            .format(parse(src))
+            .expect("pipeline formats")
+            .text()
+            .to_owned()
+    }
+
+    #[rstest]
+    #[case::comprehension_over_a_call(
+        "value = [x.name for x in fetch(\n)]\n",
+        "value = [x.name for x in fetch()]\n"
+    )]
+    #[case::pair_hugging_a_call_on_a_comprehension(
+        "value = ([x.name for x in fetch(\n)].count(key))\n",
+        "value = [x.name for x in fetch()].count(key)\n"
+    )]
+    fn empty_brackets_across_rows_join_under_either_line_ending(
+        #[case] src: &str,
+        #[case] expected: &str,
+        #[values("\n", "\r\n")] newline: &str,
+    ) {
+        let expected = expected.replace('\n', newline);
+        assert_eq!(formatted(&src.replace('\n', newline)), expected);
+        assert_eq!(formatted(&expected), expected);
+    }
 
     #[rstest]
     #[case("[a]", true)]
@@ -90,6 +121,8 @@ mod tests {
     #[case("(\n    value,)", false)]
     #[case("(1,\n    2,\n    3)", false)]
     #[case("{\n}", false)]
+    #[case("{\r\n}", false)]
+    #[case("{\r}", false)]
     #[case("[1, 2]", false)]
     fn is_column_shaped_requires_both_brackets_alone_on_their_lines(
         #[case] slice: &str,

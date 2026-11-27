@@ -1,5 +1,7 @@
 //! Reads the layout shape a construct already carries.
 
+use ruff_source_file::UniversalNewlines;
+
 use super::*;
 
 /// True for the collapse-only forms, a subscript whose `[index]` joins
@@ -25,13 +27,15 @@ pub(crate) fn is_collapsible(expr: &Expr) -> bool {
 
 /// True when `slice`, a bracketed construct's source text, already
 /// carries the flush column shape the expand path emits, its opening
-/// bracket ending its line and its closing bracket opening its own.
-/// Every other break is a fracture.
+/// bracket ending its line and its closing bracket opening its own,
+/// with a row between them. Every other break is a fracture.
 pub(crate) fn is_column_shaped(slice: &str) -> bool {
-    flush_bracket_open(slice).is_some_and(|body| {
-        body.rsplit_once(['\n', '\r'])
-            .is_some_and(|(_, close)| close.trim_start().len() == 1)
-    })
+    let mut rows = slice.universal_newlines();
+    rows.next().is_some_and(|open| open.trim().len() == 1)
+        && rows
+            .next_back()
+            .is_some_and(|close| close.trim_start().len() == 1)
+        && rows.next().is_some()
 }
 
 /// True when `range` carries a break a join could close, spanning
