@@ -32,30 +32,12 @@ def checked(
     stand_in("mise", STOPS)
 
     def run_check(*, stale: bool = False) -> CompletedProcess:
+
         if stale:
             monkeypatch.setenv("STALE", "1")
         return run([TASK], capture_output=True, cwd=ROOT, text=True)
 
     return run_check
-
-
-def test_lock_check_reads_every_recorded_platform_through_mise_lock_check(
-    checked: Callable[..., CompletedProcess]
-):
-    """
-    Pins that `lock:check` runs `mise lock --check` once between the `bun`
-    and `uv` checks, leaving the lockfile to it rather than copying,
-    regenerating, and restoring it, and that `cargo metadata` prints nothing.
-    """
-    finished = checked()
-
-    assert finished.returncode == 0
-    assert finished.stdout.splitlines() == [
-        "bun install --dry-run --frozen-lockfile",
-        "mise lock --check",
-        "mise install --dry-run --force --locked",
-        "uv lock --check --project crate"
-    ]
 
 
 def test_lock_check_fails_where_the_mise_lockfile_is_stale(
@@ -69,3 +51,21 @@ def test_lock_check_fails_where_the_mise_lockfile_is_stale(
 
     assert finished.returncode != 0
     assert finished.stdout.splitlines()[-1] == "mise lock --check"
+
+
+def test_lock_check_reads_every_recorded_platform_through_mise_lock_check(
+    checked: Callable[..., CompletedProcess]
+):
+    """
+    Pins that `lock:check` runs `mise lock --check` once between the
+    `bun` and `uv` checks, leaving the lockfile to it rather than copying,
+    regenerating, and restoring it, and that `cargo metadata` prints
+    nothing.
+    """
+    finished = checked()
+
+    assert finished.returncode == 0
+    assert finished.stdout.splitlines() == [
+        "bun install --dry-run --frozen-lockfile", "mise lock --check",
+        "mise install --dry-run --force --locked", "uv lock --check --project crate"
+    ]

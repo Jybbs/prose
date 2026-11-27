@@ -15,8 +15,8 @@ TASK = ROOT / ".mise/tasks/rust/check"
 @fixture(autouse=True)
 def commands(stand_in: Callable[..., Path]):
     """
-    Writes a stand-in `cargo` and `mise`, each printing its name and arguments
-    on a line.
+    Writes a stand-in `cargo` and `mise`, each printing its name and
+    arguments on a line.
     """
     for name in ("cargo", "mise"):
         stand_in(name, 'printf \'%s %s\\n\' "${0##*/}" "$*"\n')
@@ -25,7 +25,11 @@ def commands(stand_in: Callable[..., Path]):
 @mark.parametrize(
     ("flag", "lines"),
     [
-        param("false", ["cargo fmt --all --check", "mise lock --check"], id = "default"),
+        param(
+            "false",
+            ["cargo fmt --all --check", "mise lock --check"],
+            id = "default"
+        ),
         param("true", ["cargo fmt --all --check"], id = "rustfmt only")
     ]
 )
@@ -41,7 +45,11 @@ def test_check_runs_the_lockfile_check_unless_told_rustfmt_only(
     """
     monkeypatch.setenv("usage_rustfmt", flag)
     finished: CompletedProcess = run(
-        [TASK], capture_output=True, check=True, cwd=ROOT, text=True
+        [TASK],
+        capture_output = True,
+        check          = True,
+        cwd            = ROOT,
+        text           = True
     )
 
     assert finished.stdout.splitlines() == lines

@@ -4,6 +4,4 @@
 #USAGE flag "--rustfmt" help "Check only the Rust source"
 
 cargo fmt --all --check
-if [[ ${usage_rustfmt:-false} != true ]]; then
-  mise lock --check
-fi
+[[ ${usage_rustfmt:-false} == true ]] || mise lock --check
