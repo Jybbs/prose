@@ -268,9 +268,9 @@ impl PartialEq for Columns {
     }
 }
 
-/// The column table `reservations` shifts `source` to, built on the
-/// first [`Table::table`] call, so a rule that never looks up a column
-/// never builds it.
+/// The columns `reservations` shifts each aligned value in `source`
+/// to, built on the first [`Table::table`] call, so a rule that never
+/// looks up a column never builds the table.
 pub(crate) struct Lazy<'a> {
     reservations: &'a Reservations,
     source: &'a Source,

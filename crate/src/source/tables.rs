@@ -485,23 +485,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn lazy_columns_build_the_table_on_the_first_lookup_only() {
-        let source = parse("x = 1\nlonger = 2\n");
-        let reservations = Config::default().equals_reservations();
-        let lazy = Lazy::new(&source, &reservations);
-        assert!(source.columns.get().is_none());
-
-        let value = TextSize::new(4);
-        let held = lazy.table().column_in(&source, value);
-
-        assert!(source.columns.get().is_some());
-        assert_eq!(
-            held,
-            source.columns(&reservations).column_in(&source, value)
-        );
-    }
-
     #[rstest]
     #[case::preserving(true)]
     #[case::declining(false)]
@@ -556,6 +539,23 @@ mod tests {
         assert_eq!(
             next.assert_carried_bindings_are_fresh("the reparsed source"),
             carried,
+        );
+    }
+
+    #[test]
+    fn lazy_columns_build_the_table_on_the_first_lookup_only() {
+        let source = parse("x = 1\nlonger = 2\n");
+        let reservations = Config::default().equals_reservations();
+        let lazy = Lazy::new(&source, &reservations);
+        assert!(source.columns.get().is_none());
+
+        let value = TextSize::new(4);
+        let held = lazy.table().column_in(&source, value);
+
+        assert!(source.columns.get().is_some());
+        assert_eq!(
+            held,
+            source.columns(&reservations).column_in(&source, value)
         );
     }
 }
