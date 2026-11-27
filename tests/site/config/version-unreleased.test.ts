@@ -26,6 +26,6 @@ describe('the config with no published release', () => {
   it('hands no release to the source page dependency line', async () => {
     const data = page('architecture/source.md')
     await config.transformPageData!(data, { siteConfig: { srcDir: '' } } as never)
-    expect(data.frontmatter.proseVersion).toBeNull()
+    expect(data.frontmatter.proseTag).toBe('')
   })
 })

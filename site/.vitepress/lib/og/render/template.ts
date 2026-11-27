@@ -44,7 +44,7 @@ function buildCard(glyph: string, page: OgPage, version: string | null, wordmark
     watermarkLayer(glyph),
     parts.leftRail(accent),
     wordmarkBlock(wordmark),
-    dataPanel(accent, page, version),
+    ...dataPanel(accent, page, version),
     titleBlock(page, accent)
   )
 }
@@ -53,13 +53,11 @@ function buildKicker(page: OgPage): string {
   return `— ${page.breadcrumb.map(s => s.toUpperCase()).join(' · ')} —`
 }
 
-function dataPanel(accent: string, page: OgPage, version: string | null): JSXNode {
-  const rows = panelRows(page)
-  const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
-  return parts.panelShell(accent, warm ? '99' : '66',
-    ...rows.map(row => parts.panelRow(...row)),
-    ...parts.versionRows(version, rows.length > 0)
-  )
+function dataPanel(accent: string, page: OgPage, version: string | null): JSXNode[] {
+  const rows     = panelRows(page)
+  const warm     = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
+  const children = [...rows.map(row => parts.panelRow(...row)), ...parts.versionRows(version, rows.length > 0)]
+  return children.length === 0 ? [] : [parts.panelShell(accent, warm ? '99' : '66', ...children)]
 }
 
 export function fitTitleSize(text: string, hasCaption: boolean): number {

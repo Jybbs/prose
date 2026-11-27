@@ -156,7 +156,7 @@ export default defineConfig({
   },
   async transformPageData(pageData, { siteConfig }) {
     pageData.frontmatter ||= {}
-    pageData.frontmatter.proseVersion   = proseVersion
+    pageData.frontmatter.proseTag       = proseVersion === null ? '' : `, tag = "${proseVersion}"`
     pageData.frontmatter.requiresPython = requiresPython
     pageData.frontmatter.ruffVersion    = ruffRelease
     pageData.frontmatter.head ??= []
