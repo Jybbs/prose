@@ -8,11 +8,13 @@ Keeps one draft release for the version `crate/Cargo.toml` carries.
 
 Reads `[package].version`, emits it, then reads every page of the
 repository's releases through `gh api` and takes one outcome from the
-release carrying that version. A version no release carries is created as a
-draft with generated notes. A draft carrying it has its body replaced with
-the notes the `releases/generate-notes` endpoint returns for the version
-against `main`. A published release carrying it stops the task with an
-`::error::` annotation naming `mise bump`, so no merge adds to a version
+release carrying that version. A version no release carries is created as
+a draft with generated notes. A draft carrying it has its body replaced
+with the notes the `releases/generate-notes` endpoint returns for the
+version against `main`, sent with the version as `tag_name` so the draft
+keeps it. A draft named for the version whose tag reads `untagged-<hash>`
+counts as carrying it. A published release carrying it stops the task with
+an `::error::` annotation naming `mise bump`, so no merge adds to a version
 already released. A `gh` call that exits nonzero stops the task with an
 `::error::` annotation carrying every line it printed on stderr, so no draft
 is written after a failed read and a rerun retries it. Emits `version=`,
@@ -76,12 +78,17 @@ def emit(**outputs: str):
 def existing_release(repo: str, version: str) -> dict | None:
     """
     Finds the first release in the repository's listing whose tag is the
-    version, giving `None` when no release in the listing carries it.
+    version, or a draft named for it whose tag a refresh once replaced with
+    `untagged-<hash>`, giving `None` when no release in the listing carries
+    it.
     """
-    listing  = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
-    releases = chain.from_iterable(from_json(listing))
+    listing = gh("api", "--paginate", "--slurp", f"repos/{repo}/releases")
     return next(
-        (release for release in releases if release["tag_name"] == version),
+        (
+            release for release in chain.from_iterable(from_json(listing))
+            if release["tag_name"] == version
+            or release["draft"] and release["name"] == version
+        ),
         None
     )
 
@@ -112,7 +119,7 @@ def main():
     if release is None:
         emit(state="created", url=create_draft(repo, version))
     elif release["draft"]:
-        emit(state="refreshed", url=refresh_draft(release, repo))
+        emit(state="refreshed", url=refresh_draft(release, repo, version))
     else:
         emit(state="published", url=release["html_url"])
         raise SystemExit(
@@ -131,11 +138,12 @@ def package_version(manifest: str) -> str:
     return from_toml(manifest)["package"]["version"]
 
 
-def refresh_draft(release: dict, repo: str) -> str:
+def refresh_draft(release: dict, repo: str, version: str) -> str:
     """
-    Replaces the draft's body with the notes GitHub generates for its tag
-    against `main`, leaving its title and every other field as they stand,
-    and returns the URL GitHub gives the draft after the edit.
+    Replaces the draft's body with the notes GitHub generates for the
+    version against `main`, sending the version as its `tag_name` and `main`
+    as its `target_commitish` so the edit leaves the draft tagged with the
+    version, and returns the URL GitHub gives the draft after the edit.
     """
     notes = gh(
         "api",
@@ -143,7 +151,7 @@ def refresh_draft(release: dict, repo: str) -> str:
         "POST",
         f"repos/{repo}/releases/generate-notes",
         "-f",
-        f"tag_name={release['tag_name']}",
+        f"tag_name={version}",
         "-f",
         "target_commitish=main"
     )
@@ -152,6 +160,10 @@ def refresh_draft(release: dict, repo: str) -> str:
         "--method",
         "PATCH",
         f"repos/{repo}/releases/{release['id']}",
+        "-f",
+        f"tag_name={version}",
+        "-f",
+        "target_commitish=main",
         "-f",
         f"body={from_json(notes)['body']}"
     )

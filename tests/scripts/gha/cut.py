@@ -24,8 +24,8 @@ NOTES    = [
     "-f", "tag_name=1.2.3", "-f", "target_commitish=main"
 ]
 UPDATE = [
-    "gh", "api", "--method", "PATCH",
-    "repos/owner/repo/releases/7", "-f", "body=## Notes\n"
+    "gh", "api", "--method", "PATCH", "repos/owner/repo/releases/7", "-f",
+    "tag_name=1.2.3", "-f", "target_commitish=main", "-f", "body=## Notes\n"
 ]
 
 
@@ -49,7 +49,7 @@ def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) ->
     return workdir({"crate/Cargo.toml": MANIFEST.format("1.2.3")})
 
 
-def release(tag: str, draft: bool = False) -> dict:
+def release(tag: str, draft: bool = False, name: str | None = None) -> dict:
     """
     Builds the fields `gha:cut` reads from one entry of the release listing.
     """
@@ -57,6 +57,7 @@ def release(tag: str, draft: bool = False) -> dict:
         "draft"    : draft,
         "html_url" : f"https://example.test/{tag}",
         "id"       : 7,
+        "name"     : name or tag,
         "tag_name" : tag
     }
 
@@ -77,6 +78,20 @@ def release(tag: str, draft: bool = False) -> dict:
             "refreshed",
             "https://example.test/edited",
             id = "draft"
+        ),
+        param(
+            [[release("untagged-abc", draft=True, name="1.2.3")]],
+            [LISTING, NOTES, UPDATE],
+            "refreshed",
+            "https://example.test/edited",
+            id = "untagged draft"
+        ),
+        param(
+            [[release("untagged-abc", name="1.2.3")]],
+            [LISTING, CREATE],
+            "created",
+            "https://example.test/new",
+            id = "untagged published name ignored"
         ),
         param(
             [
