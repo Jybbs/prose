@@ -24,8 +24,8 @@ NOTES    = [
     "-f", "tag_name=1.2.3", "-f", "target_commitish=main"
 ]
 UPDATE = [
-    "gh", "api", "--method", "PATCH",
-    "repos/owner/repo/releases/7", "-f", "body=## Notes\n"
+    "gh", "api", "--method", "PATCH", "repos/owner/repo/releases/7", "-f",
+    "tag_name=1.2.3", "-f", "target_commitish=main", "-f", "body=## Notes\n"
 ]
 
 
@@ -49,7 +49,7 @@ def tree(monkeypatch: MonkeyPatch, workdir: Callable[[dict[str, str]], Path]) ->
     return workdir({"crate/Cargo.toml": MANIFEST.format("1.2.3")})
 
 
-def release(tag: str, draft: bool = False) -> dict:
+def release(tag: str, draft: bool = False, name: str | None = None) -> dict:
     """
     Builds the fields `gha:cut` reads from one entry of the release listing.
     """
@@ -57,6 +57,7 @@ def release(tag: str, draft: bool = False) -> dict:
         "draft"    : draft,
         "html_url" : f"https://example.test/{tag}",
         "id"       : 7,
+        "name"     : name or tag,
         "tag_name" : tag
     }
 
@@ -77,6 +78,20 @@ def release(tag: str, draft: bool = False) -> dict:
             "refreshed",
             "https://example.test/edited",
             id = "draft"
+        ),
+        param(
+            [[release("untagged-abc", draft=True, name="1.2.3")]],
+            [LISTING, NOTES, UPDATE],
+            "refreshed",
+            "https://example.test/edited",
+            id = "untagged draft"
+        ),
+        param(
+            [[release("untagged-abc", name="1.2.3")]],
+            [LISTING, CREATE],
+            "created",
+            "https://example.test/new",
+            id = "untagged published name ignored"
         ),
         param(
             [
@@ -107,7 +122,10 @@ def test_main_creates_or_refreshes_the_draft(
     """
     Pins that the version is looked up across every page of the listing,
     that a version no release carries is created as a draft, and that a
-    draft carrying it has its body replaced with the generated notes alone.
+    draft carrying it, by tag or by a name that is the version where its
+    tag reads `untagged-<hash>`, is refreshed with the generated notes, the
+    version as `tag_name`, and `main` as `target_commitish`. A release named
+    for the version but published is not taken for its draft.
     """
     fp.register(LISTING, stdout=dumps(pages))
     fp.register(CREATE, stdout=f"{url}\n")
@@ -162,6 +180,25 @@ def test_main_fails_on_a_published_version(
     assert capsys.readouterr().out == (
         "version=1.2.3\nstate=published\nurl=https://example.test/1.2.3\n"
     )
+
+
+def test_main_fails_on_a_published_version_behind_an_untagged_draft(
+    cut  : ModuleType,
+    fp   : FakeProcess,
+    tree : Path
+):
+    """
+    Pins that a published release carrying the version stops the task even
+    where a draft named for it, tagged `untagged-<hash>`, precedes it in the
+    listing, so no release is written.
+    """
+    draft = release("untagged-abc", draft=True, name="1.2.3")
+    fp.register(LISTING, stdout=dumps([[draft, release("1.2.3")]]))
+
+    with raises(SystemExit):
+        cut.main()
+
+    assert list(fp.calls) == [LISTING]
 
 
 @mark.parametrize(
