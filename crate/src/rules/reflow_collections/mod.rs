@@ -92,7 +92,7 @@ impl ReflowCollections {
 impl Rule for ReflowCollections {
     fn apply(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(&self.reservations);
+        let reservations = reserve::Lazy::new(source, &self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);
@@ -130,7 +130,7 @@ struct Layouter<'a> {
     pub(super) padding: &'a [Edit],
     pub(super) reflow_calls: &'a ReflowCalls,
     pub(super) reorders: Reorders,
-    pub(super) reservations: &'a reserve::Columns,
+    pub(super) reservations: &'a dyn reserve::Table,
     pub(super) source: &'a Source,
     pub(super) targets: &'a CallTargets<'a>,
     pub(super) wrap_dict_entries: bool,
@@ -239,7 +239,7 @@ impl<'a> ParentedProbe<'a> for Layouter<'a> {
                     } else {
                         self.source.line_indent_width(start)
                     };
-                    let column = self.reservations.column_under(
+                    let column = self.reservations.table().column_under(
                         self.source,
                         &self.edits,
                         start,

@@ -383,6 +383,7 @@ mod tests {
     use super::*;
     use crate::{
         config::Config,
+        primitives::reserve::{Lazy, Table},
         rules::{Rule, line_overflow::LineOverflow, reflow_collections::ReflowCollections},
         testing::{parse, range, woven},
     };
@@ -481,6 +482,23 @@ mod tests {
         assert_eq!(
             source.columns(&unaligned).column_in(&source, value),
             written
+        );
+    }
+
+    #[test]
+    fn lazy_columns_build_the_table_on_the_first_lookup_only() {
+        let source = parse("x = 1\nlonger = 2\n");
+        let reservations = Config::default().equals_reservations();
+        let lazy = Lazy::new(&source, &reservations);
+        assert!(source.columns.get().is_none());
+
+        let value = TextSize::new(4);
+        let held = lazy.table().column_in(&source, value);
+
+        assert!(source.columns.get().is_some());
+        assert_eq!(
+            held,
+            source.columns(&reservations).column_in(&source, value)
         );
     }
 

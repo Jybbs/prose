@@ -108,7 +108,7 @@ impl ReflowCalls {
     /// into `seating` when one is given.
     fn walk(&self, source: &Source, reach: Reach, seating: Option<&RefCell<Seating>>) -> Vec<Edit> {
         let targets = module_call_params(source);
-        let reservations = source.columns(&self.reservations);
+        let reservations = reserve::Lazy::new(source, &self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let stranded = source.stranded_padding(self.stranding);
         let padding = padding::beside(&stranded, &rewrites);
@@ -210,7 +210,7 @@ pub(crate) struct Reshaper<'a> {
     pub(crate) one_row: one_row::Settings<'a>,
     pub(crate) padding: &'a [Edit],
     pub(crate) reorders: Reorders,
-    pub(crate) reservations: &'a reserve::Columns,
+    pub(crate) reservations: &'a dyn reserve::Table,
     pub(crate) source: &'a Source,
     pub(crate) targets: &'a CallTargets<'a>,
 }
@@ -340,7 +340,7 @@ struct Exploder<'a> {
     padding: &'a [Edit],
     region: TextRange,
     reorders: Reorders,
-    reservations: &'a reserve::Columns,
+    reservations: &'a dyn reserve::Table,
     seating: Option<&'a RefCell<Seating>>,
     seats_elements: bool,
     source: &'a Source,

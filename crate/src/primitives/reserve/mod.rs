@@ -8,7 +8,7 @@
 //! `align-colons` gives its `:`. No column is reserved for a value
 //! inside an f-string or t-string replacement field.
 
-use std::ops::Range;
+use std::{borrow::Cow, cell::OnceCell, ops::Range};
 
 use ruff_diagnostics::{Edit, SourceMap};
 use ruff_python_ast::{
@@ -256,6 +256,38 @@ impl Columns {
     pub(crate) fn keyword_value_column(&self, indent: usize, name_width: usize) -> Option<usize> {
         self.buffer
             .map(|buffer| indent + name_width + buffer + aligner::VALUE_OFFSET)
+    }
+}
+
+/// Reads a column table, building it on the first read.
+pub(crate) trait Table {
+    /// The table, built on this call where no earlier one did.
+    fn table(&self) -> &Columns;
+}
+
+/// The column table `reservations` shifts `source` to, built on the
+/// first [`Table::table`] call, so a rule that never looks up a column
+/// never builds it.
+pub(crate) struct Lazy<'a> {
+    reservations: &'a Reservations,
+    source: &'a Source,
+    table: OnceCell<Cow<'a, Columns>>,
+}
+
+impl<'a> Lazy<'a> {
+    pub(crate) fn new(source: &'a Source, reservations: &'a Reservations) -> Self {
+        Self {
+            reservations,
+            source,
+            table: OnceCell::new(),
+        }
+    }
+}
+
+impl Table for Lazy<'_> {
+    fn table(&self) -> &Columns {
+        self.table
+            .get_or_init(|| self.source.columns(self.reservations))
     }
 }
 

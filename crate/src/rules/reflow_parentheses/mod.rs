@@ -104,7 +104,7 @@ impl ReflowParentheses {
         let fstrings = source.fstring_rewrites(self.fstrings);
         let rewrites = self.rewrites(source, simplified, &fstrings);
         let padding = padding::beside(&stranded, &rewrites);
-        let reservations = source.columns(&self.reservations);
+        let reservations = reserve::Lazy::new(source, &self.reservations);
         let targets = module_call_params(source);
         measure(&mut Shedder {
             breaks: RefCell::default(),
@@ -204,7 +204,7 @@ struct Shedder<'a> {
     landed: Option<Landed<'a>>,
     one_row: one_row::Settings<'a>,
     padding: &'a [Edit],
-    reservations: &'a reserve::Columns,
+    reservations: &'a dyn reserve::Table,
     simplified: &'a [Vec<Edit>],
     source: &'a Source,
 }
