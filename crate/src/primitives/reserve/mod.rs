@@ -259,10 +259,13 @@ impl Columns {
     }
 }
 
-/// Reads a column table, building it on the first read.
-pub(crate) trait Table {
-    /// The table, built on this call where no earlier one did.
-    fn table(&self) -> &Columns;
+/// Two tables are equal where they reserve the same columns over the
+/// same runs, whatever order their runs were numbered in.
+#[cfg(test)]
+impl PartialEq for Columns {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer == other.buffer && self.canonical() == other.canonical()
+    }
 }
 
 /// The column table `reservations` shifts `source` to, built on the
@@ -288,15 +291,6 @@ impl Table for Lazy<'_> {
     fn table(&self) -> &Columns {
         self.table
             .get_or_init(|| self.source.columns(self.reservations))
-    }
-}
-
-/// Two tables are equal where they reserve the same columns over the
-/// same runs, whatever order their runs were numbered in.
-#[cfg(test)]
-impl PartialEq for Columns {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer == other.buffer && self.canonical() == other.canonical()
     }
 }
 
@@ -708,6 +702,12 @@ impl Scope {
             stmt: run.scope,
         }
     }
+}
+
+/// Reads a column table, building it on the first read.
+pub(crate) trait Table {
+    /// The table, built on this call where no earlier one did.
+    fn table(&self) -> &Columns;
 }
 
 /// The geometry of one splice, as a carry reads it: the weave its
