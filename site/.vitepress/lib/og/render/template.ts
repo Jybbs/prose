@@ -58,8 +58,7 @@ function dataPanel(accent: string, page: OgPage, version: string | null): JSXNod
   const warm = page.family !== undefined && FAMILY_META[page.family].warmth === 'warm'
   return parts.panelShell(accent, warm ? '99' : '66',
     ...rows.map(row => parts.panelRow(...row)),
-    ...(rows.length > 0 && version !== null ? [parts.panelDivider()] : []),
-    ...(version === null ? [] : [parts.versionCallout(version)])
+    ...parts.versionRows(version, rows.length > 0)
   )
 }
 

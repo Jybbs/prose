@@ -26,7 +26,7 @@ function buildLandingCard(titleWithTagline: BrandImage, version: string | null):
 function dataPanel(version: string | null): JSXNode {
   return parts.panelShell(PALETTE.ube, '66',
     parts.panelRow('URL', new URL(SITE_HOSTNAME).host),
-    ...parts.versionRows(version)
+    ...parts.versionRows(version, true)
   )
 }
 
