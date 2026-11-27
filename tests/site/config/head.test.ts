@@ -57,6 +57,12 @@ describe('pageHead', () => {
     ] })
   })
 
+  it('leaves the version out of the landing graph where none is known', () => {
+    const data = page({ description: 'd', relativePath: 'index.md', title: 'Home' })
+    const tags = head.pageHead(data, null)
+    expect((jsonLd(tags) as { '@graph': object[] })['@graph'][1]).not.toHaveProperty('softwareVersion')
+  })
+
   it('falls back to the landing card and drops og:url and JSON-LD on the 404', () => {
     const data = page({
       description  : 'Not Found',

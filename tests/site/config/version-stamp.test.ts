@@ -26,6 +26,6 @@ describe('the version the config prints', () => {
   it('hands the published release to the source page dependency line', async () => {
     const data = page('architecture/source.md')
     await config.transformPageData!(data, { siteConfig: { srcDir: '' } } as never)
-    expect(data.frontmatter.proseVersion).toBe('9.8.7')
+    expect(data.frontmatter.proseTag).toBe(', tag = "9.8.7"')
   })
 })

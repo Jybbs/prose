@@ -5,17 +5,6 @@ import { fixtureDir } from '../support'
 
 const site = siteDir(import.meta.url)
 
-describe('readCargoVersion', () => {
-  it('reads the crate version from Cargo.toml', () => {
-    expect(version.readCargoVersion(CRATE)).toMatch(/^\d+\.\d+\.\d+/)
-  })
-
-  it('throws when the manifest carries no package version', () => {
-    const dir = fixtureDir(import.meta.dirname, 'cargo-no-version')
-    expect(() => version.readCargoVersion(dir)).toThrow(/package\.version/)
-  })
-})
-
 describe('readPackageVersions', () => {
   it('reads the pinned version of each named devDependency', () => {
     const semver = expect.stringMatching(/^\d+\.\d+\.\d+/)
