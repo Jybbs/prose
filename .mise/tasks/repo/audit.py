@@ -1,5 +1,5 @@
 #!/usr/bin/env -S uv run --script
-# MISE alias="audit"
+# MISE alias="invariants"
 # MISE depends=["repo:test"]
 # MISE description="Audit the CI invariants no other gate covers"
 # /// script
@@ -62,7 +62,9 @@ them fails.
                check runs matches its row by name, alias, or `depends`
                entry, and every matrix check has a row.
     tasks      Every task passes `mise tasks validate`, so no alias is shared
-               and no dependency names a task that does not exist.
+               and no dependency names a task that does not exist, and no
+               alias matches a command or a command's own alias in
+               `mise --help`, since mise runs that command ahead of the task.
     scripts    Every tool in `.mise/bin` resolves on the path from `site/` to
                its script, none of those scripts is a symlink, each docs-site
                script passes its arguments to `site/node_modules/.bin/<tool>`
@@ -1383,6 +1385,23 @@ def reported(path: Path) -> list[Report]:
     return reports
 
 
+def reserved() -> set[str]:
+    """
+    Reads every command and command alias in the `Commands` section of `mise
+    --help`, failing when the help lists none.
+    """
+    text = run(["mise", "--help"], capture_output=True, text=True).stdout
+    if not (listed := search(r"(?ms)^Commands:\n(.*?)^\S", text)):
+        fail("mise --help lists no commands")
+    return {
+        *findall(r"(?m)^  (\S+)", listed[1]),
+        *chain.from_iterable(
+            names.split(", ")
+            for names in findall(r"\[aliases: ([^\]]+)\]", sub(r"\s+", " ", listed[1]))
+        )
+    }
+
+
 def restores(step: dict, uncached: bool = False) -> bool:
     """
     Checks whether the `step` restores a cache, directly or through a step
@@ -1672,7 +1691,8 @@ def tasks() -> int:
     """
     Reports every issue `mise tasks validate` finds across the task tree,
     such as an alias two tasks share or a dependency naming a task that does
-    not exist, as an annotation at the issue's own severity. Returns 1 when
+    not exist, as an annotation at the issue's own severity, and every task
+    alias matching a command `mise --help` lists as an error. Returns 1 when
     any issue is an error.
     """
     failed = 0
@@ -1682,6 +1702,11 @@ def tasks() -> int:
             message = f"{message} ({details})"
         annotate(message, level = issue["severity"])
         failed |= issue["severity"] == "error"
+    commands = reserved()
+    for name, task in tasks_listed().items():
+        for alias in sorted(commands & {*task["aliases"]}):
+            annotate(f"{name}: alias {alias!r} matches a command `mise --help` lists")
+            failed = 1
     return failed
 
 
