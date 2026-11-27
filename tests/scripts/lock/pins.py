@@ -12,20 +12,19 @@ LOCK  = loads((ROOT / ".mise/mise.lock").read_text(encoding="utf-8"))["tools"]
 TOOLS = loads((ROOT / ".mise/config.toml").read_text(encoding="utf-8"))["tools"]
 
 WANTED = {
-    platform
+    name.removeprefix("platforms.")
     for entries in LOCK.values()
     for name in entries[0]
     if name.startswith("platforms.")
-    if (platform := name.removeprefix("platforms.")).count("-") == 1
 }
 
 
 def allowed(os: list[str] | None, platform: str) -> bool:
     """
     Returns whether the `os` list of a pin admits `platform`, which joins an
-    operating system and an architecture with a hyphen.
+    operating system, an architecture, and any variant with hyphens.
     """
-    system, arch = platform.split("-")
+    system, arch, *_ = platform.split("-")
     return os is None or any(item in (system, f"{system}/{arch}") for item in os)
 
 
@@ -53,7 +52,7 @@ def test_lockfile_holds_each_pin_on_every_platform_its_os_allows(tool: str):
     }
 
     assert {p for p in WANTED if allowed(os, p)} <= held
-    assert not {p for p in held if p.count("-") == 1 and not allowed(os, p)}
+    assert not {p for p in held if not allowed(os, p)}
 
 
 def test_gh_comes_from_a_pin():

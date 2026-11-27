@@ -7,6 +7,7 @@ from collections.abc import Callable
 from pathlib         import Path
 from pytest          import MonkeyPatch, fixture, mark, param
 from subprocess      import CompletedProcess, run
+from yaml            import safe_load
 
 ROOT = Path(__file__).resolve().parents[3]
 TASK = ROOT / ".mise/tasks/rust/check"
@@ -53,3 +54,17 @@ def test_check_runs_the_lockfile_check_unless_told_rustfmt_only(
     )
 
     assert finished.stdout.splitlines() == lines
+
+
+def test_format_row_checks_only_the_rust_source():
+    """
+    Pins that the `🪶 Format` row of `ci.yml` passes `--rustfmt`, leaving
+    the mise lockfile to the `🪵 Lockfile` row.
+    """
+    flow = safe_load((ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8"))
+    rows = {
+        row["name"]: row["command"]
+        for row in flow["jobs"]["check"]["strategy"]["matrix"]["include"]
+    }
+
+    assert rows["🪶 Format"] == "mise run rust:check --rustfmt"
