@@ -1,5 +1,7 @@
 #!/usr/bin/env -S bash -euo pipefail
 #MISE alias       = "check"
-#MISE description = "Verify Rust source matches `rustfmt` without rewriting"
+#MISE description = "Verify Rust source matches `rustfmt` and the mise lockfile is current"
+#USAGE flag "--rustfmt" help "Check only the Rust source"
 
 cargo fmt --all --check
+[[ ${usage_rustfmt:-false} == true ]] || mise lock --check
