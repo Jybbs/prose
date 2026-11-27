@@ -27,49 +27,53 @@ describe('the PyPI releases loader', () => {
     expect(warn).toHaveBeenCalledWith('[data:pypi-releases] request failed, seeding the fallback')
   })
 
-  supportTest('returns no release when PyPI holds no file for any version', async ({ tmpDir, warn }) => {
-    respond({ releases: { '0.11.1': [] } })
+  supportTest('returns no release when PyPI lists no file', async ({ tmpDir, warn }) => {
+    respond({ files: [] })
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([])
     expect(warn).not.toHaveBeenCalled()
   })
 
   supportTest.for([
-    ['the release map is missing', {}],
-    ['a version has no file list', { releases: { '0.9.0': null } }],
-    ['a file has no upload time', { releases: { '0.9.0': [{}] } }],
-    ['an upload time is unreadable', { releases: { '0.9.0': [{ upload_time: 'soon' }] } }]
+    ['the file list is missing', {}],
+    ['a file has no upload time', { files: [{ filename: 'prose_formatter-0.9.0.tar.gz' }] }],
+    ['an upload time is unreadable',
+      { files: [{ filename: 'prose_formatter-0.9.0.tar.gz', 'upload-time': 'soon' }] }]
   ] as const)('returns no release on a cold store when %s', async ([, payload], { tmpDir, warn }) => {
     respond(payload)
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([])
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('payload rejected'))
   })
 
+  supportTest('requests the Index API project detail', async ({ tmpDir }) => {
+    respond({ files: [] })
+    await loadFrom(tmpDir)
+    expect(fetch).toHaveBeenCalledWith(
+      'https://pypi.org/simple/prose-formatter/',
+      expect.objectContaining({ headers: expect.objectContaining({ Accept: 'application/vnd.pypi.simple.v1+json' }) })
+    )
+  })
+
   supportTest('orders releases uploaded on the same day by version number, highest first',
     async ({ tmpDir }) => {
-    respond({ releases: {
-      '0.9.0'  : [{ upload_time: '2026-05-12T08:00:00' }],
-      '0.10.0' : [{ upload_time: '2026-05-12T09:30:00' }]
-    } })
+    respond({ files: [
+      { filename: 'prose_formatter-0.9.0.tar.gz',  'upload-time': '2026-05-12T08:00:00Z' },
+      { filename: 'prose_formatter-0.10.0.tar.gz', 'upload-time': '2026-05-12T09:30:00Z' }
+    ] })
     await expect(loadFrom(tmpDir)).resolves.toMatchObject([{ version: '0.10.0' }, { version: '0.9.0' }])
   })
 
-  supportTest('lists releases newest first, each dated by its first file not yanked or else its first file',
+  supportTest('leaves out a release whose every file is yanked and keeps one with a file left',
     async ({ tmpDir }) => {
-    respond({ releases: {
-      '0.10.0' : [{ upload_time: '2026-05-12T09:30:00' }],
-      '0.11.1' : [],
+    respond({ files: [
+      { filename: 'prose_formatter-0.10.0.tar.gz', 'upload-time': '2026-05-12T09:30:00Z', yanked: false },
 
-      '0.8.0': [
-        { upload_time: '2026-01-05T08:00:00', yanked: true },
-        { upload_time: '2026-01-06T08:00:00', yanked: true }
-      ],
+      { filename: 'prose_formatter-0.8.0-py3-none-any.whl', 'upload-time': '2026-01-05T08:00:00Z', yanked: true },
+      { filename: 'prose_formatter-0.8.0.tar.gz',           'upload-time': '2026-01-06T08:00:00Z', yanked: 'broken' },
 
-      '0.9.0': [
-        { upload_time: '2026-06-02T10:00:00', yanked: true },
-        { upload_time: '2026-06-04T10:00:00' },
-        { upload_time: '2026-06-06T10:00:00' }
-      ]
-    } })
+      { filename: 'prose_formatter-0.9.0-py3-none-any.whl', 'upload-time': '2026-06-02T10:00:00Z', yanked: 'broken' },
+      { filename: 'prose_formatter-0.9.0-py3-none-musl.whl', 'upload-time': '2026-06-04T10:00:00Z' },
+      { filename: 'prose_formatter-0.9.0.tar.gz',            'upload-time': '2026-06-06T10:00:00Z', yanked: false }
+    ] })
     await expect(loadFrom(tmpDir)).resolves.toStrictEqual([
       {
         date      : '2026-06-04',
@@ -84,14 +88,6 @@ describe('the PyPI releases loader', () => {
         month     : 'MAY',
         url       : 'https://pypi.org/project/prose-formatter/0.10.0/',
         version   : '0.10.0',
-        year      : '2026',
-        yearShort : '26'
-      },
-      {
-        date      : '2026-01-05',
-        month     : 'JAN',
-        url       : 'https://pypi.org/project/prose-formatter/0.8.0/',
-        version   : '0.8.0',
         year      : '2026',
         yearShort : '26'
       }
