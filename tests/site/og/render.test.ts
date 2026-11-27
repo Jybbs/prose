@@ -78,6 +78,15 @@ describe('the data panel of a card with no rows', () => {
   })
 })
 
+describe('the data panel of a rule card with no version', () => {
+  it('draws the panel around the family and pipeline rows', async () => {
+    const rule  = CASES.find(([name]) => name === 'rule-cool')![1]
+    const shell = vi.spyOn(parts, 'panelShell')
+    await pageSvg(rule, brand, null)
+    expect(shell).toHaveBeenCalledOnce()
+  })
+})
+
 describe('fitTitleSize', () => {
   it.each([
     [4,  false, 144],
