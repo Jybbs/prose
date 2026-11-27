@@ -65,7 +65,7 @@ impl<'a> Layouter<'a> {
             self.source,
             self.padding,
             row,
-            self.reservations.column_in(self.source, offset),
+            self.reservations.table().column_in(self.source, offset),
         )
     }
 

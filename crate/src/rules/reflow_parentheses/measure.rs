@@ -62,6 +62,7 @@ impl Shedder<'_> {
         let placed = apply_inline_edits(self.source, range, &self.edits);
         let column = settled_head_column(self.source, self.padding, &placed, range.end(), 0);
         self.reservations
+            .table()
             .column_under(self.source, &self.edits, range.end(), column)
     }
 

@@ -1,9 +1,7 @@
 //! The stacked layout an adjacent-string run settles to.
 
-use std::borrow::Cow;
-
 use super::*;
-use crate::primitives::inline::display_width;
+use crate::primitives::{inline::display_width, reserve::Table};
 
 /// Emits the break each over-budget or raggedly stacked string run
 /// needs. The parent-tracking walk hands each expression over with its
@@ -15,7 +13,7 @@ pub(super) struct Layout<'a> {
     pub(super) docstrings: Vec<TextRange>,
     pub(super) edits: Vec<Edit>,
     pub(super) newline: &'static str,
-    pub(super) reservations: Cow<'a, reserve::Columns>,
+    pub(super) reservations: reserve::Lazy<'a>,
     pub(super) source: &'a Source,
 }
 
@@ -63,7 +61,7 @@ impl<'a> Layout<'a> {
             return;
         }
         let start = span.start();
-        let column = self.reservations.column_in(self.source, start);
+        let column = self.reservations.table().column_in(self.source, start);
         if !self.source.contains_line_break(span)
             && column + display_width(self.source.slice(span)) <= self.code_line_length
         {

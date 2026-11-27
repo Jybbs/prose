@@ -87,7 +87,7 @@ impl StackMethodChains {
     /// holds.
     pub(crate) fn breaks(&self, source: &Source) -> Vec<Vec<Edit>> {
         let targets = module_call_params(source);
-        let reservations = source.columns(&self.reservations);
+        let reservations = reserve::Lazy::new(source, &self.reservations);
         let rewrites = source.fstring_rewrites(self.fstrings);
         let mut breaker = Breaker {
             cap: self.max_links,
@@ -127,7 +127,7 @@ struct Breaker<'a> {
     max_shift: MaxShift,
     reflow_calls: &'a ReflowCalls,
     rejoin: fracture::Settings<'a>,
-    reservations: &'a reserve::Columns,
+    reservations: &'a dyn reserve::Table,
     rewrites: &'a [Edit],
     source: &'a Source,
 }
@@ -232,7 +232,10 @@ impl<'a> Breaker<'a> {
             return seat;
         }
         Seat {
-            column: self.reservations.column_in(self.source, range.start()),
+            column: self
+                .reservations
+                .table()
+                .column_in(self.source, range.start()),
             indent: self.source.line_indent_width(range.start()),
             line_shift: 0,
             tail: 0,

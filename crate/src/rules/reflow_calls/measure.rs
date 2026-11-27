@@ -44,6 +44,7 @@ impl<'a> Exploder<'a> {
             return column;
         }
         self.reservations
+            .table()
             .column_under(self.source, &self.edits, offset, column)
     }
 

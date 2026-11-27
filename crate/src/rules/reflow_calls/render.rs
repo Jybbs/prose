@@ -309,6 +309,7 @@ impl<'a> Exploder<'a> {
         Slot {
             aligned: name.and_then(|name| {
                 self.reservations
+                    .table()
                     .keyword_value_column(indent, display_width(name))
             }),
             indent,
