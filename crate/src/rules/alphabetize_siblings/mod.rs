@@ -250,6 +250,10 @@ mod tests {
         "def f():\n    import b\n    import a\n",
         "def f():\n    import a\n    import b\n"
     )]
+    #[case::nested_function_import_run(
+        "def f():\n    def g():\n        from m import b, a\n",
+        "def f():\n    def g():\n        from m import a, b\n"
+    )]
     #[case::nested_class(
         "def f():\n    class K:\n        b = 1\n        a = 2\n",
         "def f():\n    class K:\n        a = 2\n        b = 1\n"
