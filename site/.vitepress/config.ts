@@ -55,7 +55,7 @@ const siteDirectory        = paths.siteDir(import.meta.url)
 const pagesDirectory       = paths.pagesDir(import.meta.url)
 const publicDirectory      = paths.publicDir(import.meta.url)
 const tailwindEntry        = path.join(siteDirectory, '.vitepress/theme/styles/tailwind.css')
-const proseVersion         = await readPublishedVersion(crate, paths.fetchCacheDir(import.meta.url))
+const proseVersion         = await readPublishedVersion(paths.fetchCacheDir(import.meta.url))
 const requiresPython       = version.readRequiresPython(crate)
 const ruffRelease          = version.readRuffRelease(crate)
 const ruleDiscovery        = discoverRules(rulesDirectory)
@@ -131,7 +131,7 @@ export default defineConfig({
     nav: [
       ...SECTIONS.map(({ label, slug }) =>
         ({ activeMatch: sectionRoute(slug), link: sectionRoute(slug), text: label })),
-      { link: `${constants.REPO_URL}/releases`, text: `v${proseVersion}` }
+      { link: `${constants.REPO_URL}/releases`, text: proseVersion === null ? 'Releases' : `v${proseVersion}` }
     ],
     outline   : { level: [2, 3] },
     search    : { provider: 'local' },
@@ -156,7 +156,7 @@ export default defineConfig({
   },
   async transformPageData(pageData, { siteConfig }) {
     pageData.frontmatter ||= {}
-    pageData.frontmatter.proseVersion   = proseVersion
+    pageData.frontmatter.proseTag       = proseVersion === null ? '' : `, tag = "${proseVersion}"`
     pageData.frontmatter.requiresPython = requiresPython
     pageData.frontmatter.ruffVersion    = ruffRelease
     pageData.frontmatter.head ??= []

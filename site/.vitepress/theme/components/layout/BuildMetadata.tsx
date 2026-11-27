@@ -21,7 +21,7 @@ export const BuildMetadata = defineComponent({
     })
 
     const items = computed((): Item[] => [
-      {             label: 'Version',  value: build.version       },
+      ...(build.version === null ? [] : [{ label: 'Version', value: build.version }]),
       { code: true, label: 'Commit',   value: build.gitSha        },
       {             label: 'Rules',    value: rules.list.length   },
       {             label: 'Fixtures', value: build.fixtureCount  },
