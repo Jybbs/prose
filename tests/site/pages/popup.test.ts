@@ -16,7 +16,7 @@ describe('the cards under touch emulation at a phone width', () => {
   let page    : Page
 
   beforeAll(async () => {
-    browser = await chromium.launch()
+    browser = await chromium.launch({ args: ['--mute-audio'] })
     context = await bundleContext(browser, { hasTouch: true, isMobile: true, viewport: { height: 800, width: 390 } })
   })
 
@@ -57,7 +57,7 @@ describe('the lint cards from a keyboard at a desktop width', () => {
   const active = () => page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.probe)
 
   beforeAll(async () => {
-    browser = await chromium.launch()
+    browser = await chromium.launch({ args: ['--mute-audio'] })
     context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
   })
 
@@ -116,7 +116,7 @@ describe('the rule cards from a pointer at a desktop width', () => {
   const LINK = '.pipeline-order-link[data-rule]'
 
   beforeAll(async () => {
-    browser = await chromium.launch()
+    browser = await chromium.launch({ args: ['--mute-audio'] })
     context = await bundleContext(browser, { viewport: { height: 900, width: 1280 } })
   })
 
@@ -169,7 +169,7 @@ describe('the rule cards from a pointer at a desktop width', () => {
 describe('the tab orientation against the stacked layout', () => {
   let browser : Browser
 
-  beforeAll(async () => { browser = await chromium.launch() })
+  beforeAll(async () => { browser = await chromium.launch({ args: ['--mute-audio'] }) })
 
   afterAll(() => browser.close())
 
@@ -192,7 +192,7 @@ describe('the tab orientation against the stacked layout', () => {
 describe('the composition decks on a rule page', () => {
   let browser : Browser
 
-  beforeAll(async () => { browser = await chromium.launch() })
+  beforeAll(async () => { browser = await chromium.launch({ args: ['--mute-audio'] }) })
 
   afterAll(() => browser.close())
 

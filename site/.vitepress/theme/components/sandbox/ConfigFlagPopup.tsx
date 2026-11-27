@@ -11,8 +11,10 @@ import type { RuleControl }        from '../../../lib/sandbox/config-schema.data
 const GRACE_MS = 120
 
 export interface ConfigFlagPopupHandle {
-  hide : () => void
-  show : (event: Event) => void
+  close : () => void
+  hide  : () => void
+  press : (flag: HTMLElement) => void
+  show  : (event: Event) => void
 }
 
 export const ConfigFlagPopup = defineComponent({
@@ -27,6 +29,8 @@ export const ConfigFlagPopup = defineComponent({
     const hover  = useDismissedHover()
     const path   = ref('')
     const target = shallowRef<HTMLElement | null>(null)
+
+    let pressed = false
 
     const closing = useTimeoutFn(() => { path.value = '' }, GRACE_MS, { immediate: false })
 
@@ -45,12 +49,24 @@ export const ConfigFlagPopup = defineComponent({
     }
 
     // The anchors sit inside HTML set through `innerHTML`, so event delegation finds the
-    // hovered key and the popup takes it as its anchor. A repeat on the flag
-    // already shown returns before the read, since crossing between a flag's own
-    // token spans re-fires the delegated hover.
+    // hovered key and the popup takes it as its anchor.
     function show(event: Event): void {
       const flag = flagFrom(event)
       if (hover.enter(flag) || !flag) return
+      pressed = false
+      point(flag)
+    }
+
+    // Shows the card of a tapped key and holds it open past the hover's leave.
+    function press(flag: HTMLElement): void {
+      pressed = true
+      point(flag)
+    }
+
+    // Anchors the card to a key. A repeat on the flag already shown returns before
+    // the read, since crossing between a flag's own token spans re-fires the
+    // delegated hover.
+    function point(flag: HTMLElement): void {
       hold()
       if (path.value && flag === target.value) return
       const named = noticeKey(flag.dataset.message ?? '')
@@ -63,7 +79,7 @@ export const ConfigFlagPopup = defineComponent({
     // button, so a leave schedules the close and entering the card cancels it.
     function hide(): void {
       hover.leave()
-      if (!closing.isPending.value) closing.start()
+      if (!pressed && !closing.isPending.value) closing.start()
     }
 
     function hold(): void {
@@ -87,9 +103,15 @@ export const ConfigFlagPopup = defineComponent({
       close()
     }
 
+    // Keeps focus in the editor through a press on the card of a key tapped there.
+    // A blur hides the editor, and with it the key the card is anchored to.
+    function keepFocus(event: Event): void {
+      if (pressed) event.preventDefault()
+    }
+
     useEventListener('pointermove', event => { hover.move(flagFrom(event)) })
 
-    expose({ hide, show })
+    expose({ close, hide, press, show })
 
     return () => (
       <Popup
@@ -106,6 +128,7 @@ export const ConfigFlagPopup = defineComponent({
           default: () => (
             <div
               class="flex max-w-42ch flex-col gap-12 px-2 py-4"
+              onMousedown={keepFocus}
               onMouseenter={hold}
               onMouseleave={close}
             >

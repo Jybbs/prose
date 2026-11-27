@@ -3,6 +3,7 @@ import { defineComponent } from 'vue'
 
 import { NibSprite }          from '../../../kit'
 import { useNibStroke }       from '../../../lib/composables/use-nib-stroke'
+import { useSearchRoles }     from '../../../lib/composables/use-search-roles'
 import { GlossaryFolioIndex } from '../glossary/GlossaryFolioIndex'
 import { RuleChrome }         from '../rules/RuleChrome'
 import { RuleLinkPopup }      from '../rules/RuleLinkPopup'
@@ -14,6 +15,7 @@ export const Layout = defineComponent({
   name: 'Layout',
   setup() {
     useNibStroke()
+    useSearchRoles()
 
     return () => (
       <DefaultTheme.Layout>
