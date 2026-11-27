@@ -291,6 +291,20 @@ PINS = {
         }
     )
 }
+HELP = """\
+Usage: mise [FLAGS] [TASK] [SUBCOMMAND]
+
+Commands:
+  audit         Check tool versions for known vulnerabilities
+  backends      Manage backends [aliases: b, backend,
+                backend-list]
+  run           Run tasks and their dependencies [aliases: r]
+  help          Print this message or the help of the given
+                subcommand(s)
+
+Arguments:
+  [TASK]  Task to run
+"""
 PRESS = (
     "jobs:\n"
     "  press:\n"
@@ -1771,6 +1785,56 @@ def test_proof_rows_read_every_binary_a_row_names(
     drifted(".github/workflows/ci.yml", pin, stray)
 
     assert audit.proof_rows() == rows
+
+
+@mark.parametrize(
+    ("alias", "listed"),
+    [
+        param("audit", True, id = "command"),
+        param("backend-list", True, id = "wrapped-alias"),
+        param("invariants", False, id = "unlisted")
+    ]
+)
+def test_tasks_fails_on_an_alias_mise_lists_as_a_command(
+    alias  : str,
+    audit  : ModuleType,
+    capsys : CaptureFixture[str],
+    fp     : FakeProcess,
+    listed : bool
+):
+    """
+    Pins that `tasks` annotates each task alias matching a command or a
+    command's own alias in `mise --help`, wrapped across lines or not, and
+    passes an alias the help does not list.
+    """
+    fp.register(["mise", "tasks", "validate", "--json"], stdout=dumps({"issues": []}))
+    fp.register(["mise", "--help"], stdout=HELP)
+    fp.register(
+        ["mise", "tasks", "ls", "--json"],
+        stdout = dumps([{"name": "repo:audit", "aliases": [alias]}])
+    )
+
+    assert audit.tasks() == listed
+    assert capsys.readouterr().out == (
+        f"::error::repo:audit: alias '{alias}' matches a command "
+        "`mise --help` lists\n" * listed
+    )
+
+
+def test_reserved_fails_on_a_help_listing_no_commands(
+    audit  : ModuleType,
+    capsys : CaptureFixture[str],
+    fp     : FakeProcess
+):
+    """
+    Pins that `reserved` exits nonzero, annotating the failure, where the
+    help carries no `Commands` section.
+    """
+    fp.register(["mise", "--help"], stdout="Usage: mise\n")
+
+    with raises(SystemExit):
+        audit.reserved()
+    assert capsys.readouterr().out == "::error::mise --help lists no commands\n"
 
 
 def test_swept_follows_dependencies_transitively(
