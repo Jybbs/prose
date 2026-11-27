@@ -1,0 +1,7 @@
+## {{ row }}
+
+| Task | Status | Duration |
+|---|---|---|
+{% for task in tasks %}
+| `{{ task.name }}` | {{ task.mark }} {{ task.status }} | {{ task.time }} |
+{% endfor %}

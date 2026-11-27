@@ -184,3 +184,85 @@ def test_the_site_build_reads_github_with_the_workflow_token():
     assert steps["Build the site and check internal links"]["env"] == {
         "GITHUB_TOKEN": "${{ github.token }}"
     }
+
+
+@mark.usefixtures("gate")
+def test_a_row_summary_lists_every_task_its_report_records(
+    capsys      : CaptureFixture[str],
+    monkeypatch : MonkeyPatch,
+    task        : Callable[[str], ModuleType],
+    tmp_path    : Path
+):
+    """
+    Pins that the row summary names each task the `mise run` report holds
+    with its arguments, status, and duration, in the report's order, and
+    that a task with no duration shows a dash.
+    """
+    report = tmp_path / "tasks.json"
+    report.write_text(
+        dumps(
+            {
+                "tasks": [
+                    {
+                        "name"        : name,
+                        "args"        : args,
+                        "status"      : status,
+                        "duration_ms" : ms
+                    }
+                    for name, args, status, ms in [
+                        ("rust:build", [], "failed", 1500),
+                        ("site:bake", ["--fast"], "passed", 20),
+                        ("wasm:pack", [], "not_run", None)
+                    ]
+                ]
+            }
+        )
+    )
+    monkeypatch.setenv("REPORT", str(report))
+    monkeypatch.setenv("ROW", "🪃 Browser")
+
+    task("gha/brief").Summary().tasks()
+
+    assert capsys.readouterr().out == (
+        "## 🪃 Browser\n\n"
+        "| Task | Status | Duration |\n"
+        "|---|---|---|\n"
+        "| `rust:build` | ❌ failed | 1.5s |\n"
+        "| `site:bake --fast` | ✅ passed | 0.0s |\n"
+        "| `wasm:pack` | ➖ not run | — |\n"
+    )
+
+
+@mark.usefixtures("gate")
+def test_a_row_that_wrote_no_report_renders_no_summary(
+    capsys      : CaptureFixture[str],
+    monkeypatch : MonkeyPatch,
+    task        : Callable[[str], ModuleType],
+    tmp_path    : Path
+):
+    """
+    Pins that a row whose run ended before `mise run` wrote its report
+    renders nothing, so the summary step never fails a row on its own.
+    """
+    monkeypatch.setenv("REPORT", str(tmp_path / "missing.json"))
+    monkeypatch.setenv("ROW", "🪃 Browser")
+
+    task("gha/brief").Summary().tasks()
+
+    assert capsys.readouterr().out == ""
+
+
+@mark.parametrize("workflow", ["ci", "deploy"])
+def test_every_matrix_row_runs_through_a_report(workflow: str):
+    """
+    Asserts that each matrix row of `ci.yml` and `deploy.yml` runs its task
+    with `-c --report-file`, so sibling tasks all report, and that a step
+    after it lists them even once the task failed.
+    """
+    flow  = safe_load((ROOT / f".github/workflows/{workflow}.yml").read_text())
+    steps = flow["jobs"]["check" if workflow == "ci" else "checks"]["steps"]
+    run   = next(step for step in steps if "--report-file" in step.get("run", ""))
+    after = steps[steps.index(run) + 1]
+    assert run["run"].startswith('mise run -c --report-file "$REPORT" ')
+    assert after["run"] == "mise run gha:brief tasks"
+    assert after["if"] == "${{ !cancelled() }}"

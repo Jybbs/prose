@@ -90,10 +90,10 @@ DRIFTS = {
         (".github/workflows/ci.yml", "rust:proof settle", "rust:proof other"),
         (
             ".github/workflows/ci.yml",
-            "          - command : mise run rust:proof settle\n",
-            "          - command : mise run rust:proof corpus\n"
+            "          - task    : rust:proof settle\n",
+            "          - task    : rust:proof corpus\n"
             "            name    : 🥃 Proof · Corpus\n"
-            "          - command : mise run rust:proof settle\n"
+            "          - task    : rust:proof settle\n"
         )
     ],
 
@@ -207,12 +207,12 @@ PINS = {
         "    strategy:\n"
         "      matrix:\n"
         "        include:\n"
-        "          - command : mise run rust:proof corpus\n"
+        "          - task    : rust:proof corpus\n"
         "            name    : 🥃 Proof · Corpus\n"
-        "          - command : mise run rust:proof settle\n"
+        "          - task    : rust:proof settle\n"
         "            name    : 🥃 Proof · Settle\n"
         "    steps:\n"
-        "      - run : ${{ matrix.command }}\n"
+        '      - run : mise run -c --report-file "$REPORT" ${{ matrix.task }}\n'
     ),
 
     ".github/workflows/deploy.yml": (
@@ -1748,8 +1748,8 @@ def test_parity_pairs_each_have_a_drift_row(
             id = "several-binaries"
         ),
         param(
-            "      - run : ${{ matrix.command }}\n",
-            "      - run : ${{ matrix.command }}\n"
+            '      - run : mise run -c --report-file "$REPORT" ${{ matrix.task }}\n',
+            '      - run : mise run -c --report-file "$REPORT" ${{ matrix.task }}\n'
             "      - run : mise run gha:brief ci\n",
             [("🥃 Proof · Corpus", ["corpus"]), ("🥃 Proof · Settle", ["settle"])],
             id = "step-after"

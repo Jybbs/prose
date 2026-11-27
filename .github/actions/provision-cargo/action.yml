@@ -45,6 +45,10 @@ runs:
         install_args       : ${{ inputs.tools }}
         version            : ${{ steps.mise.outputs.version }}
 
+    - name  : Check the project's conditions
+      run   : mise doctor project
+      shell : bash
+
     - name : Restore Cargo cache
       env  : { RUST_PROBE_SELECTION: "${{ inputs.probe == 'true' && hashFiles('.mise/lib/corpus.bash', '.mise/lib/workspace.bash', '.mise/tasks/rust/probe') || '' }}" }
       if   : ${{ inputs.shared-key != '' }}

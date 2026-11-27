@@ -72,18 +72,18 @@ jobs:
 
       matrix:
         include:
-          - command    : mise run lock:check
+          - task       : lock:check
             name       : 🪵 Lockfile
-          - command    : mise run repo:audit
+          - task       : repo:audit
             name       : 🪷 Audit
-          - command    : mise run site:typecheck
+          - task       : site:typecheck
             name       : 🪡 Typecheck
-          - command    : mise run site:lint
+          - task       : site:lint
             name       : 🧶 Lint
-          - command    : mise run site:upload
+          - task       : site:upload
             name       : ☂️ Coverage
             shared-key : &debug-key prose-debug
-          - command    : mise run site:cruft
+          - task       : site:cruft
             name       : 🧹 Cruft
 
     steps:
@@ -98,11 +98,19 @@ jobs:
           save       : &no-save 'false'
           shared-key : ${{ matrix.shared-key }}
 
-      - name : ${{ matrix.command }}
+      - name : mise run ${{ matrix.task }}
         env:
-          CODECOV_TOKEN     : ${{ endsWith(matrix.command, ':upload') && secrets.CODECOV_TOKEN || '' }}
-          MISE_GITHUB_TOKEN : ${{ matrix.command == 'mise run lock:check' && github.token || '' }}
-        run  : ${{ matrix.command }}
+          CODECOV_TOKEN      : ${{ endsWith(matrix.task, ':upload') && secrets.CODECOV_TOKEN || '' }}
+          MISE_GITHUB_TOKEN  : ${{ matrix.task == 'lock:check' && github.token || '' }}
+          REPORT             : ${{ runner.temp }}/tasks.json
+        run  : mise run -c --report-file "$REPORT" ${{ matrix.task }}
+
+      - name : List the row's tasks
+        env:
+          REPORT : ${{ runner.temp }}/tasks.json
+          ROW    : ${{ matrix.name }}
+        if   : ${{ !cancelled() }}
+        run  : mise run gha:brief tasks
 
   press:
     name            : 🎞️ Press

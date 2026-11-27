@@ -114,6 +114,7 @@ READ             : set[str]       = set()
 READY_TYPES      : set[str]       = {
     "opened", "ready_for_review", "reopened", "synchronize"
 }
+RUN          = r"\bmise run (?:-c --report-file \S+ )?"
 SCRIPT_BLOCK = r"(?m)^# /// script$\s(?:^#(?:| .*)$\s)+^# ///$"
 STEP_LINE  = r"(?m)^[ \t]+(?:- )?(?:name|uses)[ \t]*:[ \t]*(?:&[\w-]+[ \t]+)?{}[ \t]*$"
 USES       = r"uses\s*:\s*(?:&[\w-]+\s+)?([\w.-]+/[\w./-]+)@(\S+)"
@@ -735,7 +736,7 @@ def invoked(text: str) -> list[str]:
     """
     Collects every task a `mise run` in `text` names.
     """
-    return findall(r"\bmise run ([\w:-]+)", text)
+    return findall(RUN + r"([\w:-]+)", text)
 
 
 def labels() -> int:
@@ -1265,7 +1266,7 @@ def proof_rows() -> list[tuple[str, list[str]]]:
             binaries := [
                 binary
                 for named in findall(
-                    r"\bmise run rust:proof((?:[ \t]+\w+)+)",
+                    RUN + r"rust:proof((?:[ \t]+\w+)+)",
                     report.script
                 )
                 for binary in named.split()
