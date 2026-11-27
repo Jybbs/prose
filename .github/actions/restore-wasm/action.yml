@@ -1,5 +1,5 @@
 name        : Restore wasm cache
-description : Restore `site/public/wasm` from the cache, under an exact key hashed from the wasm sources. A hit stamps the restored files forward, so `wasm:pack` reads its outputs as current and skips the `prose_wasm` compile, the `wasm-bindgen` emission, and the `wasm-opt` pass. The save is left to the caller, and on a push both `module.yml` and `deploy.yml` write the entry under the key this action reports.
+description : Restore `site/public/wasm` from the cache, under an exact key hashed from the wasm sources. A hit stamps the restored files forward and switches the job's tasks back to modification-time freshness, since a fresh runner holds no recorded source hashes and hash freshness would rerun `wasm:pack`. With modification times, `wasm:pack` reads its outputs as current and skips the `prose_wasm` compile, the `wasm-bindgen` emission, and the `wasm-opt` pass. The save is left to the caller, and on a push both `module.yml` and `deploy.yml` write the entry under the key this action reports.
 
 outputs:
   cache-hit:
@@ -23,5 +23,7 @@ runs:
 
     - name  : Stamp the restored module forward
       if    : ${{ steps.entry.outputs.cache-hit == 'true' }}
-      run   : find site/public/wasm -type f -exec touch {} +
+      run   : |
+        find site/public/wasm -type f -exec touch {} +
+        echo MISE_TASK_SOURCE_FRESHNESS_HASH_CONTENTS=false >> "$GITHUB_ENV"
       shell : bash
